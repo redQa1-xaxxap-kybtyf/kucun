@@ -17,6 +17,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import {
+  RETURN_ALLOWED_SALES_ORDER_STATUSES,
+  SALES_ORDER_STATUS_LABELS,
+  type SalesOrderStatus,
+} from '@/lib/config/sales-order';
 import { cn, formatCurrency } from '@/lib/utils';
 
 interface Customer {
@@ -31,7 +36,7 @@ interface SalesOrder {
   customerId: string;
   customerName?: string;
   totalAmount: number;
-  status: string;
+  status: SalesOrderStatus;
   createdAt: string;
 }
 
@@ -104,16 +109,12 @@ export function CustomerSalesOrderSelector({
       return [];
     }
 
-    // 过滤: 只显示该客户的订单，且只显示已发货/已送达/已完成的订单（可退货状态）
-    const returnableStatuses: Array<string> = [
-      'shipped',
-      'delivered',
-      'completed',
-    ];
+    // 过滤: 只显示该客户的订单，且只显示可退货状态的订单
+    // 使用集中化的配置，确保与后端逻辑一致
     const customerOrders = salesOrders.filter(
       order =>
         order.customerId === internalCustomerId &&
-        returnableStatuses.includes(order.status)
+        RETURN_ALLOWED_SALES_ORDER_STATUSES.includes(order.status)
     );
 
     if (!searchValue) {
@@ -160,17 +161,11 @@ export function CustomerSalesOrderSelector({
   };
 
   // 格式化金额
-  // 格式化状态
-  const formatStatus = (status: string) => {
-    const statusMap: Record<string, string> = {
-      draft: '草稿',
-      confirmed: '已确认',
-      shipped: '已发货',
-      completed: '已完成',
-      cancelled: '已取消',
-    };
-    return statusMap[status] || status;
-  };
+  // 格式化状态 - 使用集中化的配置
+  const formatStatus = (status: string) =>
+    SALES_ORDER_STATUS_LABELS[
+      status as keyof typeof SALES_ORDER_STATUS_LABELS
+    ] || status;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

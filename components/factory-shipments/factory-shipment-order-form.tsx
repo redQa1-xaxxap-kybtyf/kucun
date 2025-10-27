@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -14,10 +14,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { useCustomerPriceHistory } from '@/hooks/use-price-history';
-import { getCustomers } from '@/lib/api/customers';
-import { getProducts } from '@/lib/api/products';
-import { factoryShipmentConfig } from '@/lib/env';
-import { queryKeys } from '@/lib/queryKeys';
+import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
+import {
+  useCreateFactoryShipmentOrder,
+  useFactoryShipmentOrder,
+  useUpdateFactoryShipmentOrder,
+} from '@/lib/api/factory-shipments';
+import { getProducts, productQueryKeys } from '@/lib/api/products';
+import type { Customer } from '@/lib/types/customer';
 import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentOrder,
@@ -27,31 +31,36 @@ import {
   type CreateFactoryShipmentOrderData,
 } from '@/lib/validations/factory-shipment';
 
+const generateIdempotencyKey = (): string => {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const createEmptyItem = () => ({
+  productId: undefined as string | undefined,
+  supplierId: '',
+  productCode: '', // 产品编码（必填）
+  quantity: 1,
+  unitPrice: 0,
+  ownership: 'customer' as const,
+  displayName: '', // 产品名称（必填，默认空字符串）
+  specification: '', // 规格（可选，默认空字符串）
+  unit: '片' as '片' | '件',
+  weight: undefined as number | undefined, // 重量（可选）
+  ownershipRemarks: '', // 归属备注（可选，默认空字符串）
+  remarks: '', // 备注（可选，默认空字符串）
+});
+
 interface FactoryShipmentOrderFormProps {
   orderId?: string;
   onSuccess?: (order: FactoryShipmentOrder) => void;
   onCancel?: () => void;
 }
-
-// 模拟API调用 - 后续替换为真实API
-const createFactoryShipmentOrder = async (
-  data: CreateFactoryShipmentOrderData
-): Promise<FactoryShipmentOrder> =>
-  // TODO: 实现真实API调用
-  ({ id: 'mock-id', ...data }) as FactoryShipmentOrder;
-
-const updateFactoryShipmentOrder = async (
-  id: string,
-  data: CreateFactoryShipmentOrderData
-): Promise<FactoryShipmentOrder> =>
-  // TODO: 实现真实API调用
-  ({ id, ...data }) as FactoryShipmentOrder;
-
-const getFactoryShipmentOrder = async (
-  _id: string
-): Promise<FactoryShipmentOrder | null> =>
-  // TODO: 实现真实API调用
-  null;
 
 /**
  * 厂家发货订单表单组件
@@ -70,6 +79,7 @@ export function FactoryShipmentOrderForm({
   const form = useForm<CreateFactoryShipmentOrderData>({
     resolver: zodResolver(createFactoryShipmentOrderSchema),
     defaultValues: {
+      idempotencyKey: generateIdempotencyKey(),
       containerNumber: '',
       customerId: '',
       status: FACTORY_SHIPMENT_STATUS.DRAFT,
@@ -77,20 +87,7 @@ export function FactoryShipmentOrderForm({
       receivableAmount: 0,
       depositAmount: 0,
       remarks: '',
-      items: [
-        {
-          productId: undefined,
-          supplierId: '',
-          quantity: 1,
-          unitPrice: 0,
-          ownership: 'customer',
-          displayName: '',
-          specification: '',
-          unit: '件',
-          ownershipRemarks: '',
-          remarks: '',
-        },
-      ],
+      items: [createEmptyItem()],
     },
   });
 
@@ -101,28 +98,32 @@ export function FactoryShipmentOrderForm({
   });
 
   // 查询基础数据
-  const { data: customersResponse } = useQuery({
-    queryKey: queryKeys.customers.list({
-      page: 1,
-      limit: factoryShipmentConfig.queryLimit,
-    }),
-    queryFn: () =>
-      getCustomers({ page: 1, limit: factoryShipmentConfig.queryLimit }),
+  // 使用合理的客户列表限制（与销售订单保持一致）
+  const customersQueryParams = {
+    page: 1,
+    limit: 100,
+    sortBy: 'createdAt' as const,
+    sortOrder: 'desc' as const,
+  };
+
+  const customersQueryKey = customerQueryKeys.list(customersQueryParams);
+
+  const { data: customersResponse, isLoading: customersLoading } = useQuery({
+    queryKey: customersQueryKey,
+    queryFn: () => getCustomers(customersQueryParams),
   });
   const customers = customersResponse?.data || [];
 
-  const { data: productsResponse } = useQuery({
-    queryKey: queryKeys.products.list({
-      page: 1,
-      limit: factoryShipmentConfig.queryLimit,
-      includeBatchSpecs: true,
-    }),
-    queryFn: () =>
-      getProducts({
-        page: 1,
-        limit: factoryShipmentConfig.queryLimit,
-        includeBatchSpecs: true,
-      }),
+  // 产品查询参数（与销售订单保持一致，避免使用过大的 limit）
+  const productsQueryParams = {
+    includeInventory: true,
+    includeStatistics: false,
+    includeBatchSpecs: true,
+  };
+
+  const { data: productsResponse, isLoading: _productsLoading } = useQuery({
+    queryKey: productQueryKeys.list(productsQueryParams),
+    queryFn: () => getProducts(productsQueryParams),
   });
   const products = productsResponse?.data || [];
 
@@ -136,70 +137,21 @@ export function FactoryShipmentOrderForm({
   });
 
   // 查询订单详情（编辑模式）
-  const { data: orderDetail } = useQuery({
-    queryKey: queryKeys.factoryShipments.detail(orderId || ''),
-    queryFn: () => (orderId ? getFactoryShipmentOrder(orderId) : null),
-    enabled: isEditing,
-  });
+  const { data: orderDetail } = useFactoryShipmentOrder(
+    isEditing ? orderId || '' : ''
+  );
 
   // 创建订单mutation
-  const createMutation = useMutation({
-    mutationFn: createFactoryShipmentOrder,
-    onSuccess: data => {
-      toast({
-        title: '创建成功',
-        description: '厂家发货订单创建成功',
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.factoryShipments.orders(),
-      });
-      onSuccess?.(data);
-    },
-    onError: error => {
-      toast({
-        title: '创建失败',
-        description:
-          error instanceof Error ? error.message : '创建厂家发货订单失败',
-        variant: 'destructive',
-      });
-    },
-  });
+  const createMutation = useCreateFactoryShipmentOrder();
 
   // 更新订单mutation
-  const updateMutation = useMutation({
-    mutationFn: (data: CreateFactoryShipmentOrderData) => {
-      if (!orderId) {
-        throw new Error('订单ID不能为空');
-      }
-      return updateFactoryShipmentOrder(orderId, data);
-    },
-    onSuccess: data => {
-      toast({
-        title: '更新成功',
-        description: '厂家发货订单更新成功',
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.factoryShipments.lists(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.factoryShipments.detail(orderId || ''),
-      });
-      onSuccess?.(data);
-    },
-    onError: error => {
-      toast({
-        title: '更新失败',
-        description:
-          error instanceof Error ? error.message : '更新厂家发货订单失败',
-        variant: 'destructive',
-      });
-    },
-  });
+  const updateMutation = useUpdateFactoryShipmentOrder();
 
   // 填充编辑数据
   useEffect(() => {
     if (orderDetail && isEditing) {
       form.reset({
+        idempotencyKey: generateIdempotencyKey(),
         containerNumber: orderDetail.containerNumber || '',
         customerId: orderDetail.customerId,
         status: orderDetail.status,
@@ -207,35 +159,22 @@ export function FactoryShipmentOrderForm({
         receivableAmount: orderDetail.receivableAmount,
         depositAmount: orderDetail.depositAmount,
         remarks: orderDetail.remarks || '',
-        planDate: orderDetail.planDate
-          ? new Date(orderDetail.planDate)
-          : undefined,
         items: orderDetail.items?.map(item => ({
           productId: item.productId ?? undefined,
           supplierId: item.supplierId,
+          productCode: item.productCode || '', // 产品编码（必填）
           quantity: item.quantity,
           unitPrice: item.unitPrice,
           ownership: item.ownership || 'customer',
-          displayName: item.displayName,
-          specification: item.specification || '',
-          unit: item.unit,
-          weight: item.weight,
-          ownershipRemarks: item.ownershipRemarks || '',
-          remarks: item.remarks || '',
-        })) || [
-          {
-            productId: undefined,
-            supplierId: '',
-            quantity: 1,
-            unitPrice: 0,
-            ownership: 'customer',
-            displayName: '',
-            specification: '',
-            unit: '件',
-            ownershipRemarks: '',
-            remarks: '',
-          },
-        ],
+          displayName: item.displayName || '', // 产品名称（必填）
+          specification: item.specification || '', // 规格（可选）
+          unit: (item.unit === '片' || item.unit === '件'
+            ? item.unit
+            : '片') as '片' | '件',
+          weight: item.weight ?? undefined, // 重量（可选，保持 undefined）
+          ownershipRemarks: item.ownershipRemarks || '', // 归属备注（可选）
+          remarks: item.remarks || '', // 备注（可选）
+        })) || [createEmptyItem()],
       });
     }
   }, [orderDetail, isEditing, form]);
@@ -269,10 +208,86 @@ export function FactoryShipmentOrderForm({
   // 提交表单
   const onSubmit = (data: CreateFactoryShipmentOrderData) => {
     if (isEditing) {
-      updateMutation.mutate(data);
+      // 确保更新时有 idempotencyKey
+      const updateData = {
+        ...data,
+        idempotencyKey: data.idempotencyKey || generateIdempotencyKey(),
+      };
+
+      updateMutation.mutate(
+        {
+          id: orderId as string,
+          data: updateData,
+        },
+        {
+          onSuccess: updatedOrder => {
+            toast({
+              title: '更新成功',
+              description: `厂家发货订单 ${updatedOrder.orderNumber} 已更新。`,
+            });
+            onSuccess?.(updatedOrder);
+          },
+          onError: error => {
+            toast({
+              title: '更新失败',
+              description:
+                error instanceof Error
+                  ? error.message
+                  : '更新厂家发货订单失败，请稍后重试。',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data, {
+        onSuccess: createdOrder => {
+          toast({
+            title: '创建成功',
+            description: `厂家发货订单 ${createdOrder.orderNumber} 已创建。`,
+          });
+          onSuccess?.(createdOrder);
+          form.reset({
+            idempotencyKey: generateIdempotencyKey(),
+            containerNumber: '',
+            customerId: '',
+            status: FACTORY_SHIPMENT_STATUS.DRAFT,
+            totalAmount: 0,
+            receivableAmount: 0,
+            depositAmount: 0,
+            remarks: '',
+            items: [createEmptyItem()],
+          });
+        },
+        onError: error => {
+          toast({
+            title: '创建失败',
+            description:
+              error instanceof Error
+                ? error.message
+                : '创建厂家发货订单失败，请稍后重试。',
+            variant: 'destructive',
+          });
+        },
+      });
     }
+  };
+
+  // 处理客户创建成功
+  const handleCustomerCreated = (customer: Customer) => {
+    // 刷新客户列表
+    queryClient.invalidateQueries({
+      queryKey: customersQueryKey,
+    });
+    // 自动选择新创建的客户
+    form.setValue('customerId', customer.id);
+  };
+
+  // 处理刷新客户列表
+  const handleRefreshCustomers = () => {
+    queryClient.invalidateQueries({
+      queryKey: customersQueryKey,
+    });
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
@@ -285,6 +300,9 @@ export function FactoryShipmentOrderForm({
           form={form}
           customers={customers}
           showStatus={isEditing}
+          isLoadingCustomers={customersLoading}
+          onCustomerCreated={handleCustomerCreated}
+          onRefreshCustomers={handleRefreshCustomers}
         />
 
         {/* 商品明细 */}

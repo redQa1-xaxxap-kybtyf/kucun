@@ -1,3 +1,5 @@
+import type { TemporaryProductRequirements } from '../smart-product-search/types';
+
 import type { TemporaryProductData } from './validation';
 
 export interface AddTemporaryProductDialogProps {
@@ -5,6 +7,7 @@ export interface AddTemporaryProductDialogProps {
   onOpenChange: (open: boolean) => void;
   initialName?: string;
   onConfirm: (data: TemporaryProductData) => void;
+  requirements?: TemporaryProductRequirements;
 }
 
 export const UNIT_OPTIONS = [

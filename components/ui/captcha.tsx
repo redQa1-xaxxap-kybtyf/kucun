@@ -1,7 +1,7 @@
 'use client';
 
 import { RefreshCw } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -38,7 +38,6 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
     _ref
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const [captchaText, setCaptchaText] = useState('');
 
     // 使用 useRef 来存储回调函数，避免依赖数组问题
     const onCaptchaChangeRef = useRef(onCaptchaChange);
@@ -123,8 +122,7 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
       ctx.lineWidth = 1;
       ctx.strokeRect(0, 0, width, height);
 
-      // 在绘制完成后更新状态和调用回调
-      setCaptchaText(newCaptcha);
+      // 在绘制完成后调用回调
       onCaptchaChangeRef.current?.(newCaptcha);
     }, [width, height, length]); // 移除 onCaptchaChange 依赖
 

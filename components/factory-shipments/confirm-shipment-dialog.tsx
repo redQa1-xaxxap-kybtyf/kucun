@@ -1,12 +1,13 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { Ship } from 'lucide-react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { DateTimePicker } from '@/components/ui/date-time-picker';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,7 +27,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { queryKeys } from '@/lib/queryKeys';
+import {
+  factoryShipmentQueryKeys,
+  useUpdateFactoryShipmentOrderStatus,
+} from '@/lib/api/factory-shipments';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 
 // 确认发货表单验证规则
@@ -34,6 +39,12 @@ const confirmShipmentSchema = z.object({
     .string()
     .min(1, '集装箱号码不能为空')
     .max(50, '集装箱号码不能超过50个字符'),
+  shippingCompany: z
+    .string()
+    .min(1, '船运公司不能为空,用于自动查询运输状态')
+    .max(100, '船运公司名称不能超过100个字符'),
+  estimatedArrival: z.date().optional(),
+  shipmentDate: z.date().default(() => new Date()),
 });
 
 type ConfirmShipmentData = z.infer<typeof confirmShipmentSchema>;
@@ -46,32 +57,240 @@ interface ConfirmShipmentDialogProps {
   onSuccess?: () => void;
 }
 
-/**
- * 确认发货 API 调用
- * 调用 PATCH /api/factory-shipments/[id]/status
- */
-const confirmShipment = async (
-  orderId: string,
-  data: ConfirmShipmentData
-): Promise<void> => {
-  const response = await fetch(`/api/factory-shipments/${orderId}/status`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
+type ConfirmShipmentDialogStateProps = Pick<
+  ConfirmShipmentDialogProps,
+  'orderId' | 'orderNumber' | 'onOpenChange' | 'onSuccess'
+>;
+
+function useConfirmShipmentDialogState({
+  orderId,
+  orderNumber,
+  onOpenChange,
+  onSuccess,
+}: ConfirmShipmentDialogStateProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const form = useForm<ConfirmShipmentData>({
+    resolver: zodResolver(confirmShipmentSchema),
+    defaultValues: {
+      containerNumber: '',
+      shippingCompany: '',
+      estimatedArrival: undefined,
+      shipmentDate: new Date(),
     },
-    body: JSON.stringify({
-      idempotencyKey: crypto.randomUUID(),
-      status: FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
-      containerNumber: data.containerNumber,
-      shipmentDate: new Date().toISOString(),
-    }),
   });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || '确认发货失败');
-  }
-};
+  const confirmMutation = useUpdateFactoryShipmentOrderStatus();
+
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+
+  const handleSuccess = () => {
+    toast({
+      title: '确认发货成功',
+      description: `订单 ${orderNumber} 已确认发货`,
+    });
+    queryClient.invalidateQueries({
+      queryKey: factoryShipmentQueryKeys.detail(orderId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: factoryShipmentQueryKeys.lists(),
+    });
+    form.reset();
+    handleClose();
+    onSuccess?.();
+  };
+
+  const handleError = (error: unknown) => {
+    toast({
+      title: '确认发货失败',
+      description:
+        error instanceof Error ? error.message : '操作失败，请重试',
+      variant: 'destructive',
+    });
+  };
+
+  const handleSubmit = form.handleSubmit(data => {
+    confirmMutation.mutate(
+      {
+        id: orderId,
+        data: {
+          idempotencyKey: crypto.randomUUID(),
+          status: FACTORY_SHIPMENT_STATUS.SHIPPED,
+          containerNumber: data.containerNumber,
+          shippingCompany: data.shippingCompany,
+          estimatedArrival: data.estimatedArrival,
+          shipmentDate: data.shipmentDate,
+        },
+      },
+      {
+        onSuccess: handleSuccess,
+        onError: handleError,
+      },
+    );
+  });
+
+  return {
+    confirmMutation,
+    form,
+    handleCancel: handleClose,
+    handleSubmit,
+  };
+}
+
+function ContainerNumberField({
+  form,
+  disabled,
+}: {
+  form: UseFormReturn<ConfirmShipmentData>;
+  disabled?: boolean;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="containerNumber"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            集装箱号码 <span className="text-[hsl(var(--color-error))]">*</span>
+          </FormLabel>
+          <FormControl>
+            <Input placeholder="请输入集装箱号码" {...field} disabled={disabled} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function ShippingCompanyField({
+  form,
+  disabled,
+}: {
+  form: UseFormReturn<ConfirmShipmentData>;
+  disabled?: boolean;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="shippingCompany"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            船运公司 <span className="text-[hsl(var(--color-error))]">*</span>
+          </FormLabel>
+          <FormControl>
+            <Input placeholder="请输入船运公司名称" {...field} disabled={disabled} />
+          </FormControl>
+          <FormDescription>系统将使用船运公司信息自动查询货物运输状态</FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function EstimatedArrivalField({
+  form,
+  disabled,
+}: {
+  form: UseFormReturn<ConfirmShipmentData>;
+  disabled?: boolean;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="estimatedArrival"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>预计到达时间</FormLabel>
+          <FormControl>
+            <DateTimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+          </FormControl>
+          <FormDescription>可选,如有预计时间请填写</FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function ShipmentDateField({
+  form,
+  disabled,
+}: {
+  form: UseFormReturn<ConfirmShipmentData>;
+  disabled?: boolean;
+}) {
+  return (
+    <FormField
+      control={form.control}
+      name="shipmentDate"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>发货时间</FormLabel>
+          <FormControl>
+            <DateTimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function ConfirmShipmentDialogView({
+  open,
+  onOpenChange,
+  orderNumber,
+  form,
+  isPending,
+  onCancel,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  orderNumber: string;
+  form: UseFormReturn<ConfirmShipmentData>;
+  isPending: boolean;
+  onCancel: () => void;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Ship className="h-5 w-5" /> 确认发货
+          </DialogTitle>
+          <DialogDescription>
+            请填写集装箱号码和船运公司信息以确认订单 {orderNumber} 已发货
+          </DialogDescription>
+        </DialogHeader>
+
+        <Form {...form}>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <ContainerNumberField form={form} disabled={isPending} />
+            <ShippingCompanyField form={form} disabled={isPending} />
+            <EstimatedArrivalField form={form} disabled={isPending} />
+            <ShipmentDateField form={form} disabled={isPending} />
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+                取消
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? '确认中...' : '确认发货'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /**
  * 确认发货对话框组件
@@ -84,101 +303,23 @@ export function ConfirmShipmentDialog({
   onOpenChange,
   onSuccess,
 }: ConfirmShipmentDialogProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const form = useForm<ConfirmShipmentData>({
-    resolver: zodResolver(confirmShipmentSchema),
-    defaultValues: {
-      containerNumber: '',
-    },
-  });
-
-  // 确认发货 mutation
-  const confirmMutation = useMutation({
-    mutationFn: (data: ConfirmShipmentData) => confirmShipment(orderId, data),
-    onSuccess: () => {
-      toast({
-        title: '确认发货成功',
-        description: `订单 ${orderNumber} 已确认发货`,
-      });
-      // 刷新订单详情和列表
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.factoryShipments.detail(orderId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.factoryShipments.lists(),
-      });
-      form.reset();
-      onOpenChange(false);
-      onSuccess?.();
-    },
-    onError: error => {
-      toast({
-        title: '确认发货失败',
-        description:
-          error instanceof Error ? error.message : '操作失败，请重试',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const onSubmit = (data: ConfirmShipmentData) => {
-    confirmMutation.mutate(data);
-  };
+  const { confirmMutation, form, handleCancel, handleSubmit } =
+    useConfirmShipmentDialogState({
+      orderId,
+      orderNumber,
+      onOpenChange,
+      onSuccess,
+    });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Ship className="h-5 w-5" />
-            确认发货
-          </DialogTitle>
-          <DialogDescription>
-            请填写集装箱号码以确认订单 {orderNumber} 已发货
-          </DialogDescription>
-        </DialogHeader>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="containerNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    集装箱号码{' '}
-                    <span className="text-[hsl(var(--color-error))]">*</span>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="请输入集装箱号码"
-                      {...field}
-                      disabled={confirmMutation.isPending}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                disabled={confirmMutation.isPending}
-              >
-                取消
-              </Button>
-              <Button type="submit" disabled={confirmMutation.isPending}>
-                {confirmMutation.isPending ? '确认中...' : '确认发货'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <ConfirmShipmentDialogView
+      open={open}
+      onOpenChange={onOpenChange}
+      orderNumber={orderNumber}
+      form={form}
+      isPending={confirmMutation.isPending}
+      onCancel={handleCancel}
+      onSubmit={handleSubmit}
+    />
   );
 }

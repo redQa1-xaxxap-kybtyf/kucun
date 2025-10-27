@@ -40,8 +40,8 @@ import {
   type CreatePaymentRecordData,
 } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils';
-import { createPaymentRecordSchema } from '@/lib/validations/payment';
 import { logger } from '@/lib/utils/console-logger';
+import { createPaymentRecordSchema } from '@/lib/validations/payment';
 
 type FormValues = CreatePaymentRecordData;
 

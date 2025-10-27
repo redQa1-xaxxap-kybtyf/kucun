@@ -20,7 +20,7 @@ export function AddTemporaryProductDialog(
   props: AddTemporaryProductDialogProps
 ) {
   const { form, handleSubmit, handleClose } = useTemporaryProductDialog(props);
-  const { open, onOpenChange, initialName } = props;
+  const { open, onOpenChange, initialName, requirements } = props;
 
   return (
     <Dialog
@@ -51,11 +51,12 @@ export function AddTemporaryProductDialog(
             form={form}
             onSubmit={handleSubmit}
             onCancel={handleClose}
+            requirements={requirements}
           />
         </div>
 
         <DialogFooter className="text-muted-foreground pt-0 text-xs">
-          初始名称：{initialName || '（未提供）'}
+          初始关键词：{initialName || '（未提供）'}
         </DialogFooter>
       </DialogContent>
     </Dialog>

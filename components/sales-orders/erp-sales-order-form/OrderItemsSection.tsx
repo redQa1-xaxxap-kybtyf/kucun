@@ -156,23 +156,45 @@ export function OrderItemsSection({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/20">
-                <TableHead className="h-8 text-xs">产品编码</TableHead>
-                <TableHead className="h-8 text-xs">产品名称</TableHead>
-                <TableHead className="h-8 text-xs">每件片数</TableHead>
-                <TableHead className="h-8 text-xs">批次号</TableHead>
-                <TableHead className="h-8 text-xs">规格</TableHead>
-                <TableHead className="h-8 text-xs">单位</TableHead>
-                <TableHead className="h-8 text-xs">数量</TableHead>
-                <TableHead className="h-8 text-xs">单价</TableHead>
+                <TableHead className="h-8 min-w-[200px] text-xs">
+                  产品编码
+                </TableHead>
+                <TableHead className="h-8 min-w-[140px] text-xs">
+                  产品名称
+                </TableHead>
+                <TableHead className="h-8 min-w-[90px] text-xs whitespace-nowrap">
+                  每件片数
+                </TableHead>
+                <TableHead className="h-8 min-w-[180px] text-xs">
+                  批次号
+                </TableHead>
+                <TableHead className="h-8 min-w-[150px] text-xs">
+                  规格
+                </TableHead>
+                <TableHead className="h-8 min-w-[80px] text-xs">单位</TableHead>
+                <TableHead className="h-8 min-w-[100px] text-xs">
+                  数量
+                </TableHead>
+                <TableHead className="h-8 min-w-[100px] text-xs">
+                  单价
+                </TableHead>
                 {orderType === 'TRANSFER' && (
                   <>
-                    <TableHead className="h-8 text-xs">成本单价</TableHead>
-                    <TableHead className="h-8 text-xs">调货信息</TableHead>
+                    <TableHead className="h-8 min-w-[100px] text-xs whitespace-nowrap">
+                      成本单价
+                    </TableHead>
+                    <TableHead className="h-8 min-w-[120px] text-xs whitespace-nowrap">
+                      调货信息
+                    </TableHead>
                   </>
                 )}
-                <TableHead className="h-8 text-xs">金额</TableHead>
-                <TableHead className="h-8 text-xs">备注</TableHead>
-                <TableHead className="h-8 text-xs">操作</TableHead>
+                <TableHead className="h-8 min-w-[100px] text-xs">
+                  金额
+                </TableHead>
+                <TableHead className="h-8 min-w-[120px] text-xs">
+                  备注
+                </TableHead>
+                <TableHead className="h-8 min-w-[80px] text-xs">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

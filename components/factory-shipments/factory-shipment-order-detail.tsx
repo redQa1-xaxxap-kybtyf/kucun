@@ -1,11 +1,9 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import {
-  ArrowLeft,
   Anchor,
+  ArrowLeft,
   Calendar,
   DollarSign,
   Edit,
@@ -39,163 +37,27 @@ import {
 } from '@/lib/api/factory-shipments';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
-  FACTORY_SHIPMENT_STATUS,
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentItemOwnership,
   type FactoryShipmentOrder,
-  type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import {
+  canConfirmArrival,
+  canConfirmInbound,
+  canConfirmShipment,
+  FACTORY_SHIPMENT_OWNERSHIP_LABELS,
+  formatAmount,
+  formatDate,
+  formatOwnershipStatus,
+  formatUnit,
+  getFactoryShipmentStatusBadgeVariant,
+} from '@/lib/utils/factory-shipment-helpers';
 
 interface FactoryShipmentOrderDetailProps {
   orderId: string;
   onEdit?: () => void;
   onBack?: () => void;
 }
-
-// 获取状态徽章样式 - 与列表页面保持一致
-const getStatusBadgeVariant = (
-  status: FactoryShipmentStatus
-):
-  | 'default'
-  | 'secondary'
-  | 'destructive'
-  | 'outline'
-  | 'success'
-  | 'warning'
-  | 'info' => {
-  switch (status) {
-    case 'draft':
-      return 'secondary';
-    case 'planning':
-    case 'factory_shipped':
-    case 'in_transit':
-      return 'info';
-    case 'waiting_deposit':
-      return 'warning';
-    case 'deposit_paid':
-    case 'arrived':
-    case 'delivered':
-    case 'completed':
-      return 'success';
-    default:
-      return 'secondary';
-  }
-};
-
-const OWNERSHIP_LABELS: Record<FactoryShipmentItemOwnership, string> = {
-  [FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER]: '客户货',
-  [FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF]: '自用补货',
-};
-
-const getOwnershipBadgeVariant = (
-  ownership: FactoryShipmentItemOwnership
-):
-  | 'default'
-  | 'secondary'
-  | 'destructive'
-  | 'outline'
-  | 'success'
-  | 'warning'
-  | 'info' => {
-  if (ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) {
-    return 'info';
-  }
-  return 'secondary';
-};
-
-const formatOwnershipStatus = (
-  item: FactoryShipmentOrder['items'][number]
-): { label: string; variant: 'secondary' | 'info' | 'success' | 'warning' } => {
-  if (item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) {
-    return item.customerDeliveryStatus === 'delivered'
-      ? { label: '已交付', variant: 'success' }
-      : { label: '待交付', variant: 'warning' };
-  }
-  return item.selfInboundStatus === 'received'
-    ? { label: '已入库', variant: 'success' }
-    : { label: '待入库', variant: 'secondary' };
-};
-
-// 格式化金额
-const formatAmount = (amount: number): string =>
-  `¥${amount.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
-// 格式化日期
-const formatDate = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return format(dateObj, 'yyyy-MM-dd', { locale: zhCN });
-};
-
-// 单位中英文映射
-const UNIT_MAP: Record<string, string> = {
-  piece: '件',
-  box: '箱',
-  pcs: '个',
-  kg: '千克',
-  g: '克',
-  ton: '吨',
-  m: '米',
-  cm: '厘米',
-  mm: '毫米',
-  sqm: '平方米',
-  cbm: '立方米',
-  set: '套',
-  pair: '对',
-  dozen: '打',
-  pack: '包',
-  bag: '袋',
-  bottle: '瓶',
-  can: '罐',
-  roll: '卷',
-  sheet: '张',
-};
-
-// 格式化单位 - 将英文单位转换为中文
-const formatUnit = (unit: string): string =>
-  UNIT_MAP[unit.toLowerCase()] || unit;
-
-// 判断是否可以确认发货
-const canConfirmShipment = (status: FactoryShipmentStatus): boolean => {
-  const allowedStatuses: FactoryShipmentStatus[] = [
-    FACTORY_SHIPMENT_STATUS.DRAFT,
-    FACTORY_SHIPMENT_STATUS.PLANNING,
-    FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT,
-    FACTORY_SHIPMENT_STATUS.DEPOSIT_PAID,
-  ];
-
-  return allowedStatuses.includes(status);
-};
-
-// 判断是否可以确认到港
-const canConfirmArrival = (status: FactoryShipmentStatus): boolean => {
-  const allowedStatuses: FactoryShipmentStatus[] = [
-    FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
-    FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
-  ];
-
-  return allowedStatuses.includes(status);
-};
-
-// 判断是否可以确认自用货入库
-const canConfirmInbound = (
-  status: FactoryShipmentStatus,
-  hasPendingSelfInbound: boolean
-): boolean => {
-  if (!hasPendingSelfInbound) {
-    return false;
-  }
-
-  const allowedStatuses: FactoryShipmentStatus[] = [
-    FACTORY_SHIPMENT_STATUS.ARRIVED,
-    FACTORY_SHIPMENT_STATUS.DELIVERED,
-    FACTORY_SHIPMENT_STATUS.COMPLETED,
-  ];
-
-  return allowedStatuses.includes(status);
-};
 
 /**
  * 厂家发货订单详情组件
@@ -256,7 +118,7 @@ export function FactoryShipmentOrderDetail({
       ?.filter(
         item => item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER
       )
-      .reduce((sum, item) => sum + item.totalPrice, 0) ??
+      .reduce((sum, item) => sum + (item.totalPrice ?? 0), 0) ??
     0;
   const selfOwnedAmount =
     order.fulfillmentSummary?.selfOwnedAmount ??
@@ -364,7 +226,7 @@ export function FactoryShipmentOrderDetail({
               </label>
               <div className="mt-1">
                 <Badge
-                  variant={getStatusBadgeVariant(order.status)}
+                  variant={getFactoryShipmentStatusBadgeVariant(order.status)}
                   className="text-xs font-medium"
                 >
                   {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
@@ -380,17 +242,7 @@ export function FactoryShipmentOrderDetail({
                 {formatDate(order.createdAt)}
               </p>
             </div>
-            {order.planDate && (
-              <div>
-                <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  计划发货日期
-                </label>
-                <p className="mt-1 flex items-center gap-1 text-sm text-[hsl(var(--color-text-primary))]">
-                  <Calendar className="h-3 w-3" />
-                  {formatDate(order.planDate)}
-                </p>
-              </div>
-            )}
+
             {order.shipmentDate && (
               <div>
                 <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
@@ -552,8 +404,9 @@ export function FactoryShipmentOrderDetail({
                     FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER;
                   const ownershipStatus = formatOwnershipStatus(item);
                   const ownershipBadgeVariant =
-                    getOwnershipBadgeVariant(ownership);
-                  const ownershipLabel = OWNERSHIP_LABELS[ownership];
+                    getFactoryShipmentStatusBadgeVariant(ownership as any);
+                  const ownershipLabel =
+                    FACTORY_SHIPMENT_OWNERSHIP_LABELS[ownership];
                   return (
                     <TableRow
                       key={item.id ?? index}

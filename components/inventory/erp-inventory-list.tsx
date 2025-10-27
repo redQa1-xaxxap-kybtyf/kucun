@@ -20,17 +20,22 @@ interface ERPInventoryListProps {
   };
   categoryOptions: Array<{ id: string; name: string }>;
   queryParams: InventoryQueryParams;
+  /** ✅ 本地输入框值，提供即时UI反馈 */
+  searchValue?: string;
   onSearch: (value: string) => void;
   onFilter: (
     key: keyof InventoryQueryParams,
     value: string | number | boolean | undefined
   ) => void;
+  /** ✅ 新增：批量清空筛选回调 */
+  onClearFilters?: () => void;
   onPageChange: (page: number) => void;
   /** ✅ hover 预取下一页 */
   onNextPageHover?: () => void;
   /** ✅ hover 预取上一页 */
   onPrevPageHover?: () => void;
   isLoading?: boolean;
+  isFetching?: boolean;
 }
 
 /**
@@ -44,12 +49,15 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     data,
     categoryOptions,
     queryParams,
+    searchValue,
     onSearch,
     onFilter,
+    onClearFilters,
     onPageChange,
     onNextPageHover,
     onPrevPageHover,
     isLoading: _isLoading = false,
+    isFetching = false,
   }) => {
     const router = useRouter();
 
@@ -84,15 +92,27 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         <InventorySearchToolbar
           queryParams={queryParams}
           categoryOptions={categoryOptions}
+          searchValue={searchValue}
           onSearch={onSearch}
           onFilter={onFilter}
+          onClearFilters={onClearFilters}
         />
 
         {/* 库存列表 */}
         <div
-          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+          className="relative overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
           style={{ boxShadow: 'var(--shadow-medium)' }}
         >
+          {/* ✅ 加载中提示 */}
+          {isFetching && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
+              <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-lg">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                <span className="text-sm text-gray-600">加载中...</span>
+              </div>
+            </div>
+          )}
+
           <InventoryTable
             data={data.data}
             onAdjust={handleAdjust}

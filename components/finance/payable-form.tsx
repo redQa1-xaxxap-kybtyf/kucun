@@ -31,10 +31,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { usePayableForm } from '@/hooks/use-payable-form';
-import type { PayableRecordDetail } from '@/lib/types/payable';
 import {
   PAYABLE_SOURCE_TYPE_LABELS,
   PAYABLE_STATUS_LABELS,
+  type PayableRecordDetail,
 } from '@/lib/types/payable';
 
 interface PayableFormProps {

@@ -1,52 +1,53 @@
 'use client';
 
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
-import { CalendarIcon, Truck } from 'lucide-react';
+import { Truck } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   FACTORY_SHIPMENT_STATUS,
   FACTORY_SHIPMENT_STATUS_LABELS,
 } from '@/lib/types/factory-shipment';
 import type { Customer } from '@/lib/types/models';
-import { cn } from '@/lib/utils';
 import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;
   customers: Customer[];
   showStatus?: boolean;
+  isLoadingCustomers?: boolean;
+  onCustomerCreated?: (customer: Customer) => void;
+  onRefreshCustomers?: () => void;
 }
 
 /**
  * 厂家发货订单基本信息卡片
- * 包含：客户选择、集装箱号、计划发货日期
+ * 包含：客户选择、集装箱号
  * 订单状态仅在编辑场景展示
+ *
+ * 复用销售订单的客户选择器组件，支持：
+ * - 客户搜索（名称、手机号、拼音）
+ * - 快速创建新客户
+ * - 自动刷新客户列表
  */
 export function BasicInfoSection({
   form,
   customers,
   showStatus = false,
+  isLoadingCustomers = false,
+  onCustomerCreated,
+  onRefreshCustomers,
 }: BasicInfoSectionProps) {
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
@@ -77,7 +78,10 @@ export function BasicInfoSection({
                     customers={customers}
                     value={field.value}
                     onValueChange={field.onChange}
-                    placeholder="请选择客户"
+                    placeholder="搜索并选择客户"
+                    isLoading={isLoadingCustomers}
+                    onCustomerCreated={onCustomerCreated}
+                    onRefreshCustomers={onRefreshCustomers}
                   />
                 </FormControl>
                 <FormMessage />
@@ -107,14 +111,9 @@ export function BasicInfoSection({
           />
         </div>
 
-        {/* 第二行：订单状态（编辑时）和计划发货日期 */}
-        <div
-          className={cn(
-            'grid grid-cols-1 gap-5',
-            showStatus && 'md:grid-cols-2'
-          )}
-        >
-          {showStatus && (
+        {/* 第二行：订单状态（编辑时） */}
+        {showStatus && (
+          <div className="grid grid-cols-1 gap-5">
             <FormField
               control={form.control}
               name="status"
@@ -145,54 +144,8 @@ export function BasicInfoSection({
                 </FormItem>
               )}
             />
-          )}
-
-          {/* 计划发货日期 */}
-          <FormField
-            control={form.control}
-            name="planDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  计划发货日期
-                </FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          'w-full pl-3 text-left font-normal transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20',
-                          !field.value && 'text-muted-foreground'
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, 'yyyy年MM月dd日', {
-                            locale: zhCN,
-                          })
-                        ) : (
-                          <span>选择日期</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={date => date < new Date('1900-01-01')}
-                      initialFocus
-                      locale={zhCN}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

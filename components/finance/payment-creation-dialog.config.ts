@@ -1,0 +1,38 @@
+import { z } from 'zod';
+
+
+export const PAYMENT_METHODS = [
+  { value: 'cash', label: '现金' },
+  { value: 'bank_transfer', label: '银行转账' },
+  { value: 'check', label: '支票' },
+  { value: 'other', label: '其他' },
+] as const;
+
+export const paymentSchema = z.object({
+  paymentType: z.literal('order_payment').default('order_payment'),
+  salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
+  customerId: z.string().min(1, { message: '客户ID不能为空' }),
+  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
+    message: '请选择收款方式',
+  }),
+  paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
+  actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
+  roundingAmount: z.number().default(0),
+  paymentDate: z.string().min(1, { message: '请选择收款日期' }),
+  bankInfo: z.string().optional(),
+  remarks: z.string().optional(),
+});
+
+export type PaymentFormData = z.infer<typeof paymentSchema>;
+
+export interface OrderInfo {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  customerName: string;
+  totalAmount: number;
+  roundingAdjustment: number;
+  paidAmount: number;
+  remainingAmount: number;
+}
+

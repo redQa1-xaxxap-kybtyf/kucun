@@ -25,6 +25,7 @@ interface SupplierPriceSelectorProps {
   index: number;
   value: string;
   onChange: (value: string) => void;
+  showLabel?: boolean; // 是否显示标签（在表格中使用时设为 false）
 }
 
 /**
@@ -37,8 +38,8 @@ interface SupplierPriceSelectorProps {
  *
  * 使用 React.memo 优化性能
  */
-export const SupplierPriceSelector = React.memo<SupplierPriceSelectorProps>(
-  ({ form, index, value, onChange }) => {
+const SupplierPriceSelectorComponent = React.memo<SupplierPriceSelectorProps>(
+  ({ form, index, value, onChange, showLabel = true }) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -98,13 +99,16 @@ export const SupplierPriceSelector = React.memo<SupplierPriceSelectorProps>(
           }
         }
       }
-    }, [value, currentProductId, supplierPriceHistoryData, form, index, toast]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value, currentProductId, supplierPriceHistoryData]);
 
     return (
       <FormItem>
-        <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-          供应商 <span className="text-[hsl(var(--color-error))]">*</span>
-        </FormLabel>
+        {showLabel && (
+          <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+            供应商 <span className="text-[hsl(var(--color-error))]">*</span>
+          </FormLabel>
+        )}
         <FormControl>
           <SupplierSelector
             suppliers={suppliers}
@@ -131,3 +135,7 @@ export const SupplierPriceSelector = React.memo<SupplierPriceSelectorProps>(
     );
   }
 );
+
+SupplierPriceSelectorComponent.displayName = 'SupplierPriceSelector';
+
+export const SupplierPriceSelector = SupplierPriceSelectorComponent;

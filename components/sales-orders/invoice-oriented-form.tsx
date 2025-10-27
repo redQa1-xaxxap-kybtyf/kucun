@@ -43,11 +43,11 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
+import { logger } from '@/lib/utils/console-logger';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
 } from '@/lib/validations/sales-order';
-import { logger } from '@/lib/utils/console-logger';
 
 interface SalesOrderFormProps {
   onSuccess?: (order: CreateSalesOrderData) => void;

@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  FileDown,
-  FileUp,
-  Package,
-  Plus,
-  Settings,
-  Trash2,
-} from 'lucide-react';
+import { FileUp, Package, Plus, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
@@ -29,10 +22,10 @@ interface InventoryListToolbarProps {
  * - 交互动效
  */
 export function InventoryListToolbar({
-  selectedCount,
-  onBatchDelete,
-  onBatchInbound,
-  onBatchOutbound,
+  selectedCount: _selectedCount,
+  onBatchDelete: _onBatchDelete,
+  onBatchInbound: _onBatchInbound,
+  onBatchOutbound: _onBatchOutbound,
 }: InventoryListToolbarProps) {
   const router = useRouter();
 

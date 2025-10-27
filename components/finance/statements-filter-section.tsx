@@ -1,5 +1,6 @@
 import { FileText } from 'lucide-react';
 
+
 import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -174,3 +175,4 @@ function StatementsList({
     </>
   );
 }
+

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -37,18 +37,7 @@ export function ConfirmArrivalDialog({
   const { toast } = useToast();
   const updateStatusMutation = useUpdateFactoryShipmentOrderStatus();
 
-  const [arrivalDate, setArrivalDate] = useState<string>('');
-  const [remarks, setRemarks] = useState<string>('');
-
-  useEffect(() => {
-    if (open) {
-      setArrivalDate(new Date().toISOString().slice(0, 10));
-      setRemarks('');
-    }
-  }, [open]);
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  async function handleConfirm(arrivalDate: string, remarks: string) {
     if (!containerNumber) {
       toast({
         title: '无法确认到港',
@@ -90,7 +79,7 @@ export function ConfirmArrivalDialog({
         variant: 'destructive',
       });
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -102,47 +91,74 @@ export function ConfirmArrivalDialog({
             已到港，并记录到港日期。
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                到港日期
-              </label>
-              <Input
-                type="date"
-                value={arrivalDate}
-                onChange={event => setArrivalDate(event.target.value)}
-                max={new Date().toISOString().slice(0, 10)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                备注（可选）
-              </label>
-              <Textarea
-                value={remarks}
-                onChange={event => setRemarks(event.target.value)}
-                placeholder="例如：船务确认，待安排入库。"
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter className="flex space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={updateStatusMutation.isPending}
-            >
-              取消
-            </Button>
-            <Button type="submit" disabled={updateStatusMutation.isPending}>
-              {updateStatusMutation.isPending ? '提交中...' : '确认到港'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <ConfirmArrivalForm
+          open={open}
+          isPending={updateStatusMutation.isPending}
+          onCancel={() => onOpenChange(false)}
+          onConfirm={handleConfirm}
+        />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ConfirmArrivalForm({
+  open,
+  isPending,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean;
+  isPending: boolean;
+  onCancel: () => void;
+  onConfirm: (arrivalDate: string, remarks: string) => void | Promise<void>;
+}) {
+  const [arrivalDate, setArrivalDate] = useState<string>('');
+  const [remarks, setRemarks] = useState<string>('');
+
+  useEffect(() => {
+    if (open) {
+      setArrivalDate(new Date().toISOString().slice(0, 10));
+      setRemarks('');
+    }
+  }, [open]);
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onConfirm(arrivalDate, remarks);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-3">
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">到港日期</label>
+          <Input
+            type="date"
+            value={arrivalDate}
+            onChange={event => setArrivalDate(event.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">备注（可选）</label>
+          <Textarea
+            value={remarks}
+            onChange={event => setRemarks(event.target.value)}
+            placeholder="例如：船务确认，待安排入库。"
+            rows={3}
+          />
+        </div>
+      </div>
+      <DialogFooter className="flex space-x-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+          取消
+        </Button>
+        <Button type="submit" disabled={isPending}>
+          {isPending ? '提交中...' : '确认到港'}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

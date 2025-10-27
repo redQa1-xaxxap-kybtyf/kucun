@@ -22,11 +22,15 @@ import type { InventoryQueryParams } from '@/lib/types/inventory';
 interface InventorySearchToolbarProps {
   queryParams: InventoryQueryParams;
   categoryOptions: Array<{ id: string; name: string }>;
+  /** ✅ 本地输入框值，提供即时UI反馈 */
+  searchValue?: string;
   onSearch: (value: string) => void;
   onFilter: (
     key: keyof InventoryQueryParams,
     value: string | number | boolean | undefined
   ) => void;
+  /** ✅ 新增：批量清空筛选回调 */
+  onClearFilters?: () => void;
 }
 
 /**
@@ -35,143 +39,195 @@ interface InventorySearchToolbarProps {
  * 符合产品模块UI风格规范
  */
 export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
-  ({ queryParams, categoryOptions, onSearch, onFilter }) => {
-    // 统一处理筛选器变更
-    const handleFilterChange = React.useCallback(
-      (key: string, value: string | undefined) => {
-        if (key === 'categoryId') {
-          onFilter('categoryId', value);
-        } else if (key === 'sortBy') {
-          onFilter('sortBy', value);
-        }
-      },
-      [onFilter]
-    );
-
-    // 处理切换按钮点击
-    const handleToggleLowStock = React.useCallback(() => {
-      onFilter('lowStock', !queryParams.lowStock);
-    }, [onFilter, queryParams.lowStock]);
-
-    const handleToggleHasStock = React.useCallback(() => {
-      onFilter('hasStock', !queryParams.hasStock);
-    }, [onFilter, queryParams.hasStock]);
-
-    // 清空所有筛选（保留 sortBy 因为它是默认排序，不算筛选）
-    const handleClearFilters = React.useCallback(() => {
-      onFilter('categoryId', undefined);
-      onFilter('lowStock', false);
-      onFilter('hasStock', false);
-      onFilter('startDate', undefined);
-      onFilter('endDate', undefined);
-    }, [onFilter]);
-
-    const handleDateRangeChange = React.useCallback(
-      (range: DateRangeValue) => {
-        onFilter('startDate', range.startDate);
-        onFilter('endDate', range.endDate);
-      },
-      [onFilter]
-    );
-
-    // 检查是否有激活的筛选器（排除默认值）
-    const hasActiveFilters =
-      !!queryParams.categoryId || // 有选择分类
-      queryParams.lowStock || // 开启了库存偏低
-      queryParams.hasStock || // 开启了有库存
-      !!queryParams.startDate ||
-      !!queryParams.endDate;
-    // 注意：不包括 sortBy，因为它总是有默认值 'updatedAt'
+  ({
+    queryParams,
+    categoryOptions,
+    searchValue,
+    onSearch,
+    onFilter,
+    onClearFilters,
+  }) => {
+    const logic = useInventoryToolbarLogic({ queryParams, onFilter, onClearFilters });
 
     return (
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
-        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <UnifiedSearchBar
-              // 搜索配置
-              searchValue={queryParams.search || ''}
-              onSearchChange={onSearch}
-              searchPlaceholder="搜索产品名称、编码..."
-              debounceDelay={400}
-              compact={true}
-              // 切换按钮
-              toggleButtons={[
-                {
-                  key: 'lowStock',
-                  label: '库存偏低',
-                  icon: <AlertTriangle className="mr-1 h-3 w-3" />,
-                  active: !!queryParams.lowStock,
-                  onClick: handleToggleLowStock,
-                },
-                {
-                  key: 'hasStock',
-                  label: '有库存',
-                  icon: <Package className="mr-1 h-3 w-3" />,
-                  active: !!queryParams.hasStock,
-                  onClick: handleToggleHasStock,
-                },
-              ]}
-              // 筛选器
-              filters={[
-                {
-                  key: 'categoryId',
-                  label: '分类',
-                  options: categoryOptions.map(cat => ({
-                    label: cat.name,
-                    value: cat.id,
-                  })),
-                  width: 'w-[140px]',
-                },
-                {
-                  key: 'sortBy',
-                  label: '排序',
-                  options: [
-                    { label: '更新时间', value: 'updatedAt' },
-                    { label: '库存数量', value: 'quantity' },
-                  ],
-                  width: 'w-[140px]',
-                },
-              ]}
-              filterValues={{
-                categoryId: queryParams.categoryId,
-                sortBy: queryParams.sortBy,
-              }}
-              onFilterChange={handleFilterChange}
-            />
-
-            <DateRangePicker
-              value={{
-                startDate: queryParams.startDate,
-                endDate: queryParams.endDate,
-              }}
-              onChange={handleDateRangeChange}
-              label=""
-              placeholder="选择更新时间范围"
-              showPresets
-              showClearButton
-              className="w-full min-w-[220px] sm:w-auto"
-            />
-
-            {/* 清空筛选按钮 - 仅在有激活的筛选时显示，显示在筛选器右侧 */}
-            {hasActiveFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearFilters}
-                className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-              >
-                <Filter className="h-3.5 w-3.5" />
-                清空筛选
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <InventoryToolbarView
+        queryParams={queryParams}
+        categoryOptions={categoryOptions}
+        searchValue={searchValue}
+        onSearch={onSearch}
+        {...logic}
+      />
     );
   }
 );
 
 InventorySearchToolbar.displayName = 'InventorySearchToolbar';
+
+// 提取逻辑：回调与状态计算
+function useInventoryToolbarLogic({
+  queryParams,
+  onFilter,
+  onClearFilters,
+}: {
+  queryParams: InventoryQueryParams;
+  onFilter: (
+    key: keyof InventoryQueryParams,
+    value: string | number | boolean | undefined
+  ) => void;
+  onClearFilters?: () => void;
+}) {
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (key === 'categoryId') onFilter('categoryId', value);
+      else if (key === 'sortBy') onFilter('sortBy', value);
+    },
+    [onFilter]
+  );
+
+  const handleToggleLowStock = React.useCallback(() => {
+    onFilter('lowStock', !queryParams.lowStock);
+  }, [onFilter, queryParams.lowStock]);
+
+  const handleToggleHasStock = React.useCallback(() => {
+    onFilter('hasStock', !queryParams.hasStock);
+  }, [onFilter, queryParams.hasStock]);
+
+  const handleClearFilters = React.useCallback(() => {
+    if (onClearFilters) return onClearFilters();
+    onFilter('categoryId', undefined);
+    onFilter('lowStock', false);
+    onFilter('hasStock', false);
+    onFilter('startDate', undefined);
+    onFilter('endDate', undefined);
+  }, [onFilter, onClearFilters]);
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      onFilter('startDate', range.startDate);
+      onFilter('endDate', range.endDate);
+    },
+    [onFilter]
+  );
+
+  const hasActiveFilters =
+    !!queryParams.categoryId ||
+    !!queryParams.lowStock ||
+    !!queryParams.hasStock ||
+    !!queryParams.startDate ||
+    !!queryParams.endDate;
+
+  return {
+    handleFilterChange,
+    handleToggleLowStock,
+    handleToggleHasStock,
+    handleClearFilters,
+    handleDateRangeChange,
+    hasActiveFilters,
+  } as const;
+}
+
+// 提取视图：纯展示组件，便于压缩主函数行数
+type InventoryToolbarViewProps = Pick<
+  InventorySearchToolbarProps,
+  'queryParams' | 'categoryOptions' | 'searchValue' | 'onSearch'
+> & {
+  handleFilterChange: (key: string, value: string | undefined) => void;
+  handleToggleLowStock: () => void;
+  handleToggleHasStock: () => void;
+  handleDateRangeChange: (range: DateRangeValue) => void;
+  handleClearFilters: () => void;
+  hasActiveFilters: boolean;
+};
+
+function InventoryToolbarView({
+  queryParams,
+  categoryOptions,
+  searchValue,
+  onSearch,
+  handleFilterChange,
+  handleToggleLowStock,
+  handleToggleHasStock,
+  handleDateRangeChange,
+  handleClearFilters,
+  hasActiveFilters,
+}: InventoryToolbarViewProps) {
+  return (
+    <Card
+      className="border border-[hsl(var(--color-border-primary))]"
+      style={{ boxShadow: 'var(--shadow-light)' }}
+    >
+      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <UnifiedSearchBar
+            searchValue={searchValue ?? (queryParams.search || '')}
+            onSearchChange={onSearch}
+            searchPlaceholder="搜索产品名称、编码..."
+            debounceDelay={0}
+            compact={true}
+            toggleButtons={[
+              {
+                key: 'lowStock',
+                label: '库存偏低',
+                icon: <AlertTriangle className="mr-1 h-3 w-3" />,
+                active: !!queryParams.lowStock,
+                onClick: handleToggleLowStock,
+              },
+              {
+                key: 'hasStock',
+                label: '有库存',
+                icon: <Package className="mr-1 h-3 w-3" />,
+                active: !!queryParams.hasStock,
+                onClick: handleToggleHasStock,
+              },
+            ]}
+            filters={[
+              {
+                key: 'categoryId',
+                label: '分类',
+                options: categoryOptions.map(cat => ({ label: cat.name, value: cat.id })),
+                width: 'w-[140px]',
+              },
+              {
+                key: 'sortBy',
+                label: '排序',
+                options: [
+                  { label: '更新时间', value: 'updatedAt' },
+                  { label: '库存数量', value: 'quantity' },
+                ],
+                width: 'w-[140px]',
+              },
+            ]}
+            filterValues={{ categoryId: queryParams.categoryId, sortBy: queryParams.sortBy }}
+            onFilterChange={handleFilterChange}
+          />
+
+          {Boolean((searchValue ?? queryParams.search ?? '').length === 1) && (
+            <span className="text-muted-foreground text-xs">输入≥2个字符开始搜索</span>
+          )}
+
+          <DateRangePicker
+            value={{ startDate: queryParams.startDate, endDate: queryParams.endDate }}
+            onChange={handleDateRangeChange}
+            label=""
+            placeholder="选择更新时间范围"
+            showPresets
+            showClearButton
+            className="w-full min-w-[220px] sm:w-auto"
+          />
+
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearFilters}
+              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+            >
+              <Filter className="h-3.5 w-3.5" />
+              清空筛选
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

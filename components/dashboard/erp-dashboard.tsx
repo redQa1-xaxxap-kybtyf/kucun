@@ -30,8 +30,8 @@ import type {
   BusinessOverview,
   DashboardData,
   DashboardFactoryShipmentSummary,
-  DashboardSalesOrderSummary,
   DashboardSalesOrderStatus,
+  DashboardSalesOrderSummary,
   TimeRange,
 } from '@/lib/types/dashboard';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
@@ -112,14 +112,12 @@ const toDashboardOrderStatus = (status: unknown): DashboardSalesOrderStatus =>
 
 const FACTORY_SHIPMENT_STATUSES = new Set<FactoryShipmentStatus>([
   'draft',
-  'planning',
-  'waiting_deposit',
-  'deposit_paid',
-  'factory_shipped',
+  'confirmed',
+  'pending_shipment',
+  'shipped',
   'in_transit',
   'arrived',
-  'delivered',
-  'completed',
+  'cancelled',
 ]);
 
 const toFactoryShipmentStatus = (status: unknown): FactoryShipmentStatus =>

@@ -23,12 +23,18 @@ export interface ProductWithInventory {
   } | null;
 }
 
+export interface TemporaryProductRequirements {
+  requireCode?: boolean;
+  requireName?: boolean;
+}
+
 export interface SmartProductSearchProps {
   products: ProductWithInventory[];
   value?: string;
   onValueChange?: (value: string) => void;
   onBatchSelect?: (productId: string, batchNumber: string) => void;
   onTemporaryProductAdd?: (productData: {
+    productCode?: string;
     name: string;
     specification?: string;
     weight?: number;
@@ -42,4 +48,5 @@ export interface SmartProductSearchProps {
   onSearchChange?: (query: string) => void;
   isSearching?: boolean;
   simple?: boolean;
+  temporaryProductRequirements?: TemporaryProductRequirements;
 }

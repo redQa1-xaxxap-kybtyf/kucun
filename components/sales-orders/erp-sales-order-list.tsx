@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   Ban,
+  Clock,
   Edit,
   Eye,
   MoreHorizontal,
@@ -120,7 +121,7 @@ export function ERPSalesOrderList({
   };
 
   // ✅ 获取销售订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
-  const { data, isLoading, error, isFetching } = useQuery({
+  const { data, isLoading, error, isRefetching } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
     // ✅ 移除 initialData - 数据已在 QueryClient 中（通过 HydrationBoundary）
@@ -130,6 +131,10 @@ export function ERPSalesOrderList({
     refetchOnMount: false, // 避免挂载时重新获取
     gcTime: 10 * 60 * 1000, // ✅ 缓存时间10分钟，提升后退/前进体验
   });
+
+  // 区分首次加载和后台刷新
+  const isInitialLoading = isLoading && !data;
+  const isBackgroundRefetching = isRefetching && !!data;
 
   // 搜索处理 - 直接使用外部传入的处理函数
   const handleSearch = React.useCallback(
@@ -439,8 +444,9 @@ export function ERPSalesOrderList({
       return (
         <Badge
           variant="outline"
-          className="border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-xs font-medium text-[hsl(var(--color-warning))]"
+          className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-700"
         >
+          <Clock className="h-3 w-3" />
           部分收款
         </Badge>
       );
@@ -485,11 +491,11 @@ export function ERPSalesOrderList({
       {/* 搜索筛选卡片 */}
       <Card className="overflow-hidden">
         <CardContent className="pt-6">
-          {/* ✅ 加载指示器：提升用户体验 */}
-          {isFetching && (
+          {/* ✅ 优化加载指示器：区分首次加载和后台刷新 */}
+          {isBackgroundRefetching && (
             <div className="mb-2 flex items-center gap-2 text-xs text-[hsl(var(--color-primary))]">
               <div className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent"></div>
-              <span>搜索中...</span>
+              <span>刷新中...</span>
             </div>
           )}
 
@@ -570,8 +576,8 @@ export function ERPSalesOrderList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              // 加载状态
+            {isInitialLoading ? (
+              // 首次加载状态：显示骨架屏
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell className="h-8 text-xs">加载中...</TableCell>

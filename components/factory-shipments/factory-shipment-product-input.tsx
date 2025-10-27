@@ -30,9 +30,6 @@ export function FactoryShipmentProductInput({
       // 更新产品ID
       form.setValue(`items.${index}.productId`, productId);
 
-      // TODO: 可以设置默认单价（如果产品有默认价格）
-      // 暂时不设置默认价格，等待产品模型添加价格字段
-
       // 清除手动输入的产品信息
       form.setValue(`items.${index}.isManualProduct`, false);
       form.setValue(`items.${index}.manualProductName`, '');

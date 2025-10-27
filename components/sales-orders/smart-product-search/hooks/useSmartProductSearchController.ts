@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 
@@ -73,6 +73,7 @@ export function useSmartProductSearchController({
 
   const handleTemporaryProductAdded = useCallback(
     (productData: {
+      productCode?: string;
       name: string;
       specification?: string;
       weight?: number;
@@ -128,23 +129,33 @@ function useSearchLifecycle({
   selectedProduct,
   setSearchValue,
 }: UseSearchLifecycleParams) {
+  const previousOpen = usePrevious(open);
+  const selectedProductPrefill = useMemo(
+    () => selectedProduct?.code || selectedProduct?.name || '',
+    [selectedProduct?.code, selectedProduct?.name]
+  );
+
   // 打开时自动填充已选商品编码
   useEffect(() => {
-    if (open && selectedProduct) {
-      // 优先使用商品编码，其次使用名称
-      setSearchValue(selectedProduct.code || selectedProduct.name || '');
-    } else if (!open && !showAddDialog) {
-      // 关闭时清空搜索框
+    const wasOpen = previousOpen ?? false;
+
+    if (open && !wasOpen && selectedProductPrefill) {
+      setSearchValue(selectedProductPrefill);
+      return;
+    }
+
+    if (!open && wasOpen && !showAddDialog) {
       clearSearch();
       onSearchChange?.('');
     }
   }, [
     open,
+    previousOpen,
+    selectedProductPrefill,
     showAddDialog,
+    setSearchValue,
     clearSearch,
     onSearchChange,
-    selectedProduct,
-    setSearchValue,
   ]);
 
   useEffect(() => {
@@ -152,7 +163,18 @@ function useSearchLifecycle({
       return;
     }
     onSearchChange?.(debouncedSearchValue.trim());
-  }, [open, debouncedSearchValue, onSearchChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, debouncedSearchValue]);
+}
+
+function usePrevious<T>(value: T) {
+  const ref = useRef<T>();
+
+  useEffect(() => {
+    ref.current = value;
+  }, [value]);
+
+  return ref.current;
 }
 
 interface ProductSearchState {

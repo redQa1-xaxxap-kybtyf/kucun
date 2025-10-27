@@ -190,29 +190,24 @@ export function UnitPriceCell({
           <FormItem>
             <FormControl>
               <Input
-                type="text"
-                inputMode="decimal"
+                type="number"
+                step="0.01"
+                min="0"
                 {...field}
-                value={field.value ?? ''}
+                value={
+                  field.value === undefined || Number.isNaN(field.value)
+                    ? ''
+                    : field.value
+                }
                 className="h-8 text-xs"
                 placeholder="单价"
                 onChange={event => {
                   const value = event.target.value;
-                  // 允许输入数字、小数点、负号
-                  if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-                    field.onChange(value === '' ? undefined : value);
-                  }
+                  field.onChange(
+                    value === '' ? undefined : Number.parseFloat(value)
+                  );
                 }}
-                onBlur={event => {
-                  const value = event.target.value;
-                  if (value && value !== '-' && value !== '.') {
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue)) {
-                      field.onChange(numValue);
-                    }
-                  }
-                  field.onBlur();
-                }}
+                onBlur={field.onBlur}
               />
             </FormControl>
             <FormMessage className="text-xs" />
@@ -240,29 +235,24 @@ export function UnitCostCell({
           <FormItem>
             <FormControl>
               <Input
-                type="text"
-                inputMode="decimal"
+                type="number"
+                step="0.01"
+                min="0"
                 {...field}
-                value={field.value ?? ''}
+                value={
+                  field.value === undefined || Number.isNaN(field.value)
+                    ? ''
+                    : field.value
+                }
                 className="h-8 text-xs"
                 placeholder="成本单价"
                 onChange={event => {
                   const value = event.target.value;
-                  // 允许输入数字、小数点、负号
-                  if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-                    field.onChange(value === '' ? undefined : value);
-                  }
+                  field.onChange(
+                    value === '' ? undefined : Number.parseFloat(value)
+                  );
                 }}
-                onBlur={event => {
-                  const value = event.target.value;
-                  if (value && value !== '-' && value !== '.') {
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue)) {
-                      field.onChange(numValue);
-                    }
-                  }
-                  field.onBlur();
-                }}
+                onBlur={field.onBlur}
               />
             </FormControl>
             <FormMessage className="text-xs" />

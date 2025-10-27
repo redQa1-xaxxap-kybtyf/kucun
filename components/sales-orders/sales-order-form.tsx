@@ -1,15 +1,17 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
   ArrowLeft,
+  Building2,
   FileText,
   Loader2,
+  Phone,
   Save,
   ShoppingCart,
-  User,
+  User as UserIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -45,27 +47,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 import {
   createSalesOrder,
   salesOrderQueryKeys,
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
-// 重复导入已删除
+import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
 import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_TRANSITIONS,
   SALES_ORDER_STATUS_VARIANTS,
   type SalesOrder,
   type SalesOrderCreateInput,
-  type SalesOrderStatus,
   type SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
-import { type SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
+import { logger } from '@/lib/utils/console-logger';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   salesOrderUpdateSchema as UpdateSalesOrderSchema,
 } from '@/lib/validations/sales-order';
-import { logger } from '@/lib/utils/console-logger';
 
 interface SalesOrderFormProps {
   mode: 'create' | 'edit';
@@ -75,19 +76,7 @@ interface SalesOrderFormProps {
 }
 
 // 表单数据类型（简化版，用于表单组件）
-type FormData = {
-  id?: string;
-  customerId: string;
-  status?: SalesOrderStatus;
-  remarks?: string;
-  items: Array<{
-    id?: string;
-    productId?: string;
-    quantity?: number;
-    unitPrice?: number;
-  }>;
-  feeItems?: SalesOrderFeeItem[];
-};
+type FormData = SalesOrderCreateInput & { id?: string };
 
 export function SalesOrderForm({
   mode,
@@ -289,7 +278,7 @@ export function SalesOrderForm({
                 {/* 客户选择 */}
                 <div className="md:col-span-1">
                   <CustomerSelector
-                    control={form.control as unknown as Control<FieldValues>}
+                    control={form.control}
                     name="customerId"
                     label="选择客户 *"
                     placeholder="搜索客户..."
@@ -404,7 +393,7 @@ export function SalesOrderForm({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center text-base">
-                  <User className="mr-2 h-4 w-4" />
+                  <UserIcon className="mr-2 h-4 w-4" />
                   客户信息
                 </CardTitle>
               </CardHeader>
@@ -446,15 +435,71 @@ interface CustomerInfoDisplayProps {
   customerId: string;
 }
 
-function CustomerInfoDisplay({
-  customerId: _customerId,
-}: CustomerInfoDisplayProps) {
-  // 这里应该查询客户信息并显示
-  // 简化处理，实际应该使用客户API
+function CustomerInfoDisplay({ customerId }: CustomerInfoDisplayProps) {
+  const {
+    data: customer,
+    isLoading,
+    error,
+  } = useQuery<Customer, Error>({
+    queryKey: customerQueryKeys.detail(customerId),
+    queryFn: () => getCustomer(customerId),
+    enabled: !!customerId,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span>加载客户信息中...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center space-x-2 text-sm text-red-500">
+        <AlertCircle className="h-4 w-4" />
+        <span>加载客户信息失败: {error.message}</span>
+      </div>
+    );
+  }
+
+  if (!customer) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        <p>未找到客户信息。</p>
+      </div>
+    );
+  }
+
+  const extendedInfo: CustomerExtendedInfo | undefined = customer.extendedInfo
+    ? JSON.parse(customer.extendedInfo)
+    : undefined;
 
   return (
-    <div className="text-muted-foreground text-sm">
-      <p>客户信息加载中...</p>
+    <div className="space-y-2 text-sm">
+      <div className="flex items-center space-x-2">
+        <UserIcon className="h-4 w-4 text-muted-foreground" />
+        <span className="font-medium">{customer.name}</span>
+      </div>
+      {customer.phone && (
+        <div className="flex items-center space-x-2 text-muted-foreground">
+          <Phone className="h-4 w-4" />
+          <span>{customer.phone}</span>
+        </div>
+      )}
+      {customer.address && (
+        <div className="flex items-center space-x-2 text-muted-foreground">
+          <Building2 className="h-4 w-4" />
+          <span>{customer.address}</span>
+        </div>
+      )}
+      {extendedInfo?.contactPerson && (
+        <div className="flex items-center space-x-2 text-muted-foreground">
+          <span>联系人: {extendedInfo.contactPerson}</span>
+        </div>
+      )}
+      {/* 可以根据需要添加更多客户信息 */}
     </div>
   );
 }

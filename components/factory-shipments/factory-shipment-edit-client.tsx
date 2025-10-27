@@ -16,10 +16,9 @@ interface FactoryShipmentEditClientProps {
 
 export function FactoryShipmentEditClient({
   orderId,
-  initialData,
+  initialData: _initialData,
 }: FactoryShipmentEditClientProps) {
   const router = useRouter();
-
   // 处理更新成功
   const handleSuccess = () => {
     // 厂家发货订单更新成功，跳转到详情页
@@ -41,10 +40,7 @@ export function FactoryShipmentEditClient({
         <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
-                style={{ boxShadow: 'var(--shadow-light)' }}
-              >
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
                 <Truck className="h-6 w-6" />
               </div>
               <div>
@@ -70,7 +66,6 @@ export function FactoryShipmentEditClient({
           </div>
         </CardContent>
       </Card>
-
       {/* 表单 */}
       <FactoryShipmentOrderForm
         orderId={orderId}

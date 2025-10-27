@@ -1,5 +1,8 @@
 import { FileText, TrendingDown, TrendingUp, Users } from 'lucide-react';
+
+
 import type { ReactNode } from 'react';
+
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
@@ -75,3 +78,4 @@ function SummaryCard({
     </Card>
   );
 }
+

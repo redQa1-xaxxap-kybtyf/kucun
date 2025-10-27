@@ -5,6 +5,7 @@ import React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
+import { UNIT_OPTIONS } from '@/components/sales-orders/add-temporary-product-dialog/types';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -341,13 +342,23 @@ export const ItemForm = React.memo<ItemFormProps>(
                       单位{' '}
                       <span className="text-[hsl(var(--color-error))]">*</span>
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="如：件、箱、吨"
-                        className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ''}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20">
+                          <SelectValue placeholder="选择单位" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {UNIT_OPTIONS.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}

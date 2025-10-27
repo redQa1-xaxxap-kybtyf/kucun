@@ -59,11 +59,11 @@ import {
   transformFormDataToUpdateInput,
   type SalesOrderFormData,
 } from '@/lib/utils/sales-order-transforms';
+import { convertUnitPrice } from '@/lib/utils/unit-conversion';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
   type SalesOrderItemFormData,
-  type SalesOrderUpdateFormData as UpdateSalesOrderFormData,
 } from '@/lib/validations/sales-order';
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
@@ -148,105 +148,6 @@ export function ERPSalesOrderForm({
     [suppliersQueryParams]
   );
 
-  // 单位转换工具函数
-  const convertQuantity = {
-    // 片转件：数量 ÷ 每件片数
-    piecesToUnits: (pieces: number, piecesPerUnit: number): number => {
-      if (piecesPerUnit <= 0) {
-        return pieces;
-      }
-      return Math.round((pieces / piecesPerUnit) * 100) / 100; // 保留2位小数
-    },
-
-    // 件转片：数量 × 每件片数
-    unitsToPieces: (units: number, piecesPerUnit: number): number => {
-      if (piecesPerUnit <= 0) {
-        return units;
-      }
-      return Math.round(units * piecesPerUnit * 100) / 100; // 保留2位小数
-    },
-
-    // 根据显示单位转换为片数（系统存储单位）
-    toSystemQuantity: (
-      displayQuantity: number,
-      displayUnit: '片' | '件',
-      piecesPerUnit: number
-    ): number => {
-      if (displayUnit === '片') {
-        return displayQuantity;
-      } else {
-        return convertQuantity.unitsToPieces(displayQuantity, piecesPerUnit);
-      }
-    },
-
-    // 根据系统片数转换为显示数量
-    toDisplayQuantity: (
-      systemQuantity: number,
-      displayUnit: '片' | '件',
-      piecesPerUnit: number
-    ): number => {
-      if (displayUnit === '片') {
-        return systemQuantity;
-      } else {
-        return convertQuantity.piecesToUnits(systemQuantity, piecesPerUnit);
-      }
-    },
-  };
-
-  // 单价转换工具函数
-  const convertUnitPrice = {
-    // 片单价转件单价：片单价 × 每件片数
-    piecePriceToUnitPrice: (
-      piecePrice: number,
-      piecesPerUnit: number
-    ): number => {
-      if (piecesPerUnit <= 0 || piecePrice <= 0) {
-        return piecePrice;
-      }
-      return Math.round(piecePrice * piecesPerUnit * 100) / 100; // 保留2位小数
-    },
-
-    // 件单价转片单价：件单价 ÷ 每件片数
-    unitPriceToPiecePrice: (
-      unitPrice: number,
-      piecesPerUnit: number
-    ): number => {
-      if (piecesPerUnit <= 0 || unitPrice <= 0) {
-        return unitPrice;
-      }
-      return Math.round((unitPrice / piecesPerUnit) * 100) / 100; // 保留2位小数
-    },
-
-    // 根据单位转换单价（保持总金额不变）
-    convertPrice: (
-      currentPrice: number,
-      fromUnit: '片' | '件',
-      toUnit: '片' | '件',
-      piecesPerUnit: number
-    ): number => {
-      // 如果单位相同或价格为0，不需要转换
-      if (fromUnit === toUnit || currentPrice <= 0 || piecesPerUnit <= 0) {
-        return currentPrice;
-      }
-
-      if (fromUnit === '片' && toUnit === '件') {
-        // 片 → 件：单价 × 每件片数
-        return convertUnitPrice.piecePriceToUnitPrice(
-          currentPrice,
-          piecesPerUnit
-        );
-      } else if (fromUnit === '件' && toUnit === '片') {
-        // 件 → 片：单价 ÷ 每件片数
-        return convertUnitPrice.unitPriceToPiecePrice(
-          currentPrice,
-          piecesPerUnit
-        );
-      }
-
-      return currentPrice;
-    },
-  };
-
   const mapFormDataForTransform = React.useCallback(
     (payload: CreateSalesOrderData): SalesOrderFormData => ({
       customerId: payload.customerId,
@@ -297,10 +198,8 @@ export function ERPSalesOrderForm({
 
   const findFirstError = React.useCallback(
     (
-      errors:
-        | FieldErrors<CreateSalesOrderData>
-        | FieldErrors<UpdateSalesOrderFormData>
-    ): { path: string; message: string } | null => {
+      errors: FieldErrors<CreateSalesOrderData>
+    ): { path: Path<CreateSalesOrderData>; message: string } | null => {
       const traverse = (
         value: unknown,
         currentPath: string
@@ -317,6 +216,7 @@ export function ERPSalesOrderForm({
           const message = String(
             (value as { message?: unknown }).message ?? ''
           ).trim();
+
           if (message) {
             return { path: currentPath, message };
           }
@@ -347,143 +247,17 @@ export function ERPSalesOrderForm({
         return null;
       };
 
-      return traverse(errors, '');
+      const result = traverse(errors, '');
+      if (!result) {
+        return null;
+      }
+
+      return {
+        path: result.path as Path<CreateSalesOrderData>,
+        message: result.message,
+      };
     },
     []
-  );
-
-  const validateOrderItems = React.useCallback(
-    (
-      items: SalesOrderItemFormData[]
-    ): { valid: true } | { valid: false; message: string; path: string } => {
-      if (items.length === 0) {
-        return { valid: true };
-      }
-      const toNumber = (value: unknown, fallback = 0) => {
-        const numeric = Number(value);
-        return Number.isFinite(numeric) ? numeric : fallback;
-      };
-      const currentOrderType = form.getValues('orderType');
-      const currentTransferMode: TransferFulfillmentMode | undefined =
-        currentOrderType === 'TRANSFER'
-          ? ((form.getValues('transferMode') as TransferFulfillmentMode) ??
-            'SUPPLIER_ONLY')
-          : undefined;
-      const epsilon = 0.01;
-
-      for (let index = 0; index < items.length; index += 1) {
-        const item = items[index];
-        const manual = Boolean(item.isManualProduct);
-        const manualName = item.manualProductName?.trim() ?? '';
-        const productId = item.productId?.trim() ?? '';
-        const quantity = toNumber(item.quantity);
-        const unitPrice = toNumber(item.unitPrice);
-        const piecesPerUnit = toNumber(item.piecesPerUnit);
-
-        if (manual) {
-          if (!manualName) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：临时商品必须填写名称`,
-              path: `items.${index}.manualProductName`,
-            };
-          }
-        } else if (!productId) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：请选择商品`,
-            path: `items.${index}.productId`,
-          };
-        }
-
-        if (
-          item.displayUnit === '件' &&
-          (!Number.isFinite(piecesPerUnit) || piecesPerUnit <= 0)
-        ) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：件数换算需要有效的每件片数`,
-            path: `items.${index}.piecesPerUnit`,
-          };
-        }
-
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：数量必须大于 0`,
-            path: `items.${index}.displayQuantity`,
-          };
-        }
-
-        if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：单价必须大于 0`,
-            path: `items.${index}.unitPrice`,
-          };
-        }
-
-        if (currentOrderType === 'TRANSFER') {
-          const localQuantity = toNumber(item.localQuantity);
-          const transferQuantity =
-            currentTransferMode === 'MIXED'
-              ? toNumber(item.transferQuantity)
-              : toNumber(item.transferQuantity, quantity);
-          if (currentTransferMode === 'MIXED') {
-            if (localQuantity < 0) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：本地发货数量不能为负数`,
-                path: `items.${index}.localQuantity`,
-              };
-            }
-            if (transferQuantity < 0) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：调货数量不能为负数`,
-                path: `items.${index}.transferQuantity`,
-              };
-            }
-            if (
-              Math.abs(localQuantity + transferQuantity - quantity) > epsilon
-            ) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：本地发货数量与调货数量之和必须等于系统数量`,
-                path: `items.${index}.transferQuantity`,
-              };
-            }
-          } else {
-            if (Math.abs(localQuantity) > epsilon) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：调货模式下本地发货数量应为 0`,
-                path: `items.${index}.localQuantity`,
-              };
-            }
-            if (Math.abs(transferQuantity - quantity) > epsilon) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：调货模式下调货数量必须等于系统数量`,
-                path: `items.${index}.transferQuantity`,
-              };
-            }
-          }
-
-          const unitCost = toNumber(item.unitCost);
-          if (unitCost < 0) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：成本单价不能为负数`,
-              path: `items.${index}.unitCost`,
-            };
-          }
-        }
-      }
-
-      return { valid: true };
-    },
-    [form]
   );
 
   // 监听客户ID变化
@@ -606,22 +380,39 @@ export function ERPSalesOrderForm({
     [watchedItems]
   );
 
+  // 优化：使用 ref 跟踪上一次的 orderType，避免不必要的 setValue 调用
+  const prevOrderTypeRef = React.useRef<'NORMAL' | 'TRANSFER'>(orderType);
+
   React.useEffect(() => {
+    // 只在 orderType 真正改变时才执行
+    if (prevOrderTypeRef.current === orderType) {
+      return;
+    }
+
+    prevOrderTypeRef.current = orderType;
+
     if (orderType === 'TRANSFER') {
-      if (!form.getValues('transferMode')) {
+      // 切换到调货模式：只在 transferMode 为空时设置默认值
+      const currentTransferMode = form.getValues('transferMode');
+      if (!currentTransferMode) {
         form.setValue('transferMode', 'SUPPLIER_ONLY', {
           shouldDirty: false,
           shouldValidate: false,
         });
       }
     } else {
-      if (form.getValues('transferMode') !== 'SUPPLIER_ONLY') {
+      // 切换到普通模式：重置相关字段
+      const currentTransferMode = form.getValues('transferMode');
+      const currentSupplierId = form.getValues('supplierId');
+
+      if (currentTransferMode !== 'SUPPLIER_ONLY') {
         form.setValue('transferMode', 'SUPPLIER_ONLY', {
           shouldDirty: false,
           shouldValidate: false,
         });
       }
-      if (form.getValues('supplierId')) {
+
+      if (currentSupplierId) {
         form.setValue('supplierId', '', {
           shouldDirty: true,
           shouldValidate: false,
@@ -1104,28 +895,8 @@ export function ERPSalesOrderForm({
   };
 
   // 提交表单
+  // Zod schema 验证已经在 React Hook Form 中自动执行
   const onSubmit = (data: CreateSalesOrderData) => {
-    const validation = validateOrderItems(data.items);
-    if (!validation.valid) {
-      try {
-        form.setFocus(validation.path as Path<CreateSalesOrderData>);
-      } catch (error) {
-        logger.debug(
-          'sales-orders',
-          'Failed to focus validation field',
-          validation.path,
-          error
-        );
-      }
-
-      toast({
-        variant: 'destructive',
-        title: '请完善订单明细',
-        description: validation.message,
-      });
-      return;
-    }
-
     if (mode === 'edit' && orderId) {
       // 编辑模式：更新现有订单
       const formDataForTransform = mapFormDataForTransform(data);
@@ -1161,47 +932,17 @@ export function ERPSalesOrderForm({
         });
         return;
       }
-      const preCheck = validateOrderItems(snapshot.items);
-      if (!preCheck.valid) {
-        try {
-          form.setFocus(preCheck.path as Path<CreateSalesOrderData>);
-        } catch (error) {
-          logger.debug(
-            'sales-orders',
-            'Failed to focus pre-check field',
-            preCheck.path,
-            error
-          );
-        }
-
-        toast({
-          variant: 'destructive',
-          title: '请完善订单明细',
-          description: preCheck.message,
-        });
-        return;
-      }
-
-      // 使用 as unknown as 双重类型转换，因为 CreateSalesOrderData 的 status 类型可能比 SalesOrderStatus 窄
-      form.setValue(
-        'status',
-        status as unknown as
-          | 'draft'
-          | 'confirmed'
-          | 'shipped'
-          | 'completed'
-          | 'cancelled',
-        {
-          shouldDirty: true,
-          shouldValidate: false,
-        }
-      );
+      // Zod schema 验证会在 handleSubmit 中自动执行
+      form.setValue('status', status, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
       void form.handleSubmit(onSubmit, errors => {
         const firstError = findFirstError(errors);
 
         if (firstError?.path) {
           try {
-            form.setFocus(firstError.path as Path<CreateSalesOrderData>);
+            form.setFocus(firstError.path);
           } catch (error) {
             logger.debug(
               'sales-orders',
@@ -1220,7 +961,7 @@ export function ERPSalesOrderForm({
         });
       })();
     },
-    [findFirstError, form, onSubmit, toast, validateOrderItems]
+    [findFirstError, form, onSubmit, toast]
   );
 
   return (

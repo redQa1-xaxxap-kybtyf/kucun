@@ -50,6 +50,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
     allowTemporaryProducts = false,
     isSearching = false,
     simple = false,
+    temporaryProductRequirements,
   } = props;
 
   const displaySearchValue = searchValue.trim();
@@ -117,6 +118,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
         onOpenChange={setShowAddDialog}
         initialName={searchValue}
         onConfirm={handleTemporaryProductAdded}
+        requirements={temporaryProductRequirements}
       />
     </>
   );

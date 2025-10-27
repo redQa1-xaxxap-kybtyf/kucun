@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { AddTemporaryProductDialogProps } from '../types';
 import {
-  temporaryProductSchema,
+  createTemporaryProductSchema,
   type TemporaryProductData,
 } from '../validation';
 
@@ -13,10 +13,17 @@ export function useTemporaryProductDialog({
   onOpenChange,
   initialName = '',
   onConfirm,
+  requirements,
 }: AddTemporaryProductDialogProps) {
+  const schema = useMemo(
+    () => createTemporaryProductSchema(requirements),
+    [requirements]
+  );
+
   const form = useForm<TemporaryProductData>({
-    resolver: zodResolver(temporaryProductSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
+      productCode: '',
       name: '',
       specification: '',
       weight: undefined,
@@ -29,19 +36,29 @@ export function useTemporaryProductDialog({
     if (!open) {
       return;
     }
+    const initialKeyword = (initialName ?? '').trim();
 
-    form.reset({
-      name: initialName ?? '',
-      specification: '',
-      weight: undefined,
-      unit: '',
-      piecesPerUnit: undefined,
-    });
+    form.reset(
+      {
+        productCode: initialKeyword,
+        name: '',
+        specification: '',
+        weight: undefined,
+        unit: '',
+        piecesPerUnit: undefined,
+      },
+      { keepDefaultValues: false }
+    );
 
     setTimeout(() => {
-      form.setFocus('name');
+      const requireCode = requirements?.requireCode !== false;
+      if (requireCode) {
+        form.setFocus('productCode');
+      } else if (requirements?.requireName === true) {
+        form.setFocus('name');
+      }
     }, 0);
-  }, [open, initialName, form]);
+  }, [open, initialName, form, requirements]);
 
   const handleClose = useCallback(() => {
     form.reset();

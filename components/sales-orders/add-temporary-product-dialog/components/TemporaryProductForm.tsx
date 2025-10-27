@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import type { TemporaryProductRequirements } from '../../smart-product-search/types';
 import { UNIT_OPTIONS } from '../types';
 import type { TemporaryProductData } from '../validation';
 
@@ -26,17 +27,20 @@ interface TemporaryProductFormProps {
   form: UseFormReturn<TemporaryProductData>;
   onSubmit: (data: TemporaryProductData) => void;
   onCancel: () => void;
+  requirements?: TemporaryProductRequirements;
 }
 
 export function TemporaryProductForm({
   form,
   onSubmit,
   onCancel,
+  requirements,
 }: TemporaryProductFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <NameField form={form} />
+        <ProductCodeField form={form} requirements={requirements} />
+        <NameField form={form} requirements={requirements} />
         <SpecificationWeightFields form={form} />
         <UnitField form={form} />
         <PiecesPerUnitField form={form} />
@@ -46,16 +50,63 @@ export function TemporaryProductForm({
   );
 }
 
-function NameField({ form }: { form: UseFormReturn<TemporaryProductData> }) {
+function ProductCodeField({
+  form,
+  requirements,
+}: {
+  form: UseFormReturn<TemporaryProductData>;
+  requirements?: TemporaryProductRequirements;
+}) {
+  const requireCode = requirements?.requireCode !== false;
+  return (
+    <FormField
+      control={form.control}
+      name="productCode"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>
+            产品编码{requireCode && <span className="text-red-500"> *</span>}
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              placeholder={
+                requireCode ? '输入产品编码' : '输入产品编码（可选）'
+              }
+              maxLength={50}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function NameField({
+  form,
+  requirements,
+}: {
+  form: UseFormReturn<TemporaryProductData>;
+  requirements?: TemporaryProductRequirements;
+}) {
+  const requireName = requirements?.requireName === true;
   return (
     <FormField
       control={form.control}
       name="name"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>商品名称 *</FormLabel>
+          <FormLabel>
+            商品名称
+            {requireName && <span className="text-red-500"> *</span>}
+          </FormLabel>
           <FormControl>
-            <Input {...field} placeholder="输入商品名称" maxLength={100} />
+            <Input
+              {...field}
+              placeholder={requireName ? '输入商品名称' : '输入商品名称（可选）'}
+              maxLength={100}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>

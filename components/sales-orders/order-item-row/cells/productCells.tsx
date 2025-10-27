@@ -21,11 +21,13 @@ export function ProductCodeCell({
   index,
   products,
   onProductChange,
+  orderType,
 }: {
   form: OrderFormInstance;
   index: number;
   products: Product[];
   onProductChange: (product: Product | null) => void;
+  orderType: 'NORMAL' | 'TRANSFER';
 }) {
   return (
     <TableCell className="min-w-[200px]">
@@ -34,6 +36,7 @@ export function ProductCodeCell({
         index={index}
         products={products}
         onProductChange={onProductChange}
+        orderType={orderType}
       />
     </TableCell>
   );
@@ -45,16 +48,19 @@ export function ProductNameCell({
   products,
   productId,
   isManualProduct,
+  orderType: _orderType,
 }: {
   form: OrderFormInstance;
   index: number;
   products: Product[];
   productId?: string;
   isManualProduct: boolean;
+  orderType: 'NORMAL' | 'TRANSFER';
 }) {
   const manualNamePath = `items.${index}.manualProductName` as const;
   const resolvedName =
     productId && products.find(product => product.id === productId)?.name;
+  const requireManualName = false;
 
   return (
     <TableCell className="min-w-[140px]">
@@ -62,13 +68,16 @@ export function ProductNameCell({
         <FormField
           control={form.control}
           name={manualNamePath}
-          rules={{
-            required: '请输入商品名称',
-            validate: value => {
-              const trimmed = (value ?? '').toString().trim();
-              return trimmed.length > 0 || '请输入商品名称';
-            },
-          }}
+          rules={
+            requireManualName
+              ? {
+                  validate: value => {
+                    const trimmed = (value ?? '').toString().trim();
+                    return trimmed.length > 0 || '请输入商品名称';
+                  },
+                }
+              : undefined
+          }
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -76,7 +85,9 @@ export function ProductNameCell({
                   {...field}
                   value={field.value ?? ''}
                   className="h-8 text-xs"
-                  placeholder="手动商品名称"
+                  placeholder={
+                    requireManualName ? '手动商品名称' : '手动商品名称（可选）'
+                  }
                   onChange={event => {
                     const next = event.target.value;
                     field.onChange(next === '' ? undefined : next);
@@ -113,7 +124,7 @@ export function PiecesPerUnitCell({
 }) {
   const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   return (
-    <TableCell className="min-w-[80px]">
+    <TableCell className="min-w-[90px]">
       <FormField
         control={form.control}
         name={piecesPerUnitPath}

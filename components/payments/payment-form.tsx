@@ -60,6 +60,7 @@ import {
   type PaymentRecordDetail,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/console-logger';
 import {
   createPaymentRecordSchema,
   PAYMENT_FORM_FIELDS,
@@ -67,7 +68,6 @@ import {
   type CreatePaymentRecordInput,
   type UpdatePaymentRecordInput,
 } from '@/lib/validations/payment';
-import { logger } from '@/lib/utils/console-logger';
 
 export interface PaymentFormProps {
   initialData?: PaymentRecordDetail;

@@ -111,6 +111,7 @@ function OrderItemRowView({
         index={index}
         products={products}
         onProductChange={onProductOverride}
+        orderType={orderType}
       />
       <ProductNameCell
         form={form}
@@ -118,6 +119,7 @@ function OrderItemRowView({
         products={products}
         productId={watchedProductId}
         isManualProduct={isManualProduct}
+        orderType={orderType}
       />
       <PiecesPerUnitCell
         form={form}

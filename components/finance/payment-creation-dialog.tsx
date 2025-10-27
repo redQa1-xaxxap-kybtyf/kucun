@@ -9,72 +9,27 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { DollarSign, Save } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { DollarSign } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
 
-import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { formatCurrency } from '@/lib/utils';
 
-// ✅ 收款记录表单验证Schema - 支持抹零模式
-const paymentSchema = z.object({
-  paymentType: z.literal('order_payment').default('order_payment'),
-  salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
-  customerId: z.string().min(1, { message: '客户ID不能为空' }),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
-    message: '请选择收款方式',
-  }),
-  paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
-  actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
-  roundingAmount: z.number().default(0),
-  paymentDate: z.string().min(1, { message: '请选择收款日期' }),
-  bankInfo: z.string().optional(),
-  remarks: z.string().optional(),
-});
-
-type PaymentFormData = z.infer<typeof paymentSchema>;
-
-interface OrderInfo {
-  id: string;
-  orderNumber: string;
-  customerId: string;
-  customerName: string;
-  totalAmount: number;
-  roundingAdjustment: number; // 新增:订单抹零金额
-  paidAmount: number;
-  remainingAmount: number;
-}
+import { OrderSummaryCard } from './order-summary-card';
+import { PaymentForm } from './payment-creation-dialog-form';
+import {
+  paymentSchema,
+  type OrderInfo,
+  type PaymentFormData,
+} from './payment-creation-dialog.config';
 
 interface PaymentCreationDialogProps {
   open: boolean;
@@ -82,28 +37,18 @@ interface PaymentCreationDialogProps {
   orderInfo: OrderInfo | null;
 }
 
-/**
- * 收款方式映射
- */
-const PAYMENT_METHODS = [
-  { value: 'cash', label: '现金' },
-  { value: 'bank_transfer', label: '银行转账' },
-  { value: 'check', label: '支票' },
-  { value: 'other', label: '其他' },
-] as const;
+interface UsePaymentDialogStateResult {
+  form: UseFormReturn<PaymentFormData>;
+  enableRounding: boolean;
+  paymentMethod: PaymentFormData['paymentMethod'];
+  handleDialogOpenChange: (open: boolean) => void;
+  handleRoundingToggle: (checked: boolean) => void;
+}
 
-/**
- * 收款记录创建对话框组件
- */
-export function PaymentCreationDialog({
-  open,
-  onOpenChange,
-  orderInfo,
-}: PaymentCreationDialogProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  // 表单配置
+function usePaymentDialogState(
+  orderInfo: OrderInfo | null,
+  onOpenChange: (open: boolean) => void
+): UsePaymentDialogStateResult {
   const form = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
@@ -114,20 +59,18 @@ export function PaymentCreationDialog({
       paymentAmount: 0,
       actualPaymentAmount: 0,
       roundingAmount: 0,
-      paymentDate: format(new Date(), 'yyyy-MM-dd'),
+      paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       bankInfo: '',
       remarks: '',
     },
   });
 
-  const watchedPaymentMethod = form.watch('paymentMethod');
-  const watchedPaymentAmount = form.watch('paymentAmount');
-  const watchedActualAmount = form.watch('actualPaymentAmount');
+  const paymentMethod = form.watch('paymentMethod');
+  const paymentAmount = form.watch('paymentAmount');
+  const actualPaymentAmount = form.watch('actualPaymentAmount');
 
-  // ✅ 新增：是否启用抹零模式
   const [enableRounding, setEnableRounding] = useState(false);
 
-  // 当订单信息变化时，更新表单默认值
   useEffect(() => {
     if (orderInfo) {
       form.reset({
@@ -138,52 +81,90 @@ export function PaymentCreationDialog({
         paymentAmount: orderInfo.remainingAmount,
         actualPaymentAmount: orderInfo.remainingAmount,
         roundingAmount: 0,
-        paymentDate: format(new Date(), 'yyyy-MM-dd'),
+        paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
         bankInfo: '',
         remarks: '',
       });
-      setEnableRounding(false); // 重置抹零开关
+      setEnableRounding(false);
     }
   }, [orderInfo, form]);
 
-  // ✅ 修复: 根据抹零模式决定同步逻辑
   useEffect(() => {
-    if (
-      typeof watchedPaymentAmount === 'number' &&
-      !Number.isNaN(watchedPaymentAmount)
-    ) {
+    if (typeof paymentAmount === 'number' && !Number.isNaN(paymentAmount)) {
       if (!enableRounding) {
-        // 普通模式：自动同步实际收款金额 = 收款金额
         const currentActual = form.getValues('actualPaymentAmount');
-        if (currentActual !== watchedPaymentAmount) {
-          form.setValue('actualPaymentAmount', watchedPaymentAmount, { shouldValidate: false });
+        if (currentActual !== paymentAmount) {
+          form.setValue('actualPaymentAmount', paymentAmount, { shouldValidate: false });
           form.setValue('roundingAmount', 0, { shouldValidate: false });
         }
       }
-      // 抹零模式：不自动同步，由用户手动输入实际收款
     }
-  }, [watchedPaymentAmount, form, enableRounding]);
+  }, [enableRounding, form, paymentAmount]);
 
-  // ✅ 新增：抹零模式下，自动计算抹零金额
   useEffect(() => {
     if (enableRounding) {
       if (
-        typeof watchedPaymentAmount === 'number' &&
-        !Number.isNaN(watchedPaymentAmount) &&
-        typeof watchedActualAmount === 'number' &&
-        !Number.isNaN(watchedActualAmount)
+        typeof paymentAmount === 'number' &&
+        !Number.isNaN(paymentAmount) &&
+        typeof actualPaymentAmount === 'number' &&
+        !Number.isNaN(actualPaymentAmount)
       ) {
-        const rounding = Number(
-          (watchedPaymentAmount - watchedActualAmount).toFixed(2)
-        );
+        const rounding = Number((paymentAmount - actualPaymentAmount).toFixed(2));
         if (rounding !== form.getValues('roundingAmount')) {
           form.setValue('roundingAmount', rounding, { shouldValidate: false });
         }
       }
     }
-  }, [watchedPaymentAmount, watchedActualAmount, form, enableRounding]);
+  }, [enableRounding, form, paymentAmount, actualPaymentAmount]);
 
-  // 创建收款记录mutation
+  const handleDialogOpenChange = useCallback(
+    (newOpen: boolean) => {
+      if (!newOpen) {
+        form.reset();
+        setEnableRounding(false);
+      }
+      onOpenChange(newOpen);
+    },
+    [form, onOpenChange]
+  );
+
+  const handleRoundingToggle = useCallback(
+    (checked: boolean) => {
+      setEnableRounding(checked);
+      if (!checked) {
+        const currentPayment = form.getValues('paymentAmount');
+        form.setValue('actualPaymentAmount', currentPayment, { shouldValidate: false });
+        form.setValue('roundingAmount', 0, { shouldValidate: false });
+      }
+    },
+    [form]
+  );
+
+  return {
+    form,
+    enableRounding,
+    paymentMethod,
+    handleDialogOpenChange,
+    handleRoundingToggle,
+  };
+}
+
+export function PaymentCreationDialog({
+  open,
+  onOpenChange,
+  orderInfo,
+}: PaymentCreationDialogProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const {
+    form,
+    enableRounding,
+    paymentMethod,
+    handleDialogOpenChange,
+    handleRoundingToggle,
+  } = usePaymentDialogState(orderInfo, onOpenChange);
+
   const createPaymentMutation = useMutation({
     mutationFn: async (data: PaymentFormData) => {
       const response = await fetch('/api/payments', {
@@ -208,7 +189,6 @@ export function PaymentCreationDialog({
         variant: 'success',
       });
 
-      // 刷新应收账款列表
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.receivables(),
       });
@@ -216,9 +196,7 @@ export function PaymentCreationDialog({
         queryKey: queryKeys.payments.all,
       });
 
-      // 关闭对话框并重置表单
-      onOpenChange(false);
-      form.reset();
+      handleDialogOpenChange(false);
     },
     onError: (error: Error) => {
       toast({
@@ -229,21 +207,12 @@ export function PaymentCreationDialog({
     },
   });
 
-  // 提交表单处理
-  const onSubmit = (data: PaymentFormData) => {
+  const handleSubmit: SubmitHandler<PaymentFormData> = data => {
     createPaymentMutation.mutate(data);
   };
 
-  // 关闭对话框时重置表单
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      form.reset();
-    }
-    onOpenChange(newOpen);
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -257,295 +226,17 @@ export function PaymentCreationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* 订单信息摘要 */}
-        {orderInfo && (
-          <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-4">
-            <div className="grid gap-3">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  订单号
-                </span>
-                <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  {orderInfo.orderNumber}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  客户名称
-                </span>
-                <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  {orderInfo.customerName}
-                </span>
-              </div>
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  商品总额
-                </span>
-                <span className="text-base font-bold text-[hsl(var(--color-text-primary))]">
-                  {formatCurrency(orderInfo.totalAmount)}
-                </span>
-              </div>
-              {orderInfo.roundingAdjustment !== 0 && (
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                    订单抹零
-                  </span>
-                  <span
-                    className={`text-sm font-semibold ${
-                      orderInfo.roundingAdjustment > 0
-                        ? 'text-[hsl(var(--color-success))]'
-                        : 'text-[hsl(var(--color-error))]'
-                    }`}
-                  >
-                    {orderInfo.roundingAdjustment > 0 ? '+' : ''}
-                    {formatCurrency(orderInfo.roundingAdjustment)}
-                  </span>
-                </div>
-              )}
-              <Separator />
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  实际应收
-                </span>
-                <span className="text-base font-bold text-[hsl(var(--color-primary))]">
-                  {formatCurrency(
-                    orderInfo.totalAmount + orderInfo.roundingAdjustment
-                  )}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  已收金额
-                </span>
-                <span className="text-sm text-[hsl(var(--color-success))]">
-                  {formatCurrency(orderInfo.paidAmount)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  待收金额
-                </span>
-                <span className="text-lg font-bold text-[hsl(var(--color-warning))]">
-                  {formatCurrency(orderInfo.remainingAmount)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+        {orderInfo && <OrderSummaryCard orderInfo={orderInfo} />}
 
-        {/* 收款表单 */}
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* 收款方式 */}
-            <FormField
-              control={form.control}
-              name="paymentMethod"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>收款方式 *</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择收款方式" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {PAYMENT_METHODS.map(method => (
-                        <SelectItem key={method.value} value={method.value}>
-                          {method.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 收款金额 */}
-            <FormField
-              control={form.control}
-              name="paymentAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>收款金额 *</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      {...field}
-                      onChange={e =>
-                        field.onChange(parseFloat(e.target.value) || 0)
-                      }
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    输入本次实际收款金额（支持全额或部分收款）
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 抹零优惠开关 */}
-            <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
-              <div className="space-y-0.5">
-                <label className="text-sm font-medium">
-                  启用抹零优惠
-                </label>
-                <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                  当实际收款金额少于应收金额时启用（如客户没有零钱）
-                </p>
-              </div>
-              <Switch
-                checked={enableRounding}
-                onCheckedChange={setEnableRounding}
-              />
-            </div>
-
-            {/* 抹零模式：显示实际收款金额和抹零金额 */}
-            {enableRounding && (
-              <>
-                <FormField
-                  control={form.control}
-                  name="actualPaymentAmount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>实际到账金额 *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          value={field.value}
-                          onChange={e =>
-                            field.onChange(
-                              e.target.value === ''
-                                ? 0
-                                : parseFloat(e.target.value) || 0
-                            )
-                          }
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        客户实际支付的金额（可以少于收款金额）
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="roundingAmount"
-                  render={({ field }) => {
-                    const displayValue =
-                      typeof field.value === 'number' && !Number.isNaN(field.value)
-                        ? field.value.toFixed(2)
-                        : '0.00';
-
-                    return (
-                      <FormItem>
-                        <FormLabel>抹零优惠金额</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            readOnly
-                            name={field.name}
-                            ref={field.ref}
-                            value={displayValue}
-                            className="bg-muted"
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          自动计算：收款金额 - 实际到账 = 抹零优惠
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    );
-                  }}
-                />
-              </>
-            )}
-
-            {/* 收款日期 */}
-            <FormField
-              control={form.control}
-              name="paymentDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>收款日期 *</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 银行信息（仅在银行转账或支票时显示） */}
-            {(watchedPaymentMethod === 'bank_transfer' ||
-              watchedPaymentMethod === 'check') && (
-              <FormField
-                control={form.control}
-                name="bankInfo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>银行信息</FormLabel>
-                    <FormControl>
-                      <Input placeholder="银行名称、账号等信息" {...field} />
-                    </FormControl>
-                    <FormDescription>银行转账或支票的相关信息</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-
-            {/* 备注 */}
-            <FormField
-              control={form.control}
-              name="remarks"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>备注</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="收款相关的备注信息"
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-                disabled={createPaymentMutation.isPending}
-              >
-                取消
-              </Button>
-              <Button
-                type="submit"
-                disabled={createPaymentMutation.isPending}
-                className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {createPaymentMutation.isPending ? '创建中...' : '创建收款记录'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <PaymentForm
+          form={form}
+          enableRounding={enableRounding}
+          paymentMethod={paymentMethod}
+          onRoundingToggle={handleRoundingToggle}
+          onSubmit={handleSubmit}
+          onCancel={() => handleDialogOpenChange(false)}
+          isSubmitting={createPaymentMutation.isPending}
+        />
       </DialogContent>
     </Dialog>
   );

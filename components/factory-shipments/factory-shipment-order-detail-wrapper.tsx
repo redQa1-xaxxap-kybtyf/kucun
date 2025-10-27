@@ -16,7 +16,6 @@ export function FactoryShipmentOrderDetailWrapper({
   orderId,
 }: FactoryShipmentOrderDetailWrapperProps) {
   const router = useRouter();
-
   // 处理编辑
   const handleEdit = () => {
     router.push(`/factory-shipments/${orderId}/edit`);

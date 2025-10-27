@@ -9,7 +9,7 @@ import {
   ChevronsUpDown,
 } from 'lucide-react';
 import { useState } from 'react';
-import { type Control, type FieldPath, useController } from 'react-hook-form';
+import { type Control, type FieldPath, useController, type FieldValues } from 'react-hook-form';
 
 // UI Components
 import { EmptyState } from '@/components/common/empty-state';
@@ -215,9 +215,7 @@ export function CustomerHierarchyTree({
 }
 
 // 客户选择器组件属性
-interface CustomerSelectorProps<
-  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
-> {
+interface CustomerSelectorProps<TFieldValues extends FieldValues> {
   control: Control<TFieldValues>;
   name: FieldPath<TFieldValues>;
   label?: string;
@@ -229,9 +227,7 @@ interface CustomerSelectorProps<
 
 // 客户选择器组件
 // eslint-disable-next-line max-lines-per-function
-export function CustomerSelector<
-  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
->({
+export function CustomerSelector<TFieldValues extends FieldValues>({
   control,
   name,
   label = '选择客户',

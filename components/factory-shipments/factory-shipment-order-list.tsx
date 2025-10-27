@@ -1,8 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { Edit, Eye, MoreHorizontal, Package, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -33,6 +31,7 @@ import {
 import {
   factoryShipmentQueryKeys,
   getFactoryShipmentOrders,
+  useCancelFactoryShipmentOrder,
   useDeleteFactoryShipmentOrder,
 } from '@/lib/api/factory-shipments';
 import {
@@ -40,7 +39,14 @@ import {
   type FactoryShipmentOrder,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
-import { getFactoryShipmentStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import {
+  canCancelOrder,
+  canDeleteOrder,
+  formatAmount,
+  formatDate,
+  formatDateTime,
+  getFactoryShipmentStatusBadgeVariant,
+} from '@/lib/utils/factory-shipment-helpers';
 
 interface FactoryShipmentQueryParams {
   page?: number;
@@ -60,19 +66,6 @@ interface FactoryShipmentOrderListProps {
   onPageChange?: (page: number) => void;
 }
 
-// 格式化金额 - 使用人民币符号和千分位分隔符
-const formatAmount = (amount: number): string =>
-  `¥${amount.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-
-// 格式化日期 - 统一使用 YYYY-MM-DD 格式
-const formatDate = (date: Date | string): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return format(dateObj, 'yyyy-MM-dd', { locale: zhCN });
-};
-
 export function FactoryShipmentOrderList({
   onOrderSelect,
   initialParams,
@@ -87,10 +80,17 @@ export function FactoryShipmentOrderList({
     FactoryShipmentStatus | 'all'
   >(initialParams?.status || 'all');
   const [currentPage, setCurrentPage] = useState(initialParams?.page || 1);
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    initialParams?.startDate
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    initialParams?.endDate
+  );
   const pageSize = initialParams?.limit || 20;
 
-  // 删除订单的 mutation
+  // 删除和取消订单的 mutation
   const deleteOrderMutation = useDeleteFactoryShipmentOrder();
+  const cancelOrderMutation = useCancelFactoryShipmentOrder();
 
   // 查询厂家发货订单列表 - 使用真实API
   const { data, isLoading, error } = useQuery({
@@ -101,6 +101,8 @@ export function FactoryShipmentOrderList({
         initialParams?.status ||
         (statusFilter === 'all' ? undefined : statusFilter),
       containerNumber: initialParams?.search || searchTerm || undefined,
+      startDate: initialParams?.startDate || startDate,
+      endDate: initialParams?.endDate || endDate,
     }),
     queryFn: () =>
       getFactoryShipmentOrders({
@@ -110,6 +112,8 @@ export function FactoryShipmentOrderList({
           initialParams?.status ||
           (statusFilter === 'all' ? undefined : statusFilter),
         containerNumber: initialParams?.search || searchTerm || undefined,
+        startDate: initialParams?.startDate || startDate,
+        endDate: initialParams?.endDate || endDate,
       }),
   });
 
@@ -155,6 +159,20 @@ export function FactoryShipmentOrderList({
     [externalOnFilter]
   );
 
+  // 处理日期范围变化 - 优先使用外部传入的处理函数
+  const handleDateRangeChange = React.useCallback(
+    (range: { startDate?: string; endDate?: string }) => {
+      if (externalOnDateRangeChange) {
+        externalOnDateRangeChange(range);
+      } else {
+        setStartDate(range.startDate ? new Date(range.startDate) : undefined);
+        setEndDate(range.endDate ? new Date(range.endDate) : undefined);
+        setCurrentPage(1);
+      }
+    },
+    [externalOnDateRangeChange]
+  );
+
   // 处理页码变化 - 优先使用外部传入的处理函数
   const handlePageChange = React.useCallback(
     (page: number) => {
@@ -184,6 +202,25 @@ export function FactoryShipmentOrderList({
       }
     },
     [deleteOrderMutation]
+  );
+
+  // 处理取消订单
+  const handleCancel = React.useCallback(
+    async (orderId: string, orderNumber: string) => {
+      if (!confirm(`确定要取消订单 ${orderNumber} 吗？`)) {
+        return;
+      }
+
+      try {
+        await cancelOrderMutation.mutateAsync(orderId);
+        // 取消成功后会自动刷新列表
+      } catch (error) {
+        alert(
+          error instanceof Error ? error.message : '取消订单失败，请稍后重试'
+        );
+      }
+    },
+    [cancelOrderMutation]
   );
 
   // 加载状态
@@ -243,16 +280,10 @@ export function FactoryShipmentOrderList({
 
             <DateRangePicker
               value={{
-                startDate: initialParams?.startDate
-                  ?.toISOString()
-                  .split('T')[0],
-                endDate: initialParams?.endDate?.toISOString().split('T')[0],
+                startDate: startDate?.toISOString().split('T')[0],
+                endDate: endDate?.toISOString().split('T')[0],
               }}
-              onChange={range => {
-                if (externalOnDateRangeChange) {
-                  externalOnDateRangeChange(range);
-                }
-              }}
+              onChange={handleDateRangeChange}
               showPresets={true}
               showClearButton={true}
               label=""
@@ -281,9 +312,12 @@ export function FactoryShipmentOrderList({
                 <TableHead>订单编号</TableHead>
                 <TableHead>集装箱号码</TableHead>
                 <TableHead>客户</TableHead>
+                <TableHead>船运公司</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead className="text-right">订单金额</TableHead>
                 <TableHead className="text-right">应收金额</TableHead>
+                <TableHead>发货时间</TableHead>
+                <TableHead>预计到达</TableHead>
                 <TableHead>创建时间</TableHead>
                 <TableHead>操作</TableHead>
               </TableRow>
@@ -332,6 +366,13 @@ export function FactoryShipmentOrderList({
                   <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
                     {order.customer?.name || '-'}
                   </TableCell>
+                  <TableCell className="text-[hsl(var(--color-text-secondary))]">
+                    {order.shippingCompany || (
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        未填写
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={getFactoryShipmentStatusBadgeVariant(
@@ -351,6 +392,24 @@ export function FactoryShipmentOrderList({
                   </TableCell>
                   <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
                     {formatAmount(order.receivableAmount)}
+                  </TableCell>
+                  <TableCell className="text-[hsl(var(--color-text-secondary))]">
+                    {order.shipmentDate ? (
+                      formatDateTime(order.shipmentDate)
+                    ) : (
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        未发货
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-[hsl(var(--color-text-secondary))]">
+                    {order.estimatedArrival ? (
+                      formatDateTime(order.estimatedArrival)
+                    ) : (
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        未设置
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-[hsl(var(--color-text-secondary))]">
                     {formatDate(order.createdAt)}
@@ -386,16 +445,31 @@ export function FactoryShipmentOrderList({
                           <Edit className="mr-2 h-4 w-4" />
                           编辑
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDelete(order.id, order.orderNumber);
-                          }}
-                          className="text-[hsl(var(--color-error))]"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
+                        {canCancelOrder(order.status) &&
+                          order.status !== 'draft' && (
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleCancel(order.id, order.orderNumber);
+                              }}
+                              className="text-[hsl(var(--color-warning))]"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              取消
+                            </DropdownMenuItem>
+                        )}
+                        {canDeleteOrder(order.status) && (
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDelete(order.id, order.orderNumber);
+                            }}
+                            className="text-[hsl(var(--color-error))]"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

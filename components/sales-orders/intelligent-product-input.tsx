@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { Path, PathValue, UseFormReturn } from 'react-hook-form';
+import type { FieldValues, UseFormReturn } from 'react-hook-form';
 
 import {
   FormControl,
@@ -9,7 +9,6 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { useDebouncedCallback } from '@/hooks/use-debounced-search';
 import { getProducts } from '@/lib/api/products';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
@@ -17,32 +16,44 @@ import { ProductDataUtils } from '@/lib/utils/product-data';
 
 import { SmartProductSearch } from './smart-product-search';
 
-interface IntelligentProductInputProps<
-  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
-> {
-  form: UseFormReturn<TFieldValues>;
+interface IntelligentProductInputProps<T extends FieldValues = FieldValues> {
+  form: UseFormReturn<T>;
   index: number;
   products: Product[];
   onProductChange?: (product: Product | null) => void;
   onBatchSelect?: (productId: string, batchNumber: string) => void;
+  orderType?: 'NORMAL' | 'TRANSFER';
 }
 
 /**
  * 智能产品输入组件
  * 集成智能搜索和临时产品添加功能
+ *
+ * @template T - 表单数据类型，必须包含 items 数组字段
+ *
+ * 支持的表单类型：
+ * - SalesOrderCreateFormData (销售订单)
+ * - CreateFactoryShipmentOrderData (厂家发货订单)
+ *
+ * 要求表单的 items[index] 包含以下字段：
+ * - productId, isManualProduct, manualProductName, manualSpecification,
+ *   manualWeight, manualUnit, productCode, specification, unit,
+ *   piecesPerUnit, displayUnit, batchNumber, unitCost
  */
-export function IntelligentProductInput<
-  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
->({
+export function IntelligentProductInput<T extends FieldValues = FieldValues>({
   form,
   index,
   products,
   onProductChange,
   onBatchSelect,
-}: IntelligentProductInputProps<TFieldValues>) {
+  orderType: _orderType,
+}: IntelligentProductInputProps<T>) {
   const searchAbortControllerRef = React.useRef<AbortController | null>(null);
   const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
   const [isSearchingProducts, setIsSearchingProducts] = React.useState(false);
+
+  const requireManualCode = true;
+  const requireManualName = false;
 
   const allProducts = React.useMemo(() => {
     const map = new Map<string, Product>();
@@ -98,14 +109,22 @@ export function IntelligentProductInput<
     }
   }, []);
 
-  const handleProductSearch = useDebouncedCallback((query: string) => {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setIsSearchingProducts(false);
-      return;
-    }
-    performSearch(trimmed);
-  }, 300);
+  // 使用 useCallback 包裹搜索处理函数，避免每次渲染都创建新函数
+  // 注意：SmartProductSearch 内部已经做了防抖（250ms），所以这里不需要再次防抖
+  const handleProductSearch = React.useCallback(
+    (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        // 清空搜索时，重置搜索状态和额外产品
+        setIsSearchingProducts(false);
+        setExtraProducts([]);
+        return;
+      }
+      // 只有当搜索词不为空时才执行搜索
+      performSearch(trimmed);
+    },
+    [performSearch]
+  );
 
   React.useEffect(
     () => () => {
@@ -118,260 +137,219 @@ export function IntelligentProductInput<
   );
 
   // 处理库存产品选择
-  const handleProductSelect = (productId: string) => {
-    const product = allProducts.find(p => p.id === productId);
-    if (product) {
-      // 清空临时产品字段
-      form.setValue(
-        `items.${index}.isManualProduct` as unknown as Path<TFieldValues>,
-        false as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
-      form.setValue(
-        `items.${index}.manualProductName` as unknown as Path<TFieldValues>,
-        '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
-      form.setValue(
-        `items.${index}.manualSpecification` as unknown as Path<TFieldValues>,
-        '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
-      form.setValue(
-        `items.${index}.manualWeight` as unknown as Path<TFieldValues>,
-        undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
-      form.setValue(
-        `items.${index}.manualUnit` as unknown as Path<TFieldValues>,
-        '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
+  const handleProductSelect = React.useCallback(
+    (productId: string) => {
+      const product = allProducts.find(p => p.id === productId);
+      if (product) {
+        // 清空临时产品字段
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const setFormValue = form.setValue as any;
+        setFormValue(`items.${index}.isManualProduct`, false);
+        setFormValue(`items.${index}.manualProductName`, '');
+        setFormValue(`items.${index}.manualSpecification`, '');
+        setFormValue(`items.${index}.manualWeight`, undefined);
+        setFormValue(`items.${index}.manualUnit`, '');
 
-      form.setValue(
-        `items.${index}.productCode` as unknown as Path<TFieldValues>,
-        (product.code || '') as unknown as PathValue<
-          TFieldValues,
-          Path<TFieldValues>
-        >
-      );
+        setFormValue(`items.${index}.productCode`, product.code || '');
 
-      // 自动填充产品信息
-      form.setValue(
-        `items.${index}.specification` as unknown as Path<TFieldValues>,
-        ProductDataUtils.formatter.formatSpecification(
-          product.specification ?? ''
-        ) as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
+        // 自动填充产品信息
+        setFormValue(
+          `items.${index}.specification`,
+          ProductDataUtils.formatter.formatSpecification(
+            product.specification ?? ''
+          )
+        );
 
-      // 将英文单位转换为中文
-      const unitLabel =
-        product.unit && product.unit in PRODUCT_UNIT_LABELS
-          ? PRODUCT_UNIT_LABELS[
-              product.unit as keyof typeof PRODUCT_UNIT_LABELS
-            ]
-          : product.unit || '件';
+        // 将英文单位转换为中文
+        const unitLabel =
+          product.unit && product.unit in PRODUCT_UNIT_LABELS
+            ? PRODUCT_UNIT_LABELS[
+                product.unit as keyof typeof PRODUCT_UNIT_LABELS
+              ]
+            : product.unit || '件';
 
-      form.setValue(
-        `items.${index}.unit` as unknown as Path<TFieldValues>,
-        unitLabel as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
-      form.setValue(
-        `items.${index}.piecesPerUnit` as unknown as Path<TFieldValues>,
-        (product.piecesPerUnit || undefined) as unknown as PathValue<
-          TFieldValues,
-          Path<TFieldValues>
-        >
-      );
-      form.setValue(
-        `items.${index}.unitCost` as unknown as Path<TFieldValues>,
-        undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-      );
-      const displayName = product.name?.trim() || product.code?.trim() || '';
-      form.setValue(
-        `items.${index}.displayName` as unknown as Path<TFieldValues>,
-        displayName as unknown as PathValue<TFieldValues, Path<TFieldValues>>,
-        { shouldDirty: true }
-      );
+        setFormValue(`items.${index}.unit`, unitLabel);
+        setFormValue(
+          `items.${index}.piecesPerUnit`,
+          product.piecesPerUnit || undefined
+        );
+        setFormValue(`items.${index}.unitCost`, undefined);
 
-      onProductChange?.(product);
-    }
-  };
+        onProductChange?.(product);
+      }
+    },
+    [allProducts, form, index, onProductChange]
+  );
 
   // 处理临时产品添加
-  const handleTemporaryProductAdd = (productData: {
-    name: string;
-    specification?: string;
-    weight?: number;
-    unit?: string;
-    piecesPerUnit?: number;
-  }) => {
-    // 清空库存产品选择
-    form.setValue(
-      `items.${index}.productId` as unknown as Path<TFieldValues>,
-      undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-    );
+  const handleTemporaryProductAdd = React.useCallback(
+    (productData: {
+      productCode?: string;
+      name: string;
+      specification?: string;
+      weight?: number;
+      unit?: string;
+      piecesPerUnit?: number;
+    }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const setFormValue = form.setValue as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const getFormValues = form.getValues as any;
 
-    // 设置临时产品标识和信息
-    form.setValue(
-      `items.${index}.isManualProduct` as unknown as Path<TFieldValues>,
-      true as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-    );
-    const manualName = productData.name?.trim() ?? '';
-    form.setValue(
-      `items.${index}.manualProductName` as unknown as Path<TFieldValues>,
-      manualName as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-    );
-    form.setValue(
-      `items.${index}.manualSpecification` as unknown as Path<TFieldValues>,
-      (productData.specification || '') as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
-    form.setValue(
-      `items.${index}.manualWeight` as unknown as Path<TFieldValues>,
-      productData.weight as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
-    form.setValue(
-      `items.${index}.manualUnit` as unknown as Path<TFieldValues>,
-      (productData.unit || '') as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
-    form.setValue(
-      `items.${index}.unitCost` as unknown as Path<TFieldValues>,
-      undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-    );
-    form.setValue(
-      `items.${index}.productCode` as unknown as Path<TFieldValues>,
-      '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>
-    );
-    form.setValue(
-      `items.${index}.displayName` as unknown as Path<TFieldValues>,
-      manualName as unknown as PathValue<TFieldValues, Path<TFieldValues>>,
-      { shouldDirty: true }
-    );
+      // 清空库存产品选择
+      setFormValue(`items.${index}.productId`, undefined);
 
-    // 自动填充到表单的通用字段（用于显示）
-    form.setValue(
-      `items.${index}.specification` as unknown as Path<TFieldValues>,
-      (productData.specification || '') as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
-    form.setValue(
-      `items.${index}.unit` as unknown as Path<TFieldValues>,
-      (productData.unit || '') as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
-    form.setValue(
-      `items.${index}.piecesPerUnit` as unknown as Path<TFieldValues>,
-      (productData.piecesPerUnit ?? undefined) as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
+      // 设置临时产品标识和信息
+      setFormValue(`items.${index}.isManualProduct`, true);
+      const manualName = productData.name?.trim() ?? '';
+      const manualCode = productData.productCode?.trim() ?? '';
+      setFormValue(
+        `items.${index}.manualProductName`,
+        manualName === '' ? undefined : manualName
+      );
+      setFormValue(
+        `items.${index}.manualSpecification`,
+        productData.specification || ''
+      );
+      setFormValue(`items.${index}.manualWeight`, productData.weight);
+      setFormValue(`items.${index}.manualUnit`, productData.unit || '');
+      setFormValue(`items.${index}.unitCost`, undefined);
+      setFormValue(`items.${index}.productCode`, manualCode || undefined);
 
-    const nextDisplayUnit =
-      productData.unit === '件' &&
-      productData.piecesPerUnit &&
-      productData.piecesPerUnit > 0
-        ? '件'
-        : ((form.getValues(
-            `items.${index}.displayUnit` as unknown as Path<TFieldValues>
-          ) as unknown as '片' | '件' | undefined) ?? '片');
-    form.setValue(
-      `items.${index}.displayUnit` as unknown as Path<TFieldValues>,
-      (nextDisplayUnit || '片') as unknown as PathValue<
-        TFieldValues,
-        Path<TFieldValues>
-      >
-    );
+      // 自动填充到表单的通用字段（用于显示）
+      setFormValue(
+        `items.${index}.specification`,
+        productData.specification || ''
+      );
+      setFormValue(`items.${index}.unit`, productData.unit || '');
+      setFormValue(
+        `items.${index}.piecesPerUnit`,
+        productData.piecesPerUnit ?? undefined
+      );
 
-    onProductChange?.(null);
-  };
+      const nextDisplayUnit =
+        productData.unit === '件' &&
+        productData.piecesPerUnit &&
+        productData.piecesPerUnit > 0
+          ? '件'
+          : ((getFormValues(`items.${index}.displayUnit`) as
+              | '片'
+              | '件'
+              | undefined) ?? '片');
+      setFormValue(`items.${index}.displayUnit`, nextDisplayUnit || '片');
+
+      onProductChange?.(null);
+    },
+    [form, index, onProductChange]
+  );
 
   // 转换产品数据格式以匹配 SmartProductSearch 的类型要求
-  const productsWithInventory = allProducts.map(p => {
-    const batchSpecs = p.batchSpecs ?? [];
-    const batchSpecMap = new Map(
-      batchSpecs.map(spec => [spec.batchNumber, spec])
-    );
+  // 使用 useMemo 避免每次渲染都创建新对象，防止列表抖动
+  const productsWithInventory = React.useMemo(
+    () =>
+      allProducts.map(p => {
+        const batchSpecs = p.batchSpecs ?? [];
+        const batchSpecMap = new Map(
+          batchSpecs.map(spec => [spec.batchNumber, spec])
+        );
 
-    const inventoryBatches = p.inventory?.batches
-      ? p.inventory.batches.map(b => {
-          const spec = batchSpecMap.get(b.batchNumber);
-          const normalizedPieces =
-            typeof b.piecesPerUnit === 'number' && b.piecesPerUnit > 0
-              ? b.piecesPerUnit
-              : spec?.piecesPerUnit && spec.piecesPerUnit > 0
-                ? spec.piecesPerUnit
-                : undefined;
-          const batchWeight = (b as { weight?: number }).weight;
-          const normalizedWeight =
-            typeof batchWeight === 'number' && batchWeight > 0
-              ? batchWeight
-              : spec?.weight && spec.weight > 0
-                ? spec.weight
-                : undefined;
+        const inventoryBatches = p.inventory?.batches
+          ? p.inventory.batches.map(b => {
+              const spec = batchSpecMap.get(b.batchNumber);
+              const normalizedPieces =
+                typeof b.piecesPerUnit === 'number' && b.piecesPerUnit > 0
+                  ? b.piecesPerUnit
+                  : spec?.piecesPerUnit && spec.piecesPerUnit > 0
+                    ? spec.piecesPerUnit
+                    : undefined;
+              const batchWeight = (b as { weight?: number }).weight;
+              const normalizedWeight =
+                typeof batchWeight === 'number' && batchWeight > 0
+                  ? batchWeight
+                  : spec?.weight && spec.weight > 0
+                    ? spec.weight
+                    : undefined;
 
-          return {
-            batchNumber: b.batchNumber,
-            quantity: b.quantity,
-            piecesPerUnit: normalizedPieces,
-            weight: normalizedWeight,
-          };
-        })
-      : undefined;
+              return {
+                batchNumber: b.batchNumber,
+                quantity: b.quantity,
+                piecesPerUnit: normalizedPieces,
+                weight: normalizedWeight,
+              };
+            })
+          : undefined;
 
-    return {
-      id: p.id,
-      code: p.code,
-      name: p.name,
-      specification: p.specification,
-      unit: p.unit,
-      piecesPerUnit: p.piecesPerUnit,
-      weight: p.weight,
-      status: p.status,
-      batchSpecs: batchSpecs.length > 0 ? batchSpecs : undefined,
-      inventory: p.inventory
-        ? {
-            totalInventory: p.inventory.totalQuantity || 0,
-            availableInventory: p.inventory.availableQuantity || 0,
-            reservedInventory: p.inventory.reservedQuantity || 0,
-            batches: inventoryBatches,
-          }
-        : null,
-    };
-  });
+        return {
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          specification: p.specification,
+          unit: p.unit,
+          piecesPerUnit: p.piecesPerUnit,
+          weight: p.weight,
+          status: p.status,
+          batchSpecs: batchSpecs.length > 0 ? batchSpecs : undefined,
+          inventory: p.inventory
+            ? {
+                totalInventory: p.inventory.totalQuantity || 0,
+                availableInventory: p.inventory.availableQuantity || 0,
+                reservedInventory: p.inventory.reservedQuantity || 0,
+                batches: inventoryBatches,
+              }
+            : null,
+        };
+      }),
+    [allProducts]
+  );
+
+  // 使用 useCallback 稳定回调函数引用，避免触发子组件不必要的重渲染
+  const handleValueChange = React.useCallback(
+    (value: string) => {
+      handleProductSelect(value);
+    },
+    [handleProductSelect]
+  );
+
+  const handleBatchSelectCallback = React.useCallback(
+    (productId: string, batchNumber: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const setFormValue = form.setValue as any;
+      // 先设置产品ID
+      handleProductSelect(productId);
+
+      // 使用 setTimeout 确保产品信息已更新后再设置批次号
+      setTimeout(() => {
+        setFormValue(`items.${index}.batchNumber`, batchNumber);
+        // 调用外部回调
+        onBatchSelect?.(productId, batchNumber);
+      }, 0);
+    },
+    [form, index, handleProductSelect, onBatchSelect]
+  );
 
   return (
     <FormField
       control={form.control}
-      name={`items.${index}.productId` as unknown as Path<TFieldValues>}
+      name={`items.${index}.productId` as never}
       rules={{
         validate: (value: unknown) => {
-          const isManualRaw = form.getValues(
-            `items.${index}.isManualProduct` as unknown as Path<TFieldValues>
-          );
-          const isManual = Boolean(isManualRaw as unknown as boolean);
-          const manualNameRaw = form.getValues(
-            `items.${index}.manualProductName` as unknown as Path<TFieldValues>
-          );
-          const manualName =
-            typeof manualNameRaw === 'string'
-              ? manualNameRaw.trim()
-              : manualNameRaw !== null && manualNameRaw !== undefined
-                ? String(manualNameRaw).trim()
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const getFormValues = form.getValues as any;
+          const isManualRaw = getFormValues(`items.${index}.isManualProduct`);
+          const isManual = Boolean(isManualRaw);
+          const manualCodeRaw = getFormValues(`items.${index}.productCode`);
+          const manualCode =
+            typeof manualCodeRaw === 'string'
+              ? manualCodeRaw.trim()
+              : manualCodeRaw !== null && manualCodeRaw !== undefined
+                ? String(manualCodeRaw).trim()
                 : '';
 
           if (isManual) {
-            return manualName.length > 0
-              ? true
-              : '手动输入商品必须填写商品名称';
+            if (requireManualCode && manualCode.length === 0) {
+              return '临时商品必须填写产品编码';
+            }
+            return true;
           }
 
           const selected =
@@ -392,25 +370,11 @@ export function IntelligentProductInput<
               value={(field.value as string) || ''}
               onValueChange={value => {
                 field.onChange(value);
-                handleProductSelect(value);
+                handleValueChange(value);
               }}
               onBatchSelect={(productId, batchNumber) => {
-                // 先设置产品ID
                 field.onChange(productId);
-                handleProductSelect(productId);
-
-                // 使用 setTimeout 确保产品信息已更新后再设置批次号
-                setTimeout(() => {
-                  form.setValue(
-                    `items.${index}.batchNumber` as unknown as Path<TFieldValues>,
-                    batchNumber as unknown as PathValue<
-                      TFieldValues,
-                      Path<TFieldValues>
-                    >
-                  );
-                  // 调用外部回调
-                  onBatchSelect?.(productId, batchNumber);
-                }, 0);
+                handleBatchSelectCallback(productId, batchNumber);
               }}
               onTemporaryProductAdd={handleTemporaryProductAdd}
               onSearchChange={handleProductSearch}
@@ -418,6 +382,10 @@ export function IntelligentProductInput<
               placeholder="搜索商品或添加临时商品"
               className="h-8 text-xs"
               allowTemporaryProducts={true}
+              temporaryProductRequirements={{
+                requireCode: requireManualCode,
+                requireName: requireManualName,
+              }}
               simple={true}
             />
           </FormControl>
