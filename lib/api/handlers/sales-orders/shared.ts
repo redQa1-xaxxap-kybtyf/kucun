@@ -104,6 +104,9 @@ export function mapSalesOrderItem(item: SalesOrderItemResult) {
         ? item.manualSpecification || undefined
         : item.product?.specification || undefined),
     remarks: item.remarks ?? undefined,
+    // localQuantity 和 transferQuantity 在数据库中有 @default(0)，所以始终是数字
+    localQuantity: item.localQuantity,
+    transferQuantity: item.transferQuantity,
     product: item.product ? { ...item.product } : undefined,
   };
 }

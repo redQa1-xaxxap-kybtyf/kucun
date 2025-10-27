@@ -3,6 +3,7 @@
  * 提供调整记录的查询和管理功能
  */
 
+import { INVENTORY_ACTIVITY_GC_TIME_MS, INVENTORY_ACTIVITY_STALE_TIME_MS } from '@/lib/constants/cache';
 import type { ApiResponse } from '@/lib/types/api';
 import type {
   AdjustmentQueryParams,
@@ -145,8 +146,9 @@ export const getAdjustmentQueryOptions = (
 ) => ({
   queryKey: adjustmentQueryKeys.list(params),
   queryFn: () => getAdjustments(params),
-  staleTime: Infinity, // ✅ 防止客户端重复请求服务端已预取的数据
-  gcTime: 10 * 60 * 1000, // 10分钟
+  staleTime: INVENTORY_ACTIVITY_STALE_TIME_MS,
+  gcTime: INVENTORY_ACTIVITY_GC_TIME_MS,
+  refetchOnWindowFocus: true,
 });
 
 /**

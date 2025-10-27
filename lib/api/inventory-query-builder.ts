@@ -54,15 +54,42 @@ export type InventoryQueryResult = z.infer<typeof inventoryQueryResultSchema>;
 function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
 
-  // 搜索条件 - 使用模糊匹配提升用户体验
-  // 支持在产品编码、名称、批次号、存储位置的任意位置搜索
-  if (params.search) {
-    conditions.push(Prisma.sql`(
-      p.code LIKE ${`%${params.search}%`} OR
-      p.name LIKE ${`%${params.search}%`} OR
-      i.batch_number LIKE ${`%${params.search}%`} OR
-      i.location LIKE ${`%${params.search}%`}
-    )`);
+  // 搜索条件 - 优化以降低全表扫描概率（MySQL 5.7）
+  // ✅ 修复BUG：当搜索关键词不满足最小长度时，返回空结果而不是所有数据
+  // 规则：
+  // - 空字符串或undefined：不加搜索条件，正常查询
+  // - 长度=1：添加永假条件，返回空结果（不满足最小搜索长度）
+  // - 长度=2~4：
+  //     • 编码/批次/库位使用前缀匹配（可命中索引）
+  //     • 名称使用包含匹配
+  // - 长度>=5：上述基础上名称/库位仍为包含匹配
+  if (typeof params.search === 'string' && params.search.trim()) {
+    const s = params.search.trim();
+
+    if (s.length === 1) {
+      // ✅ 单字符搜索：返回空结果，不执行查询
+      // 这样更明确地告诉用户需要输入更多字符
+      conditions.push(Prisma.sql`1=0`);
+    } else if (s.length >= 2) {
+      const likePrefix = `${s}%`;
+      const likeAny = `%${s}%`;
+
+      if (s.length <= 4) {
+        conditions.push(Prisma.sql`(
+          p.code LIKE ${likePrefix} OR
+          i.batch_number LIKE ${likePrefix} OR
+          i.location LIKE ${likePrefix} OR
+          p.name LIKE ${likeAny}
+        )`);
+      } else {
+        conditions.push(Prisma.sql`(
+          p.code LIKE ${likePrefix} OR
+          i.batch_number LIKE ${likePrefix} OR
+          p.name LIKE ${likeAny} OR
+          i.location LIKE ${likeAny}
+        )`);
+      }
+    }
   }
 
   // 产品ID筛选
@@ -101,16 +128,26 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
     conditions.push(Prisma.sql`${AVAILABLE_QUANTITY_SQL} > 0`);
   }
 
+  // 日期范围：避免对列应用函数，便于索引利用
   if (params.startDate) {
-    conditions.push(Prisma.sql`DATE(i.updated_at) >= ${params.startDate}`);
+    // >= YYYY-MM-DD 00:00:00
+    conditions.push(
+      Prisma.sql`i.updated_at >= TIMESTAMP(CONCAT(${params.startDate}, ' 00:00:00'))`
+    );
   }
 
   if (params.endDate) {
-    conditions.push(Prisma.sql`DATE(i.updated_at) <= ${params.endDate}`);
+    // < (YYYY-MM-DD + 1) 00:00:00  —— 上开区间，避免跨天边界问题
+    conditions.push(
+      Prisma.sql`i.updated_at < TIMESTAMP(DATE_ADD(${params.endDate}, INTERVAL 1 DAY))`
+    );
   }
 
   // 组合所有条件
+  // ✅ 修复：当没有任何条件时，仍需返回有效的WHERE子句
+  // 不使用 1=1，因为这会返回所有记录
   if (conditions.length === 0) {
+    // 返回恒真条件，确保查询语法正确
     return Prisma.sql`1=1`;
   }
 

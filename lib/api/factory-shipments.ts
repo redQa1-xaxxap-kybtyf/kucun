@@ -171,6 +171,20 @@ export async function deleteFactoryShipmentOrder(id: string): Promise<void> {
   }
 }
 
+/**
+ * 取消厂家发货订单
+ */
+export async function cancelFactoryShipmentOrder(id: string): Promise<void> {
+  const response = await fetch(`/api/factory-shipments/${id}/cancel`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '取消厂家发货订单失败');
+  }
+}
+
 // React Query Hooks
 
 /**
@@ -277,6 +291,26 @@ export function useDeleteFactoryShipmentOrder() {
     mutationFn: deleteFactoryShipmentOrder,
     onSuccess: () => {
       // 刷新列表数据
+      queryClient.invalidateQueries({
+        queryKey: factoryShipmentQueryKeys.lists(),
+      });
+    },
+  });
+}
+
+/**
+ * 取消厂家发货订单的 Hook
+ */
+export function useCancelFactoryShipmentOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: cancelFactoryShipmentOrder,
+    onSuccess: (_, id) => {
+      // 刷新详情和列表数据
+      queryClient.invalidateQueries({
+        queryKey: factoryShipmentQueryKeys.detail(id),
+      });
       queryClient.invalidateQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
       });

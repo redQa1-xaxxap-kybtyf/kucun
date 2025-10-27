@@ -65,17 +65,18 @@ export const calculateFinancials = (
 
 export const buildOrderItemsInput = (
   data: CreateInput,
-  transferMode: CreateInput['transferMode']
+  transferMode: CreateInput['transferMode'],
+  temporaryProductIds?: Map<number, string>
 ): Prisma.SalesOrderItemUncheckedCreateWithoutSalesOrderInput[] =>
-  data.items.map(item => {
+  data.items.map((item, index) => {
     const quantity = item.quantity ?? 0;
     const subtotal = item.subtotal ?? quantity * (item.unitPrice ?? 0);
+    // 本地数量：只有调货订单的混合模式才有本地发货
     const localQuantity =
-      data.orderType === 'TRANSFER'
-        ? transferMode === 'MIXED'
-          ? (item.localQuantity ?? 0)
-          : 0
-        : quantity;
+      data.orderType === 'TRANSFER' && transferMode === 'MIXED'
+        ? (item.localQuantity ?? 0)
+        : 0;
+    // 调货数量：调货订单根据模式设置，普通订单为0
     const transferQuantity =
       data.orderType === 'TRANSFER'
         ? transferMode === 'MIXED'
@@ -85,6 +86,9 @@ export const buildOrderItemsInput = (
 
     return {
       productId: item.productId ?? null,
+      temporaryProductId: temporaryProductIds?.get(index) ?? null,
+      variantId: item.variantId ?? null,
+      productCode: item.productCode ?? null,
       batchNumber: item.batchNumber || null,
       colorCode: item.colorCode ?? null,
       productionDate: item.productionDate ?? null,
@@ -94,6 +98,8 @@ export const buildOrderItemsInput = (
       unitCost: item.unitCost ?? null,
       localQuantity,
       transferQuantity,
+      costSubtotal: item.costSubtotal ?? null,
+      profitAmount: item.profitAmount ?? null,
       displayUnit: item.displayUnit || '片',
       displayQuantity: item.displayQuantity ?? quantity,
       piecesPerUnit: item.piecesPerUnit ?? null,

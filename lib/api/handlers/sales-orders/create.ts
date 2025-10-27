@@ -23,6 +23,10 @@ import {
   salesOrderItemSelect,
   salesOrderRelations,
 } from './shared';
+import {
+  buildTemporaryProductDataFromOrderItem,
+  findOrCreateTemporaryProduct,
+} from './temporary-products';
 import type { CreateInput } from './types';
 import {
   ensureCustomerExists,
@@ -87,6 +91,28 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
     await ensureSupplierExists(tx, validatedData.supplierId);
     await ensureProductsExist(tx, validatedData.items);
 
+    // 处理临时商品：为调货销售的手动输入商品创建/查找临时商品记录
+    const temporaryProductIds = new Map<number, string>(); // itemIndex -> temporaryProductId
+
+    if (validatedData.orderType === 'TRANSFER' && validatedData.supplierId) {
+      for (let i = 0; i < validatedData.items.length; i++) {
+        const item = validatedData.items[i];
+        const tempProductData = buildTemporaryProductDataFromOrderItem(
+          item,
+          validatedData.supplierId,
+          userId
+        );
+
+        if (tempProductData) {
+          const tempProduct = await findOrCreateTemporaryProduct(
+            tx,
+            tempProductData
+          );
+          temporaryProductIds.set(i, tempProduct.id);
+        }
+      }
+    }
+
     if (shouldReserveInventory(validatedData, transferMode)) {
       await reserveInventory(tx, validatedData, transferMode);
     }
@@ -108,7 +134,11 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
         totalAmount: financials.totalAmount,
         remarks: validatedData.remarks,
         items: {
-          create: buildOrderItemsInput(validatedData, transferMode),
+          create: buildOrderItemsInput(
+            validatedData,
+            transferMode,
+            temporaryProductIds
+          ),
         },
         feeItems: {
           create: buildFeeItemsInput(validatedData),

@@ -8,13 +8,13 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import type { Product } from '@/lib/types/product';
 import type {
   ReturnOrder,
   ReturnOrderItem,
   ReturnOrderListResponse,
   ReturnOrderQueryParams,
 } from '@/lib/types/return-order';
-import type { Product } from '@/lib/types/product';
 
 /**
  * 服务端获取退货订单列表

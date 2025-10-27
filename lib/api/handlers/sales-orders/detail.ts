@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma, SalesOrder } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 
@@ -102,4 +102,65 @@ export async function getSalesOrderById(id: string) {
   }
 
   return mapDetail(order);
+}
+
+/**
+ * 获取销售订单详情（含收款统计与收款记录ISO化）
+ */
+export async function getSalesOrderDetailWithPayments(id: string) {
+  const order = await prisma.salesOrder.findUnique({
+    where: { id },
+    include: {
+      ...detailInclude,
+      payments: {
+        select: {
+          id: true,
+          paymentNumber: true,
+          paymentAmount: true,
+          actualPaymentAmount: true,
+          roundingAmount: true,
+          paymentMethod: true,
+          paymentDate: true,
+          status: true,
+          remarks: true,
+          createdAt: true,
+        },
+        orderBy: { paymentDate: 'desc' },
+      },
+    },
+  });
+
+  if (!order) return null;
+
+  const confirmed = order.payments.filter(p => p.status === 'confirmed');
+  const actualPaidAmount = confirmed.reduce(
+    (sum, r) => sum + Number(r.actualPaymentAmount),
+    0
+  );
+  const paymentRounding = confirmed.reduce(
+    (sum, r) => sum + Number(r.roundingAmount || 0),
+    0
+  );
+  const paidAmount = actualPaidAmount + paymentRounding;
+
+  type SalesOrderAmounts = Pick<SalesOrder, 'totalAmount' | 'roundingAdjustment'>;
+  const amounts = order as unknown as SalesOrderAmounts;
+  const actualTotalAmount =
+    Number(amounts.totalAmount) + Number(amounts.roundingAdjustment ?? 0);
+  const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
+
+  const mapped = mapDetail(order as unknown as SalesOrderDetailResult);
+
+  return {
+    ...mapped,
+    paymentRecords: order.payments.map(p => ({
+      ...p,
+      paymentDate: p.paymentDate.toISOString(),
+      createdAt: p.createdAt.toISOString(),
+    })),
+    actualPaidAmount,
+    paymentRounding,
+    paidAmount,
+    remainingAmount,
+  };
 }

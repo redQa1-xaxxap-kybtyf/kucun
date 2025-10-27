@@ -3,6 +3,10 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import {
+  INVENTORY_ACTIVITY_GC_TIME_MS,
+  INVENTORY_ACTIVITY_STALE_TIME_MS,
+} from '@/lib/constants/cache';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreateInboundRequest,
@@ -24,7 +28,7 @@ const PRODUCTS_API = '/api/products';
  * ✅ Next.js 15.4 最佳实践：
  * - 服务端通过 HydrationBoundary 预取数据
  * - 客户端使用相同的 queryKey 获取缓存数据
- * - 配置 staleTime=Infinity 防止首次渲染时重新请求
+ * - 配置短 staleTime 与 Redis TTL 对齐，确保跨会话刷新
  */
 export function useInboundRecords(params: InboundQueryParams = {}) {
   return useQuery({
@@ -68,8 +72,9 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
         pagination: result.pagination,
       };
     },
-    staleTime: Infinity, // 防止客户端重复请求服务端已预取的数据
-    gcTime: 10 * 60 * 1000, // 10分钟
+    staleTime: INVENTORY_ACTIVITY_STALE_TIME_MS,
+    gcTime: INVENTORY_ACTIVITY_GC_TIME_MS,
+    refetchOnWindowFocus: true,
     placeholderData: previousData => previousData, // 保持上一页数据
   });
 }

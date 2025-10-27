@@ -45,6 +45,7 @@ type QueryKeyPrefix =
   | 'factory-shipment-orders'
   | 'factory-shipment-order'
   | 'outbound-records'
+  | 'temporary-products'
   | 'settings';
 
 /**
