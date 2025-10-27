@@ -2,9 +2,11 @@
  * 库存实时服务
  * 集成 Redis Pub/Sub 和事务功能，提供实时库存更新和通知
  */
+// cspell:ignore hset hincrby hgetall
 
 import { revalidateInventory } from '@/lib/cache/revalidate';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 import { publish } from '@/lib/redis/redis-pubsub';
 
@@ -56,7 +58,8 @@ export async function updateInventoryWithNotification(
   }
 ): Promise<boolean> {
   try {
-    // 1. 获取当前库存
+    // 1. 使用原子操作更新数据库 (并发安全)
+    // 直接使用 increment 避免 read-then-write 竞态条件
     const inventory = await prisma.inventory.findFirst({
       where: {
         productId,
@@ -68,15 +71,48 @@ export async function updateInventoryWithNotification(
       throw new Error('库存记录不存在');
     }
 
-    const beforeQuantity = inventory.quantity;
-    const afterQuantity = beforeQuantity + quantity;
+    // 2. 使用原子操作更新库存
+    const updatedInventory = await prisma.inventory.update({
+      where: { id: inventory.id },
+      data: {
+        // 使用原子递增/递减操作,避免并发竞态
+        quantity: { increment: quantity },
+        // 根据类型更新预留数量
+        ...(type === 'reserve' && {
+          reservedQuantity: { increment: quantity },
+        }),
+        ...(type === 'release' && {
+          reservedQuantity: { increment: -quantity },
+        }),
+        updatedAt: new Date(),
+      },
+    });
 
-    // 2. 检查库存是否足够（如果是减少操作）
-    if (quantity < 0 && afterQuantity < 0) {
-      throw new Error('库存不足');
+    // 3. 并发安全检查：验证更新后的库存不为负数
+    if (updatedInventory.quantity < 0) {
+      throw new Error(
+        `并发更新导致库存为负数。当前库存: ${updatedInventory.quantity}, 请重试`
+      );
     }
 
-    // 3. 使用 Redis 事务更新缓存
+    // 4. 并发安全检查：验证更新后的预留数量不为负数
+    if (updatedInventory.reservedQuantity < 0) {
+      throw new Error(
+        `并发更新导致预留数量为负数。当前预留: ${updatedInventory.reservedQuantity}, 请重试`
+      );
+    }
+
+    // 5. 并发安全检查：验证可用库存不为负数
+    if (updatedInventory.quantity < updatedInventory.reservedQuantity) {
+      throw new Error(
+        `并发更新导致可用库存(${updatedInventory.quantity})低于预留数量(${updatedInventory.reservedQuantity}), 请重试`
+      );
+    }
+
+    const beforeQuantity = inventory.quantity;
+    const afterQuantity = updatedInventory.quantity;
+
+    // 6. 使用 Redis 事务更新缓存
     const cacheKey = variantId
       ? `inventory:${productId}:${variantId}`
       : `inventory:${productId}`;
@@ -85,12 +121,12 @@ export async function updateInventoryWithNotification(
       // 更新库存数量
       pipeline.hset(cacheKey, 'quantity', afterQuantity);
 
-      // 更新预留数量（如果是预留/释放操作）
-      if (type === 'reserve') {
-        pipeline.hincrby(cacheKey, 'reserved', quantity);
-      } else if (type === 'release') {
-        pipeline.hincrby(cacheKey, 'reserved', -quantity);
-      }
+      // 更新预留数量
+      pipeline.hset(
+        cacheKey,
+        'reserved',
+        updatedInventory.reservedQuantity.toString()
+      );
 
       // 更新最后修改时间
       pipeline.hset(cacheKey, 'updatedAt', new Date().toISOString());
@@ -98,16 +134,7 @@ export async function updateInventoryWithNotification(
       return pipeline.exec();
     });
 
-    // 4. 更新数据库
-    await prisma.inventory.update({
-      where: { id: inventory.id },
-      data: {
-        quantity: afterQuantity,
-        updatedAt: new Date(),
-      },
-    });
-
-    // 5. 构建变更事件
+    // 7. 构建变更事件
     const event: InventoryChangeEvent = {
       productId,
       variantId: variantId || undefined,
@@ -121,7 +148,7 @@ export async function updateInventoryWithNotification(
       timestamp: new Date().toISOString(),
     };
 
-    // 6. 发布 Pub/Sub 通知
+    // 8. 发布 Pub/Sub 通知
     await Promise.all([
       // 产品级别通知
       publish(`inventory:${productId}:updated`, event),
@@ -139,12 +166,17 @@ export async function updateInventoryWithNotification(
         }),
     ]);
 
-    // 7. 失效缓存
+    // 9. 失效缓存
     await revalidateInventory(productId);
 
     return true;
   } catch (error) {
-    console.error('[Inventory] Failed to update inventory:', error);
+    logger.error('inventory-realtime', 'Failed to update inventory', error, {
+      productId,
+      variantId: variantId || undefined,
+      quantity,
+      type,
+    });
     return false;
   }
 }
@@ -195,9 +227,16 @@ export async function batchUpdateInventory(
           },
         });
       } catch (error) {
-        console.error(
-          `Failed to update inventory for ${update.productId}:`,
-          error
+        logger.error(
+          'inventory-realtime',
+          'Failed to update inventory',
+          error,
+          {
+            productId: update.productId,
+            variantId: update.variantId || undefined,
+            quantity: update.quantity,
+            type: update.type,
+          }
         );
         failed.push(update.productId);
       }
@@ -215,7 +254,9 @@ export async function batchUpdateInventory(
       failed,
     };
   } catch (error) {
-    console.error('[Inventory] Batch update failed:', error);
+    logger.error('inventory-realtime', 'Batch update failed', error, {
+      count: updates.length,
+    });
     return {
       success: false,
       failed: updates.map(u => u.productId),
@@ -388,7 +429,12 @@ export async function getRealtimeInventory(
       updatedAt: inventory.updatedAt.toISOString(),
     };
   } catch (error) {
-    console.error('[Inventory] Failed to get realtime inventory:', error);
+    logger.error(
+      'inventory-realtime',
+      'Failed to get realtime inventory',
+      error,
+      { productId, variantId: variantId || undefined }
+    );
     return null;
   }
 }

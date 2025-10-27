@@ -162,7 +162,9 @@ const shouldIncludeTransformedItem = (
     }
 
     if (transformed.isManualProduct) {
-      return Boolean(transformed.manualProductName?.trim());
+      return Boolean(
+        transformed.manualProductName?.trim() || transformed.productCode?.trim()
+      );
     }
     return Boolean(transformed.productId?.trim());
   }
@@ -172,7 +174,9 @@ const shouldIncludeTransformedItem = (
   }
 
   if (source.isManualProduct) {
-    return Boolean(source.manualProductName?.trim());
+    return Boolean(
+      source.manualProductName?.trim() || source.productCode?.trim()
+    );
   }
 
   return Boolean(source.productId?.trim());
@@ -261,7 +265,7 @@ export function transformFormItemToCreateInput(
   // 手动输入商品的情况
   if (formItem.isManualProduct) {
     return {
-      productId: formItem.productId?.trim() || '', // 手动商品可能没有 productId
+      productId: formItem.productId?.trim() || undefined,
       productCode: formItem.productCode?.trim() || undefined,
       quantity,
       unitPrice,
@@ -287,7 +291,7 @@ export function transformFormItemToCreateInput(
 
   // 普通商品的情况
   return {
-    productId: formItem.productId?.trim() || '',
+    productId: formItem.productId?.trim() || undefined,
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
     quantity,
@@ -369,7 +373,7 @@ export function transformFormItemToUpdateInput(
   // 手动输入商品的情况
   if (formItem.isManualProduct) {
     return {
-      productId: formItem.productId?.trim() || '',
+      productId: formItem.productId?.trim() || undefined,
       productCode: formItem.productCode?.trim() || undefined,
       quantity,
       unitPrice,
@@ -395,7 +399,7 @@ export function transformFormItemToUpdateInput(
 
   // 普通商品的情况
   return {
-    productId: formItem.productId?.trim() || '',
+    productId: formItem.productId?.trim() || undefined,
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
     quantity,
@@ -479,8 +483,9 @@ function validateItems(
     const position = index + 1;
 
     if (item.isManualProduct) {
-      if (!item.manualProductName?.trim()) {
-        errors.push(`第${position}个明细项：手动输入商品必须填写商品名称`);
+      const manualCode = item.productCode?.trim() ?? '';
+      if (!manualCode) {
+        errors.push(`第${position}个明细项：手动输入商品必须填写产品编码`);
       }
     } else if (!item.productId?.trim()) {
       errors.push(`第${position}个明细项：请选择产品`);

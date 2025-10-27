@@ -1,3 +1,7 @@
+import {
+  RETURN_ALLOWED_SALES_ORDER_STATUSES,
+  SALES_ORDER_STATUS_TRANSITIONS,
+} from '@/lib/config/sales-order';
 import { prisma } from '@/lib/db';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
 
@@ -47,11 +51,6 @@ export interface ReturnableItemsResponse {
     maxReturnAmount: number;
   };
 }
-
-const RETURN_ALLOWED_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
-  'shipped',
-  'completed',
-];
 
 /**
  * 获取销售订单的可退货明细
@@ -228,6 +227,7 @@ export interface UpdateOrderStatusResult {
 
 /**
  * 验证订单状态流转规则
+ * 使用集中化的状态流转配置
  * @param currentStatus 当前状态
  * @param newStatus 新状态
  * @returns 是否允许流转
@@ -236,20 +236,16 @@ export function validateStatusTransition(
   currentStatus: string,
   newStatus: string
 ): { valid: boolean; error?: string } {
-  const validStatusTransitions: Record<string, string[]> = {
-    draft: ['confirmed', 'cancelled'],
-    confirmed: ['shipped', 'cancelled'],
-    shipped: ['completed'],
-    completed: [], // 已完成的订单不能再变更状态
-    cancelled: [], // 已取消的订单不能再变更状态
-  };
-
+  // 如果状态相同，允许流转（实际上不会发生变更）
   if (newStatus === currentStatus) {
     return { valid: true };
   }
 
-  const allowedStatuses = validStatusTransitions[currentStatus] || [];
-  if (!allowedStatuses.includes(newStatus)) {
+  // 从集中化配置获取允许的状态流转
+  const allowedStatuses =
+    SALES_ORDER_STATUS_TRANSITIONS[currentStatus as SalesOrderStatus] || [];
+
+  if (!allowedStatuses.includes(newStatus as SalesOrderStatus)) {
     return {
       valid: false,
       error: `订单状态不能从 ${currentStatus} 变更为 ${newStatus}`,
@@ -274,25 +270,28 @@ export async function createTransferPayableRecord(
   costAmount: number,
   userId: string
 ): Promise<void> {
-  await prisma.$transaction(async tx => {
-    // 检查是否已经存在应付款记录
-    const existingPayable = await tx.payableRecord.findFirst({
-      where: {
-        sourceType: 'sales_order',
-        sourceId: orderId,
-      },
-    });
+  // 检查是否已经存在应付款记录
+  const existingPayable = await prisma.payableRecord.findFirst({
+    where: {
+      sourceType: 'sales_order',
+      sourceId: orderId,
+    },
+  });
 
-    // 如果不存在应付款记录,则创建
-    if (!existingPayable) {
-      // 生成应付款单号
-      const payableNumber = `PAY-${Date.now()}-${orderId.slice(-6)}`;
+  // 如果不存在应付款记录,则创建
+  if (!existingPayable) {
+    // 生成应付款单号（使用并发安全的生成服务）
+    const { generatePayableNumber } = await import(
+      '@/lib/utils/payment-number-generator'
+    );
+    const payableNumber = await generatePayableNumber();
 
-      // 计算应付款到期日期(默认30天后)
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30);
+    // 计算应付款到期日期(默认30天后)
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
 
-      // 创建应付款记录
+    // 创建应付款记录
+    await prisma.$transaction(async tx => {
       await tx.payableRecord.create({
         data: {
           payableNumber,
@@ -310,6 +309,6 @@ export async function createTransferPayableRecord(
           remarks: `关联销售订单：${orderNumber}，成本金额：¥${costAmount.toFixed(2)}`,
         },
       });
-    }
-  });
+    });
+  }
 }

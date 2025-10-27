@@ -66,3 +66,69 @@ export const SALES_ORDER_SORT_FIELD_LABELS = {
   [SALES_ORDER_SORT_FIELDS.CREATED_AT]: '创建时间',
   [SALES_ORDER_SORT_FIELDS.UPDATED_AT]: '更新时间',
 } as const;
+
+/**
+ * 销售订单类型枚举
+ */
+export const SALES_ORDER_TYPES = {
+  NORMAL: 'NORMAL',
+  TRANSFER: 'TRANSFER',
+} as const;
+
+export type SalesOrderType =
+  (typeof SALES_ORDER_TYPES)[keyof typeof SALES_ORDER_TYPES];
+
+/**
+ * 销售订单类型中文标签映射
+ */
+export const SALES_ORDER_TYPE_LABELS: Record<SalesOrderType, string> = {
+  [SALES_ORDER_TYPES.NORMAL]: '普通销售',
+  [SALES_ORDER_TYPES.TRANSFER]: '调货销售',
+} as const;
+
+/**
+ * 调货履约模式枚举
+ */
+export const TRANSFER_MODES = {
+  SUPPLIER_ONLY: 'SUPPLIER_ONLY',
+  MIXED: 'MIXED',
+} as const;
+
+export type TransferFulfillmentMode =
+  (typeof TRANSFER_MODES)[keyof typeof TRANSFER_MODES];
+
+/**
+ * 调货履约模式中文标签映射
+ */
+export const TRANSFER_MODE_LABELS: Record<TransferFulfillmentMode, string> = {
+  [TRANSFER_MODES.SUPPLIER_ONLY]: '全部外部调货',
+  [TRANSFER_MODES.MIXED]: '本地 + 调货混合',
+} as const;
+
+/**
+ * 允许退货的销售订单状态列表
+ * 业务规则：只有已发货和已完成的订单才能退货
+ */
+export const RETURN_ALLOWED_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> =
+  [SALES_ORDER_STATUSES.SHIPPED, SALES_ORDER_STATUSES.COMPLETED] as const;
+
+/**
+ * 销售订单状态流转规则（状态机配置）
+ * 定义每个状态可以流转到哪些状态
+ */
+export const SALES_ORDER_STATUS_TRANSITIONS: Record<
+  SalesOrderStatus,
+  ReadonlyArray<SalesOrderStatus>
+> = {
+  [SALES_ORDER_STATUSES.DRAFT]: [
+    SALES_ORDER_STATUSES.CONFIRMED,
+    SALES_ORDER_STATUSES.CANCELLED,
+  ],
+  [SALES_ORDER_STATUSES.CONFIRMED]: [
+    SALES_ORDER_STATUSES.SHIPPED,
+    SALES_ORDER_STATUSES.CANCELLED,
+  ],
+  [SALES_ORDER_STATUSES.SHIPPED]: [SALES_ORDER_STATUSES.COMPLETED],
+  [SALES_ORDER_STATUSES.COMPLETED]: [], // 已完成的订单不能再变更状态
+  [SALES_ORDER_STATUSES.CANCELLED]: [], // 已取消的订单不能再变更状态
+} as const;
