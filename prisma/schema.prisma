@@ -45,6 +45,9 @@ model User {
   // 系统设置变更日志关联关系
   settingChangeLogs SettingChangeLog[]
 
+  // 临时商品关联关系
+  temporaryProducts TemporaryProduct[] @relation("TemporaryProductCreator")
+
   @@index([email])
   @@index([username])
   @@index([role])
@@ -100,12 +103,50 @@ model Supplier {
   payableRecords            PayableRecord[]
   paymentOutRecords         PaymentOutRecord[]
   productPrices             SupplierProductPrice[]
+  temporaryProducts         TemporaryProduct[] // 临时商品
 
   @@index([name])
   @@index([phone])
   @@index([status])
   @@index([supplierCode], map: "idx_suppliers_code")
   @@map("suppliers")
+}
+
+// 临时商品表 - 调货销售中使用的临时商品记录
+// 用于记录调货销售时手动输入的商品信息，按供应商维度管理
+// 自动创建和复用逻辑：同一供应商+同一编码 → 复用现有记录并更新使用统计
+model TemporaryProduct {
+  id            String    @id @default(uuid())
+  supplierId    String    @map("supplier_id") // 供应商ID
+  code          String    @db.VarChar(50) @map("code") // 产品编码（调货销售时必填）
+  name          String    @db.VarChar(100) @map("name") // 产品名称
+  specification String?   @map("specification") @db.Text // 规格
+  weight        Float?    @map("weight") // 重量
+  unit          String    @default("片") @db.VarChar(20) @map("unit") // 单位
+  piecesPerUnit Int       @default(1) @map("pieces_per_unit") // 每件片数
+  usageCount    Int       @default(0) @map("usage_count") // 使用次数（自动统计）
+  lastUsedAt    DateTime? @map("last_used_at") // 最后使用时间
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdBy     String?   @map("created_by") // 创建人ID
+
+  // 关联关系
+  supplier              Supplier         @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  creator               User?            @relation("TemporaryProductCreator", fields: [createdBy], references: [id])
+  salesOrderItems       SalesOrderItem[]
+  factoryShipmentItems  FactoryShipmentOrderItem[] @relation("TemporaryProductFactoryShipment")
+
+  // 复合唯一约束：同一供应商下编码唯一
+  @@unique([supplierId, code], map: "uk_temp_product_supplier_code")
+  @@index([supplierId], map: "idx_temp_products_supplier")
+  @@index([code], map: "idx_temp_products_code")
+  @@index([usageCount(sort: Desc)], map: "idx_temp_products_usage")
+  @@index([lastUsedAt(sort: Desc)], map: "idx_temp_products_last_used")
+  @@index([createdBy], map: "idx_temp_products_creator")
+  // 复合索引优化：支持常见查询模式
+  @@index([supplierId, usageCount(sort: Desc)], map: "idx_temp_products_supplier_usage")
+  @@index([supplierId, lastUsedAt(sort: Desc)], map: "idx_temp_products_supplier_last_used")
+  @@map("temporary_products")
 }
 
 // 分类表 - 产品分类管理，支持层级结构
@@ -284,19 +325,20 @@ model SalesOrderFeeItem {
   @@map("sales_order_fee_items")
 }
 
-// 销售单明细表 - 销售订单明细，包含瓷砖行业特有字段
+// 销售单明细表 - 销售订单明细,包含瓷砖行业特有字段
 model SalesOrderItem {
-  id             String  @id @default(uuid())
-  salesOrderId   String  @map("sales_order_id")
-  productId      String? @map("product_id") // 手动输入商品时可为空
-  variantId      String? @map("variant_id") // 产品变体ID
-  productCode    String? @map("product_code") // 产品编码
-  batchNumber    String? @map("batch_number") // 批次号
-  colorCode      String? @map("color_code")
-  productionDate String? @map("production_date") // 生产日期，瓷砖行业特有
-  quantity       Float
-  unitPrice      Float   @map("unit_price")
-  subtotal       Float
+  id                  String  @id @default(uuid())
+  salesOrderId        String  @map("sales_order_id")
+  productId           String? @map("product_id") // 手动输入商品时可为空
+  variantId           String? @map("variant_id") // 产品变体ID
+  temporaryProductId  String? @map("temporary_product_id") // 临时商品ID（调货销售时使用）
+  productCode         String? @map("product_code") // 产品编码
+  batchNumber         String? @map("batch_number") // 批次号
+  colorCode           String? @map("color_code")
+  productionDate      String? @map("production_date") // 生产日期，瓷砖行业特有
+  quantity            Float
+  unitPrice           Float   @map("unit_price")
+  subtotal            Float
 
   // 调货销售相关字段
   unitCost         Float? @map("unit_cost") // 单位成本价（调货销售时使用）
@@ -323,6 +365,7 @@ model SalesOrderItem {
   salesOrder       SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   product          Product?          @relation(fields: [productId], references: [id])
   variant          ProductVariant?   @relation(fields: [variantId], references: [id])
+  temporaryProduct TemporaryProduct? @relation(fields: [temporaryProductId], references: [id])
   returnOrderItems ReturnOrderItem[]
 
   @@index([salesOrderId], map: "idx_sales_order_items_order")
@@ -331,6 +374,7 @@ model SalesOrderItem {
   @@index([productId, colorCode], map: "idx_sales_order_items_product_color")
   @@index([unitCost], map: "idx_sales_order_items_unit_cost")
   @@index([profitAmount], map: "idx_sales_order_items_profit")
+  @@index([temporaryProductId], map: "idx_sales_order_items_temp_product")
   @@map("sales_order_items")
 }
 
@@ -625,20 +669,30 @@ model PaymentRecord {
 }
 
 // 厂家发货订单表 - 厂家直发订单管理
+// 状态流程: draft(草稿) → confirmed(已确认) → pending_shipment(待发货) → shipped(已发货) → in_transit(运输中) → arrived(到港) | cancelled(已取消)
+// 关键状态说明:
+//   - draft: 草稿状态,订单创建但未确认
+//   - confirmed: 已确认,等待发货安排
+//   - pending_shipment: 待发货,已安排发货计划
+//   - shipped: 已发货,货物已从工厂发出
+//   - in_transit: 运输中,货物在途中
+//   - arrived: 到港,货物已到达目的港(终态之一,自动创建应收账款)
+//   - cancelled: 已取消,订单已作废(终态之一)
 model FactoryShipmentOrder {
   id               String    @id @default(uuid())
   orderNumber      String    @unique @map("order_number") // 订单编号
   containerNumber  String?   @map("container_number") // 集装箱号码（确认发货时必填）
   customerId       String    @map("customer_id") // 客户ID
   userId           String    @map("user_id") // 创建用户ID
-  status           String    @default("draft") // 订单状态
+  status           String    @default("draft") // 订单状态: draft, confirmed, pending_shipment, shipped, in_transit, arrived, cancelled
   totalAmount      Float     @default(0) @map("total_amount") // 订单总金额
   receivableAmount Float     @default(0) @map("receivable_amount") // 应收金额
   depositAmount    Float     @default(0) @map("deposit_amount") // 定金金额
   paidAmount       Float     @default(0) @map("paid_amount") // 已付金额
   remarks          String? @db.Text // 备注
-  planDate         DateTime? @map("plan_date") // 计划发货日期
+  shippingCompany  String?   @map("shipping_company") // 船运公司
   shipmentDate     DateTime? @map("shipment_date") // 实际发货日期
+  estimatedArrival DateTime? @map("estimated_arrival") // 预计到达时间
   arrivalDate      DateTime? @map("arrival_date") // 到港日期
   deliveryDate     DateTime? @map("delivery_date") // 收货日期
   completionDate   DateTime? @map("completion_date") // 完成日期
@@ -659,7 +713,6 @@ model FactoryShipmentOrder {
   @@index([createdAt(sort: Desc)], map: "idx_factory_shipment_orders_created")
   // 复合索引优化：支持常见查询模式
   @@index([customerId, status, createdAt(sort: Desc)], map: "idx_factory_shipment_orders_customer_status_date")
-  @@index([status, planDate], map: "idx_factory_shipment_orders_status_plan")
   @@index([status, shipmentDate], map: "idx_factory_shipment_orders_status_shipment")
   @@map("factory_shipment_orders")
 }
@@ -669,7 +722,9 @@ model FactoryShipmentOrderItem {
   id                     String    @id @default(uuid())
   factoryShipmentOrderId String    @map("factory_shipment_order_id")
   productId              String?   @map("product_id") // 产品ID（库存商品时使用）
+  temporaryProductId     String?   @map("temporary_product_id") // 临时商品ID（手动输入商品时使用）
   supplierId             String    @map("supplier_id") // 供应商ID
+  productCode            String    @map("product_code") @db.VarChar(50) // 产品编码（必填）
   quantity               Float // 数量
   unitPrice              Float     @map("unit_price") // 单价
   totalPrice             Float     @map("total_price") // 小计金额
@@ -688,7 +743,7 @@ model FactoryShipmentOrderItem {
   manualUnit          String?  @map("manual_unit")
 
   // 通用字段（用于显示，无论是库存商品还是手动输入商品）
-  displayName   String  @map("display_name") // 显示名称
+  displayName   String  @default("") @map("display_name") // 显示名称（必填，默认空字符串）
   specification String? @db.Text // 规格
   unit          String  @default("piece") // 单位
   weight        Float? // 重量
@@ -700,10 +755,12 @@ model FactoryShipmentOrderItem {
   // 关联关系
   factoryShipmentOrder FactoryShipmentOrder @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: Cascade)
   product              Product?             @relation(fields: [productId], references: [id])
+  temporaryProduct     TemporaryProduct?    @relation("TemporaryProductFactoryShipment", fields: [temporaryProductId], references: [id])
   supplier             Supplier             @relation(fields: [supplierId], references: [id])
 
   @@index([factoryShipmentOrderId], map: "idx_factory_shipment_order_items_order")
   @@index([productId], map: "idx_factory_shipment_order_items_product")
+  @@index([temporaryProductId], map: "idx_factory_shipment_order_items_temp_product")
   @@index([supplierId], map: "idx_factory_shipment_order_items_supplier")
   @@map("factory_shipment_order_items")
 }
