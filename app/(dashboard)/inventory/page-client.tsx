@@ -2,17 +2,17 @@
 
 import { Package, Plus } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
 import { Button } from '@/components/ui/button';
+import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { paginationConfig } from '@/lib/env';
+import { inventoryParamsSchema } from '@/lib/schemas/inventory-params';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
   InventoryListResponse,
@@ -27,6 +27,7 @@ interface InventoryPageClientProps {
 /**
  * 库存管理页面客户端组件
  *
+ * ✅ 重构：使用 useUrlSearchParams Hook 统一管理URL参数
  * ✅ Next.js 15.4 + React 19 最佳实践：
  * 1. Suspense Boundary - 支持 Streaming SSR
  * 2. useTransition - 非阻塞状态更新
@@ -37,103 +38,166 @@ export function InventoryPageClient({
   initialParams,
   categoryOptions,
 }: InventoryPageClientProps) {
-  const router = useRouter();
-  const replace = router.replace;
+  const ctrl = useInventoryController(initialParams);
 
-  // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [categoryId, setCategoryId] = React.useState(
-    initialParams.categoryId || ''
+  return (
+    <InventoryContent
+      categoryOptions={categoryOptions}
+      listData={ctrl.listData}
+      currentQueryParams={ctrl.currentQueryParams}
+      searchValue={ctrl.searchInput}
+      onSearch={ctrl.handleSearch}
+      onFilter={ctrl.handleFilter}
+      onClearFilters={ctrl.handleClearFilters}
+      onPageChange={ctrl.handlePageChange}
+      onNextPageHover={ctrl.handleNextPageHover}
+      onPrevPageHover={ctrl.handlePrevPageHover}
+      isLoading={ctrl.isLoading}
+      isFetching={ctrl.isFetching || ctrl.isSearching}
+      error={ctrl.error}
+    />
   );
-  const [lowStock, setLowStock] = React.useState(
-    initialParams.lowStock || false
-  );
-  const [hasStock, setHasStock] = React.useState(
-    initialParams.hasStock || false
-  );
-  const [sortBy, setSortBy] = React.useState<InventoryQueryParams['sortBy']>(
-    initialParams.sortBy || 'updatedAt'
-  );
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
-  );
-  const [startDate, setStartDate] = React.useState<string | undefined>(
-    initialParams.startDate
-  );
-  const [endDate, setEndDate] = React.useState<string | undefined>(
-    initialParams.endDate
-  );
-  const [limit, setLimit] = React.useState<number>(
-    typeof initialParams.limit === 'number' &&
-      Number.isFinite(initialParams.limit)
-      ? initialParams.limit
-      : 50
-  );
-  const searchRef = React.useRef(search);
-  const limitRef = React.useRef(limit);
+}
 
-  React.useEffect(() => {
-    setSearch(initialParams.search || '');
-    setCategoryId(initialParams.categoryId || '');
-    setLowStock(Boolean(initialParams.lowStock));
-    setHasStock(Boolean(initialParams.hasStock));
-    setSortBy(initialParams.sortBy || 'updatedAt');
-    setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
-    setStartDate(initialParams.startDate);
-    setEndDate(initialParams.endDate);
-    setLimit(current =>
-      typeof initialParams.limit === 'number' &&
-      Number.isFinite(initialParams.limit)
-        ? initialParams.limit
-        : current
-    );
-  }, [initialParams]);
-  React.useEffect(() => {
-    searchRef.current = search;
-  }, [search]);
-  React.useEffect(() => {
-    limitRef.current = limit;
-  }, [limit]);
-
-  // ✅ 使用 ref 存储最新的筛选状态，避免闭包问题
-  const filtersRef = React.useRef({
-    categoryId,
-    lowStock,
-    hasStock,
-    sortBy,
-    sortOrder,
-    startDate,
-    endDate,
+function useInventoryController(initialParams: InventoryQueryParams) {
+  const { params, updateParams } = useUrlSearchParams(inventoryParamsSchema, {
+    basePath: '/inventory',
+    debounceMs: 0,
+    shallow: true,
+    initialParams,
   });
 
-  // ✅ 每次状态变化时更新 ref
-  React.useEffect(() => {
-    filtersRef.current = {
-      categoryId,
-      lowStock,
-      hasStock,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    };
-  }, [categoryId, lowStock, hasStock, sortBy, sortOrder, startDate, endDate]);
+  const { searchInput, isSearching, handleSearch } = useInventorySearch(
+    params.search || '',
+    updateParams
+  );
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    listData,
+    handleNextPageHover,
+    handlePrevPageHover,
+  } = useInventoryData(params);
+  const { handleFilter, handleClearFilters, handlePageChange } =
+    useInventoryFilters(updateParams, params.page);
 
-  // ✅ 获取库存列表数据（从 HydrationBoundary 自动获取服务端预取的数据，无需重复请求）
-  // ✅ 暴露预取方法供分页按钮使用
-  const { data, isLoading, error, prefetchNextPage, prefetchPrevPage } =
-    useOptimizedInventoryQuery({
-      params: initialParams,
-    });
+  const currentQueryParams: InventoryQueryParams = React.useMemo(
+    () => ({
+      search: params.search,
+      categoryId: params.categoryId,
+      lowStock: params.lowStock,
+      hasStock: params.hasStock,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      page: params.page,
+      limit: params.limit,
+    }),
+    [
+      params.search,
+      params.categoryId,
+      params.lowStock,
+      params.hasStock,
+      params.sortBy,
+      params.sortOrder,
+      params.startDate,
+      params.endDate,
+      params.page,
+      params.limit,
+    ]
+  );
+
+  return {
+    params,
+    searchInput,
+    isSearching,
+    data,
+    isLoading,
+    isFetching,
+    error,
+    listData,
+    currentQueryParams,
+    handleSearch,
+    handleFilter,
+    handleClearFilters,
+    handlePageChange,
+    handleNextPageHover,
+    handlePrevPageHover,
+  } as const;
+}
+
+function useInventorySearch(
+  paramsSearch: string,
+  updateParams: (updates: Partial<InventoryQueryParams>) => void
+) {
+  const [searchInput, setSearchInput] = React.useState(paramsSearch);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  React.useEffect(
+    () => () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    },
+    []
+  );
+
+  React.useEffect(() => {
+    // ✅ 修复BUG: 只在URL参数变化时同步本地状态,不在本地输入时触发
+    // 之前的问题: 单字符输入时,因为不创建定时器,useEffect会把输入重置为空
+    // 现在: 只有当paramsSearch变化且与当前输入不同时才更新
+    if ((paramsSearch || '') !== (searchInput || '')) {
+      setSearchInput(paramsSearch || '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only listen to paramsSearch, not searchInput, to prevent input reset bug
+  }, [paramsSearch]); // ✅ 只监听paramsSearch,不监听searchInput
+
+  const handleSearch = React.useCallback(
+    (raw: string) => {
+      const value = raw.trimStart();
+      setSearchInput(value);
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+        setIsSearching(false);
+      }
+      if (value === '') {
+        setIsSearching(false);
+        updateParams({ search: '', page: 1 });
+        return;
+      }
+      if (value.length < 2) {
+        setIsSearching(false);
+        return;
+      }
+      setIsSearching(true);
+      searchTimerRef.current = setTimeout(() => {
+        updateParams({ search: value, page: 1 });
+        setIsSearching(false);
+      }, 180);
+    },
+    [updateParams]
+  );
+
+  return { searchInput, isSearching, handleSearch } as const;
+}
+
+function useInventoryData(params: InventoryQueryParams) {
+  const {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    prefetchNextPage,
+    prefetchPrevPage,
+  } = useOptimizedInventoryQuery({ params });
 
   const normalizedData = React.useMemo<
     InventoryListResponse['data'] | undefined
   >(() => {
     const payload = data?.data;
-    if (!payload) {
-      return undefined;
-    }
-
+    if (!payload) return undefined;
     if (
       typeof (payload as InventoryListResponse['data']).inventories !==
         'undefined' &&
@@ -141,7 +205,6 @@ export function InventoryPageClient({
     ) {
       return payload as InventoryListResponse['data'];
     }
-
     if (
       Object.prototype.hasOwnProperty.call(payload, 'data') ||
       Object.prototype.hasOwnProperty.call(payload, 'pagination')
@@ -151,15 +214,10 @@ export function InventoryPageClient({
         pagination?: InventoryListResponse['data']['pagination'];
       };
       const resolvedLimit =
-        typeof initialParams.limit === 'number' && initialParams.limit > 0
-          ? initialParams.limit
-          : limit > 0
-            ? limit
-            : paginationConfig.defaultPageSize;
-      const resolvedPage =
-        typeof initialParams.page === 'number' && initialParams.page > 0
-          ? initialParams.page
-          : 1;
+        params.limit && params.limit > 0
+          ? params.limit
+          : paginationConfig.defaultPageSize;
+      const resolvedPage = params.page && params.page > 0 ? params.page : 1;
       const fallbackTotal = Array.isArray(legacy.data) ? legacy.data.length : 0;
       const fallbackTotalPages = Math.max(
         1,
@@ -174,15 +232,13 @@ export function InventoryPageClient({
               total: fallbackTotal,
               totalPages: fallbackTotalPages,
             };
-
       return {
         inventories: Array.isArray(legacy.data) ? legacy.data : [],
         pagination: normalizedPagination,
       };
     }
-
     return undefined;
-  }, [data, initialParams.limit, initialParams.page, limit]);
+  }, [data, params.limit, params.page]);
 
   const listData = React.useMemo(
     () => ({
@@ -192,256 +248,112 @@ export function InventoryPageClient({
     [normalizedData]
   );
 
-  // ✅ 防抖更新URL - 只在用户停止输入后才更新URL和触发数据请求
-  const updateURL = React.useCallback(
-    (searchValue: string) => {
-      const filters = filtersRef.current;
-      const params = new URLSearchParams();
-      const trimmedSearch = searchValue.trim();
-
-      if (trimmedSearch) {
-        params.set('search', trimmedSearch);
-      }
-      if (filters.categoryId) {
-        params.set('categoryId', filters.categoryId);
-      }
-      if (filters.lowStock) {
-        params.set('lowStock', 'true');
-      }
-      if (filters.hasStock) {
-        params.set('hasStock', 'true');
-      }
-      if (filters.sortBy) {
-        params.set('sortBy', filters.sortBy);
-      }
-      if (filters.sortOrder) {
-        params.set('sortOrder', filters.sortOrder);
-      }
-      if (filters.startDate) {
-        params.set('startDate', filters.startDate);
-      }
-      if (filters.endDate) {
-        params.set('endDate', filters.endDate);
-      }
-
-      params.set('page', '1');
-
-      const currentLimit = limitRef.current;
-      if (Number.isFinite(currentLimit) && currentLimit > 0) {
-        params.set('limit', currentLimit.toString());
-      }
-
-      replace(`/inventory?${params.toString()}`, { scroll: false });
-    },
-    [replace]
+  const handleNextPageHover = React.useCallback(
+    () => prefetchNextPage(),
+    [prefetchNextPage]
+  );
+  const handlePrevPageHover = React.useCallback(
+    () => prefetchPrevPage(),
+    [prefetchPrevPage]
   );
 
-  const debouncedUpdateURL = useDebouncedCallback(updateURL, 500);
-  const debouncedUpdateURLRef = React.useRef(debouncedUpdateURL);
+  return {
+    data,
+    isLoading,
+    isFetching,
+    error,
+    listData,
+    handleNextPageHover,
+    handlePrevPageHover,
+  } as const;
+}
 
-  React.useEffect(() => {
-    debouncedUpdateURLRef.current = debouncedUpdateURL;
-  }, [debouncedUpdateURL]);
-
-  // ✅ 搜索处理 - 立即更新本地状态（不触发重渲染），防抖更新URL
-  const handleSearch = React.useCallback((value: string) => {
-    setSearch(value);
-    searchRef.current = value;
-    debouncedUpdateURLRef.current(value);
-  }, []);
-
-  // 筛选处理
+function useInventoryFilters(
+  updateParams: (updates: Partial<InventoryQueryParams>) => void,
+  currentPage: number
+) {
   const handleFilter = React.useCallback(
     (
       key: keyof InventoryQueryParams,
       value: string | number | boolean | undefined
     ) => {
-      const nextFilters = { ...filtersRef.current };
-      let nextLimit = limitRef.current;
-
-      const stringValue = typeof value === 'string' ? value.trim() : value;
-
-      if (key === 'categoryId') {
-        const categoryValue =
-          typeof stringValue === 'string' ? stringValue : '';
-        nextFilters.categoryId = categoryValue;
-        setCategoryId(categoryValue);
-      } else if (key === 'lowStock') {
-        const lowStockValue = Boolean(stringValue);
-        nextFilters.lowStock = lowStockValue;
-        setLowStock(lowStockValue);
-        if (lowStockValue) {
-          nextFilters.hasStock = false;
-          setHasStock(false);
-        }
-      } else if (key === 'hasStock') {
-        const hasStockValue = Boolean(stringValue);
-        nextFilters.hasStock = hasStockValue;
-        setHasStock(hasStockValue);
-        if (hasStockValue) {
-          nextFilters.lowStock = false;
-          setLowStock(false);
-        }
-      } else if (key === 'sortBy') {
-        const sortByValue =
-          (stringValue as InventoryQueryParams['sortBy']) || 'updatedAt';
-        nextFilters.sortBy = sortByValue;
-        setSortBy(sortByValue);
-      } else if (key === 'sortOrder') {
-        const sortOrderValue = stringValue === 'asc' ? 'asc' : 'desc';
-        nextFilters.sortOrder = sortOrderValue;
-        setSortOrder(sortOrderValue);
-      } else if (key === 'startDate') {
-        const dateValue =
-          typeof stringValue === 'string' && stringValue.length > 0
-            ? stringValue
-            : undefined;
-        nextFilters.startDate = dateValue;
-        setStartDate(dateValue);
-      } else if (key === 'endDate') {
-        const dateValue =
-          typeof stringValue === 'string' && stringValue.length > 0
-            ? stringValue
-            : undefined;
-        nextFilters.endDate = dateValue;
-        setEndDate(dateValue);
-      } else if (key === 'limit') {
-        const parsed = Number(stringValue);
-        if (Number.isFinite(parsed) && parsed > 0) {
-          nextLimit = parsed;
-        }
-        setLimit(nextLimit);
+      if (key === 'lowStock' && value) {
+        updateParams({ page: 1, lowStock: true, hasStock: false });
+        return;
       }
-
-      const params = new URLSearchParams();
-
-      const searchValue = searchRef.current.trim();
-      if (searchValue) {
-        params.set('search', searchValue);
+      if (key === 'hasStock' && value) {
+        updateParams({ page: 1, hasStock: true, lowStock: false });
+        return;
       }
-      if (nextFilters.categoryId) {
-        params.set('categoryId', nextFilters.categoryId);
-      }
-      if (nextFilters.lowStock) {
-        params.set('lowStock', 'true');
-      }
-      if (nextFilters.hasStock) {
-        params.set('hasStock', 'true');
-      }
-      if (nextFilters.sortBy) {
-        params.set('sortBy', nextFilters.sortBy);
-      }
-      if (nextFilters.sortOrder) {
-        params.set('sortOrder', nextFilters.sortOrder);
-      }
-      if (nextFilters.startDate) {
-        params.set('startDate', nextFilters.startDate);
-      }
-      if (nextFilters.endDate) {
-        params.set('endDate', nextFilters.endDate);
-      }
-
-      params.set('page', '1');
-
-      if (Number.isFinite(nextLimit) && nextLimit > 0) {
-        params.set('limit', nextLimit.toString());
-      }
-
-      filtersRef.current = nextFilters;
-      limitRef.current = nextLimit;
-
-      replace(`/inventory?${params.toString()}`, { scroll: false });
+      const patch = {
+        [key]: value,
+      } as unknown as Partial<InventoryQueryParams>;
+      updateParams({ page: 1, ...patch });
     },
-    [replace]
+    [updateParams]
   );
 
-  // 分页处理
+  const handleClearFilters = React.useCallback(() => {
+    updateParams({
+      categoryId: undefined,
+      lowStock: false,
+      hasStock: false,
+      startDate: undefined,
+      endDate: undefined,
+      page: 1,
+    });
+  }, [updateParams]);
+
   const handlePageChange = React.useCallback(
     (page: number) => {
-      const params = new URLSearchParams();
-      const searchValue = searchRef.current.trim();
-      const currentFilters = filtersRef.current;
-      const currentLimit = limitRef.current;
-
-      if (searchValue) {
-        params.set('search', searchValue);
-      }
-      if (currentFilters.categoryId) {
-        params.set('categoryId', currentFilters.categoryId);
-      }
-      if (currentFilters.lowStock) {
-        params.set('lowStock', 'true');
-      }
-      if (currentFilters.hasStock) {
-        params.set('hasStock', 'true');
-      }
-      if (currentFilters.sortBy) {
-        params.set('sortBy', currentFilters.sortBy);
-      }
-      if (currentFilters.sortOrder) {
-        params.set('sortOrder', currentFilters.sortOrder);
-      }
-      if (currentFilters.startDate) {
-        params.set('startDate', currentFilters.startDate);
-      }
-      if (currentFilters.endDate) {
-        params.set('endDate', currentFilters.endDate);
-      }
-      if (page > 1) {
-        params.set('page', page.toString());
-      }
-      if (Number.isFinite(currentLimit) && currentLimit > 0) {
-        params.set('limit', currentLimit.toString());
-      }
-
-      // ✅ 使用 replace 而不是 push，避免输入框失去焦点
-      replace(`/inventory?${params.toString()}`, { scroll: false });
+      if (page === currentPage) return;
+      updateParams({ page });
     },
-    [replace]
+    [updateParams, currentPage]
   );
 
-  // ✅ hover 预取处理 - 提升用户体验
-  const handleNextPageHover = React.useCallback(() => {
-    prefetchNextPage();
-  }, [prefetchNextPage]);
+  return { handleFilter, handleClearFilters, handlePageChange } as const;
+}
 
-  const handlePrevPageHover = React.useCallback(() => {
-    prefetchPrevPage();
-  }, [prefetchPrevPage]);
-
-  // ✅ 构建当前查询参数（包含本地状态）
-  const currentQueryParams: InventoryQueryParams = React.useMemo(
-    () => ({
-      search,
-      categoryId,
-      lowStock,
-      hasStock,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      page: initialParams.page,
-      limit,
-    }),
-    [
-      search,
-      categoryId,
-      lowStock,
-      hasStock,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      limit,
-      initialParams,
-    ]
-  );
-
-  // ✅ 使用 Suspense 包装，支持 Streaming 和更好的加载体验
+function InventoryContent(props: {
+  categoryOptions: CategoryOption[];
+  listData: {
+    data: InventoryListResponse['data']['inventories'];
+    pagination?: InventoryListResponse['data']['pagination'];
+  };
+  currentQueryParams: InventoryQueryParams;
+  searchValue: string;
+  onSearch: (raw: string) => void;
+  onFilter: (
+    key: keyof InventoryQueryParams,
+    value: string | number | boolean | undefined
+  ) => void;
+  onClearFilters: () => void;
+  onPageChange: (page: number) => void;
+  onNextPageHover: () => void;
+  onPrevPageHover: () => void;
+  isLoading: boolean;
+  isFetching: boolean;
+  error: unknown;
+}) {
+  const {
+    categoryOptions,
+    listData,
+    currentQueryParams,
+    searchValue,
+    onSearch,
+    onFilter,
+    onClearFilters,
+    onPageChange,
+    onNextPageHover,
+    onPrevPageHover,
+    isLoading,
+    isFetching,
+    error,
+  } = props;
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题 */}
         <PageHeader
           title="库存管理"
           description="实时监控库存水平和库存变动"
@@ -460,8 +372,6 @@ export function InventoryPageClient({
             </Button>
           }
         />
-
-        {/* 库存列表 */}
         <Suspense fallback={<InventoryListSkeleton />}>
           {error ? (
             <div className="rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-6 text-center shadow-sm">
@@ -481,12 +391,15 @@ export function InventoryPageClient({
               data={listData}
               categoryOptions={categoryOptions}
               queryParams={currentQueryParams}
-              onSearch={handleSearch}
-              onFilter={handleFilter}
-              onPageChange={handlePageChange}
-              onNextPageHover={handleNextPageHover}
-              onPrevPageHover={handlePrevPageHover}
+              searchValue={searchValue}
+              onSearch={onSearch}
+              onFilter={onFilter}
+              onClearFilters={onClearFilters}
+              onPageChange={onPageChange}
+              onNextPageHover={onNextPageHover}
+              onPrevPageHover={onPrevPageHover}
               isLoading={isLoading}
+              isFetching={isFetching}
             />
           )}
         </Suspense>
