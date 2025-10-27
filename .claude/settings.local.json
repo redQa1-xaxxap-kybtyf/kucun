@@ -165,7 +165,16 @@
       "mcp__serena__find_referencing_symbols",
       "Bash(echo:*)",
       "Bash(sed:*)",
-      "Bash(npx dotenv:*)"
+      "Bash(npx dotenv:*)",
+      "Bash(del:*)",
+      "Bash(test:*)",
+      "Bash(then echo \"✅ .env文件存在\")",
+      "Bash(else echo \"❌ .env文件不存在\")",
+      "Bash(if [ -f .env.local ])",
+      "Bash(then echo \"=== .env.local ===\")",
+      "Bash(if [ -f .env.development ])",
+      "Bash(then echo \"=== .env.development ===\")",
+      "mcp__serena__initial_instructions"
     ],
     "deny": [],
     "ask": []

@@ -33,10 +33,62 @@
       - “移除了Z冗余设计，遵循YAGNI原则。”
     - 重点关注[项目类型，例如：代码质量优化 / 架构重构 / 功能增强 / 用户体验提升 / 性能调优 / 可维护性改善 / Bug修复]的具体实现细节。
 
-4.  **总结、反思与展望（汇报阶段）：**
-    - 提供一个清晰、结构化且包含**实际代码/设计变动建议（如果适用）**的总结报告。
-    - 报告中必须包含：
-      - **本次迭代已完成的核心任务**及其具体成果。
-      - **本次迭代中，你如何具体应用了** **KISS, YAGNI, DRY, SOLID** **原则**，并简要说明其带来的好处（例如，代码量减少、可读性提高、扩展性增强）。
-      - **遇到的挑战**以及如何克服。
-      - **下一步的明确计划和建议。**
+4.  **总结、反思与展望（汇报阶段）：** - 提供一个清晰、结构化且包含**实际代码/设计变动建议（如果适用）**的总结报告。- 报告中必须包含：- **本次迭代已完成的核心任务**及其具体成果。- **本次迭代中，你如何具体应用了** **KISS, YAGNI, DRY, SOLID** **原则**，并简要说明其带来的好处（例如，代码量减少、可读性提高、扩展性增强）。- **遇到的挑战**以及如何克服。- **下一步的明确计划和建议。**
+    ESLint规范遵循指南
+
+> 确保代码提交时不出错的完整指南
+
+## 🚨 当前主要问题
+
+根据ESLint检查结果，项目存在以下主要问题：
+
+### 1. TypeScript类型问题
+
+```typescript
+// ❌ 错误：使用any类型
+function process(data: any) {}
+
+// ✅ 正确：明确类型定义
+function process(data: UserData) {}
+function process<T>(data: T): T {}
+```
+
+### 2. 非空断言问题
+
+```typescript
+// ❌ 错误：使用非空断言
+const user = getUser()!;
+const name = user.name!;
+
+// ✅ 正确：安全的空值检查
+const user = getUser();
+if (user) {
+  const name = user.name || '默认名称';
+}
+```
+
+### 3. 导入顺序问题
+
+```typescript
+// ❌ 错误：导入顺序混乱
+import { Button } from '@/components/ui/button';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+// ✅ 正确：按规定顺序导入
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+
+import { Button } from '@/components/ui/button';
+```
+
+### 4. 文件长度问题
+
+```typescript
+// ❌ 错误：文件超过300行
+// 函数超过50行
+
+// ✅ 正确：拆分为多个文件/函数
+// 每个文件不超过300行
+// 每个函数不超过50行
+```

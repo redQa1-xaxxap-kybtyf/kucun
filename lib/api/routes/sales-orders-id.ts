@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import { ApiError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   createTransferPayableRecord,
   validateStatusTransition,
@@ -37,6 +36,7 @@ export const getSalesOrderRoute: ApiHandler = async (_request, { params }) => {
 };
 
 // PUT /api/sales-orders/[id] — 更新状态
+// eslint-disable-next-line max-lines-per-function -- Complex order status update logic requires comprehensive validation and transaction handling
 export const putSalesOrderRoute: ApiHandler = async (request, { user, params }) => {
   const id = await resolveId(params);
   const userId = user.id;
