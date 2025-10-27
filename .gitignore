@@ -108,3 +108,15 @@ jest-output.txt
 *.new.jsx
 *.new.js
 patch.diff
+
+# Playwright MCP 测试文件和工具缓存
+.playwright-mcp/*.png
+.playwright-mcp/.playwright-mcp/
+
+# 临时脚本和补丁
+temp-*.py
+temp_*.diff
+
+# AI工具配置和记忆
+.gemini/
+.serena/memories/
