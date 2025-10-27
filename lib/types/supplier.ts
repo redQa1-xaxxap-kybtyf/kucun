@@ -8,6 +8,7 @@ export type SupplierStatus = 'active' | 'inactive';
 export interface Supplier {
   id: string;
   name: string;
+  supplierCode?: string | null;
   phone?: string;
   address?: string;
   status: SupplierStatus;

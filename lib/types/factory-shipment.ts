@@ -2,16 +2,15 @@
 // 遵循 TypeScript 严格模式，禁用 any 类型
 
 // 厂家发货订单状态枚举
+// 状态流程: 草稿 → 已确认 → 待发货 → 已发货 → 运输中 → 到港 → 已取消
 export const FACTORY_SHIPMENT_STATUS = {
-  DRAFT: 'draft', // 草稿（用户报货）
-  PLANNING: 'planning', // 计划中（我们做计划）
-  WAITING_DEPOSIT: 'waiting_deposit', // 待定金（等待用户交定金）
-  DEPOSIT_PAID: 'deposit_paid', // 已付定金（定金已收）
-  FACTORY_SHIPPED: 'factory_shipped', // 工厂发货（确认发货）
-  IN_TRANSIT: 'in_transit', // 运输中（集装箱到港前）
-  ARRIVED: 'arrived', // 到港（集装箱到港）
-  DELIVERED: 'delivered', // 已收货（确认用户收货）
-  COMPLETED: 'completed', // 已完成（货款付完）
+  DRAFT: 'draft', // 草稿 - 订单创建但未提交
+  CONFIRMED: 'confirmed', // 已确认 - 订单已确认，准备发货
+  PENDING_SHIPMENT: 'pending_shipment', // 待发货 - 等待发货
+  SHIPPED: 'shipped', // 已发货 - 已从工厂发货
+  IN_TRANSIT: 'in_transit', // 运输中 - 货物在运输途中
+  ARRIVED: 'arrived', // 到港 - 货物已到达港口
+  CANCELLED: 'cancelled', // 已取消 - 订单已取消
 } as const;
 
 export type FactoryShipmentStatus =
@@ -38,14 +37,12 @@ export const FACTORY_SHIPMENT_STATUS_LABELS: Record<
   string
 > = {
   [FACTORY_SHIPMENT_STATUS.DRAFT]: '草稿',
-  [FACTORY_SHIPMENT_STATUS.PLANNING]: '计划中',
-  [FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT]: '待定金',
-  [FACTORY_SHIPMENT_STATUS.DEPOSIT_PAID]: '已付定金',
-  [FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED]: '工厂发货',
+  [FACTORY_SHIPMENT_STATUS.CONFIRMED]: '已确认',
+  [FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT]: '待发货',
+  [FACTORY_SHIPMENT_STATUS.SHIPPED]: '已发货',
   [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: '运输中',
   [FACTORY_SHIPMENT_STATUS.ARRIVED]: '到港',
-  [FACTORY_SHIPMENT_STATUS.DELIVERED]: '已收货',
-  [FACTORY_SHIPMENT_STATUS.COMPLETED]: '已完成',
+  [FACTORY_SHIPMENT_STATUS.CANCELLED]: '已取消',
 };
 
 // 厂家发货订单状态变体映射（用于Badge组件）
@@ -59,15 +56,13 @@ export const FACTORY_SHIPMENT_STATUS_VARIANTS: Record<
   | 'warning'
   | 'info'
 > = {
-  [FACTORY_SHIPMENT_STATUS.DRAFT]: 'outline',
-  [FACTORY_SHIPMENT_STATUS.PLANNING]: 'secondary',
-  [FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT]: 'warning',
-  [FACTORY_SHIPMENT_STATUS.DEPOSIT_PAID]: 'info',
-  [FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED]: 'info',
-  [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: 'info',
-  [FACTORY_SHIPMENT_STATUS.ARRIVED]: 'secondary',
-  [FACTORY_SHIPMENT_STATUS.DELIVERED]: 'success',
-  [FACTORY_SHIPMENT_STATUS.COMPLETED]: 'success',
+  [FACTORY_SHIPMENT_STATUS.DRAFT]: 'outline', // 草稿 - 灰色边框
+  [FACTORY_SHIPMENT_STATUS.CONFIRMED]: 'success', // 已确认 - 绿色
+  [FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT]: 'secondary', // 待发货 - 灰色
+  [FACTORY_SHIPMENT_STATUS.SHIPPED]: 'info', // 已发货 - 蓝色
+  [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: 'info', // 运输中 - 蓝色
+  [FACTORY_SHIPMENT_STATUS.ARRIVED]: 'success', // 到港 - 绿色
+  [FACTORY_SHIPMENT_STATUS.CANCELLED]: 'destructive', // 已取消 - 红色
 };
 
 // 厂家发货订单明细项
@@ -76,6 +71,7 @@ export interface FactoryShipmentOrderItem {
   factoryShipmentOrderId: string;
   productId?: string;
   supplierId: string;
+  productCode: string; // 产品编码（必填）
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -96,7 +92,7 @@ export interface FactoryShipmentOrderItem {
   manualUnit?: string;
 
   // 通用显示字段
-  displayName: string;
+  displayName: string; // 产品名称（必填）
   specification?: string;
   unit: string;
   weight?: number;
@@ -139,8 +135,9 @@ export interface FactoryShipmentOrder {
   depositAmount: number;
   paidAmount: number;
   remarks?: string;
-  planDate?: Date;
+  shippingCompany?: string;
   shipmentDate?: Date;
+  estimatedArrival?: Date;
   arrivalDate?: Date;
   deliveryDate?: Date;
   completionDate?: Date;
@@ -171,7 +168,6 @@ export interface CreateFactoryShipmentOrderData {
   receivableAmount?: number;
   depositAmount?: number;
   remarks?: string;
-  planDate?: Date;
   items: CreateFactoryShipmentOrderItemData[];
 }
 
@@ -179,6 +175,7 @@ export interface CreateFactoryShipmentOrderData {
 export interface CreateFactoryShipmentOrderItemData {
   productId?: string;
   supplierId: string;
+  productCode: string; // 产品编码（必填）
   quantity: number;
   unitPrice: number;
   ownership: FactoryShipmentItemOwnership;
@@ -194,7 +191,7 @@ export interface CreateFactoryShipmentOrderItemData {
   manualUnit?: string;
 
   // 通用显示字段
-  displayName: string;
+  displayName: string; // 产品名称（必填）
   specification?: string;
   unit: string;
   weight?: number;
@@ -212,7 +209,6 @@ export interface UpdateFactoryShipmentOrderData {
   depositAmount?: number;
   paidAmount?: number;
   remarks?: string;
-  planDate?: Date;
   shipmentDate?: Date;
   arrivalDate?: Date;
   deliveryDate?: Date;

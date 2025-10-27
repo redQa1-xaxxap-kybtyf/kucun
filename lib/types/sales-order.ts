@@ -178,6 +178,7 @@ export interface SalesOrderUpdateInput {
 // 销售订单明细创建输入类型
 export interface SalesOrderItemCreateInput {
   productId?: string; // 可选：手动输入商品时不需要 productId
+  variantId?: string; // 产品变体ID
   productCode?: string;
   batchNumber?: string;
   colorCode?: string;
