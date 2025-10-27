@@ -1,0 +1,1862 @@
+'use client';
+
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ArrowLeft,
+  DollarSign,
+  Download,
+  Edit,
+  MoreHorizontal,
+  Printer,
+  Receipt,
+  ShoppingCart,
+  Truck,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import { ContentLoading } from '@/components/common/loading';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
+import {
+  RETURN_ORDER_STATUS_LABELS,
+  RETURN_ORDER_STATUS_VARIANTS,
+  type ReturnOrderStatus,
+} from '@/lib/types/return-order';
+import {
+  SALES_ORDER_STATUS_LABELS,
+  TRANSFER_MODE_LABELS,
+} from '@/lib/types/sales-order';
+import { FEE_TYPE_LABELS } from '@/lib/types/sales-order-fee';
+import { formatCurrency } from '@/lib/utils';
+import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
+import { getErrorMessage } from '@/lib/utils/error-handler';
+
+interface PaymentRecord {
+  id: string;
+  paymentNumber: string;
+  paymentAmount: number;
+  actualPaymentAmount: number; // ✅ 新增: 实际到账金额
+  roundingAmount: number; // ✅ 新增: 收款抹零金额
+  paymentMethod: string;
+  paymentDate: string;
+  status: string;
+  remarks?: string;
+  createdAt: string;
+}
+
+interface SalesOrderDetail {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  userId: string;
+  supplierId?: string;
+  status: string;
+  orderType: string;
+  transferMode: string;
+  itemsAmount: number;
+  additionalFees: number;
+  roundingAdjustment: number;
+  totalAmount: number;
+  costAmount: number;
+  profitAmount: number;
+  actualPaidAmount: number; // ✅ 新增: 实际到账金额
+  paymentRounding: number; // ✅ 新增: 收款抹零金额
+  paidAmount: number; // 等效已收款
+  remainingAmount: number;
+  remarks?: string;
+  shippedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  hasReturnOrder?: boolean;
+  customer: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+  user: {
+    id: string;
+    name: string;
+  };
+  supplier?: {
+    id: string;
+    name: string;
+  };
+  items: Array<{
+    id: string;
+    productId: string;
+    productCode?: string;
+    batchNumber?: string;
+    colorCode?: string;
+    productionDate?: string;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+    unitCost?: number;
+    costSubtotal?: number;
+    profitAmount?: number;
+    localQuantity?: number;
+    transferQuantity?: number;
+    isManualProduct: boolean;
+    manualProductName?: string;
+    manualSpecification?: string;
+    manualWeight?: number;
+    manualUnit?: string;
+    displayUnit?: string;
+    displayQuantity?: number;
+    piecesPerUnit?: number;
+    specification?: string;
+    remarks?: string;
+    product?: {
+      id: string;
+      code: string;
+      name: string;
+      unit: string;
+      specification?: string;
+      piecesPerUnit?: number;
+      weight?: number;
+    };
+  }>;
+  feeItems: Array<{
+    id: string;
+    feeType: string;
+    feeName: string;
+    feeAmount: number;
+    remarks?: string;
+  }>;
+  returnOrders?: Array<{
+    id: string;
+    returnNumber: string;
+    status: string;
+    createdAt: string;
+  }>;
+  paymentRecords: PaymentRecord[];
+}
+
+async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
+  const response = await fetch(`/api/sales-orders/${id}`, {
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    try {
+      const errorResult = await response.json();
+      if (errorResult?.error) {
+        throw new Error(errorResult.error);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+    }
+    throw new Error('获取销售订单详情失败');
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || '获取销售订单详情失败');
+  }
+
+  return result.data;
+}
+
+function formatDecimal(value: number | undefined | null): string {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return '-';
+  }
+  if (Number.isInteger(value)) {
+    return value.toString();
+  }
+  return value.toFixed(4).replace(/(?:\.0+|(\.\d+?)0+)$/, '$1');
+}
+
+/**
+ * 格式化数量显示，优先使用录入时的显示数量
+ */
+function formatQuantityDisplay(item: SalesOrderDetail['items'][0]): string {
+  const value =
+    typeof item.displayQuantity === 'number'
+      ? item.displayQuantity
+      : item.quantity;
+
+  return formatDecimal(value);
+}
+
+function formatPiecesBreakdown(
+  item: SalesOrderDetail['items'][0]
+): string | null {
+  const quantity = item.quantity;
+  const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
+
+  if (typeof quantity !== 'number' || Number.isNaN(quantity)) {
+    return null;
+  }
+
+  if (!piecesPerUnit || piecesPerUnit <= 1) {
+    // 如果没有件/片换算，则直接返回片数
+    return `${formatDecimal(quantity)}片`;
+  }
+
+  const fullUnits = Math.floor(quantity / piecesPerUnit);
+  const remainder = quantity % piecesPerUnit;
+
+  if (remainder === 0) {
+    return `${fullUnits}件`;
+  }
+
+  if (fullUnits === 0) {
+    return `${remainder}片`;
+  }
+
+  return `${fullUnits}件${remainder}片`;
+}
+
+function resolveUnitLabel(item: SalesOrderDetail['items'][0]): string {
+  if (typeof item.displayUnit === 'string' && item.displayUnit.trim()) {
+    return item.displayUnit.trim();
+  }
+
+  if (
+    item.isManualProduct &&
+    typeof item.manualUnit === 'string' &&
+    item.manualUnit.trim()
+  ) {
+    return item.manualUnit.trim();
+  }
+
+  if (item.product?.unit) {
+    return item.product.unit;
+  }
+
+  return '片';
+}
+
+export default function SalesOrderDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useQuery<SalesOrderDetail>({
+    queryKey: queryKeys.salesOrders.detail(id),
+    queryFn: () => fetchSalesOrderDetail(id),
+    enabled: !!id,
+  });
+
+  // 更新订单状态
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+
+      try {
+        const response = await fetch(`/api/sales-orders/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: newStatus,
+            idempotencyKey: crypto.randomUUID(),
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          let errorMessage = '更新订单状态失败';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            // JSON解析失败，使用默认错误消息
+          }
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || '更新订单状态失败');
+        }
+
+        return result;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('操作超时，请重试');
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.lists(),
+      });
+      toast({
+        title: '操作成功',
+        description: '订单状态已更新',
+      });
+      setIsUpdatingStatus(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '操作失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsUpdatingStatus(false);
+    },
+    onSettled: () => {
+      // 确保无论成功还是失败都重置状态
+      setIsUpdatingStatus(false);
+    },
+  });
+
+  // 确认发货
+  const handleConfirmShipment = () => {
+    if (order?.status !== 'confirmed') {
+      toast({
+        title: '操作失败',
+        description: '只有已确认的订单才能发货',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    updateStatusMutation.mutate('shipped');
+  };
+
+  if (isLoading) {
+    return <ContentLoading />;
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        title="加载失败"
+        message={getErrorMessage(error)}
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  if (!order) {
+    return (
+      <ErrorMessage
+        title="订单不存在"
+        message="未找到指定的销售订单"
+        onRetry={() => router.push('/sales-orders')}
+      />
+    );
+  }
+
+  const isReturnOrderStatus = (value: unknown): value is ReturnOrderStatus =>
+    typeof value === 'string' && value in RETURN_ORDER_STATUS_LABELS;
+
+  const getOrderTypeBadge = (orderType: string) =>
+    orderType === 'TRANSFER' ? (
+      <Badge variant="secondary">调货销售</Badge>
+    ) : (
+      <Badge variant="outline">正常销售</Badge>
+    );
+  const getTransferModeBadge = (mode: string | undefined) => {
+    const label =
+      mode === 'MIXED'
+        ? TRANSFER_MODE_LABELS.MIXED
+        : TRANSFER_MODE_LABELS.SUPPLIER_ONLY;
+
+    return mode === 'MIXED' ? (
+      <Badge
+        variant="outline"
+        className="border-sky-200 bg-sky-50 text-sky-700"
+      >
+        {label}
+      </Badge>
+    ) : (
+      <Badge
+        variant="outline"
+        className="border-amber-200 bg-amber-50 text-amber-700"
+      >
+        {label}
+      </Badge>
+    );
+  };
+
+  const orderItems = order.items ?? [];
+  const relatedReturnOrders = order.returnOrders ?? [];
+  const customerName = order.customer?.name ?? '未关联客户';
+  const customerPhone = order.customer?.phone ?? '-';
+  const userName = order.user?.name ?? '-';
+
+  const totalDisplayQuantity = orderItems.reduce(
+    (sum, item) =>
+      sum +
+      (typeof item.displayQuantity === 'number'
+        ? item.displayQuantity
+        : item.quantity || 0),
+    0
+  );
+  const totalLocalQuantity = orderItems.reduce(
+    (sum, item) => sum + (item.localQuantity ?? 0),
+    0
+  );
+  const totalTransferQuantity = orderItems.reduce(
+    (sum, item) => sum + (item.transferQuantity ?? 0),
+    0
+  );
+  // 计算产品小计（不含额外费用）
+  const productSubtotal = orderItems.reduce(
+    (sum, item) => sum + (item.subtotal || 0),
+    0
+  );
+
+  // 计算调货部分的销售额（用于毛利率计算）
+  const transferSalesAmount = orderItems.reduce((sum, item) => {
+    const transferQty = item.transferQuantity ?? 0;
+    const totalQty = item.quantity || 1;
+    const transferRatio = totalQty > 0 ? transferQty / totalQty : 0;
+    return sum + (item.subtotal || 0) * transferRatio;
+  }, 0);
+
+  // 计算纯调货毛利（排除本地发货收入）
+  const pureTransferProfit = transferSalesAmount - (order.costAmount || 0);
+
+  const canEditOrder = order.status === 'draft';
+  const canDeleteOrder = canEditOrder;
+
+  return (
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 - 使用标准风格 */}
+        <Card
+          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-lg">
+                  <ShoppingCart className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                    销售订单详情
+                  </h1>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                    <span className="font-medium">
+                      订单号：{order.orderNumber}
+                    </span>
+                    <Badge
+                      variant={getSalesOrderStatusBadgeVariant(order.status)}
+                    >
+                      {SALES_ORDER_STATUS_LABELS[
+                        order.status as keyof typeof SALES_ORDER_STATUS_LABELS
+                      ] || order.status}
+                    </Badge>
+                    {getOrderTypeBadge(order.orderType)}
+                    {order.orderType === 'TRANSFER' &&
+                      getTransferModeBadge(order.transferMode)}
+                  </div>
+                  {order.returnOrders && order.returnOrders.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <span className="font-medium">关联退货单：</span>
+                      {order.returnOrders.map(returnOrder => (
+                        <Button
+                          key={returnOrder.id}
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-[hsl(var(--color-primary))]"
+                          onClick={() =>
+                            router.push(`/return-orders/${returnOrder.id}`)
+                          }
+                        >
+                          {returnOrder.returnNumber}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.back()}
+                  className="h-11"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => {
+                    if (canEditOrder) {
+                      router.push(`/sales-orders/${id}/edit`);
+                    } else {
+                      alert('只有草稿状态的订单才能编辑');
+                    }
+                  }}
+                  disabled={!canEditOrder}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  编辑
+                </Button>
+                {order.status === 'confirmed' && (
+                  <Button
+                    variant="default"
+                    size="lg"
+                    onClick={handleConfirmShipment}
+                    disabled={isUpdatingStatus}
+                    className="bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-dark))]"
+                  >
+                    <Truck className="mr-2 h-4 w-4" />
+                    {isUpdatingStatus ? '处理中...' : '确认发货'}
+                  </Button>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="lg">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Printer className="mr-2 h-4 w-4" />
+                      打印订单
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Download className="mr-2 h-4 w-4" />
+                      导出订单
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>复制订单</DropdownMenuItem>
+                    {canDeleteOrder && (
+                      <DropdownMenuItem className="text-[hsl(var(--color-error))]">
+                        删除订单
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 调货销售模式说明卡片 */}
+        {order.orderType === 'TRANSFER' && (
+          <Card className="border-l-4 border-amber-500 bg-gradient-to-r from-amber-50 to-orange-50">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500">
+                  <Truck className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="mb-2 flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-amber-900">
+                      调货销售订单
+                    </h3>
+                    {getTransferModeBadge(order.transferMode)}
+                  </div>
+                  <div className="space-y-1 text-xs text-amber-800">
+                    {order.transferMode === 'MIXED' ? (
+                      <>
+                        <p className="flex items-center gap-1.5">
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">✓</span>
+                          <span><strong>混合发货模式:</strong> 部分商品从本地仓库发货,部分由供应商直接发货</span>
+                        </p>
+                        <p className="ml-5.5 text-amber-700">供应商: <strong>{order.supplier?.name}</strong></p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="flex items-center gap-1.5">
+                          <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white">!</span>
+                          <span><strong>纯调货模式:</strong> 所有商品均由供应商直接发货</span>
+                        </p>
+                        <p className="ml-5.5 text-amber-700">供应商: <strong>{order.supplier?.name}</strong></p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 金额统计卡片 - 顶部突出显示 */}
+        <div
+          className={`grid gap-4 md:grid-cols-2 ${order.roundingAdjustment !== 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+        >
+          <Card
+            className="border border-[hsl(var(--color-border-primary))]"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
+            <CardContent className="p-4">
+              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                订单总金额
+              </div>
+              <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-primary))]">
+                {formatCurrency(order.totalAmount)}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ✅ 订单抹零金额卡片(只在有订单抹零时显示) */}
+          {order.roundingAdjustment !== 0 && (
+            <Card
+              className="border border-orange-200 bg-orange-50/50"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <CardContent className="p-4">
+                <div className="text-xs font-medium text-gray-600">
+                  订单抹零
+                </div>
+                <div className="mt-2 text-2xl font-bold text-orange-600">
+                  -{formatCurrency(Math.abs(order.roundingAdjustment))}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  订单创建时设定
+                  {order.roundingAdjustment > 0 ? '(加价)' : '(减价)'}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ✅ 收款差额金额卡片(只在有收款差额时显示) */}
+          {order.paymentRounding !== 0 && (
+            <Card
+              className="border border-purple-200 bg-purple-50/50"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <CardContent className="p-4">
+                <div className="text-xs font-medium text-gray-600">
+                  收款差额
+                </div>
+                <div className="mt-2 text-2xl font-bold text-purple-600">
+                  {order.paymentRounding > 0 ? '+' : '-'}
+                  {formatCurrency(Math.abs(order.paymentRounding))}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  {order.paymentRounding > 0 ? '少收/优惠' : '多收'}
+                  （四舍五入等）
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card
+            className="border border-green-200 bg-green-50/50"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
+            <CardContent className="p-4">
+              <div className="text-xs font-medium text-gray-600">已收金额</div>
+              <div className="mt-2 text-2xl font-bold text-green-600">
+                {formatCurrency(order.actualPaidAmount)}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                实际到账{' '}
+                {
+                  order.paymentRecords.filter(r => r.status === 'confirmed')
+                    .length
+                }{' '}
+                笔
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border border-orange-200 bg-orange-50/50"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
+            <CardContent className="p-4">
+              <div className="text-xs font-medium text-gray-600">待收金额</div>
+              <div className="mt-2 text-2xl font-bold text-orange-600">
+                {formatCurrency(order.remainingAmount)}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {order.remainingAmount > 0 ? '未完成收款' : '已全部收款'}
+              </div>
+            </CardContent>
+          </Card>
+
+          {order.orderType === 'TRANSFER' && (
+            <Card
+              className="border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <CardContent className="p-4">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                  调货毛利
+                </div>
+                <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-success))]">
+                  {formatCurrency(pureTransferProfit)}
+                </div>
+                <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+                  毛利率：
+                  {transferSalesAmount > 0
+                    ? ((pureTransferProfit / transferSalesAmount) * 100).toFixed(
+                        1
+                      )
+                    : '0.0'}
+                  %
+                </div>
+                {order.transferMode === 'MIXED' && (
+                  <div className="mt-2 text-[10px] text-amber-600">
+                    注: 仅计算调货部分，不含本地发货收入
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* 基本信息 */}
+          <div className="space-y-4 lg:col-span-2">
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
+                  <ShoppingCart className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                  基本信息
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      客户名称
+                    </div>
+                    <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
+                      {customerName}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      客户电话
+                    </div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {customerPhone}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      订单状态
+                    </div>
+                    <div className="mt-2">
+                      <Badge
+                        variant={getSalesOrderStatusBadgeVariant(order.status)}
+                        className="text-xs"
+                      >
+                        {SALES_ORDER_STATUS_LABELS[
+                          order.status as keyof typeof SALES_ORDER_STATUS_LABELS
+                        ] || order.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      订单类型
+                    </div>
+                    <div className="mt-2 space-y-1">
+                      {getOrderTypeBadge(order.orderType)}
+                      {order.orderType === 'TRANSFER' && (
+                        <div>{getTransferModeBadge(order.transferMode)}</div>
+                      )}
+                    </div>
+                  </div>
+                  {order.supplier && (
+                    <div>
+                      <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        供应商
+                      </div>
+                      <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        {order.supplier.name}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      创建人
+                    </div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {userName}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      创建时间
+                    </div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {formatDateTime(order.createdAt)}
+                    </div>
+                  </div>
+                  {order.shippedAt && (
+                    <div>
+                      <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        发货时间
+                      </div>
+                      <div className="mt-2 text-sm font-medium text-[hsl(var(--color-primary))]">
+                        {formatDateTime(order.shippedAt)}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      更新时间
+                    </div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {formatDateTime(order.updatedAt)}
+                    </div>
+                  </div>
+                </div>
+                {order.remarks && (
+                  <div className="mt-4 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-4">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      备注信息
+                    </div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {order.remarks}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {relatedReturnOrders.length > 0 && (
+              <Card
+                className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+                style={{ boxShadow: 'var(--shadow-medium)' }}
+              >
+                <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                  <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
+                    <Receipt className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                    关联退货单
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] text-xs text-[hsl(var(--color-text-secondary))]">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium">
+                            退货单号
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            状态
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            创建时间
+                          </th>
+                          <th className="px-4 py-3 text-center font-medium">
+                            操作
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
+                        {relatedReturnOrders.map(returnOrder => {
+                          const status = isReturnOrderStatus(returnOrder.status)
+                            ? returnOrder.status
+                            : 'draft';
+
+                          return (
+                            <tr
+                              key={returnOrder.id}
+                              className="text-[hsl(var(--color-text-primary))]"
+                            >
+                              <td className="px-4 py-3 font-mono text-[hsl(var(--color-primary))]">
+                                {returnOrder.returnNumber}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge
+                                  variant={
+                                    RETURN_ORDER_STATUS_VARIANTS[status] ??
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {RETURN_ORDER_STATUS_LABELS[status] ?? status}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
+                                {formatDate(returnOrder.createdAt)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="px-0 text-[hsl(var(--color-primary))]"
+                                  onClick={() =>
+                                    router.push(
+                                      `/return-orders/${returnOrder.id}`
+                                    )
+                                  }
+                                >
+                                  查看详情
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* 订单明细 */}
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+                    <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))] shadow-sm">
+                      <ShoppingCart className="h-5 w-5 text-white" />
+                    </div>
+                    订单明细
+                  </CardTitle>
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white px-3 py-1.5">
+                      <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        产品种类
+                      </span>
+                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                        {orderItems.length}
+                      </span>
+                    </div>
+                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white px-3 py-1.5">
+                      <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        总数量
+                      </span>
+                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                        {formatDecimal(totalDisplayQuantity)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+                {/* ERP风格表格 */}
+                <div className="overflow-x-auto rounded-b-xl border-t border-[hsl(var(--color-border-secondary))]">
+                  <table className="w-full text-sm text-[hsl(var(--color-text-secondary))]">
+                    <thead className="sticky top-0 z-10 border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-b from-white to-[hsl(var(--color-bg-secondary))] text-xs font-semibold text-[hsl(var(--color-text-secondary))] shadow-sm">
+                      <tr>
+                        <th className="px-3 py-3.5 text-left font-medium whitespace-nowrap">
+                          产品编码
+                        </th>
+                        <th className="px-3 py-3.5 text-left font-medium whitespace-nowrap">
+                          产品名称
+                        </th>
+                        <th className="px-3 py-3.5 text-left font-medium whitespace-nowrap">
+                          规格
+                        </th>
+                        {order.orderType !== 'TRANSFER' && (
+                          <th className="px-3 py-3.5 text-center font-medium whitespace-nowrap">
+                            批次/日期
+                          </th>
+                        )}
+                        <th className="min-w-[90px] px-3 py-3.5 text-center font-medium whitespace-nowrap">
+                          每件片数
+                        </th>
+                        <th className="px-3 py-3.5 text-center font-medium whitespace-nowrap">
+                          单位
+                        </th>
+                        <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                          数量
+                        </th>
+                        {order.orderType === 'TRANSFER' && (
+                          <>
+                            <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                              本地发货
+                            </th>
+                            <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                              调货发货
+                            </th>
+                          </>
+                        )}
+                        <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                          单价
+                        </th>
+                        <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                          小计
+                        </th>
+                        {order.orderType === 'TRANSFER' && (
+                          <>
+                            <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                              单位成本
+                            </th>
+                            <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                              成本小计
+                            </th>
+                            <th className="px-3 py-3.5 text-right font-medium whitespace-nowrap">
+                              毛利
+                            </th>
+                          </>
+                        )}
+                        <th className="px-3 py-3.5 text-left font-medium whitespace-nowrap">
+                          备注
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]/60 bg-white text-[hsl(var(--color-text-primary))]">
+                      {orderItems.map((item, index) => {
+                        const unitLabel = resolveUnitLabel(item);
+                        const quantityDisplay = formatQuantityDisplay(item);
+                        const piecesPerUnitDisplay =
+                          item.piecesPerUnit ?? item.product?.piecesPerUnit;
+
+                        const remarkParts: string[] = [];
+                        const piecesBreakdown = formatPiecesBreakdown(item);
+                        if (piecesBreakdown) {
+                          remarkParts.push(piecesBreakdown);
+                        }
+                        const manualRemark =
+                          typeof item.remarks === 'string'
+                            ? item.remarks.trim()
+                            : '';
+                        if (manualRemark && manualRemark !== piecesBreakdown) {
+                          remarkParts.push(manualRemark);
+                        }
+                        if (typeof item.manualWeight === 'number') {
+                          remarkParts.push(
+                            `重量：${formatDecimal(item.manualWeight)}${
+                              item.manualUnit ? item.manualUnit : ''
+                            }`
+                          );
+                        }
+                        const remarkText =
+                          remarkParts.length > 0 ? remarkParts.join('；') : '-';
+                        const specificationText = item.isManualProduct
+                          ? item.manualSpecification ||
+                            item.specification ||
+                            '-'
+                          : item.specification ||
+                            item.product?.specification ||
+                            '-';
+                        const manualName =
+                          typeof item.manualProductName === 'string'
+                            ? item.manualProductName.trim()
+                            : '';
+                        const manualCode =
+                          typeof item.productCode === 'string'
+                            ? item.productCode.trim()
+                            : '';
+                        const displayProductName = item.isManualProduct
+                          ? manualName || manualCode || '临时商品'
+                          : item.product?.name || '-';
+                        const displayProductCode = item.isManualProduct
+                          ? manualCode || '-'
+                          : item.product?.code || '-';
+                        const localQuantityDisplay = formatDecimal(item.localQuantity ?? 0);
+                        const transferQuantityDisplay = formatDecimal(item.transferQuantity ?? 0);
+
+                        return (
+                          <tr
+                            key={item.id}
+                            className="group transition-colors duration-200 hover:bg-[hsl(var(--color-bg-secondary))]"
+                          >
+                            {/* 产品编码 */}
+                            <td className="px-3 py-3.5 align-top whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-100 text-xs font-semibold text-blue-700 group-hover:bg-blue-200">
+                                  {index + 1}
+                                </div>
+                                <span className="font-mono text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                                  {displayProductCode}
+                                </span>
+                                {item.isManualProduct && (
+                                  <span className="rounded border border-orange-300 bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">
+                                    临时
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            {/* 产品名称 */}
+                            <td className="px-3 py-3.5 align-top whitespace-nowrap">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                                {displayProductName}
+                              </span>
+                            </td>
+                            {/* 规格 */}
+                            <td className="px-3 py-3.5 align-top whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                                  {specificationText}
+                                </span>
+                                {item.colorCode && (
+                                  <span className="inline-flex items-center gap-1 rounded bg-orange-50 px-1.5 py-0.5 text-[11px] text-orange-700">
+                                    <div className="h-2 w-2 rounded-full bg-orange-400"></div>
+                                    {item.colorCode}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            {/* 批次/日期 - 仅非调货订单显示 */}
+                            {order.orderType !== 'TRANSFER' && (
+                              <td className="px-3 py-3.5 text-center align-top whitespace-nowrap">
+                                <div className="inline-flex flex-col items-center gap-1">
+                                  <span className="text-xs font-medium text-purple-700">
+                                    {item.batchNumber || '-'}
+                                  </span>
+                                  {item.productionDate && (
+                                    <span className="text-[11px] text-gray-500">
+                                      {formatDate(item.productionDate)}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                            {/* 每件片数 */}
+                            <td className="px-3 py-3.5 text-center align-top whitespace-nowrap">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                {typeof piecesPerUnitDisplay === 'number'
+                                  ? formatDecimal(piecesPerUnitDisplay)
+                                  : '-'}
+                              </span>
+                            </td>
+                            {/* 单位 */}
+                            <td className="px-3 py-3.5 text-center align-top whitespace-nowrap">
+                              <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                                {unitLabel || '-'}
+                              </span>
+                            </td>
+                            {/* 数量 */}
+                            <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                              <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                                {quantityDisplay}
+                              </span>
+                            </td>
+                            {/* 调货订单的本地/调货数量 */}
+                            {order.orderType === 'TRANSFER' && (
+                              <>
+                                <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                                  <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                    {localQuantityDisplay}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                                  <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                    {transferQuantityDisplay}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                            {/* 单价 */}
+                            <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                {formatCurrency(item.unitPrice)}
+                              </span>
+                            </td>
+                            {/* 小计 */}
+                            <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                              <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                                {formatCurrency(item.subtotal)}
+                              </span>
+                            </td>
+                            {/* 调货订单的成本和毛利 */}
+                            {order.orderType === 'TRANSFER' && (
+                              <>
+                                <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                                    {item.unitCost ? formatCurrency(item.unitCost) : '-'}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                                  <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                    {item.costSubtotal ? formatCurrency(item.costSubtotal) : '-'}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
+                                  <span className="text-sm font-bold text-[hsl(var(--color-success))]">
+                                    {item.profitAmount ? formatCurrency(item.profitAmount) : '-'}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                            {/* 备注 */}
+                            <td className="px-3 py-3.5 align-top">
+                              <div className="max-w-xs text-xs text-[hsl(var(--color-text-tertiary))]">
+                                {remarkText !== '-' ? (
+                                  <div className="whitespace-normal break-words rounded-md border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] px-2 py-1">
+                                    {remarkText}
+                                  </div>
+                                ) : (
+                                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                                    -
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    {/* 合计行 */}
+                    <tfoot className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+                      <tr className="font-semibold">
+                        <td
+                          colSpan={order.orderType === 'TRANSFER' ? 3 : 4}
+                          className="px-3 py-4 text-right text-[hsl(var(--color-text-primary))]"
+                        >
+                          <span className="text-base">产品小计</span>
+                        </td>
+                        <td className="px-3 py-4 text-center whitespace-nowrap">
+                          <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>
+                        </td>
+                        <td className="px-3 py-4 text-center whitespace-nowrap">
+                          <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>
+                        </td>
+                        <td className="px-3 py-4 text-right whitespace-nowrap">
+                          <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                            {formatDecimal(totalDisplayQuantity)}
+                          </span>
+                        </td>
+                        {order.orderType === 'TRANSFER' && (
+                          <>
+                            <td className="px-3 py-4 text-right whitespace-nowrap">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                {formatDecimal(totalLocalQuantity)}
+                              </span>
+                            </td>
+                            <td className="px-3 py-4 text-right whitespace-nowrap">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                {formatDecimal(totalTransferQuantity)}
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="px-3 py-4 text-right whitespace-nowrap">
+                          <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>
+                        </td>
+                        <td className="px-3 py-4 text-right whitespace-nowrap">
+                          <span className="text-base font-bold text-[hsl(var(--color-text-primary))]">
+                            {formatCurrency(productSubtotal)}
+                          </span>
+                        </td>
+                        {order.orderType === 'TRANSFER' && (
+                          <>
+                            <td className="px-3 py-4 text-right whitespace-nowrap">
+                              <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>
+                            </td>
+                            <td className="px-3 py-4 text-right whitespace-nowrap">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                                {formatCurrency(order.costAmount)}
+                              </span>
+                            </td>
+                            <td className="px-3 py-4 text-right whitespace-nowrap">
+                              <span className="text-base font-bold text-[hsl(var(--color-success))]">
+                                {formatCurrency(order.profitAmount)}
+                              </span>
+                            </td>
+                          </>
+                        )}
+                        <td className="px-3 py-4">
+                          <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 额外费用明细 */}
+            {order.feeItems && order.feeItems.length > 0 && (
+              <Card
+                className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+                style={{ boxShadow: 'var(--shadow-medium)' }}
+              >
+                <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                  <CardTitle className="flex items-center justify-between text-base text-[hsl(var(--color-text-primary))]">
+                    <div className="flex items-center">
+                      <DollarSign className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                      额外费用明细
+                    </div>
+                    <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                      共 {order.feeItems.length} 项
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b-2 border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
+                        <tr className="text-xs font-semibold text-[hsl(var(--color-text-secondary))]">
+                          <th className="px-4 py-3 text-center font-medium">
+                            序号
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            费用类型
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            费用名称
+                          </th>
+                          <th className="px-4 py-3 text-right font-medium">
+                            费用金额
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            备注
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
+                        {order.feeItems.map((fee, index) => (
+                          <tr
+                            key={fee.id}
+                            className="transition-colors hover:bg-[hsl(var(--color-bg-secondary))]/50"
+                          >
+                            <td className="px-4 py-3.5 text-center">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="inline-flex rounded-md border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] px-2 py-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                                {FEE_TYPE_LABELS[
+                                  fee.feeType as keyof typeof FEE_TYPE_LABELS
+                                ] || fee.feeType}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                                {fee.feeName}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="text-sm font-bold text-[hsl(var(--color-primary))]">
+                                {formatCurrency(fee.feeAmount)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                                {fee.remarks || '-'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] font-semibold">
+                          <td
+                            colSpan={3}
+                            className="px-4 py-3 text-right text-[hsl(var(--color-text-primary))]"
+                          >
+                            <span className="text-sm">额外费用小计</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                              {formatCurrency(order.additionalFees)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3"></td>
+                        </tr>
+                        <tr className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] font-bold">
+                          <td
+                            colSpan={3}
+                            className="px-4 py-4 text-right text-[hsl(var(--color-text-primary))]"
+                          >
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-base">订单总金额</span>
+                              <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                                (产品 {formatCurrency(productSubtotal)} + 费用{' '}
+                                {formatCurrency(order.additionalFees)})
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-lg font-bold text-[hsl(var(--color-primary))]">
+                              {formatCurrency(order.totalAmount)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* 右侧边栏 */}
+          <div className="space-y-4">
+            {/* 收款记录 */}
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                <CardTitle className="flex items-center justify-between text-base text-[hsl(var(--color-text-primary))]">
+                  <div className="flex items-center">
+                    <Receipt className="mr-2 h-4 w-4 text-[hsl(var(--color-success))]" />
+                    收款记录
+                  </div>
+                  <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                    {
+                      order.paymentRecords.filter(r => r.status === 'confirmed')
+                        .length
+                    }{' '}
+                    / {order.paymentRecords.length} 笔
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
+                {/* 订单金额总览 */}
+                <div className="mb-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+                  {/* 订单金额信息 */}
+                  <div className="mb-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
+                          <DollarSign className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">
+                          订单总金额
+                        </span>
+                      </div>
+                      <div className="text-xl font-bold text-blue-600">
+                        {formatCurrency(order.totalAmount)}
+                      </div>
+                    </div>
+
+                    {/* ✅ 新增: 抹零金额显示(只在有抹零时显示) */}
+                    {order.roundingAdjustment !== 0 && (
+                      <div className="flex items-center justify-between rounded-md bg-white/60 px-3 py-2">
+                        <span className="text-xs font-medium text-gray-600">
+                          订单抹零
+                          <span className="ml-1 text-[10px] text-gray-500">
+                            {order.roundingAdjustment > 0 ? '(加价)' : '(减价)'}
+                          </span>
+                        </span>
+                        <div className="text-sm font-bold text-orange-600">
+                          -{formatCurrency(Math.abs(order.roundingAdjustment))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ✅ 新增: 实际应收金额(只在有抹零时显示) */}
+                    {order.roundingAdjustment !== 0 && (
+                      <div className="flex items-center justify-between rounded-md bg-white/80 px-3 py-2">
+                        <span className="text-xs font-semibold text-gray-700">
+                          实际应收
+                        </span>
+                        <div className="text-lg font-bold text-purple-600">
+                          {formatCurrency(
+                            order.totalAmount + order.roundingAdjustment
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 收款进度条 */}
+                  <div className="mb-3">
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-600">
+                        收款进度
+                      </span>
+                      <span className="text-xs font-bold text-green-600">
+                        {order.totalAmount + order.roundingAdjustment > 0
+                          ? (
+                              (order.paidAmount /
+                                (order.totalAmount +
+                                  order.roundingAdjustment)) *
+                              100
+                            ).toFixed(1)
+                          : '0.0'}
+                        %
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                        style={{
+                          width: `${order.totalAmount + order.roundingAdjustment > 0 ? (order.paidAmount / (order.totalAmount + order.roundingAdjustment)) * 100 : 0}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* 收款明细统计 */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-md bg-white/60 p-2 text-center">
+                      <div className="text-xs text-gray-600">已确认</div>
+                      <div className="mt-1 text-sm font-bold text-green-600">
+                        {formatCurrency(order.paidAmount)}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        {
+                          order.paymentRecords.filter(
+                            r => r.status === 'confirmed'
+                          ).length
+                        }{' '}
+                        笔
+                      </div>
+                    </div>
+                    <div className="rounded-md bg-white/60 p-2 text-center">
+                      <div className="text-xs text-gray-600">待确认</div>
+                      <div className="mt-1 text-sm font-bold text-yellow-600">
+                        {formatCurrency(
+                          order.paymentRecords
+                            .filter(r => r.status === 'pending')
+                            .reduce(
+                              (sum, r) => sum + Number(r.paymentAmount),
+                              0
+                            )
+                        )}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        {
+                          order.paymentRecords.filter(
+                            r => r.status === 'pending'
+                          ).length
+                        }{' '}
+                        笔
+                      </div>
+                    </div>
+                    <div className="rounded-md bg-white/60 p-2 text-center">
+                      <div className="text-xs text-gray-600">待收款</div>
+                      <div className="mt-1 text-sm font-bold text-orange-600">
+                        {formatCurrency(order.remainingAmount)}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        {order.remainingAmount > 0 ? '未完成' : '已完成'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {order.paymentRecords.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-[hsl(var(--color-text-tertiary))]">
+                    暂无收款记录
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* 待确认收款 */}
+                    {order.paymentRecords.filter(r => r.status === 'pending')
+                      .length > 0 && (
+                      <div>
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="h-px flex-1 bg-yellow-200"></div>
+                          <span className="text-xs font-semibold text-yellow-700">
+                            ⏱ 待确认收款
+                          </span>
+                          <div className="h-px flex-1 bg-yellow-200"></div>
+                        </div>
+                        <div className="space-y-2">
+                          {order.paymentRecords
+                            .filter(r => r.status === 'pending')
+                            .map((record, index) => (
+                              <div
+                                key={record.id}
+                                className="group relative overflow-hidden rounded-lg border border-yellow-200 bg-gradient-to-br from-yellow-50 to-white p-5 shadow-sm transition-all hover:shadow-md"
+                              >
+                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-yellow-400 to-yellow-500"></div>
+
+                                {/* 顶部: 金额和状态 */}
+                                <div className="mb-4 flex items-start justify-between pl-4">
+                                  <div className="flex-1">
+                                    <div className="mb-1 text-xs font-medium text-yellow-700">
+                                      待确认第 {index + 1} 笔
+                                    </div>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                      {formatCurrency(record.paymentAmount)}
+                                    </div>
+
+                                    {/* 金额明细 */}
+                                    {record.roundingAmount !== 0 && (
+                                      <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/80 px-3 py-1.5 text-xs">
+                                        <span className="text-gray-600">
+                                          实际到账
+                                        </span>
+                                        <span className="font-semibold text-gray-900">
+                                          {formatCurrency(
+                                            record.actualPaymentAmount
+                                          )}
+                                        </span>
+                                        <span className="text-gray-400">+</span>
+                                        <span className="text-gray-600">
+                                          收款差额
+                                        </span>
+                                        <span className="font-semibold text-yellow-700">
+                                          {formatCurrency(
+                                            record.roundingAmount
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <Badge className="ml-3 border-yellow-400 bg-yellow-100 text-yellow-700 shadow-sm">
+                                    ⏱ 待确认
+                                  </Badge>
+                                </div>
+
+                                {/* 中部: 核心信息 */}
+                                <div className="mb-3 grid grid-cols-2 gap-3 pl-4">
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      收款日期
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {formatDateTime(record.paymentDate)}
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      支付方式
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {record.paymentMethod === 'cash'
+                                        ? '💵 现金'
+                                        : record.paymentMethod ===
+                                            'bank_transfer'
+                                          ? '🏦 银行转账'
+                                          : record.paymentMethod === 'alipay'
+                                            ? '🔵 支付宝'
+                                            : record.paymentMethod === 'wechat'
+                                              ? '💚 微信支付'
+                                              : record.paymentMethod === 'check'
+                                                ? '📝 支票'
+                                                : '📌 其他'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* 底部: 补充信息 */}
+                                {(record.paymentNumber || record.remarks) && (
+                                  <div className="space-y-2 border-t border-yellow-100 pt-3 pl-4">
+                                    {record.paymentNumber && (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium text-gray-500">
+                                          单号
+                                        </span>
+                                        <code className="rounded bg-white px-2 py-1 font-mono text-gray-700 shadow-sm">
+                                          {record.paymentNumber}
+                                        </code>
+                                      </div>
+                                    )}
+
+                                    {record.remarks && (
+                                      <div className="rounded-lg border-l-4 border-yellow-400 bg-white/80 px-3 py-2 text-xs">
+                                        <span className="font-semibold text-gray-600">
+                                          备注：
+                                        </span>
+                                        <span className="text-gray-700">
+                                          {record.remarks}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 已确认收款 */}
+                    {order.paymentRecords.filter(r => r.status === 'confirmed')
+                      .length > 0 && (
+                      <div>
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="h-px flex-1 bg-green-200"></div>
+                          <span className="text-xs font-semibold text-green-700">
+                            ✓ 已确认收款
+                          </span>
+                          <div className="h-px flex-1 bg-green-200"></div>
+                        </div>
+                        <div className="space-y-2">
+                          {order.paymentRecords
+                            .filter(r => r.status === 'confirmed')
+                            .map((record, index) => (
+                              <div
+                                key={record.id}
+                                className="group relative overflow-hidden rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-white p-5 shadow-sm transition-all hover:shadow-md"
+                              >
+                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-green-500 to-emerald-500"></div>
+
+                                {/* 顶部: 金额和状态 */}
+                                <div className="mb-4 flex items-start justify-between pl-4">
+                                  <div className="flex-1">
+                                    <div className="mb-1 text-xs font-medium text-green-700">
+                                      已确认第 {index + 1} 笔
+                                    </div>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                      {formatCurrency(record.paymentAmount)}
+                                    </div>
+
+                                    {/* 金额明细 */}
+                                    {record.roundingAmount !== 0 && (
+                                      <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/80 px-3 py-1.5 text-xs">
+                                        <span className="text-gray-600">
+                                          实际到账
+                                        </span>
+                                        <span className="font-semibold text-gray-900">
+                                          {formatCurrency(
+                                            record.actualPaymentAmount
+                                          )}
+                                        </span>
+                                        <span className="text-gray-400">+</span>
+                                        <span className="text-gray-600">
+                                          收款差额
+                                        </span>
+                                        <span className="font-semibold text-green-700">
+                                          {formatCurrency(
+                                            record.roundingAmount
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <Badge className="ml-3 border-green-400 bg-green-100 text-green-700 shadow-sm">
+                                    ✓ 已确认
+                                  </Badge>
+                                </div>
+
+                                {/* 中部: 核心信息 */}
+                                <div className="mb-3 grid grid-cols-2 gap-3 pl-4">
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      收款日期
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {formatDateTime(record.paymentDate)}
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      支付方式
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {record.paymentMethod === 'cash'
+                                        ? '💵 现金'
+                                        : record.paymentMethod ===
+                                            'bank_transfer'
+                                          ? '🏦 银行转账'
+                                          : record.paymentMethod === 'alipay'
+                                            ? '🔵 支付宝'
+                                            : record.paymentMethod === 'wechat'
+                                              ? '💚 微信支付'
+                                              : record.paymentMethod === 'check'
+                                                ? '📝 支票'
+                                                : '📌 其他'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* 底部: 补充信息 */}
+                                {(record.paymentNumber || record.remarks) && (
+                                  <div className="space-y-2 border-t border-green-100 pt-3 pl-4">
+                                    {record.paymentNumber && (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium text-gray-500">
+                                          单号
+                                        </span>
+                                        <code className="rounded bg-white px-2 py-1 font-mono text-gray-700 shadow-sm">
+                                          {record.paymentNumber}
+                                        </code>
+                                      </div>
+                                    )}
+
+                                    {record.remarks && (
+                                      <div className="rounded-lg border-l-4 border-green-400 bg-white/80 px-3 py-2 text-xs">
+                                        <span className="font-semibold text-gray-600">
+                                          备注：
+                                        </span>
+                                        <span className="text-gray-700">
+                                          {record.remarks}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 操作历史 */}
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
+                  <ShoppingCart className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                  操作历史
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[hsl(var(--color-primary))]"></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        订单创建
+                      </div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        {formatDateTime(order.createdAt)}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        创建人：{userName}
+                      </div>
+                    </div>
+                  </div>
+                  {order.updatedAt !== order.createdAt && (
+                    <div className="flex items-start gap-3">
+                      <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[hsl(var(--color-success))]"></div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                          订单更新
+                        </div>
+                        <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
+                          {formatDateTime(order.updatedAt)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+

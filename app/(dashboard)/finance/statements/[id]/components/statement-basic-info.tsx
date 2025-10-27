@@ -3,7 +3,7 @@
 import { Users } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { formatDate } from '@/lib/utils/datetime';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 interface StatementBasicInfoProps {
   entity: {
@@ -54,13 +54,13 @@ export function StatementBasicInfo({
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">最后交易</span>
           <span className="font-medium">
-            {lastTransactionDate ? formatDate(lastTransactionDate) : '-'}
+            {lastTransactionDate ? formatDateTime(lastTransactionDate, 'yyyy-MM-dd HH:mm') : '-'}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">最近收付</span>
           <span className="font-medium">
-            {lastPaymentDate ? formatDate(lastPaymentDate) : '-'}
+            {lastPaymentDate ? formatDateTime(lastPaymentDate, 'yyyy-MM-dd HH:mm') : '-'}
           </span>
         </div>
       </CardContent>

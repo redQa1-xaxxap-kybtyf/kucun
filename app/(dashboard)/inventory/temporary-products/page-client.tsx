@@ -1,0 +1,392 @@
+'use client';
+
+/**
+ * 临时商品库客户端组件
+ */
+
+import { useQuery } from '@tanstack/react-query';
+import { Calendar, Package, TrendingUp, User } from 'lucide-react';
+import { useState } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useDebouncedCallback } from '@/hooks/use-debounced-search';
+import { useSuppliers } from '@/hooks/use-suppliers';
+import type { Supplier } from '@/lib/types/supplier';
+import { formatDateTime } from '@/lib/utils/datetime';
+
+interface TemporaryProduct {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  supplierCode: string | null;
+  code: string;
+  name: string;
+  specification: string | null;
+  weight: number | null;
+  unit: string;
+  piecesPerUnit: number;
+  usageCount: number;
+  lastUsedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  creatorName: string | null;
+  salesOrderCount: number;
+  factoryShipmentCount: number;
+  totalUsageCount: number;
+}
+
+interface TemporaryProductsResponse {
+  success: boolean;
+  data: {
+    items: TemporaryProduct[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+}
+
+// eslint-disable-next-line max-lines-per-function
+export function TemporaryProductsClient() {
+  const [supplierFilter, setSupplierFilter] = useState<string>('all');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('usageCount');
+  const [page, setPage] = useState(1);
+  const limit = 20;
+
+  // 获取供应商列表
+  const { data: suppliersData } = useSuppliers();
+  const suppliers = suppliersData?.data || [];
+
+  // 获取临时商品列表
+  const { data, isLoading, error } = useQuery({
+    queryKey: [
+      'temporary-products',
+      supplierFilter,
+      search,
+      sortBy,
+      page,
+    ] as const,
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy,
+        sortOrder: 'desc',
+      });
+
+      if (supplierFilter !== 'all') {
+        params.append('supplierId', supplierFilter);
+      }
+
+      if (search) {
+        params.append('search', search);
+      }
+
+      const res = await fetch(`/api/temporary-products?${params}`);
+      if (!res.ok) throw new Error('查询失败');
+      return res.json() as Promise<TemporaryProductsResponse>;
+    },
+  });
+
+  const products = data?.data.items || [];
+  const pagination = data?.data.pagination;
+
+  // 使用防抖处理搜索输入
+  const debouncedSearch = useDebouncedCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, 300);
+
+  // 处理搜索输入变化
+  const handleSearchChange = (value: string) => {
+    debouncedSearch(value);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* 筛选和搜索栏 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-medium">筛选和搜索</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-4">
+            {/* 供应商筛选 */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">供应商</label>
+              <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="选择供应商" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部供应商</SelectItem>
+                  {suppliers.map((supplier: Supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                      {supplier.supplierCode && ` (${supplier.supplierCode})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 排序方式 */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">排序方式</label>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="usageCount">使用次数</SelectItem>
+                  <SelectItem value="lastUsedAt">最后使用时间</SelectItem>
+                  <SelectItem value="name">商品名称</SelectItem>
+                  <SelectItem value="code">商品编码</SelectItem>
+                  <SelectItem value="createdAt">创建时间</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 搜索框 */}
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-medium">搜索</label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="搜索编码、名称或规格..."
+                  onChange={e => handleSearchChange(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 统计信息 */}
+      {pagination && (
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                临时商品总数
+              </CardTitle>
+              <Package className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{pagination.total}</div>
+              <p className="text-muted-foreground text-xs">
+                当前筛选: {products.length} 条
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">总使用次数</CardTitle>
+              <TrendingUp className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {products.reduce(
+                  (sum: number, p: TemporaryProduct) => sum + p.usageCount,
+                  0
+                )}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                销售订单 + 厂家发货
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">活跃供应商</CardTitle>
+              <User className="text-muted-foreground h-4 w-4" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {
+                  new Set(products.map((p: TemporaryProduct) => p.supplierId))
+                    .size
+                }
+              </div>
+              <p className="text-muted-foreground text-xs">当前筛选范围内</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 临时商品列表 */}
+      <Card>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-destructive">加载失败,请重试</div>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-muted-foreground flex flex-col items-center justify-center py-12">
+              <Package className="mb-4 h-12 w-12 opacity-50" />
+              <p>暂无临时商品记录</p>
+              <p className="mt-2 text-sm">
+                临时商品会在创建调货销售订单时自动记录
+              </p>
+            </div>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>供应商</TableHead>
+                    <TableHead>编码</TableHead>
+                    <TableHead>名称</TableHead>
+                    <TableHead>规格</TableHead>
+                    <TableHead className="text-center">单位</TableHead>
+                    <TableHead className="text-center">每件片数</TableHead>
+                    <TableHead className="text-center">使用次数</TableHead>
+                    <TableHead>最后使用</TableHead>
+                    <TableHead>创建人</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product: TemporaryProduct) => (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">
+                            {product.supplierName}
+                          </div>
+                          {product.supplierCode && (
+                            <div className="text-muted-foreground text-xs">
+                              {product.supplierCode}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">
+                        {product.code}
+                      </TableCell>
+                      <TableCell>{product.name}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {product.specification || '-'}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {product.unit}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {product.piecesPerUnit}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div>
+                          <div className="font-medium">
+                            {product.usageCount}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            销售:{product.salesOrderCount} / 厂发:
+                            {product.factoryShipmentCount}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {product.lastUsedAt ? (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Calendar className="h-3 w-3" />
+                            {formatDateTime(new Date(product.lastUsedAt))}
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {product.creatorName || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* 分页 */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t px-6 py-4">
+                  <div className="text-muted-foreground text-sm">
+                    共 {pagination.total} 条记录，第 {pagination.page} /{' '}
+                    {pagination.totalPages} 页
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      上一页
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setPage(p => Math.min(pagination.totalPages, p + 1))
+                      }
+                      disabled={page === pagination.totalPages}
+                    >
+                      下一页
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 使用说明 */}
+      <Card className="border-blue-200 bg-blue-50/50">
+        <CardContent className="pt-6">
+          <div className="flex gap-3">
+            <div className="mt-1 text-blue-600">
+              <Package className="h-5 w-5" />
+            </div>
+            <div className="space-y-1 text-sm">
+              <p className="font-medium text-blue-900">关于临时商品</p>
+              <p className="text-blue-700">
+                • 临时商品由系统在创建调货销售订单时自动记录和管理
+              </p>
+              <p className="text-blue-700">
+                • 同一供应商的相同编码会自动复用,并更新使用统计
+              </p>
+              <p className="text-blue-700">
+                • 此页面仅用于查询和检索,不提供手动创建/编辑/删除功能
+              </p>
+              <p className="text-blue-700">
+                • 使用次数反映了该临时商品在订单中被使用的总次数
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

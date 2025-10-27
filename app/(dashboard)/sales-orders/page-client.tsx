@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { ERPSalesOrderList } from '@/components/sales-orders/erp-sales-order-list';
 import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
+import { useUrlSearchParams } from '@/hooks/url-search-params';
+import { salesOrderParamsSchema } from '@/lib/schemas/sales-order-params';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
 
@@ -13,242 +14,128 @@ interface SalesOrdersPageClientProps {
   initialParams: SalesOrderQueryParams;
 }
 
-type LatestQueryState = {
-  search: string;
-  status?: SalesOrderQueryParams['status'];
-  customerId: string;
-  sortBy: SalesOrderQueryParams['sortBy'];
-  sortOrder: 'asc' | 'desc';
-  page: number;
-  limit?: number;
-  startDate?: string;
-  endDate?: string;
-};
-
 /**
  * 销售订单页面客户端组件
  * 负责用户交互和状态管理
  * 严格遵循前端架构规范：Client Component 层
  *
- * ✅ 修复：移除 initialData prop，使用 HydrationBoundary
+ * ✅ 重构：使用 useUrlSearchParams Hook 统一管理URL参数
  */
-export function SalesOrdersPageClient({
-  initialParams,
-}: SalesOrdersPageClientProps) {
+export function SalesOrdersPageClient({ initialParams }: SalesOrdersPageClientProps) {
+  const ctrl = useSalesOrdersController(initialParams);
+  return (
+    <SalesOrdersContent
+      params={ctrl.params}
+      currentQueryParams={ctrl.currentQueryParams}
+      onSearch={ctrl.handleSearch}
+      onFilter={ctrl.handleFilter}
+      onPageChange={ctrl.handlePageChange}
+      onOrderSelect={ctrl.handleOrderSelect}
+    />
+  );
+}
+
+function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
   const router = useRouter();
-  const [, startTransition] = React.useTransition();
-
-  // ✅ 只保留 searchInput 状态用于输入框显示，其他状态直接使用 initialParams
-  const [searchInput, setSearchInput] = React.useState(
-    initialParams.search || ''
+  const { params, updateParams, setParam } = useUrlSearchParams(
+    salesOrderParamsSchema,
+    {
+      basePath: '/sales-orders',
+      debounceMs: 300,
+      shallow: true,
+      initialParams,
+    }
   );
 
-  // ✅ 使用 ref 存储最新的查询参数，与 initialParams 保持同步
-  const latestParamsRef = React.useRef<LatestQueryState>({
-    search: initialParams.search || '',
-    status: initialParams.status,
-    customerId: initialParams.customerId || '',
-    sortBy: initialParams.sortBy || 'createdAt',
-    sortOrder: initialParams.sortOrder || 'desc',
-    page: initialParams.page || 1,
-    limit: initialParams.limit,
-    startDate: initialParams.startDate,
-    endDate: initialParams.endDate,
-  });
-
-  // ✅ 同步 initialParams 到 latestParamsRef 和 searchInput
-  React.useEffect(() => {
-    const nextSearch = initialParams.search || '';
-
-    // 同步 ref（用于 replaceURL）
-    latestParamsRef.current = {
-      search: nextSearch,
-      status: initialParams.status,
-      customerId: initialParams.customerId || '',
-      sortBy: initialParams.sortBy || 'createdAt',
-      sortOrder: initialParams.sortOrder || 'desc',
-      page: initialParams.page || 1,
-      limit: initialParams.limit,
-      startDate: initialParams.startDate,
-      endDate: initialParams.endDate,
-    };
-
-    // 同步搜索框显示值
-    setSearchInput(nextSearch);
-  }, [
-    initialParams.search,
-    initialParams.status,
-    initialParams.customerId,
-    initialParams.sortBy,
-    initialParams.sortOrder,
-    initialParams.page,
-    initialParams.limit,
-    initialParams.startDate,
-    initialParams.endDate,
-  ]);
-
-  const replaceURL = React.useCallback(
-    (overrides?: Partial<LatestQueryState>) => {
-      const next = { ...latestParamsRef.current, ...overrides };
-      const params = new URLSearchParams();
-
-      if (next.search) {
-        params.set('search', next.search);
-      }
-      if (next.status) {
-        params.set('status', next.status);
-      }
-      if (next.customerId) {
-        params.set('customerId', next.customerId);
-      }
-      if (next.sortBy) {
-        params.set('sortBy', next.sortBy);
-      }
-      if (next.sortOrder) {
-        params.set('sortOrder', next.sortOrder);
-      }
-      if (next.page > 1) {
-        params.set('page', next.page.toString());
-      }
-      if (typeof next.limit === 'number') {
-        params.set('limit', next.limit.toString());
-      }
-      if (next.startDate) {
-        params.set('startDate', next.startDate);
-      }
-      if (next.endDate) {
-        params.set('endDate', next.endDate);
-      }
-
-      const queryString = params.toString();
-      const newUrl = queryString
-        ? `/sales-orders?${queryString}`
-        : '/sales-orders';
-
-      startTransition(() => {
-        router.replace(newUrl, { scroll: false });
-      });
-    },
-    [router, startTransition]
-  );
-
-  const debouncedApplySearch = useDebouncedCallback((value: string) => {
-    const overrides: Partial<LatestQueryState> = { search: value, page: 1 };
-    latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
-    replaceURL(overrides);
-  }, 300);
-
-  React.useEffect(
-    () => () => {
-      debouncedApplySearch.cancel();
-    },
-    [debouncedApplySearch]
-  );
-
-  // 搜索处理 - 输入框即时更新，实际请求在防抖后触发
   const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearchInput(value);
-
-      if (value === '') {
-        // 清空搜索时立即执行，取消防抖
-        debouncedApplySearch.cancel();
-        const overrides: Partial<LatestQueryState> = { search: '', page: 1 };
-        latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
-        replaceURL(overrides);
-        return;
-      }
-
-      // 非空搜索使用防抖
-      debouncedApplySearch(value);
-    },
-    [debouncedApplySearch, replaceURL]
+    (value: string) => updateParams({ search: value, page: 1 }),
+    [updateParams]
   );
 
-  // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      const overrides: Partial<LatestQueryState> = { page: 1 };
-
+      const updates: Partial<typeof params> = { page: 1 };
       if (key === 'status') {
-        overrides.status =
-          value && value !== 'all'
-            ? (value as SalesOrderQueryParams['status'])
-            : undefined;
+        updates.status = value && value !== 'all' ? (value as SalesOrderQueryParams['status']) : undefined;
       } else if (key === 'customerId') {
-        overrides.customerId = value || '';
+        updates.customerId = value || '';
       } else if (key === 'sortBy') {
-        overrides.sortBy =
-          (value as SalesOrderQueryParams['sortBy']) || 'createdAt';
+        updates.sortBy = (value as SalesOrderQueryParams['sortBy']) || 'createdAt';
       } else if (key === 'sortOrder') {
-        overrides.sortOrder = (value as 'asc' | 'desc') || 'desc';
+        updates.sortOrder = (value as 'asc' | 'desc') || 'desc';
       } else if (key === 'startDate') {
-        overrides.startDate = value;
+        updates.startDate = value;
       } else if (key === 'endDate') {
-        overrides.endDate = value;
+        updates.endDate = value;
       } else if (key === 'dateRange') {
-        // 处理日期范围批量更新
         try {
           const { startDate, endDate } = JSON.parse(value || '{}');
-          overrides.startDate = startDate;
-          overrides.endDate = endDate;
+          updates.startDate = startDate;
+          updates.endDate = endDate;
         } catch (error) {
-          logger.error(
-            'dashboard:sales-orders:page-client',
-            '解析日期范围失败',
-            error,
-            { rawValue: value }
-          );
+          logger.error('dashboard:sales-orders:page-client', '解析日期范围失败', error, { rawValue: value });
         }
       }
-
-      latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
-
-      replaceURL(overrides);
+      updateParams(updates);
     },
-    [replaceURL]
+    [updateParams]
   );
 
-  // 分页处理
   const handlePageChange = React.useCallback(
     (nextPage: number) => {
-      if (nextPage === latestParamsRef.current.page) {
-        return;
-      }
-
-      const overrides: Partial<LatestQueryState> = { page: nextPage };
-      latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
-      replaceURL(overrides);
+      if (nextPage !== params.page) setParam('page', nextPage);
     },
-    [replaceURL]
+    [setParam, params.page]
   );
 
-  // ✅ 构建当前查询参数（直接使用 initialParams，避免状态不同步）
   const currentQueryParams: SalesOrderQueryParams = React.useMemo(
     () => ({
-      search: initialParams.search,
-      status: initialParams.status,
-      customerId: initialParams.customerId,
-      sortBy: initialParams.sortBy,
-      sortOrder: initialParams.sortOrder,
-      page: initialParams.page,
-      limit: initialParams.limit,
-      startDate: initialParams.startDate,
-      endDate: initialParams.endDate,
+      search: params.search,
+      status: params.status,
+      customerId: params.customerId,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+      page: params.page,
+      limit: params.limit,
+      startDate: params.startDate,
+      endDate: params.endDate,
     }),
     [
-      initialParams.search,
-      initialParams.status,
-      initialParams.customerId,
-      initialParams.sortBy,
-      initialParams.sortOrder,
-      initialParams.page,
-      initialParams.limit,
-      initialParams.startDate,
-      initialParams.endDate,
+      params.search,
+      params.status,
+      params.customerId,
+      params.sortBy,
+      params.sortOrder,
+      params.page,
+      params.limit,
+      params.startDate,
+      params.endDate,
     ]
   );
 
+  const handleOrderSelect = React.useCallback(
+    (order: { id: string }) => router.push(`/sales-orders/${order.id}`),
+    [router]
+  );
+
+  return { params, currentQueryParams, handleSearch, handleFilter, handlePageChange, handleOrderSelect } as const;
+}
+
+function SalesOrdersContent({
+  params,
+  currentQueryParams,
+  onSearch,
+  onFilter,
+  onPageChange,
+  onOrderSelect,
+}: {
+  params: { search: string; page: number } & Partial<SalesOrderQueryParams>;
+  currentQueryParams: SalesOrderQueryParams;
+  onSearch: (value: string) => void;
+  onFilter: (key: string, value: string | undefined) => void;
+  onPageChange: (page: number) => void;
+  onOrderSelect: (order: { id: string }) => void;
+}) {
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="mb-6 flex-shrink-0">
@@ -257,13 +144,11 @@ export function SalesOrdersPageClient({
       <div className="flex-1">
         <ERPSalesOrderList
           initialParams={currentQueryParams}
-          searchValue={searchInput}
-          onSearch={handleSearch}
-          onFilter={handleFilter}
-          onPageChange={handlePageChange}
-          onOrderSelect={order => {
-            router.push(`/sales-orders/${order.id}`);
-          }}
+          searchValue={params.search}
+          onSearch={onSearch}
+          onFilter={onFilter}
+          onPageChange={onPageChange}
+          onOrderSelect={onOrderSelect}
         />
       </div>
     </div>

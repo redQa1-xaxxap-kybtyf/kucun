@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ContentLoading } from '@/components/common/loading';
 import { PayableDetailClient } from '@/components/finance/payable-detail-client';
 import { ErrorMessage } from '@/components/ui/error-message';
-import { payablesApi, payableQueryKeys } from '@/lib/api/payables';
+import { payableQueryKeys, payablesApi } from '@/lib/api/payables';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 /**
@@ -55,18 +55,16 @@ export default function PayableDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
-        <div className="flex items-center space-x-2">
-          <span className="text-muted-foreground">
-            应付款单号：{payable.payableNumber}
-          </span>
-        </div>
-
-        {/* 详情内容 */}
-        <PayableDetailClient payable={payable} />
+    <div className="space-y-6 p-6">
+      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
+      <div className="flex items-center space-x-2">
+        <span className="text-muted-foreground">
+          应付款单号：{payable.payableNumber}
+        </span>
       </div>
+
+      {/* 详情内容 */}
+      <PayableDetailClient payable={payable} />
     </div>
   );
 }

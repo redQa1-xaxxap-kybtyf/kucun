@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { paginationConfig } from '@/lib/env';
+import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
 import {
   getReceivables,
   type PaymentStatus,
@@ -39,8 +40,11 @@ export default async function ReceivablesPage({
     10
   );
   const search = (params.search as string) || '';
-  const status = (params.status as PaymentStatus) || undefined;
-  const sortBy = (params.sortBy as string) || 'orderDate';
+  const paymentStatus =
+    (params.paymentStatus as PaymentStatus) ||
+    (params.status as PaymentStatus) ||
+    undefined;
+  const sortBy = (params.sortBy as string) || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
   const startDate = (params.startDate as string) || undefined;
   const endDate = (params.endDate as string) || undefined;
@@ -49,8 +53,8 @@ export default async function ReceivablesPage({
     page,
     limit,
     search,
-    status,
-    sortBy,
+    paymentStatus,
+    sortBy: sortBy as ReceivablesParams['sortBy'],
     sortOrder,
     startDate,
     endDate,
@@ -61,7 +65,7 @@ export default async function ReceivablesPage({
     page,
     limit,
     search,
-    paymentStatus: status,
+    paymentStatus,
     sortBy,
     sortOrder,
     startDate,

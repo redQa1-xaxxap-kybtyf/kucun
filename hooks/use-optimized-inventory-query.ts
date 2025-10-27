@@ -3,7 +3,7 @@
  * 统一查询键命名规范，实现数据预取策略，优化分页查询缓存
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
 import type {
@@ -53,8 +53,11 @@ export function useOptimizedInventoryQuery({
 }: UseOptimizedInventoryQueryOptions) {
   const queryClient = useQueryClient();
 
-  const executeRequest = useCallback(async (searchParams: URLSearchParams) => {
-    const response = await fetch(`/api/inventory?${searchParams.toString()}`);
+  const executeRequest = useCallback(async (searchParams: URLSearchParams, signal?: AbortSignal) => {
+    const response = await fetch(`/api/inventory?${searchParams.toString()}`,
+      // ✅ 传入 AbortSignal，允许上一次请求在新查询发起时被取消
+      signal ? { signal } : undefined
+    );
     if (!response.ok) {
       const error = new Error(
         `库存查询失败: ${response.status} ${response.statusText}`
@@ -69,7 +72,8 @@ export function useOptimizedInventoryQuery({
   // 主查询
   const query = useQuery<InventoryListResponse>({
     queryKey: inventoryQueryKeys.list(params),
-    queryFn: async (): Promise<InventoryListResponse> => {
+    // ✅ 使用 TanStack Query 提供的 signal 取消过时请求
+    queryFn: async ({ signal }): Promise<InventoryListResponse> => {
       const searchParams = new URLSearchParams();
 
       // 构建查询参数
@@ -79,13 +83,13 @@ export function useOptimizedInventoryQuery({
         }
       });
 
-      return executeRequest(searchParams);
+      return executeRequest(searchParams, signal);
     },
     enabled,
     staleTime, // 数据新鲜度时间，可通过参数覆盖（默认30秒）
     gcTime: cacheTime, // 垃圾回收时间
-    // ✅ 修复：移除 placeholderData，避免数据切换时的闪烁
-    // 使用 React 的 useTransition 在父组件中处理加载状态
+    // ✅ 保持上一份数据，避免“空窗期”重绘和闪烁（v5 推荐 placeholderData: keepPreviousData）
+    placeholderData: keepPreviousData,
     // 错误重试配置
     retry: (failureCount, error) => {
       const status = (error as { status?: number }).status;
@@ -102,7 +106,7 @@ export function useOptimizedInventoryQuery({
     async (pageParams: InventoryQueryParams) => {
       await queryClient.prefetchQuery({
         queryKey: inventoryQueryKeys.list(pageParams),
-        queryFn: async (): Promise<InventoryListResponse> => {
+        queryFn: async ({ signal }): Promise<InventoryListResponse> => {
           const searchParams = new URLSearchParams();
 
           Object.entries(pageParams).forEach(([key, value]) => {
@@ -111,7 +115,7 @@ export function useOptimizedInventoryQuery({
             }
           });
 
-          return executeRequest(searchParams);
+          return executeRequest(searchParams, signal);
         },
         staleTime: 5 * 60 * 1000, // 预取数据缓存5分钟
       });

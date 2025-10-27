@@ -2,271 +2,27 @@
 
 import { Download, Plus, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
-import { Suspense } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { DateRangeValue } from '@/components/ui/date-range-picker';
-import type {
-  PaymentStatus,
-  ReceivablesResult,
-} from '@/lib/services/receivables-service';
+import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
+import type { ReceivablesResult } from '@/lib/services/receivables-service';
 
-interface ReceivablesPageQueryParams {
-  page: number;
-  limit: number;
-  search: string;
-  status?: PaymentStatus;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
-  startDate?: string;
-  endDate?: string;
-}
+type ReceivablesPageQueryParams = ReceivablesParams;
 
 interface ReceivablesPageClientProps {
   initialData: ReceivablesResult;
   initialParams: ReceivablesPageQueryParams;
 }
 
-/**
- * 应收款页面客户端组件
- * 负责用户交互和状态管理
- * 严格遵循前端架构规范：Client Component 层
- */
 export function ReceivablesPageClient({
   initialData,
   initialParams,
 }: ReceivablesPageClientProps) {
-  const router = useRouter();
-  const [, startTransition] = React.useTransition();
-
-  // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [status, setStatus] = React.useState(initialParams.status);
-  const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'orderDate'
-  );
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
-  );
-  const [startDate, setStartDate] = React.useState<string | undefined>(
-    initialParams.startDate
-  );
-  const [endDate, setEndDate] = React.useState<string | undefined>(
-    initialParams.endDate
-  );
-
-  // 防抖更新URL - 避免每次输入都触发导航
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: ReceivablesPageQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.status) {
-          params.set('status', filters.status);
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.startDate) {
-          params.set('startDate', filters.startDate);
-        }
-        if (filters.endDate) {
-          params.set('endDate', filters.endDate);
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
-
-        router.push(`/finance/receivables?${params.toString()}`);
-      });
-    },
-    300
-  );
-
-  // 搜索处理 - 立即更新本地状态，防抖更新URL
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        status,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-        page: 1,
-      });
-    },
-    [
-      debouncedUpdateURL,
-      initialParams,
-      status,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    ]
-  );
-
-  // 筛选处理
-  const handleFilter = React.useCallback(
-    (key: string, value: string | undefined) => {
-      let nextStatus = status;
-      let nextSortBy = sortBy;
-      let nextSortOrder = sortOrder;
-
-      if (key === 'status') {
-        nextStatus = value ? (value as PaymentStatus) : undefined;
-        setStatus(nextStatus);
-      } else if (key === 'sortBy') {
-        nextSortBy = value || 'orderDate';
-        setSortBy(nextSortBy);
-      } else if (key === 'sortOrder') {
-        nextSortOrder = value === 'asc' ? 'asc' : 'desc';
-        setSortOrder(nextSortOrder);
-      }
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (nextStatus) {
-          params.set('status', nextStatus);
-        }
-        if (nextSortBy) {
-          params.set('sortBy', nextSortBy);
-        }
-        if (nextSortOrder) {
-          params.set('sortOrder', nextSortOrder);
-        }
-        if (startDate) {
-          params.set('startDate', startDate);
-        }
-        if (endDate) {
-          params.set('endDate', endDate);
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        router.push(`/finance/receivables?${params.toString()}`);
-      });
-    },
-    [
-      router,
-      search,
-      initialParams.limit,
-      sortBy,
-      sortOrder,
-      status,
-      startDate,
-      endDate,
-    ]
-  );
-
-  // 分页处理
-  const handlePageChange = React.useCallback(
-    (page: number) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (startDate) {
-          params.set('startDate', startDate);
-        }
-        if (endDate) {
-          params.set('endDate', endDate);
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        router.push(`/finance/receivables?${params.toString()}`);
-      });
-    },
-    [
-      router,
-      search,
-      status,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      initialParams.limit,
-    ]
-  );
-
-  const handleDateRangeChange = React.useCallback(
-    (range: DateRangeValue) => {
-      setStartDate(range.startDate);
-      setEndDate(range.endDate);
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (range.startDate) {
-          params.set('startDate', range.startDate);
-        }
-        if (range.endDate) {
-          params.set('endDate', range.endDate);
-        }
-        params.set('page', '1');
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        const query = params.toString();
-        router.push(
-          query ? `/finance/receivables?${query}` : '/finance/receivables'
-        );
-      });
-    },
-    [router, search, status, sortBy, sortOrder, initialParams.limit]
-  );
-
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
           <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
@@ -310,23 +66,10 @@ export function ReceivablesPageClient({
           </CardContent>
         </Card>
 
-        {/* 客户端交互组件 */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
-          <ReceivablesClient
-            initialData={initialData}
-            initialParams={initialParams}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onDateRangeChange={handleDateRangeChange}
-            onPageChange={handlePageChange}
-          />
-        </Suspense>
+        <ReceivablesClient
+          initialData={initialData}
+          initialParams={initialParams}
+        />
       </div>
     </div>
   );
