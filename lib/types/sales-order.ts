@@ -112,13 +112,21 @@ export interface SalesOrderQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  sortBy?: 'orderNumber' | 'createdAt' | 'updatedAt' | 'totalAmount' | 'status';
+  sortBy?:
+    | 'orderNumber'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'totalAmount'
+    | 'status'
+    | 'shippedAt';
   sortOrder?: 'asc' | 'desc';
   status?: SalesOrderStatus;
   customerId?: string;
   userId?: string;
   startDate?: string;
   endDate?: string;
+  orderType?: SalesOrderType;
+  hasReturns?: boolean;
 }
 
 // API 响应类型

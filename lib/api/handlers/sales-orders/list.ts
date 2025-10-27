@@ -37,6 +37,7 @@ const sortableFields: Record<
   updatedAt: 'updatedAt',
   totalAmount: 'totalAmount',
   status: 'status',
+  shippedAt: 'shippedAt',
 };
 
 const DEFAULT_SORT_FIELD: keyof Prisma.SalesOrderOrderByWithRelationInput =
@@ -67,6 +68,8 @@ const buildWhere = ({
   customerId,
   startDate,
   endDate,
+  orderType,
+  hasReturns,
 }: SalesOrderQueryParams): Prisma.SalesOrderWhereInput => {
   const where: Prisma.SalesOrderWhereInput = {};
 
@@ -77,6 +80,9 @@ const buildWhere = ({
       { customer: { phone: { contains: search } } },
       { customer: { address: { contains: search } } },
       { remarks: { contains: search } },
+      // 增加对商品编码的搜索支持
+      { items: { some: { product: { code: { contains: search } } } } },
+      { items: { some: { product: { name: { contains: search } } } } },
     ];
   }
 
@@ -86,6 +92,18 @@ const buildWhere = ({
 
   if (customerId) {
     where.customerId = customerId;
+  }
+
+  if (orderType) {
+    where.orderType = orderType;
+  }
+
+  if (hasReturns) {
+    where.returnOrders = {
+      some: {
+        status: { not: 'cancelled' },
+      },
+    };
   }
 
   const dateRange = buildDateRange(startDate, endDate);

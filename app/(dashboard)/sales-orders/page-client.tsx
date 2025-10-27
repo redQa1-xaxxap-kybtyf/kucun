@@ -21,18 +21,139 @@ interface SalesOrdersPageClientProps {
  *
  * ✅ 重构：使用 useUrlSearchParams Hook 统一管理URL参数
  */
-export function SalesOrdersPageClient({ initialParams }: SalesOrdersPageClientProps) {
-  const ctrl = useSalesOrdersController(initialParams);
+export function SalesOrdersPageClient({
+  initialParams,
+}: SalesOrdersPageClientProps) {
+  const {
+    searchInput,
+    isSearching,
+    currentQueryParams,
+    handleSearch,
+    handleFilter,
+    handlePageChange,
+    handleOrderSelect,
+    handleClearFilters,
+  } = useSalesOrdersController(initialParams);
   return (
     <SalesOrdersContent
-      params={ctrl.params}
-      currentQueryParams={ctrl.currentQueryParams}
-      onSearch={ctrl.handleSearch}
-      onFilter={ctrl.handleFilter}
-      onPageChange={ctrl.handlePageChange}
-      onOrderSelect={ctrl.handleOrderSelect}
+      searchInput={searchInput}
+      isSearching={isSearching}
+      currentQueryParams={currentQueryParams}
+      onSearch={handleSearch}
+      onFilter={handleFilter}
+      onPageChange={handlePageChange}
+      onOrderSelect={handleOrderSelect}
+      onClearFilters={handleClearFilters}
     />
   );
+}
+
+const SEARCH_DEBOUNCE_MS = 300;
+
+function buildFilterUpdates(
+  key: string,
+  value: string | undefined
+): Partial<SalesOrderQueryParams> {
+  const base: Partial<SalesOrderQueryParams> = { page: 1 };
+
+  switch (key) {
+    case 'status':
+      return {
+        ...base,
+        status:
+          value && value !== 'all'
+            ? (value as SalesOrderQueryParams['status'])
+            : undefined,
+      };
+    case 'customerId':
+      return { ...base, customerId: value ?? '' };
+    case 'sortBy':
+      return {
+        ...base,
+        sortBy: (value as SalesOrderQueryParams['sortBy']) || 'createdAt',
+      };
+    case 'sortOrder':
+      return {
+        ...base,
+        sortOrder: (value as 'asc' | 'desc') || 'desc',
+      };
+    case 'startDate':
+    case 'endDate':
+      return { ...base, [key]: value } as Partial<SalesOrderQueryParams>;
+    case 'dateRange':
+      if (!value) {
+        return { ...base, startDate: undefined, endDate: undefined };
+      }
+      try {
+        const { startDate, endDate } = JSON.parse(value) as {
+          startDate?: string;
+          endDate?: string;
+        };
+        return { ...base, startDate, endDate };
+      } catch (error) {
+        logger.error(
+          'dashboard:sales-orders:page-client',
+          '解析日期范围失败',
+          error,
+          { rawValue: value }
+        );
+        return base;
+      }
+    case 'orderType':
+      return {
+        ...base,
+        orderType: value as SalesOrderQueryParams['orderType'],
+      };
+    case 'hasReturns':
+      return { ...base, hasReturns: value === 'true' ? true : undefined };
+    default:
+      return base;
+  }
+}
+
+function useSalesOrderSearch(
+  searchParam: string | undefined,
+  updateParams: (updates: Partial<SalesOrderQueryParams>) => void
+) {
+  const [searchInput, setSearchInput] = React.useState(searchParam ?? '');
+  const [isSearching, setIsSearching] = React.useState(false);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  const clearTimer = React.useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  React.useEffect(() => {
+    setSearchInput(searchParam ?? '');
+  }, [searchParam]);
+
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      const trimmed = value.trimStart();
+      setSearchInput(trimmed);
+      clearTimer();
+
+      if (trimmed === '') {
+        setIsSearching(false);
+        updateParams({ search: undefined, page: 1 });
+        return;
+      }
+
+      setIsSearching(true);
+      timerRef.current = setTimeout(() => {
+        updateParams({ search: trimmed, page: 1 });
+        setIsSearching(false);
+      }, SEARCH_DEBOUNCE_MS);
+    },
+    [clearTimer, updateParams]
+  );
+
+  React.useEffect(() => () => clearTimer(), [clearTimer]);
+
+  return { searchInput, isSearching, handleSearch } as const;
 }
 
 function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
@@ -41,42 +162,20 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
     salesOrderParamsSchema,
     {
       basePath: '/sales-orders',
-      debounceMs: 300,
+      debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
       shallow: true,
       initialParams,
     }
   );
 
-  const handleSearch = React.useCallback(
-    (value: string) => updateParams({ search: value, page: 1 }),
-    [updateParams]
+  const { searchInput, isSearching, handleSearch } = useSalesOrderSearch(
+    params.search,
+    updateParams
   );
 
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      const updates: Partial<typeof params> = { page: 1 };
-      if (key === 'status') {
-        updates.status = value && value !== 'all' ? (value as SalesOrderQueryParams['status']) : undefined;
-      } else if (key === 'customerId') {
-        updates.customerId = value || '';
-      } else if (key === 'sortBy') {
-        updates.sortBy = (value as SalesOrderQueryParams['sortBy']) || 'createdAt';
-      } else if (key === 'sortOrder') {
-        updates.sortOrder = (value as 'asc' | 'desc') || 'desc';
-      } else if (key === 'startDate') {
-        updates.startDate = value;
-      } else if (key === 'endDate') {
-        updates.endDate = value;
-      } else if (key === 'dateRange') {
-        try {
-          const { startDate, endDate } = JSON.parse(value || '{}');
-          updates.startDate = startDate;
-          updates.endDate = endDate;
-        } catch (error) {
-          logger.error('dashboard:sales-orders:page-client', '解析日期范围失败', error, { rawValue: value });
-        }
-      }
-      updateParams(updates);
+      updateParams(buildFilterUpdates(key, value));
     },
     [updateParams]
   );
@@ -89,52 +188,57 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
   );
 
   const currentQueryParams: SalesOrderQueryParams = React.useMemo(
-    () => ({
-      search: params.search,
-      status: params.status,
-      customerId: params.customerId,
-      sortBy: params.sortBy,
-      sortOrder: params.sortOrder,
-      page: params.page,
-      limit: params.limit,
-      startDate: params.startDate,
-      endDate: params.endDate,
-    }),
-    [
-      params.search,
-      params.status,
-      params.customerId,
-      params.sortBy,
-      params.sortOrder,
-      params.page,
-      params.limit,
-      params.startDate,
-      params.endDate,
-    ]
+    () => ({ ...params }),
+    [params]
   );
+
+  const handleClearFilters = React.useCallback(() => {
+    updateParams({
+      status: undefined,
+      customerId: '',
+      startDate: undefined,
+      endDate: undefined,
+      orderType: undefined,
+      hasReturns: undefined,
+      page: 1,
+    });
+  }, [updateParams]);
 
   const handleOrderSelect = React.useCallback(
     (order: { id: string }) => router.push(`/sales-orders/${order.id}`),
     [router]
   );
 
-  return { params, currentQueryParams, handleSearch, handleFilter, handlePageChange, handleOrderSelect } as const;
+  return {
+    searchInput, // ✅ 使用本地searchInput,即时UI反馈
+    isSearching, // ✅ 使用本地isSearching状态
+    currentQueryParams,
+    handleSearch,
+    handleFilter,
+    handlePageChange,
+    handleOrderSelect,
+    handleClearFilters,
+  } as const;
 }
 
 function SalesOrdersContent({
-  params,
+  searchInput,
+  isSearching,
   currentQueryParams,
   onSearch,
   onFilter,
   onPageChange,
   onOrderSelect,
+  onClearFilters,
 }: {
-  params: { search: string; page: number } & Partial<SalesOrderQueryParams>;
+  searchInput: string;
+  isSearching: boolean;
   currentQueryParams: SalesOrderQueryParams;
   onSearch: (value: string) => void;
   onFilter: (key: string, value: string | undefined) => void;
   onPageChange: (page: number) => void;
   onOrderSelect: (order: { id: string }) => void;
+  onClearFilters: () => void;
 }) {
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -144,11 +248,13 @@ function SalesOrdersContent({
       <div className="flex-1">
         <ERPSalesOrderList
           initialParams={currentQueryParams}
-          searchValue={params.search}
+          searchValue={searchInput}
+          isSearching={isSearching}
           onSearch={onSearch}
           onFilter={onFilter}
           onPageChange={onPageChange}
           onOrderSelect={onOrderSelect}
+          onClearFilters={onClearFilters}
         />
       </div>
     </div>

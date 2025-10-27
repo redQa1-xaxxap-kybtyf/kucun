@@ -1,5 +1,7 @@
 'use client';
 
+/* eslint-disable max-lines, max-lines-per-function */
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -7,9 +9,11 @@ import {
   Clock,
   Edit,
   Eye,
+  Filter,
   MoreHorizontal,
-  Trash2,
+  Package,
   Truck,
+  Trash2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -68,6 +72,8 @@ interface ERPSalesOrderListProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onPageChange?: (page: number) => void;
   searchValue?: string;
+  isSearching?: boolean; // ✅ 新增：搜索状态指示
+  onClearFilters?: () => void;
 }
 
 /**
@@ -83,6 +89,8 @@ export function ERPSalesOrderList({
   onFilter: externalOnFilter,
   onPageChange: externalOnPageChange,
   searchValue,
+  isSearching = false,
+  onClearFilters: externalOnClearFilters,
 }: ERPSalesOrderListProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -104,6 +112,63 @@ export function ERPSalesOrderList({
     null
   );
 
+  const statusFilterValue = initialParams?.status ?? undefined;
+  const normalizedStatus = statusFilterValue;
+
+  // 检查是否有活跃筛选条件
+  const hasActiveFilters = React.useMemo(
+    () =>
+      Boolean(
+        normalizedStatus ||
+          initialParams?.customerId ||
+          initialParams?.startDate ||
+          initialParams?.endDate ||
+          initialParams?.orderType ||
+          initialParams?.hasReturns
+      ),
+    [
+      normalizedStatus,
+      initialParams?.customerId,
+      initialParams?.startDate,
+      initialParams?.endDate,
+      initialParams?.orderType,
+      initialParams?.hasReturns,
+    ]
+  );
+
+  // 清空所有筛选条件
+  const handleClearFilters = React.useCallback(() => {
+    if (externalOnClearFilters) {
+      externalOnClearFilters();
+      return;
+    }
+
+    // 重置所有筛选条件为 undefined
+    externalOnFilter?.('status', undefined);
+    externalOnFilter?.('customerId', undefined);
+    externalOnFilter?.('startDate', undefined);
+    externalOnFilter?.('endDate', undefined);
+    externalOnFilter?.('orderType', undefined);
+    externalOnFilter?.('hasReturns', undefined);
+    externalOnFilter?.(
+      'dateRange',
+      JSON.stringify({ startDate: undefined, endDate: undefined })
+    );
+  }, [externalOnClearFilters, externalOnFilter]);
+
+  // 切换订单类型（调货订单）
+  const handleToggleTransferOrders = React.useCallback(() => {
+    const isTransferActive = initialParams?.orderType === 'TRANSFER';
+    externalOnFilter?.('orderType', isTransferActive ? undefined : 'TRANSFER');
+  }, [externalOnFilter, initialParams?.orderType]);
+
+  // 切换有退货订单
+  const handleToggleHasReturns = React.useCallback(() => {
+    const currentValue = initialParams?.hasReturns === true;
+    const nextValue = !currentValue;
+    externalOnFilter?.('hasReturns', String(nextValue));
+  }, [externalOnFilter, initialParams?.hasReturns]);
+
   // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
   // ✅ 单一数据源原则：状态统一在父组件管理
 
@@ -112,12 +177,14 @@ export function ERPSalesOrderList({
     page: initialParams?.page || 1,
     limit: initialParams?.limit || 20,
     search: initialParams?.search,
-    status: initialParams?.status,
+    status: normalizedStatus,
     customerId: initialParams?.customerId,
     sortBy: initialParams?.sortBy || 'createdAt',
     sortOrder: initialParams?.sortOrder || 'desc',
     startDate: initialParams?.startDate,
     endDate: initialParams?.endDate,
+    orderType: initialParams?.orderType,
+    hasReturns: initialParams?.hasReturns,
   };
 
   // ✅ 获取销售订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
@@ -134,7 +201,6 @@ export function ERPSalesOrderList({
 
   // 区分首次加载和后台刷新
   const isInitialLoading = isLoading && !data;
-  const isBackgroundRefetching = isRefetching && !!data;
 
   // 搜索处理 - 直接使用外部传入的处理函数
   const handleSearch = React.useCallback(
@@ -491,14 +557,6 @@ export function ERPSalesOrderList({
       {/* 搜索筛选卡片 */}
       <Card className="overflow-hidden">
         <CardContent className="pt-6">
-          {/* ✅ 优化加载指示器：区分首次加载和后台刷新 */}
-          {isBackgroundRefetching && (
-            <div className="mb-2 flex items-center gap-2 text-xs text-[hsl(var(--color-primary))]">
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent"></div>
-              <span>刷新中...</span>
-            </div>
-          )}
-
           {/* 搜索栏和日期筛选的组合布局 */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-4">
             {/* 搜索栏区域 */}
@@ -507,28 +565,61 @@ export function ERPSalesOrderList({
                 // 搜索配置
                 searchValue={searchValue ?? initialParams?.search ?? ''}
                 onSearchChange={handleSearch}
-                searchPlaceholder="搜索订单号或客户名称..."
-                debounceDelay={400}
+                searchPlaceholder="搜索订单号、客户名称、商品编码..."
+                debounceDelay={0}
                 compact={true}
-                // 筛选器配置
+                isSearching={isSearching || isRefetching}
+                resultCount={data?.data?.length}
+                totalCount={data?.pagination?.total}
+                // 切换按钮配置 - 参考库存总览的设计
+                toggleButtons={[
+                  {
+                    key: 'transferOrders',
+                    label: '调货订单',
+                    icon: <Truck className="mr-1 h-3 w-3" />,
+                    active: initialParams?.orderType === 'TRANSFER',
+                    onClick: handleToggleTransferOrders,
+                  },
+                  {
+                    key: 'hasReturns',
+                    label: '有退货',
+                    icon: <Package className="mr-1 h-3 w-3" />,
+                    active: !!initialParams?.hasReturns,
+                    onClick: handleToggleHasReturns,
+                  },
+                ]}
+                // 筛选器配置 - 增强版
                 filters={[
                   {
                     key: 'status',
-                    label: '状态',
-                    includeAllOption: false,
+                    label: '订单状态',
+                    includeAllOption: true,
                     options: [
-                      { label: '全部', value: 'all' },
                       { label: '草稿', value: 'draft' },
                       { label: '已确认', value: 'confirmed' },
                       { label: '已发货', value: 'shipped' },
                       { label: '已完成', value: 'completed' },
                       { label: '已取消', value: 'cancelled' },
                     ],
-                    width: 'w-24',
+                    width: 'w-[120px]',
+                  },
+                  {
+                    key: 'sortBy',
+                    label: '排序方式',
+                    includeAllOption: false,
+                    options: [
+                      { label: '创建时间', value: 'createdAt' },
+                      { label: '订单金额', value: 'totalAmount' },
+                      { label: '发货时间', value: 'shippedAt' },
+                      { label: '更新时间', value: 'updatedAt' },
+                      { label: '订单号', value: 'orderNumber' },
+                    ],
+                    width: 'w-[120px]',
                   },
                 ]}
                 filterValues={{
-                  status: initialParams?.status || 'all',
+                  status: statusFilterValue,
+                  sortBy: initialParams?.sortBy || 'createdAt',
                 }}
                 onFilterChange={handleFilterChange}
               />
@@ -551,6 +642,19 @@ export function ERPSalesOrderList({
                 showClearButton={true}
               />
             </div>
+
+            {/* 清空筛选按钮 - 参考库存总览设计 */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                清空筛选
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

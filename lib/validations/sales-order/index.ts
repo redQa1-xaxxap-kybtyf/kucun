@@ -223,7 +223,14 @@ export const salesOrderQuerySchema = z.object({
     .optional()
     .transform(val => val?.trim() || undefined),
   sortBy: z
-    .enum(['orderNumber', 'totalAmount', 'createdAt', 'updatedAt', 'status'])
+    .enum([
+      'orderNumber',
+      'totalAmount',
+      'createdAt',
+      'updatedAt',
+      'status',
+      'shippedAt',
+    ])
     .nullable()
     .optional()
     .default('createdAt')
@@ -253,6 +260,15 @@ export const salesOrderQuerySchema = z.object({
     .nullable()
     .optional()
     .transform(val => val || undefined),
+  orderType: salesOrderTypeSchema
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
+  hasReturns: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val === 'true' ? true : undefined)),
 });
 
 /**
