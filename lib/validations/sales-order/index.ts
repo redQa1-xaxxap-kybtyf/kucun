@@ -165,9 +165,14 @@ export const salesOrderCreateSchema = baseSalesOrderSchema
     }
   )
   .refine(
-    data => validateManualProductFields(data.items, data.status ?? 'draft'),
+    data =>
+      validateManualProductFields(
+        data.items,
+        data.status ?? 'draft',
+        data.orderType
+      ),
     {
-      message: '手动输入商品必须填写商品名称，库存商品必须选择产品',
+      message: '手动输入商品缺少必填信息（临时商品必须填写产品编码）',
       path: ['items'],
     }
   );

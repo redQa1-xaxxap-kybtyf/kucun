@@ -158,20 +158,44 @@ export function validateRequiredFields(
 
 /**
  * 验证手动输入商品的必填字段
- * 手动商品需要商品名称，库存商品需要productId
+ * 手动商品需要产品编码，库存商品需要 productId
+ *
+ * 特殊规则：
+ * - 调货销售订单的手动商品必须填写 productCode（包括草稿状态）
+ *   因为后端需要 productCode 来创建临时商品记录
  */
 export function validateManualProductFields(
   items: SalesOrderItemFormData[],
-  status: string
+  status: string,
+  orderType?: 'NORMAL' | 'TRANSFER'
 ): boolean {
+  // 1. 调货销售订单的手动商品必须有 productCode（包括草稿状态）
+  // 这是因为后端创建临时商品需要 productCode 字段
+  if (orderType === 'TRANSFER') {
+    for (const item of items) {
+      if (item.isManualProduct) {
+        const hasCode =
+          typeof item.productCode === 'string' &&
+          item.productCode.trim() !== '';
+
+        if (!hasCode) {
+          return false;
+        }
+      }
+    }
+  }
+
+  // 2. 非草稿状态的订单，所有商品都需要验证必填字段
   if (status === 'draft') {
     return true;
   }
 
   for (const item of items) {
     if (item.isManualProduct) {
-      // 手动输入商品必须有商品名称
-      if (!item.manualProductName || item.manualProductName.trim() === '') {
+      const hasCode =
+        typeof item.productCode === 'string' && item.productCode.trim() !== '';
+
+      if (!hasCode) {
         return false;
       }
     } else {

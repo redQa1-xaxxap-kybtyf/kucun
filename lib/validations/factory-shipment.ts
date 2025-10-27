@@ -12,14 +12,12 @@ import {
 // 厂家发货订单状态验证
 export const factoryShipmentStatusSchema = z.enum([
   FACTORY_SHIPMENT_STATUS.DRAFT,
-  FACTORY_SHIPMENT_STATUS.PLANNING,
-  FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT,
-  FACTORY_SHIPMENT_STATUS.DEPOSIT_PAID,
-  FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
+  FACTORY_SHIPMENT_STATUS.CONFIRMED,
+  FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT,
+  FACTORY_SHIPMENT_STATUS.SHIPPED,
   FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
   FACTORY_SHIPMENT_STATUS.ARRIVED,
-  FACTORY_SHIPMENT_STATUS.DELIVERED,
-  FACTORY_SHIPMENT_STATUS.COMPLETED,
+  FACTORY_SHIPMENT_STATUS.CANCELLED,
 ]);
 
 // 厂家发货订单明细项验证
@@ -36,6 +34,11 @@ export const factoryShipmentOrderItemSchema = z
       .trim()
       .min(1, '请选择供应商')
       .uuid('供应商ID格式不正确'),
+    productCode: z
+      .string()
+      .trim()
+      .min(1, '产品编码不能为空')
+      .max(50, '产品编码不能超过50个字符'),
     quantity: z.number().positive('数量必须大于0'),
     unitPrice: z.number().min(0, '单价不能为负数'),
     ownership: z
@@ -69,16 +72,13 @@ export const factoryShipmentOrderItemSchema = z
       .or(z.literal('')),
 
     // 通用显示字段
-    displayName: z
-      .string()
-      .min(1, '商品名称不能为空')
-      .max(100, '商品名称不能超过100个字符'),
+    displayName: z.string().max(100, '商品名称不能超过100个字符').default(''),
     specification: z
       .string()
       .max(200, '规格不能超过200个字符')
       .optional()
       .or(z.literal('')),
-    unit: z.string().min(1, '单位不能为空').max(20, '单位不能超过20个字符'),
+    unit: z.enum(['片', '件']),
     weight: z.number().min(0, '重量不能为负数').optional(),
 
     remarks: z
@@ -130,6 +130,11 @@ export const factoryShipmentOrderItemSchema = z
 // 创建厂家发货订单验证（创建时集装箱号码为可选）
 export const createFactoryShipmentOrderSchema = z
   .object({
+    idempotencyKey: z
+      .string()
+      .uuid('幂等性键格式不正确')
+      .optional()
+      .describe('幂等性键,防止重复操作'),
     containerNumber: z
       .string()
       .max(50, '集装箱号码不能超过50个字符')
@@ -145,7 +150,6 @@ export const createFactoryShipmentOrderSchema = z
       .max(1000, '备注不能超过1000个字符')
       .optional()
       .or(z.literal('')),
-    planDate: z.date().optional(),
     items: z
       .array(factoryShipmentOrderItemSchema)
       .min(1, '至少需要添加一个商品'),
@@ -180,6 +184,12 @@ export const updateFactoryShipmentOrderSchema = z
       .min(1, '集装箱号码不能为空')
       .max(50, '集装箱号码不能超过50个字符')
       .optional(),
+    shippingCompany: z
+      .string()
+      .max(100, '船运公司名称不能超过100个字符')
+      .optional()
+      .or(z.literal('')),
+    estimatedArrival: z.date().optional(),
     customerId: z.string().uuid('客户ID格式不正确').optional(),
     status: factoryShipmentStatusSchema.optional(),
     totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
@@ -191,7 +201,6 @@ export const updateFactoryShipmentOrderSchema = z
       .max(1000, '备注不能超过1000个字符')
       .optional()
       .or(z.literal('')),
-    planDate: z.date().optional(),
     shipmentDate: z.date().optional(),
     arrivalDate: z.date().optional(),
     deliveryDate: z.date().optional(),
@@ -277,13 +286,18 @@ export const updateFactoryShipmentOrderStatusSchema = z
       .max(50, '集装箱号码不能超过50个字符')
       .optional()
       .or(z.literal('')),
+    shippingCompany: z
+      .string()
+      .max(100, '船运公司名称不能超过100个字符')
+      .optional()
+      .or(z.literal('')),
+    estimatedArrival: z.date().optional(),
     remarks: z
       .string()
       .max(500, '备注不能超过500个字符')
       .optional()
       .or(z.literal('')),
     // 根据状态更新相应的日期字段
-    planDate: z.date().optional(),
     shipmentDate: z.date().optional(),
     arrivalDate: z.date().optional(),
     deliveryDate: z.date().optional(),
@@ -293,11 +307,9 @@ export const updateFactoryShipmentOrderStatusSchema = z
     data => {
       // 如果状态为已发货或之后的状态，集装箱号码必填
       const shippedStatuses = [
-        FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
+        FACTORY_SHIPMENT_STATUS.SHIPPED,
         FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
         FACTORY_SHIPMENT_STATUS.ARRIVED,
-        FACTORY_SHIPMENT_STATUS.DELIVERED,
-        FACTORY_SHIPMENT_STATUS.COMPLETED,
       ] as const;
       if (
         (shippedStatuses as readonly string[]).includes(data.status) &&
@@ -310,6 +322,22 @@ export const updateFactoryShipmentOrderStatusSchema = z
     {
       message: '确认发货时必须填写集装箱号码',
       path: ['containerNumber'],
+    }
+  )
+  .refine(
+    data => {
+      // 如果状态为已发货，船运公司必填
+      if (
+        data.status === FACTORY_SHIPMENT_STATUS.SHIPPED &&
+        (!data.shippingCompany || data.shippingCompany.trim() === '')
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '确认发货时必须填写船运公司信息(用于自动查询运输状态)',
+      path: ['shippingCompany'],
     }
   );
 
