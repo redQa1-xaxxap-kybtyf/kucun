@@ -1,233 +1,28 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { Download, Package, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
+import { ReturnOrderListView } from '@/components/return-orders/return-order-list-view';
 import { Button } from '@/components/ui/button';
+import { getReturnOrders } from '@/lib/api/return-orders';
+import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   ReturnOrderQueryParams,
   ReturnOrderStatus,
   ReturnOrderType,
   ReturnProcessType,
+  ReturnOrder,
 } from '@/lib/types/return-order';
 
 interface ReturnOrdersPageClientProps {
   initialParams: ReturnOrderQueryParams;
-}
-
-interface DateRangePayload {
-  startDate?: string;
-  endDate?: string;
-}
-
-function buildReturnOrderQuery(
-  searchValue: string,
-  filters: ReturnOrderQueryParams
-) {
-  const params = new URLSearchParams();
-
-  if (searchValue) {
-    params.set('search', searchValue);
-  }
-  if (filters.status) {
-    params.set('status', filters.status);
-  }
-  if (filters.type) {
-    params.set('type', filters.type);
-  }
-  if (filters.processType) {
-    params.set('processType', filters.processType);
-  }
-  if (filters.sortBy) {
-    params.set('sortBy', filters.sortBy);
-  }
-  if (filters.sortOrder) {
-    params.set('sortOrder', filters.sortOrder);
-  }
-  if (filters.startDate) {
-    params.set('startDate', filters.startDate);
-  }
-  if (filters.endDate) {
-    params.set('endDate', filters.endDate);
-  }
-  if (filters.page && filters.page > 1) {
-    params.set('page', filters.page.toString());
-  }
-  if (filters.limit) {
-    params.set('limit', filters.limit.toString());
-  }
-
-  return params.toString();
-}
-
-function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
-  const router = useRouter();
-  const [, startTransition] = React.useTransition();
-
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [status, setStatus] = React.useState(initialParams.status);
-  const [type, setType] = React.useState<ReturnOrderType | undefined>(
-    initialParams.type
-  );
-  const [processType, setProcessType] = React.useState<
-    ReturnProcessType | undefined
-  >(initialParams.processType);
-  const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
-  );
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
-  );
-  const [startDate, setStartDate] = React.useState(initialParams.startDate);
-  const [endDate, setEndDate] = React.useState(initialParams.endDate);
-
-  const buildFilters = React.useCallback(
-    (overrides: Partial<ReturnOrderQueryParams> = {}) => ({
-      ...initialParams,
-      status,
-      type,
-      processType,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-      page: 1,
-      ...overrides,
-    }),
-    [
-      endDate,
-      initialParams,
-      processType,
-      sortBy,
-      sortOrder,
-      startDate,
-      status,
-      type,
-    ]
-  );
-
-  const pushFilters = React.useCallback(
-    (searchValue: string, filters: ReturnOrderQueryParams) => {
-      startTransition(() => {
-        const query = buildReturnOrderQuery(searchValue, filters);
-        router.push(query ? `/return-orders?${query}` : '/return-orders');
-      });
-    },
-    [router, startTransition]
-  );
-
-  const debouncedPushFilters = useDebouncedCallback(pushFilters, 300);
-
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearch(value);
-      debouncedPushFilters(value, buildFilters({ page: 1 }));
-    },
-    [buildFilters, debouncedPushFilters]
-  );
-
-  const handleFilter = React.useCallback(
-    (key: string, value: string | undefined) => {
-      if (key === 'status') {
-        const nextStatus =
-          (value as ReturnOrderStatus | undefined) || undefined;
-        setStatus(nextStatus);
-        pushFilters(search, buildFilters({ status: nextStatus, page: 1 }));
-        return;
-      }
-
-      if (key === 'type') {
-        const nextType = (value as ReturnOrderType | undefined) || undefined;
-        setType(nextType);
-        pushFilters(search, buildFilters({ type: nextType, page: 1 }));
-        return;
-      }
-
-      if (key === 'processType') {
-        const nextProcessType =
-          (value as ReturnProcessType | undefined) || undefined;
-        setProcessType(nextProcessType);
-        pushFilters(
-          search,
-          buildFilters({ processType: nextProcessType, page: 1 })
-        );
-        return;
-      }
-
-      if (key === 'sortBy') {
-        const nextSortBy = value || 'createdAt';
-        setSortBy(nextSortBy);
-        pushFilters(search, buildFilters({ sortBy: nextSortBy, page: 1 }));
-        return;
-      }
-
-      if (key === 'sortOrder') {
-        const nextSortOrder = (value as 'asc' | 'desc') || 'desc';
-        setSortOrder(nextSortOrder);
-        pushFilters(
-          search,
-          buildFilters({ sortOrder: nextSortOrder, page: 1 })
-        );
-      }
-    },
-    [buildFilters, pushFilters, search]
-  );
-
-  const handleDateRangeChange = React.useCallback(
-    (range: DateRangePayload) => {
-      setStartDate(range.startDate);
-      setEndDate(range.endDate);
-      pushFilters(
-        search,
-        buildFilters({
-          startDate: range.startDate,
-          endDate: range.endDate,
-          page: 1,
-        })
-      );
-    },
-    [buildFilters, pushFilters, search]
-  );
-
-  const handlePageChange = React.useCallback(
-    (page: number) => {
-      pushFilters(search, buildFilters({ page }));
-    },
-    [buildFilters, pushFilters, search]
-  );
-
-  const handleClearFilters = React.useCallback(() => {
-    setStatus(undefined);
-    setType(undefined);
-    setProcessType(undefined);
-    setStartDate(undefined);
-    setEndDate(undefined);
-    pushFilters(
-      search,
-      buildFilters({
-        status: undefined,
-        type: undefined,
-        processType: undefined,
-        startDate: undefined,
-        endDate: undefined,
-        page: 1,
-      })
-    );
-  }, [buildFilters, pushFilters, search]);
-
-  return {
-    onSearch: handleSearch,
-    onFilter: handleFilter,
-    onDateRangeChange: handleDateRangeChange,
-    onPageChange: handlePageChange,
-    onClearFilters: handleClearFilters,
-  };
 }
 
 /**
@@ -238,13 +33,151 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
 export function ReturnOrdersPageClient({
   initialParams,
 }: ReturnOrdersPageClientProps) {
+  const router = useRouter();
+
+  // 构建查询参数
+  const queryParams: ReturnOrderQueryParams = {
+    page: initialParams?.page || 1,
+    limit: initialParams?.limit || paginationConfig.defaultPageSize,
+    search: initialParams?.search,
+    status: initialParams?.status,
+    type: initialParams?.type,
+    processType: initialParams?.processType,
+    sortBy: initialParams?.sortBy || 'createdAt',
+    sortOrder: initialParams?.sortOrder || 'desc',
+    startDate: initialParams?.startDate,
+    endDate: initialParams?.endDate,
+  };
+
+  // 获取退货订单数据
   const {
-    onSearch,
-    onFilter,
-    onDateRangeChange,
-    onPageChange,
-    onClearFilters,
-  } = useReturnOrderNavigation(initialParams);
+    data: queryData,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.returnOrders.list(queryParams),
+    queryFn: () => getReturnOrders(queryParams),
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: false,
+    placeholderData: previousData => previousData,
+  });
+
+  const orders = queryData?.data.returnOrders || [];
+  const pagination = queryData?.data.pagination;
+
+  // 处理操作回调
+  const handleCancelRequest = React.useCallback((_order: ReturnOrder) => {
+    // 取消操作逻辑已集成到 ReturnOrderListView 中
+  }, []);
+
+  const handleDeleteRequest = React.useCallback((_order: ReturnOrder) => {
+    // 删除操作逻辑已集成到 ReturnOrderListView 中
+  }, []);
+
+  const handleRetry = React.useCallback(() => {
+    refetch();
+  }, [refetch]);
+
+  // 导航相关处理
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      const params = new URLSearchParams(window.location.search);
+      if (value) {
+        params.set('search', value);
+      } else {
+        params.delete('search');
+      }
+      params.delete('page');
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
+
+  const handleStatusChange = React.useCallback(
+    (value: ReturnOrderStatus | 'all') => {
+      const params = new URLSearchParams(window.location.search);
+      if (value && value !== 'all') {
+        params.set('status', value);
+      } else {
+        params.delete('status');
+      }
+      params.delete('page');
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
+
+  const handleTypeChange = React.useCallback(
+    (value: ReturnOrderType | 'all') => {
+      const params = new URLSearchParams(window.location.search);
+      if (value && value !== 'all') {
+        params.set('type', value);
+      } else {
+        params.delete('type');
+      }
+      params.delete('page');
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
+
+  const handleProcessTypeChange = React.useCallback(
+    (value: ReturnProcessType | 'all') => {
+      const params = new URLSearchParams(window.location.search);
+      if (value && value !== 'all') {
+        params.set('processType', value);
+      } else {
+        params.delete('processType');
+      }
+      params.delete('page');
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: { startDate?: string; endDate?: string }) => {
+      const params = new URLSearchParams(window.location.search);
+      if (range.startDate) {
+        params.set('startDate', range.startDate);
+      } else {
+        params.delete('startDate');
+      }
+      if (range.endDate) {
+        params.set('endDate', range.endDate);
+      } else {
+        params.delete('endDate');
+      }
+      params.delete('page');
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
+
+  const handleClearFilters = React.useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    params.delete('status');
+    params.delete('type');
+    params.delete('processType');
+    params.delete('startDate');
+    params.delete('endDate');
+    params.delete('page');
+    router.push(`/return-orders?${params.toString()}`);
+  }, [router]);
+
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(window.location.search);
+      if (page > 1) {
+        params.set('page', page.toString());
+      } else {
+        params.delete('page');
+      }
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -288,13 +221,30 @@ export function ReturnOrdersPageClient({
             </div>
           }
         >
-          <ERPReturnOrderList
-            initialParams={initialParams}
-            onSearch={onSearch}
-            onFilter={onFilter}
-            onDateRangeChange={onDateRangeChange}
-            onPageChange={onPageChange}
-            onClearFilters={onClearFilters}
+          <ReturnOrderListView
+            searchValue={initialParams?.search || ''}
+            statusFilter={initialParams?.status || 'all'}
+            typeFilter={initialParams?.type || 'all'}
+            processTypeFilter={initialParams?.processType || 'all'}
+            dateRange={{
+              startDate: initialParams?.startDate,
+              endDate: initialParams?.endDate,
+            }}
+            isSearching={isLoading}
+            onSearch={handleSearch}
+            onStatusChange={handleStatusChange}
+            onTypeChange={handleTypeChange}
+            onProcessTypeChange={handleProcessTypeChange}
+            onDateRangeChange={handleDateRangeChange}
+            onClearFilters={handleClearFilters}
+            orders={orders}
+            isLoading={isLoading}
+            error={error}
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            onCancelRequest={handleCancelRequest}
+            onDeleteRequest={handleDeleteRequest}
+            onRetry={handleRetry}
           />
         </Suspense>
       </div>
