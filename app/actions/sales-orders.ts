@@ -51,16 +51,8 @@ const salesOrderItemSchema = z
   })
   .superRefine((item, ctx) => {
     if (item.isManualProduct) {
-      if (
-        !item.manualProductName ||
-        item.manualProductName.trim().length === 0
-      ) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: '手动输入商品必须填写商品名称',
-          path: ['manualProductName'],
-        });
-      }
+      // 临时商品只需要产品编码，商品名称为可选
+      // 不再强制要求 manualProductName
     } else {
       const productId = item.productId?.trim();
       if (!productId) {
@@ -121,12 +113,14 @@ export async function createSalesOrder(
     );
     const profitAmount = totalAmount - costAmount;
 
-    // 4. 数据库事务
-    const result = await prisma.$transaction(async tx => {
-      // 生成订单号
-      const count = await tx.salesOrder.count();
-      const orderNumber = `SO${new Date().getFullYear()}${String(count + 1).padStart(6, '0')}`;
+    // 4. 生成订单号（使用并发安全的生成服务）
+    const { generateSalesOrderNumber } = await import(
+      '@/lib/services/simple-order-number-generator'
+    );
+    const orderNumber = await generateSalesOrderNumber();
 
+    // 5. 数据库事务
+    const result = await prisma.$transaction(async tx => {
       // 创建销售订单
       const order = await tx.salesOrder.create({
         data: {
@@ -358,7 +352,113 @@ export async function deleteSalesOrder(orderId: string): Promise<ActionResult> {
 }
 
 /**
+ * 增量更新销售订单明细项
+ * 采用智能差异对比策略，避免"先删后建"的数据丢失风险
+ *
+ * @param tx - Prisma事务对象
+ * @param orderId - 订单ID
+ * @param newItems - 新的订单项数据
+ * @param existingItems - 现有的订单项数据
+ */
+async function updateSalesOrderItemsIncremental(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  orderId: string,
+  newItems: Array<{
+    id?: string;
+    productId?: string | null;
+    isManualProduct?: boolean | null;
+    manualProductName?: string | null;
+    manualSpecification?: string | null;
+    manualWeight?: number | null;
+    manualUnit?: string | null;
+    colorCode?: string | null;
+    productionDate?: string | Date | null;
+    quantity: number;
+    unitPrice: number;
+    subtotal: number;
+    unitCost?: number | null;
+    costSubtotal?: number | null;
+    profitAmount?: number | null;
+  }>,
+  existingItems: Array<{ id: string }>
+) {
+  // 构建现有订单项ID集合
+  const existingItemIds = new Set(existingItems.map(item => item.id));
+
+  // 构建新订单项ID集合（过滤掉undefined和空字符串）
+  const newItemIds = new Set(
+    newItems
+      .filter((item): item is typeof item & { id: string } =>
+        Boolean(item.id && item.id.trim())
+      )
+      .map(item => item.id)
+  );
+
+  // 1. 处理新增和修改的订单项
+  for (const newItem of newItems) {
+    const itemData = {
+      productId: newItem.productId || null,
+      isManualProduct: newItem.isManualProduct,
+      manualProductName: newItem.manualProductName,
+      manualSpecification: newItem.manualSpecification,
+      manualWeight: newItem.manualWeight,
+      manualUnit: newItem.manualUnit,
+      colorCode: newItem.colorCode,
+      productionDate: newItem.productionDate
+        ? typeof newItem.productionDate === 'string'
+          ? newItem.productionDate
+          : (newItem.productionDate as Date).toISOString()
+        : null,
+      quantity: newItem.quantity,
+      unitPrice: newItem.unitPrice,
+      subtotal: newItem.subtotal,
+      unitCost: newItem.unitCost,
+      costSubtotal: newItem.costSubtotal,
+      profitAmount: newItem.profitAmount,
+    };
+
+    if (!newItem.id || !newItem.id.trim()) {
+      // 新增订单项
+      await tx.salesOrderItem.create({
+        data: {
+          ...itemData,
+          salesOrderId: orderId,
+        },
+      });
+    } else if (existingItemIds.has(newItem.id)) {
+      // 修改现有订单项
+      await tx.salesOrderItem.update({
+        where: { id: newItem.id },
+        data: itemData,
+      });
+    }
+  }
+
+  // 2. 处理需要删除的订单项
+  const itemsToDelete = existingItems.filter(item => !newItemIds.has(item.id));
+
+  for (const item of itemsToDelete) {
+    // 检查是否存在退货记录
+    const returnItemCount = await tx.returnOrderItem.count({
+      where: { salesOrderItemId: item.id },
+    });
+
+    if (returnItemCount > 0) {
+      throw new Error(
+        `订单项 ${item.id} 存在 ${returnItemCount} 条退货记录，无法删除。请先处理相关退货记录。`
+      );
+    }
+
+    // 安全删除
+    await tx.salesOrderItem.delete({
+      where: { id: item.id },
+    });
+  }
+}
+
+/**
  * 更新销售订单
+ * 使用增量更新策略，避免"先删后建"的数据丢失风险
  */
 export async function updateSalesOrder(
   formData: FormData
@@ -403,12 +503,15 @@ export async function updateSalesOrder(
         throw new Error('不能修改已完成的订单');
       }
 
-      // 删除旧的订单项
-      await tx.salesOrderItem.deleteMany({
-        where: { salesOrderId: orderId },
-      });
+      // 使用增量更新策略更新订单项
+      await updateSalesOrderItemsIncremental(
+        tx,
+        orderId,
+        data.items,
+        existingOrder.items
+      );
 
-      // 更新订单
+      // 更新订单主表
       await tx.salesOrder.update({
         where: { id: orderId },
         data: {
@@ -420,28 +523,6 @@ export async function updateSalesOrder(
           costAmount,
           profitAmount,
           remarks: data.remarks,
-          items: {
-            create: data.items.map(item => ({
-              productId: item.productId,
-              isManualProduct: item.isManualProduct,
-              manualProductName: item.manualProductName,
-              manualSpecification: item.manualSpecification,
-              manualWeight: item.manualWeight,
-              manualUnit: item.manualUnit,
-              colorCode: item.colorCode,
-              productionDate: item.productionDate
-                ? typeof item.productionDate === 'string'
-                  ? item.productionDate
-                  : (item.productionDate as Date).toISOString()
-                : null,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              subtotal: item.subtotal,
-              unitCost: item.unitCost,
-              costSubtotal: item.costSubtotal,
-              profitAmount: item.profitAmount,
-            })),
-          },
         },
       });
     });
@@ -464,4 +545,3 @@ export async function updateSalesOrder(
     };
   }
 }
-

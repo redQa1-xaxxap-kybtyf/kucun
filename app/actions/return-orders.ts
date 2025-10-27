@@ -6,8 +6,15 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { returnRefundConfig } from '@/lib/env';
-import type { SalesOrderStatus } from '@/lib/types/sales-order';
 import { logger } from '@/lib/logger';
+import type { SalesOrderStatus } from '@/lib/types/sales-order';
+
+import {
+  ALLOWED_RETURN_SALES_ORDER_STATUSES,
+  approveReturnOrderSchema,
+  createReturnOrderSchema,
+  updateReturnOrderStatusSchema,
+} from './return-orders.schemas';
 
 /**
  * 退货订单管理模块 Server Actions
@@ -31,79 +38,7 @@ export type ActionResult<T = unknown> = {
   error?: string;
 };
 
-const ALLOWED_RETURN_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
-  'shipped',
-  'completed',
-];
-
-// ============================================
-// Zod 验证模式
-// ============================================
-
-const returnOrderItemSchema = z.object({
-  salesOrderItemId: z.string().min(1, '请选择销售订单明细'),
-  productId: z.string().min(1, '产品ID不能为空'),
-  returnQuantity: z
-    .number()
-    .min(0.01, '退货数量必须大于0')
-    .max(999999, '退货数量不能超过999999'),
-  originalQuantity: z.number().min(0, '原始数量不能为负数'),
-  unitPrice: z
-    .number()
-    .min(0, '单价不能为负数')
-    .max(999999, '单价不能超过999999'),
-  subtotal: z.number().min(0, '小计不能为负数'),
-  reason: z.string().optional(),
-  condition: z.enum(['good', 'damaged', 'defective']),
-});
-
-const createReturnOrderSchema = z.object({
-  salesOrderId: z.string().min(1, '请选择关联的销售订单'),
-  customerId: z.string().min(1, '客户ID不能为空'),
-  type: z.enum([
-    'quality_issue',
-    'wrong_product',
-    'customer_change',
-    'damage_in_transit',
-    'other',
-  ]),
-  processType: z.enum(['refund', 'exchange']),
-  reason: z
-    .string()
-    .min(1, '退货原因不能为空')
-    .max(500, '退货原因不能超过500字符'),
-  remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
-  items: z
-    .array(returnOrderItemSchema)
-    .min(1, '至少需要一个退货明细')
-    .max(100, '退货明细不能超过100项'),
-});
-
-const updateReturnOrderStatusSchema = z.object({
-  returnOrderId: z.string().min(1, '退货订单ID不能为空'),
-  status: z.enum([
-    'draft',
-    'submitted',
-    'approved',
-    'rejected',
-    'processing',
-    'completed',
-    'cancelled',
-  ]),
-  remarks: z.string().max(500, '备注不能超过500字符').optional(),
-  refundAmount: z
-    .number()
-    .min(0, '退款金额不能为负数')
-    .max(999999, '退款金额不能超过999999')
-    .optional(),
-});
-
-const approveReturnOrderSchema = z.object({
-  returnOrderId: z.string().min(1, '退货订单ID不能为空'),
-  approved: z.boolean(),
-  refundAmount: z.number().min(0, '退款金额不能为负数').optional(),
-  remarks: z.string().max(500, '审核备注不能超过500字符').optional(),
-});
+// Zod 模式与允许状态已拆分到 return-orders.schemas.ts
 
 // ============================================
 // Server Actions
@@ -127,12 +62,8 @@ export async function createReturnOrder(
     const data = createReturnOrderSchema.parse(rawData);
 
     // 3. 生成退货单号
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const timestamp = now.getTime().toString().slice(-6);
-    const returnNumber = `${returnRefundConfig.returnOrderPrefix}${year}${month}${day}${timestamp}`;
+    const { generateReturnNumber } = await import('./return-orders.utils');
+    const returnNumber = generateReturnNumber(returnRefundConfig.returnOrderPrefix);
 
     // 4. 验证销售订单存在
     const salesOrder = await prisma.salesOrder.findUnique({
@@ -156,58 +87,37 @@ export async function createReturnOrder(
     }
 
     // 6. 验证退货数量不超过原始数量
-    for (const item of data.items) {
-      const salesOrderItem = salesOrder.items.find(
-        si => si.id === item.salesOrderItemId
+    {
+      const { validateReturnQuantities } = await import('./return-orders.utils');
+      const err = validateReturnQuantities(
+        data.items.map(i => ({ salesOrderItemId: i.salesOrderItemId, returnQuantity: i.returnQuantity })),
+        salesOrder.items.map(i => ({ id: i.id, quantity: i.quantity }))
       );
-
-      if (!salesOrderItem) {
-        return { success: false, error: '销售订单明细不存在' };
-      }
-
-      if (item.returnQuantity > salesOrderItem.quantity) {
-        return { success: false, error: '退货数量不能超过原始数量' };
-      }
+      if (err) return { success: false, error: err };
     }
 
     // 7. 计算总金额
-    const totalAmount = data.items.reduce(
-      (sum, item) => sum + item.subtotal,
-      0
-    );
+    const { calcTotalAmount, createReturnOrderTx } = await import('./return-orders.utils');
+    const totalAmount = calcTotalAmount(data.items.map(i => ({ subtotal: i.subtotal })));
 
     // 8. 创建退货订单（事务）
-    const result = await prisma.$transaction(async tx => {
-      const returnOrder = await tx.returnOrder.create({
-        data: {
-          returnNumber,
+    const result = await prisma.$transaction(async tx =>
+      await createReturnOrderTx(
+        tx,
+        {
           salesOrderId: data.salesOrderId,
           customerId: data.customerId,
           userId: session.user.id,
           type: data.type,
           processType: data.processType,
-          status: 'draft',
           reason: data.reason,
           remarks: data.remarks,
-          totalAmount,
-          refundAmount: 0, // 初始退款金额为0，审核通过后设置
-          items: {
-            create: data.items.map(item => ({
-              salesOrderItemId: item.salesOrderItemId,
-              productId: item.productId,
-              returnQuantity: item.returnQuantity,
-              originalQuantity: item.originalQuantity,
-              unitPrice: item.unitPrice,
-              subtotal: item.subtotal,
-              reason: item.reason,
-              condition: item.condition,
-            })),
-          },
+          items: data.items,
         },
-      });
-
-      return returnOrder;
-    });
+        returnNumber,
+        totalAmount
+      )
+    );
 
     // 8. 重新验证路径
     revalidatePath('/return-orders');
@@ -280,17 +190,8 @@ export async function updateReturnOrderStatus(
     }
 
     // 验证状态流转
-    const validTransitions: Record<string, string[]> = {
-      draft: ['submitted', 'cancelled'],
-      submitted: ['approved', 'rejected', 'cancelled'],
-      approved: ['processing', 'cancelled'],
-      rejected: ['cancelled'],
-      processing: ['completed', 'cancelled'],
-      completed: [],
-      cancelled: [],
-    };
-
-    if (!validTransitions[returnOrder.status]?.includes(data.status)) {
+    const { canTransition, applyCompletionEffects, mergeRemarks } = await import('./return-orders.utils');
+    if (!canTransition(returnOrder.status, data.status)) {
       return {
         success: false,
         error: `不能从 ${returnOrder.status} 状态变更为 ${data.status} 状态`,
@@ -305,27 +206,13 @@ export async function updateReturnOrderStatus(
         data: {
           status: data.status,
           refundAmount: data.refundAmount ?? returnOrder.refundAmount,
-          remarks: data.remarks
-            ? `${returnOrder.remarks || ''}\n${data.remarks}`
-            : returnOrder.remarks,
+          remarks: mergeRemarks(returnOrder.remarks, data.remarks),
         },
       });
 
       // 如果状态变更为 completed，恢复库存
       if (data.status === 'completed') {
-        for (const item of returnOrder.items) {
-          if ((item.damagedQuantity ?? 0) === 0) {
-            // 只有无破损的商品才恢复库存
-            await tx.inventory.updateMany({
-              where: { productId: item.productId },
-              data: {
-                quantity: {
-                  increment: item.returnQuantity,
-                },
-              },
-            });
-          }
-        }
+        await applyCompletionEffects(tx, returnOrder);
       }
     });
 
@@ -588,51 +475,14 @@ export async function batchUpdateReturnOrderStatus(
     }
 
     // 根据操作类型执行不同的逻辑
-    const affectedSalesOrderIds = new Set<string>();
-
-    await prisma.$transaction(async tx => {
-      const orders = await tx.returnOrder.findMany({
-        where: { id: { in: returnOrderIds } },
-        select: { id: true, salesOrderId: true },
-      });
-
-      orders.forEach(order => {
-        if (order.salesOrderId) {
-          affectedSalesOrderIds.add(order.salesOrderId);
-        }
-      });
-
-      if (batchAction === 'cancel') {
-        // 批量取消
-        await tx.returnOrder.updateMany({
-          where: {
-            id: { in: returnOrderIds },
-            status: { notIn: ['completed', 'cancelled'] },
-          },
-          data: { status: 'cancelled' },
-        });
-      } else if (batchAction === 'approve') {
-        // 批量批准（仅限提交状态）
-        await tx.returnOrder.updateMany({
-          where: {
-            id: { in: returnOrderIds },
-            status: 'submitted',
-          },
-          data: { status: 'approved' },
-        });
-      } else if (batchAction === 'reject') {
-        // 批量拒绝（仅限提交状态）
-        await tx.returnOrder.updateMany({
-          where: {
-            id: { in: returnOrderIds },
-            status: 'submitted',
-          },
-          data: { status: 'rejected' },
-        });
-      } else {
-        throw new Error('无效的操作类型');
-      }
-    });
+    const { batchUpdateReturnOrderStatusTx } = await import('./return-orders.utils');
+    const affectedSalesOrderIds = await prisma.$transaction(async tx =>
+      await batchUpdateReturnOrderStatusTx(
+        tx,
+        returnOrderIds,
+        batchAction as 'cancel' | 'approve' | 'reject'
+      )
+    );
 
     revalidatePath('/return-orders');
     revalidatePath('/sales-orders');
@@ -673,44 +523,11 @@ export async function batchDeleteReturnOrders(
       return { success: false, error: '未选择退货订单' };
     }
 
-    const affectedSalesOrderIds = new Set<string>();
-
-    await prisma.$transaction(async tx => {
-      // 检查所有订单的状态
-      const returnOrders = await tx.returnOrder.findMany({
-        where: { id: { in: returnOrderIds } },
-      });
-
-      for (const order of returnOrders) {
-        if (order.status !== 'draft' && order.status !== 'cancelled') {
-          throw new Error(
-            `退货订单 "${order.returnNumber}" 不是草稿或已取消状态，无法批量删除`
-          );
-        }
-      }
-
-      // 删除所有退货订单明细
-      await tx.returnOrderItem.deleteMany({
-        where: { returnOrderId: { in: returnOrderIds } },
-      });
-
-      // 删除所有退货订单
-      await tx.returnOrder.deleteMany({
-        where: { id: { in: returnOrderIds } },
-      });
-
-      returnOrders.forEach(order => {
-        if (order.salesOrderId) {
-          affectedSalesOrderIds.add(order.salesOrderId);
-        }
-      });
-    });
+    const { batchDeleteReturnOrdersTx } = await import('./return-orders.utils');
+    await prisma.$transaction(async tx => batchDeleteReturnOrdersTx(tx, returnOrderIds));
 
     revalidatePath('/return-orders');
     revalidatePath('/sales-orders');
-    affectedSalesOrderIds.forEach(salesOrderId => {
-      revalidatePath(`/sales-orders/${salesOrderId}`);
-    });
 
     return { success: true };
   } catch (error) {
@@ -724,3 +541,4 @@ export async function batchDeleteReturnOrders(
     };
   }
 }
+

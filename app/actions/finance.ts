@@ -7,8 +7,8 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { parseLocalDateString } from '@/lib/utils/datetime';
 import { logger } from '@/lib/logger';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 
 // cspell:words payables
 
@@ -486,10 +486,13 @@ export async function createRefundRecord(
 
     const data = createRefundSchema.parse(rawData);
 
-    const result = await prisma.$transaction(async tx => {
-      const count = await tx.refundRecord.count();
-      const refundNumber = `RF${new Date().getFullYear()}${String(count + 1).padStart(6, '0')}`;
+    // 生成退款单号（使用并发安全的生成服务）
+    const { generateRefundNumber } = await import(
+      '@/lib/services/simple-order-number-generator'
+    );
+    const refundNumber = await generateRefundNumber();
 
+    const result = await prisma.$transaction(async tx => {
       const returnOrder = await tx.returnOrder.findUnique({
         where: { id: data.returnOrderId },
         select: { salesOrderId: true },

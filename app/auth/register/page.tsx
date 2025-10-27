@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { type UseFormReturn, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,8 +26,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { userValidations } from '@/lib/validations/base';
 import { logger } from '@/lib/utils/console-logger';
+import { userValidations } from '@/lib/validations/base';
 
 // 扩展注册表单类型以包含确认密码
 const registerFormSchema = userValidations.register.extend({
@@ -36,13 +36,20 @@ const registerFormSchema = userValidations.register.extend({
 
 type RegisterFormInput = z.infer<typeof registerFormSchema>;
 
-export default function RegisterPage() {
+type UseRegisterControllerReturn = {
+  form: UseFormReturn<RegisterFormInput>;
+  isLoading: boolean;
+  formError: string;
+  successMessage: string;
+  onSubmit: (values: RegisterFormInput) => Promise<void>;
+};
+
+function useRegisterController(): UseRegisterControllerReturn {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // 表单配置
   const form = useForm<RegisterFormInput>({
     resolver: zodResolver(registerFormSchema),
     defaultValues: {
@@ -54,7 +61,7 @@ export default function RegisterPage() {
     },
   });
 
-  const handleSubmit = async (data: RegisterFormInput) => {
+  const onSubmit = async (data: RegisterFormInput) => {
     setIsLoading(true);
     setFormError('');
     setSuccessMessage('');
@@ -94,6 +101,236 @@ export default function RegisterPage() {
     }
   };
 
+  return { form, isLoading, formError, successMessage, onSubmit };
+}
+
+type RegisterFormSectionProps = {
+  form: UseFormReturn<RegisterFormInput>;
+  isLoading: boolean;
+  onSubmit: (values: RegisterFormInput) => Promise<void>;
+};
+
+function RegisterFormSection({
+  form,
+  isLoading,
+  onSubmit,
+}: RegisterFormSectionProps) {
+  return (
+    <Form {...form}>
+      <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+        <div className="space-y-4">
+          <RegisterFormFields form={form} isLoading={isLoading} />
+        </div>
+
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading ? '注册中...' : '注册账户'}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
+type RegisterFormFieldsProps = {
+  form: UseFormReturn<RegisterFormInput>;
+  isLoading: boolean;
+};
+
+function RegisterFormFields(props: RegisterFormFieldsProps) {
+  return (
+    <>
+      <EmailField {...props} />
+      <UsernameField {...props} />
+      <NameField {...props} />
+      <PasswordField {...props} />
+      <ConfirmPasswordField {...props} />
+    </>
+  );
+}
+
+type RegisterFieldProps = RegisterFormFieldsProps;
+
+function EmailField({ form, isLoading }: RegisterFieldProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="email"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            邮箱
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              type="email"
+              autoComplete="email"
+              placeholder="请输入邮箱地址"
+              disabled={isLoading}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function UsernameField({ form, isLoading }: RegisterFieldProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="username"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            用户名
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              type="text"
+              autoComplete="username"
+              placeholder="请输入用户名（3-20个字符）"
+              disabled={isLoading}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function NameField({ form, isLoading }: RegisterFieldProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="name"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>姓名</FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              type="text"
+              autoComplete="name"
+              placeholder="请输入真实姓名"
+              disabled={isLoading}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function PasswordField({ form, isLoading }: RegisterFieldProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="password"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            密码
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              type="password"
+              autoComplete="new-password"
+              placeholder="请输入密码（至少6个字符）"
+              disabled={isLoading}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+function ConfirmPasswordField({ form, isLoading }: RegisterFieldProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="confirmPassword"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="flex items-center gap-2">
+            <Lock className="h-4 w-4" />
+            确认密码
+          </FormLabel>
+          <FormControl>
+            <Input
+              {...field}
+              type="password"
+              autoComplete="new-password"
+              placeholder="请再次输入密码"
+              disabled={isLoading}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+type RegisterAlertsProps = {
+  successMessage: string;
+  formError: string;
+};
+
+function RegisterAlerts({ successMessage, formError }: RegisterAlertsProps) {
+  if (!successMessage && !formError) {
+    return null;
+  }
+
+  return (
+    <div className="mb-4 space-y-4">
+      {successMessage && (
+        <Alert variant="default">
+          <AlertDescription className="text-green-600">
+            {successMessage}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {formError && (
+        <Alert variant="destructive">
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
+
+function RegisterFooter() {
+  return (
+    <div className="mt-6 text-center text-sm text-gray-600">
+      <p>
+        已有账户？{' '}
+        <Link
+          href="/auth/signin"
+          className="text-primary hover:text-primary/80 font-medium"
+        >
+          立即登录
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+export default function RegisterPage() {
+  const { form, isLoading, formError, successMessage, onSubmit } =
+    useRegisterController();
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
@@ -114,164 +351,18 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* 成功信息 */}
-            {successMessage && (
-              <Alert className="mb-4" variant="default">
-                <AlertDescription className="text-green-600">
-                  {successMessage}
-                </AlertDescription>
-              </Alert>
-            )}
+            <RegisterAlerts
+              successMessage={successMessage}
+              formError={formError}
+            />
 
-            {/* 错误信息 */}
-            {formError && (
-              <Alert className="mb-4" variant="destructive">
-                <AlertDescription>{formError}</AlertDescription>
-              </Alert>
-            )}
+            <RegisterFormSection
+              form={form}
+              isLoading={isLoading}
+              onSubmit={onSubmit}
+            />
 
-            <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(handleSubmit)}
-                className="space-y-4"
-              >
-                {/* 邮箱字段 */}
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        邮箱地址
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          autoComplete="email"
-                          placeholder="请输入邮箱地址"
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 用户名字段 */}
-                <FormField
-                  control={form.control}
-                  name="username"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        用户名
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          autoComplete="username"
-                          placeholder="请输入用户名（3-20个字符）"
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 姓名字段 */}
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>姓名</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          autoComplete="name"
-                          placeholder="请输入真实姓名"
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 密码字段 */}
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        密码
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="请输入密码（至少6个字符）"
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 确认密码字段 */}
-                <FormField
-                  control={form.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        确认密码
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="password"
-                          autoComplete="new-password"
-                          placeholder="请再次输入密码"
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  {isLoading ? '注册中...' : '注册账户'}
-                </Button>
-              </form>
-            </Form>
-
-            <div className="mt-6 text-center text-sm text-gray-600">
-              <p>
-                已有账户？{' '}
-                <Link
-                  href="/auth/signin"
-                  className="text-primary hover:text-primary/80 font-medium"
-                >
-                  立即登录
-                </Link>
-              </p>
-            </div>
+            <RegisterFooter />
           </CardContent>
         </Card>
       </div>

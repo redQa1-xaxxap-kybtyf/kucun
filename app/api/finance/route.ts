@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
-import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
+import { buildCacheKey, getOrSetJSON } from '@/lib/cache';
+import { FINANCE_CACHE_TTL_SECONDS } from '@/lib/constants/cache';
 import {
   getFinanceOverview,
   getFinanceStatistics,
@@ -20,7 +21,7 @@ export const GET = withAuth(async () => {
     const financeOverview = await getOrSetJSON(
       cacheKey,
       async () => getFinanceOverview(), // 获取财务概览数据(使用服务层函数)
-      CACHE_STRATEGY.aggregateData.redisTTL, // 10分钟缓存
+      FINANCE_CACHE_TTL_SECONDS, // 缩短TTL，确保概览数据靠近实时
       {
         enableRandomTTL: true,
         enableNullCache: true,
@@ -71,7 +72,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     const statisticsData = await getOrSetJSON(
       cacheKey,
       async () => getFinanceStatistics(params), // 获取财务统计数据(使用服务层函数)
-      CACHE_STRATEGY.aggregateData.redisTTL, // 10分钟缓存
+      FINANCE_CACHE_TTL_SECONDS, // 缩短TTL，保持统计数据新鲜
       {
         enableRandomTTL: true,
         enableNullCache: true,

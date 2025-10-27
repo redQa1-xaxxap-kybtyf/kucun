@@ -1,200 +1,29 @@
 'use server';
 
 import type { Prisma } from '@prisma/client';
-import { getServerSession } from 'next-auth';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { generateFactoryShipmentNumber } from '@/lib/services/simple-order-number-generator';
 import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
-import { logger } from '@/lib/logger';
 
-const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(
-  FACTORY_SHIPMENT_STATUS
-) as FactoryShipmentStatus[];
-
-const factoryShipmentStatusEnum = z.enum(
-  FACTORY_SHIPMENT_STATUS_VALUES as [
-    FactoryShipmentStatus,
-    ...FactoryShipmentStatus[],
-  ]
-);
-
-/**
- * 厂家发货模块 Server Actions
- *
- * ✅ Next.js 15 最佳实践：
- * 1. 'use server' 指令
- * 2. Zod 参数验证
- * 3. 身份认证检查
- * 4. Prisma 事务处理
- * 5. 路径重新验证
- */
-
-// ============================================
-// 类型定义
-// ============================================
-
-export type ActionResult<T = unknown> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-};
-
-// ============================================
-// Zod 验证模式
-// ============================================
-
-const factoryShipmentItemSchema = z
-  .object({
-    productId: z.string().optional(),
-    supplierId: z.string().min(1, '供应商 ID 不能为空'),
-    isManualProduct: z.boolean().optional(),
-    manualProductName: z.string().optional(),
-    manualSpecification: z.string().optional(),
-    manualWeight: z.number().nonnegative('重量不能为负数').optional(),
-    manualUnit: z.string().optional(),
-    displayName: z.string().min(1, '商品名称不能为空'),
-    specification: z.string().optional(),
-    unit: z.string().optional(),
-    weight: z.number().nonnegative('重量不能为负数').optional(),
-    quantity: z.number().positive('数量必须大于 0'),
-    unitPrice: z.number().nonnegative('单价不能为负'),
-    totalPrice: z.number().nonnegative('总价不能为负'),
-    remarks: z.string().optional(),
-  })
-  .superRefine((item, ctx) => {
-    const trimmedManualName = item.manualProductName?.trim();
-    const hasProduct = Boolean(item.productId && item.productId.trim());
-    const isManual = Boolean(item.isManualProduct);
-
-    if (!isManual && !hasProduct) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '请选择商品或启用手动商品',
-      });
-    }
-
-    if (isManual && !trimmedManualName) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: '手动商品必须填写名称',
-        path: ['manualProductName'],
-      });
-    }
-  });
-
-const createFactoryShipmentSchema = z.object({
-  customerId: z.string().min(1, '客户 ID 不能为空'),
-  containerNumber: z.string().optional(),
-  status: factoryShipmentStatusEnum.default(FACTORY_SHIPMENT_STATUS.DRAFT),
-  planDate: z.string().optional(),
-  shipmentDate: z.string().optional(),
-  arrivalDate: z.string().optional(),
-  items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个商品项'),
-  receivableAmount: z.number().nonnegative('应收金额不能为负').optional(),
-  depositAmount: z.number().nonnegative('定金金额不能为负').optional(),
-  remarks: z.string().optional(),
-});
-
-const updateFactoryShipmentStatusSchema = z.object({
-  shipmentId: z.string().min(1, '发货单 ID 不能为空'),
-  status: factoryShipmentStatusEnum,
-});
-
-type FactoryShipmentItemInput = z.infer<typeof factoryShipmentItemSchema>;
-type FactoryShipmentFormData = z.infer<typeof createFactoryShipmentSchema>;
-
-async function resolveShipmentItems(
-  tx: Omit<
-    typeof prisma,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-  >,
-  items: FactoryShipmentItemInput[]
-): Promise<
-  Prisma.FactoryShipmentOrderItemUncheckedCreateWithoutFactoryShipmentOrderInput[]
-> {
-  const productIds = Array.from(
-    new Set(
-      items
-        .map(item => item.productId)
-        .filter((id): id is string => Boolean(id))
-    )
-  );
-
-  const products =
-    productIds.length > 0
-      ? await tx.product.findMany({
-          where: { id: { in: productIds } },
-          select: {
-            id: true,
-            name: true,
-            specification: true,
-            unit: true,
-            weight: true,
-          },
-        })
-      : [];
-
-  const productMap = new Map(products.map(product => [product.id, product]));
-
-  return items.map(item => {
-    const product = item.productId ? productMap.get(item.productId) : undefined;
-    const trimmedManualName = item.manualProductName?.trim();
-    const trimmedDisplayName =
-      item.displayName?.trim() ||
-      (product?.name ?? trimmedManualName ?? '未知商品');
-    const trimmedSpecification =
-      item.specification?.trim() ?? product?.specification ?? undefined;
-    const trimmedUnit = item.unit?.trim() ?? product?.unit ?? 'piece';
-    const itemWeight =
-      typeof item.weight === 'number'
-        ? item.weight
-        : (product?.weight ?? undefined);
-
-    return {
-      productId:
-        item.productId && item.productId.trim().length > 0
-          ? item.productId
-          : null,
-      supplierId: item.supplierId,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: item.totalPrice,
-      isManualProduct: item.isManualProduct ? true : undefined,
-      manualProductName: item.isManualProduct
-        ? (trimmedManualName ?? '临时商品')
-        : undefined,
-      manualSpecification: item.isManualProduct
-        ? (item.manualSpecification?.trim() ?? undefined)
-        : undefined,
-      manualWeight: item.isManualProduct
-        ? (item.manualWeight ?? undefined)
-        : undefined,
-      manualUnit: item.isManualProduct
-        ? (item.manualUnit?.trim() ?? undefined)
-        : undefined,
-      remarks: item.remarks?.trim() ?? undefined,
-      displayName: trimmedDisplayName,
-      specification: trimmedSpecification,
-      unit: trimmedUnit,
-      weight: itemWeight,
-    };
-  });
-}
-
-function parseJsonPayload<T>(formData: FormData, key: string): T {
-  const payload = formData.get(key);
-  if (typeof payload !== 'string' || !payload) {
-    throw new Error('提交数据格式不正确');
-  }
-  return JSON.parse(payload) as T;
-}
+import {
+  createFactoryShipmentSchema,
+  updateFactoryShipmentStatusSchema,
+  type FactoryShipmentFormData,
+} from './factory-shipments.schemas';
+import {
+  parseJsonPayload,
+  resolveShipmentItems,
+  type ActionResult,
+} from './factory-shipments.utils';
 
 // ============================================
 // Server Actions
@@ -248,7 +77,6 @@ export async function createFactoryShipment(
           totalAmount: grandTotal,
           receivableAmount,
           depositAmount,
-          planDate: data.planDate ? new Date(data.planDate) : undefined,
           shipmentDate: data.shipmentDate
             ? new Date(data.shipmentDate)
             : undefined,
@@ -264,10 +92,7 @@ export async function createFactoryShipment(
       });
 
       // 如果订单状态为已到货，增加库存
-      if (
-        status === FACTORY_SHIPMENT_STATUS.ARRIVED ||
-        status === FACTORY_SHIPMENT_STATUS.COMPLETED
-      ) {
+      if (status === FACTORY_SHIPMENT_STATUS.ARRIVED) {
         for (const item of itemsPayload) {
           if (item.productId && !item.isManualProduct) {
             const quantityDelta = Math.round(item.quantity);
@@ -366,8 +191,9 @@ export async function updateFactoryShipmentStatus(
 
       // 如果从待发货/运输中变为已到货，增加库存
       if (
-        (shipment.status === 'pending' || shipment.status === 'in_transit') &&
-        (data.status === 'arrived' || data.status === 'completed')
+        (shipment.status === 'pending_shipment' ||
+          shipment.status === 'in_transit') &&
+        data.status === 'arrived'
       ) {
         for (const item of shipment.items) {
           if (item.productId && !item.isManualProduct) {
@@ -414,6 +240,7 @@ export async function updateFactoryShipmentStatus(
 
 /**
  * 删除厂家发货订单
+ * 权限规则：草稿状态和已取消状态允许删除
  */
 export async function deleteFactoryShipment(
   shipmentId: string
@@ -435,9 +262,12 @@ export async function deleteFactoryShipment(
         throw new Error('发货单不存在');
       }
 
-      // 不能删除已到货或已完成的发货单
-      if (shipment.status === 'arrived' || shipment.status === 'completed') {
-        throw new Error('不能删除已到货或已完成的发货单');
+      // 只允许删除草稿和已取消的订单
+      if (
+        shipment.status !== FACTORY_SHIPMENT_STATUS.DRAFT &&
+        shipment.status !== FACTORY_SHIPMENT_STATUS.CANCELLED
+      ) {
+        throw new Error('只能删除草稿或已取消的订单');
       }
 
       // 删除发货单项
@@ -462,6 +292,63 @@ export async function deleteFactoryShipment(
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除发货单失败',
+    };
+  }
+}
+
+/**
+ * 取消厂家发货订单
+ * 权限规则：待确认和已确认状态允许取消
+ */
+export async function cancelFactoryShipment(
+  shipmentId: string
+): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: '未授权操作' };
+    }
+
+    await prisma.$transaction(async tx => {
+      // 检查发货单是否存在
+      const shipment = await tx.factoryShipmentOrder.findUnique({
+        where: { id: shipmentId },
+      });
+
+      if (!shipment) {
+        throw new Error('发货单不存在');
+      }
+
+      // 只允许取消草稿、已确认、待发货状态的订单
+      if (
+        shipment.status !== FACTORY_SHIPMENT_STATUS.DRAFT &&
+        shipment.status !== FACTORY_SHIPMENT_STATUS.CONFIRMED &&
+        shipment.status !== FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT
+      ) {
+        throw new Error('只能取消草稿、已确认或待发货的订单');
+      }
+
+      // 更新订单状态为已取消
+      await tx.factoryShipmentOrder.update({
+        where: { id: shipmentId },
+        data: {
+          status: FACTORY_SHIPMENT_STATUS.CANCELLED,
+        },
+      });
+    });
+
+    revalidatePath('/factory-shipments');
+    revalidatePath(`/factory-shipments/${shipmentId}`);
+
+    return { success: true };
+  } catch (error) {
+    logger.error('actions:factory-shipments', '取消发货单失败', error, {
+      action: 'cancelFactoryShipment',
+      shipmentId,
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '取消发货单失败',
     };
   }
 }
@@ -508,9 +395,9 @@ export async function updateFactoryShipment(
         throw new Error('发货单不存在');
       }
 
-      // 不能修改已完成的发货单
-      if (existingShipment.status === 'completed') {
-        throw new Error('不能修改已完成的发货单');
+      // 不能修改已到港的发货单
+      if (existingShipment.status === 'arrived') {
+        throw new Error('不能修改已到港的发货单');
       }
 
       // 删除旧的发货单项和临时商品
@@ -541,10 +428,6 @@ export async function updateFactoryShipment(
         if (trimmed.length > 0) {
           updateData.containerNumber = trimmed;
         }
-      }
-
-      if (data.planDate) {
-        updateData.planDate = new Date(data.planDate);
       }
 
       if (data.shipmentDate) {

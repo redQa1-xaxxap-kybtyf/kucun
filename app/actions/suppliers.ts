@@ -8,11 +8,11 @@ import { auth } from '@/lib/auth';
 import type { AuthUser } from '@/lib/auth/context';
 import { can } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   ensureSupplierCanBeDeactivated,
   ensureSupplierCanBeDeleted,
 } from '@/lib/services/supplier-service';
-import { logger } from '@/lib/logger';
 
 /**
  * 供应商管理模块 Server Actions

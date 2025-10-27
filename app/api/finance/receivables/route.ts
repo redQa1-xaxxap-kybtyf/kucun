@@ -15,7 +15,8 @@ import {
   successResponse,
   withAuth,
 } from '@/lib/auth/api-helpers';
-import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
+import { buildCacheKey, getOrSetJSON } from '@/lib/cache';
+import { FINANCE_CACHE_TTL_SECONDS } from '@/lib/constants/cache';
 import { getReceivables } from '@/lib/services/receivables-service';
 import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
 
@@ -32,12 +33,15 @@ export const GET = withAuth(
     const limitParam =
       searchParams.get('limit') ?? searchParams.get('pageSize') ?? '20';
 
+    const paymentStatusParam =
+      searchParams.get('paymentStatus') ?? searchParams.get('status') ?? undefined;
+
     const validationResult = accountsReceivableQuerySchema.safeParse({
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(limitParam, 10),
       search: searchParams.get('search') || undefined,
       customerId: searchParams.get('customerId') || undefined,
-      paymentStatus: searchParams.get('paymentStatus') || undefined,
+      paymentStatus: paymentStatusParam || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
       sortBy: searchParams.get('sortBy') || undefined,
@@ -64,7 +68,7 @@ export const GET = withAuth(
         // 调用服务层
          await getReceivables(validationResult.data)
       ,
-      CACHE_STRATEGY.aggregateData.redisTTL, // 财务数据变化较慢，使用10分钟缓存
+      FINANCE_CACHE_TTL_SECONDS, // 财务数据频繁变更，缩短TTL保持数据新鲜度
       {
         enableRandomTTL: true, // 防止缓存雪崩
         enableNullCache: true, // 防止缓存穿透
@@ -86,8 +90,11 @@ export const POST = withAuth(
     // 参数验证
     const body = await request.json();
     const { pageSize, ...restBody } = body ?? {};
+    const paymentStatusBody =
+      restBody?.paymentStatus ?? restBody?.status ?? undefined;
     const validationResult = accountsReceivableQuerySchema.safeParse({
       ...restBody,
+      paymentStatus: paymentStatusBody,
       page: 1,
       limit: restBody?.limit ?? pageSize ?? 999999, // 导出所有数据
     });
