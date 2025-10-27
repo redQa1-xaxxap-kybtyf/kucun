@@ -1,6 +1,5 @@
 import { FileText } from 'lucide-react';
 
-
 import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +31,8 @@ interface StatementsFilterSectionProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
+  /** ✅ 新增：搜索状态指示 */
+  isSearching?: boolean;
 }
 
 export function StatementsFilterSection({
@@ -42,6 +43,7 @@ export function StatementsFilterSection({
   onFilter,
   onDateRangeChange,
   onPageChange,
+  isSearching = false,
 }: StatementsFilterSectionProps) {
   return (
     <Card>
@@ -52,6 +54,9 @@ export function StatementsFilterSection({
             onSearch={onSearch}
             onFilter={onFilter}
             onDateRangeChange={onDateRangeChange}
+            isSearching={isSearching}
+            statements={statements}
+            pagination={pagination}
           />
         </div>
         <StatementsList
@@ -69,11 +74,17 @@ function FilterControls({
   onSearch,
   onFilter,
   onDateRangeChange,
+  isSearching = false,
+  statements,
+  pagination,
 }: {
   filters: StatementsFiltersState;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onDateRangeChange?: (range: DateRangeValue) => void;
+  isSearching?: boolean;
+  statements: AccountStatementItem[];
+  pagination: StatementsPagination;
 }) {
   return (
     <div className="flex flex-1 flex-wrap items-center gap-2">
@@ -82,6 +93,10 @@ function FilterControls({
         onSearchChange={value => onSearch?.(value)}
         searchPlaceholder="搜索伙伴名称..."
         className="max-w-sm"
+        // ✅ 新增：搜索状态指示
+        isSearching={isSearching}
+        resultCount={statements.length}
+        totalCount={pagination.total}
       />
 
       <Select
@@ -175,4 +190,3 @@ function StatementsList({
     </>
   );
 }
-

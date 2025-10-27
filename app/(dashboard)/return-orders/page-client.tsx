@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import type {
   ReturnOrderQueryParams,
   ReturnOrderStatus,
+  ReturnOrderType,
+  ReturnProcessType,
 } from '@/lib/types/return-order';
 
 interface ReturnOrdersPageClientProps {
@@ -35,6 +37,12 @@ function buildReturnOrderQuery(
   }
   if (filters.status) {
     params.set('status', filters.status);
+  }
+  if (filters.type) {
+    params.set('type', filters.type);
+  }
+  if (filters.processType) {
+    params.set('processType', filters.processType);
   }
   if (filters.sortBy) {
     params.set('sortBy', filters.sortBy);
@@ -64,6 +72,12 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
 
   const [search, setSearch] = React.useState(initialParams.search || '');
   const [status, setStatus] = React.useState(initialParams.status);
+  const [type, setType] = React.useState<ReturnOrderType | undefined>(
+    initialParams.type
+  );
+  const [processType, setProcessType] = React.useState<
+    ReturnProcessType | undefined
+  >(initialParams.processType);
   const [sortBy, setSortBy] = React.useState(
     initialParams.sortBy || 'createdAt'
   );
@@ -77,6 +91,8 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
     (overrides: Partial<ReturnOrderQueryParams> = {}) => ({
       ...initialParams,
       status,
+      type,
+      processType,
       sortBy,
       sortOrder,
       startDate,
@@ -84,7 +100,16 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
       page: 1,
       ...overrides,
     }),
-    [endDate, initialParams, sortBy, sortOrder, startDate, status]
+    [
+      endDate,
+      initialParams,
+      processType,
+      sortBy,
+      sortOrder,
+      startDate,
+      status,
+      type,
+    ]
   );
 
   const pushFilters = React.useCallback(
@@ -114,6 +139,24 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
           (value as ReturnOrderStatus | undefined) || undefined;
         setStatus(nextStatus);
         pushFilters(search, buildFilters({ status: nextStatus, page: 1 }));
+        return;
+      }
+
+      if (key === 'type') {
+        const nextType = (value as ReturnOrderType | undefined) || undefined;
+        setType(nextType);
+        pushFilters(search, buildFilters({ type: nextType, page: 1 }));
+        return;
+      }
+
+      if (key === 'processType') {
+        const nextProcessType =
+          (value as ReturnProcessType | undefined) || undefined;
+        setProcessType(nextProcessType);
+        pushFilters(
+          search,
+          buildFilters({ processType: nextProcessType, page: 1 })
+        );
         return;
       }
 
@@ -159,11 +202,31 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
     [buildFilters, pushFilters, search]
   );
 
+  const handleClearFilters = React.useCallback(() => {
+    setStatus(undefined);
+    setType(undefined);
+    setProcessType(undefined);
+    setStartDate(undefined);
+    setEndDate(undefined);
+    pushFilters(
+      search,
+      buildFilters({
+        status: undefined,
+        type: undefined,
+        processType: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        page: 1,
+      })
+    );
+  }, [buildFilters, pushFilters, search]);
+
   return {
     onSearch: handleSearch,
     onFilter: handleFilter,
     onDateRangeChange: handleDateRangeChange,
     onPageChange: handlePageChange,
+    onClearFilters: handleClearFilters,
   };
 }
 
@@ -175,8 +238,13 @@ function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
 export function ReturnOrdersPageClient({
   initialParams,
 }: ReturnOrdersPageClientProps) {
-  const { onSearch, onFilter, onDateRangeChange, onPageChange } =
-    useReturnOrderNavigation(initialParams);
+  const {
+    onSearch,
+    onFilter,
+    onDateRangeChange,
+    onPageChange,
+    onClearFilters,
+  } = useReturnOrderNavigation(initialParams);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -226,6 +294,7 @@ export function ReturnOrdersPageClient({
             onFilter={onFilter}
             onDateRangeChange={onDateRangeChange}
             onPageChange={onPageChange}
+            onClearFilters={onClearFilters}
           />
         </Suspense>
       </div>

@@ -115,17 +115,20 @@ export function useUrlSearchParams<T extends Record<string, unknown>>(
   // 初始化时使用URL参数,后续由setParam/updateParams立即更新
   const [localParams, setLocalParams] = useState<T>(urlParams);
 
-  // ✅ 同步URL变化到本地状态 (例如浏览器前进/后退)
-  // ✅ 修复BUG: 只监听 urlParams,不监听 localParams
-  // 之前的问题: 监听 localParams 导致用户输入时触发同步,把输入重置为URL参数
-  // 现在: 只在URL参数变化时同步(例如浏览器前进/后退),不在本地输入时触发
+  // ✅ 同步URL变化到本地状态 (仅限非shallow模式)
+  // shallow模式使用window.history.replaceState,不会触发useSearchParams更新
+  // 所以在shallow模式下,localParams是唯一真实来源,不需要同步
   useEffect(() => {
-    // 只有当URL参数真正变化时才更新本地状态
+    // ❌ Shallow模式下禁用URL→本地状态的同步
+    // 因为shallow模式使用window.history.replaceState,useSearchParams不会更新
+    if (shallow) return;
+
+    // ✅ 非Shallow模式:同步URL参数到本地状态(例如浏览器前进/后退)
     if (!areParamsEqual(localParams, urlParams)) {
       setLocalParams(urlParams);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only listen to urlParams, not localParams, to prevent input reset bug
-  }, [urlParams]); // ✅ 只监听 urlParams,不监听 localParams
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParams, shallow]);
 
   // 使用ref保存最新的参数值,避免闭包陷阱
   const latestParamsRef = useRef<T>(localParams);

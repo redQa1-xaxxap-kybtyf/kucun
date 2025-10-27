@@ -28,9 +28,11 @@ import { formatCurrencyWithSign, isMeaningfulAmount } from './utils';
 type ReceivablesFilterCardProps = {
   queryParams: ReceivablesQueryParams;
   isLoading: boolean;
+  isSearching: boolean;
   error: unknown;
   receivables: ReceivableItem[];
   pagination?: ReceivablesResult['pagination'];
+  searchValue: string;
   onSearch: (value: string) => void;
   onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
@@ -41,9 +43,11 @@ type ReceivablesFilterCardProps = {
 export function ReceivablesFilterCard({
   queryParams,
   isLoading,
+  isSearching,
   error,
   receivables,
   pagination,
+  searchValue,
   onSearch,
   onFilterChange,
   onDateRangeChange,
@@ -61,6 +65,8 @@ export function ReceivablesFilterCard({
       <CardContent className="pt-6">
         <ReceivablesFilterBar
           queryParams={queryParams}
+          searchValue={searchValue}
+          isSearching={isSearching}
           onSearch={onSearch}
           onFilterChange={onFilterChange}
           onDateRangeChange={onDateRangeChange}
@@ -82,6 +88,8 @@ export function ReceivablesFilterCard({
 
 type ReceivablesFilterBarProps = {
   queryParams: ReceivablesQueryParams;
+  searchValue: string;
+  isSearching: boolean;
   onSearch: (value: string) => void;
   onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
@@ -89,6 +97,8 @@ type ReceivablesFilterBarProps = {
 
 function ReceivablesFilterBar({
   queryParams,
+  searchValue,
+  isSearching,
   onSearch,
   onFilterChange,
   onDateRangeChange,
@@ -97,10 +107,12 @@ function ReceivablesFilterBar({
     <div className="flex flex-wrap items-center gap-3">
       <div className="min-w-[280px] flex-1">
         <UnifiedSearchBar
-          searchValue={queryParams.search}
+          searchValue={searchValue}
           onSearchChange={onSearch}
           searchPlaceholder="搜索订单号或客户名称..."
-          debounceDelay={400}
+          debounceDelay={0}
+          showClearButton
+          isSearching={isSearching}
           filters={[
             {
               key: 'paymentStatus',
@@ -167,7 +179,9 @@ function ReceivablesList({
     const message = error instanceof Error ? error.message : '未知错误';
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-[hsl(var(--color-error))]">加载失败: {message}</div>
+        <div className="text-[hsl(var(--color-error))]">
+          加载失败: {message}
+        </div>
       </div>
     );
   }
@@ -396,7 +410,9 @@ function ReceivableCardDates({ receivable }: ReceivableCardDatesProps) {
     <div className="flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))]/30 bg-[hsl(var(--color-bg-tertiary))]/30 px-6 py-3.5 text-xs">
       <div className="flex items-center gap-2">
         <Calendar className="h-3.5 w-3.5 text-[hsl(var(--color-text-tertiary))]" />
-        <span className="text-[hsl(var(--color-text-tertiary))]">订单日期:</span>
+        <span className="text-[hsl(var(--color-text-tertiary))]">
+          订单日期:
+        </span>
         <span className="font-medium text-[hsl(var(--color-text-secondary))]">
           {formatDateTime(receivable.orderDate, 'yyyy-MM-dd HH:mm')}
         </span>
@@ -406,7 +422,9 @@ function ReceivableCardDates({ receivable }: ReceivableCardDatesProps) {
           <span className="text-[hsl(var(--color-border-primary))]">•</span>
           <div className="flex items-center gap-2">
             <Calendar className="h-3.5 w-3.5 text-[hsl(var(--color-success))]" />
-            <span className="text-[hsl(var(--color-text-tertiary))]">最后收款:</span>
+            <span className="text-[hsl(var(--color-text-tertiary))]">
+              最后收款:
+            </span>
             <span className="font-medium text-[hsl(var(--color-success))]">
               {formatDateTime(receivable.lastPaymentDate, 'yyyy-MM-dd HH:mm')}
             </span>
@@ -424,23 +442,26 @@ type StatusConfigItem = {
   icon?: LucideIcon;
 };
 
-const STATUS_CONFIG: Partial<Record<PaymentStatus | string, StatusConfigItem>> = {
-  unpaid: { label: '未收款', variant: 'destructive' },
-  partial: {
-    label: '部分收款',
-    variant: 'outline',
-    className: 'gap-1 border-yellow-300 bg-yellow-50 text-yellow-700',
-    icon: Clock,
-  },
-  paid: { label: '已收款', variant: 'default' },
-  pending: { label: '待确认', variant: 'secondary' },
-  confirmed: { label: '已确认', variant: 'default' },
-  cancelled: { label: '已取消', variant: 'secondary' },
-};
+const STATUS_CONFIG: Partial<Record<PaymentStatus | string, StatusConfigItem>> =
+  {
+    unpaid: { label: '未收款', variant: 'destructive' },
+    partial: {
+      label: '部分收款',
+      variant: 'outline',
+      className: 'gap-1 border-yellow-300 bg-yellow-50 text-yellow-700',
+      icon: Clock,
+    },
+    paid: { label: '已收款', variant: 'default' },
+    pending: { label: '待确认', variant: 'secondary' },
+    confirmed: { label: '已确认', variant: 'default' },
+    cancelled: { label: '已取消', variant: 'secondary' },
+  };
 
 function ReceivableStatusBadge({ status }: { status: PaymentStatus | string }) {
-  const config =
-    STATUS_CONFIG[status] ?? { label: '未知状态', variant: 'secondary' as BadgeProps['variant'] };
+  const config = STATUS_CONFIG[status] ?? {
+    label: '未知状态',
+    variant: 'secondary' as BadgeProps['variant'],
+  };
   const Icon = config.icon;
 
   return (
@@ -466,7 +487,8 @@ function getReceivableAmounts(receivable: ReceivableItem): ReceivableAmounts {
   const productAmount = receivable.totalAmount;
   const orderRoundingRaw = receivable.roundingAdjustment ?? 0;
   const paymentRoundingRaw =
-    (receivable.paymentRoundingAmount ?? 0) + (receivable.pendingRoundingAmount ?? 0);
+    (receivable.paymentRoundingAmount ?? 0) +
+    (receivable.pendingRoundingAmount ?? 0);
   const paidActual = receivable.paidAmount ?? 0;
 
   const orderActualAmount = productAmount + orderRoundingRaw;

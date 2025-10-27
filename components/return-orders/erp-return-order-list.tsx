@@ -4,11 +4,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Ban, Edit, Eye, MoreHorizontal, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useState } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { ReturnOrderSearchToolbar } from '@/components/return-orders/return-order-search-toolbar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +21,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,6 +44,9 @@ import { queryKeys } from '@/lib/queryKeys';
 import {
   type ReturnOrder,
   type ReturnOrderQueryParams,
+  type ReturnOrderStatus,
+  type ReturnOrderType,
+  type ReturnProcessType,
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
@@ -66,6 +65,7 @@ interface ERPReturnOrderListProps {
   onViewDetail?: (returnOrder: ReturnOrder) => void;
   onEdit?: (returnOrder: ReturnOrder) => void;
   onDelete?: (returnOrder: ReturnOrder) => void;
+  onClearFilters?: () => void;
 }
 
 /**
@@ -82,6 +82,7 @@ export function ERPReturnOrderList({
   onViewDetail,
   onEdit,
   onDelete,
+  onClearFilters,
 }: ERPReturnOrderListProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -91,8 +92,10 @@ export function ERPReturnOrderList({
   // ✅ 单一数据源原则：状态统一在父组件管理
 
   // 取消对话框状态
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [orderToCancel, setOrderToCancel] = useState<ReturnOrder | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = React.useState(false);
+  const [orderToCancel, setOrderToCancel] = React.useState<ReturnOrder | null>(
+    null
+  );
 
   // ✅ 默认查询参数（确保类型正确）
   const queryParams: ReturnOrderQueryParams = {
@@ -100,11 +103,23 @@ export function ERPReturnOrderList({
     limit: initialParams?.limit || paginationConfig.defaultPageSize,
     search: initialParams?.search,
     status: initialParams?.status,
+    type: initialParams?.type,
+    processType: initialParams?.processType,
     sortBy: initialParams?.sortBy || 'createdAt',
     sortOrder: initialParams?.sortOrder || 'desc',
     startDate: initialParams?.startDate,
     endDate: initialParams?.endDate,
   };
+
+  const [searchInput, setSearchInput] = React.useState(
+    queryParams.search ?? ''
+  );
+  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [isSearching, setIsSearching] = React.useState(false);
+
+  React.useEffect(() => {
+    setSearchInput(queryParams.search ?? '');
+  }, [queryParams.search]);
 
   // ✅ 获取退货订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
   const {
@@ -126,6 +141,33 @@ export function ERPReturnOrderList({
 
   // ✅ 直接使用 queryData，不再使用 mock 数据回退
   const displayData = queryData;
+
+  const searchValue = searchInput;
+  const statusFilter: ReturnOrderStatus | 'all' = queryParams.status ?? 'all';
+  const typeFilter: ReturnOrderType | 'all' = queryParams.type ?? 'all';
+  const processTypeFilter: ReturnProcessType | 'all' =
+    queryParams.processType ?? 'all';
+  const dateRange: DateRangeValue = {
+    startDate: queryParams.startDate,
+    endDate: queryParams.endDate,
+  };
+  const isBackgroundFetching = isFetching && !isLoading;
+
+  React.useEffect(() => {
+    if (!isSearching) return;
+    if (!isLoading && !isFetching) {
+      setIsSearching(false);
+    }
+  }, [isSearching, isLoading, isFetching]);
+
+  React.useEffect(
+    () => () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    },
+    []
+  );
 
   // 取消退货订单mutation
   const cancelMutation = useMutation({
@@ -203,37 +245,113 @@ export function ERPReturnOrderList({
 
   // 处理搜索
   const handleSearch = React.useCallback(
-    (search: string) => {
+    (value: string) => {
+      const trimmed = value.trimStart();
+      setSearchInput(trimmed);
+
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = null;
+      }
+
       if (onSearch) {
-        onSearch(search);
+        onSearch(trimmed);
+        return;
+      }
+
+      if (trimmed === '') {
+        setIsSearching(false);
+        updateQueryStringParams({
+          search: undefined,
+          page: 1,
+        });
+        return;
+      }
+
+      if (trimmed === (queryParams.search ?? '')) {
+        return;
+      }
+
+      setIsSearching(true);
+
+      searchTimerRef.current = setTimeout(() => {
+        updateQueryStringParams({
+          search: trimmed,
+          page: 1,
+        });
+        searchTimerRef.current = null;
+      }, 300); // ✅ 与库存搜索保持一致的防抖延迟
+    },
+    [onSearch, queryParams.search, updateQueryStringParams]
+  );
+
+  const handleStatusChange = React.useCallback(
+    (status: ReturnOrderStatus | 'all') => {
+      if (onFilter) {
+        onFilter('status', status === 'all' ? undefined : status);
       } else {
         updateQueryStringParams({
-          search: search || undefined,
+          status: status === 'all' ? undefined : status,
           page: 1,
         });
       }
     },
-    [onSearch, updateQueryStringParams]
+    [onFilter, updateQueryStringParams]
   );
 
-  // 统一处理筛选器变更
-  const handleFilterChange = React.useCallback(
-    (key: string, value: string | undefined) => {
+  const handleTypeChange = React.useCallback(
+    (typeValue: ReturnOrderType | 'all') => {
       if (onFilter) {
-        onFilter(key, value);
+        onFilter('type', typeValue === 'all' ? undefined : typeValue);
+      } else {
+        updateQueryStringParams({
+          type: typeValue === 'all' ? undefined : typeValue,
+          page: 1,
+        });
       }
     },
-    [onFilter]
+    [onFilter, updateQueryStringParams]
   );
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
       if (onDateRangeChange) {
         onDateRangeChange(range);
+      } else {
+        updateQueryStringParams({
+          startDate: range.startDate || undefined,
+          endDate: range.endDate || undefined,
+          page: 1,
+        });
       }
     },
-    [onDateRangeChange]
+    [onDateRangeChange, updateQueryStringParams]
   );
+
+  const handleClearFilters = React.useCallback(() => {
+    if (onClearFilters) {
+      onClearFilters();
+      return;
+    }
+
+    if (onFilter) {
+      onFilter('status', undefined);
+      onFilter('type', undefined);
+      onFilter('processType', undefined);
+    } else {
+      updateQueryStringParams({
+        status: undefined,
+        type: undefined,
+        processType: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        page: 1,
+      });
+    }
+    if (onDateRangeChange) {
+      onDateRangeChange({});
+    }
+  }, [onClearFilters, onFilter, onDateRangeChange, updateQueryStringParams]);
 
   // 处理新建
   const handleCreateNew = () => {
@@ -304,60 +422,19 @@ export function ERPReturnOrderList({
   return (
     <div className="space-y-4">
       {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
-        <CardContent className="space-y-4 pt-6">
-          {/* ✅ 加载指示器：提升用户体验 */}
-          {isFetching && (
-            <div className="mb-2 flex items-center gap-2 text-xs text-[hsl(var(--color-primary))]">
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent"></div>
-              <span>搜索中...</span>
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="min-w-[280px] flex-1">
-              <UnifiedSearchBar
-                searchValue={queryParams.search || ''}
-                onSearchChange={handleSearch}
-                searchPlaceholder="搜索退货单号或客户名称..."
-                debounceDelay={400}
-                compact
-                filters={[
-                  {
-                    key: 'status',
-                    label: '状态',
-                    options: [
-                      { label: '草稿', value: 'draft' },
-                      { label: '已提交', value: 'submitted' },
-                      { label: '已审核', value: 'approved' },
-                      { label: '已拒绝', value: 'rejected' },
-                      { label: '处理中', value: 'processing' },
-                      { label: '已完成', value: 'completed' },
-                      { label: '已取消', value: 'cancelled' },
-                    ],
-                    width: 'w-24',
-                  },
-                ]}
-                filterValues={{
-                  status: queryParams.status || 'all',
-                }}
-                onFilterChange={handleFilterChange}
-              />
-            </div>
-            <DateRangePicker
-              value={{
-                startDate: queryParams.startDate,
-                endDate: queryParams.endDate,
-              }}
-              onChange={handleDateRangeChange}
-              label=""
-              placeholder="选择退货日期范围"
-              showPresets
-              className="min-w-[220px]"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <ReturnOrderSearchToolbar
+        searchValue={searchValue}
+        statusFilter={statusFilter}
+        typeFilter={typeFilter}
+        processTypeFilter={processTypeFilter}
+        dateRange={dateRange}
+        isSearching={isSearching || isBackgroundFetching}
+        onSearch={handleSearch}
+        onStatusChange={handleStatusChange}
+        onTypeChange={handleTypeChange}
+        onDateRangeChange={handleDateRangeChange}
+        onClearFilters={handleClearFilters}
+      />
 
       {/* 数据表格 */}
       <div
@@ -447,8 +524,7 @@ export function ERPReturnOrderList({
                           )}
                           {hasRemaining && (
                             <span className="text-xs text-[hsl(var(--color-warning))]">
-                              待处理{' '}
-                              {formatCurrency(remainingAmount)}
+                              待处理 {formatCurrency(remainingAmount)}
                             </span>
                           )}
                         </div>

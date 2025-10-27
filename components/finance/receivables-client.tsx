@@ -16,11 +16,17 @@ interface ReceivablesClientProps {
  * 应收账款客户端交互组件
  * 处理搜索、筛选、分页等客户端交互
  */
-export function ReceivablesClient({ initialData, initialParams }: ReceivablesClientProps) {
+export function ReceivablesClient({
+  initialData,
+  initialParams,
+}: ReceivablesClientProps) {
   const {
     queryParams,
     currentData,
     isLoading,
+    isFetching,
+    searchValue,
+    isSearching,
     error,
     handleSearch,
     handleFilterChange,
@@ -39,9 +45,11 @@ export function ReceivablesClient({ initialData, initialParams }: ReceivablesCli
       <ReceivablesFilterCard
         queryParams={queryParams}
         isLoading={isLoading}
+        isSearching={isSearching || isFetching}
         error={error}
         receivables={currentData.receivables || []}
         pagination={currentData.pagination}
+        searchValue={searchValue}
         onSearch={handleSearch}
         onFilterChange={handleFilterChange}
         onDateRangeChange={handleDateRangeChange}

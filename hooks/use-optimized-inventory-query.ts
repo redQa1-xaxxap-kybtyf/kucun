@@ -3,7 +3,12 @@
  * 统一查询键命名规范，实现数据预取策略，优化分页查询缓存
  */
 
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 
 import type {
@@ -33,6 +38,8 @@ interface UseOptimizedInventoryQueryOptions {
   staleTime?: number;
   /** 垃圾回收时间（毫秒）- 未使用的缓存被清理的时间 */
   cacheTime?: number;
+  /** 搜索模式 - 自动优化搜索查询的缓存策略 */
+  searchMode?: boolean;
 }
 
 /**
@@ -50,24 +57,46 @@ export function useOptimizedInventoryQuery({
   enabled = true,
   staleTime = 30 * 1000, // 默认缓存30秒，避免长期持有陈旧数据
   cacheTime = 10 * 60 * 1000, // 10分钟
+  searchMode = false,
 }: UseOptimizedInventoryQueryOptions) {
   const queryClient = useQueryClient();
 
-  const executeRequest = useCallback(async (searchParams: URLSearchParams, signal?: AbortSignal) => {
-    const response = await fetch(`/api/inventory?${searchParams.toString()}`,
-      // ✅ 传入 AbortSignal，允许上一次请求在新查询发起时被取消
-      signal ? { signal } : undefined
-    );
-    if (!response.ok) {
-      const error = new Error(
-        `库存查询失败: ${response.status} ${response.statusText}`
-      ) as Error & { status?: number };
-      error.status = response.status;
-      throw error;
+  // ✅ 搜索模式自适应缓存策略
+  const adaptiveStaleTime = useMemo(() => {
+    if (searchMode && params.search) {
+      // 搜索查询：较短的缓存时间，因为搜索词变化频繁
+      return 10 * 1000; // 10秒
     }
+    return staleTime;
+  }, [searchMode, params.search, staleTime]);
 
-    return response.json();
-  }, []);
+  const adaptiveCacheTime = useMemo(() => {
+    if (searchMode && params.search) {
+      // 搜索查询：较短的垃圾回收时间
+      return 5 * 60 * 1000; // 5分钟
+    }
+    return cacheTime;
+  }, [searchMode, params.search, cacheTime]);
+
+  const executeRequest = useCallback(
+    async (searchParams: URLSearchParams, signal?: AbortSignal) => {
+      const response = await fetch(
+        `/api/inventory?${searchParams.toString()}`,
+        // ✅ 传入 AbortSignal，允许上一次请求在新查询发起时被取消
+        signal ? { signal } : undefined
+      );
+      if (!response.ok) {
+        const error = new Error(
+          `库存查询失败: ${response.status} ${response.statusText}`
+        ) as Error & { status?: number };
+        error.status = response.status;
+        throw error;
+      }
+
+      return response.json();
+    },
+    []
+  );
 
   // 主查询
   const query = useQuery<InventoryListResponse>({
@@ -86,9 +115,9 @@ export function useOptimizedInventoryQuery({
       return executeRequest(searchParams, signal);
     },
     enabled,
-    staleTime, // 数据新鲜度时间，可通过参数覆盖（默认30秒）
-    gcTime: cacheTime, // 垃圾回收时间
-    // ✅ 保持上一份数据，避免“空窗期”重绘和闪烁（v5 推荐 placeholderData: keepPreviousData）
+    staleTime: adaptiveStaleTime, // ✅ 搜索模式自适应缓存时间
+    gcTime: adaptiveCacheTime, // ✅ 搜索模式自适应垃圾回收时间
+    // ✅ 保持上一份数据，避免"空窗期"重绘和闪烁（v5 推荐 placeholderData: keepPreviousData）
     placeholderData: keepPreviousData,
     // 错误重试配置
     retry: (failureCount, error) => {

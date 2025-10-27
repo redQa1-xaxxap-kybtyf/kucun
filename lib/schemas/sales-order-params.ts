@@ -21,9 +21,19 @@ export const salesOrderParamsSchema = z.object({
   // 客户ID筛选
   customerId: z.string().default(''),
 
+  // 销售员筛选
+  userId: z.string().default(''),
+
   // 排序字段
   sortBy: z
-    .enum(['orderNumber', 'createdAt', 'updatedAt', 'totalAmount', 'status'])
+    .enum([
+      'orderNumber',
+      'createdAt',
+      'updatedAt',
+      'totalAmount',
+      'status',
+      'shippedAt',
+    ])
     .default('createdAt'),
 
   // 排序顺序
@@ -36,8 +46,20 @@ export const salesOrderParamsSchema = z.object({
   limit: z.number().int().positive().max(100).optional(),
 
   // 日期范围筛选
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+
+  // 订单类型筛选
+  orderType: z.enum(['NORMAL', 'TRANSFER']).optional(),
+
+  // 是否包含退货订单
+  hasReturns: z.boolean().optional(),
 });
 
 /**

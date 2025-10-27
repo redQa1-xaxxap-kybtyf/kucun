@@ -6,7 +6,7 @@
  * 遵循全栈项目统一约定规范
  */
 
-import { Search, X } from 'lucide-react';
+import { Loader2, Search, X } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -77,6 +77,11 @@ export interface UnifiedSearchBarProps {
   debounceDelay?: number;
   showClearButton?: boolean;
 
+  // ✅ 新增：搜索状态指示
+  isSearching?: boolean; // 是否正在搜索
+  resultCount?: number; // 搜索结果数量
+  totalCount?: number; // 总结果数量
+
   // 筛选器
   filters?: FilterConfig[];
   filterValues?: Record<string, string | undefined>;
@@ -93,6 +98,227 @@ export interface UnifiedSearchBarProps {
   compact?: boolean; // 紧凑模式,用于移动端或空间有限的场景
 }
 
+interface ActionButtonsSectionProps {
+  actionButtons: ActionButton[];
+  buttonSize: string;
+  compact: boolean;
+}
+
+const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
+  actionButtons,
+  buttonSize,
+  compact,
+}) => {
+  if (actionButtons.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      {actionButtons.map((action, index) => (
+        <Button
+          key={index}
+          size={compact ? 'sm' : 'default'}
+          variant={action.variant || 'default'}
+          className={cn(buttonSize, action.className)}
+          onClick={action.onClick}
+        >
+          {action.icon}
+          {action.label}
+        </Button>
+      ))}
+      <div className="bg-border mx-1 h-6 w-px" />
+    </>
+  );
+};
+
+interface SearchInputBoxProps {
+  compact: boolean;
+  inputSize: string;
+  isSearching: boolean;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onClear: () => void;
+  searchPlaceholder: string;
+  searchValue: string;
+  showClearButton: boolean;
+}
+
+const SearchInputBox: React.FC<SearchInputBoxProps> = ({
+  compact,
+  inputSize,
+  isSearching,
+  onChange,
+  onClear,
+  searchPlaceholder,
+  searchValue,
+  showClearButton,
+}) => (
+  <div className="relative w-[280px] min-w-[200px] sm:w-[320px]">
+    {isSearching ? (
+      <Loader2
+        className={cn(
+          'text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2 animate-spin',
+          compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
+        )}
+      />
+    ) : (
+      <Search
+        className={cn(
+          'text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2',
+          compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
+        )}
+      />
+    )}
+    <Input
+      placeholder={searchPlaceholder}
+      value={searchValue}
+      onChange={onChange}
+      className={cn(
+        'pl-10',
+        showClearButton && searchValue && 'pr-10',
+        inputSize
+      )}
+    />
+    {showClearButton && searchValue && (
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={onClear}
+        className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0 hover:bg-transparent"
+        aria-label="清空搜索"
+      >
+        <X
+          className={cn(
+            'text-muted-foreground hover:text-foreground',
+            compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
+          )}
+        />
+      </Button>
+    )}
+  </div>
+);
+
+interface ResultInfoProps {
+  isSearching: boolean;
+  resultCount?: number;
+  searchValue: string;
+  totalCount?: number;
+}
+
+const ResultInfo: React.FC<ResultInfoProps> = ({
+  isSearching,
+  resultCount,
+  searchValue,
+  totalCount,
+}) => {
+  if (!searchValue || isSearching || resultCount === undefined) {
+    return null;
+  }
+
+  const content =
+    resultCount === 0
+      ? '未找到结果'
+      : `找到 ${resultCount}${totalCount ? ` / ${totalCount}` : ''} 个结果`;
+
+  return (
+    <span className="text-muted-foreground text-xs whitespace-nowrap">
+      {content}
+    </span>
+  );
+};
+
+interface ToggleButtonsSectionProps {
+  buttonSize: string;
+  compact: boolean;
+  toggleButtons: ToggleButton[];
+}
+
+const ToggleButtonsSection: React.FC<ToggleButtonsSectionProps> = ({
+  buttonSize,
+  compact,
+  toggleButtons,
+}) => {
+  if (toggleButtons.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      {toggleButtons.map(toggle => (
+        <Button
+          key={toggle.key}
+          variant={toggle.active ? 'default' : 'outline'}
+          size={compact ? 'sm' : 'default'}
+          className={cn(buttonSize, 'gap-1')}
+          onClick={toggle.onClick}
+        >
+          {toggle.icon}
+          <span className={compact ? 'text-xs' : ''}>{toggle.label}</span>
+        </Button>
+      ))}
+    </>
+  );
+};
+
+interface FiltersSectionProps {
+  compact: boolean;
+  createHandler: (key: string) => (value: string) => void;
+  filterValues: Record<string, string | undefined>;
+  filters: FilterConfig[];
+  inputSize: string;
+}
+
+const FiltersSection: React.FC<FiltersSectionProps> = ({
+  compact,
+  createHandler,
+  filterValues,
+  filters,
+  inputSize,
+}) => {
+  if (filters.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      {filters.map(filter => {
+        const includeAllOption = filter.includeAllOption ?? true;
+        const selectedValue =
+          filterValues[filter.key] ?? (includeAllOption ? 'all' : undefined);
+
+        return (
+          <Select
+            key={filter.key}
+            value={selectedValue}
+            onValueChange={createHandler(filter.key)}
+          >
+            <SelectTrigger
+              className={cn(
+                inputSize,
+                filter.width || 'w-32',
+                compact && 'text-xs'
+              )}
+            >
+              <SelectValue placeholder={filter.placeholder || filter.label} />
+            </SelectTrigger>
+            <SelectContent>
+              {includeAllOption && (
+                <SelectItem value="all">全部{filter.label}</SelectItem>
+              )}
+              {filter.options.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      })}
+    </>
+  );
+};
+
 // ============================================================================
 // 统一搜索栏组件
 // ============================================================================
@@ -104,6 +330,9 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     searchPlaceholder = '搜索...',
     debounceDelay: _debounceDelay = 400, // 防抖由父组件处理
     showClearButton = true,
+    isSearching = false, // ✅ 新增：搜索状态
+    resultCount, // ✅ 新增：结果数量
+    totalCount, // ✅ 新增：总数量
     filters = [],
     filterValues = {},
     onFilterChange,
@@ -147,117 +376,39 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     return (
       <div className={cn('flex flex-col gap-3', className)}>
         <div className="flex flex-wrap items-center gap-2">
-          {/* 操作按钮组 */}
-          {actionButtons.length > 0 && (
-            <>
-              {actionButtons.map((action, index) => (
-                <Button
-                  key={index}
-                  size={compact ? 'sm' : 'default'}
-                  variant={action.variant || 'default'}
-                  className={cn(buttonSize, action.className)}
-                  onClick={action.onClick}
-                >
-                  {action.icon}
-                  {action.label}
-                </Button>
-              ))}
-              {/* 分隔线 */}
-              <div className="bg-border mx-1 h-6 w-px" />
-            </>
-          )}
-
-          {/* 搜索框 */}
-          <div className="relative w-[280px] min-w-[200px] sm:w-[320px]">
-            <Search
-              className={cn(
-                'text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2',
-                compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
-              )}
-            />
-            <Input
-              placeholder={searchPlaceholder}
-              value={searchValue}
-              onChange={handleInputChange}
-              className={cn(
-                'pl-10',
-                showClearButton && searchValue && 'pr-10',
-                inputSize
-              )}
-            />
-            {/* 清空按钮 */}
-            {showClearButton && searchValue && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleClearSearch}
-                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0 hover:bg-transparent"
-                aria-label="清空搜索"
-              >
-                <X
-                  className={cn(
-                    'text-muted-foreground hover:text-foreground',
-                    compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
-                  )}
-                />
-              </Button>
-            )}
-          </div>
-
-          {/* 切换按钮组 */}
-          {toggleButtons.length > 0 &&
-            toggleButtons.map(toggle => (
-              <Button
-                key={toggle.key}
-                variant={toggle.active ? 'default' : 'outline'}
-                size={compact ? 'sm' : 'default'}
-                className={cn(buttonSize, 'gap-1')}
-                onClick={toggle.onClick}
-              >
-                {toggle.icon}
-                <span className={compact ? 'text-xs' : ''}>{toggle.label}</span>
-              </Button>
-            ))}
-
-          {/* 筛选器组 */}
-          {filters.length > 0 &&
-            filters.map(filter => {
-              const includeAllOption = filter.includeAllOption ?? true;
-              const selectedValue =
-                filterValues[filter.key] ??
-                (includeAllOption ? 'all' : undefined);
-
-              return (
-                <Select
-                  key={filter.key}
-                  value={selectedValue}
-                  onValueChange={handleFilterChange(filter.key)}
-                >
-                  <SelectTrigger
-                    className={cn(
-                      inputSize,
-                      filter.width || 'w-32',
-                      compact && 'text-xs'
-                    )}
-                  >
-                    <SelectValue
-                      placeholder={filter.placeholder || filter.label}
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {includeAllOption && (
-                      <SelectItem value="all">全部{filter.label}</SelectItem>
-                    )}
-                    {filter.options.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              );
-            })}
+          <ActionButtonsSection
+            actionButtons={actionButtons}
+            buttonSize={buttonSize}
+            compact={compact}
+          />
+          <SearchInputBox
+            compact={compact}
+            inputSize={inputSize}
+            isSearching={isSearching}
+            onChange={handleInputChange}
+            onClear={handleClearSearch}
+            searchPlaceholder={searchPlaceholder}
+            searchValue={searchValue}
+            showClearButton={showClearButton}
+          />
+          <ResultInfo
+            isSearching={isSearching}
+            resultCount={resultCount}
+            searchValue={searchValue}
+            totalCount={totalCount}
+          />
+          <ToggleButtonsSection
+            buttonSize={buttonSize}
+            compact={compact}
+            toggleButtons={toggleButtons}
+          />
+          <FiltersSection
+            compact={compact}
+            createHandler={handleFilterChange}
+            filterValues={filterValues ?? {}}
+            filters={filters}
+            inputSize={inputSize}
+          />
         </div>
       </div>
     );

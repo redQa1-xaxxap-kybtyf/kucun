@@ -28,6 +28,8 @@ interface VirtualizedInventoryTableProps {
   /** 虚拟化配置 */
   itemHeight?: number;
   containerHeight?: number;
+  /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
+  searchQuery?: string;
   overscan?: number;
 }
 

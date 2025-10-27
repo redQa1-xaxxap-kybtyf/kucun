@@ -1,0 +1,26 @@
+'use client';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+
+interface ErrorStateCardProps {
+  onRetry: () => void;
+}
+
+export function ErrorStateCard({ onRetry }: ErrorStateCardProps) {
+  return (
+    <Card
+      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+      style={{ boxShadow: 'var(--shadow-light)' }}
+    >
+      <CardContent className="space-y-4 bg-[hsl(var(--color-error-light))] py-8 text-center">
+        <div className="text-[hsl(var(--color-error))]">
+          加载厂家发货订单失败，请稍后重试
+        </div>
+        <Button variant="outline" onClick={onRetry}>
+          重新加载
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}

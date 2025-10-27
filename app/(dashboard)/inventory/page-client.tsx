@@ -53,24 +53,48 @@ export function InventoryPageClient({
       onNextPageHover={ctrl.handleNextPageHover}
       onPrevPageHover={ctrl.handlePrevPageHover}
       isLoading={ctrl.isLoading}
-      isFetching={ctrl.isFetching || ctrl.isSearching}
+      isFetching={ctrl.isFetching}
+      isSearching={ctrl.isSearching} // ✅ 传递搜索状态
       error={ctrl.error}
     />
   );
 }
 
+function buildCurrentQueryParams(
+  params: InventoryQueryParams
+): InventoryQueryParams {
+  return {
+    search: params.search,
+    categoryId: params.categoryId,
+    lowStock: params.lowStock,
+    hasStock: params.hasStock,
+    sortBy: params.sortBy,
+    sortOrder: params.sortOrder,
+    startDate: params.startDate,
+    endDate: params.endDate,
+    page: params.page,
+    limit: params.limit,
+  };
+}
+
 function useInventoryController(initialParams: InventoryQueryParams) {
   const { params, updateParams } = useUrlSearchParams(inventoryParamsSchema, {
     basePath: '/inventory',
-    debounceMs: 0,
+    debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
     shallow: true,
     initialParams,
   });
 
-  const { searchInput, isSearching, handleSearch } = useInventorySearch(
-    params.search || '',
-    updateParams
-  );
+  // ✅ 本地搜索输入状态,用于即时UI反馈
+  const [searchInput, setSearchInput] = React.useState(params.search || '');
+  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [isSearching, setIsSearching] = React.useState(false);
+
+  // ✅ 同步URL参数到本地输入框(浏览器前进/后退、清空筛选等)
+  React.useEffect(() => {
+    setSearchInput(params.search || '');
+  }, [params.search]);
+
   const {
     data,
     isLoading,
@@ -79,41 +103,90 @@ function useInventoryController(initialParams: InventoryQueryParams) {
     listData,
     handleNextPageHover,
     handlePrevPageHover,
-  } = useInventoryData(params);
+  } = useInventoryData(params, !!params.search); // ✅ 搜索模式：当有搜索词时启用
+
+  // ✅ 优化搜索状态管理:单一职责原则，减少重渲染
+  const shouldShowSearchingIndicator = React.useMemo(
+    () => isSearching && (isLoading || isFetching),
+    [isSearching, isLoading, isFetching]
+  );
   const { handleFilter, handleClearFilters, handlePageChange } =
     useInventoryFilters(updateParams, params.page);
 
+  // ✅ 自适应防抖搜索:根据输入模式动态调整延迟
+  const lastInputTimeRef = React.useRef<number>(Date.now());
+  const inputCountRef = React.useRef<number>(0);
+
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      const trimmed = value.trimStart();
+      const now = Date.now();
+      const timeSinceLastInput = now - lastInputTimeRef.current;
+
+      // 1. 立即更新输入框(0ms延迟)
+      setSearchInput(trimmed);
+
+      // 2. 清除之前的定时器
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+
+      // 3. 设置搜索状态
+      if (trimmed === '') {
+        setIsSearching(false);
+        inputCountRef.current = 0;
+        // 清空时立即更新
+        updateParams({ search: undefined, page: 1 });
+        return;
+      }
+
+      setIsSearching(true);
+      inputCountRef.current += 1;
+
+      // 4. 自适应延迟计算
+      let adaptiveDelay = 300; // 默认延迟
+
+      if (inputCountRef.current >= 3) {
+        // 连续输入3次以上，用户在快速输入，增加延迟
+        adaptiveDelay = 500;
+      } else if (timeSinceLastInput < 100) {
+        // 快速连续输入，稍增加延迟
+        adaptiveDelay = 400;
+      } else if (trimmed.length >= 5) {
+        // 输入较长，用户可能在输入完整词，减少延迟
+        adaptiveDelay = 200;
+      }
+
+      lastInputTimeRef.current = now;
+
+      // 5. 使用自适应延迟更新URL和触发查询
+      searchTimerRef.current = setTimeout(() => {
+        updateParams({ search: trimmed, page: 1 });
+        inputCountRef.current = 0; // 重置计数器
+      }, adaptiveDelay);
+    },
+    [updateParams]
+  );
+
+  // 清理定时器
+  React.useEffect(
+    () => () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    },
+    []
+  );
+
   const currentQueryParams: InventoryQueryParams = React.useMemo(
-    () => ({
-      search: params.search,
-      categoryId: params.categoryId,
-      lowStock: params.lowStock,
-      hasStock: params.hasStock,
-      sortBy: params.sortBy,
-      sortOrder: params.sortOrder,
-      startDate: params.startDate,
-      endDate: params.endDate,
-      page: params.page,
-      limit: params.limit,
-    }),
-    [
-      params.search,
-      params.categoryId,
-      params.lowStock,
-      params.hasStock,
-      params.sortBy,
-      params.sortOrder,
-      params.startDate,
-      params.endDate,
-      params.page,
-      params.limit,
-    ]
+    () => buildCurrentQueryParams(params),
+    [params]
   );
 
   return {
     params,
-    searchInput,
-    isSearching,
+    searchInput, // ✅ 使用本地searchInput,即时UI反馈
+    isSearching: shouldShowSearchingIndicator, // ✅ 优化后的搜索状态指示
     data,
     isLoading,
     isFetching,
@@ -129,61 +202,7 @@ function useInventoryController(initialParams: InventoryQueryParams) {
   } as const;
 }
 
-function useInventorySearch(
-  paramsSearch: string,
-  updateParams: (updates: Partial<InventoryQueryParams>) => void
-) {
-  const [searchInput, setSearchInput] = React.useState(paramsSearch);
-  const [isSearching, setIsSearching] = React.useState(false);
-  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  React.useEffect(
-    () => () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    },
-    []
-  );
-
-  React.useEffect(() => {
-    // ✅ 修复BUG: 只在URL参数变化时同步本地状态,不在本地输入时触发
-    // 之前的问题: 单字符输入时,因为不创建定时器,useEffect会把输入重置为空
-    // 现在: 只有当paramsSearch变化且与当前输入不同时才更新
-    if ((paramsSearch || '') !== (searchInput || '')) {
-      setSearchInput(paramsSearch || '');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally only listen to paramsSearch, not searchInput, to prevent input reset bug
-  }, [paramsSearch]); // ✅ 只监听paramsSearch,不监听searchInput
-
-  const handleSearch = React.useCallback(
-    (raw: string) => {
-      const value = raw.trimStart();
-      setSearchInput(value);
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-        setIsSearching(false);
-      }
-      if (value === '') {
-        setIsSearching(false);
-        updateParams({ search: '', page: 1 });
-        return;
-      }
-      if (value.length < 2) {
-        setIsSearching(false);
-        return;
-      }
-      setIsSearching(true);
-      searchTimerRef.current = setTimeout(() => {
-        updateParams({ search: value, page: 1 });
-        setIsSearching(false);
-      }, 180);
-    },
-    [updateParams]
-  );
-
-  return { searchInput, isSearching, handleSearch } as const;
-}
-
-function useInventoryData(params: InventoryQueryParams) {
+function useInventoryData(params: InventoryQueryParams, searchMode = false) {
   const {
     data,
     isLoading,
@@ -191,7 +210,7 @@ function useInventoryData(params: InventoryQueryParams) {
     error,
     prefetchNextPage,
     prefetchPrevPage,
-  } = useOptimizedInventoryQuery({ params });
+  } = useOptimizedInventoryQuery({ params, searchMode });
 
   const normalizedData = React.useMemo<
     InventoryListResponse['data'] | undefined
@@ -334,6 +353,7 @@ function InventoryContent(props: {
   onPrevPageHover: () => void;
   isLoading: boolean;
   isFetching: boolean;
+  isSearching: boolean; // ✅ 新增：搜索中状态
   error: unknown;
 }) {
   const {
@@ -349,6 +369,7 @@ function InventoryContent(props: {
     onPrevPageHover,
     isLoading,
     isFetching,
+    isSearching,
     error,
   } = props;
   return (
@@ -400,6 +421,7 @@ function InventoryContent(props: {
               onPrevPageHover={onPrevPageHover}
               isLoading={isLoading}
               isFetching={isFetching}
+              isSearching={isSearching}
             />
           )}
         </Suspense>

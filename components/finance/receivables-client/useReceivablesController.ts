@@ -33,6 +33,9 @@ export type ReceivablesControllerResult = {
   queryParams: ReceivablesQueryParams;
   currentData: ReceivablesResult;
   isLoading: boolean;
+  isFetching: boolean;
+  searchValue: string;
+  isSearching: boolean;
   error: unknown;
   handleSearch: (value: string) => void;
   handleFilterChange: (key: string, value: string | undefined) => void;
@@ -62,15 +65,74 @@ export function useReceivablesController({
     receivablesParamsSchema,
     {
       basePath: '/finance/receivables',
-      debounceMs: 300,
+      debounceMs: 0,
       shallow: true,
       initialParams,
     }
   );
 
-  const { data, isLoading, error } = useReceivablesQuery(queryParams, initialData);
+  const [searchInput, setSearchInput] = React.useState(
+    queryParams.search ?? ''
+  );
+  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+  const [isSearching, setIsSearching] = React.useState(false);
+
+  React.useEffect(() => {
+    setSearchInput(queryParams.search ?? '');
+  }, [queryParams.search]);
+
+  const { data, isLoading, isFetching, error } = useReceivablesQuery(
+    queryParams,
+    initialData
+  );
   const paymentDialogState = usePaymentDialogState();
-  const handlers = useReceivablesHandlers(updateParams);
+  const { handleFilterChange, handleDateRangeChange, handlePageChange } =
+    useReceivablesHandlers(updateParams);
+
+  React.useEffect(() => {
+    if (!isSearching) {
+      return;
+    }
+    if (!isLoading && !isFetching) {
+      setIsSearching(false);
+    }
+  }, [isSearching, isLoading, isFetching]);
+
+  React.useEffect(
+    () => () => {
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+    },
+    []
+  );
+
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      const trimmed = value.trimStart();
+      setSearchInput(trimmed);
+
+      if (searchTimerRef.current) {
+        clearTimeout(searchTimerRef.current);
+      }
+
+      if (trimmed === '') {
+        setIsSearching(false);
+        updateParams({ search: undefined, page: 1 });
+        return;
+      }
+
+      setIsSearching(true);
+
+      searchTimerRef.current = setTimeout(() => {
+        updateParams({ search: trimmed, page: 1 });
+        searchTimerRef.current = null;
+      }, 300);
+    },
+    [updateParams]
+  );
 
   const currentData = data?.data || initialData;
 
@@ -78,15 +140,20 @@ export function useReceivablesController({
     queryParams,
     currentData,
     isLoading,
+    isFetching,
+    searchValue: searchInput,
+    isSearching,
     error,
-    ...handlers,
+    handleSearch,
+    handleFilterChange,
+    handleDateRangeChange,
+    handlePageChange,
     handleOpenPaymentDialog: paymentDialogState.openPaymentDialog,
     isPaymentDialogOpen: paymentDialogState.isPaymentDialogOpen,
     setIsPaymentDialogOpen: paymentDialogState.setIsPaymentDialogOpen,
     selectedOrder: paymentDialogState.selectedOrder,
   };
 }
-
 
 function useReceivablesQuery(
   queryParams: ReceivablesQueryParams,
@@ -103,9 +170,8 @@ function useReceivablesQuery(
 
 function usePaymentDialogState() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = React.useState(false);
-  const [selectedOrder, setSelectedOrder] = React.useState<PaymentDialogOrder | null>(
-    null
-  );
+  const [selectedOrder, setSelectedOrder] =
+    React.useState<PaymentDialogOrder | null>(null);
 
   const openPaymentDialog = React.useCallback((receivable: ReceivableItem) => {
     setSelectedOrder({
@@ -124,7 +190,12 @@ function usePaymentDialogState() {
     setIsPaymentDialogOpen(true);
   }, []);
 
-  return { isPaymentDialogOpen, setIsPaymentDialogOpen, selectedOrder, openPaymentDialog };
+  return {
+    isPaymentDialogOpen,
+    setIsPaymentDialogOpen,
+    selectedOrder,
+    openPaymentDialog,
+  };
 }
 
 /**
@@ -133,13 +204,6 @@ function usePaymentDialogState() {
 function useReceivablesHandlers(
   updateParams: (updates: Partial<ReceivablesQueryParams>) => void
 ) {
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      updateParams({ search: value, page: 1 });
-    },
-    [updateParams]
-  );
-
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
       if (key === 'paymentStatus') {
@@ -183,7 +247,6 @@ function useReceivablesHandlers(
   );
 
   return {
-    handleSearch,
     handleFilterChange,
     handleDateRangeChange,
     handlePageChange,

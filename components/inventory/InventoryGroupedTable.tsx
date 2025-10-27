@@ -27,6 +27,8 @@ import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 interface InventoryGroupedTableProps {
   data: Inventory[];
   onAdjust: (id: string) => void;
+  /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
+  searchQuery?: string;
 }
 
 interface ProductGroup {
@@ -118,8 +120,12 @@ function formatSpecification(spec: string | null | undefined): string {
 }
 
 export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
-  ({ data, onAdjust }) => {
+  ({ data, onAdjust, searchQuery }) => {
     const groups = React.useMemo(() => groupByProduct(data), [data]);
+
+    // ✅ 判断是否为搜索无结果
+    const hasSearchQuery = searchQuery && searchQuery.trim().length > 0;
+    const isEmptyState = data.length === 0;
 
     return (
       <Table>
@@ -140,11 +146,12 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.length === 0 ? (
+          {isEmptyState ? (
             <TableRow>
               <TableCell colSpan={12} className="p-8">
                 <EmptyState
-                  title="暂无库存数据"
+                  title={hasSearchQuery ? undefined : '暂无库存数据'}
+                  description={undefined}
                   icon={<Package className="text-muted-foreground h-6 w-6" />}
                   compact
                 />

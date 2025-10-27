@@ -119,6 +119,8 @@ export function StatementsPageClient({
             onFilter={handlers.handleFilter}
             onDateRangeChange={handlers.handleDateRangeChange}
             onPageChange={handlers.handlePageChange}
+            // ✅ 新增：搜索状态指示
+            isSearching={filters.isSearching}
           />
         </Suspense>
       </div>

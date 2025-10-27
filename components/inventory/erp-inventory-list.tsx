@@ -36,6 +36,8 @@ interface ERPInventoryListProps {
   onPrevPageHover?: () => void;
   isLoading?: boolean;
   isFetching?: boolean;
+  /** ✅ 新增：搜索状态指示 */
+  isSearching?: boolean;
 }
 
 /**
@@ -58,6 +60,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     onPrevPageHover,
     isLoading: _isLoading = false,
     isFetching = false,
+    isSearching = false,
   }) => {
     const router = useRouter();
 
@@ -96,6 +99,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           onSearch={onSearch}
           onFilter={onFilter}
           onClearFilters={onClearFilters}
+          isSearching={isSearching || isFetching}
         />
 
         {/* 库存列表 */}
@@ -117,6 +121,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
             data={data.data}
             onAdjust={handleAdjust}
             useVirtualization={data.data.length > 50}
+            searchQuery={queryParams.search}
           />
 
           {/* 分页器 */}

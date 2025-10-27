@@ -32,6 +32,21 @@ export function serializeToUrlParams<T extends Record<string, unknown>>(
       continue;
     }
 
+    // 当配置缺失时，采用字符串兜底逻辑
+    if (!config) {
+      const fallbackValue = Array.isArray(value)
+        ? value.join(',')
+        : String(value);
+      if (fallbackValue.length > 0) {
+        if (encodeUri) {
+          urlParams.set(key as string, fallbackValue);
+        } else {
+          urlParams.append(key as string, fallbackValue);
+        }
+      }
+      continue;
+    }
+
     // 跳过默认值(除非明确要求包含)
     if (!includeDefaults && value === config.default) {
       continue;

@@ -31,6 +31,8 @@ interface InventorySearchToolbarProps {
   ) => void;
   /** ✅ 新增：批量清空筛选回调 */
   onClearFilters?: () => void;
+  /** ✅ 搜索状态指示（仅用于显示输入框内的加载图标） */
+  isSearching?: boolean;
 }
 
 /**
@@ -46,8 +48,13 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     onSearch,
     onFilter,
     onClearFilters,
+    isSearching,
   }) => {
-    const logic = useInventoryToolbarLogic({ queryParams, onFilter, onClearFilters });
+    const logic = useInventoryToolbarLogic({
+      queryParams,
+      onFilter,
+      onClearFilters,
+    });
 
     return (
       <InventoryToolbarView
@@ -55,6 +62,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
         categoryOptions={categoryOptions}
         searchValue={searchValue}
         onSearch={onSearch}
+        isSearching={isSearching}
         {...logic}
       />
     );
@@ -129,7 +137,7 @@ function useInventoryToolbarLogic({
 // 提取视图：纯展示组件，便于压缩主函数行数
 type InventoryToolbarViewProps = Pick<
   InventorySearchToolbarProps,
-  'queryParams' | 'categoryOptions' | 'searchValue' | 'onSearch'
+  'queryParams' | 'categoryOptions' | 'searchValue' | 'onSearch' | 'isSearching'
 > & {
   handleFilterChange: (key: string, value: string | undefined) => void;
   handleToggleLowStock: () => void;
@@ -144,6 +152,7 @@ function InventoryToolbarView({
   categoryOptions,
   searchValue,
   onSearch,
+  isSearching,
   handleFilterChange,
   handleToggleLowStock,
   handleToggleHasStock,
@@ -164,6 +173,7 @@ function InventoryToolbarView({
             searchPlaceholder="搜索产品名称、编码..."
             debounceDelay={0}
             compact={true}
+            isSearching={isSearching}
             toggleButtons={[
               {
                 key: 'lowStock',
@@ -184,7 +194,10 @@ function InventoryToolbarView({
               {
                 key: 'categoryId',
                 label: '分类',
-                options: categoryOptions.map(cat => ({ label: cat.name, value: cat.id })),
+                options: categoryOptions.map(cat => ({
+                  label: cat.name,
+                  value: cat.id,
+                })),
                 width: 'w-[140px]',
               },
               {
@@ -197,16 +210,20 @@ function InventoryToolbarView({
                 width: 'w-[140px]',
               },
             ]}
-            filterValues={{ categoryId: queryParams.categoryId, sortBy: queryParams.sortBy }}
+            filterValues={{
+              categoryId: queryParams.categoryId,
+              sortBy: queryParams.sortBy,
+            }}
             onFilterChange={handleFilterChange}
           />
 
-          {Boolean((searchValue ?? queryParams.search ?? '').length === 1) && (
-            <span className="text-muted-foreground text-xs">输入≥2个字符开始搜索</span>
-          )}
+          {/* 根据需求，不在搜索框旁展示任何提示信息 */}
 
           <DateRangePicker
-            value={{ startDate: queryParams.startDate, endDate: queryParams.endDate }}
+            value={{
+              startDate: queryParams.startDate,
+              endDate: queryParams.endDate,
+            }}
             onChange={handleDateRangeChange}
             label=""
             placeholder="选择更新时间范围"
