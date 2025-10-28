@@ -204,11 +204,11 @@ function ReturnOrderToolbarView({
             isSearching={isSearching}
             toggleButtons={[
               {
-                key: 'pending_review',
+                key: 'submitted',
                 label: '待审核',
                 icon: <Clock className="h-3.5 w-3.5" />,
-                active: statusFilter === 'pending_review',
-                onClick: toggleStatus('pending_review'),
+                active: statusFilter === 'submitted',
+                onClick: toggleStatus('submitted'),
               },
               {
                 key: 'processing',

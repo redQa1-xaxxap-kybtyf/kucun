@@ -65,11 +65,16 @@ export function ReturnOrdersPageClient({
 
   const orders = queryData?.data.returnOrders || [];
   const pagination = queryData?.data.pagination;
+  const paginationInfo = pagination
+    ? {
+        page: pagination.page,
+        limit: pagination.limit,
+        totalCount: pagination.total,
+        totalPages: pagination.totalPages,
+      }
+    : undefined;
 
   // 处理操作回调
-  const handleCancelRequest = React.useCallback((_order: ReturnOrder) => {
-    // 取消操作逻辑已集成到 ReturnOrderListView 中
-  }, []);
 
   const handleDeleteRequest = React.useCallback((_order: ReturnOrder) => {
     // 删除操作逻辑已集成到 ReturnOrderListView 中
@@ -240,9 +245,8 @@ export function ReturnOrdersPageClient({
             orders={orders}
             isLoading={isLoading}
             error={error}
-            pagination={pagination}
+            pagination={paginationInfo}
             onPageChange={handlePageChange}
-            onCancelRequest={handleCancelRequest}
             onDeleteRequest={handleDeleteRequest}
             onRetry={handleRetry}
           />

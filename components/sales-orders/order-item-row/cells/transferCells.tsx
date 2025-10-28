@@ -12,6 +12,9 @@ import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
 
 import type { OrderFormInstance } from '../types';
 
+const baseCellClass =
+  'border-r last:border-r-0 border-[hsl(var(--color-border-primary))] px-3 py-2 align-top';
+
 export function TransferInfoCell({
   form,
   index,
@@ -30,7 +33,7 @@ export function TransferInfoCell({
   const localQuantityPath = `items.${index}.localQuantity` as const;
   if (transferMode === 'MIXED') {
     return (
-      <TableCell className="min-w-[160px]">
+      <TableCell className={`${baseCellClass} min-w-[160px]`}>
         <div className="space-y-1">
           <FormField
             control={form.control}
@@ -69,7 +72,7 @@ export function TransferInfoCell({
   }
 
   return (
-    <TableCell className="min-w-[160px]">
+    <TableCell className={`${baseCellClass} min-w-[160px]`}>
       <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
         全部由供应商调货（{formatQuantity(transferQuantityDisplay)} 片）
       </div>

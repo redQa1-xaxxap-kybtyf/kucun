@@ -19,6 +19,9 @@ import type { Product } from '@/lib/types/product';
 
 import type { OrderFormInstance } from '../types';
 
+const baseCellClass =
+  'border-r last:border-r-0 border-[hsl(var(--color-border-primary))] px-3 py-2 align-middle';
+
 export function UnitAndQuantityCells({
   form,
   index,
@@ -58,7 +61,7 @@ function UnitSelectCell({
   const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   const displayUnitPath = `items.${index}.displayUnit` as const;
   return (
-    <TableCell className="min-w-[120px]">
+    <TableCell className={`${baseCellClass} min-w-[120px]`}>
       <FormField
         control={form.control}
         name={displayUnitPath}
@@ -121,7 +124,7 @@ function QuantityInputCell({
 }) {
   const displayQuantityPath = `items.${index}.displayQuantity` as const;
   return (
-    <TableCell className="min-w-[100px]">
+    <TableCell className={`${baseCellClass} min-w-[100px]`}>
       <FormField
         control={form.control}
         name={displayQuantityPath}
@@ -175,7 +178,7 @@ export function UnitPriceCell({
 }) {
   const unitPricePath = `items.${index}.unitPrice` as const;
   return (
-    <TableCell className="min-w-[100px]">
+    <TableCell className={`${baseCellClass} min-w-[100px]`}>
       <FormField
         control={form.control}
         name={unitPricePath}
@@ -227,7 +230,7 @@ export function UnitCostCell({
 }) {
   const unitCostPath = `items.${index}.unitCost` as const;
   return (
-    <TableCell className="min-w-[120px]">
+    <TableCell className={`${baseCellClass} min-w-[120px]`}>
       <FormField
         control={form.control}
         name={unitCostPath}

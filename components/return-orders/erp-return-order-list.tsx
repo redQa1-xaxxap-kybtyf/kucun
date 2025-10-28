@@ -313,6 +313,24 @@ export function ERPReturnOrderList({
     [onFilter, updateQueryStringParams]
   );
 
+  const handleProcessTypeChange = React.useCallback(
+    (processTypeValue: ReturnProcessType | 'all') => {
+      if (onFilter) {
+        onFilter(
+          'processType',
+          processTypeValue === 'all' ? undefined : processTypeValue
+        );
+      } else {
+        updateQueryStringParams({
+          processType:
+            processTypeValue === 'all' ? undefined : processTypeValue,
+          page: 1,
+        });
+      }
+    },
+    [onFilter, updateQueryStringParams]
+  );
+
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
       if (onDateRangeChange) {
@@ -432,6 +450,7 @@ export function ERPReturnOrderList({
         onSearch={handleSearch}
         onStatusChange={handleStatusChange}
         onTypeChange={handleTypeChange}
+        onProcessTypeChange={handleProcessTypeChange}
         onDateRangeChange={handleDateRangeChange}
         onClearFilters={handleClearFilters}
       />

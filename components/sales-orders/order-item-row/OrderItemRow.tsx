@@ -105,7 +105,7 @@ function OrderItemRowView({
   onProductOverride,
 }: OrderItemRowViewProps) {
   return (
-    <TableRow className="h-10">
+    <TableRow className="h-10 border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] transition-colors hover:bg-[hsl(var(--color-bg-tertiary))]">
       <ProductCodeCell
         form={form}
         index={index}

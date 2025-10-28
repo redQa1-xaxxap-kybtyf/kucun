@@ -16,6 +16,9 @@ import type { Product } from '@/lib/types/product';
 
 import type { OrderFormInstance } from '../types';
 
+const baseCellClass =
+  'border-r last:border-r-0 border-[hsl(var(--color-border-primary))] px-3 py-2 align-middle';
+
 export function ProductCodeCell({
   form,
   index,
@@ -30,7 +33,7 @@ export function ProductCodeCell({
   orderType: 'NORMAL' | 'TRANSFER';
 }) {
   return (
-    <TableCell className="min-w-[200px]">
+    <TableCell className={`${baseCellClass} min-w-[200px]`}>
       <IntelligentProductInput
         form={form}
         index={index}
@@ -63,7 +66,7 @@ export function ProductNameCell({
   const requireManualName = false;
 
   return (
-    <TableCell className="min-w-[140px]">
+    <TableCell className={`${baseCellClass} min-w-[140px]`}>
       {isManualProduct ? (
         <FormField
           control={form.control}
@@ -99,7 +102,7 @@ export function ProductNameCell({
           )}
         />
       ) : (
-        <div className="flex h-8 items-center text-xs text-gray-700">
+        <div className="flex h-8 items-center text-xs text-[hsl(var(--color-text-primary))]">
           {resolvedName ? (
             <span className="truncate">{resolvedName}</span>
           ) : (
@@ -124,7 +127,7 @@ export function PiecesPerUnitCell({
 }) {
   const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   return (
-    <TableCell className="min-w-[90px]">
+    <TableCell className={`${baseCellClass} min-w-[90px]`}>
       <FormField
         control={form.control}
         name={piecesPerUnitPath}
@@ -182,7 +185,7 @@ export function BatchSelectorCell({
 }) {
   const batchNumberPath = `items.${index}.batchNumber` as const;
   return (
-    <TableCell className="min-w-[180px]">
+    <TableCell className={`${baseCellClass} min-w-[180px]`}>
       <FormField
         control={form.control}
         name={batchNumberPath}
@@ -251,7 +254,7 @@ export function ManualInfoCells({
     }) ?? '';
 
   return (
-    <TableCell className="min-w-[150px]">
+    <TableCell className={`${baseCellClass} min-w-[150px]`}>
       {isManualProduct ? (
         <FormField
           control={form.control}
@@ -275,7 +278,7 @@ export function ManualInfoCells({
           )}
         />
       ) : (
-        <div className="flex h-8 items-center text-xs text-gray-700">
+        <div className="flex h-8 items-center text-xs text-[hsl(var(--color-text-primary))]">
           <span className="truncate">
             {specificationValue ? specificationValue : '—'}
           </span>

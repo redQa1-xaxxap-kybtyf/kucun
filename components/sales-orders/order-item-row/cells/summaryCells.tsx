@@ -14,10 +14,15 @@ import { Textarea } from '@/components/ui/textarea';
 
 import type { OrderFormInstance } from '../types';
 
+const baseCellClass =
+  'border-r last:border-r-0 border-[hsl(var(--color-border-primary))] px-3 py-2 align-middle';
+
 export function AmountCell({ amount }: { amount: number }) {
   return (
-    <TableCell className="min-w-[100px]">
-      <div className="text-xs font-medium">¥{amount.toFixed(2)}</div>
+    <TableCell className={`${baseCellClass} min-w-[100px]`}>
+      <div className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
+        ¥{amount.toFixed(2)}
+      </div>
     </TableCell>
   );
 }
@@ -31,7 +36,7 @@ export function RemarksCell({
 }) {
   const remarksPath = `items.${index}.remarks` as const;
   return (
-    <TableCell className="min-w-[150px]">
+    <TableCell className={`${baseCellClass} min-w-[150px]`}>
       <FormField
         control={form.control}
         name={remarksPath}
@@ -54,7 +59,7 @@ export function RemarksCell({
 
 export function ActionsCell({ onRemove }: { onRemove: () => void }) {
   return (
-    <TableCell className="min-w-[80px]">
+    <TableCell className="min-w-[80px] px-3 py-2 text-center align-middle">
       <Button
         type="button"
         variant="ghost"

@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
 import {
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
@@ -170,7 +171,6 @@ function ReturnOrderTable({
               key={order.id}
               order={order}
               onOrderSelect={onOrderSelect}
-              onCancelRequest={onCancelRequest}
               onDeleteRequest={onDeleteRequest}
             />
           ))}
