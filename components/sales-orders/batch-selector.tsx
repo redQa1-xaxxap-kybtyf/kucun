@@ -98,9 +98,7 @@ export function BatchSelector({
           disabled={disabled || batches.length === 0}
         >
           <span className="truncate">
-            {selectedBatch
-              ? `${selectedBatch.batchNumber} (${formatBatchStock(selectedBatch)}${selectedBatch.piecesPerUnit && selectedBatch.piecesPerUnit > 1 ? `, 每件${selectedBatch.piecesPerUnit}片` : ''})`
-              : placeholder}
+            {selectedBatch ? selectedBatch.batchNumber : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
         </Button>

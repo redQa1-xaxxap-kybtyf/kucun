@@ -73,6 +73,8 @@ export function CustomerSelector({
   const [searchValue, setSearchValue] = React.useState('');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const wasOpenRef = React.useRef(false);
+  // 保存上一次的搜索关键词，用于重新打开时复用
+  const lastSearchValueRef = React.useRef('');
 
   const selectedCustomer = customers.find(customer => customer.id === value);
 
@@ -135,7 +137,8 @@ export function CustomerSelector({
   const handleSelect = (customerId: string) => {
     onValueChange?.(customerId);
     setOpen(false);
-    setSearchValue('');
+    // 保存当前搜索关键词，供下次打开时复用
+    lastSearchValueRef.current = searchValue;
   };
 
   // 处理新增客户
@@ -159,6 +162,10 @@ export function CustomerSelector({
   React.useEffect(() => {
     if (open && !wasOpenRef.current) {
       onRefreshCustomers?.();
+      // 重新打开时复用上次的搜索关键词
+      if (lastSearchValueRef.current) {
+        setSearchValue(lastSearchValueRef.current);
+      }
     }
     wasOpenRef.current = open;
   }, [open, onRefreshCustomers]);
@@ -177,16 +184,14 @@ export function CustomerSelector({
             {selectedCustomer ? (
               <div className="flex items-center gap-2 truncate">
                 <User className="text-muted-foreground h-4 w-4 shrink-0" />
-                <div className="flex flex-col items-start truncate">
-                  <span className="truncate font-medium">
-                    {selectedCustomer.name}
-                  </span>
+                <span className="truncate font-medium">
+                  {selectedCustomer.name}
                   {selectedCustomer.phone && (
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-muted-foreground ml-2 font-normal">
                       {selectedCustomer.phone}
                     </span>
                   )}
-                </div>
+                </span>
               </div>
             ) : (
               <div className="text-muted-foreground flex items-center gap-2">

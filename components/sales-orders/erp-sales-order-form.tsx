@@ -1087,6 +1087,31 @@ export function ERPSalesOrderForm({
                 />
               </div>
 
+              {/* 第三行：客户地址 */}
+              {selectedCustomerId && (
+                <div className="mb-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-gray-700">
+                      客户地址
+                    </Label>
+                    <div className="flex min-h-[40px] items-center rounded-md border bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                      {(() => {
+                        const selectedCustomer = customersData?.data?.find(
+                          customer => customer.id === selectedCustomerId
+                        );
+                        return selectedCustomer?.address ? (
+                          <span>{selectedCustomer.address}</span>
+                        ) : (
+                          <span className="text-gray-400">
+                            该客户暂未设置地址
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 调货销售特殊字段 */}
               {orderType === 'TRANSFER' && (
                 <div className="mb-6 rounded-lg border border-orange-200 bg-orange-50/50 p-4">
