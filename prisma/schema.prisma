@@ -1,52 +1,22 @@
-// 库存管理工具 Prisma Schema
-// 严格按照 TECH_ARCHITECTURE 文档设计
-// 开发环境: SQLite | 生产环境: MySQL 5.7+
-// 注意: MySQL 5.7 不支持降序索引优化,但语法兼容
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "mysql" // 开发环境使用 SQLite
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-// 用户表 - 系统用户管理
 model User {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @db.Char(36)
   email        String   @unique
-  username     String   @unique // 新增用户名字段，用于登录
+  username     String   @unique
   name         String
-  passwordHash String   @map("password_hash")
-  role         String   @default("sales") // admin, sales
-  status       String   @default("active") // active, inactive
+  passwordHash String   @map("password_hash") @db.VarChar(100)
+  role         String   @default("sales") @db.VarChar(32)
+  status       String   @default("active") @db.VarChar(32)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  salesOrders           SalesOrder[]
-  inboundRecords        InboundRecord[]
-  paymentRecords        PaymentRecord[]
-  factoryShipmentOrders FactoryShipmentOrder[]
-  refundRecords         RefundRecord[]
-  returnOrders          ReturnOrder[]
-  systemLogs            SystemLog[]
-  outboundRecords       OutboundRecord[]       @relation("OutboundRecordOperator")
-
-  // 库存调整关联关系
-  operatedAdjustments InventoryAdjustment[] @relation("InventoryAdjustmentOperator")
-  approvedAdjustments InventoryAdjustment[] @relation("InventoryAdjustmentApprover")
-
-  // 应付款关联关系
-  payableRecords    PayableRecord[]
-  paymentOutRecords PaymentOutRecord[]
-
-  // 系统设置变更日志关联关系
-  settingChangeLogs SettingChangeLog[]
-
-  // 临时商品关联关系
-  temporaryProducts TemporaryProduct[] @relation("TemporaryProductCreator")
 
   @@index([email])
   @@index([username])
@@ -54,30 +24,16 @@ model User {
   @@map("users")
 }
 
-// 客户表 - 客户信息管理，支持层级关系
 model Customer {
-  id               String   @id @default(uuid())
-  name             String
-  role             String   @default("customer")
+  id               String   @id @default(uuid()) @db.Char(36)
+  name             String   @db.VarChar(150)
+  role             String   @default("customer") @db.VarChar(32)
   phone            String?
   address          String?
-  extendedInfo     String?  @map("extended_info") // JSON格式的客户扩展信息（SQLite存储为文本）
-  parentCustomerId String?  @map("parent_customer_id")
+  extendedInfo     String?  @map("extended_info")
+  parentCustomerId String?  @map("parent_customer_id") @db.Char(36)
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // 自关联：客户层级关系
-  parentCustomer Customer?  @relation("CustomerHierarchy", fields: [parentCustomerId], references: [id])
-  childCustomers Customer[] @relation("CustomerHierarchy")
-
-  // 关联关系
-  salesOrders           SalesOrder[]
-  paymentRecords        PaymentRecord[]
-  factoryShipmentOrders FactoryShipmentOrder[]
-  refundRecords         RefundRecord[]
-  returnOrders          ReturnOrder[]
-  outboundRecords       OutboundRecord[]
-  productPrices         CustomerProductPrice[]
 
   @@index([name])
   @@index([phone])
@@ -86,24 +42,15 @@ model Customer {
   @@map("customers")
 }
 
-// 供应商表 - 供应商信息管理
 model Supplier {
-  id           String   @id @default(uuid())
-  name         String
-  supplierCode String?  @unique @map("supplier_code") // 供应商编码
-  phone        String?
+  id           String   @id @default(uuid()) @db.Char(36)
+  name         String   @db.VarChar(150)
+  supplierCode String?  @unique @map("supplier_code")
+  phone        String?  @db.VarChar(50)
   address      String?
-  status       String   @default("active") // active, inactive
+  status       String   @default("active") @db.VarChar(32)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  salesOrders               SalesOrder[]
-  factoryShipmentOrderItems FactoryShipmentOrderItem[]
-  payableRecords            PayableRecord[]
-  paymentOutRecords         PaymentOutRecord[]
-  productPrices             SupplierProductPrice[]
-  temporaryProducts         TemporaryProduct[] // 临时商品
 
   @@index([name])
   @@index([phone])
@@ -112,61 +59,16 @@ model Supplier {
   @@map("suppliers")
 }
 
-// 临时商品表 - 调货销售中使用的临时商品记录
-// 用于记录调货销售时手动输入的商品信息，按供应商维度管理
-// 自动创建和复用逻辑：同一供应商+同一编码 → 复用现有记录并更新使用统计
-model TemporaryProduct {
-  id            String    @id @default(uuid())
-  supplierId    String    @map("supplier_id") // 供应商ID
-  code          String    @db.VarChar(50) @map("code") // 产品编码（调货销售时必填）
-  name          String    @db.VarChar(100) @map("name") // 产品名称
-  specification String?   @map("specification") @db.Text // 规格
-  weight        Float?    @map("weight") // 重量
-  unit          String    @default("片") @db.VarChar(20) @map("unit") // 单位
-  piecesPerUnit Int       @default(1) @map("pieces_per_unit") // 每件片数
-  usageCount    Int       @default(0) @map("usage_count") // 使用次数（自动统计）
-  lastUsedAt    DateTime? @map("last_used_at") // 最后使用时间
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  createdBy     String?   @map("created_by") // 创建人ID
-
-  // 关联关系
-  supplier              Supplier         @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  creator               User?            @relation("TemporaryProductCreator", fields: [createdBy], references: [id])
-  salesOrderItems       SalesOrderItem[]
-  factoryShipmentItems  FactoryShipmentOrderItem[] @relation("TemporaryProductFactoryShipment")
-
-  // 复合唯一约束：同一供应商下编码唯一
-  @@unique([supplierId, code], map: "uk_temp_product_supplier_code")
-  @@index([supplierId], map: "idx_temp_products_supplier")
-  @@index([code], map: "idx_temp_products_code")
-  @@index([usageCount(sort: Desc)], map: "idx_temp_products_usage")
-  @@index([lastUsedAt(sort: Desc)], map: "idx_temp_products_last_used")
-  @@index([createdBy], map: "idx_temp_products_creator")
-  // 复合索引优化：支持常见查询模式
-  @@index([supplierId, usageCount(sort: Desc)], map: "idx_temp_products_supplier_usage")
-  @@index([supplierId, lastUsedAt(sort: Desc)], map: "idx_temp_products_supplier_last_used")
-  @@map("temporary_products")
-}
-
-// 分类表 - 产品分类管理，支持层级结构
 model Category {
-  id          String   @id @default(uuid())
-  name        String
-  code        String   @unique
-  description String? @db.Text // 分类描述
-  parentId    String?  @map("parent_id")
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @db.VarChar(150)
+  code        String   @unique @db.VarChar(100)
+  description String?
+  parentId    String?  @map("parent_id") @db.Char(36)
   sortOrder   Int      @default(0) @map("sort_order")
-  status      String   @default("active") // active, inactive
+  status      String   @default("active") @db.VarChar(32)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // 自关联：分类层级关系
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryHierarchy")
-
-  // 关联关系
-  products Product[]
 
   @@unique([name, parentId], map: "unique_name_per_parent")
   @@index([name])
@@ -176,40 +78,22 @@ model Category {
   @@map("categories")
 }
 
-// 产品表 - 产品基础信息管理
 model Product {
-  id            String  @id @default(uuid())
-  code          String  @unique
-  name          String
-  specification String? @db.Text
-  unit          String  @default("piece") // 瓷砖行业专用单位：piece(件), sheet(片)
-  piecesPerUnit Int     @default(1) @map("pieces_per_unit")
-  weight        Float? // 每件重量(kg) - 可选，优先使用批次规格中的重量
-  thickness     Float? // 产品厚度(mm)，瓷砖行业特有字段
-  categoryId    String? @map("category_id") // 产品分类ID
-  status        String  @default("active") // active, inactive
-
-  // 图片相关字段
-  thumbnailUrl String? @map("thumbnail_url") // 缩略图URL
-  images       String? @db.Text // 产品图片数组JSON字符串 [{"url": "...", "type": "main|effect", "alt": "..."}]
-  description  String? @db.Text // 产品描述
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  category                  Category?                  @relation(fields: [categoryId], references: [id])
-  variants                  ProductVariant[]
-  inventory                 Inventory[]
-  salesOrderItems           SalesOrderItem[]
-  returnOrderItems          ReturnOrderItem[]
-  inboundRecords            InboundRecord[]
-  outboundRecords           OutboundRecord[]
-  factoryShipmentOrderItems FactoryShipmentOrderItem[]
-  batchSpecifications       BatchSpecification[]
-  inventoryAdjustments      InventoryAdjustment[]
-  customerPrices            CustomerProductPrice[]
-  supplierPrices            SupplierProductPrice[]
+  id            String   @id @default(uuid()) @db.Char(36)
+  code          String   @unique @db.VarChar(100)
+  name          String   @db.VarChar(150)
+  specification String?  @db.Text
+  unit          String   @default("piece") @db.VarChar(32)
+  piecesPerUnit Int      @default(1) @map("pieces_per_unit")
+  weight        Float?
+  thickness     Float?
+  categoryId    String?  @map("category_id") @db.Char(36)
+  status        String   @default("active") @db.VarChar(32)
+  thumbnailUrl  String?  @map("thumbnail_url")
+  images        String?
+  description   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@index([code])
   @@index([name])
@@ -217,31 +101,21 @@ model Product {
   @@index([status])
   @@index([status, categoryId], map: "idx_products_status_category")
   @@index([createdAt])
-  // 性能优化：添加复合索引支持常见查询模式
   @@index([status, createdAt], map: "idx_products_status_created")
   @@index([status, name], map: "idx_products_status_name")
   @@map("products")
 }
 
-// 产品变体表 - 管理产品的色号变体
 model ProductVariant {
-  id         String   @id @default(uuid())
-  productId  String   @map("product_id")
-  colorCode  String   @map("color_code")
-  colorName  String?  @map("color_name") // 色号的中文名称
-  colorValue String?  @map("color_value") // 色号对应的颜色值
-  sku        String   @unique // 产品编码+色号的唯一SKU
-  status     String   @default("active") // active, inactive
+  id         String   @id @default(uuid()) @db.Char(36)
+  productId  String   @map("product_id") @db.Char(36)
+  colorCode  String   @map("color_code") @db.VarChar(64)
+  colorName  String?  @map("color_name") @db.VarChar(100)
+  colorValue String?  @map("color_value") @db.VarChar(100)
+  sku        String   @unique @db.VarChar(120)
+  status     String   @default("active") @db.VarChar(32)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  product              Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventory            Inventory[]
-  inboundRecords       InboundRecord[]
-  outboundRecords      OutboundRecord[]
-  inventoryAdjustments InventoryAdjustment[]
-  salesOrderItems      SalesOrderItem[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -250,123 +124,80 @@ model ProductVariant {
   @@map("product_variants")
 }
 
-// 销售单表 - 销售订单主表
 model SalesOrder {
-  id                 String  @id @default(uuid())
-  orderNumber        String  @unique @map("order_number")
-  customerId         String  @map("customer_id")
-  userId             String  @map("user_id")
-  status             String  @default("draft") // draft, confirmed, shipped, completed, cancelled
-  orderType          String  @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
-  transferMode       String  @default("SUPPLIER_ONLY") @map("transfer_mode") // 调货履约模式：SUPPLIER_ONLY, MIXED
-  supplierId         String? @map("supplier_id") // 调货销售时的供应商ID
-  costAmount         Float?  @default(0) @map("cost_amount") // 调货销售的成本金额
-  profitAmount       Float?  @default(0) @map("profit_amount") // 调货销售的毛利金额
-  itemsAmount        Float   @default(0) @map("items_amount") // 商品总金额
-  additionalFees     Float   @default(0) @map("additional_fees") // 额外费用总额（加工费、运费等）
-  totalAmount        Float   @default(0) @map("total_amount") // 订单总额 = 商品总额 + 额外费用
-  paidAmount         Float   @default(0) @map("paid_amount") // 已付金额
-  roundingAdjustment Float   @default(0) @map("rounding_adjustment") // 抹零金额（可正可负）
-
-  // 预收款字段
-  usePrepayment    Boolean @default(false) @map("use_prepayment") // 是否使用预收款冲抵
-  prepaymentAmount Float?  @default(0) @map("prepayment_amount") // 预收款冲抵金额
-
-  remarks   String? @db.Text
-  shippedAt DateTime? @map("shipped_at") // 发货时间
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-
-  // 关联关系
-  customer        Customer            @relation(fields: [customerId], references: [id])
-  user            User                @relation(fields: [userId], references: [id])
-  supplier        Supplier?           @relation(fields: [supplierId], references: [id])
-  items           SalesOrderItem[]
-  feeItems        SalesOrderFeeItem[] // 费用项明细
-  payments        PaymentRecord[]
-  refunds         RefundRecord[]
-  returnOrders    ReturnOrder[]
-  outboundRecords OutboundRecord[]
+  id                 String    @id @default(uuid()) @db.Char(36)
+  orderNumber        String    @unique @map("order_number") @db.VarChar(100)
+  customerId         String    @map("customer_id") @db.Char(36)
+  userId             String    @map("user_id") @db.Char(36)
+  status             String    @default("draft") @db.VarChar(32)
+  orderType          String    @default("NORMAL") @map("order_type") @db.VarChar(32)
+  transferMode       String    @default("SUPPLIER_ONLY") @map("transfer_mode") @db.VarChar(32)
+  supplierId         String?   @map("supplier_id") @db.Char(36)
+  costAmount         Float?    @default(0) @map("cost_amount")
+  profitAmount       Float?    @default(0) @map("profit_amount")
+  itemsAmount        Float     @default(0) @map("items_amount")
+  additionalFees     Float     @default(0) @map("additional_fees")
+  totalAmount        Float     @default(0) @map("total_amount")
+  paidAmount         Float     @default(0) @map("paid_amount")
+  roundingAdjustment Float     @default(0) @map("rounding_adjustment")
+  usePrepayment      Boolean   @default(false) @map("use_prepayment")
+  prepaymentAmount   Float?    @default(0) @map("prepayment_amount")
+  remarks            String?
+  shippedAt          DateTime? @map("shipped_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
   @@index([status], map: "idx_sales_orders_status")
   @@index([orderType], map: "idx_sales_orders_order_type")
   @@index([supplierId], map: "idx_sales_orders_supplier")
-  @@index([createdAt(sort: Desc)], map: "idx_sales_orders_date")
-  @@index([updatedAt(sort: Desc)], map: "idx_sales_orders_updated")
   @@index([usePrepayment], map: "idx_sales_orders_prepayment")
-  // 复合索引优化：支持常见查询模式
-  @@index([customerId, status, createdAt(sort: Desc)], map: "idx_sales_orders_customer_status_date")
-  @@index([status, createdAt(sort: Desc)], map: "idx_sales_orders_status_date")
-  @@index([status, updatedAt(sort: Desc)], map: "idx_sales_orders_status_updated")
-  @@index([status, totalAmount(sort: Desc)], map: "idx_sales_orders_status_amount")
-  @@index([userId, status, createdAt(sort: Desc)], map: "idx_sales_orders_user_status_date")
-  @@index([customerId, totalAmount(sort: Desc)], map: "idx_sales_orders_customer_amount")
   @@map("sales_orders")
 }
 
-// 销售订单费用项表 - 记录加工费、运费等额外费用
 model SalesOrderFeeItem {
-  id           String   @id @default(uuid())
-  salesOrderId String   @map("sales_order_id")
-  feeType      String   @map("fee_type") // processing: 加工费, shipping: 运费, other: 其他
-  feeName      String   @map("fee_name") // 费用名称
-  feeAmount    Float    @map("fee_amount") // 费用金额
-  remarks      String? @db.Text // 备注
+  id           String   @id @default(uuid()) @db.Char(36)
+  salesOrderId String   @map("sales_order_id") @db.Char(36)
+  feeType      String   @map("fee_type")
+  feeName      String   @map("fee_name")
+  feeAmount    Float    @map("fee_amount")
+  remarks      String?
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
 
   @@index([salesOrderId], map: "idx_sales_order_fee_items_order")
   @@index([feeType], map: "idx_sales_order_fee_items_type")
   @@map("sales_order_fee_items")
 }
 
-// 销售单明细表 - 销售订单明细,包含瓷砖行业特有字段
 model SalesOrderItem {
-  id                  String  @id @default(uuid())
-  salesOrderId        String  @map("sales_order_id")
-  productId           String? @map("product_id") // 手动输入商品时可为空
-  variantId           String? @map("variant_id") // 产品变体ID
-  temporaryProductId  String? @map("temporary_product_id") // 临时商品ID（调货销售时使用）
-  productCode         String? @map("product_code") // 产品编码
-  batchNumber         String? @map("batch_number") // 批次号
-  colorCode           String? @map("color_code")
-  productionDate      String? @map("production_date") // 生产日期，瓷砖行业特有
+  id                  String   @id @default(uuid()) @db.Char(36)
+  salesOrderId        String   @map("sales_order_id") @db.Char(36)
+  productId           String?  @map("product_id") @db.Char(36)
+  variantId           String?  @map("variant_id") @db.Char(36)
+  productCode         String?  @map("product_code")
+  batchNumber         String?  @map("batch_number") @db.VarChar(100)
+  colorCode           String?  @map("color_code")
+  productionDate      String?  @map("production_date")
   quantity            Float
-  unitPrice           Float   @map("unit_price")
+  unitPrice           Float    @map("unit_price")
   subtotal            Float
-
-  // 调货销售相关字段
-  unitCost         Float? @map("unit_cost") // 单位成本价（调货销售时使用）
-  localQuantity    Float  @default(0) @map("local_quantity") // 本地仓发货数量（调货混合模式使用）
-  transferQuantity Float  @default(0) @map("transfer_quantity") // 调货发货数量（调货模式使用）
-  costSubtotal     Float? @map("cost_subtotal") // 成本小计（调货销售时使用）
-  profitAmount     Float? @map("profit_amount") // 毛利金额（调货销售时使用）
-
-  // 手动输入商品信息（调货销售时使用）
-  isManualProduct     Boolean? @map("is_manual_product") // 是否为手动输入的商品
-  manualProductName   String?  @map("manual_product_name") // 手动输入的商品名称
-  manualSpecification String?  @map("manual_specification") // 手动输入的规格
-  manualWeight        Float?   @map("manual_weight") // 手动输入的重量
-  manualUnit          String?  @map("manual_unit") // 手动输入的单位
-
-  // 显示字段（用于界面展示和计算）
-  displayUnit     String? @map("display_unit") // 显示单位（片/件）
-  displayQuantity Float?  @map("display_quantity") // 显示数量
-  piecesPerUnit   Int?    @map("pieces_per_unit") // 每件片数
-  specification   String? @map("specification") @db.Text // 规格
-  remarks         String? @map("remarks") @db.Text // 备注
-
-  // 关联关系
-  salesOrder       SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  product          Product?          @relation(fields: [productId], references: [id])
-  variant          ProductVariant?   @relation(fields: [variantId], references: [id])
-  temporaryProduct TemporaryProduct? @relation(fields: [temporaryProductId], references: [id])
-  returnOrderItems ReturnOrderItem[]
+  unitCost            Float?   @map("unit_cost")
+  localQuantity       Float    @default(0) @map("local_quantity")
+  transferQuantity    Float    @default(0) @map("transfer_quantity")
+  costSubtotal        Float?   @map("cost_subtotal")
+  profitAmount        Float?   @map("profit_amount")
+  isManualProduct     Boolean? @map("is_manual_product")
+  manualProductName   String?  @map("manual_product_name")
+  manualSpecification String?  @map("manual_specification")
+  manualWeight        Float?   @map("manual_weight")
+  manualUnit          String?  @map("manual_unit")
+  displayUnit         String?  @map("display_unit")
+  displayQuantity     Float?   @map("display_quantity")
+  piecesPerUnit       Int?     @map("pieces_per_unit")
+  specification       String?  @map("specification") @db.Text
+  remarks             String?  @map("remarks")
 
   @@index([salesOrderId], map: "idx_sales_order_items_order")
   @@index([productId], map: "idx_sales_order_items_product")
@@ -374,68 +205,49 @@ model SalesOrderItem {
   @@index([productId, colorCode], map: "idx_sales_order_items_product_color")
   @@index([unitCost], map: "idx_sales_order_items_unit_cost")
   @@index([profitAmount], map: "idx_sales_order_items_profit")
-  @@index([temporaryProductId], map: "idx_sales_order_items_temp_product")
   @@map("sales_order_items")
 }
 
-// 客户产品价格历史表 - 记录客户购买产品的历史价格
 model CustomerProductPrice {
-  id         String   @id @default(uuid())
-  customerId String   @map("customer_id")
-  productId  String   @map("product_id")
-  priceType  String   @map("price_type") // SALES: 销售发货价格, FACTORY: 厂家发货价格
+  id         String   @id @default(uuid()) @db.Char(36)
+  customerId String   @map("customer_id") @db.Char(36)
+  productId  String   @map("product_id") @db.Char(36)
+  priceType  String   @map("price_type") @db.VarChar(64)
   unitPrice  Float    @map("unit_price")
-  orderId    String?  @map("order_id") // 关联的订单ID（销售订单或厂家发货订单）
-  orderType  String?  @map("order_type") // SALES_ORDER, FACTORY_SHIPMENT
+  orderId    String?  @map("order_id") @db.Char(36)
+  orderType  String?  @map("order_type") @db.VarChar(32)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  // 关联关系
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
   @@index([customerId, productId, priceType], map: "idx_customer_product_price_lookup")
-  @@index([customerId, priceType, createdAt(sort: Desc)], map: "idx_customer_price_history")
   @@index([productId], map: "idx_customer_product_price_product")
   @@map("customer_product_prices")
 }
 
-// 供应商产品价格历史表 - 记录供应商产品的历史价格
 model SupplierProductPrice {
-  id         String   @id @default(uuid())
-  supplierId String   @map("supplier_id")
-  productId  String   @map("product_id")
+  id         String   @id @default(uuid()) @db.Char(36)
+  supplierId String   @map("supplier_id") @db.Char(36)
+  productId  String   @map("product_id") @db.Char(36)
   unitPrice  Float    @map("unit_price")
-  orderId    String?  @map("order_id") // 关联的厂家发货订单ID
+  orderId    String?  @map("order_id") @db.Char(36)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  // 关联关系
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-
   @@index([supplierId, productId], map: "idx_supplier_product_price_lookup")
-  @@index([supplierId, createdAt(sort: Desc)], map: "idx_supplier_price_history")
   @@index([productId], map: "idx_supplier_product_price_product")
   @@map("supplier_product_prices")
 }
 
-// 库存表 - 产品库存管理，支持变体和生产批次维度
 model Inventory {
-  id               String   @id @default(uuid())
-  productId        String   @map("product_id")
-  variantId        String?  @map("variant_id") // 产品变体ID（可选，兼容无色号产品）
-  batchNumber      String?  @map("batch_number") // 生产批次号
+  id               String   @id @default(uuid()) @db.Char(36)
+  productId        String   @map("product_id") @db.Char(36)
+  variantId        String?  @map("variant_id") @db.Char(36)
+  batchNumber      String?  @map("batch_number") @db.VarChar(100)
   quantity         Int      @default(0)
-  reservedQuantity Int      @default(0) @map("reserved_quantity") // 预留数量
-  unitCost         Float?   @map("unit_cost") // 单位成本
-  location         String? @db.VarChar(200) // 存储位置
+  reservedQuantity Int      @default(0) @map("reserved_quantity")
+  unitCost         Float?   @map("unit_cost")
+  location         String?
   updatedAt        DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  product         Product          @relation(fields: [productId], references: [id])
-  variant         ProductVariant?  @relation(fields: [variantId], references: [id])
-  outboundRecords OutboundRecord[]
 
   @@unique([productId, variantId, batchNumber], map: "uk_inventory_variant_batch")
   @@index([productId], map: "idx_inventory_product")
@@ -444,26 +256,20 @@ model Inventory {
   @@index([batchNumber], map: "idx_inventory_batch")
   @@index([location], map: "idx_inventory_location")
   @@index([updatedAt], map: "idx_inventory_updated_at")
-  // ✅ P2优化: 复合索引支持库存预警和库存查询优化
   @@index([productId, quantity], map: "idx_inventory_product_quantity")
   @@index([productId, variantId, quantity], map: "idx_inventory_variant_quantity")
   @@map("inventory")
 }
 
-// 批次规格参数表 - 管理每个批次的具体规格参数
 model BatchSpecification {
-  id            String   @id @default(uuid())
-  productId     String   @map("product_id")
-  batchNumber   String   @map("batch_number")
-  piecesPerUnit Int      @default(1) @map("pieces_per_unit") // 每单位片数
-  weight        Float? // 每件重量(kg) - 入库时录入
-  thickness     Float? // 产品厚度(mm)
+  id            String   @id @default(uuid()) @db.Char(36)
+  productId     String   @map("product_id") @db.Char(36)
+  batchNumber   String   @map("batch_number") @db.VarChar(100)
+  piecesPerUnit Int      @default(1) @map("pieces_per_unit")
+  weight        Float?
+  thickness     Float?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  product        Product         @relation(fields: [productId], references: [id])
-  inboundRecords InboundRecord[]
 
   @@unique([productId, batchNumber], map: "uk_batch_spec_product_batch")
   @@index([productId], map: "idx_batch_spec_product")
@@ -472,29 +278,22 @@ model BatchSpecification {
   @@map("batch_specifications")
 }
 
-// 入库记录表 - 入库操作记录，支持多种入库类型
 model InboundRecord {
-  id                   String   @id @default(uuid())
+  id                   String   @id @default(uuid()) @db.Char(36)
   recordNumber         String   @unique @map("record_number")
-  productId            String   @map("product_id")
-  variantId            String?  @map("variant_id") // 产品变体ID（可选）
-  batchNumber          String?  @map("batch_number") // 生产批次号
-  batchSpecificationId String?  @map("batch_specification_id") // 批次规格参数ID
-  quantity             Float // 支持小数点，最小值0.01
-  unitCost             Float?   @map("unit_cost") // 单位成本
-  totalCost            Float?   @map("total_cost") // 总成本
-  location             String? @db.VarChar(200) // 存储位置
-  reason               String   @db.VarChar(100) @default("purchase") // purchase, return, transfer, surplus, other
-  remarks              String? @db.Text // 最大500字符
-  userId               String   @map("user_id")
+  productId            String   @map("product_id") @db.Char(36)
+  variantId            String?  @map("variant_id") @db.Char(36)
+  batchNumber          String?  @map("batch_number") @db.VarChar(100)
+  batchSpecificationId String?  @map("batch_specification_id") @db.Char(36)
+  quantity             Float
+  unitCost             Float?   @map("unit_cost")
+  totalCost            Float?   @map("total_cost")
+  location             String?
+  reason               String   @default("purchase")
+  remarks              String?
+  userId               String   @map("user_id") @db.Char(36)
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  product            Product             @relation(fields: [productId], references: [id])
-  variant            ProductVariant?     @relation(fields: [variantId], references: [id])
-  user               User                @relation(fields: [userId], references: [id])
-  batchSpecification BatchSpecification? @relation(fields: [batchSpecificationId], references: [id])
 
   @@index([productId], map: "idx_inbound_records_product")
   @@index([variantId], map: "idx_inbound_records_variant")
@@ -502,40 +301,26 @@ model InboundRecord {
   @@index([batchSpecificationId], map: "idx_inbound_records_batch_spec")
   @@index([userId], map: "idx_inbound_records_user")
   @@index([reason], map: "idx_inbound_records_reason")
-  @@index([createdAt(sort: Desc)], map: "idx_inbound_records_date")
-  // 复合索引优化：支持常见查询模式
-  @@index([productId, batchNumber, createdAt(sort: Desc)], map: "idx_inbound_records_product_batch_date")
-  @@index([reason, createdAt(sort: Desc)], map: "idx_inbound_records_reason_date")
-  @@index([userId, createdAt(sort: Desc)], map: "idx_inbound_records_user_date")
   @@map("inbound_records")
 }
 
-// 出库记录表 - 出库操作记录，支持多种出库类型
 model OutboundRecord {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid()) @db.Char(36)
   recordNumber String   @unique @map("record_number")
-  productId    String   @map("product_id")
-  variantId    String?  @map("variant_id") // 产品变体ID（可选）
-  batchNumber  String?  @map("batch_number") // 生产批次号
-  inventoryId  String   @map("inventory_id") // 关联的库存记录ID
-  quantity     Float // 支持小数点，最小值0.01
-  unitCost     Float?   @map("unit_cost") // 单位成本
-  totalCost    Float?   @map("total_cost") // 总成本
-  reason       String   @default("manual_outbound") // manual_outbound, sales_outbound, transfer, damage, other
-  notes        String? @db.Text // 备注信息
-  customerId   String?  @map("customer_id") // 客户ID（销售出库时）
-  salesOrderId String?  @map("sales_order_id") // 销售订单ID（销售出库时）
-  operatorId   String   @map("operator_id") // 操作员ID
+  productId    String   @map("product_id") @db.Char(36)
+  variantId    String?  @map("variant_id") @db.Char(36)
+  batchNumber  String?  @map("batch_number") @db.VarChar(100)
+  inventoryId  String   @map("inventory_id") @db.Char(36)
+  quantity     Float
+  unitCost     Float?   @map("unit_cost")
+  totalCost    Float?   @map("total_cost")
+  reason       String   @default("manual_outbound")
+  notes        String?
+  customerId   String?  @map("customer_id") @db.Char(36)
+  salesOrderId String?  @map("sales_order_id") @db.Char(36)
+  operatorId   String   @map("operator_id") @db.Char(36)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  product    Product         @relation(fields: [productId], references: [id])
-  variant    ProductVariant? @relation(fields: [variantId], references: [id])
-  inventory  Inventory       @relation(fields: [inventoryId], references: [id])
-  customer   Customer?       @relation(fields: [customerId], references: [id])
-  salesOrder SalesOrder?     @relation(fields: [salesOrderId], references: [id])
-  operator   User            @relation("OutboundRecordOperator", fields: [operatorId], references: [id])
 
   @@index([productId], map: "idx_outbound_records_product")
   @@index([variantId], map: "idx_outbound_records_variant")
@@ -545,29 +330,23 @@ model OutboundRecord {
   @@index([salesOrderId], map: "idx_outbound_records_sales_order")
   @@index([operatorId], map: "idx_outbound_records_operator")
   @@index([reason], map: "idx_outbound_records_reason")
-  @@index([createdAt(sort: Desc)], map: "idx_outbound_records_date")
-  // 复合索引优化：支持常见查询模式
-  @@index([productId, batchNumber, createdAt(sort: Desc)], map: "idx_outbound_records_product_batch_date")
-  @@index([customerId, createdAt(sort: Desc)], map: "idx_outbound_records_customer_date")
   @@index([salesOrderId, reason], map: "idx_outbound_records_order_reason")
-  @@index([reason, createdAt(sort: Desc)], map: "idx_outbound_records_reason_date")
   @@map("outbound_records")
 }
 
-// 库存操作幂等性记录表 - 防止重复操作
 model InventoryOperation {
-  id             String    @id @default(uuid())
-  idempotencyKey String    @unique @map("idempotency_key") // 幂等性键
-  operationType  String    @map("operation_type") // inbound, outbound, adjust
-  productId      String    @map("product_id")
-  status         String    @default("processing") // processing, completed, failed
-  requestData    String    @map("request_data") @db.MediumText // JSON格式的请求数据，使用MediumText支持大数据量
-  responseData   String?   @map("response_data") @db.MediumText // JSON格式的响应数据
-  errorMessage   String?   @map("error_message") @db.MediumText
-  operatorId     String    @map("operator_id")
+  id             String    @id @default(uuid()) @db.Char(36)
+  idempotencyKey String    @unique @map("idempotency_key")
+  operationType  String    @map("operation_type")
+  productId      String    @map("product_id") @db.Char(36)
+  status         String    @default("processing") @db.VarChar(32)
+  requestData    String    @map("request_data")
+  responseData   String?   @map("response_data")
+  errorMessage   String?   @map("error_message")
+  operatorId     String    @map("operator_id") @db.Char(36)
   createdAt      DateTime  @default(now()) @map("created_at")
   completedAt    DateTime? @map("completed_at")
-  expiresAt      DateTime  @map("expires_at") // 过期时间，用于清理旧记录
+  expiresAt      DateTime  @map("expires_at")
 
   @@index([idempotencyKey], map: "idx_operation_idempotency")
   @@index([operatorId], map: "idx_operation_operator")
@@ -576,39 +355,23 @@ model InventoryOperation {
   @@map("inventory_operations")
 }
 
-// 库存调整记录表 - 库存调整操作的审计追溯
 model InventoryAdjustment {
-  id               String  @id @default(uuid())
-  adjustmentNumber String  @unique @map("adjustment_number") // 调整单号：TZ-YYYYMMDD-序号
-  productId        String  @map("product_id")
-  variantId        String? @map("variant_id") // 产品变体ID（可选）
-  batchNumber      String? @map("batch_number") // 生产批次号
-
-  // 调整数量信息
-  beforeQuantity Int @map("before_quantity") // 调整前数量
-  adjustQuantity Int @map("adjust_quantity") // 调整数量（正数增加，负数减少）
-  afterQuantity  Int @map("after_quantity") // 调整后数量
-
-  // 调整原因和备注
-  reason String // inventory_gain, inventory_loss, damage_loss, surplus_gain, transfer, other
-  notes  String? @db.Text // 备注信息
-
-  // 审批状态
-  status String @default("draft") // draft, pending, approved, rejected
-
-  // 操作人员信息
-  operatorId String    @map("operator_id") // 制单人
-  approverId String?   @map("approver_id") // 审批人
-  approvedAt DateTime? @map("approved_at") // 审批时间
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  product  Product         @relation(fields: [productId], references: [id])
-  variant  ProductVariant? @relation(fields: [variantId], references: [id])
-  operator User            @relation("InventoryAdjustmentOperator", fields: [operatorId], references: [id])
-  approver User?           @relation("InventoryAdjustmentApprover", fields: [approverId], references: [id])
+  id               String    @id @default(uuid()) @db.Char(36)
+  adjustmentNumber String    @unique @map("adjustment_number")
+  productId        String    @map("product_id") @db.Char(36)
+  variantId        String?   @map("variant_id") @db.Char(36)
+  batchNumber      String?   @map("batch_number") @db.VarChar(100)
+  beforeQuantity   Int       @map("before_quantity")
+  adjustQuantity   Int       @map("adjust_quantity")
+  afterQuantity    Int       @map("after_quantity")
+  reason           String
+  notes            String?
+  status           String    @default("draft") @db.VarChar(32)
+  operatorId       String    @map("operator_id") @db.Char(36)
+  approverId       String?   @map("approver_id") @db.Char(36)
+  approvedAt       DateTime? @map("approved_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   @@index([productId], map: "idx_inventory_adjustments_product")
   @@index([variantId], map: "idx_inventory_adjustments_variant")
@@ -617,41 +380,31 @@ model InventoryAdjustment {
   @@index([status], map: "idx_inventory_adjustments_status")
   @@index([operatorId], map: "idx_inventory_adjustments_operator")
   @@index([approverId], map: "idx_inventory_adjustments_approver")
-  @@index([createdAt(sort: Desc)], map: "idx_inventory_adjustments_date")
-  // 复合索引优化：支持常见查询模式
-  @@index([status, createdAt(sort: Desc)], map: "idx_inventory_adjustments_status_date")
   @@index([operatorId, status], map: "idx_inventory_adjustments_operator_status")
   @@index([productId, status], map: "idx_inventory_adjustments_product_status")
   @@map("inventory_adjustments")
 }
 
-// 收款记录表 - 收款管理，支持部分收款、分期收款和预收款
 model PaymentRecord {
-  id                     String   @id @default(uuid())
+  id                     String   @id @default(uuid()) @db.Char(36)
   paymentNumber          String   @unique @map("payment_number")
-  salesOrderId           String?  @map("sales_order_id") // 订单收款时必填,预收款时为空
-  factoryShipmentOrderId String?  @map("factory_shipment_order_id")
-  customerId             String   @map("customer_id")
-  userId                 String   @map("user_id")
-  paymentType            String   @default("order_payment") @map("payment_type") // order_payment, prepayment
-  paymentMethod          String   @default("cash") // cash, bank_transfer, check, other
+  salesOrderId           String?  @map("sales_order_id") @db.Char(36)
+  factoryShipmentOrderId String?  @map("factory_shipment_order_id") @db.Char(36)
+  customerId             String   @map("customer_id") @db.Char(36)
+  userId                 String   @map("user_id") @db.Char(36)
+  paymentType            String   @default("order_payment") @map("payment_type") @db.VarChar(64)
+  paymentMethod          String   @default("cash") @db.VarChar(64)
   paymentAmount          Float    @map("payment_amount")
-  actualPaymentAmount    Float    @default(0) @map("actual_payment_amount") // 实际到账金额
-  roundingAmount         Float    @default(0) @map("rounding_amount") // 抹零金额(正数表示冲减)
-  appliedAmount          Float    @default(0) @map("applied_amount") // 已冲抵金额(预收款使用)
+  actualPaymentAmount    Float    @default(0) @map("actual_payment_amount")
+  roundingAmount         Float    @default(0) @map("rounding_amount")
+  appliedAmount          Float    @default(0) @map("applied_amount")
   paymentDate            DateTime @map("payment_date")
-  status                 String   @default("pending") // pending, confirmed, cancelled, applied
-  remarks                String? @db.Text
-  receiptNumber          String?  @map("receipt_number") // 收据号
-  bankInfo               String?  @map("bank_info") // 银行信息（转账时使用）
+  status                 String   @default("pending") @db.VarChar(32)
+  remarks                String?
+  receiptNumber          String?  @map("receipt_number")
+  bankInfo               String?  @map("bank_info")
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  salesOrder           SalesOrder?           @relation(fields: [salesOrderId], references: [id])
-  factoryShipmentOrder FactoryShipmentOrder? @relation(fields: [factoryShipmentOrderId], references: [id])
-  customer             Customer              @relation(fields: [customerId], references: [id])
-  user                 User                  @relation(fields: [userId], references: [id])
 
   @@index([salesOrderId], map: "idx_payment_records_order")
   @@index([factoryShipmentOrderId], map: "idx_payment_records_factory_shipment")
@@ -659,128 +412,98 @@ model PaymentRecord {
   @@index([userId], map: "idx_payment_records_user")
   @@index([status], map: "idx_payment_records_status")
   @@index([paymentType], map: "idx_payment_records_type")
-  @@index([paymentDate(sort: Desc)], map: "idx_payment_records_date")
   @@index([paymentMethod], map: "idx_payment_records_method")
-  // 复合索引优化：支持常见查询模式
   @@index([customerId, paymentType, status], map: "idx_payment_records_customer_type_status")
-  @@index([customerId, status, paymentDate(sort: Desc)], map: "idx_payment_records_customer_status_date")
   @@index([salesOrderId, status], map: "idx_payment_records_order_status")
   @@map("payment_records")
 }
 
-// 厂家发货订单表 - 厂家直发订单管理
-// 状态流程: draft(草稿) → confirmed(已确认) → pending_shipment(待发货) → shipped(已发货) → in_transit(运输中) → arrived(到港) | cancelled(已取消)
-// 关键状态说明:
-//   - draft: 草稿状态,订单创建但未确认
-//   - confirmed: 已确认,等待发货安排
-//   - pending_shipment: 待发货,已安排发货计划
-//   - shipped: 已发货,货物已从工厂发出
-//   - in_transit: 运输中,货物在途中
-//   - arrived: 到港,货物已到达目的港(终态之一,自动创建应收账款)
-//   - cancelled: 已取消,订单已作废(终态之一)
 model FactoryShipmentOrder {
-  id               String    @id @default(uuid())
-  orderNumber      String    @unique @map("order_number") // 订单编号
-  containerNumber  String?   @map("container_number") // 集装箱号码（确认发货时必填）
-  customerId       String    @map("customer_id") // 客户ID
-  userId           String    @map("user_id") // 创建用户ID
-  status           String    @default("draft") // 订单状态: draft, confirmed, pending_shipment, shipped, in_transit, arrived, cancelled
-  totalAmount      Float     @default(0) @map("total_amount") // 订单总金额
-  receivableAmount Float     @default(0) @map("receivable_amount") // 应收金额
-  depositAmount    Float     @default(0) @map("deposit_amount") // 定金金额
-  paidAmount       Float     @default(0) @map("paid_amount") // 已付金额
-  remarks          String? @db.Text // 备注
-  shippingCompany  String?   @map("shipping_company") // 船运公司
-  shipmentDate     DateTime? @map("shipment_date") // 实际发货日期
-  estimatedArrival DateTime? @map("estimated_arrival") // 预计到达时间
-  arrivalDate      DateTime? @map("arrival_date") // 到港日期
-  deliveryDate     DateTime? @map("delivery_date") // 收货日期
-  completionDate   DateTime? @map("completion_date") // 完成日期
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
-
-  // 关联关系
-  customer       Customer                   @relation(fields: [customerId], references: [id])
-  user           User                       @relation(fields: [userId], references: [id])
-  items          FactoryShipmentOrderItem[]
-  paymentRecords PaymentRecord[]
+  id                  String    @id @default(uuid()) @db.Char(36)
+  orderNumber         String    @unique @map("order_number")
+  containerNumber     String?   @map("container_number")
+  customerId          String    @map("customer_id") @db.Char(36)
+  userId              String    @map("user_id") @db.Char(36)
+  status              String    @default("draft") @db.VarChar(32)
+  totalAmount         Float     @default(0) @map("total_amount")
+  receivableAmount    Float     @default(0) @map("receivable_amount")
+  depositAmount       Float     @default(0) @map("deposit_amount")
+  paidAmount          Float     @default(0) @map("paid_amount")
+  remarks             String?
+  plan_date           DateTime?
+  shipmentDate        DateTime? @map("shipment_date")
+  estimatedArrival    DateTime? @map("estimated_arrival") @db.DateTime(0)
+  arrivalDate         DateTime? @map("arrival_date")
+  deliveryDate        DateTime? @map("delivery_date")
+  completionDate      DateTime? @map("completion_date")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  shippingCompany     String?   @map("shipping_company")
+  lastShippingQueryAt DateTime? @map("last_shipping_query_at")
+  shippingQueryStatus String?   @map("shipping_query_status") @db.VarChar(50)
+  shippingQueryError  String?   @map("shipping_query_error") @db.Text
+  preferredSiteId     String?   @map("preferred_site_id")
 
   @@index([orderNumber])
   @@index([containerNumber])
   @@index([customerId], map: "idx_factory_shipment_orders_customer")
   @@index([userId], map: "idx_factory_shipment_orders_user")
   @@index([status])
-  @@index([createdAt(sort: Desc)], map: "idx_factory_shipment_orders_created")
-  // 复合索引优化：支持常见查询模式
-  @@index([customerId, status, createdAt(sort: Desc)], map: "idx_factory_shipment_orders_customer_status_date")
   @@index([status, shipmentDate], map: "idx_factory_shipment_orders_status_shipment")
+  @@index([shippingCompany], map: "idx_factory_shipment_orders_shipping_company")
+  @@index([shippingQueryStatus], map: "idx_factory_shipment_orders_query_status")
+  @@index([lastShippingQueryAt], map: "idx_factory_shipment_orders_last_query")
+  @@index([preferredSiteId], map: "idx_factory_shipment_orders_preferred_site")
   @@map("factory_shipment_orders")
 }
 
-// 厂家发货订单明细表 - 厂家发货商品明细
 model FactoryShipmentOrderItem {
-  id                     String    @id @default(uuid())
-  factoryShipmentOrderId String    @map("factory_shipment_order_id")
-  productId              String?   @map("product_id") // 产品ID（库存商品时使用）
-  temporaryProductId     String?   @map("temporary_product_id") // 临时商品ID（手动输入商品时使用）
-  supplierId             String    @map("supplier_id") // 供应商ID
-  productCode            String    @map("product_code") @db.VarChar(50) // 产品编码（必填）
-  quantity               Float // 数量
-  unitPrice              Float     @map("unit_price") // 单价
-  totalPrice             Float     @map("total_price") // 小计金额
+  id                     String    @id @default(uuid()) @db.Char(36)
+  factoryShipmentOrderId String    @map("factory_shipment_order_id") @db.Char(36)
+  productId              String?   @map("product_id") @db.Char(36)
+  supplierId             String    @map("supplier_id") @db.Char(36)
+  quantity               Float
+  unitPrice              Float     @map("unit_price")
+  totalPrice             Float     @map("total_price")
   ownership              String    @default("customer")
   ownershipRemarks       String?   @map("ownership_remarks")
   customerDeliveryStatus String?   @map("customer_delivery_status")
   selfInboundStatus      String?   @map("self_inbound_status")
   deliveryConfirmedAt    DateTime? @map("delivery_confirmed_at")
   inboundReceivedAt      DateTime? @map("inbound_received_at")
-
-  // 手动输入商品信息（临时商品时使用）
-  isManualProduct     Boolean? @map("is_manual_product")
-  manualProductName   String?  @map("manual_product_name")
-  manualSpecification String?  @map("manual_specification")
-  manualWeight        Float?   @map("manual_weight")
-  manualUnit          String?  @map("manual_unit")
-
-  // 通用字段（用于显示，无论是库存商品还是手动输入商品）
-  displayName   String  @default("") @map("display_name") // 显示名称（必填，默认空字符串）
-  specification String? @db.Text // 规格
-  unit          String  @default("piece") // 单位
-  weight        Float? // 重量
-
-  remarks   String? @db.Text // 备注
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  factoryShipmentOrder FactoryShipmentOrder @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: Cascade)
-  product              Product?             @relation(fields: [productId], references: [id])
-  temporaryProduct     TemporaryProduct?    @relation("TemporaryProductFactoryShipment", fields: [temporaryProductId], references: [id])
-  supplier             Supplier             @relation(fields: [supplierId], references: [id])
+  isManualProduct        Boolean?  @map("is_manual_product")
+  manualProductName      String?   @map("manual_product_name")
+  manualSpecification    String?   @map("manual_specification")
+  manualWeight           Float?    @map("manual_weight")
+  manualUnit             String?   @map("manual_unit")
+  displayName            String    @map("display_name")
+  specification          String?   @db.Text
+  unit                   String    @default("piece")
+  weight                 Float?
+  remarks                String?
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
 
   @@index([factoryShipmentOrderId], map: "idx_factory_shipment_order_items_order")
   @@index([productId], map: "idx_factory_shipment_order_items_product")
-  @@index([temporaryProductId], map: "idx_factory_shipment_order_items_temp_product")
   @@index([supplierId], map: "idx_factory_shipment_order_items_supplier")
   @@map("factory_shipment_order_items")
 }
 
-// 退货订单表 - 退货管理，支持质量问题、产品错误、客户变更等退货类型
-// 支持两种退货模式: single_order (单订单退货), multi_order (多订单退货)
 model ReturnOrder {
-  id           String    @id @default(uuid())
+  id           String    @id @default(uuid()) @db.Char(36)
   returnNumber String    @unique @map("return_number")
-  returnMode   String    @default("single_order") @map("return_mode") // single_order, multi_order
-  salesOrderId String?   @map("sales_order_id") // 单订单模式使用，多订单模式为null
-  customerId   String    @map("customer_id")
-  userId       String    @map("user_id")
-  type         String    @map("type") // quality_issue, wrong_product, customer_change, damage_in_transit, remaining_return, other
-  processType  String    @map("process_type") // refund, exchange, repair, credit
-  status       String    @default("draft") // draft, submitted, approved, rejected, processing, completed, cancelled
-  reason       String? @db.Text
+  returnMode   String    @default("single_order") @map("return_mode") @db.VarChar(32)
+  salesOrderId String?   @map("sales_order_id") @db.Char(36)
+  customerId   String    @map("customer_id") @db.Char(36)
+  userId       String    @map("user_id") @db.Char(36)
+  type         String    @map("type") @db.VarChar(32)
+  processType  String    @map("process_type") @db.VarChar(32)
+  status       String    @default("draft") @db.VarChar(32)
+  reason       String?
   totalAmount  Float     @map("total_amount")
   refundAmount Float     @map("refund_amount")
-  remarks      String? @db.Text
+  remarks      String?
   submittedAt  DateTime? @map("submitted_at")
   approvedAt   DateTime? @map("approved_at")
   processedAt  DateTime? @map("processed_at")
@@ -788,38 +511,27 @@ model ReturnOrder {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  // 关联关系
-  salesOrder    SalesOrder?       @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  customer      Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items         ReturnOrderItem[]
-  refundRecords RefundRecord[]
-
   @@index([returnMode], map: "idx_return_orders_mode")
   @@index([salesOrderId], map: "idx_return_orders_sales_order")
   @@index([customerId], map: "idx_return_orders_customer")
   @@index([userId], map: "idx_return_orders_user")
   @@index([status], map: "idx_return_orders_status")
   @@index([type], map: "idx_return_orders_type")
-  @@index([createdAt(sort: Desc)], map: "idx_return_orders_created")
-  // 复合索引优化：支持常见查询模式
   @@index([returnMode, customerId, status], map: "idx_return_orders_mode_customer_status")
-  @@index([customerId, status, createdAt(sort: Desc)], map: "idx_return_orders_customer_status_date")
   @@index([salesOrderId, status], map: "idx_return_orders_order_status")
   @@index([status, type], map: "idx_return_orders_status_type")
   @@map("return_orders")
 }
 
-// 退货订单明细表 - 退货明细项，记录具体退货的产品和数量
 model ReturnOrderItem {
-  id               String   @id @default(uuid())
-  returnOrderId    String   @map("return_order_id")
-  salesOrderItemId String   @map("sales_order_item_id")
-  productId        String   @map("product_id")
+  id               String   @id @default(uuid()) @db.Char(36)
+  returnOrderId    String   @map("return_order_id") @db.Char(36)
+  salesOrderItemId String   @map("sales_order_item_id") @db.Char(36)
+  productId        String   @map("product_id") @db.Char(36)
   colorCode        String?  @map("color_code")
   productionDate   String?  @map("production_date")
   returnQuantity   Float    @map("return_quantity")
-  damagedQuantity  Float    @default(0) @map("damaged_quantity") // 破损数量，不计入退款金额
+  damagedQuantity  Float    @default(0) @map("damaged_quantity")
   originalQuantity Float    @map("original_quantity")
   unitPrice        Float    @map("unit_price")
   subtotal         Float
@@ -827,69 +539,52 @@ model ReturnOrderItem {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  // 关联关系
-  returnOrder    ReturnOrder    @relation(fields: [returnOrderId], references: [id], onDelete: Cascade)
-  salesOrderItem SalesOrderItem @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
-  product        Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-
   @@index([returnOrderId], map: "idx_return_order_items_return_order")
   @@index([salesOrderItemId], map: "idx_return_order_items_sales_order_item")
   @@index([productId], map: "idx_return_order_items_product")
-  // ✅ P2优化: 复合索引支持退货数量验证查询 (app/api/return-orders/route.ts:272)
   @@index([salesOrderItemId, returnOrderId], map: "idx_return_items_sales_return")
   @@map("return_order_items")
 }
 
-// 退款记录表 - 退款管理，支持全额退款、部分退款和换货退款
 model RefundRecord {
-  id                String    @id @default(uuid())
+  id                String    @id @default(uuid()) @db.Char(36)
   refundNumber      String    @unique @map("refund_number")
-  returnOrderId     String?   @map("return_order_id")
+  returnOrderId     String?   @map("return_order_id") @db.Char(36)
   returnOrderNumber String?   @map("return_order_number")
-  salesOrderId      String    @map("sales_order_id")
-  customerId        String    @map("customer_id")
-  userId            String    @map("user_id")
-  refundType        String    @map("refund_type") // full_refund, partial_refund, exchange_refund
-  refundMethod      String    @map("refund_method") // cash, bank_transfer, original_payment, other
+  salesOrderId      String    @map("sales_order_id") @db.Char(36)
+  customerId        String    @map("customer_id") @db.Char(36)
+  userId            String    @map("user_id") @db.Char(36)
+  refundType        String    @map("refund_type")
+  refundMethod      String    @map("refund_method")
   refundAmount      Float     @map("refund_amount")
   processedAmount   Float     @default(0) @map("processed_amount")
   remainingAmount   Float     @default(0) @map("remaining_amount")
   refundDate        DateTime  @map("refund_date")
   processedDate     DateTime? @map("processed_date")
-  status            String    @default("pending") // pending, processing, completed, rejected, cancelled
-  reason            String @db.Text
-  remarks           String? @db.Text
+  status            String    @default("pending") @db.VarChar(32)
+  reason            String
+  remarks           String?
   bankInfo          String?   @map("bank_info")
   receiptNumber     String?   @map("receipt_number")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  // 关联关系
-  returnOrder ReturnOrder? @relation(fields: [returnOrderId], references: [id], onDelete: SetNull)
-  salesOrder  SalesOrder   @relation(fields: [salesOrderId], references: [id])
-  customer    Customer     @relation(fields: [customerId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
-
   @@index([salesOrderId], map: "idx_refund_records_order")
   @@index([customerId], map: "idx_refund_records_customer")
   @@index([userId], map: "idx_refund_records_user")
   @@index([status], map: "idx_refund_records_status")
-  @@index([refundDate(sort: Desc)], map: "idx_refund_records_date")
   @@index([refundType], map: "idx_refund_records_type")
   @@index([refundMethod], map: "idx_refund_records_method")
-  // 复合索引优化：支持常见查询模式
-  @@index([customerId, status, refundDate(sort: Desc)], map: "idx_refund_records_customer_status_date")
   @@index([salesOrderId, status], map: "idx_refund_records_order_status")
   @@index([returnOrderId, status], map: "idx_refund_records_return_status")
   @@map("refund_records")
 }
 
-// 往来账单表 - 客户和供应商的综合账务往来管理
 model AccountStatement {
   id                  String    @id @default(uuid())
-  entityId            String    @map("entity_id")
+  entityId            String    @unique(map: "uk_account_statements_entity") @map("entity_id")
   entityName          String    @map("entity_name")
-  entityType          String    @map("entity_type") // customer, supplier
+  entityType          String    @map("entity_type")
   partnerRole         String    @default("customer") @map("partner_role")
   totalOrders         Int       @default(0) @map("total_orders")
   totalAmount         Float     @default(0) @map("total_amount")
@@ -899,62 +594,50 @@ model AccountStatement {
   overdueAmount       Float     @default(0) @map("overdue_amount")
   creditLimit         Float     @default(0) @map("credit_limit")
   paymentTerms        String    @default("30天") @map("payment_terms")
-  status              String    @default("active") // active, settled, overdue, suspended
+  status              String    @default("active")
   lastTransactionDate DateTime? @map("last_transaction_date")
   lastPaymentDate     DateTime? @map("last_payment_date")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
-  // 关联关系
-  transactions StatementTransaction[]
-
-  @@unique([entityId], map: "uk_account_statements_entity")
   @@index([entityType], map: "idx_account_statements_type")
   @@index([status], map: "idx_account_statements_status")
-  @@index([lastTransactionDate(sort: Desc)], map: "idx_account_statements_last_transaction")
   @@index([overdueAmount], map: "idx_account_statements_overdue")
   @@map("account_statements")
 }
 
-// 账单交易记录表 - 往来账单的详细交易明细
 model StatementTransaction {
-  id              String    @id @default(uuid())
-  statementId     String    @map("statement_id")
-  transactionType String    @map("transaction_type") // sale, payment_in, payment_out, refund, sales_return, prepayment_in, prepayment_out, adjustment
-  direction       String    @map("direction") // debit, credit
-  referenceId     String    @map("reference_id") // 关联的订单、支付或退款ID
-  referenceNumber String    @map("reference_number") // 关联的单据号
+  id              String    @id @default(uuid()) @db.Char(36)
+  statementId     String    @map("statement_id") @db.Char(36)
+  transactionType String    @map("transaction_type")
+  direction       String    @map("direction")
+  referenceId     String    @map("reference_id") @db.Char(36)
+  referenceNumber String    @map("reference_number")
   debitAmount     Float     @default(0) @map("debit_amount")
   creditAmount    Float     @default(0) @map("credit_amount")
   amount          Float
   beforeBalance   Float     @map("before_balance")
-  balance         Float // 交易后余额
+  balance         Float
   afterBalance    Float     @map("after_balance")
   description     String
   transactionDate DateTime  @map("transaction_date")
   dueDate         DateTime? @map("due_date")
-  status          String    @default("pending") // pending, completed, overdue
-  metadata        String?   @map("metadata") // JSON结构字符串，记录拓展信息
+  status          String    @default("pending") @db.VarChar(32)
+  metadata        String?   @map("metadata")
   createdAt       DateTime  @default(now()) @map("created_at")
 
-  // 关联关系
-  statement AccountStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
-
-  @@unique([referenceId, transactionType], map: "unique_reference_transaction_type")
   @@index([statementId], map: "idx_statement_transactions_statement")
   @@index([transactionType], map: "idx_statement_transactions_type")
   @@index([referenceId], map: "idx_statement_transactions_reference")
-  @@index([transactionDate(sort: Desc)], map: "idx_statement_transactions_date")
   @@index([status], map: "idx_statement_transactions_status")
   @@map("statement_transactions")
 }
 
-// 订单序列表 - 用于生成唯一的订单号，保证并发安全
 model OrderSequence {
-  id              String   @id @default(uuid())
-  sequenceType    String   @map("sequence_type") // sales_order, purchase_order等
-  dateKey         String   @map("date_key") // YYYYMMDD格式的日期键
-  currentSequence Int      @default(0) @map("current_sequence") // 当前序列号
+  id              String   @id @default(uuid()) @db.Char(36)
+  sequenceType    String   @map("sequence_type") @db.VarChar(32)
+  dateKey         String   @map("date_key") @db.VarChar(16)
+  currentSequence Int      @default(0) @map("current_sequence")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -964,14 +647,13 @@ model OrderSequence {
   @@map("order_sequences")
 }
 
-// 系统设置表 - 系统配置参数管理
 model SystemSetting {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid()) @db.Char(36)
   key         String   @unique
   value       String
-  category    String   @default("basic") // basic, user, storage, log
+  category    String   @default("basic")
   description String?
-  dataType    String   @default("string") @map("dataType") // string, number, boolean, json
+  dataType    String   @default("string") @map("dataType")
   isPublic    Boolean  @default(false) @map("is_public")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -982,9 +664,8 @@ model SystemSetting {
   @@map("system_settings")
 }
 
-// 系统设置变更日志表 - 记录配置变更历史
 model SettingChangeLog {
-  id         String   @id @default(uuid())
+  id         String   @id @default(uuid()) @db.Char(36)
   settingKey String   @map("setting_key")
   oldValue   String?  @map("old_value")
   newValue   String   @map("new_value")
@@ -994,208 +675,154 @@ model SettingChangeLog {
   userAgent  String?  @map("user_agent")
   remarks    String?
 
-  // 关联关系
-  user User @relation(fields: [changedBy], references: [id])
-
   @@index([settingKey], map: "idx_setting_change_logs_key")
   @@index([changedBy], map: "idx_setting_change_logs_user")
   @@index([changedAt], map: "idx_setting_change_logs_date")
   @@map("setting_change_logs")
 }
 
-// 系统日志表 - 系统操作日志记录
 model SystemLog {
-  id          String  @id @default(uuid())
-  type        String // user_action, business_operation, system_event, error, security
-  level       String // info, warning, error, critical
-  action      String
-  description String
-  userId      String? @map("user_id")
-  ipAddress   String? @map("ip_address")
-  userAgent   String? @map("user_agent")
-  metadata    String? // JSON格式的额外信息
-
-  // IP地理位置信息字段
-  ipCountry  String? @map("ip_country") // 国家
-  ipProvince String? @map("ip_province") // 省份/州
-  ipCity     String? @map("ip_city") // 城市
-  ipLocation String? @map("ip_location") // 完整位置字符串 "国家 省份 城市"
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // 关联关系
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id          String   @id @default(uuid()) @db.Char(36)
+  type        String   @db.VarChar(64)
+  level       String   @db.VarChar(32)
+  action      String   @db.VarChar(100)
+  description String   @db.VarChar(255)
+  userId      String?  @map("user_id") @db.Char(36)
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  metadata    String?
+  ipCountry   String?  @map("ip_country")
+  ipProvince  String?  @map("ip_province")
+  ipCity      String?  @map("ip_city")
+  ipLocation  String?  @map("ip_location")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([type])
   @@index([level])
   @@index([action])
   @@index([userId], map: "idx_system_logs_user")
-  @@index([createdAt(sort: Desc)], map: "idx_system_logs_created")
-  // 复合索引优化：支持常见查询模式
-  @@index([type, level, createdAt(sort: Desc)], map: "idx_system_logs_type_level_date")
-  @@index([userId, type, createdAt(sort: Desc)], map: "idx_system_logs_user_type_date")
-  @@index([level, createdAt(sort: Desc)], map: "idx_system_logs_level_date")
   @@map("system_logs")
 }
 
-// 应付款记录表 - 应付款管理，支持部分付款和分期付款
 model PayableRecord {
-  id              String    @id @default(uuid())
-  payableNumber   String    @unique @map("payable_number")
-  supplierId      String    @map("supplier_id")
-  userId          String    @map("user_id")
-  sourceType      String    @map("source_type") // purchase_order, factory_shipment, service, other
-  sourceId        String?   @map("source_id") // 关联的源单据ID
-  sourceNumber    String?   @map("source_number") // 关联的源单据号
+  id              String    @id @default(uuid()) @db.Char(36)
+  payableNumber   String    @unique @map("payable_number") @db.VarChar(100)
+  supplierId      String    @map("supplier_id") @db.Char(36)
+  userId          String    @map("user_id") @db.Char(36)
+  sourceType      String    @map("source_type") @db.VarChar(64)
+  sourceId        String?   @map("source_id") @db.Char(36)
+  sourceNumber    String?   @map("source_number")
   payableAmount   Float     @map("payable_amount")
   paidAmount      Float     @default(0) @map("paid_amount")
   remainingAmount Float     @map("remaining_amount")
   dueDate         DateTime? @map("due_date")
-  status          String    @default("pending") // pending, partial, paid, overdue, cancelled
-  paymentTerms    String    @default("30天") @map("payment_terms")
+  status          String    @default("pending") @db.VarChar(32)
+  paymentTerms    String    @default("30天") @map("payment_terms") @db.VarChar(64)
   description     String?
   remarks         String?
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  // 关联关系
-  supplier          Supplier           @relation(fields: [supplierId], references: [id])
-  user              User               @relation(fields: [userId], references: [id])
-  paymentOutRecords PaymentOutRecord[]
 
   @@index([supplierId], map: "idx_payable_records_supplier")
   @@index([userId], map: "idx_payable_records_user")
   @@index([status], map: "idx_payable_records_status")
   @@index([dueDate], map: "idx_payable_records_due_date")
   @@index([sourceType], map: "idx_payable_records_source_type")
-  @@index([createdAt(sort: Desc)], map: "idx_payable_records_date")
-  // 复合索引优化：支持常见查询模式
-  @@index([supplierId, status, createdAt(sort: Desc)], map: "idx_payable_records_supplier_status_date")
   @@index([status, dueDate], map: "idx_payable_records_status_due")
   @@index([sourceType, sourceId], map: "idx_payable_records_source")
   @@map("payable_records")
 }
 
-// 付款记录表 - 付款管理，支持部分付款和分期付款
 model PaymentOutRecord {
-  id              String   @id @default(uuid())
-  paymentNumber   String   @unique @map("payment_number")
-  payableRecordId String?  @map("payable_record_id")
-  supplierId      String   @map("supplier_id")
-  userId          String   @map("user_id")
-  paymentMethod   String   @default("bank_transfer") // cash, bank_transfer, check, other
+  id              String   @id @default(uuid()) @db.Char(36)
+  paymentNumber   String   @unique @map("payment_number") @db.VarChar(100)
+  payableRecordId String?  @map("payable_record_id") @db.Char(36)
+  supplierId      String   @map("supplier_id") @db.Char(36)
+  userId          String   @map("user_id") @db.Char(36)
+  paymentMethod   String   @default("bank_transfer") @db.VarChar(64)
   paymentAmount   Float    @map("payment_amount")
   paymentDate     DateTime @map("payment_date")
-  status          String   @default("pending") // pending, confirmed, cancelled
+  status          String   @default("pending") @db.VarChar(32)
   remarks         String?
-  voucherNumber   String?  @map("voucher_number") // 付款凭证号
-  bankInfo        String?  @map("bank_info") // 银行信息（转账时使用）
+  voucherNumber   String?  @map("voucher_number")
+  bankInfo        String?  @map("bank_info")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  payableRecord PayableRecord? @relation(fields: [payableRecordId], references: [id])
-  supplier      Supplier       @relation(fields: [supplierId], references: [id])
-  user          User           @relation(fields: [userId], references: [id])
 
   @@index([payableRecordId], map: "idx_payment_out_records_payable")
   @@index([supplierId], map: "idx_payment_out_records_supplier")
   @@index([userId], map: "idx_payment_out_records_user")
   @@index([status], map: "idx_payment_out_records_status")
-  @@index([paymentDate(sort: Desc)], map: "idx_payment_out_records_date")
   @@index([paymentMethod], map: "idx_payment_out_records_method")
-  // 复合索引优化：支持常见查询模式
-  @@index([supplierId, status, paymentDate(sort: Desc)], map: "idx_payment_out_records_supplier_status_date")
   @@index([payableRecordId, status], map: "idx_payment_out_records_payable_status")
   @@map("payment_out_records")
 }
 
-// 登录失败记录表 - 用于登录安全控制
 model LoginAttempt {
-  id            String   @id @default(uuid())
-  username      String // 尝试登录的用户名
+  id            String   @id @default(uuid()) @db.Char(36)
+  username      String
   ipAddress     String   @map("ip_address")
   userAgent     String?  @map("user_agent")
-  success       Boolean  @default(false) // 是否成功
-  failureReason String?  @map("failure_reason") // 失败原因
+  success       Boolean  @default(false)
+  failureReason String?  @map("failure_reason")
   attemptAt     DateTime @default(now()) @map("attempt_at")
 
   @@index([username], map: "idx_login_attempts_username")
   @@index([ipAddress], map: "idx_login_attempts_ip")
-  @@index([attemptAt(sort: Desc)], map: "idx_login_attempts_date")
   @@map("login_attempts")
 }
 
-// 账户锁定记录表 - 记录账户锁定状态
 model AccountLockout {
   id          String    @id @default(uuid())
   username    String    @unique
   lockedAt    DateTime  @default(now()) @map("locked_at")
   lockedUntil DateTime  @map("locked_until")
-  reason      String // 锁定原因
-  unlocked    Boolean   @default(false) // 是否已解锁
+  reason      String
+  unlocked    Boolean   @default(false)
   unlockedAt  DateTime? @map("unlocked_at")
-  unlockedBy  String?   @map("unlocked_by") // 解锁操作人
+  unlockedBy  String?   @map("unlocked_by")
 
   @@index([username], map: "idx_account_lockouts_username")
   @@index([lockedUntil], map: "idx_account_lockouts_until")
   @@map("account_lockouts")
 }
 
-// ==================== 运输查询系统 ====================
-
-// 运输查询站点配置表
 model ShippingSite {
-  id          String  @id @default(uuid())
-  name        String // 站点名称，如"顺丰速运"
-  url         String // 站点URL
-  description String? // 站点描述
-
-  // 选择器配置 (JSON格式存储)
-  searchInputSelector     String @map("search_input_selector") // 搜索框选择器
-  searchButtonSelector    String @map("search_button_selector") // 搜索按钮选择器
-  resultContainerSelector String @map("result_container_selector") // 结果容器选择器
-
-  // 数据提取选择器配置 (JSON格式)
-  extractSelectors String @map("extract_selectors") // JSON: {status, destination, estimatedArrival, updateTime}
-
-  status    String   @default("active") // active, inactive
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  shippingQueries ShippingQuery[]
+  id                      String   @id @default(uuid()) @db.Char(36)
+  name                    String
+  url                     String
+  description             String?
+  searchInputSelector     String   @map("search_input_selector")
+  searchButtonSelector    String   @map("search_button_selector")
+  resultContainerSelector String   @map("result_container_selector")
+  extractSelectors        String   @map("extract_selectors") @db.Text
+  status                  String   @default("active") @db.VarChar(32)
+  createdAt               DateTime @default(now()) @map("created_at")
+  updatedAt               DateTime @updatedAt @map("updated_at")
 
   @@index([status])
   @@map("shipping_sites")
 }
 
-// 运输查询记录表
 model ShippingQuery {
-  id             String @id @default(uuid())
-  siteId         String @map("site_id") // 关联站点
-  trackingNumber String @map("tracking_number") // 追踪单号(大写)
-  inputKeyword   String @map("input_keyword") // 用户输入的关键词(可能是中文)
-
-  // 查询结果
-  status           String? // 当前状态
-  destination      String? // 目的地
-  estimatedArrival DateTime? @map("estimated_arrival") // 预计到达时间
-  lastUpdateTime   DateTime? @map("last_update_time") // 最后更新时间
-
-  // 元数据
-  queryStatus  String   @default("pending") @map("query_status") // pending, success, failed
-  errorMessage String?  @map("error_message") // 错误信息
-  queriedAt    DateTime @default(now()) @map("queried_at")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  site ShippingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  id                     String    @id @default(uuid()) @db.Char(36)
+  siteId                 String    @map("site_id") @db.Char(36)
+  trackingNumber         String    @map("tracking_number")
+  inputKeyword           String    @map("input_keyword")
+  status                 String?   @db.VarChar(500)
+  destination            String?   @db.VarChar(500)
+  estimatedArrival       DateTime? @map("estimated_arrival")
+  lastUpdateTime         DateTime? @map("last_update_time")
+  queryStatus            String    @default("pending") @map("query_status")
+  errorMessage           String?   @map("error_message") @db.Text
+  queriedAt              DateTime  @default(now()) @map("queried_at")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  factoryShipmentOrderId String?   @map("factory_shipment_order_id")
 
   @@index([siteId])
   @@index([trackingNumber])
   @@index([queryStatus])
-  @@index([queriedAt(sort: Desc)])
+  @@index([factoryShipmentOrderId], map: "idx_shipping_queries_factory_shipment_order_id")
   @@map("shipping_queries")
 }
