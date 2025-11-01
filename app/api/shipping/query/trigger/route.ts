@@ -1,0 +1,134 @@
+/**
+ * POST /api/shipping/query/trigger - 手动触发单个订单的运输查询
+ * SOLID-S: 单一职责 - 只负责触发单个订单查询
+ * DRY: 复用现有的队列和 Worker 基础设施
+ */
+
+import type { NextRequest } from 'next/server';
+import { z } from 'zod';
+
+import { withErrorHandling } from '@/lib/api/middleware';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
+import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import { addShippingQueryJob } from '@/lib/queue/shipping-query-queue';
+
+/**
+ * 请求体验证 Schema
+ */
+const triggerQuerySchema = z.object({
+  factoryShipmentOrderId: z
+    .string()
+    .min(1, '订单 ID 不能为空')
+    .uuid('订单 ID 格式无效'),
+  force: z.boolean().optional().default(false),
+});
+
+/**
+ * POST /api/shipping/query/trigger
+ * 手动触发单个厂家发货订单的运输查询
+ */
+export const POST = withErrorHandling(
+  withAuth(async (request: NextRequest, { user }) => {
+    try {
+      // 解析和验证请求体
+      const body: unknown = await request.json();
+      const validatedData = triggerQuerySchema.parse(body);
+      const { factoryShipmentOrderId, force } = validatedData;
+
+      logger.info('shipping-query-trigger', `用户 ${user.id} 触发运输查询`, {
+        factoryShipmentOrderId,
+        force,
+      });
+
+      // 查询订单信息
+      const order = await prisma.factoryShipmentOrder.findUnique({
+        where: { id: factoryShipmentOrderId },
+        select: {
+          id: true,
+          orderNumber: true,
+          containerNumber: true,
+          shippingCompany: true,
+          status: true,
+          lastShippingQueryAt: true,
+          shippingQueryStatus: true,
+        },
+      });
+
+      // 验证订单是否存在
+      if (!order) {
+        return errorResponse('订单不存在', 404);
+      }
+
+      // 验证订单是否有运输信息
+      if (!order.containerNumber && !order.shippingCompany) {
+        return errorResponse('订单缺少运输信息（柜号或船公司），无法查询', 400);
+      }
+
+      // 检查最小查询间隔（除非强制查询）
+      if (!force && order.lastShippingQueryAt) {
+        const minIntervalHours = env.SHIPPING_QUERY_MIN_INTERVAL_HOURS;
+        const minIntervalMs = minIntervalHours * 60 * 60 * 1000;
+        const timeSinceLastQuery =
+          Date.now() - order.lastShippingQueryAt.getTime();
+
+        if (timeSinceLastQuery < minIntervalMs) {
+          const remainingMinutes = Math.ceil(
+            (minIntervalMs - timeSinceLastQuery) / 60000
+          );
+          return errorResponse(
+            `距离上次查询时间不足 ${minIntervalHours} 小时，请等待 ${remainingMinutes} 分钟后再试。如需立即查询，请使用强制查询选项。`,
+            429
+          );
+        }
+      }
+
+      // 添加查询任务到队列
+      const job = await addShippingQueryJob(
+        {
+          factoryShipmentOrderId: order.id,
+          shippingCompany: order.shippingCompany || '',
+          containerNumber: order.containerNumber || undefined,
+        },
+        {
+          jobId: `manual-${order.id}-${Date.now()}`, // 使用唯一 jobId 避免重复
+          priority: 1, // 手动触发的任务优先级更高
+        }
+      );
+
+      logger.info('shipping-query-trigger', `成功添加查询任务 ${job.id}`, {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        jobId: job.id,
+      });
+
+      // 返回任务信息
+      return successResponse({
+        jobId: job.id,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: 'queued' as const,
+        message: '查询任务已添加到队列',
+      });
+    } catch (error) {
+      // Zod 验证错误
+      if (error instanceof z.ZodError) {
+        return errorResponse(
+          `请求参数验证失败: ${error.errors.map(e => e.message).join(', ')}`,
+          400
+        );
+      }
+
+      logger.error('shipping-query-trigger', '触发运输查询失败', error, {
+        userId: user.id,
+      });
+
+      return errorResponse('触发查询失败，请稍后重试', 500);
+    }
+  })
+);
