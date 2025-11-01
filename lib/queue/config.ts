@@ -63,6 +63,7 @@ export const QUEUE_NAMES = {
   INBOUND_POST_PROCESSING: 'inbound-post-processing',
   OUTBOUND_POST_PROCESSING: 'outbound-post-processing',
   ADJUSTMENT_POST_PROCESSING: 'adjustment-post-processing',
+  SHIPPING_QUERY: 'shipping-query',
 } as const;
 
 /**
