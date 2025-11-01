@@ -585,6 +585,33 @@ const envSchema = z.object({
     .min(1, 'MONITORING_TOKEN 不能为空')
     .default('dev-token-change-in-production')
     .describe('内存监控API访问令牌'),
+
+  // 运输查询定时任务配置
+  SHIPPING_QUERY_INTERVAL_HOURS: z
+    .string()
+    .regex(/^[\d]+$/, 'SHIPPING_QUERY_INTERVAL_HOURS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 1 && val <= 24, {
+      message: 'SHIPPING_QUERY_INTERVAL_HOURS 必须在 1-24 之间',
+    })
+    .default(6)
+    .describe('运输查询定时任务执行间隔（小时）'),
+
+  SHIPPING_QUERY_MIN_INTERVAL_HOURS: z
+    .string()
+    .regex(/^[\d]+$/, 'SHIPPING_QUERY_MIN_INTERVAL_HOURS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 1 && val <= 12, {
+      message: 'SHIPPING_QUERY_MIN_INTERVAL_HOURS 必须在 1-12 之间',
+    })
+    .default(2)
+    .describe('两次运输查询之间的最小间隔（小时）'),
+
+  SHIPPING_QUERY_AUTO_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform(val => val === 'true')
+    .describe('是否启用运输查询自动调度'),
 });
 
 // 环境变量类型推断
@@ -688,6 +715,9 @@ function validateEnv(): Env {
         RATE_LIMIT_CAPTCHA: 10,
         ENABLE_MEMORY_MONITOR: false,
         MONITORING_TOKEN: 'dev-token',
+        SHIPPING_QUERY_INTERVAL_HOURS: 6,
+        SHIPPING_QUERY_MIN_INTERVAL_HOURS: 2,
+        SHIPPING_QUERY_AUTO_ENABLED: true,
       } as Env;
     } catch (_error) {
       // 客户端环境变量验证失败时使用默认值
@@ -771,6 +801,9 @@ function validateEnv(): Env {
         RATE_LIMIT_CAPTCHA: 10,
         ENABLE_MEMORY_MONITOR: false,
         MONITORING_TOKEN: 'dev-token',
+        SHIPPING_QUERY_INTERVAL_HOURS: 6,
+        SHIPPING_QUERY_MIN_INTERVAL_HOURS: 2,
+        SHIPPING_QUERY_AUTO_ENABLED: true,
       } as Env;
     }
   }
@@ -1057,6 +1090,15 @@ export const monitoringConfig = {
   token: env.MONITORING_TOKEN,
 } as const;
 
+/**
+ * 运输查询调度器配置对象
+ */
+export const shippingQuerySchedulerConfig = {
+  intervalHours: env.SHIPPING_QUERY_INTERVAL_HOURS,
+  minQueryIntervalHours: env.SHIPPING_QUERY_MIN_INTERVAL_HOURS,
+  enabled: env.SHIPPING_QUERY_AUTO_ENABLED,
+} as const;
+
 // 在开发环境下打印配置信息（不包含敏感信息）
 if (isDevelopment) {
   // eslint-disable-next-line no-console
@@ -1148,6 +1190,10 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(
     `  - WS端口: ${env.WS_PORT} (客户端: ${env.NEXT_PUBLIC_WS_PORT})`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 运输查询调度: 间隔${env.SHIPPING_QUERY_INTERVAL_HOURS}小时/最小间隔${env.SHIPPING_QUERY_MIN_INTERVAL_HOURS}小时/启用${env.SHIPPING_QUERY_AUTO_ENABLED}`
   );
 }
 /* eslint-enable max-lines */

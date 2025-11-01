@@ -67,12 +67,14 @@ class ShippingQueryQueue {
    * - backoff: exponential - 使用指数退避策略（1秒、2秒、4秒）
    * - priority: 0 - 默认优先级
    * - delay: 0 - 立即执行
+   * - jobId: 可选，用于任务去重
    */
   static async addShippingQueryJob(
     data: ShippingQueryJobData,
     options?: {
       priority?: number;
       delay?: number;
+      jobId?: string;
     }
   ) {
     const queue = ShippingQueryQueue.getInstance();
@@ -80,6 +82,7 @@ class ShippingQueryQueue {
     return await queue.add('shipping-query', data, {
       priority: options?.priority || 0,
       delay: options?.delay || 0,
+      jobId: options?.jobId,
       attempts: 3, // 重试3次
       backoff: {
         type: 'exponential',
