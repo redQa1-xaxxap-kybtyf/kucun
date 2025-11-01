@@ -824,6 +824,9 @@ model ShippingSite {
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
+  // 关系定义
+  queries ShippingQuery[]
+
   @@index([status])
   @@map("shipping_sites")
 }
@@ -843,6 +846,9 @@ model ShippingQuery {
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
   factoryShipmentOrderId String?   @map("factory_shipment_order_id")
+
+  // 关系定义
+  site ShippingSite @relation(fields: [siteId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([siteId])
   @@index([trackingNumber])
