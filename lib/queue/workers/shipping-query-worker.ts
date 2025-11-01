@@ -73,8 +73,12 @@ async function processShippingQueryJob(
     let querySuccess = false;
     let lastError: string | null = null;
 
-    // 使用柜号或船公司名称作为查询关键词
-    const keyword = (containerNumber || shippingCompany).toUpperCase();
+    // 优先使用船公司名称作为查询关键词，柜号作为备选
+    const keyword = (shippingCompany || containerNumber || '').toUpperCase();
+
+    if (!keyword) {
+      throw new Error('缺少查询关键词：必须提供船公司名称或柜号');
+    }
 
     for (const site of activeSites) {
       try {
