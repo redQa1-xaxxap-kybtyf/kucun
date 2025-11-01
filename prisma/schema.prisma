@@ -106,6 +106,7 @@ model Product {
 
   // 关系定义
   factoryShipmentOrderItems FactoryShipmentOrderItem[] @relation("FactoryShipmentOrderItemProduct")
+  inventory                 Inventory[]                @relation("ProductInventory")
 
   @@index([code])
   @@index([name])
@@ -260,6 +261,9 @@ model Inventory {
   unitCost         Float?   @map("unit_cost")
   location         String?
   updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  product Product @relation("ProductInventory", fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([productId, variantId, batchNumber], map: "uk_inventory_variant_batch")
   @@index([productId], map: "idx_inventory_product")
