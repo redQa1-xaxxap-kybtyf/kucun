@@ -18,6 +18,9 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  // 关系定义
+  factoryShipmentOrders FactoryShipmentOrder[] @relation("FactoryShipmentOrders")
+
   @@index([email])
   @@index([username])
   @@index([role])
@@ -35,6 +38,9 @@ model Customer {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
+  // 关系定义
+  factoryShipmentOrders FactoryShipmentOrder[]
+
   @@index([name])
   @@index([phone])
   @@index([role], map: "idx_customers_role")
@@ -51,6 +57,9 @@ model Supplier {
   status       String   @default("active") @db.VarChar(32)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  factoryShipmentOrderItems FactoryShipmentOrderItem[] @relation("FactoryShipmentOrderItemSupplier")
 
   @@index([name])
   @@index([phone])
@@ -94,6 +103,9 @@ model Product {
   description   String?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  factoryShipmentOrderItems FactoryShipmentOrderItem[] @relation("FactoryShipmentOrderItemProduct")
 
   @@index([code])
   @@index([name])
@@ -444,6 +456,11 @@ model FactoryShipmentOrder {
   shippingQueryError  String?   @map("shipping_query_error") @db.Text
   preferredSiteId     String?   @map("preferred_site_id")
 
+  // 关系定义
+  customer Customer?                  @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user     User?                      @relation("FactoryShipmentOrders", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items    FactoryShipmentOrderItem[]
+
   @@index([orderNumber])
   @@index([containerNumber])
   @@index([customerId], map: "idx_factory_shipment_orders_customer")
@@ -483,6 +500,11 @@ model FactoryShipmentOrderItem {
   remarks                String?
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // 关系定义
+  factoryShipmentOrder FactoryShipmentOrder @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product              Product?             @relation("FactoryShipmentOrderItemProduct", fields: [productId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier             Supplier             @relation("FactoryShipmentOrderItemSupplier", fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([factoryShipmentOrderId], map: "idx_factory_shipment_order_items_order")
   @@index([productId], map: "idx_factory_shipment_order_items_product")
