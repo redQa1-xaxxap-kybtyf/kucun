@@ -2,13 +2,17 @@
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
 import type { Prisma } from '@prisma/client';
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { FACTORY_SHIPMENT_ITEM_OWNERSHIP, FACTORY_SHIPMENT_STATUS, type FactoryShipmentStatus } from '@/lib/types/factory-shipment';
+import {
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  FACTORY_SHIPMENT_STATUS,
+  type FactoryShipmentStatus,
+} from '@/lib/types/factory-shipment';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
@@ -31,16 +35,25 @@ type ListParams = {
 function parseAndValidateListParams(request: NextRequest): ListParams {
   const { searchParams } = new URL(request.url);
   const raw = {
-    page: searchParams.get('page') ? parseInt(searchParams.get('page') || '1') : 1,
+    page: searchParams.get('page')
+      ? parseInt(searchParams.get('page') || '1')
+      : 1,
     limit: searchParams.get('limit')
-      ? parseInt(searchParams.get('limit') || paginationConfig.defaultPageSize.toString())
+      ? parseInt(
+          searchParams.get('limit') ||
+            paginationConfig.defaultPageSize.toString()
+        )
       : paginationConfig.defaultPageSize,
     status: searchParams.get('status') || undefined,
     customerId: searchParams.get('customerId') || undefined,
     containerNumber: searchParams.get('containerNumber') || undefined,
     orderNumber: searchParams.get('orderNumber') || undefined,
-    startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate') || '') : undefined,
-    endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate') || '') : undefined,
+    startDate: searchParams.get('startDate')
+      ? new Date(searchParams.get('startDate') || '')
+      : undefined,
+    endDate: searchParams.get('endDate')
+      ? new Date(searchParams.get('endDate') || '')
+      : undefined,
   };
 
   const parsed = factoryShipmentOrderListParamsSchema.parse(raw);
@@ -60,7 +73,8 @@ function buildWhere(params: ListParams): Prisma.FactoryShipmentOrderWhereInput {
   const where: Prisma.FactoryShipmentOrderWhereInput = {};
   if (params.status) where.status = params.status;
   if (params.customerId) where.customerId = params.customerId;
-  if (params.containerNumber) where.containerNumber = { contains: params.containerNumber };
+  if (params.containerNumber)
+    where.containerNumber = { contains: params.containerNumber };
   if (params.orderNumber) where.orderNumber = { contains: params.orderNumber };
   if (params.startDate || params.endDate) {
     where.createdAt = {};
@@ -90,6 +104,7 @@ const orderListSelect = {
       id: true,
       productId: true,
       supplierId: true,
+      productCode: true,
       quantity: true,
       unitPrice: true,
       totalPrice: true,
@@ -104,7 +119,6 @@ const orderListSelect = {
       manualSpecification: true,
       manualWeight: true,
       manualUnit: true,
-      productCode: true,
       displayName: true,
       specification: true,
       unit: true,
@@ -114,7 +128,11 @@ const orderListSelect = {
   },
 } satisfies Prisma.FactoryShipmentOrderSelect;
 
-function enrichOrders(orders: Array<Prisma.FactoryShipmentOrderGetPayload<{ select: typeof orderListSelect }>>) {
+function enrichOrders(
+  orders: Array<
+    Prisma.FactoryShipmentOrderGetPayload<{ select: typeof orderListSelect }>
+  >
+) {
   return orders.map(order => {
     const customerOwnedAmount = order.items
       .filter(item => item.ownership === 'customer')
@@ -134,7 +152,13 @@ function enrichOrders(orders: Array<Prisma.FactoryShipmentOrderGetPayload<{ sele
 
 // ----- POST helpers -----
 
-function computeAmountSummary(items: Array<{ quantity: number; unitPrice: number; ownership?: 'customer' | 'self' }>) {
+function computeAmountSummary(
+  items: Array<{
+    quantity: number;
+    unitPrice: number;
+    ownership?: 'customer' | 'self';
+  }>
+) {
   return items.reduce(
     (acc, item) => {
       const lineTotal = item.quantity * item.unitPrice;
@@ -151,17 +175,29 @@ function computeAmountSummary(items: Array<{ quantity: number; unitPrice: number
 }
 
 async function ensureCustomerExists(customerId: string) {
-  const customer = await prisma.customer.findUnique({ where: { id: customerId }, select: { id: true } });
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { id: true },
+  });
   if (!customer) {
-    throw new NextResponse(JSON.stringify({ error: '客户不存在' }), { status: 400 }) as unknown as Error;
+    throw new NextResponse(JSON.stringify({ error: '客户不存在' }), {
+      status: 400,
+    }) as unknown as Error;
   }
 }
 
-async function ensureProductsExist(items: Array<{ isManualProduct?: boolean; productId?: string | null }>) {
-  const inventoryItems = items.filter(item => !item.isManualProduct && item.productId);
+async function ensureProductsExist(
+  items: Array<{ isManualProduct?: boolean; productId?: string | null }>
+) {
+  const inventoryItems = items.filter(
+    item => !item.isManualProduct && item.productId
+  );
   if (inventoryItems.length === 0) return;
   const productIds = inventoryItems.map(item => item.productId || '');
-  const existing = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
+  const existing = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: { id: true },
+  });
   const existingIds = new Set(existing.map(p => p.id));
   const missing = productIds.filter(id => !existingIds.has(id));
   if (missing.length > 0) {
@@ -172,10 +208,17 @@ async function ensureProductsExist(items: Array<{ isManualProduct?: boolean; pro
   }
 }
 
-async function ensureSuppliersExist(items: Array<{ supplierId?: string | null }>) {
-  const supplierIds = [...new Set(items.map(i => i.supplierId).filter(Boolean))] as string[];
+async function ensureSuppliersExist(
+  items: Array<{ supplierId?: string | null }>
+) {
+  const supplierIds = [
+    ...new Set(items.map(i => i.supplierId).filter(Boolean)),
+  ] as string[];
   if (supplierIds.length === 0) return;
-  const existing = await prisma.supplier.findMany({ where: { id: { in: supplierIds } }, select: { id: true } });
+  const existing = await prisma.supplier.findMany({
+    where: { id: { in: supplierIds } },
+    select: { id: true },
+  });
   const existingIds = new Set(existing.map(s => s.id));
   const missing = supplierIds.filter(id => !existingIds.has(id));
   if (missing.length > 0) {
@@ -236,8 +279,14 @@ async function createOrderInTransaction(
           totalPrice: item.quantity * item.unitPrice,
           ownership: item.ownership ?? FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
           ownershipRemarks: item.ownershipRemarks || null,
-          customerDeliveryStatus: item.ownership === 'customer' ? item.customerDeliveryStatus ?? 'pending' : null,
-          selfInboundStatus: item.ownership === 'self' ? item.selfInboundStatus ?? 'pending' : null,
+          customerDeliveryStatus:
+            item.ownership === 'customer'
+              ? (item.customerDeliveryStatus ?? 'pending')
+              : null,
+          selfInboundStatus:
+            item.ownership === 'self'
+              ? (item.selfInboundStatus ?? 'pending')
+              : null,
           deliveryConfirmedAt: null,
           inboundReceivedAt: null,
           isManualProduct: item.isManualProduct || false,
@@ -254,51 +303,81 @@ async function createOrderInTransaction(
       },
     },
     include: {
-      customer: { select: { id: true, name: true, phone: true, address: true } },
+      customer: {
+        select: { id: true, name: true, phone: true, address: true },
+      },
       user: { select: { id: true, name: true, email: true } },
       items: {
         include: {
-          product: { select: { id: true, code: true, name: true, specification: true, unit: true, weight: true } },
-          supplier: { select: { id: true, name: true, phone: true, address: true } },
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              specification: true,
+              unit: true,
+              weight: true,
+            },
+          },
+          supplier: {
+            select: { id: true, name: true, phone: true, address: true },
+          },
         },
       },
     },
   });
 
   // 价格历史（客户）
-  const customerPriceData = items.reduce<Array<{ customerId: string; productId: string; priceType: 'FACTORY'; unitPrice: number; orderId: string; orderType: 'FACTORY_SHIPMENT' }>>(
-    (acc, item) => {
-      if (item.isManualProduct || !item.productId || item.unitPrice === undefined) return acc;
-      acc.push({
-        customerId,
-        productId: item.productId,
-        priceType: 'FACTORY',
-        unitPrice: item.unitPrice,
-        orderId: newOrder.id,
-        orderType: 'FACTORY_SHIPMENT',
-      });
+  const customerPriceData = items.reduce<
+    Array<{
+      customerId: string;
+      productId: string;
+      priceType: 'FACTORY';
+      unitPrice: number;
+      orderId: string;
+      orderType: 'FACTORY_SHIPMENT';
+    }>
+  >((acc, item) => {
+    if (item.isManualProduct || !item.productId || item.unitPrice === undefined)
       return acc;
-    },
-    []
-  );
+    acc.push({
+      customerId,
+      productId: item.productId,
+      priceType: 'FACTORY',
+      unitPrice: item.unitPrice,
+      orderId: newOrder.id,
+      orderType: 'FACTORY_SHIPMENT',
+    });
+    return acc;
+  }, []);
   if (customerPriceData.length > 0) {
     await tx.customerProductPrice.createMany({ data: customerPriceData });
   }
 
   // 价格历史（供应商）
-  const supplierPriceData = items.reduce<Array<{ supplierId: string; productId: string; unitPrice: number; orderId: string }>>(
-    (acc, item) => {
-      if (item.isManualProduct || !item.productId || !item.supplierId || item.unitPrice === undefined) return acc;
-      acc.push({
-        supplierId: item.supplierId,
-        productId: item.productId,
-        unitPrice: item.unitPrice,
-        orderId: newOrder.id,
-      });
+  const supplierPriceData = items.reduce<
+    Array<{
+      supplierId: string;
+      productId: string;
+      unitPrice: number;
+      orderId: string;
+    }>
+  >((acc, item) => {
+    if (
+      item.isManualProduct ||
+      !item.productId ||
+      !item.supplierId ||
+      item.unitPrice === undefined
+    )
       return acc;
-    },
-    []
-  );
+    acc.push({
+      supplierId: item.supplierId,
+      productId: item.productId,
+      unitPrice: item.unitPrice,
+      orderId: newOrder.id,
+    });
+    return acc;
+  }, []);
   if (supplierPriceData.length > 0) {
     await tx.supplierProductPrice.createMany({ data: supplierPriceData });
   }

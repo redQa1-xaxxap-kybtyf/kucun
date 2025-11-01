@@ -479,6 +479,7 @@ model FactoryShipmentOrderItem {
   factoryShipmentOrderId String    @map("factory_shipment_order_id") @db.Char(36)
   productId              String?   @map("product_id") @db.Char(36)
   supplierId             String    @map("supplier_id") @db.Char(36)
+  productCode            String    @map("product_code") @db.VarChar(100)
   quantity               Float
   unitPrice              Float     @map("unit_price")
   totalPrice             Float     @map("total_price")
@@ -509,6 +510,7 @@ model FactoryShipmentOrderItem {
   @@index([factoryShipmentOrderId], map: "idx_factory_shipment_order_items_order")
   @@index([productId], map: "idx_factory_shipment_order_items_product")
   @@index([supplierId], map: "idx_factory_shipment_order_items_supplier")
+  @@index([productCode], map: "idx_factory_shipment_order_items_product_code")
   @@map("factory_shipment_order_items")
 }
 
