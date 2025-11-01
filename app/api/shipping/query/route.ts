@@ -1,18 +1,22 @@
 import type { NextRequest } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
-import { withAuth, successResponse, errorResponse } from '@/lib/auth/api-helpers';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { PuppeteerService } from '@/lib/services/puppeteer-service';
 import type {
   ExtractSelectors,
   ShippingQueryInput,
 } from '@/lib/types/shipping';
-import { parseDate } from '@/lib/utils/datetime';
+import { parseShippingDate } from '@/lib/utils/datetime';
 import { chineseToPinyinUppercase } from '@/lib/utils/pinyin';
 import {
   normalizeSelector,
-  normalizeSelectorGroup,
+  normalizeShippingExtractSelectors,
 } from '@/lib/utils/selector-normalizer';
 
 /**
@@ -38,7 +42,7 @@ export const GET = withErrorHandling(
     // 查询总数
     const total = await prisma.shippingQuery.count({ where });
 
-    // 查询数据
+    // 查询数据（包含物流轨迹历史）
     const queries = await prisma.shippingQuery.findMany({
       where,
       include: {
@@ -97,15 +101,18 @@ export const POST = withErrorHandling(
       const parsedSelectors = JSON.parse(
         site.extractSelectors
       ) as Partial<ExtractSelectors>;
-      const extractSelectors = normalizeSelectorGroup({
-        status: parsedSelectors.status ?? '',
-        destination: parsedSelectors.destination ?? '',
-        estimatedArrival: parsedSelectors.estimatedArrival ?? '',
-        updateTime: parsedSelectors.updateTime ?? '',
-      });
+      const canonicalSelectors =
+        normalizeShippingExtractSelectors(parsedSelectors);
+      const extractSelectors = {
+        status: canonicalSelectors.status ?? '',
+        destination: canonicalSelectors.destination ?? '',
+        estimatedArrival: canonicalSelectors.estimatedArrival ?? '',
+        updateTime: canonicalSelectors.updateTime ?? '',
+      };
 
-      // 执行查询
+      // 执行查询（集成 Rate Limiting 和缓存）
       const result = await PuppeteerService.queryShipping(
+        siteId, // 站点ID（用于 Rate Limiting 和缓存）
         site.url,
         trackingNumber,
         {
@@ -116,28 +123,34 @@ export const POST = withErrorHandling(
         extractSelectors
       );
 
+      // 使用专门的运输日期解析函数，支持年份推断
       const parsedEstimatedArrival = result.estimatedArrival
-        ? (parseDate(result.estimatedArrival) ?? null)
+        ? (parseShippingDate(result.estimatedArrival) ?? null)
         : null;
       const parsedLastUpdateTime = result.lastUpdateTime
-        ? (parseDate(result.lastUpdateTime) ?? null)
+        ? (parseShippingDate(result.lastUpdateTime) ?? null)
         : null;
 
-      // 保存成功查询记录
-      const query = await prisma.shippingQuery.create({
-        data: {
-          siteId,
-          trackingNumber,
-          inputKeyword: keyword,
-          status: result.status,
-          destination: result.destination,
-          estimatedArrival: parsedEstimatedArrival,
-          lastUpdateTime: parsedLastUpdateTime,
-          queryStatus: 'success',
-        },
-        include: {
-          site: true,
-        },
+      // 使用事务保存查询记录和物流轨迹历史
+      const query = await prisma.$transaction(async tx => {
+        // 保存成功查询记录
+        const createdQuery = await tx.shippingQuery.create({
+          data: {
+            siteId,
+            trackingNumber,
+            inputKeyword: keyword,
+            status: result.status,
+            destination: result.destination,
+            estimatedArrival: parsedEstimatedArrival,
+            lastUpdateTime: parsedLastUpdateTime,
+            queryStatus: 'success',
+          },
+          include: {
+            site: true,
+          },
+        });
+
+        return createdQuery;
       });
 
       return successResponse(query);
