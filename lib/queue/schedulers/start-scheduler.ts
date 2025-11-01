@@ -4,6 +4,9 @@
  * SOLID-S: 单一职责 - 只负责调度器的启动、停止和健康检查
  */
 
+// 在导入其他模块之前加载环境变量
+import 'dotenv/config';
+
 import { shippingQuerySchedulerConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
