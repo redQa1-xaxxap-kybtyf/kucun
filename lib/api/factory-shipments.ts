@@ -158,6 +158,32 @@ export async function updateFactoryShipmentOrderStatus(
 }
 
 /**
+ * 更新厂家发货订单集装箱号
+ */
+export async function updateFactoryShipmentOrderContainerNumber(
+  id: string,
+  data: { containerNumber: string }
+): Promise<FactoryShipmentOrder> {
+  const response = await fetch(
+    `/api/factory-shipments/${id}/container-number`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '更新集装箱号失败');
+  }
+
+  return response.json();
+}
+
+/**
  * 删除厂家发货订单
  */
 export async function deleteFactoryShipmentOrder(id: string): Promise<void> {
@@ -291,6 +317,85 @@ export function useDeleteFactoryShipmentOrder() {
     mutationFn: deleteFactoryShipmentOrder,
     onSuccess: () => {
       // 刷新列表数据
+      queryClient.invalidateQueries({
+        queryKey: factoryShipmentQueryKeys.lists(),
+      });
+    },
+  });
+}
+
+/**
+ * 更新厂家发货订单集装箱号的 Hook
+ */
+export function useUpdateFactoryShipmentOrderContainerNumber() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { containerNumber: string };
+    }) => updateFactoryShipmentOrderContainerNumber(id, data),
+    onSuccess: (_, { id }) => {
+      // 刷新详情和列表数据
+      queryClient.invalidateQueries({
+        queryKey: factoryShipmentQueryKeys.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: factoryShipmentQueryKeys.lists(),
+      });
+    },
+  });
+}
+
+/**
+ * 更新厂家发货订单船公司名称
+ */
+export async function updateFactoryShipmentOrderShippingCompany(
+  id: string,
+  data: { shippingCompany: string }
+): Promise<FactoryShipmentOrder> {
+  const response = await fetch(
+    `/api/factory-shipments/${id}/shipping-company`,
+    {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || '更新船公司名称失败');
+  }
+
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * 更新厂家发货订单船公司名称的 Hook
+ */
+export function useUpdateFactoryShipmentOrderShippingCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { shippingCompany: string };
+    }) => updateFactoryShipmentOrderShippingCompany(id, data),
+    onSuccess: (_, { id }) => {
+      // 刷新详情和列表数据
+      queryClient.invalidateQueries({
+        queryKey: factoryShipmentQueryKeys.detail(id),
+      });
       queryClient.invalidateQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
       });
