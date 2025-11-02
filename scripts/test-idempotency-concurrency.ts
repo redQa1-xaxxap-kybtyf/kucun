@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * 幂等性实现并发测试
  * 验证修复后的withIdempotency函数在并发场景下的表现
@@ -122,9 +123,7 @@ async function testFailureRetry() {
       productId,
       operatorId,
       { test: true, attempt: 2 },
-      async () => {
-        return { success: true, message: '重试成功' };
-      }
+      async () => ({ success: true, message: '重试成功' })
     );
 
     console.log(`  第二次请求成功: ${result.message}`);
@@ -197,7 +196,7 @@ async function testRaceConditionStress() {
  * 测试场景4：超时保护
  * 预期：长时间操作触发超时错误
  */
-async function testTimeoutProtection() {
+async function _testTimeoutProtection() {
   console.log('\n=== 测试场景4：超时保护 ===');
 
   const idempotencyKey = `test-timeout-${Date.now()}`;
@@ -206,7 +205,7 @@ async function testTimeoutProtection() {
 
   try {
     // 第一个请求：模拟一个永不完成的操作
-    const slowPromise = withIdempotency(
+    const _slowPromise = withIdempotency(
       idempotencyKey,
       'inbound',
       productId,
@@ -229,9 +228,7 @@ async function testTimeoutProtection() {
       productId,
       operatorId,
       { test: true },
-      async () => {
-        return { message: '不应该执行' };
-      }
+      async () => ({ message: '不应该执行' })
     );
 
     await timeoutPromise;
@@ -282,7 +279,7 @@ async function runTests() {
     // console.log(`  超时保护测试:     ${results.timeout ? '✅ 通过' : '❌ 失败'}`);
 
     const allPassed = Object.values(results).every(r => r);
-    console.log('\n' + '='.repeat(50));
+    console.log(`\n${'='.repeat(50)}`);
     console.log(allPassed ? '✅ 所有测试通过！' : '❌ 部分测试失败');
     console.log('='.repeat(50));
   } catch (error) {
