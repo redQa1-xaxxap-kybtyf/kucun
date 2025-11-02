@@ -1,12 +1,16 @@
 /**
  * 导出服务 - 提供图片和Excel导出功能
+ *
+ * 严格遵循全栈项目统一约定规范：
+ * - 客户端代码使用客户端 logger，避免导入服务端依赖
+ * - 使用动态导入加载大型库（html2canvas）
  */
 
 import { saveAs } from 'file-saver';
 import { useCallback, useState } from 'react';
 import * as XLSX from 'xlsx';
 
-import { logger } from '@/lib/logger';
+import { clientLogger as logger } from '@/lib/logger/client';
 
 // HTML2Canvas 动态导入类型
 type Html2CanvasFunction = (
@@ -49,7 +53,9 @@ export interface ImageExportOptions {
 /**
  * Excel导出配置
  */
-export interface ExcelExportOptions<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface ExcelExportOptions<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> {
   /** 文件名，不包含扩展名 */
   filename?: string;
   /** 工作表名称 */
@@ -83,45 +89,48 @@ export class ExportService {
     }
 
     if (!this.html2canvasPromise) {
-      const HTML2CANVAS_CDN = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      const HTML2CANVAS_CDN =
+        'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
 
-      const loadPromise = new Promise<Html2CanvasFunction>((resolve, reject) => {
-        // 检查是否已有脚本标签
-        const existingScript = document.querySelector<HTMLScriptElement>(
-          'script[data-lib="html2canvas"]'
-        );
+      const loadPromise = new Promise<Html2CanvasFunction>(
+        (resolve, reject) => {
+          // 检查是否已有脚本标签
+          const existingScript = document.querySelector<HTMLScriptElement>(
+            'script[data-lib="html2canvas"]'
+          );
 
-        if (existingScript) {
-          existingScript.addEventListener('load', () => {
+          if (existingScript) {
+            existingScript.addEventListener('load', () => {
+              if (typeof window.html2canvas === 'function') {
+                resolve(window.html2canvas);
+              } else {
+                reject(new Error('html2canvas 脚本加载失败'));
+              }
+            });
+            existingScript.addEventListener('error', () =>
+              reject(new Error('html2canvas 脚本加载失败'))
+            );
+            return;
+          }
+
+          const script = document.createElement('script');
+          script.src = HTML2CANVAS_CDN;
+          script.async = true;
+          script.dataset.lib = 'html2canvas';
+          script.onload = () => {
             if (typeof window.html2canvas === 'function') {
               resolve(window.html2canvas);
             } else {
-              reject(new Error('html2canvas 脚本加载失败'));
+              reject(new Error('html2canvas 未正确加载'));
             }
-          });
-          existingScript.addEventListener('error', () =>
-            reject(new Error('html2canvas 脚本加载失败'))
-          );
-          return;
+          };
+          script.onerror = () => {
+            script.remove();
+            reject(new Error('html2canvas 脚本加载失败'));
+          };
+          document.head.appendChild(script);
         }
-
-        const script = document.createElement('script');
-        script.src = HTML2CANVAS_CDN;
-        script.async = true;
-        script.dataset.lib = 'html2canvas';
-        script.onload = () => {
-          if (typeof window.html2canvas === 'function') {
-            resolve(window.html2canvas);
-          } else {
-            reject(new Error('html2canvas 未正确加载'));
-          }
-        };
-        script.onerror = () => {
-          script.remove();
-          reject(new Error('html2canvas 脚本加载失败'));
-        };
-        document.head.appendChild(script);
-      });
+      );
 
       this.html2canvasPromise = loadPromise.catch(error => {
         this.html2canvasPromise = null;
@@ -146,7 +155,7 @@ export class ExportService {
       quality = 0.95,
       backgroundColor = '#ffffff',
       scale = 2,
-      format = 'png'
+      format = 'png',
     } = options;
 
     try {
@@ -158,7 +167,7 @@ export class ExportService {
         scrollWidth: element.scrollWidth,
         scrollHeight: element.scrollHeight,
         offsetWidth: element.offsetWidth,
-        offsetHeight: element.offsetHeight
+        offsetHeight: element.offsetHeight,
       });
 
       // 生成canvas - 针对打印模板优化的配置
@@ -171,30 +180,40 @@ export class ExportService {
         imageTimeout: 15000,
         removeContainer: true,
         windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight
+        windowHeight: element.scrollHeight,
       });
 
       logger.info('export-service', 'Canvas生成成功，开始转换为Blob');
       logger.debug('export-service', 'Canvas信息', {
         width: canvas.width,
-        height: canvas.height
+        height: canvas.height,
       });
 
       // 转换为Blob
-      const mimeType = format === 'png' ? 'image/png' :
-                      format === 'jpeg' ? 'image/jpeg' :
-                      'image/webp';
+      const mimeType =
+        format === 'png'
+          ? 'image/png'
+          : format === 'jpeg'
+            ? 'image/jpeg'
+            : 'image/webp';
 
       const blob = await new Promise<Blob | null>((resolve, reject) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            logger.info('export-service', `Blob生成成功，大小: ${blob.size} bytes`);
-            resolve(blob);
-          } else {
-            logger.error('export-service', 'Blob生成失败');
-            reject(new Error('图片生成失败 - Blob为空'));
-          }
-        }, mimeType, quality);
+        canvas.toBlob(
+          blob => {
+            if (blob) {
+              logger.info(
+                'export-service',
+                `Blob生成成功，大小: ${blob.size} bytes`
+              );
+              resolve(blob);
+            } else {
+              logger.error('export-service', 'Blob生成失败');
+              reject(new Error('图片生成失败 - Blob为空'));
+            }
+          },
+          mimeType,
+          quality
+        );
       });
 
       if (!blob) {
@@ -208,7 +227,8 @@ export class ExportService {
     } catch (error) {
       logger.error('export-service', '图片导出详细错误', error);
 
-      const errorMessage = error instanceof Error ? error.message : '导出图片时发生未知错误';
+      const errorMessage =
+        error instanceof Error ? error.message : '导出图片时发生未知错误';
 
       // 提供更具体的错误信息
       if (errorMessage.includes('html2canvas')) {
@@ -238,13 +258,13 @@ export class ExportService {
       includeHeaders = true,
       headerMapping = {},
       columnWidths = [],
-      dataTransformer
+      dataTransformer,
     } = options;
 
     try {
       const transformedData: Array<Record<string, unknown>> = dataTransformer
         ? dataTransformer(data)
-        : data.map(item => ({ ...item } as Record<string, unknown>));
+        : data.map(item => ({ ...item }) as Record<string, unknown>);
 
       if (transformedData.length === 0) {
         throw new Error('没有数据可导出');
@@ -266,7 +286,7 @@ export class ExportService {
 
       // 创建工作表
       const worksheet = XLSX.utils.json_to_sheet(processedData, {
-        header: includeHeaders ? undefined : [] // 控制是否包含表头
+        header: includeHeaders ? undefined : [], // 控制是否包含表头
       });
 
       // 设置列宽
@@ -281,10 +301,11 @@ export class ExportService {
 
       // 导出文件
       XLSX.writeFile(workbook, `${filename}.xlsx`, {
-        compression: true // 启用压缩
+        compression: true, // 启用压缩
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : '导出Excel时发生未知错误';
+      const errorMessage =
+        error instanceof Error ? error.message : '导出Excel时发生未知错误';
       throw new Error(errorMessage);
     }
   }
@@ -307,7 +328,10 @@ export class ExportService {
  */
 export interface UseExportResult {
   /** 导出为图片 */
-  exportToImage: (element: HTMLElement, options?: ImageExportOptions) => Promise<void>;
+  exportToImage: (
+    element: HTMLElement,
+    options?: ImageExportOptions
+  ) => Promise<void>;
   /** 导出为Excel */
   exportToExcel: <T extends Record<string, unknown>>(
     data: T[],
@@ -361,6 +385,6 @@ export function useExport(): UseExportResult {
     exportToImage,
     exportToExcel,
     isExportingImage,
-    imageError
+    imageError,
   };
 }
