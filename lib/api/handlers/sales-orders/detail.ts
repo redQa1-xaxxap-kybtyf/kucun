@@ -84,7 +84,13 @@ const mapDetail = (order: SalesOrderDetailResult) => {
   return {
     ...orderBase,
     items: items.map(mapSalesOrderItem),
-    feeItems: order.feeItems,
+    feeItems: order.feeItems.map(fee => ({
+      id: fee.id,
+      feeType: fee.feeType,
+      feeName: fee.feeName,
+      feeAmount: fee.feeAmount,
+      remarks: fee.remarks ?? undefined,
+    })),
     hasReturnOrder: returnOrders.length > 0,
     returnOrders: returnOrders.map(mapReturnOrder),
     itemCount: _count.items,
@@ -143,7 +149,10 @@ export async function getSalesOrderDetailWithPayments(id: string) {
   );
   const paidAmount = actualPaidAmount + paymentRounding;
 
-  type SalesOrderAmounts = Pick<SalesOrder, 'totalAmount' | 'roundingAdjustment'>;
+  type SalesOrderAmounts = Pick<
+    SalesOrder,
+    'totalAmount' | 'roundingAdjustment'
+  >;
   const amounts = order as unknown as SalesOrderAmounts;
   const actualTotalAmount =
     Number(amounts.totalAmount) + Number(amounts.roundingAdjustment ?? 0);
