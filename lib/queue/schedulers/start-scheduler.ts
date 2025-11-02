@@ -34,26 +34,26 @@ let isShuttingDown = false;
  */
 async function start(): Promise<void> {
   try {
-    logger.info('正在启动运输查询调度器...', {
+    logger.info('shipping-scheduler', '正在启动运输查询调度器...', undefined, {
       config: shippingQuerySchedulerConfig,
     });
 
     // 创建并启动 Worker
     worker = await createShippingQueryWorker();
-    logger.info('运输查询 Worker 已启动');
+    logger.info('shipping-scheduler', '运输查询 Worker 已启动');
 
     // 创建并启动调度器
     scheduler = getShippingQueryScheduler(shippingQuerySchedulerConfig);
     await scheduler.start();
 
-    logger.info('运输查询调度器启动成功', {
+    logger.info('shipping-scheduler', '运输查询调度器启动成功', undefined, {
       status: scheduler.getStatus(),
     });
 
     // 设置健康检查
     setupHealthCheck();
   } catch (error) {
-    logger.error('启动运输查询调度器失败', { error });
+    logger.error('shipping-scheduler', '启动运输查询调度器失败', error);
     process.exit(1);
   }
 }
@@ -63,33 +63,33 @@ async function start(): Promise<void> {
  */
 async function stop(): Promise<void> {
   if (isShuttingDown) {
-    logger.warn('调度器正在关闭中，请勿重复操作');
+    logger.warn('shipping-scheduler', '调度器正在关闭中，请勿重复操作');
     return;
   }
 
   isShuttingDown = true;
 
   try {
-    logger.info('正在停止运输查询调度器...');
+    logger.info('shipping-scheduler', '正在停止运输查询调度器...');
 
     // 停止调度器
     if (scheduler) {
       await scheduler.stop();
       scheduler = null;
-      logger.info('调度器已停止');
+      logger.info('shipping-scheduler', '调度器已停止');
     }
 
     // 停止 Worker
     if (worker) {
       await worker.close();
       worker = null;
-      logger.info('Worker 已停止');
+      logger.info('shipping-scheduler', 'Worker 已停止');
     }
 
-    logger.info('运输查询调度器已完全停止');
+    logger.info('shipping-scheduler', '运输查询调度器已完全停止');
     process.exit(0);
   } catch (error) {
-    logger.error('停止运输查询调度器失败', { error });
+    logger.error('shipping-scheduler', '停止运输查询调度器失败', error);
     process.exit(1);
   }
 }
@@ -102,18 +102,21 @@ function setupHealthCheck(): void {
   setInterval(() => {
     try {
       if (!scheduler || !worker) {
-        logger.error('健康检查失败：调度器或 Worker 未运行');
+        logger.error(
+          'shipping-scheduler',
+          '健康检查失败：调度器或 Worker 未运行'
+        );
         return;
       }
 
       const status = scheduler.getStatus();
 
-      logger.debug('健康检查通过', {
+      logger.debug('shipping-scheduler', '健康检查通过', undefined, {
         schedulerRunning: status.isRunning,
         workerRunning: worker !== null,
       });
     } catch (error) {
-      logger.error('健康检查异常', { error });
+      logger.error('shipping-scheduler', '健康检查异常', error);
     }
   }, 60 * 1000); // 每分钟检查一次
 }
@@ -124,28 +127,33 @@ function setupHealthCheck(): void {
 function setupErrorHandlers(): void {
   // 处理未捕获的 Promise 拒绝
   process.on('unhandledRejection', (reason, promise) => {
-    logger.error('未捕获的 Promise 拒绝', {
-      reason,
-      promise,
-    });
+    logger.error(
+      'shipping-scheduler',
+      '未捕获的 Promise 拒绝',
+      reason as Error,
+      undefined,
+      {
+        promise,
+      }
+    );
   });
 
   // 处理未捕获的异常
   process.on('uncaughtException', error => {
-    logger.error('未捕获的异常', { error });
+    logger.error('shipping-scheduler', '未捕获的异常', error);
     // 异常后优雅关闭
     stop();
   });
 
   // 处理 SIGTERM 信号（Docker/Kubernetes 停止容器）
   process.on('SIGTERM', () => {
-    logger.info('收到 SIGTERM 信号，开始优雅关闭...');
+    logger.info('shipping-scheduler', '收到 SIGTERM 信号，开始优雅关闭...');
     stop();
   });
 
   // 处理 SIGINT 信号（Ctrl+C）
   process.on('SIGINT', () => {
-    logger.info('收到 SIGINT 信号，开始优雅关闭...');
+    logger.info('shipping-scheduler', '收到 SIGINT 信号，开始优雅关闭...');
     stop();
   });
 }
@@ -154,7 +162,7 @@ function setupErrorHandlers(): void {
  * 主函数
  */
 async function main(): Promise<void> {
-  logger.info('运输查询调度器进程启动', {
+  logger.info('shipping-scheduler', '运输查询调度器进程启动', undefined, {
     pid: process.pid,
     nodeVersion: process.version,
     platform: process.platform,
@@ -167,11 +175,11 @@ async function main(): Promise<void> {
   await start();
 
   // 保持进程运行
-  logger.info('调度器进程正在运行，按 Ctrl+C 停止');
+  logger.info('shipping-scheduler', '调度器进程正在运行，按 Ctrl+C 停止');
 }
 
 // 执行主函数
 main().catch(error => {
-  logger.error('调度器进程启动失败', { error });
+  logger.error('shipping-scheduler', '调度器进程启动失败', error);
   process.exit(1);
 });

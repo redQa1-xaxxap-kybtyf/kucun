@@ -81,7 +81,12 @@ export function createOptimisticListMutation<
     position?: 'start' | 'end';
   }
 ): Pick<
-  UseMutationOptions<TData, Error, TVariables>,
+  UseMutationOptions<
+    TData,
+    Error,
+    TVariables,
+    OptimisticContext<PaginatedResponse<TItem>>
+  >,
   'onMutate' | 'onError' | 'onSettled'
 > {
   return {
@@ -180,7 +185,12 @@ export function createOptimisticUpdateMutation<
     updateItem: (item: TItem, variables: TVariables) => TItem;
   }
 ): Pick<
-  UseMutationOptions<TData, Error, TVariables>,
+  UseMutationOptions<
+    TData,
+    Error,
+    TVariables,
+    OptimisticContext<PaginatedResponse<TItem>>
+  >,
   'onMutate' | 'onError' | 'onSettled'
 > {
   return {
@@ -254,7 +264,12 @@ export function createOptimisticDeleteMutation<
     getItemId: (variables: TVariables) => string;
   }
 ): Pick<
-  UseMutationOptions<TData, Error, TVariables>,
+  UseMutationOptions<
+    TData,
+    Error,
+    TVariables,
+    OptimisticContext<PaginatedResponse<TItem>>
+  >,
   'onMutate' | 'onError' | 'onSettled'
 > {
   return {

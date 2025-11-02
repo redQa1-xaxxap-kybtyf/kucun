@@ -184,7 +184,7 @@ export async function getAdjustmentsServer(searchParams: URLSearchParams) {
 
   // 格式化数据
   const formattedAdjustments = adjustments.map(adj =>
-    formatAdjustmentData(adj as AdjustmentWithRelations)
+    formatAdjustmentData(adj as InventoryAdjustmentWithRelations)
   );
 
   return {

@@ -11,7 +11,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 import { defaultQueueConfig } from '../config';
-import { ShippingQueryQueue } from '../shipping-query-queue';
+import { addShippingQueryJob } from '../shipping-query-queue';
 
 /**
  * 调度器配置
@@ -65,12 +65,14 @@ class ShippingQueryScheduler {
    */
   async start(): Promise<void> {
     if (!this.config.enabled) {
-      logger.info('运输查询调度器已禁用', { config: this.config });
+      logger.info('shipping-scheduler', '运输查询调度器已禁用', undefined, {
+        config: this.config,
+      });
       return;
     }
 
     if (this.isRunning) {
-      logger.warn('运输查询调度器已在运行中');
+      logger.warn('shipping-scheduler', '运输查询调度器已在运行中');
       return;
     }
 
@@ -97,7 +99,7 @@ class ShippingQueryScheduler {
 
       this.isRunning = true;
 
-      logger.info('运输查询调度器已启动', {
+      logger.info('shipping-scheduler', '运输查询调度器已启动', undefined, {
         intervalHours: this.config.intervalHours,
         minQueryIntervalHours: this.config.minQueryIntervalHours,
       });
@@ -105,7 +107,13 @@ class ShippingQueryScheduler {
       // 立即执行一次（可选）
       await this.scheduleAutoQuery();
     } catch (error) {
-      logger.error('启动运输查询调度器失败', { error });
+      logger.error(
+        'shipping-scheduler',
+        '启动运输查询调度器失败',
+        error,
+        undefined,
+        { error }
+      );
       throw error;
     }
   }
@@ -115,7 +123,7 @@ class ShippingQueryScheduler {
    */
   async stop(): Promise<void> {
     if (!this.isRunning) {
-      logger.warn('运输查询调度器未在运行');
+      logger.warn('shipping-scheduler', '运输查询调度器未在运行');
       return;
     }
 
@@ -132,9 +140,9 @@ class ShippingQueryScheduler {
       }
 
       this.isRunning = false;
-      logger.info('运输查询调度器已停止');
+      logger.info('shipping-scheduler', '运输查询调度器已停止');
     } catch (error) {
-      logger.error('停止运输查询调度器失败', { error });
+      logger.error('shipping-scheduler', '停止运输查询调度器失败', error);
       throw error;
     }
   }
@@ -160,7 +168,7 @@ class ShippingQueryScheduler {
     const startTime = Date.now();
 
     try {
-      logger.info('开始执行运输查询调度');
+      logger.info('shipping-scheduler', '开始执行运输查询调度');
 
       // 计算最小查询间隔时间点
       const minQueryTime = new Date(
@@ -203,7 +211,10 @@ class ShippingQueryScheduler {
         take: 100,
       });
 
-      logger.info(`找到 ${orders.length} 个需要查询的订单`);
+      logger.info(
+        'shipping-scheduler',
+        `找到 ${orders.length} 个需要查询的订单`
+      );
 
       // 为每个订单添加查询任务
       let successCount = 0;
@@ -213,7 +224,7 @@ class ShippingQueryScheduler {
         try {
           // 使用订单ID作为 jobId 实现任务去重
           // 如果该订单已有待处理的任务，则不会重复添加
-          await ShippingQueryQueue.addShippingQueryJob(
+          await addShippingQueryJob(
             {
               factoryShipmentOrderId: order.id,
               shippingCompany: order.shippingCompany || '',
@@ -236,7 +247,7 @@ class ShippingQueryScheduler {
 
           successCount++;
 
-          logger.debug('已添加运输查询任务', {
+          logger.debug('shipping-scheduler', '已添加运输查询任务', undefined, {
             orderId: order.id,
             orderNumber: order.orderNumber,
             shippingCompany: order.shippingCompany,
@@ -244,24 +255,29 @@ class ShippingQueryScheduler {
           });
         } catch (error) {
           failCount++;
-          logger.error('添加运输查询任务失败', {
-            orderId: order.id,
-            orderNumber: order.orderNumber,
+          logger.error(
+            'shipping-scheduler',
+            '添加运输查询任务失败',
             error,
-          });
+            undefined,
+            {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+            }
+          );
         }
       }
 
       const duration = Date.now() - startTime;
 
-      logger.info('运输查询调度完成', {
+      logger.info('shipping-scheduler', '运输查询调度完成', undefined, {
         totalOrders: orders.length,
         successCount,
         failCount,
         durationMs: duration,
       });
     } catch (error) {
-      logger.error('执行运输查询调度失败', { error });
+      logger.error('shipping-scheduler', '执行运输查询调度失败', error);
       throw error;
     }
   }
@@ -270,7 +286,7 @@ class ShippingQueryScheduler {
    * 手动触发一次调度（用于测试或手动执行）
    */
   async triggerManual(): Promise<void> {
-    logger.info('手动触发运输查询调度');
+    logger.info('shipping-scheduler', '手动触发运输查询调度');
     await this.scheduleAutoQuery();
   }
 }

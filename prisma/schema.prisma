@@ -86,6 +86,7 @@ model Supplier {
   temporaryProducts         TemporaryProduct[]         @relation("SupplierTemporaryProducts")
   payableRecords            PayableRecord[]            @relation("SupplierPayables")
   paymentOutRecords         PaymentOutRecord[]         @relation("SupplierPaymentOuts")
+  supplierProductPrices     SupplierProductPrice[]     @relation("SupplierProductPrices")
 
   @@index([name])
   @@index([phone])
@@ -175,6 +176,8 @@ model Product {
   inboundRecords            InboundRecord[]
   batchSpecifications       BatchSpecification[]
   returnOrderItems          ReturnOrderItem[]          @relation("ProductReturns")
+  customerProductPrices     CustomerProductPrice[]     @relation("CustomerProductPrices")
+  supplierProductPrices     SupplierProductPrice[]     @relation("SupplierProductPrices")
 
   @@index([code])
   @@index([name])
@@ -333,6 +336,7 @@ model CustomerProductPrice {
 
   // 关系定义
   customer Customer @relation("CustomerProductPrices", fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation("CustomerProductPrices", fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([customerId, productId, priceType], map: "idx_customer_product_price_lookup")
   @@index([productId], map: "idx_customer_product_price_product")
@@ -347,6 +351,10 @@ model SupplierProductPrice {
   orderId    String?  @map("order_id") @db.Char(36)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  product  Product  @relation("SupplierProductPrices", fields: [productId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation("SupplierProductPrices", fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@index([supplierId, productId], map: "idx_supplier_product_price_lookup")
   @@index([productId], map: "idx_supplier_product_price_product")

@@ -217,7 +217,7 @@ function OrderItemRow({
                 onUpdateItem(
                   index,
                   'quantity',
-                  value === '' ? '' : Number(value)
+                  value === '' ? undefined : Number(value)
                 );
               }
             }}
@@ -259,7 +259,7 @@ function OrderItemRow({
               onUpdateItem(
                 index,
                 'unitPrice',
-                value === '' ? '' : Number(value)
+                value === '' ? undefined : Number(value)
               );
             }
           }}

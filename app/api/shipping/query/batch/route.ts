@@ -5,7 +5,7 @@
  */
 
 import type { NextRequest } from 'next/server';
-import { z } from 'zod';
+import { z, type ZodIssue } from 'zod';
 
 import { withErrorHandling } from '@/lib/api/middleware';
 import {
@@ -220,7 +220,7 @@ export const POST = withErrorHandling(
       // Zod 验证错误
       if (error instanceof z.ZodError) {
         return errorResponse(
-          `请求参数验证失败: ${error.errors.map(e => e.message).join(', ')}`,
+          `请求参数验证失败: ${error.issues.map((e: ZodIssue) => e.message).join(', ')}`,
           400
         );
       }

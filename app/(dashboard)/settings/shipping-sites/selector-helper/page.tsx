@@ -252,11 +252,12 @@ export default function SelectorHelperPage() {
 
             // 策略2: 查找下一个兄弟元素（跳过文本节点和注释节点）
             if (!valueElement && element.nextElementSibling) {
-              let sibling = element.nextElementSibling;
+              let sibling: Element | null = element.nextElementSibling;
               // 跳过冒号元素
               if (
-                sibling.textContent?.trim() === '：' ||
-                sibling.textContent?.trim() === ':'
+                sibling &&
+                (sibling.textContent?.trim() === '：' ||
+                  sibling.textContent?.trim() === ':')
               ) {
                 sibling = sibling.nextElementSibling;
               }
@@ -326,11 +327,11 @@ export default function SelectorHelperPage() {
           variant: 'destructive',
         });
       } else {
-      toast({
-        title: '分析完成',
-        description: `检测到 ${fields.length} 个字段`,
-        variant: 'success',
-      });
+        toast({
+          title: '分析完成',
+          description: `检测到 ${fields.length} 个字段`,
+          variant: 'success',
+        });
       }
     } catch (_error) {
       toast({
@@ -346,11 +347,11 @@ export default function SelectorHelperPage() {
   // 复制选择器
   const copySelector = (selector: string, type: string) => {
     navigator.clipboard.writeText(selector);
-  toast({
-    title: '已复制',
-    description: `${type.toUpperCase()} 选择器已复制到剪贴板`,
-    variant: 'success',
-  });
+    toast({
+      title: '已复制',
+      description: `${type.toUpperCase()} 选择器已复制到剪贴板`,
+      variant: 'success',
+    });
   };
 
   // 复制所有推荐选择器
@@ -359,11 +360,11 @@ export default function SelectorHelperPage() {
       .map(f => `${f.label}: ${f.recommended.selector}`)
       .join('\n');
     navigator.clipboard.writeText(text);
-  toast({
-    title: '已复制所有推荐选择器',
-    description: '可以粘贴到站点配置中',
-    variant: 'success',
-  });
+    toast({
+      title: '已复制所有推荐选择器',
+      description: '可以粘贴到站点配置中',
+      variant: 'success',
+    });
   };
 
   // 复制为 JSON 格式（用于 extract_selectors 字段）
@@ -381,11 +382,11 @@ export default function SelectorHelperPage() {
       json[key] = f.recommended.selector;
     });
     navigator.clipboard.writeText(JSON.stringify(json, null, 2));
-  toast({
-    title: '已复制 JSON 格式',
-    description: '可以直接粘贴到 extract_selectors 字段',
-    variant: 'success',
-  });
+    toast({
+      title: '已复制 JSON 格式',
+      description: '可以直接粘贴到 extract_selectors 字段',
+      variant: 'success',
+    });
   };
 
   return (

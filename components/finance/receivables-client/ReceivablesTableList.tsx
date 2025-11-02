@@ -1,8 +1,6 @@
 'use client';
 
-import { Calendar, Clock, Eye, MoreHorizontal, DollarSign } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
+import { Calendar, Clock, DollarSign, Eye, MoreHorizontal } from 'lucide-react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
@@ -103,7 +101,7 @@ export function ReceivablesTableList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {receivables.map((receivable) => (
+            {receivables.map(receivable => (
               <ReceivableTableRow
                 key={receivable.id}
                 receivable={receivable}
@@ -187,15 +185,22 @@ function ReceivableTableRow({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
-                  <div className={`text-xs cursor-help ${
-                    amounts.paymentRoundingDisplay > 0 ? 'text-red-600' : 'text-green-600'
-                  }`}>
+                  <div
+                    className={`cursor-help text-xs ${
+                      amounts.paymentRoundingDisplay > 0
+                        ? 'text-red-600'
+                        : 'text-green-600'
+                    }`}
+                  >
                     {amounts.paymentRoundingDisplay > 0 ? '多收' : '少收'}
                     {formatCurrency(Math.abs(amounts.paymentRoundingDisplay))}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>收款差额: {formatCurrencyWithSign(amounts.paymentRoundingDisplay)}</p>
+                  <p>
+                    收款差额:{' '}
+                    {formatCurrencyWithSign(amounts.paymentRoundingDisplay)}
+                  </p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -204,16 +209,18 @@ function ReceivableTableRow({
       </TableCell>
 
       <TableCell className="text-right">
-        <div className={`font-medium ${
-          amounts.actualRemaining > 0 ? 'text-orange-600' : 'text-green-600'
-        }`}>
+        <div
+          className={`font-medium ${
+            amounts.actualRemaining > 0 ? 'text-orange-600' : 'text-green-600'
+          }`}
+        >
           {formatCurrency(amounts.actualRemaining)}
         </div>
       </TableCell>
 
       <TableCell>
         <div className="flex items-center gap-2 text-sm">
-          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+          <Calendar className="text-muted-foreground h-3.5 w-3.5" />
           <span>{formatDateTime(receivable.orderDate, 'yyyy-MM-dd')}</span>
           <span className="text-muted-foreground">
             {formatDateTime(receivable.orderDate, 'HH:mm')}
@@ -225,13 +232,15 @@ function ReceivableTableRow({
         {receivable.lastPaymentDate ? (
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-3.5 w-3.5 text-green-600" />
-            <span>{formatDateTime(receivable.lastPaymentDate, 'yyyy-MM-dd')}</span>
+            <span>
+              {formatDateTime(receivable.lastPaymentDate, 'yyyy-MM-dd')}
+            </span>
             <span className="text-green-600">
               {formatDateTime(receivable.lastPaymentDate, 'HH:mm')}
             </span>
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <Clock className="h-3.5 w-3.5" />
             <span>暂无收款</span>
           </div>
@@ -263,7 +272,7 @@ function ReceivableTableRow({
               variant="outline"
               size="sm"
               disabled
-              className="h-6 px-2 text-xs cursor-not-allowed border-gray-300 text-gray-500 bg-gray-50"
+              className="h-6 cursor-not-allowed border-gray-300 bg-gray-50 px-2 text-xs text-gray-500"
             >
               待确认收款
             </Button>
@@ -273,7 +282,7 @@ function ReceivableTableRow({
                 variant="default"
                 size="sm"
                 onClick={() => onOpenPaymentDialog(receivable)}
-                className="h-6 px-2 text-xs bg-green-600 text-white hover:bg-green-700"
+                className="h-6 bg-green-600 px-2 text-xs text-white hover:bg-green-700"
               >
                 立即收款
               </Button>
@@ -282,11 +291,7 @@ function ReceivableTableRow({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-              >
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -295,15 +300,16 @@ function ReceivableTableRow({
                 <Eye className="mr-2 h-4 w-4" />
                 查看详情
               </DropdownMenuItem>
-              {amounts.actualRemaining > 0 && receivable.paymentStatus !== 'pending' && (
-                <DropdownMenuItem
-                  onClick={() => onOpenPaymentDialog(receivable)}
-                  className="text-green-600"
-                >
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  立即收款
-                </DropdownMenuItem>
-              )}
+              {amounts.actualRemaining > 0 &&
+                receivable.paymentStatus !== 'pending' && (
+                  <DropdownMenuItem
+                    onClick={() => onOpenPaymentDialog(receivable)}
+                    className="text-green-600"
+                  >
+                    <DollarSign className="mr-2 h-4 w-4" />
+                    立即收款
+                  </DropdownMenuItem>
+                )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -322,7 +328,7 @@ const STATUS_CONFIG: Partial<Record<PaymentStatus | string, StatusConfigItem>> =
   {
     unpaid: {
       label: '未收款',
-      variant: 'destructive' as BadgeProps['variant']
+      variant: 'destructive' as BadgeProps['variant'],
     },
     partial: {
       label: '部分收款',
@@ -331,19 +337,19 @@ const STATUS_CONFIG: Partial<Record<PaymentStatus | string, StatusConfigItem>> =
     },
     paid: {
       label: '已收款',
-      variant: 'default' as BadgeProps['variant']
+      variant: 'default' as BadgeProps['variant'],
     },
     pending: {
       label: '待确认',
-      variant: 'secondary' as BadgeProps['variant']
+      variant: 'secondary' as BadgeProps['variant'],
     },
     confirmed: {
       label: '已确认',
-      variant: 'default' as BadgeProps['variant']
+      variant: 'default' as BadgeProps['variant'],
     },
     cancelled: {
       label: '已取消',
-      variant: 'secondary' as BadgeProps['variant']
+      variant: 'secondary' as BadgeProps['variant'],
     },
   };
 

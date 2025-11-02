@@ -241,7 +241,7 @@ export async function getReturnOrdersServer(
             : undefined,
         };
       }),
-      refundRecords: order.refundRecords.map(record => ({
+      refundRecords: order.refunds.map(record => ({
         id: record.id,
         refundAmount: Number(record.refundAmount),
         refundDate: record.refundDate.toISOString(),

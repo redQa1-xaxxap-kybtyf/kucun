@@ -93,15 +93,6 @@ export async function getSettingChangeHistory(
     where: {
       settingKey,
     },
-    include: {
-      user: {
-        select: {
-          id: true,
-          username: true,
-          name: true,
-        },
-      },
-    },
     orderBy: {
       changedAt: 'desc',
     },
@@ -123,15 +114,6 @@ export async function getAllSettingChangeHistory(
 
   const [logs, total] = await Promise.all([
     prisma.settingChangeLog.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-          },
-        },
-      },
       orderBy: {
         changedAt: 'desc',
       },
