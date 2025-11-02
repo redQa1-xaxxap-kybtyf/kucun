@@ -54,41 +54,39 @@ export type InventoryQueryResult = z.infer<typeof inventoryQueryResultSchema>;
 function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
 
-  // 搜索条件 - 优化以降低全表扫描概率（MySQL 5.7）
-  // ✅ 修复BUG：当搜索关键词不满足最小长度时，返回空结果而不是所有数据
-  // 规则：
+  // 搜索条件 - 性能优化（避免全表扫描）
+  // ✅ 优化策略：
   // - 空字符串或undefined：不加搜索条件，正常查询
-  // - 长度=1：添加永假条件，返回空结果（不满足最小搜索长度）
-  // - 长度=2~4：
-  //     • 编码/批次/库位使用前缀匹配（可命中索引）
-  //     • 名称使用包含匹配
-  // - 长度>=5：上述基础上名称/库位仍为包含匹配
+  // - 长度=1：返回空结果（不满足最小搜索长度）
+  // - 长度=2~4（短关键词）：
+  //     • 只使用前缀匹配（可命中索引）：p.code, i.batch_number
+  //     • 移除 LIKE '%keyword%' 避免全表扫描
+  // - 长度>=5（长关键词）：
+  //     • 前缀匹配：p.code, i.batch_number
+  //     • 包含匹配：p.name, i.location（用户输入更完整，性能损失可接受）
   if (typeof params.search === 'string' && params.search.trim()) {
     const s = params.search.trim();
 
     if (s.length === 1) {
-      // ✅ 单字符搜索：返回空结果，不执行查询
-      // 这样更明确地告诉用户需要输入更多字符
+      // ✅ 单字符搜索：返回空结果
       conditions.push(Prisma.sql`1=0`);
-    } else if (s.length >= 2) {
+    } else if (s.length >= 2 && s.length <= 4) {
+      // ✅ 短关键词：只使用前缀匹配，避免全表扫描
+      const likePrefix = `${s}%`;
+      conditions.push(Prisma.sql`(
+        p.code LIKE ${likePrefix} OR
+        i.batch_number LIKE ${likePrefix}
+      )`);
+    } else if (s.length >= 5) {
+      // ✅ 长关键词：前缀匹配 + 包含匹配
       const likePrefix = `${s}%`;
       const likeAny = `%${s}%`;
-
-      if (s.length <= 4) {
-        conditions.push(Prisma.sql`(
-          p.code LIKE ${likePrefix} OR
-          i.batch_number LIKE ${likePrefix} OR
-          i.location LIKE ${likePrefix} OR
-          p.name LIKE ${likeAny}
-        )`);
-      } else {
-        conditions.push(Prisma.sql`(
-          p.code LIKE ${likePrefix} OR
-          i.batch_number LIKE ${likePrefix} OR
-          p.name LIKE ${likeAny} OR
-          i.location LIKE ${likeAny}
-        )`);
-      }
+      conditions.push(Prisma.sql`(
+        p.code LIKE ${likePrefix} OR
+        i.batch_number LIKE ${likePrefix} OR
+        p.name LIKE ${likeAny} OR
+        i.location LIKE ${likeAny}
+      )`);
     }
   }
 

@@ -113,17 +113,15 @@ function useInventoryController(initialParams: InventoryQueryParams) {
   const { handleFilter, handleClearFilters, handlePageChange } =
     useInventoryFilters(updateParams, params.page);
 
-  // ✅ 自适应防抖搜索:根据输入模式动态调整延迟
-  const lastInputTimeRef = React.useRef<number>(Date.now());
-  const inputCountRef = React.useRef<number>(0);
+  // ✅ 优化：简化防抖逻辑，固定300ms延迟
+  // 移除复杂的自适应算法，提升性能和可维护性
+  const SEARCH_DEBOUNCE_DELAY = 300; // 固定防抖延迟
 
   const handleSearch = React.useCallback(
     (value: string) => {
       const trimmed = value.trimStart();
-      const now = Date.now();
-      const timeSinceLastInput = now - lastInputTimeRef.current;
 
-      // 1. 立即更新输入框(0ms延迟)
+      // 1. 立即更新输入框显示（0ms延迟）
       setSearchInput(trimmed);
 
       // 2. 清除之前的定时器
@@ -131,39 +129,21 @@ function useInventoryController(initialParams: InventoryQueryParams) {
         clearTimeout(searchTimerRef.current);
       }
 
-      // 3. 设置搜索状态
+      // 3. 处理清空搜索
       if (trimmed === '') {
         setIsSearching(false);
-        inputCountRef.current = 0;
-        // 清空时立即更新
+        // 清空时立即更新URL和触发查询
         updateParams({ search: undefined, page: 1 });
         return;
       }
 
+      // 4. 设置搜索状态
       setIsSearching(true);
-      inputCountRef.current += 1;
 
-      // 4. 自适应延迟计算
-      let adaptiveDelay = 300; // 默认延迟
-
-      if (inputCountRef.current >= 3) {
-        // 连续输入3次以上，用户在快速输入，增加延迟
-        adaptiveDelay = 500;
-      } else if (timeSinceLastInput < 100) {
-        // 快速连续输入，稍增加延迟
-        adaptiveDelay = 400;
-      } else if (trimmed.length >= 5) {
-        // 输入较长，用户可能在输入完整词，减少延迟
-        adaptiveDelay = 200;
-      }
-
-      lastInputTimeRef.current = now;
-
-      // 5. 使用自适应延迟更新URL和触发查询
+      // 5. 使用固定延迟更新URL和触发查询
       searchTimerRef.current = setTimeout(() => {
         updateParams({ search: trimmed, page: 1 });
-        inputCountRef.current = 0; // 重置计数器
-      }, adaptiveDelay);
+      }, SEARCH_DEBOUNCE_DELAY);
     },
     [updateParams]
   );
