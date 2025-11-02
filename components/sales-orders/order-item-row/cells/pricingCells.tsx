@@ -149,15 +149,29 @@ function QuantityInputCell({
                 value={field.value ?? ''}
                 className="h-8 text-xs"
                 placeholder="数量"
-                onBlur={field.onBlur}
                 onChange={event => {
                   const inputValue = event.target.value;
-                  if (inputValue === '') {
-                    field.onChange(undefined);
-                    return;
+                  // 允许输入数字、小数点、空字符串
+                  if (inputValue === '' || /^\d*\.?\d*$/.test(inputValue)) {
+                    // 允许空值，不立即转换，让用户可以删除内容
+                    field.onChange(inputValue === '' ? '' : inputValue);
                   }
-                  const parsed = parseFloat(inputValue);
-                  field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                }}
+                onBlur={event => {
+                  const inputValue = event.target.value;
+                  // 失焦时处理空值：如果为空或只有小数点，设置为默认值1
+                  if (!inputValue || inputValue === '.') {
+                    field.onChange(1);
+                  } else {
+                    const parsed = parseFloat(inputValue);
+                    if (!Number.isNaN(parsed)) {
+                      field.onChange(parsed);
+                    } else {
+                      // 如果解析失败，恢复为默认值1
+                      field.onChange(1);
+                    }
+                  }
+                  field.onBlur();
                 }}
               />
             </FormControl>
@@ -193,9 +207,8 @@ export function UnitPriceCell({
           <FormItem>
             <FormControl>
               <Input
-                type="number"
-                step="0.01"
-                min="0"
+                type="text"
+                inputMode="decimal"
                 {...field}
                 value={
                   field.value === undefined || Number.isNaN(field.value)
@@ -206,15 +219,32 @@ export function UnitPriceCell({
                 placeholder="单价"
                 onChange={event => {
                   const value = event.target.value;
-                  field.onChange(
-                    value === '' ? undefined : Number.parseFloat(value)
-                  );
+                  // 允许输入数字、小数点、空字符串
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    // 允许空值，不立即转换，让用户可以删除内容
+                    field.onChange(value === '' ? '' : value);
+                  }
                 }}
                 onFocus={event => {
                   // 聚焦时自动选中所有内容，方便用户直接输入新价格
                   event.target.select();
                 }}
-                onBlur={field.onBlur}
+                onBlur={event => {
+                  const value = event.target.value;
+                  // 失焦时处理空值：如果为空或只有小数点，设置为0
+                  if (!value || value === '.') {
+                    field.onChange(0);
+                  } else {
+                    const parsed = Number.parseFloat(value);
+                    if (!Number.isNaN(parsed)) {
+                      field.onChange(parsed);
+                    } else {
+                      // 如果解析失败，恢复为0
+                      field.onChange(0);
+                    }
+                  }
+                  field.onBlur();
+                }}
               />
             </FormControl>
             <FormMessage className="text-xs" />

@@ -388,9 +388,10 @@ function OrderItemRow({
                         value={field.value ?? ''}
                         onChange={e => {
                           const value = e.target.value;
-                          // 允许输入数字、小数点
+                          // 允许输入数字、小数点、空字符串
                           if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                            field.onChange(value === '' ? 0 : value);
+                            // 允许空值，不立即转换为0，让用户可以删除内容
+                            field.onChange(value === '' ? '' : value);
                           }
                         }}
                         onFocus={e => {
@@ -399,10 +400,16 @@ function OrderItemRow({
                         }}
                         onBlur={e => {
                           const value = e.target.value;
-                          if (value && value !== '.') {
+                          // 失焦时处理空值：如果为空或只有小数点，设置为默认值1
+                          if (!value || value === '.') {
+                            field.onChange(1);
+                          } else {
                             const numValue = parseFloat(value);
                             if (!isNaN(numValue)) {
                               field.onChange(numValue);
+                            } else {
+                              // 如果解析失败，恢复为默认值1
+                              field.onChange(1);
                             }
                           }
                           field.onBlur();
@@ -432,9 +439,10 @@ function OrderItemRow({
                         value={field.value ?? ''}
                         onChange={e => {
                           const value = e.target.value;
-                          // 允许输入数字、小数点、负号
+                          // 允许输入数字、小数点、负号、空字符串
                           if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-                            field.onChange(value === '' ? 0 : value);
+                            // 允许空值，不立即转换为0，让用户可以删除内容
+                            field.onChange(value === '' ? '' : value);
                           }
                         }}
                         onFocus={e => {
@@ -443,10 +451,16 @@ function OrderItemRow({
                         }}
                         onBlur={e => {
                           const value = e.target.value;
-                          if (value && value !== '-' && value !== '.') {
+                          // 失焦时处理空值：如果为空或只有符号，设置为0
+                          if (!value || value === '-' || value === '.') {
+                            field.onChange(0);
+                          } else {
                             const numValue = parseFloat(value);
                             if (!isNaN(numValue)) {
                               field.onChange(numValue);
+                            } else {
+                              // 如果解析失败，恢复为0
+                              field.onChange(0);
                             }
                           }
                           field.onBlur();

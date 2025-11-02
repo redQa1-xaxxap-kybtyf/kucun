@@ -537,15 +537,16 @@ export function SalesOrderForm({
                                 value={item.quantity ?? ''}
                                 onChange={e => {
                                   const value = e.target.value;
-                                  // 允许输入数字、小数点
+                                  // 允许输入数字、小数点、空字符串
                                   if (
                                     value === '' ||
                                     /^\d*\.?\d*$/.test(value)
                                   ) {
+                                    // 允许空值，不立即转换，让用户可以删除内容
                                     updateOrderItem(
                                       index,
                                       'quantity',
-                                      value === '' ? 0 : value
+                                      value === '' ? '' : value
                                     );
                                   }
                                 }}
@@ -555,7 +556,10 @@ export function SalesOrderForm({
                                 }}
                                 onBlur={e => {
                                   const value = e.target.value;
-                                  if (value && value !== '.') {
+                                  // 失焦时处理空值：如果为空或只有小数点，设置为默认值1
+                                  if (!value || value === '.') {
+                                    updateOrderItem(index, 'quantity', 1);
+                                  } else {
                                     const numValue = parseFloat(value);
                                     if (!isNaN(numValue)) {
                                       updateOrderItem(
@@ -563,6 +567,9 @@ export function SalesOrderForm({
                                         'quantity',
                                         numValue
                                       );
+                                    } else {
+                                      // 如果解析失败，恢复为默认值1
+                                      updateOrderItem(index, 'quantity', 1);
                                     }
                                   }
                                 }}
