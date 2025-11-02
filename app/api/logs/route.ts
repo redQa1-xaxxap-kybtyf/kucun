@@ -13,6 +13,7 @@ import type {
   SystemLogListResponse,
   SystemLogType,
 } from '@/lib/types/settings';
+import { safeJSONParse } from '@/lib/utils/safe-json';
 import { SystemLogListRequestSchema } from '@/lib/validations/settings';
 
 /**
@@ -134,7 +135,12 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       user: log.user,
       ipAddress: log.ipAddress,
       userAgent: log.userAgent,
-      metadata: log.metadata ? JSON.parse(log.metadata) : null,
+      metadata: log.metadata
+        ? safeJSONParse<Record<string, unknown> | null>(log.metadata, null, {
+            logError: true,
+            context: 'log-metadata-parse',
+          })
+        : null,
       createdAt: log.createdAt.toISOString(),
     }));
 

@@ -14,6 +14,7 @@ import type {
 } from '@/lib/types/shipping';
 import { parseShippingDate } from '@/lib/utils/datetime';
 import { chineseToPinyinUppercase } from '@/lib/utils/pinyin';
+import { safeJSONParse } from '@/lib/utils/safe-json';
 import {
   normalizeSelector,
   normalizeShippingExtractSelectors,
@@ -98,9 +99,14 @@ export const POST = withErrorHandling(
 
     try {
       // 解析选择器配置
-      const parsedSelectors = JSON.parse(
-        site.extractSelectors
-      ) as Partial<ExtractSelectors>;
+      const parsedSelectors = safeJSONParse<Partial<ExtractSelectors>>(
+        site.extractSelectors,
+        {},
+        {
+          logError: true,
+          context: 'shipping-query-selectors-parse',
+        }
+      );
       const canonicalSelectors =
         normalizeShippingExtractSelectors(parsedSelectors);
       const extractSelectors = {

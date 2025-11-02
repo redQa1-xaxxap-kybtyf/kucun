@@ -256,7 +256,7 @@ export async function withIdempotency<T>(
           operatorId,
           status: 'processing',
           requestData: JSON.stringify(requestData),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24小时后过期
+          expiresAt: new Date(Date.now() + PROCESSING_RECORD_TTL_MS), // 使用常量定义的过期时间
         },
       });
 

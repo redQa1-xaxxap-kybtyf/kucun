@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { safeJSONParse } from '@/lib/utils/safe-json';
 
 /**
  * GET /api/logs/[id] - 获取系统日志详情
@@ -69,7 +70,12 @@ export async function GET(
       user: log.user,
       ipAddress: log.ipAddress,
       userAgent: log.userAgent,
-      metadata: log.metadata ? JSON.parse(log.metadata) : null,
+      metadata: log.metadata
+        ? safeJSONParse<Record<string, unknown> | null>(log.metadata, null, {
+            logError: true,
+            context: 'log-detail-metadata-parse',
+          })
+        : null,
       createdAt: log.createdAt.toISOString(),
     };
 
