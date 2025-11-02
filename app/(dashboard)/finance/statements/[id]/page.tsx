@@ -1,18 +1,22 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { format, subDays } from 'date-fns';
 import {
   ArrowLeft,
   DollarSign,
   FileText,
+  RefreshCw,
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { queryKeys } from '@/lib/queryKeys';
 import type { AccountStatementDetail } from '@/lib/types/statement';
 import { formatCurrency } from '@/lib/utils/format';
@@ -22,6 +26,8 @@ import { StatementHeader } from './components/statement-header';
 import { StatementStatistics } from './components/statement-statistics';
 import { StatementTransactions } from './components/statement-transactions';
 
+const DEFAULT_RANGE_DAYS = 90; // 默认显示最近 90 天
+
 /**
  * 往来账单详情页面
  * 显示客户或供应商的详细账务往来信息
@@ -29,15 +35,102 @@ import { StatementTransactions } from './components/statement-transactions';
 export default function StatementDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const id = params.id as string;
 
-  // API 调用函数
+  // 日期范围默认值
+  const today = new Date();
+  const defaultEndDate = format(today, 'yyyy-MM-dd');
+  const defaultStartDate = format(
+    subDays(today, DEFAULT_RANGE_DAYS),
+    'yyyy-MM-dd'
+  );
+
+  // 从 URL 参数获取日期范围
+  const queryStart = searchParams.get('startDate') ?? defaultStartDate;
+  const queryEnd = searchParams.get('endDate') ?? defaultEndDate;
+
+  // 日期范围状态
+  const [dateRange, setDateRange] = useState({
+    startDate: queryStart,
+    endDate: queryEnd,
+  });
+
+  // 同步 URL 参数到本地状态
+  useEffect(() => {
+    setDateRange(prev => {
+      if (prev.startDate === queryStart && prev.endDate === queryEnd) {
+        return prev;
+      }
+      return {
+        startDate: queryStart,
+        endDate: queryEnd,
+      };
+    });
+  }, [queryStart, queryEnd]);
+
+  // 同步本地状态到 URL 参数
+  useEffect(() => {
+    if (!id) {
+      return;
+    }
+
+    const currentStart = searchParams.get('startDate');
+    const currentEnd = searchParams.get('endDate');
+
+    if (
+      currentStart === dateRange.startDate &&
+      currentEnd === dateRange.endDate
+    ) {
+      return;
+    }
+
+    const params = new URLSearchParams();
+    if (dateRange.startDate) {
+      params.set('startDate', dateRange.startDate);
+    }
+    if (dateRange.endDate) {
+      params.set('endDate', dateRange.endDate);
+    }
+
+    const queryString = params.toString();
+
+    router.replace(
+      queryString
+        ? `/finance/statements/${id}?${queryString}`
+        : `/finance/statements/${id}`,
+      { scroll: false }
+    );
+  }, [id, dateRange.startDate, dateRange.endDate, router, searchParams]);
+
+  // 验证日期范围
+  const isRangeValid =
+    Boolean(dateRange.startDate) &&
+    Boolean(dateRange.endDate) &&
+    new Date(dateRange.startDate).getTime() <=
+      new Date(dateRange.endDate).getTime();
+
+  // API 调用函数 - 添加日期参数
   const fetchStatementDetail = async (): Promise<AccountStatementDetail> => {
     if (!id) {
       throw new Error('ID 不能为空');
     }
 
-    const response = await fetch(`/api/finance/statements/${id}`);
+    // 构建查询参数
+    const params = new URLSearchParams();
+    if (dateRange.startDate) {
+      params.set('startDate', dateRange.startDate);
+    }
+    if (dateRange.endDate) {
+      params.set('endDate', dateRange.endDate);
+    }
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/api/finance/statements/${id}?${queryString}`
+      : `/api/finance/statements/${id}`;
+
+    const response = await fetch(url);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(errorData.error || '获取账单详情失败');
@@ -50,17 +143,56 @@ export default function StatementDetailPage() {
   const {
     data: statement,
     isLoading,
+    isFetching,
     isError,
     error,
+    refetch,
   } = useQuery<AccountStatementDetail>({
-    queryKey: queryKeys.finance.statement(id),
+    queryKey: [
+      ...queryKeys.finance.statement(id),
+      dateRange.startDate,
+      dateRange.endDate,
+    ],
     queryFn: fetchStatementDetail,
-    enabled: !!id,
+    enabled: !!id && isRangeValid,
     staleTime: 5 * 60 * 1000,
   });
 
+  // 日期范围无效
+  if (!isRangeValid) {
+    return (
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="mx-auto w-full max-w-[1600px] space-y-6">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/finance/statements')}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回列表
+            </Button>
+            <h1 className="text-2xl font-semibold">往来账单详情</h1>
+          </div>
+          <Card>
+            <CardContent className="p-8">
+              <div className="text-center">
+                <h2 className="text-lg font-semibold text-[hsl(var(--color-warning))]">
+                  日期范围无效
+                </h2>
+                <p className="text-muted-foreground mt-2 text-sm">
+                  开始日期不能晚于结束日期，请调整后重试。
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
-    return <ContentLoading />;
+    return <ContentLoading text="加载账单详情..." />;
   }
 
   if (isError || !statement) {
@@ -98,6 +230,48 @@ export default function StatementDetailPage() {
           status={statement.status}
           currentBalance={statement.currentBalance}
         />
+
+        {/* 日期筛选器 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>筛选条件</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="flex-1 md:max-w-md">
+                <DateRangePicker
+                  value={{
+                    startDate: dateRange.startDate,
+                    endDate: dateRange.endDate,
+                  }}
+                  onChange={({ startDate, endDate }) => {
+                    setDateRange({
+                      startDate: startDate || defaultStartDate,
+                      endDate: endDate || defaultEndDate,
+                    });
+                  }}
+                  label="交易日期范围"
+                  maxDate={today}
+                  showPresets={true}
+                  showClearButton={false}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetch()}
+                  disabled={isFetching}
+                >
+                  <RefreshCw
+                    className={`mr-2 h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+                  />
+                  刷新
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* 财务概览 - 横向卡片组 */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
