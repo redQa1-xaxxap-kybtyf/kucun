@@ -65,6 +65,11 @@ const nextConfig = {
       config.externals = config.externals || [];
       config.externals.push({
         ioredis: 'ioredis',
+        // 🔒 排除 Puppeteer 相关包（服务器端专用）
+        puppeteer: 'puppeteer',
+        'puppeteer-core': 'puppeteer-core',
+        'puppeteer-extra': 'puppeteer-extra',
+        'puppeteer-extra-plugin-stealth': 'puppeteer-extra-plugin-stealth',
       });
 
       // 忽略警告
@@ -82,6 +87,16 @@ const nextConfig = {
         {
           module: /node_modules\/ioredis/,
         },
+        // 🔒 忽略 Puppeteer 相关包的警告
+        {
+          module: /node_modules\/puppeteer/,
+        },
+        {
+          module: /node_modules\/clone-deep/,
+        },
+        {
+          module: /node_modules\/merge-deep/,
+        },
         /coffee-script/,
       ];
     }
@@ -93,6 +108,14 @@ const nextConfig = {
   experimental: {
     // 优化包导入
     optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
+
+    // 🔒 服务器端专用包配置（Puppeteer 相关包只在服务器端使用）
+    serverComponentsExternalPackages: [
+      'puppeteer',
+      'puppeteer-core',
+      'puppeteer-extra',
+      'puppeteer-extra-plugin-stealth',
+    ],
   },
 
   // CDN 配置 (可选 - 取消注释以启用)

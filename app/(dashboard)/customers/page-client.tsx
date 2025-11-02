@@ -8,7 +8,6 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { CustomerDeleteDialog } from '@/components/customers/customer-delete-dialog';
-import { CustomerDetailDialog } from '@/components/customers/customer-detail-dialog';
 import { CustomerSearchFilters } from '@/components/customers/customer-search-filters';
 import { ERPCustomerList } from '@/components/customers/erp-customer-list';
 import { Button } from '@/components/ui/button';
@@ -51,11 +50,7 @@ export function CustomersPageClient({
   );
 
   // 对话框状态管理
-  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = React.useState<
-    string | null
-  >(null);
   const [selectedCustomer, setSelectedCustomer] =
     React.useState<Customer | null>(null);
 
@@ -156,8 +151,7 @@ export function CustomersPageClient({
 
   // 操作处理函数
   const handleViewDetail = (customer: Customer) => {
-    setSelectedCustomerId(customer.id);
-    setDetailDialogOpen(true);
+    router.push(`/customers/${customer.id}`);
   };
 
   const handleDelete = (customer: Customer) => {
@@ -233,12 +227,6 @@ export function CustomersPageClient({
       </div>
 
       {/* 对话框组件 */}
-      <CustomerDetailDialog
-        customerId={selectedCustomerId}
-        open={detailDialogOpen}
-        onOpenChange={setDetailDialogOpen}
-      />
-
       <CustomerDeleteDialog
         customer={selectedCustomer}
         open={deleteDialogOpen}

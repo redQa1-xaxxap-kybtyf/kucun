@@ -3,6 +3,10 @@
  * 用于 Next.js 15.4 Server Components
  */
 
+import {
+  INVENTORY_ADJUSTMENT_SELECT,
+  type InventoryAdjustmentWithRelations,
+} from '@/lib/api/selectors/inventory-selectors';
 import { prisma } from '@/lib/db';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
@@ -95,50 +99,9 @@ function buildAdjustmentOrderBy(
 }
 
 /**
- * 调整记录数据库查询结果类型
- */
-type AdjustmentWithRelations = {
-  id: string;
-  adjustmentNumber: string;
-  productId: string;
-  variantId: string | null;
-  batchNumber: string | null;
-  beforeQuantity: number;
-  adjustQuantity: number;
-  afterQuantity: number;
-  reason: string;
-  notes: string | null;
-  status: string;
-  operatorId: string;
-  approverId: string | null;
-  approvedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  product: {
-    id: string;
-    code: string;
-    name: string;
-  };
-  variant: {
-    id: string;
-    sku: string;
-    colorCode: string;
-    colorName: string | null;
-  } | null;
-  operator: {
-    id: string;
-    name: string;
-  };
-  approver: {
-    id: string;
-    name: string;
-  } | null;
-};
-
-/**
  * 格式化调整记录数据
  */
-function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
+function formatAdjustmentData(adjustment: InventoryAdjustmentWithRelations) {
   return {
     id: adjustment.id,
     adjustmentNumber: adjustment.adjustmentNumber,
@@ -211,37 +174,7 @@ export async function getAdjustmentsServer(searchParams: URLSearchParams) {
   const [adjustments, total] = await Promise.all([
     prisma.inventoryAdjustment.findMany({
       where,
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
-            unit: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            sku: true,
-            colorCode: true,
-            colorName: true,
-          },
-        },
-        operator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        approver: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+      select: INVENTORY_ADJUSTMENT_SELECT,
       skip: offset,
       take: limit,
       orderBy,
@@ -275,36 +208,7 @@ export async function getAdjustmentByNumber(adjustmentNumber: string) {
 
   const adjustment = await prisma.inventoryAdjustment.findUnique({
     where: { adjustmentNumber },
-    include: {
-      product: {
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          specification: true,
-          unit: true,
-        },
-      },
-      variant: {
-        select: {
-          id: true,
-          colorCode: true,
-          colorName: true,
-        },
-      },
-      operator: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      approver: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
+    select: INVENTORY_ADJUSTMENT_SELECT,
   });
 
   if (!adjustment) {

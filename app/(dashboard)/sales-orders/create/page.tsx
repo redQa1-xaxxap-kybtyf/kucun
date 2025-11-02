@@ -1,19 +1,19 @@
-'use client';
-
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-import { ERPSalesOrderForm } from '@/components/sales-orders/erp-sales-order-form';
+import { CreateSalesOrderPageClient } from '@/components/sales-orders/create-sales-order-page-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 
 /**
  * 新建销售订单页面
  * 采用中国ERP系统标准布局
+ * 优化：使用 Server Component 预先生成订单号，消除加载延迟
  */
-export default function CreateSalesOrderPage() {
-  const router = useRouter();
+export default async function CreateSalesOrderPage() {
+  // 服务端预先生成订单号，无延迟
+  const initialOrderNumber = await generateSalesOrderNumber();
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -48,16 +48,8 @@ export default function CreateSalesOrderPage() {
           </CardContent>
         </Card>
 
-        {/* 表单 */}
-        <ERPSalesOrderForm
-          onSuccess={() => {
-            // 创建成功后返回订单列表
-            router.push('/sales-orders');
-          }}
-          onCancel={() => {
-            router.push('/sales-orders');
-          }}
-        />
+        {/* 表单 - 传递预生成的订单号 */}
+        <CreateSalesOrderPageClient initialOrderNumber={initialOrderNumber} />
       </div>
     </div>
   );

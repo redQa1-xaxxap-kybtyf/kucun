@@ -254,10 +254,11 @@ export function PaymentsClient({
       try {
         setConfirmingId(paymentId);
         await confirmPaymentMutation.mutateAsync({ id: paymentId });
-        toast({
-          title: '收款已确认',
-          description: '该收款记录已成功确认到账。',
-        });
+      toast({
+        title: '收款已确认',
+        description: '该收款记录已成功确认到账。',
+        variant: 'success',
+      });
         externalOnRefresh?.();
       } catch (error) {
         toast({

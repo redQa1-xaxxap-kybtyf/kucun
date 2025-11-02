@@ -7,7 +7,9 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { queryKeys } from '@/lib/queryKeys';
+import type { SalesOrder } from '@/lib/types/sales-order';
 import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
+import { createOptimisticListMutation } from '@/lib/utils/optimistic-updates';
 import type { SalesOrderCreateFormData as CreateSalesOrderData } from '@/lib/validations/sales-order';
 
 export interface SalesOrderSubmissionResult {

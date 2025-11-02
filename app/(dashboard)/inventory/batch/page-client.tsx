@@ -247,6 +247,7 @@ export function BatchSpecificationPageClient({
         toast({
           title: '创建成功',
           description: '批次规格参数已创建并同步至库存。',
+          variant: 'success',
         });
       } else if (editingSpec) {
         await updateMutation.mutateAsync({
@@ -260,6 +261,7 @@ export function BatchSpecificationPageClient({
         toast({
           title: '更新成功',
           description: '批次规格参数已更新。',
+          variant: 'success',
         });
       }
       setShowForm(false);
@@ -285,6 +287,7 @@ export function BatchSpecificationPageClient({
       toast({
         title: '删除成功',
         description: `批次 ${deletingSpec.batchNumber} 已删除。`,
+        variant: 'success',
       });
     } catch (mutationError) {
       const message =

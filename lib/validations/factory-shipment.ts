@@ -291,17 +291,17 @@ export const updateFactoryShipmentOrderStatusSchema = z
       .max(100, '船运公司名称不能超过100个字符')
       .optional()
       .or(z.literal('')),
-    estimatedArrival: z.date().optional(),
+    estimatedArrival: z.string().datetime().optional().or(z.literal('')),
     remarks: z
       .string()
       .max(500, '备注不能超过500个字符')
       .optional()
       .or(z.literal('')),
     // 根据状态更新相应的日期字段
-    shipmentDate: z.date().optional(),
-    arrivalDate: z.date().optional(),
-    deliveryDate: z.date().optional(),
-    completionDate: z.date().optional(),
+    shipmentDate: z.string().datetime().optional().or(z.literal('')),
+    arrivalDate: z.string().datetime().optional().or(z.literal('')),
+    deliveryDate: z.string().datetime().optional().or(z.literal('')),
+    completionDate: z.string().datetime().optional().or(z.literal('')),
   })
   .refine(
     data => {

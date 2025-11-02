@@ -224,6 +224,7 @@ export function FactoryShipmentOrderForm({
             toast({
               title: '更新成功',
               description: `厂家发货订单 ${updatedOrder.orderNumber} 已更新。`,
+              variant: 'success',
             });
             onSuccess?.(updatedOrder);
           },
@@ -245,6 +246,7 @@ export function FactoryShipmentOrderForm({
           toast({
             title: '创建成功',
             description: `厂家发货订单 ${createdOrder.orderNumber} 已创建。`,
+            variant: 'success',
           });
           onSuccess?.(createdOrder);
           form.reset({

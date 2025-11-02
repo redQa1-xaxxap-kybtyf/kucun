@@ -8,8 +8,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Cloud } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
@@ -76,7 +76,11 @@ export default function StorageSettingsPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: '成功', description: '七牛云存储配置保存成功' });
+      toast({
+        title: '成功',
+        description: '七牛云存储配置保存成功',
+        variant: 'success',
+      });
       // 不刷新查询，避免表单被重置
       // queryClient.invalidateQueries({ queryKey: queryKeys.settings.storage() });
       // 清除测试结果
@@ -123,7 +127,11 @@ export default function StorageSettingsPage() {
       setTestResult(data);
       setTestError(null);
       if (data.success) {
-        toast({ title: '测试成功', description: '七牛云存储连接正常' });
+        toast({
+          title: '测试成功',
+          description: '七牛云存储连接正常',
+          variant: 'success',
+        });
       } else {
         toast({
           title: '测试失败',

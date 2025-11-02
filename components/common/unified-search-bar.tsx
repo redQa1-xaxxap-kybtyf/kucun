@@ -374,42 +374,40 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     const buttonSize = compact ? 'h-8' : 'h-10';
 
     return (
-      <div className={cn('flex flex-col gap-3', className)}>
-        <div className="flex flex-wrap items-center gap-2">
-          <ActionButtonsSection
-            actionButtons={actionButtons}
-            buttonSize={buttonSize}
-            compact={compact}
-          />
-          <SearchInputBox
-            compact={compact}
-            inputSize={inputSize}
-            isSearching={isSearching}
-            onChange={handleInputChange}
-            onClear={handleClearSearch}
-            searchPlaceholder={searchPlaceholder}
-            searchValue={searchValue}
-            showClearButton={showClearButton}
-          />
-          <ResultInfo
-            isSearching={isSearching}
-            resultCount={resultCount}
-            searchValue={searchValue}
-            totalCount={totalCount}
-          />
-          <ToggleButtonsSection
-            buttonSize={buttonSize}
-            compact={compact}
-            toggleButtons={toggleButtons}
-          />
-          <FiltersSection
-            compact={compact}
-            createHandler={handleFilterChange}
-            filterValues={filterValues ?? {}}
-            filters={filters}
-            inputSize={inputSize}
-          />
-        </div>
+      <div className={cn('flex flex-wrap items-center gap-2', className)}>
+        <ActionButtonsSection
+          actionButtons={actionButtons}
+          buttonSize={buttonSize}
+          compact={compact}
+        />
+        <SearchInputBox
+          compact={compact}
+          inputSize={inputSize}
+          isSearching={isSearching}
+          onChange={handleInputChange}
+          onClear={handleClearSearch}
+          searchPlaceholder={searchPlaceholder}
+          searchValue={searchValue}
+          showClearButton={showClearButton}
+        />
+        <ResultInfo
+          isSearching={isSearching}
+          resultCount={resultCount}
+          searchValue={searchValue}
+          totalCount={totalCount}
+        />
+        <ToggleButtonsSection
+          buttonSize={buttonSize}
+          compact={compact}
+          toggleButtons={toggleButtons}
+        />
+        <FiltersSection
+          compact={compact}
+          createHandler={handleFilterChange}
+          filterValues={filterValues ?? {}}
+          filters={filters}
+          inputSize={inputSize}
+        />
       </div>
     );
   }

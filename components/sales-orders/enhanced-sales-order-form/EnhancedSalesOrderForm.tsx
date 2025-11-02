@@ -23,6 +23,7 @@ import { OrderSummaryCard } from './OrderSummaryCard';
 import { SalesOrderHeader } from './SalesOrderHeader';
 
 interface EnhancedSalesOrderFormProps {
+  initialOrderNumber?: string; // 新增：服务端预生成的订单号
   onSuccess?: (order: unknown) => void;
   onCancel?: () => void;
 }
@@ -149,10 +150,11 @@ function EnhancedSalesOrderFormView({
 }
 
 function useEnhancedSalesOrderFormController({
+  initialOrderNumber,
   onSuccess,
   onCancel,
 }: EnhancedSalesOrderFormProps): EnhancedSalesOrderFormViewProps {
-  const basics = useSalesOrderBasics(onCancel);
+  const basics = useSalesOrderBasics(onCancel, initialOrderNumber);
   const items = useOrderItemsManager(basics.form, basics.products);
   const submission = useSalesOrderSubmission(
     basics.form,

@@ -3,6 +3,10 @@
  * 用于 Next.js 15.4 Server Components
  */
 
+import {
+  OUTBOUND_RECORD_SELECT,
+  type OutboundRecordWithRelations,
+} from '@/lib/api/selectors/inventory-selectors';
 import { prisma } from '@/lib/db';
 import type { OutboundRecord } from '@/lib/types/inventory';
 
@@ -73,51 +77,6 @@ function buildOutboundWhereClause(params: {
   return where;
 }
 
-type OutboundRecordWithRelations = {
-  id: string;
-  recordNumber: string;
-  productId: string;
-  variantId: string | null;
-  inventoryId: string;
-  quantity: number;
-  reason: string;
-  notes: string | null;
-  customerId: string | null;
-  salesOrderId: string | null;
-  operatorId: string;
-  batchNumber: string | null;
-  unitCost: number | null;
-  totalCost: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-  product: {
-    id: string;
-    code: string;
-    name: string;
-    specification: string | null;
-    unit: string;
-    piecesPerUnit: number | null;
-    weight: number | null;
-  };
-  variant: {
-    id: string;
-    colorCode: string;
-    colorName: string | null;
-  } | null;
-  operator: {
-    id: string;
-    name: string;
-  };
-  customer: {
-    id: string;
-    name: string;
-  } | null;
-  salesOrder: {
-    id: string;
-    orderNumber: string;
-  } | null;
-};
-
 /**
  * 格式化出库记录数据
  */
@@ -141,80 +100,16 @@ function formatOutboundRecord(record: OutboundRecordWithRelations) {
 }
 
 /**
- * 获取出库记录列表
+ * 获取批次规格映射
  */
-export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
-  // 解析查询参数
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '50');
-  const search = searchParams.get('search') || undefined;
-  const type = searchParams.get('type') || undefined;
-  const startDate = searchParams.get('startDate') || undefined;
-  const endDate = searchParams.get('endDate') || undefined;
+async function fetchBatchSpecifications(
+  records: OutboundRecordWithRelations[]
+): Promise<Map<string, { piecesPerUnit?: number; weight?: number }>> {
+  const batchSpecMap = new Map<
+    string,
+    { piecesPerUnit?: number; weight?: number }
+  >();
 
-  // 构建查询条件
-  const where = buildOutboundWhereClause({
-    search,
-    type,
-    startDate,
-    endDate,
-  });
-
-  // 计算分页
-  const skip = (page - 1) * limit;
-
-  // 并行查询记录和总数
-  const [records, total] = await Promise.all([
-    prisma.outboundRecord.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
-            unit: true,
-            piecesPerUnit: true,
-            weight: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            colorCode: true,
-            colorName: true,
-            sku: true,
-          },
-        },
-        operator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        customer: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        salesOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-          },
-        },
-      },
-    }),
-    prisma.outboundRecord.count({ where }),
-  ]);
-
-  const batchSpecMap = new Map<string, { piecesPerUnit?: number; weight?: number }>();
   const batchQueries = records.reduce<
     Array<{ productId: string; batchNumber: string }>
   >((acc, record) => {
@@ -252,39 +147,108 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
     });
   }
 
-  const formattedRecords = records.map(record => {
-    const formatted = formatOutboundRecord(
-      record as OutboundRecordWithRelations
-    );
+  return batchSpecMap;
+}
 
-    const batchKey = record.batchNumber
-      ? `${record.productId}-${record.batchNumber}`
-      : null;
-    const batchOverride = batchKey ? batchSpecMap.get(batchKey) : undefined;
-    const piecesPerUnit =
-      batchOverride?.piecesPerUnit ?? record.product.piecesPerUnit ?? undefined;
-    const weightPerUnit =
-      batchOverride?.weight ?? record.product.weight ?? undefined;
+/**
+ * 计算总重量
+ */
+function calculateTotalWeight(
+  quantity: number,
+  weightPerUnit: number,
+  piecesPerUnit?: number
+): number {
+  const effectivePiecesPerUnit =
+    piecesPerUnit && piecesPerUnit > 0 ? piecesPerUnit : undefined;
+  const units = effectivePiecesPerUnit
+    ? quantity / effectivePiecesPerUnit
+    : quantity;
+  const rawTotal = units * weightPerUnit;
+  return Math.round(rawTotal * 1000) / 1000;
+}
 
-    let totalWeight: number | undefined;
-    if (weightPerUnit !== undefined) {
-      const effectivePiecesPerUnit =
-        piecesPerUnit && piecesPerUnit > 0 ? piecesPerUnit : undefined;
-      const units =
-        effectivePiecesPerUnit
-          ? Number(record.quantity) / effectivePiecesPerUnit
-          : Number(record.quantity);
-      const rawTotal = units * weightPerUnit;
-      totalWeight = Math.round(rawTotal * 1000) / 1000;
-    }
+/**
+ * 格式化出库记录并添加批次信息
+ */
+function formatRecordWithBatchInfo(
+  record: OutboundRecordWithRelations,
+  batchSpecMap: Map<string, { piecesPerUnit?: number; weight?: number }>
+) {
+  const formatted = formatOutboundRecord(record);
 
-    return {
-      ...formatted,
-      piecesPerUnit,
+  const batchKey = record.batchNumber
+    ? `${record.productId}-${record.batchNumber}`
+    : null;
+  const batchOverride = batchKey ? batchSpecMap.get(batchKey) : undefined;
+  const piecesPerUnit =
+    batchOverride?.piecesPerUnit ?? record.product.piecesPerUnit ?? undefined;
+  const weightPerUnit =
+    batchOverride?.weight ?? record.product.weight ?? undefined;
+
+  let totalWeight: number | undefined;
+  if (weightPerUnit !== undefined) {
+    totalWeight = calculateTotalWeight(
+      Number(record.quantity),
       weightPerUnit,
-      totalWeight,
-    };
+      piecesPerUnit
+    );
+  }
+
+  return {
+    ...formatted,
+    piecesPerUnit,
+    weightPerUnit,
+    totalWeight,
+  };
+}
+
+/**
+ * 获取出库记录列表
+ */
+export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
+  // 解析查询参数
+  const page = parseInt(searchParams.get('page') || '1');
+  const limit = parseInt(searchParams.get('limit') || '50');
+  const search = searchParams.get('search') || undefined;
+  const type = searchParams.get('type') || undefined;
+  const startDate = searchParams.get('startDate') || undefined;
+  const endDate = searchParams.get('endDate') || undefined;
+
+  // 构建查询条件
+  const where = buildOutboundWhereClause({
+    search,
+    type,
+    startDate,
+    endDate,
   });
+
+  // 计算分页
+  const skip = (page - 1) * limit;
+
+  // 并行查询记录和总数
+  const [records, total] = await Promise.all([
+    prisma.outboundRecord.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      select: OUTBOUND_RECORD_SELECT,
+    }),
+    prisma.outboundRecord.count({ where }),
+  ]);
+
+  // 获取批次规格信息
+  const batchSpecMap = await fetchBatchSpecifications(
+    records as OutboundRecordWithRelations[]
+  );
+
+  // 格式化记录并添加批次信息
+  const formattedRecords = records.map(record =>
+    formatRecordWithBatchInfo(
+      record as OutboundRecordWithRelations,
+      batchSpecMap
+    )
+  );
 
   return {
     data: formattedRecords,
@@ -314,46 +278,7 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
 
   const record = await prisma.outboundRecord.findUnique({
     where: { recordNumber },
-    include: {
-      product: {
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          specification: true,
-          unit: true,
-          piecesPerUnit: true,
-          weight: true,
-        },
-      },
-      variant: {
-        select: {
-          id: true,
-          colorCode: true,
-          colorName: true,
-          sku: true,
-        },
-      },
-      operator: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      customer: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      salesOrder: {
-        select: {
-          id: true,
-          orderNumber: true,
-        },
-      },
-    },
+    select: OUTBOUND_RECORD_SELECT,
   });
 
   if (!record) {
@@ -400,7 +325,7 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
       ? ({
           id: record.operator.id,
           name: record.operator.name ?? '—',
-          email: record.operator.email ?? undefined,
+          email: record.operator.email ?? '',
         } satisfies NonNullable<OutboundRecord['user']>)
       : undefined,
     variant: record.variant
@@ -408,7 +333,7 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
           id: record.variant.id,
           colorCode: record.variant.colorCode ?? undefined,
           colorName: record.variant.colorName ?? undefined,
-          sku: record.variant.sku ?? undefined,
+          sku: record.variant.sku,
         } satisfies NonNullable<OutboundRecord['variant']>)
       : undefined,
     customer: record.customer

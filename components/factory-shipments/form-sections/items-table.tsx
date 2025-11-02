@@ -75,6 +75,9 @@ export const ItemsTable = React.memo<ItemsTableProps>(
           // 自动填充产品编码
           form.setValue(`items.${index}.productCode`, product.code);
 
+          // 自动填充产品名称
+          form.setValue(`items.${index}.displayName`, product.name || '');
+
           // 自动填充客户历史价格
           const customerPrice = getLatestPrice(
             customerPriceHistoryData?.data,
@@ -85,7 +88,13 @@ export const ItemsTable = React.memo<ItemsTableProps>(
             form.setValue(`items.${index}.unitPrice`, customerPrice);
             toast({
               title: '已自动填充',
-              description: `产品编码和历史价格已自动填充`,
+              description: `产品编码、产品名称和历史价格已自动填充`,
+              duration: 2000,
+            });
+          } else {
+            toast({
+              title: '已自动填充',
+              description: `产品编码和产品名称已自动填充`,
               duration: 2000,
             });
           }
@@ -166,34 +175,35 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                       {index + 1}
                     </TableCell>
 
-                    {/* 产品编码 */}
-                    <TableCell className="border-r p-2">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.productCode`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                placeholder="产品编码"
-                                className="h-8 text-xs"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
-
-                    {/* 产品名称（智能选择器） */}
+                    {/* 产品编码（智能选择器） */}
                     <TableCell className="border-r p-2">
                       <IntelligentProductInput
                         form={form}
                         index={index}
                         products={products}
                         onProductChange={handleProductChange(index)}
+                        placeholder="搜索商品或添加临时商品"
+                      />
+                    </TableCell>
+
+                    {/* 产品名称 */}
+                    <TableCell className="border-r p-2">
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.displayName`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                value={field.value || ''}
+                                placeholder="产品名称"
+                                className="h-8 text-xs"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
                       />
                     </TableCell>
 
@@ -245,9 +255,6 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                             <FormControl>
                               <Input
                                 {...field}
-                                type="number"
-                                min="0"
-                                step="0.01"
                                 value={field.value || ''}
                                 onChange={e =>
                                   field.onChange(
@@ -301,9 +308,6 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                             <FormControl>
                               <Input
                                 {...field}
-                                type="number"
-                                min="0"
-                                step="0.01"
                                 value={field.value || ''}
                                 onChange={e =>
                                   field.onChange(

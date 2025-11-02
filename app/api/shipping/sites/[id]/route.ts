@@ -1,19 +1,24 @@
 import type { NextRequest } from 'next/server';
 
-import { withErrorHandling, resolveParams } from '@/lib/api/middleware';
-import { withAuth, successResponse, errorResponse } from '@/lib/auth/api-helpers';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { ShippingSiteUpdateInput } from '@/lib/types/shipping';
 import {
   normalizeSelector,
-  normalizeSelectorGroup,
+  normalizeShippingExtractSelectors,
 } from '@/lib/utils/selector-normalizer';
 
 /**
  * GET /api/shipping/sites/[id] - 获取单个站点详情
+ * 🔒 安全增强: 根据用户角色过滤敏感数据（URL）
  */
 export const GET = withErrorHandling(
-  withAuth(async (request: NextRequest, { params }) => {
+  withAuth(async (request: NextRequest, { user, params }) => {
     const { id } = await resolveParams(params);
 
     const site = await prisma.shippingSite.findUnique({
@@ -24,7 +29,18 @@ export const GET = withErrorHandling(
       return errorResponse('站点不存在', 404);
     }
 
-    return successResponse(site);
+    // 🔒 根据用户角色过滤 URL 字段
+    if (user.role === 'admin') {
+      // 管理员：返回完整数据（包含 URL）
+      return successResponse(site);
+    }
+
+    // 普通用户：移除 URL 字段
+    const { url: _url, ...siteWithoutUrl } = site;
+    return successResponse({
+      ...siteWithoutUrl,
+      urlMasked: true, // 标记 URL 已被隐藏
+    });
   })
 );
 
@@ -77,7 +93,7 @@ export const PUT = withErrorHandling(
     }
     if (body.extractSelectors) {
       updateData.extractSelectors = JSON.stringify(
-        normalizeSelectorGroup(body.extractSelectors)
+        normalizeShippingExtractSelectors(body.extractSelectors)
       );
     }
     if (body.status) {

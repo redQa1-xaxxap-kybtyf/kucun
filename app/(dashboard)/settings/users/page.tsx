@@ -8,8 +8,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Plus, Search, Users } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 import { UserForm } from '@/components/settings/UserForm';
@@ -118,7 +118,11 @@ export default function UsersSettingsPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: '成功', description: '用户创建成功' });
+      toast({
+        title: '成功',
+        description: '用户创建成功',
+        variant: 'success',
+      });
       setUserFormOpen(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
@@ -146,7 +150,11 @@ export default function UsersSettingsPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: '成功', description: '用户更新成功' });
+      toast({
+        title: '成功',
+        description: '用户更新成功',
+        variant: 'success',
+      });
       setUserFormOpen(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
@@ -174,7 +182,11 @@ export default function UsersSettingsPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: '成功', description: '用户删除成功' });
+      toast({
+        title: '成功',
+        description: '用户删除成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     onError: (error: Error) => {
@@ -207,7 +219,11 @@ export default function UsersSettingsPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: '成功', description: '用户状态更新成功' });
+      toast({
+        title: '成功',
+        description: '用户状态更新成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     onError: (error: Error) => {
@@ -240,7 +256,11 @@ export default function UsersSettingsPage() {
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: '成功', description: '密码重置成功' });
+      toast({
+        title: '成功',
+        description: '密码重置成功',
+        variant: 'success',
+      });
     },
     onError: (error: Error) => {
       toast({

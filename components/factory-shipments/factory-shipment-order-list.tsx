@@ -281,6 +281,7 @@ function useFactoryShipmentOrderActions({
       toast({
         title: type === 'delete' ? '删除成功' : '取消成功',
         description: `订单 ${order.orderNumber} 已${type === 'delete' ? '删除' : '取消'}。`,
+        variant: 'success',
       });
 
       setActionDialog(null);

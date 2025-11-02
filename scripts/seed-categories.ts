@@ -133,13 +133,25 @@ async function seedCategories() {
 
     console.log('分类数据创建完成！');
 
-    // 查询并显示创建的分类
+    // ✅ 优化: 使用 select 替代 include，只查询需要的字段
     const categories = await prisma.category.findMany({
-      include: {
-        parent: true,
-        children: true,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        status: true,
+        parentId: true,
+        sortOrder: true,
+        // 只选择父分类的名称，而不是完整对象
+        parent: {
+          select: {
+            name: true,
+          },
+        },
+        // 只计数子分类数量，而不是加载完整对象
         _count: {
           select: {
+            children: true,
             products: true,
           },
         },
@@ -150,8 +162,11 @@ async function seedCategories() {
     console.log('\n创建的分类列表：');
     categories.forEach(category => {
       const level = category.parentId ? '  └─ ' : '';
+      const parentInfo = category.parent
+        ? ` (父分类: ${category.parent.name})`
+        : '';
       console.log(
-        `${level}${category.name} (${category.code}) - ${category.status} - 产品数: ${category._count.products}`
+        `${level}${category.name} (${category.code}) - ${category.status}${parentInfo} - 子分类: ${category._count.children} - 产品数: ${category._count.products}`
       );
     });
   } catch (error) {

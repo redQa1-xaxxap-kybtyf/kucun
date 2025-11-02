@@ -50,6 +50,7 @@ import {
 } from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
+  initialOrderNumber?: string; // 新增：服务端预生成的订单号
   onSuccess?: (order: CreateSalesOrderData) => void;
   onCancel?: () => void;
 }
@@ -57,8 +58,13 @@ interface SalesOrderFormProps {
 /**
  * 销售订单表单组件
  * 通用的销售订单创建界面
+ * 优化：支持接收预生成的订单号，消除加载延迟
  */
-export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
+export function SalesOrderForm({
+  initialOrderNumber,
+  onSuccess,
+  onCancel,
+}: SalesOrderFormProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -66,8 +72,16 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   // 自动生成订单号状态
   const [autoOrderNumber, setAutoOrderNumber] = React.useState<string>('');
 
-  // 页面加载时自动生成订单号
+  // 页面加载时设置订单号
+  // 优化：优先使用服务端预生成的订单号，消除加载延迟
   React.useEffect(() => {
+    // 如果有预生成的订单号，直接使用
+    if (initialOrderNumber) {
+      setAutoOrderNumber(initialOrderNumber);
+      return;
+    }
+
+    // 降级方案：客户端异步生成（保持向后兼容）
     const generateOrderNumber = async () => {
       try {
         const response = await fetch(
@@ -84,11 +98,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
           setAutoOrderNumber(data.data.orderNumber);
         }
       } catch (error) {
-        logger.error(
-          'sales-orders:invoice-form',
-          '自动生成订单号失败',
-          error
-        );
+        logger.error('sales-orders:invoice-form', '自动生成订单号失败', error);
         // 如果API失败，使用本地生成逻辑作为备用
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -98,7 +108,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
     };
 
     generateOrderNumber();
-  }, []);
+  }, [initialOrderNumber]);
 
   // 表单配置
   const form = useForm<CreateSalesOrderData>({
@@ -142,6 +152,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       toast({
         title: '销售订单创建成功',
         description: `订单号 "${data.orderNumber}" 已创建`,
+        variant: 'success',
       });
 
       // ✅ 失效销售订单缓存
@@ -538,6 +549,10 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                                     );
                                   }
                                 }}
+                                onFocus={e => {
+                                  // 聚焦时自动选中所有内容，方便用户直接输入新数量
+                                  e.target.select();
+                                }}
                                 onBlur={e => {
                                   const value = e.target.value;
                                   if (value && value !== '.') {
@@ -579,6 +594,10 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                                       value === '' ? 0 : value
                                     );
                                   }
+                                }}
+                                onFocus={e => {
+                                  // 聚焦时自动选中所有内容，方便用户直接输入新价格
+                                  e.target.select();
                                 }}
                                 onBlur={e => {
                                   const value = e.target.value;

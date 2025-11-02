@@ -26,16 +26,20 @@ export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 
-export default async function InboundRecordsPage(props?: {
-  searchParams?: Record<string, string | string[] | undefined>;
+export default async function InboundRecordsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   // ✅ 权限检查：要求用户拥有库存查看权限（入库记录是查看性质）
   await requirePagePermission('inventory:view');
 
-  const { searchParams = {} } = props ?? {};
+  // ✅ Next.js 15: await searchParams before accessing
+  const params = await searchParams;
+
   const urlSearchParams = new URLSearchParams();
 
-  Object.entries(searchParams).forEach(([key, value]) => {
+  Object.entries(params).forEach(([key, value]) => {
     if (value === undefined) {
       return;
     }

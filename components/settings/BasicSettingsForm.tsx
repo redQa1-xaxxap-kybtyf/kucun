@@ -242,6 +242,7 @@ export function BasicSettingsForm() {
       toast({
         title: '重置成功',
         description: '表单已重置',
+        variant: 'success',
       });
     }
   };

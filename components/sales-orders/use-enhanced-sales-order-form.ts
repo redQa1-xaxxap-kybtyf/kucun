@@ -78,11 +78,19 @@ export function useOrderNumber(
     title: string;
     description: string;
     variant: 'destructive';
-  }) => void
+  }) => void,
+  initialOrderNumber?: string // 新增：服务端预生成的订单号
 ) {
   const [autoOrderNumber, setAutoOrderNumber] = React.useState('');
 
   React.useEffect(() => {
+    // 如果有预生成的订单号，直接使用
+    if (initialOrderNumber) {
+      setAutoOrderNumber(initialOrderNumber);
+      return;
+    }
+
+    // 降级方案：客户端异步生成（保持向后兼容）
     let mounted = true;
 
     const fetchOrderNumber = async () => {
@@ -112,7 +120,7 @@ export function useOrderNumber(
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initialOrderNumber]);
 
   const handleGenerateOrderNumber = React.useCallback(async () => {
     try {

@@ -372,7 +372,11 @@ export function ConfirmInboundDialog({
         queryClient.invalidateQueries({ queryKey: factoryShipmentQueryKeys.lists() }),
       ]);
 
-      toast({ title: '自用货入库完成', description: `成功处理 ${processedIds.length} 条自用补货明细。` });
+      toast({
+        title: '自用货入库完成',
+        description: `成功处理 ${processedIds.length} 条自用补货明细。`,
+        variant: 'success',
+      });
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {

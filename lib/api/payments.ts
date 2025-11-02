@@ -3,7 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { financeKeys } from '@/lib/queryKeys';
+import { financeKeys, queryKeys } from '@/lib/queryKeys';
 import type {
   AccountsReceivableQuery,
   AccountsReceivableResponse,
@@ -140,12 +140,20 @@ export const paymentsApi = {
 
     if (!response.ok) {
       // 如果有详细的验证错误，显示第一个错误的详细信息
-      if (result.details && Array.isArray(result.details) && result.details.length > 0) {
+      if (
+        result.details &&
+        Array.isArray(result.details) &&
+        result.details.length > 0
+      ) {
         const firstError = result.details[0];
-        throw new Error(`${firstError.path?.join('.') || '字段'}: ${firstError.message}`);
+        throw new Error(
+          `${firstError.path?.join('.') || '字段'}: ${firstError.message}`
+        );
       }
       // 否则显示通用错误消息
-      throw new Error(result.error || `创建收款记录失败: ${response.statusText}`);
+      throw new Error(
+        result.error || `创建收款记录失败: ${response.statusText}`
+      );
     }
 
     if (!result.success) {
@@ -415,12 +423,34 @@ export const useCreatePaymentRecord = () => {
   return useMutation({
     mutationFn: paymentsApi.createPaymentRecord,
     onSuccess: () => {
+      // ✅ 失效收款记录列表
       queryClient.invalidateQueries({ queryKey: paymentQueryKeys.lists() });
+
+      // ✅ 失效应收账款（旧的 Query Key）
       queryClient.invalidateQueries({
         queryKey: paymentQueryKeys.accountsReceivable(),
       });
+
+      // ✅ 失效收款统计
       queryClient.invalidateQueries({
         queryKey: paymentQueryKeys.statistics(),
+      });
+
+      // ✅ 关键修复：失效应收款缓存（新的 Query Key）
+      // 因为收款会影响应收款列表数据
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.receivables(),
+      });
+
+      // ✅ 失效销售订单缓存
+      // 因为收款会更新订单的 paidAmount 字段
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+
+      // ✅ 失效财务统计缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.stats(),
       });
     },
   });

@@ -327,6 +327,7 @@ function ReturnOrderActionMenu({
       toast({
         title: '取消成功',
         description: '退货订单已取消',
+        variant: 'success',
       });
       setCancelDialogOpen(false);
 

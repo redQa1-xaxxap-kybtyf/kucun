@@ -19,6 +19,7 @@ import { OperationHistoryCard } from './components/OperationHistoryCard';
 import { OrderItemsTable } from './components/OrderItemsTable';
 import { PaymentsCard } from './components/PaymentsCard';
 import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
+import { SalesOrderPrintTemplate } from './components/SalesOrderPrintTemplate';
 import { TransferModeInfoCard } from './components/TransferModeInfoCard';
 import type { SalesOrderDetail } from './components/types';
 
@@ -124,6 +125,7 @@ export default function SalesOrderDetailPage() {
       toast({
         title: '操作成功',
         description: '订单状态已更新',
+        variant: 'success',
       });
       setIsUpdatingStatus(false);
     },
@@ -218,10 +220,10 @@ export default function SalesOrderDetailPage() {
   const pureTransferProfit = transferSalesAmount - (order.costAmount || 0);
 
   const canEditOrder = order.status === 'draft';
-  
+
     return (
     <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+      <div id="sales-order-export-content" className="space-y-6">
         <HeaderCard
           order={order}
           id={id}
@@ -261,6 +263,11 @@ export default function SalesOrderDetailPage() {
             <OperationHistoryCard order={order} userName={userName} />
           </div>
         </div>
+      </div>
+
+      {/* 隐藏的打印模板 - 用于生成专业的销售单据 */}
+      <div id="sales-order-print-template" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+        <SalesOrderPrintTemplate order={order} />
       </div>
     </div>
   );

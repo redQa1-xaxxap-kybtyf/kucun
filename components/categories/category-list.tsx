@@ -168,7 +168,6 @@ export function CategoryList({
         <TableHeader>
           <TableRow className="bg-gray-50/50">
             <TableHead className="w-[280px]">分类名称</TableHead>
-            <TableHead className="w-[100px]">编码</TableHead>
             <TableHead className="w-[80px]">排序</TableHead>
             <TableHead className="w-[100px]">产品数量</TableHead>
             <TableHead className="w-[120px]">状态</TableHead>
@@ -222,11 +221,6 @@ function CategoryRow({
   return (
     <TableRow className={`transition-colors hover:${style.bg}`}>
       <CategoryNameCell category={category} indentPx={indentPx} style={style} />
-
-      {/* 分类编码 */}
-      <TableCell className="font-mono text-sm text-gray-600">
-        {category.code || '-'}
-      </TableCell>
 
       {/* 排序顺序 */}
       <TableCell className="text-center text-sm text-gray-600">

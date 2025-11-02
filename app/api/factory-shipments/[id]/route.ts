@@ -15,9 +15,9 @@ import {
  
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // 统一的 include 配置（避免重复定义，减少 PUT 体积）
@@ -218,7 +218,7 @@ async function applyStatusChangeAndFetchFullOrder(
 
 // 获取单个厂家发货订单详情
 export async function GET(request: NextRequest, { params }: RouteParams) {
-  const { id } = params;
+  const { id } = await params;
   try {
     // 查询订单详情
     const order = await prisma.factoryShipmentOrder.findUnique({
@@ -277,7 +277,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 // 更新厂家发货订单
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-  const { id } = params;
+  const { id } = await params;
   try {
     // 检查订单是否存在
     const existingOrder = await prisma.factoryShipmentOrder.findUnique({
@@ -351,7 +351,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // 删除厂家发货订单
 // 权限规则：只允许删除草稿和已取消的订单
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  const { id } = params;
+  const { id } = await params;
   try {
     // 检查订单是否存在
     const existingOrder = await prisma.factoryShipmentOrder.findUnique({

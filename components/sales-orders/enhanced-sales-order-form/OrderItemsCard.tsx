@@ -220,6 +220,10 @@ function OrderItemRow({
                 );
               }
             }}
+            onFocus={event => {
+              // 聚焦时自动选中所有内容，方便用户直接输入新数量
+              event.target.select();
+            }}
             onBlur={event => {
               const value = event.target.value;
               if (value && value !== '.') {
@@ -236,21 +240,25 @@ function OrderItemRow({
       </TableCell>
 
       <TableCell>
-          <Input
-            type="text"
-            inputMode="decimal"
-            value={item.unitPrice ?? ''}
-            onChange={event => {
-              const value = event.target.value;
-              // 允许输入数字、小数点、负号
-              if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-                onUpdateItem(
-                  index,
-                  'unitPrice',
-                  value === '' ? undefined : Number(value)
-                );
-              }
-            }}
+        <Input
+          type="text"
+          inputMode="decimal"
+          value={item.unitPrice ?? ''}
+          onChange={event => {
+            const value = event.target.value;
+            // 允许输入数字、小数点、负号
+            if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+              onUpdateItem(
+                index,
+                'unitPrice',
+                value === '' ? undefined : Number(value)
+              );
+            }
+          }}
+          onFocus={event => {
+            // 聚焦时自动选中所有内容，方便用户直接输入新价格
+            event.target.select();
+          }}
           onBlur={event => {
             const value = event.target.value;
             if (value && value !== '-' && value !== '.') {

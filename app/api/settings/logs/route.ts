@@ -3,8 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -82,6 +82,29 @@ function buildLogWhereCondition(
 }
 
 /**
+ * 安全解析日志元数据，防止因格式不规范导致接口失败
+ */
+function parseLogMetadata(
+  metadata: string | null,
+  logId?: string
+): Record<string, unknown> | null {
+  if (!metadata) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(metadata) as Record<string, unknown>;
+  } catch (error) {
+    console.warn('Failed to parse system log metadata', {
+      logId,
+      metadataPreview: metadata.slice(0, 200),
+      error,
+    });
+    return { raw: metadata };
+  }
+}
+
+/**
  * 转换数据库日志为API响应格式
  */
 function transformLogsForResponse(
@@ -113,7 +136,7 @@ function transformLogsForResponse(
     user: log.user,
     ipAddress: log.ipAddress,
     userAgent: log.userAgent,
-    metadata: log.metadata ? JSON.parse(log.metadata) : null,
+    metadata: parseLogMetadata(log.metadata, log.id),
     ipCountry: log.ipCountry,
     ipProvince: log.ipProvince,
     ipCity: log.ipCity,
@@ -129,6 +152,13 @@ export async function GET(
   request: NextRequest
 ): Promise<NextResponse<SettingsApiResponse<SystemLogListResponse>>> {
   try {
+    // 调试：打印环境变量
+    console.log('🔍 调试信息:', {
+      NODE_ENV: env.NODE_ENV,
+      isDevelopment: env.NODE_ENV === 'development',
+      processEnv: process.env.NODE_ENV,
+    });
+
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);

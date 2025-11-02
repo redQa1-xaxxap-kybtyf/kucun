@@ -2,7 +2,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, Loader2 } from 'lucide-react';
-import * as React from 'react';
 
 import {
   AlertDialog,
@@ -43,6 +42,7 @@ export function CustomerDeleteDialog({
       toast({
         title: '删除成功',
         description: `客户"${customer?.name}"已成功删除`,
+        variant: 'success',
       });
 
       // 刷新客户列表

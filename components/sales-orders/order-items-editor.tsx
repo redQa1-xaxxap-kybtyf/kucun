@@ -393,6 +393,10 @@ function OrderItemRow({
                             field.onChange(value === '' ? 0 : value);
                           }
                         }}
+                        onFocus={e => {
+                          // 聚焦时自动选中所有内容，方便用户直接输入新数量
+                          e.target.select();
+                        }}
                         onBlur={e => {
                           const value = e.target.value;
                           if (value && value !== '.') {
@@ -432,6 +436,10 @@ function OrderItemRow({
                           if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
                             field.onChange(value === '' ? 0 : value);
                           }
+                        }}
+                        onFocus={e => {
+                          // 聚焦时自动选中所有内容，方便用户直接输入新价格
+                          e.target.select();
                         }}
                         onBlur={e => {
                           const value = e.target.value;

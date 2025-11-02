@@ -4,8 +4,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 import maxmind, { type CityResponse, type Reader } from 'maxmind';
 

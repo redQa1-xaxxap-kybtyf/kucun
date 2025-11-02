@@ -11,6 +11,7 @@ type DateTimePickerProps = {
   id?: string;
   name?: string;
   className?: string;
+  placeholder?: string;
 };
 
 function pad(n: number) {
@@ -28,7 +29,7 @@ function formatDateToLocalInput(date?: Date) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export function DateTimePicker({ value, onChange, disabled, id, name, className }: DateTimePickerProps) {
+export function DateTimePicker({ value, onChange, disabled, id, name, className, placeholder }: DateTimePickerProps) {
   const inputValue = useMemo(() => formatDateToLocalInput(value), [value]);
 
   return (
@@ -43,9 +44,9 @@ export function DateTimePicker({ value, onChange, disabled, id, name, className 
       id={id}
       name={name}
       className={className}
+      placeholder={placeholder}
     />
   );
 }
 
 export default DateTimePicker;
-

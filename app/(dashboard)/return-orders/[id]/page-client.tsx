@@ -164,6 +164,7 @@ export function ReturnOrderDetailPageClient({
       toast({
         title: '取消成功',
         description: '退货订单已取消',
+        variant: 'success',
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.returnOrders.detail(id),

@@ -38,8 +38,8 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import type {
-  ShippingQuery,
   ShippingQueriesResponse,
+  ShippingQuery,
   ShippingSitesResponse,
 } from '@/lib/types/shipping';
 
@@ -112,6 +112,7 @@ export default function ShippingQueryPage() {
         toast({
           title: '查询成功',
           description: '已获取运输信息',
+          variant: 'success',
         });
       } else {
         toast({

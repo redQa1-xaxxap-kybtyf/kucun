@@ -37,11 +37,11 @@ import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 const confirmShipmentSchema = z.object({
   containerNumber: z
     .string()
-    .min(1, '集装箱号码不能为空')
+    .min(1, '确认发货时必须填写集装箱号码')
     .max(50, '集装箱号码不能超过50个字符'),
   shippingCompany: z
     .string()
-    .min(1, '船运公司不能为空,用于自动查询运输状态')
+    .min(1, '确认发货时必须填写船运公司信息(用于自动查询运输状态)')
     .max(100, '船运公司名称不能超过100个字符'),
   estimatedArrival: z.date().optional(),
   shipmentDate: z.date().default(() => new Date()),
@@ -52,6 +52,7 @@ type ConfirmShipmentData = z.infer<typeof confirmShipmentSchema>;
 interface ConfirmShipmentDialogProps {
   orderId: string;
   orderNumber: string;
+  containerNumber?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -59,12 +60,13 @@ interface ConfirmShipmentDialogProps {
 
 type ConfirmShipmentDialogStateProps = Pick<
   ConfirmShipmentDialogProps,
-  'orderId' | 'orderNumber' | 'onOpenChange' | 'onSuccess'
+  'orderId' | 'orderNumber' | 'containerNumber' | 'onOpenChange' | 'onSuccess'
 >;
 
 function useConfirmShipmentDialogState({
   orderId,
   orderNumber,
+  containerNumber,
   onOpenChange,
   onSuccess,
 }: ConfirmShipmentDialogStateProps) {
@@ -73,7 +75,7 @@ function useConfirmShipmentDialogState({
   const form = useForm<ConfirmShipmentData>({
     resolver: zodResolver(confirmShipmentSchema),
     defaultValues: {
-      containerNumber: '',
+      containerNumber: containerNumber || '',
       shippingCompany: '',
       estimatedArrival: undefined,
       shipmentDate: new Date(),
@@ -90,6 +92,7 @@ function useConfirmShipmentDialogState({
     toast({
       title: '确认发货成功',
       description: `订单 ${orderNumber} 已确认发货`,
+      variant: 'success',
     });
     queryClient.invalidateQueries({
       queryKey: factoryShipmentQueryKeys.detail(orderId),
@@ -112,6 +115,13 @@ function useConfirmShipmentDialogState({
   };
 
   const handleSubmit = form.handleSubmit(data => {
+    const estimatedArrivalIso = data.estimatedArrival
+      ? data.estimatedArrival.toISOString()
+      : undefined;
+    const shipmentDateIso = data.shipmentDate
+      ? data.shipmentDate.toISOString()
+      : new Date().toISOString();
+
     confirmMutation.mutate(
       {
         id: orderId,
@@ -120,8 +130,8 @@ function useConfirmShipmentDialogState({
           status: FACTORY_SHIPMENT_STATUS.SHIPPED,
           containerNumber: data.containerNumber,
           shippingCompany: data.shippingCompany,
-          estimatedArrival: data.estimatedArrival,
-          shipmentDate: data.shipmentDate,
+          estimatedArrival: estimatedArrivalIso,
+          shipmentDate: shipmentDateIso,
         },
       },
       {
@@ -158,6 +168,9 @@ function ContainerNumberField({
           <FormControl>
             <Input placeholder="请输入集装箱号码" {...field} disabled={disabled} />
           </FormControl>
+          <FormDescription>
+            确认发货时必须填写货运公司提供的集装箱号
+          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -179,12 +192,14 @@ function ShippingCompanyField({
       render={({ field }) => (
         <FormItem>
           <FormLabel>
-            船运公司 <span className="text-[hsl(var(--color-error))]">*</span>
+            船运公司 <span className="text-yellow-600">(推荐填写)</span>
           </FormLabel>
           <FormControl>
-            <Input placeholder="请输入船运公司名称" {...field} disabled={disabled} />
+            <Input placeholder="如已知,请填写船运公司" {...field} disabled={disabled} />
           </FormControl>
-          <FormDescription>系统将使用船运公司信息自动查询货物运输状态</FormDescription>
+          <FormDescription>
+            填写船运公司信息可以更好地追踪货物状态,可稍后补充
+          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -299,6 +314,7 @@ function ConfirmShipmentDialogView({
 export function ConfirmShipmentDialog({
   orderId,
   orderNumber,
+  containerNumber,
   open,
   onOpenChange,
   onSuccess,
@@ -307,6 +323,7 @@ export function ConfirmShipmentDialog({
     useConfirmShipmentDialogState({
       orderId,
       orderNumber,
+      containerNumber,
       onOpenChange,
       onSuccess,
     });

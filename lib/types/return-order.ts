@@ -66,7 +66,7 @@ export interface ReturnOrder {
   customer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
   user?: Pick<User, 'id' | 'name'>;
   items?: ReturnOrderItem[];
-  refundRecords?: Array<{
+  refunds?: Array<{
     id: string;
     refundAmount: number;
     refundDate: string;

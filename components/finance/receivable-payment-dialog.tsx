@@ -214,6 +214,7 @@ export function ReceivablePaymentDialog({
       toast({
         title: '收款记录已创建',
         description: `成功收款 ${formatCurrency(payload.actualPaymentAmount)}`,
+        variant: 'success',
       });
       handleClose(false);
       onSuccess?.();

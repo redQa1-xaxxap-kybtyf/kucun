@@ -32,7 +32,8 @@ export interface SalesOrderBasicsResult {
 }
 
 export function useSalesOrderBasics(
-  onCancel?: () => void
+  onCancel?: () => void,
+  initialOrderNumber?: string // 新增：服务端预生成的订单号
 ): SalesOrderBasicsResult {
   const router = useRouter();
   const { toast } = useToast();
@@ -50,7 +51,7 @@ export function useSalesOrderBasics(
   const status = form.watch('status');
   const orderNumber = form.watch('orderNumber');
 
-  const autoOrderNumber = useAutoOrderNumber(toast);
+  const autoOrderNumber = useAutoOrderNumber(toast, initialOrderNumber);
   const { customers, customersLoading, selectedCustomer, customerId } =
     useCustomerSelection(form);
   const products = useProducts();
@@ -107,11 +108,19 @@ export function useSalesOrderBasics(
 }
 
 function useAutoOrderNumber(
-  toast: ReturnType<typeof useToast>['toast']
+  toast: ReturnType<typeof useToast>['toast'],
+  initialOrderNumber?: string // 新增：服务端预生成的订单号
 ): string {
   const [autoOrderNumber, setAutoOrderNumber] = React.useState('');
 
   React.useEffect(() => {
+    // 如果有预生成的订单号，直接使用
+    if (initialOrderNumber) {
+      setAutoOrderNumber(initialOrderNumber);
+      return;
+    }
+
+    // 降级方案：客户端异步生成（保持向后兼容）
     let isMounted = true;
 
     const generateOrderNumber = async () => {
@@ -150,7 +159,7 @@ function useAutoOrderNumber(
     return () => {
       isMounted = false;
     };
-  }, [toast]);
+  }, [toast, initialOrderNumber]);
 
   return autoOrderNumber;
 }

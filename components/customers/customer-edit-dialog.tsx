@@ -110,6 +110,7 @@ export function CustomerEditDialog({
       toast({
         title: '更新成功',
         description: '客户信息已成功更新',
+        variant: 'success',
       });
 
       // 刷新相关查询

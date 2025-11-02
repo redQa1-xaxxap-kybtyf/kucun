@@ -216,7 +216,7 @@ export function ERPReturnOrderForm({
       toast({
         title: '创建成功',
         description: `退货订单 ${response.data.returnNumber} 已创建`,
-        variant: 'default',
+        variant: 'success',
       });
       onSuccess?.(response.data);
     },
@@ -234,7 +234,7 @@ export function ERPReturnOrderForm({
       toast({
         title: '更新成功',
         description: `退货订单 ${response.data.returnNumber} 已更新`,
-        variant: 'default',
+        variant: 'success',
       });
       onSuccess?.(response.data);
     },

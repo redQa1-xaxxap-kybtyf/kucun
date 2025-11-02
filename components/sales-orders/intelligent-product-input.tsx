@@ -23,6 +23,7 @@ interface IntelligentProductInputProps<T extends FieldValues = FieldValues> {
   onProductChange?: (product: Product | null) => void;
   onBatchSelect?: (productId: string, batchNumber: string) => void;
   orderType?: 'NORMAL' | 'TRANSFER';
+  placeholder?: string;
 }
 
 /**
@@ -47,6 +48,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
   onProductChange,
   onBatchSelect,
   orderType: _orderType,
+  placeholder,
 }: IntelligentProductInputProps<T>) {
   const searchAbortControllerRef = React.useRef<AbortController | null>(null);
   const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
@@ -379,7 +381,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
               onTemporaryProductAdd={handleTemporaryProductAdd}
               onSearchChange={handleProductSearch}
               isSearching={isSearchingProducts}
-              placeholder="搜索商品或添加临时商品"
+              placeholder={placeholder ?? '搜索商品或添加临时商品'}
               className="h-8 text-xs"
               allowTemporaryProducts={true}
               temporaryProductRequirements={{

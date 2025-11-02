@@ -194,6 +194,7 @@ export function ERPReturnOrderList({
       toast({
         title: '取消成功',
         description: '退货订单已取消',
+        variant: 'success',
       });
       // 刷新列表
       queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });

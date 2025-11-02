@@ -266,6 +266,7 @@ export function ERPSalesOrderList({
       toast({
         title: '操作成功',
         description: '订单状态已更新',
+        variant: 'success',
       });
       setUpdatingOrderId(null);
     },
@@ -354,6 +355,7 @@ export function ERPSalesOrderList({
       toast({
         title: '删除成功',
         description: '销售订单已删除',
+        variant: 'success',
       });
       setDeletingOrderId(null);
       setOrderPendingDelete(null);

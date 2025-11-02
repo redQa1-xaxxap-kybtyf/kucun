@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertCircle,
   Anchor,
   ArrowLeft,
   Calendar,
@@ -19,6 +20,8 @@ import { ContentLoading } from '@/components/common/loading';
 import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arrival-dialog';
 import { ConfirmInboundDialog } from '@/components/factory-shipments/confirm-inbound-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
+import { SupplementShippingInfoDialog } from '@/components/factory-shipments/supplement-shipping-info-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,6 +74,7 @@ export function FactoryShipmentOrderDetail({
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [arrivalDialogOpen, setArrivalDialogOpen] = useState(false);
   const [inboundDialogOpen, setInboundDialogOpen] = useState(false);
+  const [supplementDialogOpen, setSupplementDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const handleOrderRefresh = () => {
@@ -186,6 +190,37 @@ export function FactoryShipmentOrderDetail({
           </Button>
         </div>
       </div>
+
+      {/* 补充船公司信息提醒 */}
+      {order.status === 'shipped' &&
+        order.containerNumber &&
+        !order.shippingCompany && (
+          <Alert
+            variant="default"
+            className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950"
+          >
+            <AlertCircle className="h-4 w-4 text-yellow-600" />
+            <AlertTitle className="text-yellow-900 dark:text-yellow-100">
+              需要补充船公司信息
+            </AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p className="text-yellow-800 dark:text-yellow-200">
+                请向货运公司询问船公司名称,以便追踪货物运输状态
+              </p>
+              <div className="flex gap-2 mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-yellow-600 text-yellow-700 hover:bg-yellow-100"
+                  onClick={() => setSupplementDialogOpen(true)}
+                >
+                  <Ship className="mr-2 h-4 w-4" />
+                  补充船公司信息
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
       {/* 基本信息 */}
       <Card
@@ -483,6 +518,7 @@ export function FactoryShipmentOrderDetail({
       <ConfirmShipmentDialog
         orderId={orderId}
         orderNumber={order.orderNumber}
+        containerNumber={order.containerNumber}
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}
         onSuccess={handleOrderRefresh}
@@ -503,6 +539,15 @@ export function FactoryShipmentOrderDetail({
         items={order.items}
         open={inboundDialogOpen}
         onOpenChange={setInboundDialogOpen}
+        onSuccess={handleOrderRefresh}
+      />
+
+      <SupplementShippingInfoDialog
+        orderId={orderId}
+        orderNumber={order.orderNumber}
+        containerNumber={order.containerNumber || ''}
+        open={supplementDialogOpen}
+        onOpenChange={setSupplementDialogOpen}
         onSuccess={handleOrderRefresh}
       />
     </div>

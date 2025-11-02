@@ -1,20 +1,25 @@
 import type { NextRequest } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
-import { withAuth, successResponse, errorResponse } from '@/lib/auth/api-helpers';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { ShippingSiteCreateInput } from '@/lib/types/shipping';
 import {
   normalizeSelector,
-  normalizeSelectorGroup,
+  normalizeShippingExtractSelectors,
 } from '@/lib/utils/selector-normalizer';
 
 /**
  * GET /api/shipping/sites - 获取站点列表
  * SOLID-S: 单一职责 - 只负责站点列表查询
+ * 🔒 安全增强: 根据用户角色过滤敏感数据（URL）
  */
 export const GET = withErrorHandling(
-  withAuth(async (request: NextRequest) => {
+  withAuth(async (request: NextRequest, { user }) => {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const page = parseInt(searchParams.get('page') || '1');
@@ -36,8 +41,22 @@ export const GET = withErrorHandling(
       take: limit,
     });
 
+    // 🔒 根据用户角色过滤 URL 字段
+    const sitesData = sites.map(site => {
+      if (user.role === 'admin') {
+        // 管理员：返回完整数据（包含 URL）
+        return site;
+      }
+      // 普通用户：移除 URL 字段
+      const { url: _url, ...siteWithoutUrl } = site;
+      return {
+        ...siteWithoutUrl,
+        urlMasked: true, // 标记 URL 已被隐藏
+      };
+    });
+
     return successResponse({
-      data: sites,
+      data: sitesData,
       pagination: {
         page,
         limit,
@@ -78,7 +97,7 @@ export const POST = withErrorHandling(
       searchButtonSelector: normalizeSelector(body.searchButtonSelector),
       resultContainerSelector: normalizeSelector(body.resultContainerSelector),
     };
-    const sanitizedExtractSelectors = normalizeSelectorGroup(
+    const sanitizedExtractSelectors = normalizeShippingExtractSelectors(
       body.extractSelectors
     );
 

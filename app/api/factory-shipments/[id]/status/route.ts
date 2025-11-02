@@ -1,18 +1,23 @@
 // 厂家发货订单状态更新 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
+import { type PrismaClient } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import { withIdempotency } from '@/lib/utils/idempotency';
-import { updateFactoryShipmentOrderStatusSchema } from '@/lib/validations/factory-shipment';
+import {
+  updateFactoryShipmentOrderStatusSchema,
+  type UpdateFactoryShipmentOrderStatusData,
+} from '@/lib/validations/factory-shipment';
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -27,96 +32,32 @@ interface RouteParams {
  * - 自动创建应收账款记录（确认发货时）
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const { id } = params;
+  const { id } = await params;
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
+    const userId = await resolveUserId();
+    if (!userId) {
       return NextResponse.json({ error: '未授权操作' }, { status: 401 });
     }
-    const userId = session.user.id;
 
-    // 解析请求体
-    const body = await request.json();
-
-    // 验证输入数据
-    const validatedData = updateFactoryShipmentOrderStatusSchema.parse(body);
-    const {
-      idempotencyKey,
-      status,
-      containerNumber,
-      remarks,
-      shipmentDate,
-      arrivalDate,
-      deliveryDate,
-      completionDate,
-    } = validatedData;
-
-    // 获取当前订单状态
-    const { prisma } = await import('@/lib/db');
-    const existingOrder = await prisma.factoryShipmentOrder.findUnique({
-      where: { id },
-      select: { status: true, orderNumber: true },
-    });
-
+    const validated = await parseAndValidateRequest(request);
+    const prisma = (await import('@/lib/db')).prisma;
+    const existingOrder = await ensureOrderExists(prisma, id);
     if (!existingOrder) {
       return NextResponse.json({ error: '订单不存在' }, { status: 404 });
     }
 
-    // 使用幂等性包装器更新状态
-    const result = await withIdempotency(
-      idempotencyKey,
-      'factory_shipment_status_change',
+    const dateFields = convertDateFields(validated);
+    const enableSmartTransition = validated.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
+
+    const result = await applyStatusUpdate({
       id,
       userId,
-      {
-        status,
-        containerNumber,
-        remarks,
-        shipmentDate,
-        arrivalDate,
-        deliveryDate,
-        completionDate,
-      },
-      async () =>
-        await updateFactoryShipmentStatus(id, status, existingOrder.status, {
-          containerNumber,
-          remarks,
-          shipmentDate,
-          arrivalDate,
-          deliveryDate,
-          completionDate,
-        })
-    );
-
-    // 获取更新后的完整订单信息
-    const updatedOrder = await prisma.factoryShipmentOrder.findUnique({
-      where: { id },
-      include: {
-        customer: {
-          select: { id: true, name: true, phone: true, address: true },
-        },
-        user: {
-          select: { id: true, name: true, email: true },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                code: true,
-                name: true,
-                specification: true,
-                unit: true,
-                weight: true,
-              },
-            },
-            supplier: {
-              select: { id: true, name: true, phone: true, address: true },
-            },
-          },
-        },
-      },
+      existingStatus: existingOrder.status,
+      enableSmartTransition,
+      payload: dateFields,
     });
+
+    const updatedOrder = await fetchOrderWithRelations(prisma, id);
 
     return NextResponse.json({
       ...updatedOrder,
@@ -128,7 +69,6 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       orderId: id,
     });
 
-    // 处理验证错误
     if (error instanceof Error) {
       if (error.message.includes('状态流转')) {
         return NextResponse.json({ error: error.message }, { status: 400 });
@@ -143,4 +83,135 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ error: '更新订单状态失败' }, { status: 500 });
   }
+}
+
+async function resolveUserId(): Promise<string | null> {
+  const session = await auth();
+  return session?.user?.id ?? null;
+}
+
+async function parseAndValidateRequest(request: NextRequest) {
+  const body = await request.json();
+  return updateFactoryShipmentOrderStatusSchema.parse(body);
+}
+
+type ConvertedStatusPayload = {
+  idempotencyKey: string;
+  status: UpdateFactoryShipmentOrderStatusData['status'];
+  containerNumber?: string;
+  shippingCompany?: string;
+  remarks?: string;
+  shipmentDate?: Date;
+  arrivalDate?: Date;
+  deliveryDate?: Date;
+  completionDate?: Date;
+  estimatedArrival?: Date;
+};
+
+function convertDateFields(
+  data: UpdateFactoryShipmentOrderStatusData
+): ConvertedStatusPayload {
+  const toDate = (value?: string | null) =>
+    value ? new Date(value) : undefined;
+  const toOptionalString = (value?: string | null) =>
+    value && value.trim().length > 0 ? value : undefined;
+
+  return {
+    status: data.status,
+    containerNumber: toOptionalString(data.containerNumber),
+    shippingCompany: toOptionalString(data.shippingCompany),
+    remarks: toOptionalString(data.remarks),
+    shipmentDate: toDate(data.shipmentDate),
+    arrivalDate: toDate(data.arrivalDate),
+    deliveryDate: toDate(data.deliveryDate),
+    completionDate: toDate(data.completionDate),
+    estimatedArrival: toDate(data.estimatedArrival),
+    idempotencyKey: data.idempotencyKey,
+  };
+}
+
+async function ensureOrderExists(prisma: PrismaClient, id: string) {
+  return prisma.factoryShipmentOrder.findUnique({
+    where: { id },
+    select: { status: true, orderNumber: true },
+  });
+}
+
+async function applyStatusUpdate({
+  id,
+  userId,
+  existingStatus,
+  enableSmartTransition,
+  payload,
+}: {
+  id: string;
+  userId: string;
+  existingStatus: string;
+  enableSmartTransition: boolean;
+  payload: ConvertedStatusPayload;
+}) {
+  return withIdempotency(
+    payload.idempotencyKey,
+    'factory_shipment_status_change',
+    id,
+    userId,
+    {
+      status: payload.status,
+      containerNumber: payload.containerNumber,
+      remarks: payload.remarks,
+      shipmentDate: payload.shipmentDate,
+      arrivalDate: payload.arrivalDate,
+      deliveryDate: payload.deliveryDate,
+      completionDate: payload.completionDate,
+      estimatedArrival: payload.estimatedArrival,
+    },
+    async () =>
+      await updateFactoryShipmentStatus(
+        id,
+        payload.status,
+        existingStatus,
+        {
+          containerNumber: payload.containerNumber,
+          shippingCompany: payload.shippingCompany,
+          remarks: payload.remarks,
+          shipmentDate: payload.shipmentDate,
+          arrivalDate: payload.arrivalDate,
+          deliveryDate: payload.deliveryDate,
+          completionDate: payload.completionDate,
+          estimatedArrival: payload.estimatedArrival,
+        },
+        false,
+        enableSmartTransition
+      )
+  );
+}
+
+async function fetchOrderWithRelations(
+  prisma: PrismaClient,
+  id: string
+) {
+  return prisma.factoryShipmentOrder.findUnique({
+    where: { id },
+    include: {
+      customer: { select: { id: true, name: true, phone: true, address: true } },
+      user: { select: { id: true, name: true, email: true } },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              specification: true,
+              unit: true,
+              weight: true,
+            },
+          },
+          supplier: {
+            select: { id: true, name: true, phone: true, address: true },
+          },
+        },
+      },
+    },
+  });
 }

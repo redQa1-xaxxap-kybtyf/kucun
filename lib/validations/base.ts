@@ -64,13 +64,13 @@ export const baseValidations = {
 export const paginationValidations = {
   query: z.object({
     page: z
-      .string()
+      .union([z.string(), z.null(), z.undefined()])
       .optional()
       .transform(val => (val ? parseInt(val) : 1))
       .refine(val => val > 0, '页码必须大于0'),
 
     limit: z
-      .string()
+      .union([z.string(), z.null(), z.undefined()])
       .optional()
       .transform(val =>
         val ? parseInt(val) : paginationConfig.defaultPageSize
@@ -81,7 +81,7 @@ export const paginationValidations = {
       ),
 
     search: z
-      .string()
+      .union([z.string(), z.null(), z.undefined()])
       .optional()
       .transform(val => val?.trim() || undefined),
 

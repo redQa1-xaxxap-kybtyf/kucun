@@ -80,6 +80,7 @@ export function QuickAddCustomerDialog({
       toast({
         title: '创建成功',
         description: `客户 "${data.name}" 创建成功！`,
+        variant: 'success',
       });
 
       // 刷新客户列表

@@ -7,7 +7,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, DollarSign, Package, Receipt, Save } from 'lucide-react';
 import Link from 'next/link';
@@ -108,6 +108,7 @@ export default function CreatePaymentPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // 表单配置
   const form = useForm<CreatePaymentFormData>({
@@ -207,6 +208,29 @@ export default function CreatePaymentPage() {
         description: '收款记录创建成功',
         variant: 'success',
       });
+
+      // ✅ 关键修复：失效应收款缓存
+      // 因为收款会影响应收款列表数据
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.receivables(),
+      });
+
+      // ✅ 失效收款记录缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.payments.all,
+      });
+
+      // ✅ 失效销售订单缓存
+      // 因为收款会更新订单的 paidAmount 字段
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+
+      // ✅ 失效财务统计缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.stats(),
+      });
+
       router.push(`/finance/payments/${data.data.id}`);
     },
     onError: error => {

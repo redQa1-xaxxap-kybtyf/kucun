@@ -7,60 +7,17 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
+import {
+  INBOUND_RECORD_SELECT,
+  type InboundRecordWithRelations,
+} from '@/lib/api/selectors/inventory-selectors';
 import { authOptions } from '@/lib/auth';
 import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
-import type { InboundListResponse, InboundReason } from '@/lib/types/inbound';
+import type { InboundListResponse } from '@/lib/types/inbound';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
-
-/**
- * 入库记录数据库查询结果类型
- * 基于实际的Prisma查询结果定义
- */
-interface InboundRecordWithRelations {
-  id: string;
-  recordNumber: string;
-  productId: string;
-  variantId: string | null;
-  quantity: number;
-  reason: InboundReason;
-  remarks: string | null;
-  userId: string;
-  batchNumber: string | null;
-  unitCost: number | null;
-  totalCost: number | null;
-  createdAt: Date;
-  updatedAt: Date;
-  product: {
-    id: string;
-    name: string;
-    code: string;
-    specification: string | null;
-    unit: string;
-    piecesPerUnit: number;
-    weight: number | null;
-  };
-  user: {
-    id: string;
-    name: string;
-    email: string | null;
-  };
-  variant?: {
-    id: string;
-    colorCode: string | null;
-    colorName: string | null;
-    sku: string | null;
-  } | null;
-  batchSpecification?: {
-    id: string;
-    batchNumber: string | null;
-    piecesPerUnit: number;
-    weight: number | null;
-    thickness: number | null;
-  } | null;
-}
 
 let lastSequenceTimestamp = 0;
 let sequenceCounter = 0;
@@ -233,7 +190,7 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     productId: record.productId,
     variantId: record.variantId ?? undefined,
     quantity: record.quantity,
-    reason: record.reason,
+    reason: record.reason as import('@/lib/types/inbound').InboundReason,
     remarks: record.remarks ?? undefined,
     userId: record.userId,
     batchNumber: record.batchNumber ?? undefined,
@@ -327,43 +284,7 @@ export async function getInboundRecords(queryData: {
       orderBy,
       skip,
       take: queryData.limit,
-      include: {
-        product: {
-          select: {
-            id: true,
-            name: true,
-            code: true, // 使用 code 字段而不是 sku
-            specification: true, // 添加规格字段
-            unit: true,
-            piecesPerUnit: true, // 产品默认每单位片数
-            weight: true, // 产品默认重量
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            colorCode: true,
-            colorName: true,
-            sku: true,
-          },
-        },
-        batchSpecification: {
-          select: {
-            id: true,
-            batchNumber: true,
-            piecesPerUnit: true, // 批次级每单位片数
-            weight: true, // 批次级重量
-            thickness: true, // 批次级厚度
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      select: INBOUND_RECORD_SELECT,
     }),
     prisma.inboundRecord.count({ where }),
   ]);
@@ -372,19 +293,11 @@ export async function getInboundRecords(queryData: {
   // 这种情况不应该发生，但如果发生了，我们要优雅地处理
   const records = allRecords.filter(record => {
     if (!record.user) {
-      console.warn(
-        `⚠️  警告: 入库记录 ${record.recordNumber} 的用户不存在 (userId: ${record.userId})`
-      );
+      // 孤儿记录已被过滤，可通过运行修复脚本处理: npx tsx scripts/fix-orphaned-records.ts
       return false;
     }
     return true;
   });
-
-  if (records.length < allRecords.length) {
-    console.error(
-      `❌ 发现 ${allRecords.length - records.length} 条孤儿入库记录，已自动过滤。请运行修复脚本: npx tsx scripts/fix-orphaned-records.ts`
-    );
-  }
 
   // 格式化记录数据
   const formattedRecords = formatInboundRecords(
@@ -475,22 +388,7 @@ export async function createInboundRecord(
       remarks: cleanRemarks(data.remarks),
       userId,
     },
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-          code: true, // 使用 code 字段而不是 sku
-          unit: true,
-        },
-      },
-      user: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
+    select: INBOUND_RECORD_SELECT,
   });
 
   return {

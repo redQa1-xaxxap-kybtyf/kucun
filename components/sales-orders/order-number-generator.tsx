@@ -61,10 +61,11 @@ export function OrderNumberGenerator({
           available: true,
           message: '订单号生成成功',
         });
-        toast({
-          title: '订单号生成成功',
-          description: `新订单号：${data.data.orderNumber}`,
-        });
+      toast({
+        title: '订单号生成成功',
+        description: `新订单号：${data.data.orderNumber}`,
+        variant: 'success',
+      });
       } else {
         throw new Error(data.error || '生成失败');
       }
@@ -133,6 +134,7 @@ export function OrderNumberGenerator({
       toast({
         title: '复制成功',
         description: '订单号已复制到剪贴板',
+        variant: 'success',
       });
       setTimeout(() => setCopied(false), 2000);
     } catch (_error) {

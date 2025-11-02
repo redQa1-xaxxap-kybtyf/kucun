@@ -3,6 +3,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import type { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
 import {
@@ -31,6 +32,82 @@ import {
   parseExtendedInfo,
   processExtendedInfo,
 } from '@/lib/validations/customer';
+
+type CustomerComputedSortField =
+  | 'totalOrders'
+  | 'totalAmount'
+  | 'transactionCount'
+  | 'cooperationDays'
+  | 'returnOrderCount';
+
+const DIRECT_CUSTOMER_SORT_FIELDS = new Set<
+  keyof Prisma.CustomerOrderByWithRelationInput
+>(['createdAt', 'updatedAt', 'name']);
+
+const COMPUTED_CUSTOMER_SORT_FIELDS = new Set<CustomerComputedSortField>([
+  'totalOrders',
+  'totalAmount',
+  'transactionCount',
+  'cooperationDays',
+  'returnOrderCount',
+]);
+
+function normalizeSortOrder(sortOrder: string): Prisma.SortOrder {
+  return sortOrder === 'asc' ? 'asc' : 'desc';
+}
+
+function buildCustomerOrderBy(
+  sortBy: string,
+  sortOrder: Prisma.SortOrder
+): Prisma.CustomerOrderByWithRelationInput {
+  if (
+    DIRECT_CUSTOMER_SORT_FIELDS.has(
+      sortBy as keyof Prisma.CustomerOrderByWithRelationInput
+    )
+  ) {
+    return {
+      [sortBy]: sortOrder,
+    } as Prisma.CustomerOrderByWithRelationInput;
+  }
+
+  return { createdAt: sortOrder };
+}
+
+function sortCustomersInMemory(
+  customers: Customer[],
+  sortBy: string,
+  sortOrder: Prisma.SortOrder
+): Customer[] {
+  if (!COMPUTED_CUSTOMER_SORT_FIELDS.has(sortBy as CustomerComputedSortField)) {
+    return customers;
+  }
+
+  const getComputedValue = (customer: Customer): number => {
+    switch (sortBy as CustomerComputedSortField) {
+      case 'totalOrders':
+        return customer.totalOrders ?? 0;
+      case 'totalAmount':
+        return Number(customer.totalAmount ?? 0);
+      case 'transactionCount':
+        return customer.transactionCount ?? 0;
+      case 'cooperationDays':
+        return customer.cooperationDays ?? 0;
+      case 'returnOrderCount':
+        return customer.returnOrderCount ?? 0;
+      default:
+        return 0;
+    }
+  };
+
+  const sorted = [...customers];
+  sorted.sort((a, b) => {
+    const aValue = getComputedValue(a);
+    const bValue = getComputedValue(b);
+    return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+  });
+
+  return sorted;
+}
 
 /**
  * 验证用户会话
@@ -361,6 +438,17 @@ export async function deleteCustomer(id: string): Promise<void> {
     throw new Error(`无法删除客户,该客户有 ${outboundCount} 个关联的出库记录`);
   }
 
+  // 检查是否有关联的客户产品价格记录
+  const customerProductPriceCount = await prisma.customerProductPrice.count({
+    where: { customerId: id },
+  });
+
+  if (customerProductPriceCount > 0) {
+    throw new Error(
+      `无法删除客户,该客户有 ${customerProductPriceCount} 个关联的产品价格记录`
+    );
+  }
+
   // 所有检查通过,可以安全删除
   await prisma.customer.delete({
     where: { id },
@@ -382,8 +470,8 @@ export async function getCustomerList(params: CustomerQueryParams) {
     parentCustomerId,
   } = params;
 
-  // 构建查询条件
-  const where: Record<string, unknown> = {};
+  const normalizedSortOrder = normalizeSortOrder(sortOrder);
+  const where: Prisma.CustomerWhereInput = {};
 
   // 搜索条件 (MySQL 默认不区分大小写，无需 mode 参数)
   if (search) {
@@ -403,8 +491,7 @@ export async function getCustomerList(params: CustomerQueryParams) {
   const skip = (page - 1) * limit;
 
   // 构建排序条件
-  const orderBy: Record<string, string> = {};
-  orderBy[sortBy] = sortOrder;
+  const orderBy = buildCustomerOrderBy(sortBy, normalizedSortOrder);
 
   // 查询客户列表
   const [customers, total] = await Promise.all([
@@ -453,15 +540,20 @@ export async function getCustomerList(params: CustomerQueryParams) {
     prisma.customer.count({ where }),
   ]);
 
-  const transformedCustomers: Customer[] = customers.map(customer =>
+  const transformedCustomers = customers.map(customer =>
     transformCustomerListItem(customer as CustomerListQueryResult)
+  );
+  const sortedCustomers = sortCustomersInMemory(
+    transformedCustomers,
+    sortBy,
+    normalizedSortOrder
   );
 
   // 计算分页信息
   const totalPages = Math.ceil(total / limit);
 
   return {
-    data: transformedCustomers,
+    data: sortedCustomers,
     pagination: {
       page,
       limit,

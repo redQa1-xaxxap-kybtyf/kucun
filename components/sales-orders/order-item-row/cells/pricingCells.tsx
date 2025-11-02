@@ -210,6 +210,10 @@ export function UnitPriceCell({
                     value === '' ? undefined : Number.parseFloat(value)
                   );
                 }}
+                onFocus={event => {
+                  // 聚焦时自动选中所有内容，方便用户直接输入新价格
+                  event.target.select();
+                }}
                 onBlur={field.onBlur}
               />
             </FormControl>
@@ -254,6 +258,10 @@ export function UnitCostCell({
                   field.onChange(
                     value === '' ? undefined : Number.parseFloat(value)
                   );
+                }}
+                onFocus={event => {
+                  // 聚焦时自动选中所有内容，方便用户直接输入新成本
+                  event.target.select();
                 }}
                 onBlur={field.onBlur}
               />

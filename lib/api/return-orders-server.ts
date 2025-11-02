@@ -134,7 +134,7 @@ export async function getReturnOrdersServer(
             },
           },
         },
-        refundRecords: {
+        refunds: {
           select: {
             id: true,
             refundAmount: true,
@@ -153,12 +153,16 @@ export async function getReturnOrdersServer(
   const totalPages = Math.ceil(total / limit);
 
   const formattedReturnOrders: ReturnOrder[] = returnOrders.map(order => {
-    const processedAmountValue = (order as {
-      processedAmount?: number | null;
-    }).processedAmount;
-    const remainingAmountValue = (order as {
-      remainingAmount?: number | null;
-    }).remainingAmount;
+    const processedAmountValue = (
+      order as {
+        processedAmount?: number | null;
+      }
+    ).processedAmount;
+    const remainingAmountValue = (
+      order as {
+        remainingAmount?: number | null;
+      }
+    ).remainingAmount;
 
     return {
       id: order.id,
@@ -204,9 +208,11 @@ export async function getReturnOrdersServer(
           }
         : undefined,
       items: order.items.map(item => {
-        const conditionValue = (item as {
-          condition?: ReturnOrderItem['condition'];
-        }).condition;
+        const conditionValue = (
+          item as {
+            condition?: ReturnOrderItem['condition'];
+          }
+        ).condition;
 
         return {
           id: item.id,

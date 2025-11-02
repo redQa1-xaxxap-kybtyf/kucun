@@ -67,13 +67,131 @@ export function parseDate(input: DateInput): Date | null {
   }
 }
 
+/**
+ * 解析运输查询中的日期时间字符串
+ *
+ * 处理格式：
+ * - "11-04 05:00" (月-日 时:分，无年份)
+ * - "2025-11-04 05:00" (完整日期时间)
+ * - "11-04" (仅月-日)
+ *
+ * 年份推断逻辑：
+ * - 如果提供了完整年份，直接使用
+ * - 如果只有月-日：
+ *   - 如果月份 < 当前月份 → 使用下一年
+ *   - 如果月份 = 当前月份 且 日期 < 当前日期 → 使用下一年
+ *   - 否则使用当前年份
+ *
+ * @param dateStr - 日期字符串
+ * @returns Date 对象或 null
+ *
+ * @example
+ * // 当前日期：2025-11-01
+ * parseShippingDate("11-04 05:00") // → 2025-11-04 05:00 (同年，月份相同但日期在后)
+ * parseShippingDate("10-15 08:00") // → 2026-10-15 08:00 (下一年，月份已过)
+ * parseShippingDate("11-01 10:00") // → 2026-11-01 10:00 (下一年，同月同日但时间已过)
+ * parseShippingDate("12-25 12:00") // → 2025-12-25 12:00 (同年，月份在后)
+ */
+export function parseShippingDate(
+  dateStr: string | null | undefined
+): Date | null {
+  if (!dateStr) {
+    return null;
+  }
+
+  const trimmed = dateStr.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    // 如果已经是完整的 ISO 格式或包含年份，直接解析
+    if (trimmed.includes('T') || /^\d{4}-/.test(trimmed)) {
+      return parseDate(trimmed);
+    }
+
+    // 匹配 "MM-DD HH:mm" 或 "MM-DD" 格式
+    const monthDayTimeMatch = trimmed.match(
+      /^(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2}):(\d{1,2}))?/
+    );
+
+    if (!monthDayTimeMatch) {
+      // 如果不匹配预期格式，尝试直接解析
+      return parseDate(trimmed);
+    }
+
+    const month = parseInt(monthDayTimeMatch[1], 10);
+    const day = parseInt(monthDayTimeMatch[2], 10);
+    const hour = monthDayTimeMatch[3] ? parseInt(monthDayTimeMatch[3], 10) : 0;
+    const minute = monthDayTimeMatch[4]
+      ? parseInt(monthDayTimeMatch[4], 10)
+      : 0;
+
+    // 验证月份和日期的有效性
+    if (month < 1 || month > 12 || day < 1 || day > 31) {
+      return null;
+    }
+
+    // 获取当前日期
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // getMonth() 返回 0-11
+    const currentDay = now.getDate();
+
+    // 推断年份
+    let year = currentYear;
+
+    if (month < currentMonth) {
+      // 月份已过，使用下一年
+      year = currentYear + 1;
+    } else if (month === currentMonth) {
+      // 同月，比较日期
+      if (day < currentDay) {
+        // 日期已过，使用下一年
+        year = currentYear + 1;
+      } else if (day === currentDay) {
+        // 同月同日，比较时间
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+
+        if (
+          hour < currentHour ||
+          (hour === currentHour && minute <= currentMinute)
+        ) {
+          // 时间已过，使用下一年
+          year = currentYear + 1;
+        }
+      }
+    }
+    // 如果 month > currentMonth，使用当前年份（已经是默认值）
+
+    // 创建 Date 对象（月份需要 -1，因为 Date 的月份是 0-11）
+    const date = new Date(year, month - 1, day, hour, minute, 0, 0);
+
+    // 验证日期是否有效（例如 2月30日会被自动调整）
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return date;
+  } catch {
+    return null;
+  }
+}
+
 const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * 将仅包含日期（yyyy-MM-dd）的字符串解析为本地时区的 Date 对象
  * 解决 new Date('yyyy-MM-dd') 默认按 UTC 解析导致的 8 小时时差问题
  */
-export function parseLocalDateString(dateString: string | null | undefined): Date | null {
+export function parseLocalDateString(
+  dateString: string | null | undefined
+): Date | null {
   if (!dateString) {
     return null;
   }

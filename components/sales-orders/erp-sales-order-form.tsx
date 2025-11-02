@@ -98,6 +98,7 @@ interface ERPSalesOrderFormProps {
   mode?: 'create' | 'edit';
   orderId?: string;
   initialData?: SalesOrder;
+  initialOrderNumber?: string; // 新增：服务端预生成的订单号
   onSuccess?: (order: { id: string; orderNumber?: string }) => void;
   onCancel?: () => void;
 }
@@ -105,11 +106,13 @@ interface ERPSalesOrderFormProps {
 /**
  * ERP风格的销售订单表单组件
  * 采用中国主流ERP系统的界面设计模式
+ * 优化：支持接收预生成的订单号，消除加载延迟
  */
 export function ERPSalesOrderForm({
   mode = 'create',
   orderId,
   initialData,
+  initialOrderNumber,
   onSuccess,
   onCancel,
 }: ERPSalesOrderFormProps) {
@@ -309,6 +312,7 @@ export function ERPSalesOrderForm({
       toast({
         title: '订单创建成功',
         description: `订单号：${data.orderNumber}`,
+        variant: 'success',
       });
 
       // ✅ 失效销售订单缓存
@@ -336,6 +340,7 @@ export function ERPSalesOrderForm({
       toast({
         title: '订单更新成功',
         description: `订单号：${order?.orderNumber || ''}`,
+        variant: 'success',
       });
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
       if (orderId) {
@@ -707,9 +712,17 @@ export function ERPSalesOrderForm({
     });
   }, [form, mode, initialData]);
 
-  // 页面加载时自动生成订单号（仅创建模式）
+  // 页面加载时设置订单号（仅创建模式）
+  // 优化：优先使用服务端预生成的订单号，消除加载延迟
   React.useEffect(() => {
     if (mode === 'create') {
+      // 如果有预生成的订单号，直接使用
+      if (initialOrderNumber) {
+        setAutoOrderNumber(initialOrderNumber);
+        return;
+      }
+
+      // 降级方案：客户端异步生成（保持向后兼容）
       const generateOrderNumber = async () => {
         const generateLocalOrderNumber = () => {
           const now = new Date();
@@ -752,7 +765,7 @@ export function ERPSalesOrderForm({
 
       generateOrderNumber();
     }
-  }, []);
+  }, [mode, initialOrderNumber]);
 
   // 处理客户创建成功
   const handleCustomerCreated = (customer: Customer) => {
@@ -970,19 +983,19 @@ export function ERPSalesOrderForm({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* ERP标准布局：基本信息区域 */}
           <div className="bg-card rounded-lg border shadow-sm">
-            <div className="border-b bg-gradient-to-r from-blue-50 to-slate-50 px-4 py-3">
+            <div className="border-b bg-gradient-to-r from-blue-50 to-slate-50 px-4 py-2.5">
               <h3 className="text-sm font-semibold text-gray-700">基本信息</h3>
             </div>
-            <div className="p-6">
+            <div className="p-4">
               {/* 第一行：订单号和创建日期 */}
-              <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {/* 订单号 */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">
                     订单号
                   </Label>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 font-mono text-sm font-medium text-blue-700">
+                    <div className="flex-1 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 font-mono text-sm font-medium text-blue-700">
                       {mode === 'edit'
                         ? form.watch('orderNumber') || initialData?.orderNumber
                         : autoOrderNumber || '正在生成...'}
@@ -996,11 +1009,11 @@ export function ERPSalesOrderForm({
                 </div>
 
                 {/* 创建日期 */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label className="text-sm font-medium text-gray-700">
                     创建日期
                   </Label>
-                  <div className="rounded-md border bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                  <div className="rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
                     {creationDisplayDate.toLocaleDateString('zh-CN', {
                       year: 'numeric',
                       month: 'long',
@@ -1011,13 +1024,13 @@ export function ERPSalesOrderForm({
               </div>
 
               {/* 第二行：客户和订单类型 */}
-              <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-2">
                 {/* 客户名称 */}
                 <FormField
                   control={form.control}
                   name="customerId"
                   render={({ field }) => (
-                    <FormItem className="space-y-2">
+                    <FormItem className="space-y-1.5">
                       <FormLabel className="text-sm font-medium text-gray-700">
                         客户名称 <span className="text-red-500">*</span>
                       </FormLabel>
@@ -1038,7 +1051,7 @@ export function ERPSalesOrderForm({
                               queryKey: customersQueryKey,
                             });
                           }}
-                          className="h-10"
+                          className="h-9"
                         />
                       </FormControl>
                       <FormMessage className="text-xs" />
@@ -1051,7 +1064,7 @@ export function ERPSalesOrderForm({
                   control={form.control}
                   name="orderType"
                   render={({ field }) => (
-                    <FormItem className="space-y-2">
+                    <FormItem className="space-y-1.5">
                       <FormLabel className="text-sm font-medium text-gray-700">
                         订单类型 <span className="text-red-500">*</span>
                       </FormLabel>
@@ -1059,7 +1072,7 @@ export function ERPSalesOrderForm({
                         <RadioGroup
                           value={field.value}
                           onValueChange={field.onChange}
-                          className="flex flex-row space-x-8 pt-2"
+                          className="flex flex-row space-x-8 pt-1.5"
                         >
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="NORMAL" id="normal" />
@@ -1089,12 +1102,12 @@ export function ERPSalesOrderForm({
 
               {/* 第三行：客户地址 */}
               {selectedCustomerId && (
-                <div className="mb-6">
-                  <div className="space-y-2">
+                <div className="mb-4">
+                  <div className="space-y-1.5">
                     <Label className="text-sm font-medium text-gray-700">
                       客户地址
                     </Label>
-                    <div className="flex min-h-[40px] items-center rounded-md border bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                    <div className="flex min-h-[36px] items-center rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
                       {(() => {
                         const selectedCustomer = customersData?.data?.find(
                           customer => customer.id === selectedCustomerId
@@ -1114,16 +1127,16 @@ export function ERPSalesOrderForm({
 
               {/* 调货销售特殊字段 */}
               {orderType === 'TRANSFER' && (
-                <div className="mb-6 rounded-lg border border-orange-200 bg-orange-50/50 p-4">
-                  <h4 className="mb-4 text-sm font-semibold text-orange-800">
+                <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+                  <h4 className="mb-3 text-sm font-semibold text-orange-800">
                     调货销售信息
                   </h4>
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <FormField
                       control={form.control}
                       name="transferMode"
                       render={({ field }) => (
-                        <FormItem className="space-y-2 md:col-span-3">
+                        <FormItem className="space-y-1.5 md:col-span-3">
                           <FormLabel className="text-sm font-medium text-gray-700">
                             调货履约模式 <span className="text-red-500">*</span>
                           </FormLabel>
@@ -1183,7 +1196,7 @@ export function ERPSalesOrderForm({
                       control={form.control}
                       name="supplierId"
                       render={({ field }) => (
-                        <FormItem className="space-y-2">
+                        <FormItem className="space-y-1.5">
                           <FormLabel className="text-sm font-medium text-gray-700">
                             供应商/调出方{' '}
                             <span className="text-red-500">*</span>
@@ -1205,7 +1218,7 @@ export function ERPSalesOrderForm({
                                   queryKey: suppliersQueryKey,
                                 });
                               }}
-                              className="h-10"
+                              className="h-9"
                             />
                           </FormControl>
                           <FormMessage className="text-xs" />

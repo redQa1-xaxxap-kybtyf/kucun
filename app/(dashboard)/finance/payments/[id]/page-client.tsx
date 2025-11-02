@@ -159,6 +159,7 @@ export function PaymentDetailClient({
       toast({
         title: '确认成功',
         description: '收款记录已确认',
+        variant: 'success',
       });
 
       // 更新本地状态

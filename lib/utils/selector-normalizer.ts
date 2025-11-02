@@ -3,6 +3,10 @@
  * Cleans up user-provided selectors and converts attribute-like inputs into valid selectors.
  */
 
+// cspell:ignore shipstatus logisticsstatus currentstatus arrivalport destinationport estimatedtime arrivaltime deliverytime lastupdatetime lastupdated updatetime lastupdate
+
+import type { ExtractField, ExtractSelectors } from '@/lib/types/shipping';
+
 const CODE_WRAPPER_PATTERNS: RegExp[] = [
   /(?:await\s+)?(?:page\.)?waitForXPath\s*\(\s*(['"`])([^'"`]+)\1/i,
   /(?:await\s+)?(?:page\.)?\$x\s*\(\s*(['"`])([^'"`]+)\1/i,
@@ -92,4 +96,103 @@ export function normalizeSelectorGroup<
     ]
   );
   return Object.fromEntries(entries) as { [K in keyof T]: string };
+}
+
+const CANONICAL_KEYS = ['status', 'destination', 'estimatedArrival', 'updateTime'] as const;
+type CanonicalKey = (typeof CANONICAL_KEYS)[number];
+
+const SHIPPING_SELECTOR_ALIASES: Record<CanonicalKey, string[]> = {
+  status: ['shipstatus', 'logisticsstatus', 'currentstatus', 'state'],
+  destination: ['dest', 'location', 'arrivalport', 'port', 'to', 'destinationport'],
+  estimatedArrival: [
+    'eta',
+    'estimatedtime',
+    'estimated-arrival',
+    'arrival',
+    'arrivaltime',
+    'arrival-time',
+    'deliverytime',
+    'delivery-time',
+  ],
+  updateTime: [
+    'lastupdatetime',
+    'lastupdated',
+    'update-time',
+    'updatetime',
+    'timestamp',
+    'lastupdate',
+  ],
+};
+
+function toSelectorObject(
+  raw?:
+    | ExtractSelectors
+    | Partial<ExtractSelectors>
+    | ExtractField[]
+    | Record<string, string>
+    | null
+): Record<string, string> {
+  if (!raw) {
+    return {};
+  }
+
+  if (Array.isArray(raw)) {
+    return raw.reduce<Record<string, string>>((acc, field) => {
+      if (field?.key) {
+        acc[field.key] = field.selector ?? '';
+      }
+      return acc;
+    }, {});
+  }
+
+  return Object.entries(raw).reduce<Record<string, string>>((acc, [key, value]) => {
+    if (typeof value === 'string') {
+      acc[key] = value;
+    }
+    return acc;
+  }, {});
+}
+
+export function normalizeShippingExtractSelectors(
+  raw?:
+    | ExtractSelectors
+    | Partial<ExtractSelectors>
+    | ExtractField[]
+    | Record<string, string>
+    | null
+): Record<string, string> {
+  const selectorObject = toSelectorObject(raw);
+  const normalized = normalizeSelectorGroup(selectorObject);
+  const result: Record<string, string> = { ...normalized };
+
+  const lowercaseKeyMap = new Map<string, string>();
+  for (const key of Object.keys(normalized)) {
+    lowercaseKeyMap.set(key.toLowerCase(), key);
+  }
+
+  for (const canonicalKey of CANONICAL_KEYS) {
+    const existing = result[canonicalKey];
+    if (existing && existing.trim()) {
+      continue;
+    }
+
+    const aliases = [canonicalKey, ...SHIPPING_SELECTOR_ALIASES[canonicalKey]];
+    const matchedAlias = aliases.find(alias => {
+      const realKey = lowercaseKeyMap.get(alias.toLowerCase());
+      if (!realKey) {
+        return false;
+      }
+      const value = normalized[realKey];
+      return Boolean(value);
+    });
+
+    if (matchedAlias) {
+      const realKey = lowercaseKeyMap.get(matchedAlias.toLowerCase());
+      if (realKey) {
+        result[canonicalKey] = normalized[realKey];
+      }
+    }
+  }
+
+  return result;
 }

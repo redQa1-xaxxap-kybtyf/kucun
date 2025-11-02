@@ -32,9 +32,32 @@ function formatQuantityDisplay(item: SalesOrderDetail["items"][number]) {
 
 function formatPiecesBreakdown(item: SalesOrderDetail["items"][number]) {
   const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
-  if (!piecesPerUnit || !item.quantity) return "";
-  const totalPieces = piecesPerUnit * item.quantity;
-  return `片数：${formatDecimal(totalPieces)}片 (${formatDecimal(piecesPerUnit)}片/件 × ${formatDecimal(item.quantity)}件)`;
+  const displayUnit = item.displayUnit || item.product?.unit;
+  const quantity = item.displayQuantity ?? item.quantity;
+
+  if (!displayUnit || !quantity) return "";
+
+  // 如果单位是"件"，直接显示件数
+  if (displayUnit === "件") {
+    return `${formatDecimal(quantity)}件`;
+  }
+
+  // 如果单位是"片"，计算件数和余片
+  if (displayUnit === "片" && piecesPerUnit) {
+    const fullBoxes = Math.floor(quantity / piecesPerUnit);
+    const remainingPieces = quantity % piecesPerUnit;
+
+    if (remainingPieces === 0) {
+      // 能整除，只显示件数
+      return `${formatDecimal(fullBoxes)}件`;
+    } else {
+      // 有余数，显示件数+片数
+      return `${formatDecimal(fullBoxes)}件${formatDecimal(remainingPieces)}片`;
+    }
+  }
+
+  // 其他单位情况，直接显示数量+单位
+  return `${formatDecimal(quantity)}${displayUnit}`;
 }
 
 interface Props {
@@ -113,15 +136,9 @@ export function OrderItemsTable({
                 const unitLabel = resolveUnitLabel(item);
                 const quantityDisplay = formatQuantityDisplay(item);
                 const piecesPerUnitDisplay = item.piecesPerUnit ?? item.product?.piecesPerUnit;
-                const remarkParts: string[] = [];
+                // 备注只显示：片数转换信息（x件y片）
                 const piecesBreakdown = formatPiecesBreakdown(item);
-                if (piecesBreakdown) remarkParts.push(piecesBreakdown);
-                const manualRemark = typeof item.remarks === "string" ? item.remarks.trim() : "";
-                if (manualRemark && manualRemark !== piecesBreakdown) remarkParts.push(manualRemark);
-                if (typeof item.manualWeight === "number") {
-                  remarkParts.push(`重量：${formatDecimal(item.manualWeight)}${item.manualUnit ? item.manualUnit : ""}`);
-                }
-                const remarkText = remarkParts.length > 0 ? remarkParts.join("；") : "-";
+                const remarkText = piecesBreakdown || "-";
                 const specificationText = item.isManualProduct
                   ? item.manualSpecification || item.specification || "-"
                   : item.specification || item.product?.specification || "-";

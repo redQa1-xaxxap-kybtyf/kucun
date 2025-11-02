@@ -37,11 +37,11 @@ export function BasicInfoCard({
 }: BasicInfoCardProps) {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">基本信息</CardTitle>
+      <CardHeader className="pb-2.5">
+        <CardTitle className="text-base">基本信息</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
+      <CardContent className="pt-3">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-2.5 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-1">
             <FormLabel className="text-muted-foreground text-xs">
               订单号
@@ -95,11 +95,11 @@ export function BasicInfoCard({
           </div>
 
           {selectedCustomer && (
-            <div className="space-y-3 rounded-lg border border-blue-200/50 bg-blue-50/50 p-4 md:col-span-2 lg:col-span-2">
+            <div className="space-y-2.5 rounded-lg border border-blue-200/50 bg-blue-50/50 p-3 md:col-span-2 lg:col-span-2">
               <div className="text-sm font-medium text-blue-700">
                 客户详细信息
               </div>
-              <div className="grid gap-2 text-sm">
+              <div className="grid gap-1.5 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">📞 联系电话：</span>
                   <span className="font-medium">

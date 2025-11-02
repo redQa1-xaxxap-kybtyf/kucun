@@ -77,6 +77,7 @@ function useShippingCompanyEditDialogState({
     toast({
       title: '更新成功',
       description: `订单 ${order.orderNumber} 的船公司名称已更新。`,
+      variant: 'success',
     });
     form.reset();
     handleClose();

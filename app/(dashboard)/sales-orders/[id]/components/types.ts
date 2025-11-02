@@ -35,7 +35,8 @@ export interface SalesOrderDetail {
   createdAt: string;
   updatedAt: string;
   hasReturnOrder?: boolean;
-  customer: { id: string; name: string; phone?: string };
+  shippingAddress?: string;
+  customer: { id: string; name: string; phone?: string; address?: string };
   user: { id: string; name: string };
   supplier?: { id: string; name: string };
   items: Array<{
@@ -88,4 +89,3 @@ export interface SalesOrderDetail {
     createdAt: string;
   }>;
 }
-
