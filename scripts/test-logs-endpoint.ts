@@ -27,7 +27,7 @@ async function testLogsEndpoint() {
         const data = JSON.parse(text);
         console.log('\n📄 响应数据:');
         console.log(JSON.stringify(data, null, 2));
-      } catch (e) {
+      } catch (_e) {
         console.log('\n⚠️  响应不是 JSON:');
         console.log(text);
       }
@@ -45,4 +45,3 @@ async function testLogsEndpoint() {
 }
 
 testLogsEndpoint();
-
