@@ -120,3 +120,7 @@ temp_*.diff
 # AI工具配置和记忆
 .gemini/
 .serena/memories/
+
+# Augment 自动生成的报告文件
+.augment/reports/
+type-check-result.txt

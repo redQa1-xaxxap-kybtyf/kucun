@@ -123,14 +123,14 @@ export function TemporaryProductsClient() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* 筛选和搜索栏 */}
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-medium">筛选和搜索</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">筛选和搜索</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+        <CardContent className="pt-0">
+          <div className="grid gap-3 md:grid-cols-4">
             {/* 供应商筛选 */}
             <div className="space-y-2">
               <label className="text-sm font-medium">供应商</label>
@@ -184,17 +184,17 @@ export function TemporaryProductsClient() {
 
       {/* 统计信息 */}
       {pagination && (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 md:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-muted-foreground text-xs font-medium">
                 临时商品总数
               </CardTitle>
-              <Package className="text-muted-foreground h-4 w-4" />
+              <Package className="text-muted-foreground h-3.5 w-3.5" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{pagination.total}</div>
-              <p className="text-muted-foreground text-xs">
+            <CardContent className="pb-3">
+              <div className="text-xl font-bold">{pagination.total}</div>
+              <p className="text-muted-foreground mt-0.5 text-xs">
                 当前筛选: {products.length} 条
               </p>
             </CardContent>
@@ -202,17 +202,19 @@ export function TemporaryProductsClient() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">总使用次数</CardTitle>
-              <TrendingUp className="text-muted-foreground h-4 w-4" />
+              <CardTitle className="text-muted-foreground text-xs font-medium">
+                总使用次数
+              </CardTitle>
+              <TrendingUp className="text-muted-foreground h-3.5 w-3.5" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="pb-3">
+              <div className="text-xl font-bold">
                 {products.reduce(
                   (sum: number, p: TemporaryProduct) => sum + p.usageCount,
                   0
                 )}
               </div>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground mt-0.5 text-xs">
                 销售订单 + 厂家发货
               </p>
             </CardContent>
@@ -220,17 +222,21 @@ export function TemporaryProductsClient() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">活跃供应商</CardTitle>
-              <User className="text-muted-foreground h-4 w-4" />
+              <CardTitle className="text-muted-foreground text-xs font-medium">
+                活跃供应商
+              </CardTitle>
+              <User className="text-muted-foreground h-3.5 w-3.5" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            <CardContent className="pb-3">
+              <div className="text-xl font-bold">
                 {
                   new Set(products.map((p: TemporaryProduct) => p.supplierId))
                     .size
                 }
               </div>
-              <p className="text-muted-foreground text-xs">当前筛选范围内</p>
+              <p className="text-muted-foreground mt-0.5 text-xs">
+                当前筛选范围内
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -240,18 +246,18 @@ export function TemporaryProductsClient() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground text-sm">加载中...</div>
             </div>
           ) : error ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-destructive">加载失败,请重试</div>
+            <div className="flex items-center justify-center py-8">
+              <div className="text-destructive text-sm">加载失败,请重试</div>
             </div>
           ) : products.length === 0 ? (
-            <div className="text-muted-foreground flex flex-col items-center justify-center py-12">
-              <Package className="mb-4 h-12 w-12 opacity-50" />
-              <p>暂无临时商品记录</p>
-              <p className="mt-2 text-sm">
+            <div className="text-muted-foreground flex flex-col items-center justify-center py-10">
+              <Package className="mb-3 h-10 w-10 opacity-50" />
+              <p className="text-sm font-medium">暂无临时商品记录</p>
+              <p className="mt-1 text-xs">
                 临时商品会在创建调货销售订单时自动记录
               </p>
             </div>
@@ -259,24 +265,30 @@ export function TemporaryProductsClient() {
             <>
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>供应商</TableHead>
-                    <TableHead>编码</TableHead>
-                    <TableHead>名称</TableHead>
-                    <TableHead>规格</TableHead>
-                    <TableHead className="text-center">单位</TableHead>
-                    <TableHead className="text-center">每件片数</TableHead>
-                    <TableHead className="text-center">使用次数</TableHead>
-                    <TableHead>最后使用</TableHead>
-                    <TableHead>创建人</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="h-9 text-xs">供应商</TableHead>
+                    <TableHead className="h-9 text-xs">编码</TableHead>
+                    <TableHead className="h-9 text-xs">名称</TableHead>
+                    <TableHead className="h-9 text-xs">规格</TableHead>
+                    <TableHead className="h-9 text-center text-xs">
+                      单位
+                    </TableHead>
+                    <TableHead className="h-9 text-center text-xs">
+                      每件片数
+                    </TableHead>
+                    <TableHead className="h-9 text-center text-xs">
+                      使用次数
+                    </TableHead>
+                    <TableHead className="h-9 text-xs">最后使用</TableHead>
+                    <TableHead className="h-9 text-xs">创建人</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.map((product: TemporaryProduct) => (
-                    <TableRow key={product.id}>
-                      <TableCell>
+                    <TableRow key={product.id} className="h-12">
+                      <TableCell className="py-2">
                         <div>
-                          <div className="font-medium">
+                          <div className="text-sm font-medium">
                             {product.supplierName}
                           </div>
                           {product.supplierCode && (
@@ -286,22 +298,24 @@ export function TemporaryProductsClient() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="font-mono">
+                      <TableCell className="py-2 font-mono text-sm">
                         {product.code}
                       </TableCell>
-                      <TableCell>{product.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="py-2 text-sm">
+                        {product.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground py-2 text-sm">
                         {product.specification || '-'}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="py-2 text-center text-sm">
                         {product.unit}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="py-2 text-center text-sm">
                         {product.piecesPerUnit}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className="py-2 text-center">
                         <div>
-                          <div className="font-medium">
+                          <div className="text-sm font-medium">
                             {product.usageCount}
                           </div>
                           <div className="text-muted-foreground text-xs">
@@ -310,17 +324,21 @@ export function TemporaryProductsClient() {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="py-2">
                         {product.lastUsedAt ? (
-                          <div className="flex items-center gap-1 text-sm">
+                          <div className="flex items-center gap-1 text-xs">
                             <Calendar className="h-3 w-3" />
-                            {formatDateTime(new Date(product.lastUsedAt))}
+                            <span className="text-muted-foreground">
+                              {formatDateTime(new Date(product.lastUsedAt))}
+                            </span>
                           </div>
                         ) : (
-                          '-'
+                          <span className="text-muted-foreground text-sm">
+                            -
+                          </span>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground">
+                      <TableCell className="text-muted-foreground py-2 text-sm">
                         {product.creatorName || '-'}
                       </TableCell>
                     </TableRow>
@@ -330,8 +348,8 @@ export function TemporaryProductsClient() {
 
               {/* 分页 */}
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-6 py-4">
-                  <div className="text-muted-foreground text-sm">
+                <div className="flex items-center justify-between border-t px-4 py-3">
+                  <div className="text-muted-foreground text-xs">
                     共 {pagination.total} 条记录，第 {pagination.page} /{' '}
                     {pagination.totalPages} 页
                   </div>
@@ -339,6 +357,7 @@ export function TemporaryProductsClient() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8 text-xs"
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
                     >
@@ -347,6 +366,7 @@ export function TemporaryProductsClient() {
                     <Button
                       variant="outline"
                       size="sm"
+                      className="h-8 text-xs"
                       onClick={() =>
                         setPage(p => Math.min(pagination.totalPages, p + 1))
                       }
@@ -364,12 +384,12 @@ export function TemporaryProductsClient() {
 
       {/* 使用说明 */}
       <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="pt-6">
-          <div className="flex gap-3">
-            <div className="mt-1 text-blue-600">
-              <Package className="h-5 w-5" />
+        <CardContent className="py-3">
+          <div className="flex gap-2.5">
+            <div className="mt-0.5 text-blue-600">
+              <Package className="h-4 w-4" />
             </div>
-            <div className="space-y-1 text-sm">
+            <div className="space-y-0.5 text-xs">
               <p className="font-medium text-blue-900">关于临时商品</p>
               <p className="text-blue-700">
                 • 临时商品由系统在创建调货销售订单时自动记录和管理

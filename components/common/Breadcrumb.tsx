@@ -63,6 +63,7 @@ const PATH_TITLES: Record<string, string> = {
   '/inventory/adjustments': '调整记录',
   '/inventory/adjustments/create': '新建库存调整',
   '/inventory/batch': '批次管理',
+  '/inventory/temporary-products': '临时商品库',
   '/products': '产品管理',
   '/products/create': '新建产品',
   '/sales-orders': '销售订单',

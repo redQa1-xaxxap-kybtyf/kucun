@@ -26,7 +26,7 @@ export const metadata = {
 
 export default function TemporaryProductsPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="临时商品库"
         description="查看调货销售中使用的临时商品，系统自动记录，无需手动管理"
@@ -35,8 +35,8 @@ export default function TemporaryProductsPage() {
 
       <Suspense
         fallback={
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">加载中...</div>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-muted-foreground text-sm">加载中...</div>
           </div>
         }
       >
