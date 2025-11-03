@@ -1,14 +1,37 @@
 import { prisma } from '@/lib/db';
-import { getIpLocation } from '@/lib/services/ip-location';
 import type { SystemLogLevel, SystemLogType } from '@/lib/types/settings';
 
 import {
-  warn as logWarn,
   error as baseLogError,
   logger as baseLogger,
+  warn as logWarn,
 } from './logger/index';
 
 export { baseLogger as logger };
+
+/**
+ * 动态导入 IP 地理位置服务（仅服务端）
+ * 避免在客户端环境导入 Node.js 模块（fs, maxmind）
+ */
+async function getIpLocationSafe(ip: string | null | undefined): Promise<{
+  country: string | null;
+  province: string | null;
+  city: string | null;
+  fullLocation: string | null;
+} | null> {
+  // 只在服务端环境执行
+  if (typeof window !== 'undefined') {
+    return null;
+  }
+
+  try {
+    const { getIpLocation } = await import('@/lib/services/ip-location');
+    return await getIpLocation(ip);
+  } catch (error) {
+    baseLogError('logger', 'IP地理位置查询失败', error);
+    return null;
+  }
+}
 
 interface LogParams {
   type: SystemLogType;
@@ -42,10 +65,10 @@ export async function logSystemEvent(params: LogParams): Promise<void> {
       }
     }
 
-    // 获取IP地理位置信息（异步非阻塞）
+    // 获取IP地理位置信息（异步非阻塞，仅服务端）
     let ipLocation = null;
     if (params.ipAddress) {
-      ipLocation = await getIpLocation(params.ipAddress);
+      ipLocation = await getIpLocationSafe(params.ipAddress);
     }
 
     await prisma.systemLog.create({
