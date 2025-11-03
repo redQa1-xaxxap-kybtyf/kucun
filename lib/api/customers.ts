@@ -28,6 +28,9 @@ export const customerQueryKeys = {
   detail: (id: string) => [...customerQueryKeys.details(), id] as const,
   hierarchy: (id?: string) =>
     [...customerQueryKeys.all, 'hierarchy', id] as const,
+  searches: () => [...customerQueryKeys.all, 'search'] as const,
+  search: (query: string, options?: { limit?: number; excludeId?: string }) =>
+    [...customerQueryKeys.searches(), query, options] as const,
 };
 
 /**
@@ -178,20 +181,19 @@ export async function deleteCustomer(id: string): Promise<void> {
 }
 
 /**
- * 搜索客户
+ * 搜索客户（轻量级，用于选择器组件）
+ * 只返回必要字段，性能优化
  */
-export async function searchCustomers(
+export async function searchCustomersLightweight(
   query: string,
   options?: {
     limit?: number;
-    includeInactive?: boolean;
     excludeId?: string;
   }
 ): Promise<Customer[]> {
   const params = new URLSearchParams({
     q: query,
-    limit: (options?.limit || 10).toString(),
-    includeInactive: (options?.includeInactive || false).toString(),
+    limit: (options?.limit || 20).toString(),
   });
 
   if (options?.excludeId) {
@@ -220,4 +222,22 @@ export async function searchCustomers(
   }
 
   return data.data;
+}
+
+/**
+ * 搜索客户（完整版，保留向后兼容）
+ */
+export async function searchCustomers(
+  query: string,
+  options?: {
+    limit?: number;
+    includeInactive?: boolean;
+    excludeId?: string;
+  }
+): Promise<Customer[]> {
+  // 使用轻量级搜索
+  return searchCustomersLightweight(query, {
+    limit: options?.limit,
+    excludeId: options?.excludeId,
+  });
 }

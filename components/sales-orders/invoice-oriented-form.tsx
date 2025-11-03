@@ -39,7 +39,6 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 // API and Types
-import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
@@ -129,10 +128,7 @@ export function SalesOrderForm({
   });
 
   // 获取客户列表
-  const { data: customersData, isLoading: customersLoading } = useQuery({
-    queryKey: customerQueryKeys.list({ page: 1, limit: 100 }),
-    queryFn: () => getCustomers({ page: 1, limit: 100 }),
-  });
+  // 客户数据查询已移至 CustomerSelector 组件内部
 
   // 获取产品列表
   const { data: productsData } = useQuery({
@@ -183,15 +179,9 @@ export function SalesOrderForm({
   >({});
   const [_isAdvancedOpen, _setIsAdvancedOpen] = React.useState(false);
 
-  const customerId = form.watch('customerId');
+  const _customerId = form.watch('customerId');
 
-  // 获取选中的客户信息
-  const customers = customersData?.data;
-
-  const selectedCustomer = React.useMemo(
-    () => customers?.find(c => c.id === customerId),
-    [customerId, customers]
-  );
+  // 客户数据查询已移至 CustomerSelector 组件内部
 
   // 计算订单总金额
   const totalAmount = React.useMemo(
@@ -348,18 +338,9 @@ export function SalesOrderForm({
                         </FormLabel>
                         <FormControl>
                           <CustomerSelector
-                            customers={customersData?.data || []}
                             value={field.value}
                             onValueChange={field.onChange}
                             placeholder="选择客户"
-                            disabled={customersLoading}
-                            isLoading={customersLoading}
-                            onCustomerCreated={_customer => {
-                              // 刷新客户列表
-                              queryClient.invalidateQueries({
-                                queryKey: customerQueryKeys.lists(),
-                              });
-                            }}
                           />
                         </FormControl>
                         <FormMessage />
@@ -368,19 +349,8 @@ export function SalesOrderForm({
                   />
                 </div>
 
-                {/* 客户信息显示 */}
-                <div className="col-span-3">
-                  {selectedCustomer && (
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        联系电话
-                      </label>
-                      <div className="mt-1 text-sm">
-                        {selectedCustomer.phone || '-'}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* 客户信息显示（客户数据查询已移至 CustomerSelector 组件内部） */}
+                <div className="col-span-3">{/* 客户信息不再显示 */}</div>
 
                 {/* 订单状态 */}
                 <div className="col-span-2">
@@ -711,11 +681,7 @@ export function SalesOrderForm({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={
-                    !selectedCustomer ||
-                    fields.length === 0 ||
-                    createMutation.isPending
-                  }
+                  disabled={fields.length === 0 || createMutation.isPending}
                   className="min-w-[120px]"
                 >
                   {createMutation.isPending ? (

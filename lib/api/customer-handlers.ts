@@ -456,6 +456,64 @@ export async function deleteCustomer(id: string): Promise<void> {
 }
 
 /**
+ * 轻量级客户搜索（用于选择器组件）
+ * 只返回必要字段，不加载关联数据，性能优化
+ * @param params 查询参数
+ * @returns 客户列表（不含统计信息）
+ */
+export async function searchCustomersLightweight(params: {
+  search?: string;
+  limit?: number;
+  excludeId?: string;
+}) {
+  const { search = '', limit = 20, excludeId } = params;
+
+  const where: Prisma.CustomerWhereInput = {};
+
+  // 搜索条件
+  if (search) {
+    where.OR = [
+      { name: { contains: search } },
+      { phone: { contains: search } },
+      { address: { contains: search } },
+    ];
+  }
+
+  // 排除指定客户
+  if (excludeId) {
+    where.id = { not: excludeId };
+  }
+
+  // 只查询必要字段，不加载关联数据
+  const customers = await prisma.customer.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      address: true,
+      extendedInfo: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc', // 最近创建的客户优先
+    },
+    take: limit,
+  });
+
+  return customers.map(customer => ({
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone ?? undefined,
+    address: customer.address ?? undefined,
+    extendedInfo: customer.extendedInfo ?? undefined,
+    createdAt: customer.createdAt.toISOString(),
+    updatedAt: customer.updatedAt.toISOString(),
+  }));
+}
+
+/**
  * 获取客户列表
  * @param params 查询参数
  * @returns 分页的客户列表

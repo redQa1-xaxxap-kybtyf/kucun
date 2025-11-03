@@ -43,11 +43,11 @@ interface BasicInfoSectionProps {
  */
 export function BasicInfoSection({
   form,
-  customers,
+  customers: _customers,
   showStatus = false,
-  isLoadingCustomers = false,
+  isLoadingCustomers: _isLoadingCustomers = false,
   onCustomerCreated,
-  onRefreshCustomers,
+  onRefreshCustomers: _onRefreshCustomers,
 }: BasicInfoSectionProps) {
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
@@ -75,13 +75,10 @@ export function BasicInfoSection({
                 </FormLabel>
                 <FormControl>
                   <CustomerSelector
-                    customers={customers}
                     value={field.value}
                     onValueChange={field.onChange}
                     placeholder="搜索并选择客户"
-                    isLoading={isLoadingCustomers}
                     onCustomerCreated={onCustomerCreated}
-                    onRefreshCustomers={onRefreshCustomers}
                   />
                 </FormControl>
                 <FormMessage />

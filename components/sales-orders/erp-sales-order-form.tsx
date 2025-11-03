@@ -34,7 +34,6 @@ import {
   useCustomerPriceHistory,
   type PriceType,
 } from '@/hooks/use-price-history';
-import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import {
   createSalesOrder,
@@ -91,7 +90,7 @@ const UNIT_MAPPING: Record<string, string> = {
   ml: '毫升',
 };
 
-type CustomersResponse = Awaited<ReturnType<typeof getCustomers>>;
+// 客户数据查询已移至 CustomerSelector 组件内部
 type SuppliersResponse = Awaited<ReturnType<typeof getSuppliers>>;
 
 interface ERPSalesOrderFormProps {
@@ -120,20 +119,8 @@ export function ERPSalesOrderForm({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const customersQueryParams = React.useMemo(
-    () =>
-      ({
-        page: 1,
-        limit: 100,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }) as const,
-    []
-  );
-  const customersQueryKey = React.useMemo(
-    () => customerQueryKeys.list(customersQueryParams),
-    [customersQueryParams]
-  );
+  // 客户数据查询已移至 CustomerSelector 组件内部
+  // 不再需要在表单组件中预加载客户列表
 
   const suppliersQueryParams = React.useMemo(
     () =>
@@ -272,11 +259,7 @@ export function ERPSalesOrderForm({
   const feeItems = (form.watch('feeItems') || []) as SalesOrderFeeItem[];
   const roundingAdjustment = Number(form.watch('roundingAdjustment') ?? 0);
 
-  // 数据查询
-  const { data: customersData, isLoading: customersLoading } = useQuery({
-    queryKey: customersQueryKey,
-    queryFn: () => getCustomers(customersQueryParams),
-  });
+  // 客户数据查询已移至 CustomerSelector 组件内部
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
     queryKey: productQueryKeys.list({
@@ -767,67 +750,9 @@ export function ERPSalesOrderForm({
     }
   }, [mode, initialOrderNumber]);
 
-  // 处理客户创建成功
+  // 客户创建成功处理（客户数据查询已移至 CustomerSelector 组件内部）
   const handleCustomerCreated = (customer: Customer) => {
-    queryClient.setQueryData<CustomersResponse | undefined>(
-      customersQueryKey,
-      previous => {
-        if (!previous) {
-          return {
-            data: [customer],
-            pagination: {
-              page: customersQueryParams.page,
-              limit: customersQueryParams.limit,
-              total: 1,
-              totalPages: 1,
-            },
-          };
-        }
-
-        const existingIndex = previous.data.findIndex(
-          existing => existing.id === customer.id
-        );
-
-        const updatedData =
-          existingIndex >= 0
-            ? previous.data.map((item, index) =>
-                index === existingIndex ? customer : item
-              )
-            : [customer, ...previous.data].slice(
-                0,
-                previous.pagination?.limit ?? previous.data.length + 1
-              );
-
-        if (!previous.pagination) {
-          return {
-            ...previous,
-            data: updatedData,
-          };
-        }
-
-        const previousTotal =
-          typeof previous.pagination.total === 'number'
-            ? previous.pagination.total
-            : previous.data.length;
-        const newTotal = existingIndex >= 0 ? previousTotal : previousTotal + 1;
-
-        const updatedPagination = {
-          ...previous.pagination,
-          total: newTotal,
-          totalPages:
-            previous.pagination.limit && previous.pagination.limit > 0
-              ? Math.ceil(newTotal / previous.pagination.limit)
-              : previous.pagination.totalPages,
-        };
-
-        return {
-          ...previous,
-          data: updatedData,
-          pagination: updatedPagination,
-        };
-      }
-    );
-
+    // CustomerSelector 组件会自动处理新创建的客户
     toast({
       title: '客户创建成功',
       description: `客户 "${customer.name}" 已创建并自动选择`,
@@ -1036,21 +961,10 @@ export function ERPSalesOrderForm({
                       </FormLabel>
                       <FormControl>
                         <CustomerSelector
-                          customers={customersData?.data || []}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder="搜索并选择客户"
-                          disabled={customersLoading}
-                          isLoading={customersLoading}
                           onCustomerCreated={handleCustomerCreated}
-                          onRefreshCustomers={() => {
-                            queryClient.invalidateQueries({
-                              queryKey: customersQueryKey,
-                            });
-                            queryClient.refetchQueries({
-                              queryKey: customersQueryKey,
-                            });
-                          }}
                           className="h-9"
                         />
                       </FormControl>
@@ -1108,18 +1022,7 @@ export function ERPSalesOrderForm({
                       客户地址
                     </Label>
                     <div className="flex min-h-[36px] items-center rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
-                      {(() => {
-                        const selectedCustomer = customersData?.data?.find(
-                          customer => customer.id === selectedCustomerId
-                        );
-                        return selectedCustomer?.address ? (
-                          <span>{selectedCustomer.address}</span>
-                        ) : (
-                          <span className="text-gray-400">
-                            该客户暂未设置地址
-                          </span>
-                        );
-                      })()}
+                      <span className="text-gray-400">请选择客户查看地址</span>
                     </div>
                   </div>
                 </div>

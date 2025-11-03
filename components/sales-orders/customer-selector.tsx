@@ -1,6 +1,7 @@
 'use client';
 /* eslint-disable max-lines-per-function */
 
+import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Plus, Search, User } from 'lucide-react';
 import * as React from 'react';
 
@@ -18,6 +19,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  customerQueryKeys,
+  searchCustomersLightweight,
+} from '@/lib/api/customers';
 import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
 import { cn } from '@/lib/utils';
 import {
@@ -28,15 +33,14 @@ import {
 import { CustomerCreateDialog } from './customer-create-dialog';
 
 interface CustomerSelectorProps {
-  customers: Customer[];
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  isLoading?: boolean;
   onCustomerCreated?: (customer: Customer) => void;
-  onRefreshCustomers?: () => void;
+  // 可选：初始客户列表（用于显示已选客户）
+  initialCustomer?: Customer;
 }
 
 /**
@@ -59,59 +63,68 @@ function extractCustomerEmail(customer: Customer): string | undefined {
 }
 
 export function CustomerSelector({
-  customers,
   value,
   onValueChange,
   placeholder = '搜索并选择客户',
   disabled = false,
   className,
-  isLoading = false,
   onCustomerCreated,
-  onRefreshCustomers,
+  initialCustomer,
 }: CustomerSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
-  const wasOpenRef = React.useRef(false);
-  // 保存上一次的搜索关键词，用于重新打开时复用
-  const lastSearchValueRef = React.useRef('');
+  const [selectedCustomer, setSelectedCustomer] = React.useState<
+    Customer | undefined
+  >(initialCustomer);
 
-  const selectedCustomer = customers.find(customer => customer.id === value);
+  // 防抖搜索：用户停止输入 300ms 后才发起搜索
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+    }, 300);
 
-  // 过滤客户列表
+    return () => clearTimeout(timer);
+  }, [searchValue]);
+
+  // 搜索客户（只在输入 2 个字符以上时搜索）
+  const shouldSearch = debouncedSearch.trim().length >= 2;
+  const { data: searchResults, isLoading: isSearching } = useQuery({
+    queryKey: customerQueryKeys.search(debouncedSearch, { limit: 20 }),
+    queryFn: () => searchCustomersLightweight(debouncedSearch, { limit: 20 }),
+    enabled: shouldSearch && open,
+    staleTime: 5 * 60 * 1000, // 5分钟缓存
+  });
+
+  // 客户列表：搜索结果或空数组（使用 useMemo 避免重复渲染）
+  const customers = React.useMemo(() => searchResults ?? [], [searchResults]);
+
+  // 前端拼音过滤（增强搜索体验）
   const filteredCustomers = React.useMemo(() => {
-    const normalizedSearch = searchValue.trim().toLowerCase();
-
-    if (!normalizedSearch) {
+    if (!shouldSearch) {
       return [];
     }
 
+    const normalizedSearch = searchValue.trim().toLowerCase();
     const collapseSpaces = (value: string) => value.replace(/\s+/g, '');
 
-    return customers.filter(customer => {
+    // 服务端已经做了基础搜索，这里只做拼音增强
+    return customers.filter((customer: Customer) => {
       const name = customer.name ?? '';
       const nameLower = name.toLowerCase();
 
-      if (nameLower.includes(normalizedSearch)) {
-        return true;
-      }
-
-      if (customer.phone && customer.phone.includes(normalizedSearch)) {
-        return true;
-      }
-
-      const email = extractCustomerEmail(customer);
-      if (email && email.toLowerCase().includes(normalizedSearch)) {
-        return true;
-      }
-
+      // 基础匹配（服务端已处理）
       if (
-        customer.address &&
-        customer.address.toLowerCase().includes(normalizedSearch)
+        nameLower.includes(normalizedSearch) ||
+        (customer.phone && customer.phone.includes(normalizedSearch)) ||
+        (customer.address &&
+          customer.address.toLowerCase().includes(normalizedSearch))
       ) {
         return true;
       }
 
+      // 拼音匹配（前端增强）
       const pinyinFull = collapseSpaces(
         chineseToPinyinUppercase(name).toLowerCase()
       );
@@ -131,14 +144,13 @@ export function CustomerSelector({
 
       return false;
     });
-  }, [customers, searchValue]);
+  }, [customers, searchValue, shouldSearch]);
 
   // 处理客户选择
-  const handleSelect = (customerId: string) => {
-    onValueChange?.(customerId);
+  const handleSelect = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    onValueChange?.(customer.id);
     setOpen(false);
-    // 保存当前搜索关键词，供下次打开时复用
-    lastSearchValueRef.current = searchValue;
   };
 
   // 处理新增客户
@@ -149,6 +161,9 @@ export function CustomerSelector({
 
   // 处理客户创建成功
   const handleCustomerCreated = (customer: Customer) => {
+    // 更新选中的客户
+    setSelectedCustomer(customer);
+
     // 通知父组件
     onCustomerCreated?.(customer);
 
@@ -159,16 +174,18 @@ export function CustomerSelector({
     setCreateDialogOpen(false);
   };
 
+  // 当 value 变化时，更新 selectedCustomer
   React.useEffect(() => {
-    if (open && !wasOpenRef.current) {
-      onRefreshCustomers?.();
-      // 重新打开时复用上次的搜索关键词
-      if (lastSearchValueRef.current) {
-        setSearchValue(lastSearchValueRef.current);
+    if (value && !selectedCustomer) {
+      // 如果有 value 但没有 selectedCustomer，尝试从搜索结果中找
+      const customer = customers.find((c: Customer) => c.id === value);
+      if (customer) {
+        setSelectedCustomer(customer);
       }
+    } else if (!value) {
+      setSelectedCustomer(undefined);
     }
-    wasOpenRef.current = open;
-  }, [open, onRefreshCustomers]);
+  }, [value, selectedCustomer, customers]);
 
   return (
     <>
@@ -179,7 +196,7 @@ export function CustomerSelector({
             role="combobox"
             aria-expanded={open}
             className={cn('h-12 w-full justify-between', className)}
-            disabled={disabled || isLoading}
+            disabled={disabled}
           >
             {selectedCustomer ? (
               <div className="flex items-center gap-2 truncate">
@@ -196,7 +213,7 @@ export function CustomerSelector({
             ) : (
               <div className="text-muted-foreground flex items-center gap-2">
                 <Search className="h-4 w-4" />
-                {isLoading ? '加载中...' : placeholder}
+                {placeholder}
               </div>
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -211,12 +228,16 @@ export function CustomerSelector({
             />
             <CommandList>
               <CommandEmpty>
-                {isLoading ? (
-                  '加载中...'
-                ) : searchValue.trim() ? (
+                {isSearching ? (
+                  <div className="py-6 text-center">
+                    <div className="text-muted-foreground text-sm">
+                      搜索中...
+                    </div>
+                  </div>
+                ) : !shouldSearch ? (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground mb-3 text-sm">
-                      未找到相关客户，尝试输入其它关键词
+                      输入至少 2 个字符开始搜索客户
                     </div>
                     <Button
                       variant="outline"
@@ -231,7 +252,7 @@ export function CustomerSelector({
                 ) : (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground mb-3 text-sm">
-                      输入客户名称 / 手机号进行搜索，或直接创建新客户
+                      未找到相关客户，尝试输入其它关键词
                     </div>
                     <Button
                       variant="outline"
@@ -247,7 +268,7 @@ export function CustomerSelector({
               </CommandEmpty>
               {filteredCustomers.length > 0 && (
                 <CommandGroup>
-                  {filteredCustomers.map(customer => {
+                  {filteredCustomers.map((customer: Customer) => {
                     const customerEmail = extractCustomerEmail(customer);
                     const isSelected = value === customer.id;
 
@@ -255,7 +276,7 @@ export function CustomerSelector({
                       <CommandItem
                         key={customer.id}
                         value={`${customer.name} ${customer.phone || ''} ${customerEmail || ''}`}
-                        onSelect={() => handleSelect(customer.id)}
+                        onSelect={() => handleSelect(customer)}
                         className="flex items-center gap-3 p-3"
                       >
                         <Check
