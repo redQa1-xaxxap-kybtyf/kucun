@@ -6,12 +6,13 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 创建厂家发货订单页面错误边界
  *
  * ✅ Next.js 15 最佳实践：错误边界组件
+ * ✅ P1 修复：集成错误上报服务
  */
 export default function CreateFactoryShipmentError({
   error,
@@ -21,12 +22,11 @@ export default function CreateFactoryShipmentError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:factory-shipments:create:error-boundary',
-      '创建厂家发货订单页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'CreateFactoryShipmentError', {
+      pageTitle: '创建厂家发货订单',
+      route: '/factory-shipments/create',
+    });
   }, [error]);
 
   return (

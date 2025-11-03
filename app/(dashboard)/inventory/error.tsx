@@ -4,11 +4,12 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { logClientError } from '@/lib/logger/client';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 库存模块错误边界
  * Next.js 15 最佳实践：使用 error.tsx 捕获并处理组件树错误
+ * ✅ P1 修复：集成错误上报服务
  *
  * @see https://nextjs.org/docs/app/building-your-application/routing/error-handling
  */
@@ -20,9 +21,10 @@ export default function InventoryError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logClientError('inventory', '库存模块错误', error, {
-      digest: error.digest,
-      stack: error.stack,
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'InventoryError', {
+      pageTitle: '库存管理',
+      route: '/inventory',
     });
   }, [error]);
 

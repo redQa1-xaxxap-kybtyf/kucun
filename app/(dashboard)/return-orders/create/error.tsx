@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 新建退货订单页面错误边界
@@ -21,12 +21,11 @@ export default function CreateReturnOrderError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:return-orders:create:error-boundary',
-      '新建退货订单页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'CreateReturnOrderError', {
+      pageTitle: '新建退货订单',
+      route: '/return-orders/create',
+    });
   }, [error]);
 
   return (

@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 厂家发货订单详情页面错误边界
@@ -21,12 +21,11 @@ export default function FactoryShipmentDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:factory-shipments:detail:error-boundary',
-      '厂家发货订单详情页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'FactoryShipmentDetailError', {
+      pageTitle: '厂家发货订单详情',
+      route: '/factory-shipments/[id]',
+    });
   }, [error]);
 
   return (

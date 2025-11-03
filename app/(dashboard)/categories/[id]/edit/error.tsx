@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 编辑分类页面错误边界
@@ -21,12 +21,11 @@ export default function EditCategoryError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:categories:edit:error-boundary',
-      '编辑分类页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'EditCategoryError', {
+      pageTitle: '编辑分类',
+      route: '/categories/[id]/edit',
+    });
   }, [error]);
 
   return (

@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 产品详情页面错误边界
@@ -21,12 +21,11 @@ export default function ProductDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:products:detail:error-boundary',
-      '产品详情页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'ProductDetailError', {
+      pageTitle: '产品详情',
+      route: '/products/[id]',
+    });
   }, [error]);
 
   return (

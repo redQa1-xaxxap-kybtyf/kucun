@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 销售订单模块错误边界
@@ -15,6 +15,7 @@ import { logger } from '@/lib/utils/console-logger';
  * - 提供友好的错误提示
  * - 支持重试功能
  * - 开发模式显示错误堆栈
+ * ✅ P1 修复：集成错误上报服务
  */
 export default function SalesOrdersError({
   error,
@@ -24,13 +25,11 @@ export default function SalesOrdersError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // 记录错误到监控服务
-    logger.error(
-      'dashboard:sales-orders:error-boundary',
-      '销售订单模块错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'SalesOrdersError', {
+      pageTitle: '销售订单',
+      route: '/sales-orders',
+    });
   }, [error]);
 
   return (

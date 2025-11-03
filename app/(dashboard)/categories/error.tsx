@@ -6,12 +6,13 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 分类管理主页面错误边界
  *
  * ✅ Next.js 15 最佳实践：错误边界组件
+ * ✅ P1 修复：集成错误上报服务
  */
 export default function CategoriesError({
   error,
@@ -21,12 +22,11 @@ export default function CategoriesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:categories:error-boundary',
-      '分类管理页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'CategoriesError', {
+      pageTitle: '分类管理',
+      route: '/categories',
+    });
   }, [error]);
 
   return (

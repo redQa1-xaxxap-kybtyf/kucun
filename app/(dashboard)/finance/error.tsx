@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logClientError } from '@/lib/logger/client';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 财务模块错误边界
@@ -15,6 +15,7 @@ import { logClientError } from '@/lib/logger/client';
  * - 提供友好的错误提示
  * - 支持重试功能
  * - 开发模式显示错误堆栈
+ * ✅ P1 修复：集成错误上报服务
  */
 export default function FinanceError({
   error,
@@ -24,9 +25,10 @@ export default function FinanceError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logClientError('finance', '财务模块错误', error, {
-      digest: error.digest,
-      stack: error.stack,
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'FinanceError', {
+      pageTitle: '财务管理',
+      route: '/finance',
     });
   }, [error]);
 

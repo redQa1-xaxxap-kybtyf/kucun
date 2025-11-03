@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/utils/console-logger';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 新建供应商页面错误边界
@@ -21,12 +21,11 @@ export default function CreateSupplierError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error(
-      'dashboard:suppliers:create:error-boundary',
-      '新建供应商页面错误',
-      error,
-      { digest: error.digest }
-    );
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'CreateSupplierError', {
+      pageTitle: '新建供应商',
+      route: '/suppliers/create',
+    });
   }, [error]);
 
   return (
