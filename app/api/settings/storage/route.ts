@@ -58,7 +58,15 @@ function decrypt(text: string): string {
     }
 
     const textParts = text.split(':');
-    const iv = Buffer.from(textParts.shift()!, 'hex');
+    const ivPart = textParts.shift();
+
+    // 安全检查：确保 IV 部分存在
+    if (!ivPart) {
+      console.error('解密失败: 缺少 IV 部分');
+      return text;
+    }
+
+    const iv = Buffer.from(ivPart, 'hex');
     const encryptedText = textParts.join(':');
     const decipher = crypto.createDecipheriv(
       ALGORITHM,

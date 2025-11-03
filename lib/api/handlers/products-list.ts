@@ -292,11 +292,13 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     // 使用特殊分隔符避免与批次号中的 - 冲突
     const key = `${inv.batchNumber}|||${batchSpec.piecesPerUnit}`;
 
-    if (!productBatchMap.has(inv.productId)) {
-      productBatchMap.set(inv.productId, new Map());
+    // 确保产品批次映射存在
+    let batchMap = productBatchMap.get(inv.productId);
+    if (!batchMap) {
+      batchMap = new Map();
+      productBatchMap.set(inv.productId, batchMap);
     }
 
-    const batchMap = productBatchMap.get(inv.productId)!;
     const existing = batchMap.get(key);
 
     if (existing) {
@@ -443,7 +445,7 @@ export function formatProductList(params: {
         const resolvedWeight =
           batch.weight && batch.weight > 0
             ? batch.weight
-            : batchPiecesMap.get(batch.batchNumber)?.weight ?? undefined;
+            : (batchPiecesMap.get(batch.batchNumber)?.weight ?? undefined);
 
         return {
           batchNumber: batch.batchNumber,

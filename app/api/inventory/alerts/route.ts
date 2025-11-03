@@ -16,11 +16,10 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
   try {
     // 解析并验证查询参数
     const { searchParams } = request.nextUrl;
+    const limitParam = searchParams.get('limit');
     const queryParams = {
       severity: searchParams.get('severity') || undefined,
-      limit: searchParams.get('limit')
-        ? parseInt(searchParams.get('limit')!, 10)
-        : undefined,
+      limit: limitParam ? parseInt(limitParam, 10) : undefined,
       productId: searchParams.get('productId') || undefined,
       categoryId: searchParams.get('categoryId') || undefined,
     };
