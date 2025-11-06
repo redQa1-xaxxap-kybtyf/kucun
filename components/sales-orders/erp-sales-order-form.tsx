@@ -41,6 +41,7 @@ import {
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import {
@@ -309,10 +310,19 @@ export function ERPSalesOrderForm({
       // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
 
-      // ✅ 关键修复：同时失效应收款缓存并强制重新获取
+      // ✅ 修复：失效应收货款缓存 - 使用正确的 queryKey
+      // 失效所有应收货款相关查询（包括列表和详情）
       queryClient.invalidateQueries({
-        queryKey: ['finance', 'receivables'],
+        queryKey: queryKeys.finance.receivables(),
         refetchType: 'active',
+      });
+
+      // ✅ 同时失效财务概览和仪表盘统计
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.overview(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
       });
 
       onSuccess?.(data);
@@ -336,12 +346,29 @@ export function ERPSalesOrderForm({
         description: `订单号：${order?.orderNumber || ''}`,
         variant: 'success',
       });
+
+      // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
       if (orderId) {
         queryClient.invalidateQueries({
           queryKey: salesOrderQueryKeys.detail(orderId),
         });
       }
+
+      // ✅ 修复：失效应收货款缓存 - 订单金额/状态变更会影响应收款
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.receivables(),
+        refetchType: 'active',
+      });
+
+      // ✅ 同时失效财务概览和仪表盘统计
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.overview(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+
       if (order) {
         onSuccess?.(order);
       }
