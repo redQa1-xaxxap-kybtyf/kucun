@@ -115,30 +115,25 @@ export const POST = withAuth(
             select: {
               id: true,
               totalAmount: true,
-              roundingAdjustment: true, // ✅ 新增: 获取订单抹零金额
               status: true,
             },
           });
 
           if (salesOrder) {
-            // ✅ 修复: 使用实际到账金额(actualPaymentAmount)统计已收款
             const confirmedSum = await tx.paymentRecord.aggregate({
               where: {
                 salesOrderId: updatedPayment.salesOrderId,
                 status: { in: ['confirmed', 'applied'] },
               },
-              _sum: { actualPaymentAmount: true }, // ✅ 改用实际到账金额
+              _sum: { paymentAmount: true },
             });
 
-            const totalConfirmed = confirmedSum._sum.actualPaymentAmount ?? 0;
+            const totalConfirmed = confirmedSum._sum.paymentAmount ?? 0;
 
-            // ✅ 修复: 实际应收金额 = totalAmount + roundingAdjustment
-            const actualTotalAmount =
-              Number(salesOrder.totalAmount ?? 0) +
-              Number(salesOrder.roundingAdjustment || 0);
-
-            // ✅ 修复: 使用实际到账金额与实际应收金额比较
-            if (salesOrder.status === 'shipped' && totalConfirmed >= actualTotalAmount) {
+            if (
+              salesOrder.status === 'shipped' &&
+              totalConfirmed >= Number(salesOrder.totalAmount ?? 0)
+            ) {
               await tx.salesOrder.update({
                 where: { id: salesOrder.id },
                 data: { status: 'completed' },
@@ -152,16 +147,10 @@ export const POST = withAuth(
 
       await clearCacheAfterPayment();
 
-      // ✅ 修复: 只有订单已发货时才记录往来账单的收款
-      // 预收款不记录(预收款在冲抵时才影响往来账)
-      // 未发货订单的收款也不记录(因为还没有应收款记录)
       if (
         updated.customerId &&
-        updated.paymentType === 'order_payment' &&
         Number(updated.actualPaymentAmount) > 0 &&
-        updated.status === 'confirmed' &&
-        updated.salesOrder?.status &&
-        ['shipped', 'completed'].includes(updated.salesOrder.status) // ✅ 关键修复: 只有已发货订单才记录收款
+        updated.status === 'confirmed'
       ) {
         try {
           await recordPartnerTransaction({
@@ -185,7 +174,7 @@ export const POST = withAuth(
             },
           });
         } catch (error) {
-          logger.error('payments', '确认收款后同步往来账失败', error, {
+          logger.warn('payments', '确认收款后同步往来账失败', error, {
             paymentId: updated.id,
             paymentNumber: updated.paymentNumber,
           });

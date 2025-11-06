@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { useConfirmPayment, useCreatePaymentRecord } from '@/lib/api/payments';
+import { useCreatePaymentRecord, useConfirmPayment } from '@/lib/api/payments';
 import { queryKeys } from '@/lib/queryKeys';
 import type { ReceivableItem } from '@/lib/services/receivables-service';
 import {
@@ -40,8 +40,10 @@ import {
   type CreatePaymentRecordData,
 } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils';
-import { logger } from '@/lib/utils/console-logger';
-import { createPaymentRecordSchema } from '@/lib/validations/payment';
+import {
+  createPaymentRecordSchema,
+  validatePaymentAmount,
+} from '@/lib/validations/payment';
 
 type FormValues = CreatePaymentRecordData;
 
@@ -137,27 +139,15 @@ export function ReceivablePaymentDialog({
 
   const handleSubmit = async (values: FormValues) => {
     if (!receivable) {
-      toast({
-        title: '错误',
-        description: '应收账款信息不存在',
-        variant: 'destructive',
-      });
       return;
     }
 
-    // ✅ 修复: 添加详细的验证逻辑和错误提示
-    if (!values.paymentAmount || values.paymentAmount <= 0) {
+    if (
+      !validatePaymentAmount(values.paymentAmount, receivable.remainingAmount)
+    ) {
       form.setError('paymentAmount', {
         type: 'manual',
-        message: '收款金额必须大于0',
-      });
-      return;
-    }
-
-    if (values.paymentAmount > receivable.remainingAmount) {
-      form.setError('paymentAmount', {
-        type: 'manual',
-        message: `收款金额不能超过待收金额 ¥${receivable.remainingAmount.toFixed(2)}`,
+        message: '收款金额不能超过待收金额',
       });
       return;
     }
@@ -179,32 +169,8 @@ export function ReceivablePaymentDialog({
     };
 
     try {
-      // ✅ 修复: 添加详细的日志记录
-      logger.info(
-        'finance:receivable-payment-dialog',
-        '开始创建收款记录',
-        {
-          orderId: receivable.id,
-          customerId: receivable.customerId,
-          paymentAmount: payload.paymentAmount,
-          actualPaymentAmount: payload.actualPaymentAmount,
-        }
-      );
-
       const paymentRecord = await createPaymentMutation.mutateAsync(payload);
-      logger.info(
-        'finance:receivable-payment-dialog',
-        '收款记录已创建',
-        { paymentRecord }
-      );
-
       await confirmPaymentMutation.mutateAsync({ id: paymentRecord.id });
-      logger.info(
-        'finance:receivable-payment-dialog',
-        '收款记录已确认',
-        { paymentRecordId: paymentRecord.id }
-      );
-
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.receivables(),
       });
@@ -214,20 +180,10 @@ export function ReceivablePaymentDialog({
       toast({
         title: '收款记录已创建',
         description: `成功收款 ${formatCurrency(payload.actualPaymentAmount)}`,
-        variant: 'success',
       });
       handleClose(false);
       onSuccess?.();
     } catch (error) {
-      logger.error(
-        'finance:receivable-payment-dialog',
-        '收款失败',
-        error,
-        {
-          orderId: receivable?.id,
-          customerId: receivable?.customerId,
-        }
-      );
       toast({
         title: '收款失败',
         description: error instanceof Error ? error.message : '请稍后重试',

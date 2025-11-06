@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
@@ -8,14 +7,11 @@ import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
-import { parseLocalDateString } from '@/lib/utils/datetime';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
-
-type CreatePaymentRecordInput = z.infer<typeof createPaymentRecordSchema>;
 
 /**
  * GET /api/payments - 获取收款记录列表
@@ -87,12 +83,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     if (startDate || endDate) {
       const paymentDateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        const parsedStart = parseLocalDateString(startDate) ?? new Date(startDate);
-        paymentDateFilter.gte = parsedStart;
+        paymentDateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        const parsedEnd = parseLocalDateString(endDate) ?? new Date(endDate);
-        paymentDateFilter.lte = parsedEnd;
+        paymentDateFilter.lte = new Date(endDate);
       }
       where.paymentDate = paymentDateFilter;
     }
@@ -162,7 +156,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
  */
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   const userId = user.id;
-  let requestData: CreatePaymentRecordInput | null = null;
+  let data: any = null;
 
   try {
     // 解析请求体
@@ -208,8 +202,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
-    const data = validationResult.data;
-    requestData = data;
+    data = validationResult.data;
 
     // 根据收款类型执行不同的验证逻辑
     if (data.paymentType === 'order_payment') {
@@ -294,9 +287,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             actualPaymentAmount: data.actualPaymentAmount,
             roundingAmount: data.roundingAmount,
             appliedAmount: 0, // ✅ 预收款初始已冲抵金额为0
-            paymentDate:
-              parseLocalDateString(data.paymentDate) ??
-              new Date(data.paymentDate),
+            paymentDate: new Date(data.paymentDate),
             status: data.paymentType === 'prepayment' ? 'confirmed' : 'pending', // ✅ 预收款直接确认
             remarks: data.remarks,
             receiptNumber: data.receiptNumber,
@@ -327,19 +318,16 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         });
 
-        // ✅ 仅订单付款需要验证金额
+        // ✅ 仅订单付款需要验证金额和更新订单状态
         if (data.paymentType === 'order_payment' && data.salesOrderId) {
-          // ✅ 修复: 查询现有的收款记录,排除当前正在创建的记录(通过ID不等于新创建的记录ID)
+          // 从之前的验证中获取订单信息(避免重复查询)
           const salesOrder = await tx.salesOrder.findUnique({
             where: { id: data.salesOrderId },
             select: {
               totalAmount: true,
               status: true,
               payments: {
-                where: {
-                  status: { in: ['confirmed', 'pending'] },
-                  id: { not: newPayment.id }, // ✅ 关键修复: 排除当前正在创建的记录
-                },
+                where: { status: { in: ['confirmed', 'pending'] } },
                 select: { paymentAmount: true, status: true },
               },
             },
@@ -364,9 +352,20 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             throw new Error('收款金额超过订单总额');
           }
 
-          // ✅ 修复: 移除创建收款时的订单状态自动更新逻辑
-          // 订单状态更新应该在收款确认时进行(POST /api/payments/[id]/confirm)
-          // 创建收款记录时不应该立即更新订单状态,因为收款记录可能还未确认
+          // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
+          const newTotalPaid = confirmedAmount + data.paymentAmount;
+          if (
+            newTotalPaid >= salesOrder.totalAmount &&
+            salesOrder.status === 'shipped'
+          ) {
+            await tx.salesOrder.update({
+              where: { id: data.salesOrderId },
+              data: {
+                status: 'completed', // 已发货 + 全额收款 = 已完成
+                updatedAt: new Date(),
+              },
+            });
+          }
         }
 
         return newPayment;
@@ -377,16 +376,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     // 清除相关缓存
     await clearCacheAfterPayment();
 
-    // ✅ 修复: 只有订单已发货时才记录往来账单的收款
-    // 预收款不记录(预收款在冲抵时才影响往来账)
-    // 未发货订单的收款也不记录(因为还没有应收款记录)
     if (
       payment.status === 'confirmed' &&
-      payment.paymentType === 'order_payment' &&
       payment.customerId &&
-      Number(payment.actualPaymentAmount) > 0 &&
-      payment.salesOrder?.status &&
-      ['shipped', 'completed'].includes(payment.salesOrder.status) // ✅ 关键修复: 只有已发货订单才记录收款
+      Number(payment.actualPaymentAmount) > 0
     ) {
       try {
         await recordPartnerTransaction({
@@ -410,7 +403,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         });
       } catch (error) {
-        logger.error('payments', '记录收款往来账失败', error, {
+        logger.warn('payments', '记录收款往来账失败', error, {
           paymentId: payment.id,
           paymentNumber: payment.paymentNumber,
         });
@@ -437,7 +430,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
   } catch (error) {
     logger.error('payments', '创建收款记录失败', error, {
       userId,
-      salesOrderId: requestData?.salesOrderId,
+      salesOrderId: data?.salesOrderId,
     });
     return NextResponse.json(
       { success: false, error: '创建收款记录失败' },
