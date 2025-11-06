@@ -11,7 +11,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { DollarSign } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { useForm, type SubmitHandler, type UseFormReturn } from 'react-hook-form';
+import {
+  useForm,
+  type SubmitHandler,
+  type UseFormReturn,
+} from 'react-hook-form';
 
 import {
   Dialog,
@@ -94,7 +98,9 @@ function usePaymentDialogState(
       if (!enableRounding) {
         const currentActual = form.getValues('actualPaymentAmount');
         if (currentActual !== paymentAmount) {
-          form.setValue('actualPaymentAmount', paymentAmount, { shouldValidate: false });
+          form.setValue('actualPaymentAmount', paymentAmount, {
+            shouldValidate: false,
+          });
           form.setValue('roundingAmount', 0, { shouldValidate: false });
         }
       }
@@ -109,7 +115,9 @@ function usePaymentDialogState(
         typeof actualPaymentAmount === 'number' &&
         !Number.isNaN(actualPaymentAmount)
       ) {
-        const rounding = Number((paymentAmount - actualPaymentAmount).toFixed(2));
+        const rounding = Number(
+          (paymentAmount - actualPaymentAmount).toFixed(2)
+        );
         if (rounding !== form.getValues('roundingAmount')) {
           form.setValue('roundingAmount', rounding, { shouldValidate: false });
         }
@@ -133,7 +141,9 @@ function usePaymentDialogState(
       setEnableRounding(checked);
       if (!checked) {
         const currentPayment = form.getValues('paymentAmount');
-        form.setValue('actualPaymentAmount', currentPayment, { shouldValidate: false });
+        form.setValue('actualPaymentAmount', currentPayment, {
+          shouldValidate: false,
+        });
         form.setValue('roundingAmount', 0, { shouldValidate: false });
       }
     },
@@ -175,28 +185,52 @@ export function PaymentCreationDialog({
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '创建收款记录失败');
+      // ✅ 解析响应体（可能抛出异常）
+      let result;
+      try {
+        result = await response.json();
+      } catch (_parseError) {
+        throw new Error('服务器响应格式错误');
       }
 
-      return response.json();
+      // ✅ 检查HTTP状态码
+      if (!response.ok) {
+        throw new Error(result.error || '创建收款记录失败');
+      }
+
+      // ✅ 检查业务状态码（后端返回 { success, data, error }）
+      if (result.success === false) {
+        throw new Error(result.error || '创建收款记录失败');
+      }
+
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: data => {
+      // ✅ 先显示成功提示
       toast({
         title: '创建成功',
-        description: '收款记录已成功创建',
+        description: data.message || '收款记录已成功创建',
         variant: 'success',
       });
 
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivables(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.payments.all,
-      });
-
+      // ✅ 关闭对话框
       handleDialogOpenChange(false);
+
+      // ✅ 异步失效缓存（不阻塞UI）
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.receivables(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.payments.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.overview(),
+        }),
+      ]).catch(error => {
+        // 缓存失效失败不影响用户体验，只记录日志
+        console.error('缓存失效失败:', error);
+      });
     },
     onError: (error: Error) => {
       toast({
