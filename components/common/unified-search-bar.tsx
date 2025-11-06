@@ -48,6 +48,7 @@ export interface FilterConfig {
  * 操作按钮配置
  */
 export interface ActionButton {
+  key?: string; // 唯一标识符，用于 React key prop
   label: string;
   icon?: React.ReactNode;
   onClick: () => void;
@@ -117,7 +118,7 @@ const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
     <>
       {actionButtons.map((action, index) => (
         <Button
-          key={index}
+          key={action.key || action.label || `action-${index}`}
           size={compact ? 'sm' : 'default'}
           variant={action.variant || 'default'}
           className={cn(buttonSize, action.className)}
