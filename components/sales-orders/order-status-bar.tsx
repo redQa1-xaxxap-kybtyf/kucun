@@ -1,6 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
-
 import {
   Calendar,
   Hash,
@@ -10,6 +8,7 @@ import {
   User,
 } from 'lucide-react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';

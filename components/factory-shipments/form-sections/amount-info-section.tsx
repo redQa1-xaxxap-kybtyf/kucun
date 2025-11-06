@@ -1,8 +1,7 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
-
 import type { UseFormReturn } from 'react-hook-form';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   FormControl,

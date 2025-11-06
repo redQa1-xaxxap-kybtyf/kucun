@@ -1,4 +1,3 @@
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 // 收款记录表单组件
 // 使用React Hook Form + Zod实现收款记录的创建和编辑表单
 
@@ -19,6 +18,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ContentLoading } from '@/components/common/loading';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -141,7 +141,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
     });
 
     // 监听收款方式变化
-    const watchedPaymentMethod = form.watch('paymentMethod');
+    const _watchedPaymentMethod = form.watch('paymentMethod');
     const watchedPaymentAmount = form.watch('paymentAmount');
     const watchedActualAmount = form.watch('actualPaymentAmount');
 

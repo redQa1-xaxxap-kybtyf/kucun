@@ -1,5 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 // 付款记录管理页面
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
@@ -8,6 +7,7 @@ import { CheckCircle, Clock, Download, Filter, Plus, Search, TrendingUp, Wallet 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

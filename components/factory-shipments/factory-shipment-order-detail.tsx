@@ -1,5 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -21,6 +20,7 @@ import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arr
 import { ConfirmInboundDialog } from '@/components/factory-shipments/confirm-inbound-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
 import { SupplementShippingInfoDialog } from '@/components/factory-shipments/supplement-shipping-info-dialog';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

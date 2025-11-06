@@ -1,5 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
@@ -14,6 +13,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/date-range-picker';

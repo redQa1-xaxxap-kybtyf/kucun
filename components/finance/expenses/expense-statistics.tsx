@@ -1,10 +1,10 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery } from '@tanstack/react-query';
 import { FileText, TrendingUp } from 'lucide-react';
 import * as React from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { queryKeys } from '@/lib/queryKeys';

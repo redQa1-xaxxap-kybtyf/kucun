@@ -1,6 +1,5 @@
 'use client';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
 

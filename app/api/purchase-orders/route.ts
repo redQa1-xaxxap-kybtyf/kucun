@@ -1,12 +1,12 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { generatePurchaseOrderNumber } from '@/lib/services/simple-order-number-generator';
-import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,

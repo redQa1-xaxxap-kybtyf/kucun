@@ -1,4 +1,3 @@
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 /**
  * 收款记录页面
  * 显示所有收款记录，支持筛选、搜索和分页
@@ -9,11 +8,22 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CheckCircle, Clock, Download, Filter, Plus, Receipt, Search, TrendingUp, XCircle } from 'lucide-react';
+import {
+  CheckCircle,
+  Clock,
+  Download,
+  Filter,
+  Plus,
+  Receipt,
+  Search,
+  TrendingUp,
+  XCircle,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,8 +112,16 @@ function PaymentMethodBadge({ method }: { method: string }) {
     bank_transfer: { label: '银行转账', color: 'bg-blue-100 text-blue-800' },
     alipay: { label: '支付宝', color: 'bg-blue-100 text-blue-800' },
     wechat: { label: '微信支付', color: 'bg-green-100 text-green-800' },
-    check: { label: '支票', color: 'bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-primary))]' },
-    other: { label: '其他', color: 'bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-primary))]' },
+    check: {
+      label: '支票',
+      color:
+        'bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-primary))]',
+    },
+    other: {
+      label: '其他',
+      color:
+        'bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-primary))]',
+    },
   };
 
   const config =

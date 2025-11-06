@@ -287,6 +287,7 @@ export async function fetchReceivableBaseOrders(
       createdAt: true,
     },
     orderBy,
+    take: 10000,
   });
 }
 
@@ -294,14 +295,27 @@ export async function aggregatePaymentsByOrder(
   orderIds: string[]
 ): Promise<Record<string, PaymentTotals>> {
   if (!orderIds.length) return {};
-  const paymentAggregations = await prisma.paymentRecord.groupBy({
-    by: ['salesOrderId', 'status'],
-    where: {
-      salesOrderId: { in: orderIds },
-      status: { in: ['confirmed', 'pending'] },
-    },
-    _sum: { actualPaymentAmount: true, roundingAmount: true },
-  });
+
+  const batchSize = 1000;
+  const batches: string[][] = [];
+  for (let i = 0; i < orderIds.length; i += batchSize) {
+    batches.push(orderIds.slice(i, i + batchSize));
+  }
+
+  const allAggregations = await Promise.all(
+    batches.map(batch =>
+      prisma.paymentRecord.groupBy({
+        by: ['salesOrderId', 'status'],
+        where: {
+          salesOrderId: { in: batch },
+          status: { in: ['confirmed', 'pending'] },
+        },
+        _sum: { actualPaymentAmount: true, roundingAmount: true },
+      })
+    )
+  );
+
+  const paymentAggregations = allAggregations.flat();
 
   return paymentAggregations.reduce<Record<string, PaymentTotals>>(
     (acc, item) => {

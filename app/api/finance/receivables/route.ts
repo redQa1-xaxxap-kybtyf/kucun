@@ -28,83 +28,65 @@ import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
  */
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
-    // 参数验证
-    const searchParams = new URL(request.url).searchParams;
-    const limitParam =
-      searchParams.get('limit') ?? searchParams.get('pageSize') ?? '20';
+    try {
+      // 参数验证
+      const searchParams = new URL(request.url).searchParams;
+      const limitParam =
+        searchParams.get('limit') ?? searchParams.get('pageSize') ?? '20';
 
-    const paymentStatusParam =
-      searchParams.get('paymentStatus') ??
-      searchParams.get('status') ??
-      undefined;
+      const paymentStatusParam =
+        searchParams.get('paymentStatus') ??
+        searchParams.get('status') ??
+        undefined;
 
-    const validationResult = accountsReceivableQuerySchema.safeParse({
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(limitParam, 10),
-      search: searchParams.get('search') || undefined,
-      customerId: searchParams.get('customerId') || undefined,
-      paymentStatus: paymentStatusParam || undefined,
-      startDate: searchParams.get('startDate') || undefined,
-      endDate: searchParams.get('endDate') || undefined,
-      sortBy: searchParams.get('sortBy') || undefined,
-      sortOrder: searchParams.get('sortOrder') || undefined,
-    });
+      const validationResult = accountsReceivableQuerySchema.safeParse({
+        page: parseInt(searchParams.get('page') || '1'),
+        limit: parseInt(limitParam, 10),
+        search: searchParams.get('search') || undefined,
+        customerId: searchParams.get('customerId') || undefined,
+        paymentStatus: paymentStatusParam || undefined,
+        startDate: searchParams.get('startDate') || undefined,
+        endDate: searchParams.get('endDate') || undefined,
+        sortBy: searchParams.get('sortBy') || undefined,
+        sortOrder: searchParams.get('sortOrder') || undefined,
+      });
 
-    if (!validationResult.success) {
-      return errorResponse(
-        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
-        400
-      );
-    }
-
-    // 🔍 调试日志：查询参数
-    console.group('🔍 [DEBUG] Receivables Query');
-    console.log('Query Params:', validationResult.data);
-    console.log('User ID:', user.id);
-
-    // 构建缓存键 (v2: 包含roundingAdjustment修复)
-    const cacheKey = buildCacheKey(
-      `finance:receivables:list:v2:${user.id}`,
-      validationResult.data
-    );
-    console.log('Cache Key:', cacheKey);
-
-    // 使用缓存包装查询
-    const result = await getOrSetJSON(
-      cacheKey,
-      async () => {
-        console.log('📊 [DEBUG] Fetching from database...');
-        // 调用服务层
-        const data = await getReceivables(validationResult.data);
-        console.log('📊 [DEBUG] Query Results:', {
-          total: data.total,
-          count: data.receivables.length,
-          firstOrder: data.receivables[0]
-            ? {
-                orderNumber: data.receivables[0].orderNumber,
-                status: data.receivables[0].status,
-                createdAt: data.receivables[0].createdAt,
-              }
-            : null,
-        });
-        return data;
-      },
-      FINANCE_CACHE_TTL_SECONDS, // 财务数据频繁变更，缩短TTL保持数据新鲜度
-      {
-        enableRandomTTL: true, // 防止缓存雪崩
-        enableNullCache: true, // 防止缓存穿透
+      if (!validationResult.success) {
+        return errorResponse(
+          `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+          400
+        );
       }
-    );
 
-    console.log('✅ [DEBUG] Final Result:', {
-      total: result.total,
-      count: result.receivables.length,
-      fromCache: result.receivables.length > 0 && !result.receivables[0],
-    });
-    console.groupEnd();
+      // 构建缓存键 (v2: 包含roundingAdjustment修复)
+      const cacheKey = buildCacheKey(
+        `finance:receivables:list:v2:${user.id}`,
+        validationResult.data
+      );
 
-    // 返回响应
-    return successResponse(result);
+      // 使用缓存包装查询
+      const result = await getOrSetJSON(
+        cacheKey,
+        async () => {
+          // 调用服务层
+          const data = await getReceivables(validationResult.data);
+          return data;
+        },
+        FINANCE_CACHE_TTL_SECONDS,
+        {
+          enableRandomTTL: true,
+          enableNullCache: true,
+        }
+      );
+
+      // 返回响应
+      return successResponse(result);
+    } catch (error) {
+      console.error('[Receivables API Error]', error);
+      const errorMessage =
+        error instanceof Error ? error.message : '获取应收账款失败';
+      return errorResponse(errorMessage, 500);
+    }
   },
   { permissions: ['finance:view'] }
 );

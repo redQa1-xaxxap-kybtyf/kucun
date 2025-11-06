@@ -21,16 +21,16 @@ import {
   executeMinimalInboundTransaction,
   validateProductExistsOutsideTransaction,
 } from '@/lib/api/minimal-inbound-transaction';
+import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfillment';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
-import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfillment';
+import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
 import { withIdempotency } from '@/lib/utils/idempotency-redis'; // 🚀 使用 Redis 优化版本
 import { createInboundSchema } from '@/lib/validations/inbound';
-import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
 
 // ==========================================
 // GET /api/inventory/inbound - 获取入库记录列表

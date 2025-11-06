@@ -1,4 +1,3 @@
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 // 应收账款组件
 // 实现应收账款查询和统计展示
 
@@ -21,6 +20,7 @@ import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

@@ -1,5 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { Download, Plus } from 'lucide-react';
 import Link from 'next/link';
@@ -9,6 +8,7 @@ import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PaymentsOutClient } from '@/components/finance/payments-out-client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';

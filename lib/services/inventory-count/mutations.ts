@@ -7,13 +7,13 @@ import type {
   UpdateInventoryCountRequest,
 } from '@/lib/types/inventory-count';
 
+import { buildInventoryItems } from './items';
 import {
   INVENTORY_COUNT_RELATIONS,
   INVENTORY_COUNT_WITH_ITEMS_RELATIONS,
   toInventoryCount,
   toInventoryCountWithItems,
 } from './utils';
-import { buildInventoryItems } from './items';
 
 export async function updateInventoryCount(
   id: string,

@@ -1,5 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import {
   ArrowLeft,
@@ -15,6 +14,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

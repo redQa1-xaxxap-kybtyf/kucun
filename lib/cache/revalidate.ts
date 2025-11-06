@@ -14,10 +14,10 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 import { publish, subscribe } from '@/lib/redis/redis-pubsub';
+import { invalidateStatementsCache } from '@/lib/services/finance-statistics-cached';
 
 import { invalidateNamespace } from './cache';
 import { CacheTags, RedisCachePrefix } from './tags';
-import { invalidateStatementsCache } from '@/lib/services/finance-statistics-cached';
 
 /**
  * 缓存失效选项

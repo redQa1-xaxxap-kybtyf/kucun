@@ -1,4 +1,3 @@
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 /**
  * 退款详情页面
  * 显示退款记录的详细信息，支持状态更新和处理操作
@@ -18,6 +17,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {

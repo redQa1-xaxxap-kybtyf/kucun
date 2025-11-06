@@ -2,10 +2,11 @@
 import { CheckCircle, Clock, Receipt, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
+
 
 import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

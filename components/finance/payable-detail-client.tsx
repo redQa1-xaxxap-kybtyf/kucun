@@ -1,10 +1,10 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { ArrowLeft, Building2, Edit, FileText, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { EmptyState } from '@/components/common/empty-state';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

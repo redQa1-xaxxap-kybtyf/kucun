@@ -12,7 +12,7 @@
  * - 混合分页（引导筛选）: ~60ms ✅
  */
 
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';

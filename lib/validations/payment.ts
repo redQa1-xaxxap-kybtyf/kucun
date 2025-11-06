@@ -428,10 +428,10 @@ export const validatePaymentDate = (date: string): boolean => {
 export const validateBankInfo = (
   _paymentMethod: string,
   _bankInfo?: string
-): boolean => {
+): boolean => 
   // 新的收款方式不需要强制验证银行信息
-  return true;
-};
+   true
+;
 
 // 表单字段配置
 export const PAYMENT_FORM_FIELDS = {

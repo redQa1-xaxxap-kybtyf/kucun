@@ -327,7 +327,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
               totalAmount: true,
               status: true,
               payments: {
-                where: { status: { in: ['confirmed', 'pending'] } },
+                where: {
+                  status: { in: ['confirmed', 'pending'] },
+                  NOT: { id: newPayment.id }, // 排除当前事务中新建的待确认收款，避免重复计入
+                },
                 select: { paymentAmount: true, status: true },
               },
             },

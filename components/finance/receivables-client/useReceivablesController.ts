@@ -164,7 +164,15 @@ function useReceivablesQuery(
     queryFn: () => fetchReceivables(queryParams),
     initialData: { data: initialData },
     staleTime: FINANCE_RECEIVABLES_STALE_TIME_MS,
-    refetchOnWindowFocus: true,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      if (error instanceof Error && /4\d{2}/.test(error.message)) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 }
 
@@ -276,10 +284,32 @@ async function fetchReceivables(
   params.set('sortBy', queryParams.sortBy);
   params.set('sortOrder', queryParams.sortOrder);
 
-  const response = await fetch(`/api/finance/receivables?${params}`);
-  if (!response.ok) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+  try {
+    const response = await fetch(`/api/finance/receivables?${params}`, {
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage =
+        errorData.error || errorData.message || '获取应收账款失败';
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('请求超时，请稍后重试');
+      }
+      throw error;
+    }
     throw new Error('获取应收账款失败');
   }
-
-  return response.json();
 }

@@ -1,10 +1,10 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { Clock, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
   AlertDialog,
   AlertDialogAction,

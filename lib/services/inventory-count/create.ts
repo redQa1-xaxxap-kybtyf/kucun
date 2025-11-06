@@ -4,9 +4,9 @@ import type {
   InventoryCount,
 } from '@/lib/types/inventory-count';
 
-import { INVENTORY_COUNT_RELATIONS, toInventoryCount } from './utils';
 import { buildInventoryItems } from './items';
 import { generateCountNumber } from './number';
+import { INVENTORY_COUNT_RELATIONS, toInventoryCount } from './utils';
 
 export async function createInventoryCount(
   data: CreateInventoryCountRequest,

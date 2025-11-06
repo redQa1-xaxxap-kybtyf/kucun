@@ -3,8 +3,9 @@
  * 用于性能测试，不需要认证
  */
 
-import { prisma } from '@/lib/db';
 import { NextResponse, type NextRequest } from 'next/server';
+
+import { prisma } from '@/lib/db';
 
 /**
  * GET /api/performance/categories - 性能测试专用分类列表

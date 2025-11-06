@@ -1,10 +1,10 @@
-import { prisma } from '@/lib/db';
-
-// 复用临时产品相关工具
 import {
   buildTemporaryProductDataFromOrderItem,
   findOrCreateTemporaryProduct,
 } from '@/lib/api/handlers/sales-orders/temporary-products';
+import { prisma } from '@/lib/db';
+
+// 复用临时产品相关工具
 
 /**
  * 更新草稿销售订单（完整覆盖式）

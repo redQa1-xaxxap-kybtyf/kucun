@@ -1,9 +1,9 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { CheckCircle, Clock } from 'lucide-react';
 import * as React from 'react';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
 

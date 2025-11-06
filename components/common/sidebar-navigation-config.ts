@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-
 import type { NavigationItem } from '@/lib/types/layout';
 
 /**

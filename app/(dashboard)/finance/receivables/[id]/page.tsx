@@ -1,11 +1,11 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery } from '@tanstack/react-query';
 import { Calendar, Edit, FileText, Users } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

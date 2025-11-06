@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
 import {
   executeMinimalInboundTransaction,
   type MinimalInboundTransactionResult,
 } from '@/lib/api/minimal-inbound-transaction';
+import { auth } from '@/lib/auth';
 import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';

@@ -70,10 +70,22 @@ export function ReceivablesTableList({
   if (error) {
     const message = error instanceof Error ? error.message : '未知错误';
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-[hsl(var(--color-error))]">
-          加载失败: {message}
+      <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-[hsl(var(--color-error-light))] bg-[hsl(var(--color-error-lighter))] p-8">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-[hsl(var(--color-error))]">
+            加载失败
+          </p>
+          <p className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+            {message}
+          </p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => window.location.reload()}
+        >
+          重新加载
+        </Button>
       </div>
     );
   }

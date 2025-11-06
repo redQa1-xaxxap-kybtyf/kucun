@@ -1,5 +1,4 @@
 'use client';
-import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,6 +12,7 @@ import {
 } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
   Dialog,
   DialogContent,
