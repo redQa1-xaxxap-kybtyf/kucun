@@ -1,0 +1,83 @@
+import { z } from 'zod';
+
+import {
+  PURCHASE_ORDER_STATUS,
+  type PurchaseOrderStatus,
+} from '@/lib/types/purchase-order';
+
+const PURCHASE_ORDER_STATUS_VALUES = Object.values(
+  PURCHASE_ORDER_STATUS
+) as PurchaseOrderStatus[];
+
+export const purchaseOrderStatusEnum = z.enum(
+  PURCHASE_ORDER_STATUS_VALUES as [
+    PurchaseOrderStatus,
+    ...PurchaseOrderStatus[],
+  ]
+);
+
+export const purchaseOrderItemSchema = z
+  .object({
+    productId: z.string().optional(),
+    supplierId: z.string().min(1, '供应商 ID 不能为空'),
+    productCode: z.string().min(1, '产品编码不能为空'),
+    isManualProduct: z.boolean().optional(),
+    manualProductName: z.string().optional(),
+    manualSpecification: z.string().optional(),
+    manualWeight: z.number().nonnegative('重量不能为负数').optional(),
+    manualUnit: z.string().optional(),
+    displayName: z.string().min(1, '产品名称不能为空'),
+    specification: z.string().optional(),
+    unit: z.string().optional(),
+    weight: z.number().nonnegative('重量不能为负数').optional(),
+    quantity: z.number().positive('数量必须大于 0'),
+    unitPrice: z.number().nonnegative('单价不能为负'),
+    totalPrice: z.number().nonnegative('总价不能为负'),
+    remarks: z.string().optional(),
+  })
+  .superRefine((item, ctx) => {
+    const trimmedManualName = item.manualProductName?.trim();
+    const hasProduct = Boolean(item.productId && item.productId.trim());
+    const isManual = Boolean(item.isManualProduct);
+
+    if (!isManual && !hasProduct) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '请选择产品或启用手动产品',
+      });
+    }
+
+    if (isManual && !trimmedManualName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '手动产品必须填写名称',
+        path: ['manualProductName'],
+      });
+    }
+  });
+
+export const purchaseOrderFeeItemSchema = z.object({
+  feeType: z.enum(['shipping', 'storage', 'customs', 'other']),
+  feeName: z.string().min(1, '费用名称不能为空'),
+  feeAmount: z.number().nonnegative('费用金额不能为负'),
+  remarks: z.string().optional(),
+});
+
+export const createPurchaseOrderSchema = z.object({
+  supplierId: z.string().min(1, '供应商 ID 不能为空'),
+  containerNumber: z.string().optional(),
+  status: purchaseOrderStatusEnum.default(PURCHASE_ORDER_STATUS.DRAFT),
+  orderDate: z.string().optional(),
+  shipmentDate: z.string().optional(),
+  items: z.array(purchaseOrderItemSchema).min(1, '至少需要一个产品项'),
+  remarks: z.string().optional(),
+  feeItems: z.array(purchaseOrderFeeItemSchema).optional().default([]),
+});
+
+export const updatePurchaseOrderStatusSchema = z.object({
+  orderId: z.string().min(1, '订单 ID 不能为空'),
+  status: purchaseOrderStatusEnum,
+});
+
+export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema>;
+export type PurchaseOrderFormData = z.infer<typeof createPurchaseOrderSchema>;
