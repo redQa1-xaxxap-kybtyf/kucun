@@ -49,50 +49,13 @@ interface UsePaymentDialogStateResult {
   handleRoundingToggle: (checked: boolean) => void;
 }
 
-function usePaymentDialogState(
-  orderInfo: OrderInfo | null,
-  onOpenChange: (open: boolean) => void
-): UsePaymentDialogStateResult {
-  const form = useForm<PaymentFormData>({
-    resolver: zodResolver(paymentSchema),
-    defaultValues: {
-      paymentType: 'order_payment',
-      salesOrderId: '',
-      customerId: '',
-      paymentMethod: 'cash',
-      paymentAmount: 0,
-      actualPaymentAmount: 0,
-      roundingAmount: 0,
-      paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-      bankInfo: '',
-      remarks: '',
-    },
-  });
-
-  const paymentMethod = form.watch('paymentMethod');
-  const paymentAmount = form.watch('paymentAmount');
-  const actualPaymentAmount = form.watch('actualPaymentAmount');
-
-  const [enableRounding, setEnableRounding] = useState(false);
-
-  useEffect(() => {
-    if (orderInfo) {
-      form.reset({
-        paymentType: 'order_payment',
-        salesOrderId: orderInfo.id,
-        customerId: orderInfo.customerId,
-        paymentMethod: 'cash',
-        paymentAmount: orderInfo.remainingAmount,
-        actualPaymentAmount: orderInfo.remainingAmount,
-        roundingAmount: 0,
-        paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-        bankInfo: '',
-        remarks: '',
-      });
-      setEnableRounding(false);
-    }
-  }, [orderInfo, form]);
-
+// 自动同步收款金额和实际收款金额
+function useAutoSyncAmounts(
+  form: UseFormReturn<PaymentFormData>,
+  enableRounding: boolean,
+  paymentAmount: number,
+  actualPaymentAmount: number
+) {
   useEffect(() => {
     if (typeof paymentAmount === 'number' && !Number.isNaN(paymentAmount)) {
       if (!enableRounding) {
@@ -124,6 +87,55 @@ function usePaymentDialogState(
       }
     }
   }, [enableRounding, form, paymentAmount, actualPaymentAmount]);
+}
+
+function usePaymentDialogState(
+  orderInfo: OrderInfo | null,
+  onOpenChange: (open: boolean) => void
+): UsePaymentDialogStateResult {
+  const form = useForm<PaymentFormData>({
+    resolver: zodResolver(paymentSchema),
+    defaultValues: {
+      paymentType: 'order_payment',
+      salesOrderId: '',
+      customerId: '',
+      paymentMethod: 'cash',
+      paymentAmount: 0,
+      actualPaymentAmount: 0,
+      roundingAmount: 0,
+      paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      bankInfo: '',
+      remarks: '',
+      receiptNumber: '',
+    },
+  });
+
+  const paymentMethod = form.watch('paymentMethod');
+  const paymentAmount = form.watch('paymentAmount');
+  const actualPaymentAmount = form.watch('actualPaymentAmount');
+
+  const [enableRounding, setEnableRounding] = useState(false);
+
+  useEffect(() => {
+    if (orderInfo) {
+      form.reset({
+        paymentType: 'order_payment',
+        salesOrderId: orderInfo.id,
+        customerId: orderInfo.customerId,
+        paymentMethod: 'cash',
+        paymentAmount: orderInfo.remainingAmount,
+        actualPaymentAmount: orderInfo.remainingAmount,
+        roundingAmount: 0,
+        paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        bankInfo: '',
+        remarks: '',
+        receiptNumber: '',
+      });
+      setEnableRounding(false);
+    }
+  }, [orderInfo, form]);
+
+  useAutoSyncAmounts(form, enableRounding, paymentAmount, actualPaymentAmount);
 
   const handleDialogOpenChange = useCallback(
     (newOpen: boolean) => {
@@ -227,9 +239,8 @@ export function PaymentCreationDialog({
         queryClient.invalidateQueries({
           queryKey: queryKeys.finance.overview(),
         }),
-      ]).catch(error => {
-        // 缓存失效失败不影响用户体验，只记录日志
-        console.error('缓存失效失败:', error);
+      ]).catch(_error => {
+        // 缓存失效失败不影响用户体验，静默处理
       });
     },
     onError: (error: Error) => {

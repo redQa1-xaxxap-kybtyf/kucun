@@ -25,8 +25,9 @@ export const paymentSchema = z.object({
   actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
   roundingAmount: z.number().default(0),
   paymentDate: z.string().min(1, { message: '请选择收款日期' }),
-  bankInfo: z.string().optional(),
-  remarks: z.string().optional(),
+  bankInfo: z.string().optional().or(z.literal('')),
+  remarks: z.string().optional().or(z.literal('')),
+  receiptNumber: z.string().optional().or(z.literal('')),
 });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>;

@@ -445,12 +445,25 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       message: '收款记录创建成功',
     });
   } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : '创建收款记录失败';
     logger.error('payments', '创建收款记录失败', error, {
       userId,
       salesOrderId: data?.salesOrderId,
+      errorMessage,
+      errorStack: error instanceof Error ? error.stack : undefined,
     });
     return NextResponse.json(
-      { success: false, error: '创建收款记录失败' },
+      {
+        success: false,
+        error: errorMessage,
+        details:
+          process.env.NODE_ENV === 'development'
+            ? error instanceof Error
+              ? error.stack
+              : String(error)
+            : undefined,
+      },
       { status: 500 }
     );
   }
