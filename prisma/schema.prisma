@@ -274,6 +274,7 @@ model SalesOrder {
   @@index([status, createdAt], map: "idx_sales_orders_status_created")
   @@index([status, totalAmount], map: "idx_sales_orders_status_amount")
   @@index([status, customerId, createdAt], map: "idx_sales_orders_status_customer_created")
+  @@index([orderNumber], map: "idx_sales_orders_order_number")
   @@map("sales_orders")
 }
 

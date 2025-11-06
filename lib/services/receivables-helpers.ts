@@ -320,7 +320,7 @@ export async function fetchReceivableBaseOrders(
       createdAt: true,
     },
     orderBy,
-    take: 10000,
+    take: 5000, // 减少查询数量，提升性能
   });
 }
 
