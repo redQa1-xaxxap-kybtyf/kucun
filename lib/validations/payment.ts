@@ -287,9 +287,18 @@ export const accountsReceivableQuerySchema = z
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的结束日期格式'),
     sortBy: z
-      .enum(['orderDate', 'totalAmount', 'remainingAmount', 'customerName'])
+      .enum([
+        'createdAt',
+        'updatedAt',
+        'dueDate',
+        'orderNumber',
+        'customerName',
+        'totalAmount',
+        'paidAmount',
+        'remainingAmount',
+      ])
       .optional()
-      .default('orderDate'),
+      .default('createdAt'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
   })
   .refine(
@@ -428,10 +437,9 @@ export const validatePaymentDate = (date: string): boolean => {
 export const validateBankInfo = (
   _paymentMethod: string,
   _bankInfo?: string
-): boolean => 
+): boolean =>
   // 新的收款方式不需要强制验证银行信息
-   true
-;
+  true;
 
 // 表单字段配置
 export const PAYMENT_FORM_FIELDS = {

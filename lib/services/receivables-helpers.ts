@@ -134,12 +134,51 @@ export function buildWhereConditions(params: {
     status: { in: ['confirmed', 'shipped', 'completed'] },
   };
 
-  if (params.search) {
-    where.OR = [
-      { orderNumber: { contains: params.search } },
-      { customer: { name: { contains: params.search } } },
-      { customer: { phone: { contains: params.search } } },
+  const rawSearch = params.search?.trim();
+  if (rawSearch) {
+    const normalizedSearch = rawSearch.replace(/\s+/g, ' ');
+    const numericSearch = normalizedSearch.replace(/[^0-9]/g, '');
+
+    const searchConditions: Prisma.SalesOrderWhereInput[] = [
+      {
+        orderNumber: {
+          contains: normalizedSearch,
+        },
+      },
+      {
+        customer: {
+          name: {
+            contains: normalizedSearch,
+          },
+        },
+      },
     ];
+
+    if (numericSearch.length > 0) {
+      searchConditions.push({
+        customer: {
+          phone: {
+            contains: numericSearch,
+          },
+        },
+      });
+    } else {
+      searchConditions.push({
+        customer: {
+          phone: {
+            contains: normalizedSearch,
+          },
+        },
+      });
+    }
+
+    const existingAnd = Array.isArray(where.AND)
+      ? where.AND
+      : where.AND
+        ? [where.AND]
+        : [];
+
+    where.AND = [...existingAnd, { OR: searchConditions }];
   }
 
   if (params.customerId) {
@@ -155,12 +194,6 @@ export function buildWhereConditions(params: {
       where.createdAt.lte = endDate;
     }
   }
-
-  // 🔍 调试日志：查询条件
-  console.log(
-    '🔎 [DEBUG] Receivables WHERE Conditions:',
-    JSON.stringify(where, null, 2)
-  );
 
   return where;
 }

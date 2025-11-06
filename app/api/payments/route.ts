@@ -377,7 +377,14 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     );
 
     // 清除相关缓存
-    await clearCacheAfterPayment();
+    try {
+      await clearCacheAfterPayment();
+    } catch (error) {
+      logger.warn('payments', '清除收款缓存失败', error, {
+        paymentId: payment.id,
+        paymentNumber: payment.paymentNumber,
+      });
+    }
 
     if (
       payment.status === 'confirmed' &&
@@ -414,16 +421,23 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     }
 
     // 发布财务事件
-    await publishFinanceEvent({
-      action: 'created',
-      recordType: 'payment',
-      recordId: payment.id,
-      recordNumber: payment.paymentNumber,
-      amount: payment.paymentAmount,
-      customerId: payment.customerId,
-      customerName: payment.customer.name,
-      userId,
-    });
+    try {
+      await publishFinanceEvent({
+        action: 'created',
+        recordType: 'payment',
+        recordId: payment.id,
+        recordNumber: payment.paymentNumber,
+        amount: payment.paymentAmount,
+        customerId: payment.customerId,
+        customerName: payment.customer.name,
+        userId,
+      });
+    } catch (error) {
+      logger.warn('payments', '发布收款事件失败', error, {
+        paymentId: payment.id,
+        paymentNumber: payment.paymentNumber,
+      });
+    }
 
     return NextResponse.json({
       success: true,

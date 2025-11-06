@@ -111,14 +111,14 @@ export function useReceivablesController({
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      const trimmed = value.trimStart();
-      setSearchInput(trimmed);
+      const normalized = value.trim().replace(/\s+/g, ' ');
+      setSearchInput(normalized);
 
       if (searchTimerRef.current) {
         clearTimeout(searchTimerRef.current);
       }
 
-      if (trimmed === '') {
+      if (normalized === '') {
         setIsSearching(false);
         updateParams({ search: undefined, page: 1 });
         return;
@@ -127,7 +127,7 @@ export function useReceivablesController({
       setIsSearching(true);
 
       searchTimerRef.current = setTimeout(() => {
-        updateParams({ search: trimmed, page: 1 });
+        updateParams({ search: normalized, page: 1 });
         searchTimerRef.current = null;
       }, 300);
     },
@@ -165,7 +165,9 @@ function useReceivablesQuery(
     initialData: { data: initialData },
     staleTime: FINANCE_RECEIVABLES_STALE_TIME_MS,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: 'always',
+    refetchOnMount: 'always',
+    refetchOnReconnect: 'always',
     retry: (failureCount, error) => {
       if (error instanceof Error && /4\d{2}/.test(error.message)) {
         return false;
