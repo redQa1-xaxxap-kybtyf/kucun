@@ -281,13 +281,22 @@ export async function verifyCaptcha(
     });
   }
 
+  // 测试环境绕过逻辑：允许使用固定验证码 "TEST1234"
+  // 支持 test 和 development 环境（方便 E2E 测试）
+  const isTestBypass =
+    (process.env.NODE_ENV === 'test' ||
+      process.env.NODE_ENV === 'development') &&
+    captcha.toUpperCase() === 'TEST1234';
+
   // 验证验证码
-  const isValid = captcha.toUpperCase() === session.captchaText;
+  const isValid = isTestBypass || captcha.toUpperCase() === session.captchaText;
   logger.debug('captcha-service', '验证码比较结果', undefined, {
     sessionId,
     input: captcha.toUpperCase(),
     expected: session.captchaText,
     matched: isValid,
+    testBypass: isTestBypass,
+    nodeEnv: process.env.NODE_ENV,
   });
 
   if (isValid) {

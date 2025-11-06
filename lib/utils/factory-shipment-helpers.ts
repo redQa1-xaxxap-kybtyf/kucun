@@ -13,7 +13,7 @@ import {
  * 格式化金额 - 使用人民币符号和千分位分隔符
  */
 export const formatAmount = (amount: number): string =>
-  `¥${amount.toLocaleString('zh-CN', {
+  `￥${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -99,7 +99,7 @@ export const getFactoryShipmentStatusBadgeVariant = (
 };
 
 /**
- * 厂家发货商品归属标签映射
+ * 厂家发货产品归属标签映射
  */
 export const FACTORY_SHIPMENT_OWNERSHIP_LABELS: Record<
   FactoryShipmentItemOwnership,
@@ -110,7 +110,7 @@ export const FACTORY_SHIPMENT_OWNERSHIP_LABELS: Record<
 };
 
 /**
- * 格式化商品归属状态
+ * 格式化产品归属状态
  */
 export const formatOwnershipStatus = (
   item: FactoryShipmentOrder['items'][number]

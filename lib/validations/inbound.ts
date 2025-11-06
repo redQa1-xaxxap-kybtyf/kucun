@@ -12,73 +12,105 @@ export const inboundReasonSchema = z.enum([
   'transfer',
   'surplus',
   'other',
+  'sales_cancel',
+  'return_inbound',
 ] as const);
 
 // 入库单位类型
 export const inboundUnitSchema = z.enum(['pieces', 'units'] as const);
 
 // 创建入库记录验证规则
-export const createInboundSchema = z.object({
-  idempotencyKey: z
-    .string()
-    .min(1, '幂等性键不能为空')
-    .max(100, '幂等性键过长')
-    .describe('幂等性键,防止重复操作'),
+export const createInboundSchema = z
+  .object({
+    idempotencyKey: z
+      .string()
+      .min(1, '幂等性键不能为空')
+      .max(100, '幂等性键过长')
+      .describe('幂等性键,防止重复操作'),
 
-  productId: z.string().min(1, '请选择产品'),
+    productId: z.string().min(1, '请选择产品'),
 
-  variantId: z.string().uuid('产品变体ID格式不正确').optional(),
+    variantId: z.string().uuid('产品变体ID格式不正确').optional(),
 
-  // 用户输入的数量（根据选择的单位）
-  inputQuantity: z
-    .number({ message: '数量必须是数字' })
-    .min(1, { error: '数量必须大于等于1' })
-    .max(999999, { error: '数量不能超过999999' })
-    .int({ error: '数量必须是整数' }),
+    // 用户输入的数量（根据选择的单位）
+    inputQuantity: z
+      .number({ message: '数量必须是数字' })
+      .min(1, { error: '数量必须大于等于1' })
+      .max(999999, { error: '数量不能超过999999' })
+      .int({ error: '数量必须是整数' }),
 
-  // 用户选择的单位
-  inputUnit: inboundUnitSchema.default('pieces'),
+    // 用户选择的单位
+    inputUnit: inboundUnitSchema.default('pieces'),
 
-  // 最终存储的片数（由前端计算后传入）
-  quantity: z
-    .number({ message: '数量必须是数字' })
-    .min(1, { error: '数量必须大于等于1片' })
-    .max(999999, { error: '数量不能超过999999片' })
-    .int({ error: '数量必须是整数' }),
+    // 最终存储的片数（由前端计算后传入）
+    quantity: z
+      .number({ message: '数量必须是数字' })
+      .min(1, { error: '数量必须大于等于1片' })
+      .max(999999, { error: '数量不能超过999999片' })
+      .int({ error: '数量必须是整数' }),
 
-  reason: inboundReasonSchema.default('purchase'),
+    reason: inboundReasonSchema.default('purchase'),
 
-  remarks: z
-    .string()
-    .max(500, '备注不能超过500个字符')
-    .optional()
-    .transform(val => val?.trim() || undefined)
-    .refine(
-      val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
-      '备注包含不安全的内容'
-    ),
+    remarks: z
+      .string()
+      .max(500, '备注不能超过500个字符')
+      .optional()
+      .transform(val => val?.trim() || undefined)
+      .refine(
+        val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+        '备注包含不安全的内容'
+      ),
 
-  // 批次管理字段
-  batchNumber: z
-    .string()
-    .max(50, '批次号不能超过50个字符')
-    .optional()
-    .transform(val => val?.trim() || undefined), // 空字符串转为 undefined
+    // 批次管理字段
+    batchNumber: z
+      .string()
+      .max(50, '批次号不能超过50个字符')
+      .optional()
+      .transform(val => val?.trim() || undefined), // 空字符串转为 undefined
 
-  // 产品参数字段（入库时确定）
-  piecesPerUnit: z
-    .number()
-    .int({ error: '每单位片数必须是整数' })
-    .min(1, { error: '每单位片数至少为1' })
-    .max(10000, { error: '每单位片数不能超过10000' })
-    .optional(),
+    purchaseOrderId: z
+      .string()
+      .uuid('采购订单ID格式不正确')
+      .optional()
+      .or(z.literal(''))
+      .transform(val =>
+        val && val.trim().length > 0 ? val.trim() : undefined
+      ),
 
-  weight: z
-    .number()
-    .min(0.01, { error: '重量必须大于0' })
-    .max(10000, { error: '重量不能超过10000kg' })
-    .optional(),
-});
+    purchaseOrderItemId: z
+      .string()
+      .uuid('采购订单明细ID格式不正确')
+      .optional()
+      .or(z.literal(''))
+      .transform(val =>
+        val && val.trim().length > 0 ? val.trim() : undefined
+      ),
+
+    // 产品参数字段（入库时确定）
+    piecesPerUnit: z
+      .number()
+      .int({ error: '每单位片数必须是整数' })
+      .min(1, { error: '每单位片数至少为1' })
+      .max(10000, { error: '每单位片数不能超过10000' })
+      .optional(),
+
+    weight: z
+      .number()
+      .min(0.01, { error: '重量必须大于0' })
+      .max(10000, { error: '重量不能超过10000kg' })
+      .optional(),
+
+    // 成本字段（入库时必填）
+    unitCost: z
+      .number({ message: '单位成本必须是数字' })
+      .min(0.01, { error: '单位成本必须大于0' })
+      .max(999999.99, { error: '单位成本不能超过999,999.99' })
+      .multipleOf(0.01, { error: '单位成本最多保留2位小数' }),
+  })
+  .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
+    message: '传入采购订单明细时必须指定采购订单ID',
+    path: ['purchaseOrderId'],
+  });
 
 // 更新入库记录验证规则
 export const updateInboundSchema = z.object({
@@ -144,7 +176,15 @@ export const inboundQuerySchema = z.object({
     .refine(
       val =>
         !val ||
-        ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(val),
+        [
+          'purchase',
+          'return',
+          'transfer',
+          'surplus',
+          'other',
+          'sales_cancel',
+          'return_inbound',
+        ].includes(val),
       '入库原因格式不正确'
     ),
 
@@ -227,7 +267,15 @@ export type ProductSearchData = z.infer<typeof productSearchSchema>;
 export const validateInboundReason = (
   reason: string
 ): reason is InboundReason =>
-  ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(reason);
+  [
+    'purchase',
+    'return',
+    'transfer',
+    'surplus',
+    'other',
+    'sales_cancel',
+    'return_inbound',
+  ].includes(reason);
 
 // 数量格式化辅助函数
 export const formatQuantity = (quantity: number): number =>

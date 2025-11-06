@@ -157,53 +157,87 @@ export function validateRequiredFields(
 }
 
 /**
- * 验证手动输入商品的必填字段
- * 手动商品需要产品编码，库存商品需要 productId
+ * 验证手动输入产品的必填字段
+ * 手动产品需要产品编码，库存产品需要 productId
  *
  * 特殊规则：
- * - 调货销售订单的手动商品必须填写 productCode（包括草稿状态）
- *   因为后端需要 productCode 来创建临时商品记录
+ * - 调货销售订单的手动产品必须填写 productCode（包括草稿状态）
+ *   因为后端需要 productCode 来创建临时产品记录
  */
 export function validateManualProductFields(
   items: SalesOrderItemFormData[],
-  status: string,
-  orderType?: 'NORMAL' | 'TRANSFER'
+  ctxOrStatus: z.RefinementCtx | string,
+  statusOrOrderType?: string | 'NORMAL' | 'TRANSFER',
+  maybeOrderType?: 'NORMAL' | 'TRANSFER'
 ): boolean {
-  // 1. 调货销售订单的手动商品必须有 productCode（包括草稿状态）
-  // 这是因为后端创建临时商品需要 productCode 字段
-  if (orderType === 'TRANSFER') {
-    for (const item of items) {
-      if (item.isManualProduct) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return true;
+  }
+
+  const isCtx =
+    typeof ctxOrStatus === 'object' &&
+    ctxOrStatus !== null &&
+    'addIssue' in ctxOrStatus &&
+    typeof (ctxOrStatus as z.RefinementCtx).addIssue === 'function';
+
+  const ctx = isCtx ? (ctxOrStatus as z.RefinementCtx) : undefined;
+  const status = isCtx
+    ? ((statusOrOrderType as string | undefined) ?? 'draft')
+    : ((ctxOrStatus as string | undefined) ?? 'draft');
+  const orderType = isCtx
+    ? maybeOrderType
+    : (statusOrOrderType as 'NORMAL' | 'TRANSFER' | undefined);
+
+  const isDraft = status === 'draft';
+  const shouldRequireManualCode = orderType === 'TRANSFER';
+
+  let isValid = true;
+
+  const reportIssue = (path: (string | number)[], message: string): void => {
+    isValid = false;
+    if (ctx) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message,
+        path,
+      });
+    }
+  };
+
+  items.forEach((item, index) => {
+    if (item.isManualProduct) {
+      const hasName =
+        typeof item.manualProductName === 'string' &&
+        item.manualProductName.trim() !== '';
+
+      if (!hasName) {
+        reportIssue(
+          ['items', index, 'manualProductName'],
+          '手动输入产品必须填写产品名称'
+        );
+      }
+
+      if (shouldRequireManualCode) {
         const hasCode =
           typeof item.productCode === 'string' &&
           item.productCode.trim() !== '';
 
         if (!hasCode) {
-          return false;
+          reportIssue(
+            ['items', index, 'productCode'],
+            '手动输入产品必须填写产品编码'
+          );
         }
       }
-    }
-  }
+    } else if (!isDraft) {
+      const hasProductId =
+        typeof item.productId === 'string' && item.productId.trim() !== '';
 
-  // 2. 非草稿状态的订单，所有商品都需要验证必填字段
-  if (status === 'draft') {
-    return true;
-  }
-
-  for (const item of items) {
-    if (item.isManualProduct) {
-      const hasCode =
-        typeof item.productCode === 'string' && item.productCode.trim() !== '';
-
-      if (!hasCode) {
-        return false;
-      }
-    } else {
-      // 非手动输入商品必须有productId
-      if (!item.productId || item.productId.trim() === '') {
-        return false;
+      if (!hasProductId) {
+        reportIssue(['items', index, 'productId'], '库存产品必须选择产品');
       }
     }
-  }
-  return true;
+  });
+
+  return isValid;
 }

@@ -6,6 +6,7 @@
 'use client';
 
 import { Eye, Package } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -19,9 +20,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatCurrency } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryGroupedTableProps {
@@ -122,6 +125,13 @@ function formatSpecification(spec: string | null | undefined): string {
 export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
   ({ data, onAdjust, searchQuery }) => {
     const groups = React.useMemo(() => groupByProduct(data), [data]);
+    const { data: session } = useSession();
+
+    // 检查用户是否有财务查看权限
+    const hasFinancePermission = React.useMemo(
+      () => can(session?.user ?? null, 'finance:view'),
+      [session?.user]
+    );
 
     // ✅ 判断是否为搜索无结果
     const hasSearchQuery = searchQuery && searchQuery.trim().length > 0;
@@ -140,6 +150,12 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             <TableHead>库存数量</TableHead>
             <TableHead>预留数量</TableHead>
             <TableHead>可用数量</TableHead>
+            {hasFinancePermission && (
+              <>
+                <TableHead className="text-right">单位成本（元）</TableHead>
+                <TableHead className="text-right">库存总成本（元）</TableHead>
+              </>
+            )}
             <TableHead>库存状态</TableHead>
             <TableHead>最后更新</TableHead>
             <TableHead className="text-right">操作</TableHead>
@@ -148,7 +164,10 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
         <TableBody>
           {isEmptyState ? (
             <TableRow>
-              <TableCell colSpan={12} className="p-8">
+              <TableCell
+                colSpan={hasFinancePermission ? 14 : 12}
+                className="p-8"
+              >
                 <EmptyState
                   title={hasSearchQuery ? undefined : '暂无库存数据'}
                   description={undefined}
@@ -332,6 +351,23 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="font-semibold text-[hsl(var(--color-text-primary))]">
                       {availableDisplay}
                     </TableCell>
+
+                    {/* 成本信息（仅财务权限可见） */}
+                    {hasFinancePermission && (
+                      <>
+                        {/* 单位成本 */}
+                        <TableCell className="text-right font-medium text-[hsl(var(--color-text-primary))]">
+                          {item.unitCost ? formatCurrency(item.unitCost) : '-'}
+                        </TableCell>
+
+                        {/* 库存总成本 */}
+                        <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))]">
+                          {item.unitCost
+                            ? formatCurrency(item.quantity * item.unitCost)
+                            : '-'}
+                        </TableCell>
+                      </>
+                    )}
 
                     {/* 库存状态 */}
                     <TableCell>

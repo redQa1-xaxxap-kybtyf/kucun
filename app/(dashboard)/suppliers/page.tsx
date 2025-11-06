@@ -91,6 +91,7 @@ export default async function SuppliersPage({
     data: initialData.suppliers.map<Supplier>(supplier => ({
       id: supplier.id,
       name: supplier.name,
+      supplierCode: supplier.supplierCode ?? undefined,
       phone: supplier.phone ?? undefined,
       address: supplier.address ?? undefined,
       status: supplier.status as Supplier['status'],

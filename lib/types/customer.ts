@@ -35,12 +35,24 @@ export interface CustomerExtendedInfo {
   // 联系信息
   contactPerson?: string;
   email?: string;
-
-  // 备注信息
-  notes?: string;
+  fax?: string; // 传真号码
+  phone2?: string; // 备用电话1
+  phone3?: string; // 备用电话2
+  website?: string;
+  businessLicense?: string;
+  taxNumber?: string;
+  bankAccount?: string;
+  creditLimit?: number;
+  paymentTerms?: string;
+  customerType?: 'company' | 'store' | 'individual';
+  industry?: string;
+  level?: 'A' | 'B' | 'C' | 'D';
 
   // 地区
   region?: string;
+
+  // 备注信息
+  notes?: string;
 
   // 标签
   tags?: string[];

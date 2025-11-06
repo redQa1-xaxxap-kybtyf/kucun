@@ -65,7 +65,7 @@ export interface SalesOrderFormItem {
   localQuantity?: number;
   transferQuantity?: number;
 
-  // 手动输入商品
+  // 手动输入产品
   isManualProduct?: boolean;
   manualProductName?: string;
   manualSpecification?: string;
@@ -262,7 +262,7 @@ export function transformFormItemToCreateInput(
   const localQuantity = toOptionalNumber(formItem.localQuantity);
   const transferQuantity = toOptionalNumber(formItem.transferQuantity);
 
-  // 手动输入商品的情况
+  // 手动输入产品的情况
   if (formItem.isManualProduct) {
     return {
       productId: formItem.productId?.trim() || undefined,
@@ -289,7 +289,7 @@ export function transformFormItemToCreateInput(
     };
   }
 
-  // 普通商品的情况
+  // 普通产品的情况
   return {
     productId: formItem.productId?.trim() || undefined,
     productCode: formItem.productCode?.trim() || undefined,
@@ -370,7 +370,7 @@ export function transformFormItemToUpdateInput(
   const localQuantity = toOptionalNumber(formItem.localQuantity);
   const transferQuantity = toOptionalNumber(formItem.transferQuantity);
 
-  // 手动输入商品的情况
+  // 手动输入产品的情况
   if (formItem.isManualProduct) {
     return {
       productId: formItem.productId?.trim() || undefined,
@@ -397,7 +397,7 @@ export function transformFormItemToUpdateInput(
     };
   }
 
-  // 普通商品的情况
+  // 普通产品的情况
   return {
     productId: formItem.productId?.trim() || undefined,
     productCode: formItem.productCode?.trim() || undefined,
@@ -485,7 +485,7 @@ function validateItems(
     if (item.isManualProduct) {
       const manualCode = item.productCode?.trim() ?? '';
       if (!manualCode) {
-        errors.push(`第${position}个明细项：手动输入商品必须填写产品编码`);
+        errors.push(`第${position}个明细项：手动输入产品必须填写产品编码`);
       }
     } else if (!item.productId?.trim()) {
       errors.push(`第${position}个明细项：请选择产品`);

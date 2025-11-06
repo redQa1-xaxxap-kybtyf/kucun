@@ -1,6 +1,5 @@
 'use client';
-
-import { DollarSign } from 'lucide-react';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
@@ -31,7 +30,7 @@ export function StatementFinancialSummary({
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
+          <ChineseYuan className="h-5 w-5" />
           财务汇总
         </CardTitle>
       </CardHeader>

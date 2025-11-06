@@ -38,10 +38,12 @@ async function checkOrderStatus() {
     console.log(`订单号: ${order.orderNumber}`);
     console.log(`客户: ${order.customer.name}`);
     console.log(`状态: ${order.status}`);
-    console.log(`订单金额: ¥${Number(order.totalAmount).toFixed(2)}`);
-    console.log(`抹零金额: ¥${Number(order.roundingAdjustment || 0).toFixed(2)}`);
+    console.log(`订单金额: ￥${Number(order.totalAmount).toFixed(2)}`);
     console.log(
-      `实际应收: ¥${(Number(order.totalAmount) + Number(order.roundingAdjustment || 0)).toFixed(2)}`
+      `抹零金额: ￥${Number(order.roundingAdjustment || 0).toFixed(2)}`
+    );
+    console.log(
+      `实际应收: ￥${(Number(order.totalAmount) + Number(order.roundingAdjustment || 0)).toFixed(2)}`
     );
     console.log('');
 
@@ -51,8 +53,10 @@ async function checkOrderStatus() {
     } else {
       order.payments.forEach((payment, index) => {
         console.log(`  ${index + 1}. ${payment.paymentNumber}`);
-        console.log(`     金额: ¥${Number(payment.paymentAmount).toFixed(2)}`);
-        console.log(`     状态: ${payment.status === 'confirmed' ? '已确认' : '待确认'}`);
+        console.log(`     金额: ￥${Number(payment.paymentAmount).toFixed(2)}`);
+        console.log(
+          `     状态: ${payment.status === 'confirmed' ? '已确认' : '待确认'}`
+        );
       });
     }
     console.log('');
@@ -61,7 +65,9 @@ async function checkOrderStatus() {
     const roundingAdjustment = Number(order.roundingAdjustment || 0);
     const actualTotalAmount = totalAmount + roundingAdjustment;
 
-    const confirmedPayments = order.payments.filter(p => p.status === 'confirmed');
+    const confirmedPayments = order.payments.filter(
+      p => p.status === 'confirmed'
+    );
     const pendingPayments = order.payments.filter(p => p.status === 'pending');
     const confirmedAmount = confirmedPayments.reduce(
       (sum, p) => sum + Number(p.paymentAmount),
@@ -74,18 +80,18 @@ async function checkOrderStatus() {
     const remainingAmount = actualTotalAmount - confirmedAmount - pendingAmount;
 
     console.log('📊 应收分析：');
-    console.log(`实际应收: ¥${actualTotalAmount.toFixed(2)}`);
-    console.log(`已确认: ¥${confirmedAmount.toFixed(2)}`);
-    console.log(`待确认: ¥${pendingAmount.toFixed(2)}`);
-    console.log(`待收金额: ¥${remainingAmount.toFixed(2)}`);
+    console.log(`实际应收: ￥${actualTotalAmount.toFixed(2)}`);
+    console.log(`已确认: ￥${confirmedAmount.toFixed(2)}`);
+    console.log(`待确认: ￥${pendingAmount.toFixed(2)}`);
+    console.log(`待收金额: ￥${remainingAmount.toFixed(2)}`);
     console.log('');
 
     if (Math.abs(remainingAmount) < 0.01) {
       console.log('✅ 待收金额为 0，订单已完全收款！');
     } else if (remainingAmount > 0) {
-      console.log(`⚠️  还需收款 ¥${remainingAmount.toFixed(2)}`);
+      console.log(`⚠️  还需收款 ￥${remainingAmount.toFixed(2)}`);
     } else {
-      console.log(`⚠️  多收了 ¥${Math.abs(remainingAmount).toFixed(2)}`);
+      console.log(`⚠️  多收了 ￥${Math.abs(remainingAmount).toFixed(2)}`);
     }
   } catch (error) {
     console.error('❌ 检查失败:', error);
@@ -96,4 +102,3 @@ async function checkOrderStatus() {
 }
 
 checkOrderStatus();
-

@@ -1,10 +1,10 @@
 /**
- * 临时商品查询 API
+ * 临时产品查询 API
  *
  * GET /api/temporary-products
  *
  * 功能:
- * - 查询临时商品列表
+ * - 查询临时产品列表
  * - 支持按供应商筛选
  * - 支持搜索(编码、名称、规格)
  * - 支持排序(使用次数、最后使用时间、名称)
@@ -20,7 +20,10 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 // 排序配置映射（函数外，减少 GET 体积）
-const orderByMap: Record<string, Prisma.TemporaryProductOrderByWithRelationInput> = {
+const orderByMap: Record<
+  string,
+  Prisma.TemporaryProductOrderByWithRelationInput
+> = {
   usageCount: { usageCount: 'desc' },
   lastUsedAt: { lastUsedAt: 'desc' },
   name: { name: 'asc' },
@@ -36,7 +39,10 @@ function getOrderBy(
   const base = known ? orderByMap[sortBy] : orderByMap.usageCount;
   // 仅当字段有效时才按请求调整排序方向，保持未知字段时的原有默认行为
   if (!known) return base;
-  const dir = (sortOrder === 'asc' || sortOrder === 'desc') ? (sortOrder as Prisma.SortOrder) : undefined;
+  const dir =
+    sortOrder === 'asc' || sortOrder === 'desc'
+      ? (sortOrder as Prisma.SortOrder)
+      : undefined;
   if (!dir) return base;
   const key = Object.keys(base)[0] as keyof typeof base;
   return { [key]: dir } as Prisma.TemporaryProductOrderByWithRelationInput;
@@ -85,7 +91,8 @@ function formatTemporaryProduct(item: TempProductWithRelations) {
     creatorName: item.creator?.name || null,
     salesOrderCount: item._count.salesOrderItems,
     factoryShipmentCount: item._count.factoryShipmentItems,
-    totalUsageCount: item._count.salesOrderItems + item._count.factoryShipmentItems,
+    totalUsageCount:
+      item._count.salesOrderItems + item._count.factoryShipmentItems,
   };
 }
 
@@ -161,7 +168,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: '查询临时商品失败',
+        error: '查询临时产品失败',
         message: error instanceof Error ? error.message : '未知错误',
       },
       { status: 500 }

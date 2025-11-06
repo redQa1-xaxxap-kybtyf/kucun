@@ -3,8 +3,15 @@
 import * as React from 'react';
 
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { DateRangePicker, type DateRangeValue } from '@/components/ui/date-range-picker';
-import type { PayableRecordQuery, PayableStatus, PayableSourceType } from '@/lib/types/payable';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
+import type {
+  PayableRecordQuery,
+  PayableStatus,
+  PayableSourceType,
+} from '@/lib/types/payable';
 
 interface Props {
   query: PayableRecordQuery;
@@ -13,7 +20,12 @@ interface Props {
   onDateRangeChange: (range: DateRangeValue) => void;
 }
 
-export function PayablesFilterBar({ query, onSearch, onFilterChange, onDateRangeChange }: Props) {
+export function PayablesFilterBar({
+  query,
+  onSearch,
+  onFilterChange,
+  onDateRangeChange,
+}: Props) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="min-w-[280px] flex-1">

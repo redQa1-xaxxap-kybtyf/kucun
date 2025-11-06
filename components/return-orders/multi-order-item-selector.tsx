@@ -194,7 +194,7 @@ function SalesOrderSection({
                 })}
               </span>
               <span className="text-muted-foreground">
-                总金额: ¥{order.totalAmount.toFixed(2)}
+                总金额: ￥{order.totalAmount.toFixed(2)}
               </span>
             </div>
           </Button>
@@ -205,12 +205,12 @@ function SalesOrderSection({
               <div className="flex items-center justify-center gap-2 py-4">
                 <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
                 <span className="text-muted-foreground text-xs">
-                  加载商品明细...
+                  加载产品明细...
                 </span>
               </div>
             ) : returnableItems.length === 0 ? (
               <div className="text-muted-foreground py-4 text-center text-xs">
-                该订单暂无可退货商品
+                该订单暂无可退货产品
               </div>
             ) : (
               <Table>
@@ -253,7 +253,7 @@ function SalesOrderSection({
                           {item.availableQuantity}
                         </TableCell>
                         <TableCell className="h-8 px-2">
-                          ¥{item.unitPrice.toFixed(2)}
+                          ￥{item.unitPrice.toFixed(2)}
                         </TableCell>
                         <TableCell className="h-8 px-2">
                           <Input

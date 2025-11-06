@@ -81,17 +81,17 @@ function BalanceInfo({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">可用预收款余额：</span>
         <span className="font-semibold text-blue-600">
-          ¥{formatCurrency(availableBalance)}
+          ￥{formatCurrency(availableBalance)}
         </span>
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">订单金额：</span>
-        <span className="font-semibold">¥{formatCurrency(orderTotal)}</span>
+        <span className="font-semibold">￥{formatCurrency(orderTotal)}</span>
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">最大可冲抵金额：</span>
         <span className="font-semibold text-green-600">
-          ¥{formatCurrency(maxApplicableAmount)}
+          ￥{formatCurrency(maxApplicableAmount)}
         </span>
       </div>
     </div>
@@ -122,7 +122,7 @@ function PrepaymentAmountInput({
           <FormControl>
             <div className="relative">
               <span className="text-muted-foreground absolute top-2.5 left-3 text-sm">
-                ¥
+                ￥
               </span>
               <Input
                 type="number"
@@ -172,9 +172,9 @@ function ValidationAlert({
       <AlertCircle className="h-4 w-4" />
       <AlertDescription className="text-xs">
         {prepaymentAmount > availableBalance
-          ? `冲抵金额不能超过可用余额 ¥${formatCurrency(availableBalance)}`
+          ? `冲抵金额不能超过可用余额 ￥${formatCurrency(availableBalance)}`
           : prepaymentAmount > orderTotal
-            ? `冲抵金额不能超过订单金额 ¥${formatCurrency(orderTotal)}`
+            ? `冲抵金额不能超过订单金额 ￥${formatCurrency(orderTotal)}`
             : '请输入有效的冲抵金额'}
       </AlertDescription>
     </Alert>
@@ -194,7 +194,7 @@ function PaymentPreview({
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">冲抵后应付金额：</span>
         <span className="text-lg font-bold text-green-700">
-          ¥{formatCurrency(orderTotal - prepaymentAmount)}
+          ￥{formatCurrency(orderTotal - prepaymentAmount)}
         </span>
       </div>
     </div>

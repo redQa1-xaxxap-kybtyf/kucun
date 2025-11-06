@@ -1,3 +1,5 @@
+import type { Prisma, PrismaClient } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 
 import {
@@ -20,17 +22,24 @@ export function normalizeSupplierName(name: string): string {
     .trim(); // 再次去除可能产生的前后空格
 }
 
+type SupplierPrismaClient = PrismaClient | Prisma.TransactionClient;
+
+const SUPPLIER_CODE_SEQUENCE_LENGTH = 4;
+
 /**
  * 生成供应商编码
- * 格式：SUP + 年月日 + 3位序号
+ * 格式：SUP + 年月日 + 4位序号
  */
-export async function generateSupplierCode(): Promise<string> {
+export async function generateSupplierCode(
+  client?: SupplierPrismaClient
+): Promise<string> {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
   const prefix = `SUP${dateStr}`;
+  const db = client ?? prisma;
 
   // 查找当天最大的序号
-  const lastSupplier = await prisma.supplier.findFirst({
+  const lastSupplier = await db.supplier.findFirst({
     where: {
       supplierCode: {
         startsWith: prefix,
@@ -55,7 +64,9 @@ export async function generateSupplierCode(): Promise<string> {
     }
   }
 
-  return `${prefix}${sequence.toString().padStart(3, '0')}`;
+  return `${prefix}${sequence
+    .toString()
+    .padStart(SUPPLIER_CODE_SEQUENCE_LENGTH, '0')}`;
 }
 
 /**
@@ -126,13 +137,31 @@ export async function checkSupplierReferences(supplierId: string): Promise<{
   references: {
     salesOrders: number;
     factoryShipmentItems: number;
+    temporaryProducts: number;
+    purchaseOrders: number;
+    purchaseOrderItems: number;
   };
 }> {
-  const [salesOrderCount, factoryShipmentItemCount] = await Promise.all([
+  const [
+    salesOrderCount,
+    factoryShipmentItemCount,
+    temporaryProductCount,
+    purchaseOrderCount,
+    purchaseOrderItemCount,
+  ] = await Promise.all([
     prisma.salesOrder.count({
       where: { supplierId },
     }),
     prisma.factoryShipmentOrderItem.count({
+      where: { supplierId },
+    }),
+    prisma.temporaryProduct.count({
+      where: { supplierId },
+    }),
+    prisma.purchaseOrder.count({
+      where: { supplierId },
+    }),
+    prisma.purchaseOrderItem.count({
       where: { supplierId },
     }),
   ]);
@@ -140,12 +169,19 @@ export async function checkSupplierReferences(supplierId: string): Promise<{
   const references = {
     salesOrders: salesOrderCount,
     factoryShipmentItems: factoryShipmentItemCount,
+    temporaryProducts: temporaryProductCount,
+    purchaseOrders: purchaseOrderCount,
+    purchaseOrderItems: purchaseOrderItemCount,
   };
 
-  return {
-    hasReferences: salesOrderCount > 0 || factoryShipmentItemCount > 0,
-    references,
-  };
+  const hasReferences =
+    salesOrderCount > 0 ||
+    factoryShipmentItemCount > 0 ||
+    temporaryProductCount > 0 ||
+    purchaseOrderCount > 0 ||
+    purchaseOrderItemCount > 0;
+
+  return { hasReferences, references };
 }
 
 /**
@@ -154,6 +190,9 @@ export async function checkSupplierReferences(supplierId: string): Promise<{
 export function formatSupplierReferenceError(references: {
   salesOrders: number;
   factoryShipmentItems: number;
+  temporaryProducts?: number;
+  purchaseOrders?: number;
+  purchaseOrderItems?: number;
 }): string {
   const messages: string[] = [];
 
@@ -163,6 +202,18 @@ export function formatSupplierReferenceError(references: {
 
   if (references.factoryShipmentItems > 0) {
     messages.push(`${references.factoryShipmentItems}个厂家发货项目`);
+  }
+
+  if (references.temporaryProducts && references.temporaryProducts > 0) {
+    messages.push(`${references.temporaryProducts}个临时产品`);
+  }
+
+  if (references.purchaseOrders && references.purchaseOrders > 0) {
+    messages.push(`${references.purchaseOrders}个采购订单`);
+  }
+
+  if (references.purchaseOrderItems && references.purchaseOrderItems > 0) {
+    messages.push(`${references.purchaseOrderItems}个采购订单明细`);
   }
 
   return `该供应商正在被${messages.join('、')}引用，无法删除。请先处理相关业务数据。`;

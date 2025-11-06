@@ -26,6 +26,7 @@ export const PUT = withAuth(
 
     let updatedCount = 0;
     let failedCount = 0;
+    let unchangedCount = 0;
     const failedSuppliers: { id: string; name: string; reason: string }[] = [];
 
     // 处理不存在的供应商
@@ -39,10 +40,7 @@ export const PUT = withAuth(
     });
 
     // 统计状态相同的供应商(无需更新)
-    const sameStatusSuppliers = suppliersToUpdate.filter(
-      s => s.status === status
-    );
-    const sameStatusCount = sameStatusSuppliers.length;
+    unchangedCount = suppliersToUpdate.filter(s => s.status === status).length;
 
     // 获取需要更新的供应商
     const suppliersNeedingUpdate = suppliersToUpdate.filter(
@@ -52,7 +50,7 @@ export const PUT = withAuth(
     const idsToUpdate: string[] = [];
 
     for (const supplier of suppliersNeedingUpdate) {
-      if (status === 'inactive') {
+      if (status !== 'active') {
         try {
           await ensureSupplierCanBeDeactivated(supplier.id, supplier.name);
           idsToUpdate.push(supplier.id);
@@ -68,8 +66,6 @@ export const PUT = withAuth(
         idsToUpdate.push(supplier.id);
       }
     }
-
-    updatedCount = sameStatusCount;
 
     // 使用 updateMany 一次性更新所有需要更新的供应商
     if (idsToUpdate.length > 0) {
@@ -110,13 +106,15 @@ export const PUT = withAuth(
       }
     }
 
-    const statusText = status === 'active' ? '启用' : '停用';
+    const statusText =
+      status === 'active' ? '启用' : status === 'inactive' ? '停用' : '暂停';
     const result: BatchUpdateSupplierStatusResult = {
       success: failedCount === 0,
       updatedCount,
+      unchangedCount,
       failedCount,
       failedSuppliers: failedSuppliers.length > 0 ? failedSuppliers : undefined,
-      message: `成功${statusText} ${updatedCount} 个供应商${failedCount > 0 ? `，${failedCount} 个失败` : ''}`,
+      message: `成功${statusText} ${updatedCount} 个供应商${unchangedCount > 0 ? `，${unchangedCount} 个已处于目标状态` : ''}${failedCount > 0 ? `，${failedCount} 个失败` : ''}`,
     };
 
     return NextResponse.json(result);

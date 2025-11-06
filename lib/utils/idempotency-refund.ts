@@ -176,7 +176,7 @@ export async function processRefundWithLock(
     // 验证金额（除非抹平剩余金额）
     if (!shouldCloseRemaining && newProcessedAmount > refund.refundAmount) {
       throw new Error(
-        `处理金额超出剩余金额。剩余: ¥${refund.remainingAmount.toFixed(2)}, 尝试处理: ¥${processAmount.toFixed(2)}`
+        `处理金额超出剩余金额。剩余: ￥${refund.remainingAmount.toFixed(2)}, 尝试处理: ￥${processAmount.toFixed(2)}`
       );
     }
 

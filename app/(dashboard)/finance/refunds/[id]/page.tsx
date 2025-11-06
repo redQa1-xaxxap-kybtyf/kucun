@@ -1,3 +1,4 @@
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 /**
  * 退款详情页面
  * 显示退款记录的详细信息，支持状态更新和处理操作
@@ -9,7 +10,6 @@ import {
   ArrowLeft,
   CheckCircle,
   Clock,
-  DollarSign,
   FileText,
   Package,
   XCircle,
@@ -149,7 +149,7 @@ export default async function RefundDetailPage({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <DollarSign className="h-6 w-6" />
+                  <ChineseYuan className="h-6 w-6" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
@@ -196,7 +196,7 @@ export default async function RefundDetailPage({
             <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
               <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
-                  <DollarSign className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
+                  <ChineseYuan className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                   退款信息
                 </CardTitle>
                 <CardDescription>查看退款金额和处理状态</CardDescription>

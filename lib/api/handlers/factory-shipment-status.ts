@@ -82,9 +82,9 @@ export function validateStatusPrerequisites(
 ): { valid: boolean; message: string } {
   switch (newStatus) {
     case FACTORY_SHIPMENT_STATUS.CONFIRMED:
-      // 已确认: 必须有商品明细和金额
+      // 已确认: 必须有产品明细和金额
       if (!order.items || order.items.length === 0) {
-        return { valid: false, message: '必须有商品明细才能确认订单' };
+        return { valid: false, message: '必须有产品明细才能确认订单' };
       }
       if (!order.totalAmount || order.totalAmount <= 0) {
         return { valid: false, message: '订单金额必须大于0才能确认' };
@@ -203,7 +203,10 @@ export async function updateFactoryShipmentStatus(
 ): Promise<OrderStatusUpdateResult> {
   // 确定状态流转路径
   let statusPath: string[];
-  if (enableSmartTransition && !validateStatusTransition(currentStatus, newStatus).valid) {
+  if (
+    enableSmartTransition &&
+    !validateStatusTransition(currentStatus, newStatus).valid
+  ) {
     // 需要智能流转
     statusPath = getSmartStatusTransition(currentStatus, newStatus);
     if (statusPath.length === 0) {
@@ -320,7 +323,10 @@ export async function updateFactoryShipmentStatus(
     }
 
     // 当订单状态变更为已发货或已到港时，创建应收账款记录
-    if (finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED || finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED) {
+    if (
+      finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED ||
+      finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED
+    ) {
       const existingReceivable = await tx.paymentRecord.findFirst({
         where: {
           factoryShipmentOrderId: orderId,

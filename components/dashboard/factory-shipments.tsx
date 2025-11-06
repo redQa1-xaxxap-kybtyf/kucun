@@ -71,8 +71,12 @@ function SectionHeader() {
           <Truck className="h-5 w-5" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">厂家发货订单</h3>
-          <p className="text-sm text-[hsl(var(--color-text-secondary))]">最近的发货订单</p>
+          <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+            厂家发货订单
+          </h3>
+          <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+            最近的发货订单
+          </p>
         </div>
       </div>
     </CardHeader>
@@ -96,32 +100,51 @@ function EmptyStateCard() {
       <SectionHeader />
       <CardContent className="flex flex-col items-center justify-center py-12">
         <Package className="mb-4 h-12 w-12 text-[hsl(var(--color-border-secondary))]" />
-        <p className="text-sm text-[hsl(var(--color-text-secondary))]">暂无厂家发货订单</p>
-        <p className="mt-1 text-sm text-[hsl(var(--color-text-tertiary))]">所有发货均已完成</p>
+        <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+          暂无厂家发货订单
+        </p>
+        <p className="mt-1 text-sm text-[hsl(var(--color-text-tertiary))]">
+          所有发货均已完成
+        </p>
       </CardContent>
     </Card>
   );
 }
 
-function ShipmentListItem({ order }: { order: DashboardFactoryShipmentSummary }) {
+function ShipmentListItem({
+  order,
+}: {
+  order: DashboardFactoryShipmentSummary;
+}) {
   const badgeVariant = STATUS_VARIANT_MAP[order.status] ?? 'secondary';
   return (
-    <Link key={order.id} href={`/factory-shipments/${order.id}`} className="group block">
+    <Link
+      key={order.id}
+      href={`/factory-shipments/${order.id}`}
+      className="group block"
+    >
       <div className="flex items-start gap-4 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-4 transition-all hover:border-[hsl(var(--color-success))] hover:shadow-[var(--shadow-light)]">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--color-success))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
           <Truck className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="truncate font-medium text-[hsl(var(--color-text-primary))]">{order.orderNumber}</span>
-            <Badge variant={badgeVariant} className="shrink-0 text-xs font-medium">
+            <span className="truncate font-medium text-[hsl(var(--color-text-primary))]">
+              {order.orderNumber}
+            </span>
+            <Badge
+              variant={badgeVariant}
+              className="shrink-0 text-xs font-medium"
+            >
               {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
             </Badge>
           </div>
           <div className="flex items-center gap-4 text-sm text-[hsl(var(--color-text-secondary))]">
             <div className="flex items-center gap-1">
               <User className="h-3.5 w-3.5" />
-              <span className="truncate">{order.customer?.name || '未知客户'}</span>
+              <span className="truncate">
+                {order.customer?.name || '未知客户'}
+              </span>
             </div>
             <div className="shrink-0 font-medium text-[hsl(var(--color-success))]">
               {formatCurrency(order.totalAmount)}

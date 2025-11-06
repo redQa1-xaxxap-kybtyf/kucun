@@ -7,10 +7,12 @@ import type { User } from './user';
 // 入库原因枚举
 export type InboundReason =
   | 'purchase' // 采购入库
-  | 'return' // 退货入库
+  | 'return' // 退货入库（手工处理）
   | 'transfer' // 调拨入库
   | 'surplus' // 盘盈入库
-  | 'other'; // 其他
+  | 'other' // 其他
+  | 'sales_cancel' // 销售取消回库
+  | 'return_inbound'; // 退货单自动入库
 
 // 入库原因标签映射
 export const INBOUND_REASON_LABELS: Record<InboundReason, string> = {
@@ -19,6 +21,8 @@ export const INBOUND_REASON_LABELS: Record<InboundReason, string> = {
   transfer: '调拨入库',
   surplus: '盘盈入库',
   other: '其他',
+  sales_cancel: '销售订单取消入库',
+  return_inbound: '退货订单入库',
 };
 
 // 入库原因选项
@@ -94,6 +98,7 @@ export interface CreateInboundRequest {
   inputQuantity: number;
   inputUnit: InboundUnit;
   quantity: number;
+  unitCost: number; // 单位成本（必填）
   reason: InboundReason;
   remarks?: string;
 
@@ -101,7 +106,6 @@ export interface CreateInboundRequest {
   productionDate?: string; // ISO日期字符串
   batchNumber?: string; // 批次号
   colorCode?: string; // 色号
-  unitCost?: number; // 单位成本
   location?: string; // 存储位置
 
   // 批次规格参数（入库时确定，可选）
@@ -175,6 +179,7 @@ export interface InboundFormData {
   inputQuantity?: number; // 用户输入的数量
   inputUnit: InboundUnit; // 用户选择的单位
   quantity?: number; // 最终存储的片数
+  unitCost?: number; // 单位成本（必填，但表单初始化时可为undefined）
   reason: InboundReason;
   remarks?: string;
 
@@ -182,7 +187,6 @@ export interface InboundFormData {
   batchNumber?: string; // 批次号
   piecesPerUnit?: number; // 每单位片数（入库时确定）
   weight?: number; // 产品重量（入库时确定）
-  unitCost?: number; // 单位成本
   location?: string; // 存储位置
 }
 

@@ -15,7 +15,8 @@ interface Props {
 
 export function PayableList({ items, isLoading, onView, onPayNow }: Props) {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [selectedPayable, setSelectedPayable] = useState<PayableRecordDetail | null>(null);
+  const [selectedPayable, setSelectedPayable] =
+    useState<PayableRecordDetail | null>(null);
 
   const handlePayNow = (payableId: string) => {
     const payable = items.find(item => item.id === payableId);

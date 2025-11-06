@@ -182,14 +182,17 @@ export default function SignInPage() {
   );
 
   // 组件卸载时清理所有定时器
-  useEffect(() => () => {
+  useEffect(
+    () => () => {
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
       }
       if (redirectDelayTimerRef.current) {
         clearTimeout(redirectDelayTimerRef.current);
       }
-    }, []);
+    },
+    []
+  );
 
   // 处理登录失败逻辑
   const handleLoginError = useCallback(

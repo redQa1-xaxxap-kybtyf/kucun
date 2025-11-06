@@ -7,7 +7,7 @@ interface UpdateFactoryShipmentItemInboundStatusData {
 }
 
 /**
- * 更新厂家发货订单商品明细入库状态的 API 调用
+ * 更新厂家发货订单产品明细入库状态的 API 调用
  */
 export async function updateFactoryShipmentItemInboundStatus(
   orderId: string,
@@ -28,7 +28,7 @@ export async function updateFactoryShipmentItemInboundStatus(
 }
 
 /**
- * 更新厂家发货订单商品明细入库状态的 Hook
+ * 更新厂家发货订单产品明细入库状态的 Hook
  */
 export function useUpdateFactoryShipmentItemInboundStatus() {
   const queryClient = useQueryClient();

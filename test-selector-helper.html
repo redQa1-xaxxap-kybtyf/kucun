@@ -1,111 +1,165 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>选择器助手测试</title>
-</head>
-<body>
+  </head>
+  <body>
     <h1>测试 HTML</h1>
     <ul data-v-5f0b6561="" class="right-top-list-ul">
-        <li data-v-5f0b6561="" class="flex-in flex-c">
-            <span data-v-5f0b6561="" title="状态" class="title" style="width: 60px;">状态</span>
-            <span data-v-5f0b6561="">：</span>
-            <span data-v-5f0b6561="" title="用主机航行" data-clipboard-text="用主机航行" class="ship-mmsi text-over-hide copy" style="max-width: calc(100% - 88px);">用主机航行</span>
-        </li>
-        <li data-v-5f0b6561="" class="flex-in flex-c">
-            <span data-v-5f0b6561="" title="目的地" class="title" style="width: 60px;">目的地</span>
-            <span data-v-5f0b6561="">：</span>
-            <span data-v-5f0b6561="" title="天津港" data-clipboard-text="天津港" class="ship-mmsi text-over-hide copy" style="max-width: calc(100% - 88px);">天津港</span>
-        </li>
-        <li data-v-5f0b6561="" class="flex-in flex-c">
-            <span data-v-5f0b6561="" title="预到时间" class="title" style="width: 60px;">预到时间</span>
-            <span data-v-5f0b6561="">：</span>
-            <span data-v-5f0b6561="" title="11-04 05:00" data-clipboard-text="11-04 05:00" class="ship-mmsi text-over-hide copy" style="max-width: calc(100% - 88px);">11-04 05:00</span>
-        </li>
+      <li data-v-5f0b6561="" class="flex-in flex-c">
+        <span data-v-5f0b6561="" title="状态" class="title" style="width: 60px"
+          >状态</span
+        >
+        <span data-v-5f0b6561="">：</span>
+        <span
+          data-v-5f0b6561=""
+          title="用主机航行"
+          data-clipboard-text="用主机航行"
+          class="ship-mmsi text-over-hide copy"
+          style="max-width: calc(100% - 88px)"
+          >用主机航行</span
+        >
+      </li>
+      <li data-v-5f0b6561="" class="flex-in flex-c">
+        <span
+          data-v-5f0b6561=""
+          title="目的地"
+          class="title"
+          style="width: 60px"
+          >目的地</span
+        >
+        <span data-v-5f0b6561="">：</span>
+        <span
+          data-v-5f0b6561=""
+          title="天津港"
+          data-clipboard-text="天津港"
+          class="ship-mmsi text-over-hide copy"
+          style="max-width: calc(100% - 88px)"
+          >天津港</span
+        >
+      </li>
+      <li data-v-5f0b6561="" class="flex-in flex-c">
+        <span
+          data-v-5f0b6561=""
+          title="预到时间"
+          class="title"
+          style="width: 60px"
+          >预到时间</span
+        >
+        <span data-v-5f0b6561="">：</span>
+        <span
+          data-v-5f0b6561=""
+          title="11-04 05:00"
+          data-clipboard-text="11-04 05:00"
+          class="ship-mmsi text-over-hide copy"
+          style="max-width: calc(100% - 88px)"
+          >11-04 05:00</span
+        >
+      </li>
     </ul>
 
     <script>
-        // 测试选择器
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(document.body.innerHTML, 'text/html');
-        
-        console.log('=== 测试选择器助手逻辑 ===');
-        
-        // 查找所有 li 元素
-        const allElements = doc.querySelectorAll('li, div, span, p');
-        console.log('找到元素数量:', allElements.length);
-        
-        const fieldKeywords = {
-            status: { keywords: ['状态', 'status', '航行状态'], field: '当前状态' },
-            destination: { keywords: ['目的地', 'destination', '目的港', '到达港'], field: '目的地' },
-            eta: { keywords: ['预到时间', '预计到达', 'eta', 'estimated arrival', '到港时间'], field: '预计到达' },
-        };
-        
-        const fields = [];
-        
-        allElements.forEach(element => {
-            const text = element.textContent?.trim() || '';
-            const title = element.getAttribute('title') || '';
-            
-            Object.entries(fieldKeywords).forEach(([key, config]) => {
-                const matchKeyword = config.keywords.find(keyword => 
-                    title.includes(keyword) || text.toLowerCase().includes(keyword.toLowerCase())
-                );
-                
-                if (matchKeyword) {
-                    console.log(`\n找到匹配: ${config.field}`);
-                    console.log('  元素:', element.tagName);
-                    console.log('  title:', title);
-                    console.log('  text:', text);
-                    console.log('  匹配关键词:', matchKeyword);
-                    
-                    // 查找值元素
-                    let valueElement = null;
-                    
-                    if (element.tagName === 'SPAN' && title) {
-                        const parent = element.parentElement;
-                        const spans = parent?.querySelectorAll('span');
-                        if (spans && spans.length > 1) {
-                            valueElement = Array.from(spans).find(s => 
-                                s !== element && s.textContent?.trim() && s.textContent?.trim() !== '：'
-                            );
-                        }
-                    }
-                    
-                    if (valueElement) {
-                        const value = valueElement.textContent?.trim() || '';
-                        console.log('  值元素:', valueElement);
-                        console.log('  值:', value);
-                        console.log('  值元素 classes:', Array.from(valueElement.classList));
-                        
-                        if (value && value !== ':' && value !== '-') {
-                            fields.push({
-                                label: config.field,
-                                value: value,
-                                classes: Array.from(valueElement.classList)
-                            });
-                        }
-                    }
-                }
-            });
-        });
-        
-        console.log('\n=== 检测结果 ===');
-        console.log('检测到字段数量:', fields.length);
-        fields.forEach(f => {
-            console.log(`\n${f.label}: ${f.value}`);
-            console.log('  Classes:', f.classes.join(', '));
-        });
-        
-        // 生成 XPath 选择器
-        console.log('\n=== 推荐的 XPath 选择器 ===');
-        fields.forEach(f => {
-            const mainClass = f.classes[0];
-            const xpath = `.//li[.//span[@title='${f.label === '当前状态' ? '状态' : f.label === '目的地' ? '目的地' : '预到时间'}']]/span[contains(@class, '${mainClass}')]`;
-            console.log(`${f.label}: ${xpath}`);
-        });
-    </script>
-</body>
-</html>
+      // 测试选择器
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(document.body.innerHTML, 'text/html');
 
+      console.log('=== 测试选择器助手逻辑 ===');
+
+      // 查找所有 li 元素
+      const allElements = doc.querySelectorAll('li, div, span, p');
+      console.log('找到元素数量:', allElements.length);
+
+      const fieldKeywords = {
+        status: { keywords: ['状态', 'status', '航行状态'], field: '当前状态' },
+        destination: {
+          keywords: ['目的地', 'destination', '目的港', '到达港'],
+          field: '目的地',
+        },
+        eta: {
+          keywords: [
+            '预到时间',
+            '预计到达',
+            'eta',
+            'estimated arrival',
+            '到港时间',
+          ],
+          field: '预计到达',
+        },
+      };
+
+      const fields = [];
+
+      allElements.forEach(element => {
+        const text = element.textContent?.trim() || '';
+        const title = element.getAttribute('title') || '';
+
+        Object.entries(fieldKeywords).forEach(([key, config]) => {
+          const matchKeyword = config.keywords.find(
+            keyword =>
+              title.includes(keyword) ||
+              text.toLowerCase().includes(keyword.toLowerCase())
+          );
+
+          if (matchKeyword) {
+            console.log(`\n找到匹配: ${config.field}`);
+            console.log('  元素:', element.tagName);
+            console.log('  title:', title);
+            console.log('  text:', text);
+            console.log('  匹配关键词:', matchKeyword);
+
+            // 查找值元素
+            let valueElement = null;
+
+            if (element.tagName === 'SPAN' && title) {
+              const parent = element.parentElement;
+              const spans = parent?.querySelectorAll('span');
+              if (spans && spans.length > 1) {
+                valueElement = Array.from(spans).find(
+                  s =>
+                    s !== element &&
+                    s.textContent?.trim() &&
+                    s.textContent?.trim() !== '：'
+                );
+              }
+            }
+
+            if (valueElement) {
+              const value = valueElement.textContent?.trim() || '';
+              console.log('  值元素:', valueElement);
+              console.log('  值:', value);
+              console.log(
+                '  值元素 classes:',
+                Array.from(valueElement.classList)
+              );
+
+              if (value && value !== ':' && value !== '-') {
+                fields.push({
+                  label: config.field,
+                  value: value,
+                  classes: Array.from(valueElement.classList),
+                });
+              }
+            }
+          }
+        });
+      });
+
+      console.log('\n=== 检测结果 ===');
+      console.log('检测到字段数量:', fields.length);
+      fields.forEach(f => {
+        console.log(`\n${f.label}: ${f.value}`);
+        console.log('  Classes:', f.classes.join(', '));
+      });
+
+      // 生成 XPath 选择器
+      console.log('\n=== 推荐的 XPath 选择器 ===');
+      fields.forEach(f => {
+        const mainClass = f.classes[0];
+        const xpath = `.//li[.//span[@title='${f.label === '当前状态' ? '状态' : f.label === '目的地' ? '目的地' : '预到时间'}']]/span[contains(@class, '${mainClass}')]`;
+        console.log(`${f.label}: ${xpath}`);
+      });
+    </script>
+  </body>
+</html>

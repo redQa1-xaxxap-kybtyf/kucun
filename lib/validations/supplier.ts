@@ -5,7 +5,7 @@ import { paginationConfig } from '@/lib/env';
 /**
  * 供应商状态枚举
  */
-export const SupplierStatusEnum = z.enum(['active', 'inactive']);
+export const SupplierStatusEnum = z.enum(['active', 'inactive', 'suspended']);
 
 /**
  * 创建供应商Schema

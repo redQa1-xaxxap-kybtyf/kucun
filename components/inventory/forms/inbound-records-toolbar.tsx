@@ -2,18 +2,65 @@
 
 import { ArrowLeft, PackageCheck, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { can } from '@/lib/auth/permissions';
 
 interface InboundRecordsToolbarProps {
   onCreateNew: () => void;
 }
 
+/**
+ * 入库记录工具栏组件
+ *
+ * 功能：
+ * - 显示页面标题和描述
+ * - 提供"返回"和"新增入库"操作按钮
+ * - 根据用户权限控制"新增入库"按钮的显示
+ *
+ * 权限控制：
+ * - 需要 `inventory:inbound` 权限才能显示"新增入库"按钮
+ * - 无权限时按钮不显示（而非禁用），提供更好的用户体验
+ */
 export function InboundRecordsToolbar({
   onCreateNew,
 }: InboundRecordsToolbarProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+
+  // 🐛 调试日志 - 查看 session 数据
+  console.log('🐛 [InboundRecordsToolbar] Session 数据:', {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    userId: session?.user?.id,
+    username: session?.user?.username,
+    role: session?.user?.role,
+    fullSession: session,
+  });
+
+  // 检查用户是否有入库操作权限
+  const hasInboundPermission = can(
+    session?.user
+      ? {
+          id: session.user.id || '',
+          email: session.user.email || '',
+          username: session.user.username || '',
+          name: session.user.name || '',
+          role: session.user.role || 'sales',
+          status: 'active',
+        }
+      : null,
+    'inventory:inbound'
+  );
+
+  // 🐛 调试日志 - 查看权限检查结果
+  console.log('🐛 [InboundRecordsToolbar] 权限检查:', {
+    hasInboundPermission,
+    userRole: session?.user?.role,
+    expectedRoles: ['admin', 'warehouse'],
+  });
 
   return (
     <PageHeader
@@ -33,15 +80,18 @@ export function InboundRecordsToolbar({
             <ArrowLeft className="h-4 w-4" />
             返回
           </Button>
-          <Button
-            size="lg"
-            className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
-            onClick={onCreateNew}
-            style={{ boxShadow: 'var(--shadow-light)' }}
-          >
-            <Plus className="h-4 w-4" />
-            新增入库
-          </Button>
+          {/* 只有拥有入库权限的用户才能看到"新增入库"按钮 */}
+          {hasInboundPermission && (
+            <Button
+              size="lg"
+              className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
+              onClick={onCreateNew}
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <Plus className="h-4 w-4" />
+              新增入库
+            </Button>
+          )}
         </>
       }
     />

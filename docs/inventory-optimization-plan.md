@@ -12,11 +12,13 @@
 ### 当前状态分析
 
 **✅ 优势**:
+
 - 已使用原生 SQL 查询优化 N+1 问题（`inventory-query-builder.ts`）
 - 代码质量优秀（ESLint 仅 3 个 Warning）
 - 架构清晰，遵循最佳实践
 
 **⚠️ 待优化**:
+
 - 使用 `skip/take` 偏移分页，大数据量时性能下降
 - 类型定义重复（手动维护 `OutboundRecordWithRelations`、`InboundRecordWithRelations` 等）
 - 缺少 Prisma 类型推导的充分利用
@@ -39,12 +41,13 @@
 // 优点：简单直观，支持跳页
 // 缺点：大数据量时性能差（需要扫描 skip 条记录）
 const records = await prisma.inventory.findMany({
-  skip: (page - 1) * limit,  // ❌ 大数据量时慢
+  skip: (page - 1) * limit, // ❌ 大数据量时慢
   take: limit,
 });
 ```
 
 **性能分析**:
+
 - 10,000 条记录，第 1 页: ~50ms
 - 10,000 条记录，第 100 页: ~200ms ⚠️
 - 100,000 条记录，第 500 页: ~1500ms ❌
@@ -55,13 +58,14 @@ const records = await prisma.inventory.findMany({
 // 优点：性能稳定，不受数据量影响
 // 缺点：不支持跳页，只能上一页/下一页
 const records = await prisma.inventory.findMany({
-  cursor: lastId ? { id: lastId } : undefined,  // ✅ 始终快速
+  cursor: lastId ? { id: lastId } : undefined, // ✅ 始终快速
   take: limit,
-  skip: lastId ? 1 : 0,  // 跳过 cursor 本身
+  skip: lastId ? 1 : 0, // 跳过 cursor 本身
 });
 ```
 
 **性能分析**:
+
 - 100,000 条记录，任意位置: ~50ms ✅
 - 1,000,000 条记录，任意位置: ~60ms ✅
 
@@ -85,6 +89,7 @@ type OutboundRecordWithRelations = {
 ```
 
 **问题**:
+
 - 🔴 Prisma Schema 变更时需要手动同步
 - 🔴 容易出现类型不一致
 - 🔴 维护成本高
@@ -110,9 +115,10 @@ type OutboundRecordWithRelations = Prisma.OutboundRecordGetPayload<{
 }>;
 
 // 方法 2: 使用 Prisma Validator
-const outboundRecordWithRelations = Prisma.validator<Prisma.OutboundRecordDefaultArgs>()({
-  select: OUTBOUND_SELECT,
-});
+const outboundRecordWithRelations =
+  Prisma.validator<Prisma.OutboundRecordDefaultArgs>()({
+    select: OUTBOUND_SELECT,
+  });
 
 type OutboundRecordWithRelations = Prisma.OutboundRecordGetPayload<
   typeof outboundRecordWithRelations
@@ -120,6 +126,7 @@ type OutboundRecordWithRelations = Prisma.OutboundRecordGetPayload<
 ```
 
 **优势**:
+
 - ✅ 自动同步 Prisma Schema 变更
 - ✅ 类型安全，编译时检查
 - ✅ 减少 80% 的手动类型定义
@@ -133,7 +140,7 @@ type OutboundRecordWithRelations = Prisma.OutboundRecordGetPayload<
 const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
   queryKey: ['inventory', 'list', filters],
   queryFn: ({ pageParam }) => fetchInventory({ cursor: pageParam }),
-  getNextPageParam: (lastPage) => lastPage.nextCursor,
+  getNextPageParam: lastPage => lastPage.nextCursor,
   initialPageParam: undefined,
 });
 ```
@@ -154,11 +161,11 @@ const { data } = useQuery({
 
 ### 方案对比
 
-| 方案 | 性能 | 用户体验 | 实施难度 | 推荐场景 |
-|------|------|----------|----------|----------|
-| **保持偏移分页** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐ | 数据量 < 50,000 |
-| **混合分页** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐ | **推荐** |
-| **纯游标分页** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | 数据量 > 100,000 |
+| 方案             | 性能       | 用户体验   | 实施难度 | 推荐场景         |
+| ---------------- | ---------- | ---------- | -------- | ---------------- |
+| **保持偏移分页** | ⭐⭐⭐     | ⭐⭐⭐⭐⭐ | ⭐       | 数据量 < 50,000  |
+| **混合分页**     | ⭐⭐⭐⭐   | ⭐⭐⭐⭐   | ⭐⭐⭐   | **推荐**         |
+| **纯游标分页**   | ⭐⭐⭐⭐⭐ | ⭐⭐⭐     | ⭐⭐⭐⭐ | 数据量 > 100,000 |
 
 ### 推荐方案：混合分页策略
 
@@ -173,7 +180,7 @@ export interface PaginationParams {
   // 偏移分页参数
   page?: number;
   limit?: number;
-  
+
   // 游标分页参数
   cursor?: string;
   direction?: 'next' | 'prev';
@@ -182,7 +189,7 @@ export interface PaginationParams {
 export async function getInventoryListHybrid(params: PaginationParams) {
   const limit = params.limit || 20;
   const maxOffsetPage = 50; // 前 50 页使用偏移分页
-  
+
   // 策略 1: 使用游标分页（性能优先）
   if (params.cursor) {
     return await prisma.inventory.findMany({
@@ -190,10 +197,12 @@ export async function getInventoryListHybrid(params: PaginationParams) {
       skip: 1, // 跳过 cursor 本身
       cursor: { id: params.cursor },
       orderBy: { updatedAt: 'desc' },
-      include: { /* ... */ },
+      include: {
+        /* ... */
+      },
     });
   }
-  
+
   // 策略 2: 前 N 页使用偏移分页（用户体验优先）
   const page = params.page || 1;
   if (page <= maxOffsetPage) {
@@ -201,10 +210,12 @@ export async function getInventoryListHybrid(params: PaginationParams) {
       skip: (page - 1) * limit,
       take: limit,
       orderBy: { updatedAt: 'desc' },
-      include: { /* ... */ },
+      include: {
+        /* ... */
+      },
     });
   }
-  
+
   // 策略 3: 超过 N 页，引导用户使用筛选或游标分页
   throw new Error('请使用筛选条件缩小范围，或使用"加载更多"功能');
 }
@@ -212,14 +223,14 @@ export async function getInventoryListHybrid(params: PaginationParams) {
 
 ### 性能对比
 
-| 数据量 | 页码 | 偏移分页 | 游标分页 | 混合分页 |
-|--------|------|----------|----------|----------|
-| 10,000 | 1 | 50ms | 50ms | 50ms |
-| 10,000 | 50 | 180ms | 50ms | 180ms |
-| 10,000 | 100 | 350ms | 50ms | **引导筛选** |
-| 100,000 | 1 | 60ms | 60ms | 60ms |
-| 100,000 | 50 | 800ms | 60ms | 800ms |
-| 100,000 | 500 | 3500ms ❌ | 60ms ✅ | **引导筛选** ✅ |
+| 数据量  | 页码 | 偏移分页  | 游标分页 | 混合分页        |
+| ------- | ---- | --------- | -------- | --------------- |
+| 10,000  | 1    | 50ms      | 50ms     | 50ms            |
+| 10,000  | 50   | 180ms     | 50ms     | 180ms           |
+| 10,000  | 100  | 350ms     | 50ms     | **引导筛选**    |
+| 100,000 | 1    | 60ms      | 60ms     | 60ms            |
+| 100,000 | 50   | 800ms     | 60ms     | 800ms           |
+| 100,000 | 500  | 3500ms ❌ | 60ms ✅  | **引导筛选** ✅ |
 
 **预期提升**: 大数据量场景下，查询速度提升 **40-60%**
 
@@ -315,12 +326,16 @@ export type OutboundRecordWithRelations = Prisma.OutboundRecordGetPayload<{
 }>;
 
 // 同样的模式应用于其他模型
-export const INBOUND_RECORD_SELECT = { /* ... */ } as const satisfies Prisma.InboundRecordSelect;
+export const INBOUND_RECORD_SELECT = {
+  /* ... */
+} as const satisfies Prisma.InboundRecordSelect;
 export type InboundRecordWithRelations = Prisma.InboundRecordGetPayload<{
   select: typeof INBOUND_RECORD_SELECT;
 }>;
 
-export const ADJUSTMENT_SELECT = { /* ... */ } as const satisfies Prisma.InventoryAdjustmentSelect;
+export const ADJUSTMENT_SELECT = {
+  /* ... */
+} as const satisfies Prisma.InventoryAdjustmentSelect;
 export type AdjustmentWithRelations = Prisma.InventoryAdjustmentGetPayload<{
   select: typeof ADJUSTMENT_SELECT;
 }>;
@@ -331,7 +346,10 @@ export type AdjustmentWithRelations = Prisma.InventoryAdjustmentGetPayload<{
 ```typescript
 // lib/api/outbound-server.ts (优化后)
 
-import { OUTBOUND_RECORD_SELECT, type OutboundRecordWithRelations } from './selectors/inventory-selectors';
+import {
+  OUTBOUND_RECORD_SELECT,
+  type OutboundRecordWithRelations,
+} from './selectors/inventory-selectors';
 
 export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
   const records = await prisma.outboundRecord.findMany({
@@ -339,9 +357,9 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
     skip,
     take: limit,
     orderBy: { createdAt: 'desc' },
-    select: OUTBOUND_RECORD_SELECT,  // ✅ 复用选择器
+    select: OUTBOUND_RECORD_SELECT, // ✅ 复用选择器
   });
-  
+
   // TypeScript 自动推导类型为 OutboundRecordWithRelations[]
   return records.map(formatOutboundRecord);
 }
@@ -359,12 +377,12 @@ function formatOutboundRecord(record: OutboundRecordWithRelations) {
 
 ### 优化效果
 
-| 指标 | 优化前 | 优化后 | 改进 |
-|------|--------|--------|------|
+| 指标         | 优化前 | 优化后 | 改进        |
+| ------------ | ------ | ------ | ----------- |
 | 手动类型定义 | 276 行 | ~50 行 | **-82%** ✅ |
-| 类型同步成本 | 手动 | 自动 | **100%** ✅ |
-| 类型安全性 | 中等 | 高 | **+40%** ✅ |
-| 维护成本 | 高 | 低 | **-70%** ✅ |
+| 类型同步成本 | 手动   | 自动   | **100%** ✅ |
+| 类型安全性   | 中等   | 高     | **+40%** ✅ |
+| 维护成本     | 高     | 低     | **-70%** ✅ |
 
 ---
 
@@ -414,23 +432,25 @@ function formatOutboundRecord(record: OutboundRecordWithRelations) {
 
 ### 风险矩阵
 
-| 风险 | 概率 | 影响 | 缓解措施 |
-|------|------|------|----------|
-| 类型推导错误 | 低 | 中 | 充分的 TypeScript 测试 |
-| 游标分页兼容性 | 中 | 低 | 保留偏移分页作为后备 |
-| 性能回归 | 低 | 高 | A/B 测试，逐步迁移 |
-| 用户体验下降 | 中 | 中 | 混合分页策略，保留跳页功能 |
+| 风险           | 概率 | 影响 | 缓解措施                   |
+| -------------- | ---- | ---- | -------------------------- |
+| 类型推导错误   | 低   | 中   | 充分的 TypeScript 测试     |
+| 游标分页兼容性 | 中   | 低   | 保留偏移分页作为后备       |
+| 性能回归       | 低   | 高   | A/B 测试，逐步迁移         |
+| 用户体验下降   | 中   | 中   | 混合分页策略，保留跳页功能 |
 
 ### 注意事项
 
 #### 1. 类型定义优化
 
 ⚠️ **注意**:
+
 - 使用 `as const satisfies` 确保类型安全
 - 避免使用 `include: true`，明确指定需要的字段
 - 定期运行 `npx prisma generate` 更新类型
 
 ✅ **最佳实践**:
+
 ```typescript
 // ✅ 正确
 const SELECT = { id: true, name: true } as const satisfies Prisma.ProductSelect;
@@ -442,11 +462,13 @@ const SELECT = { id: true, name: true }; // 缺少类型约束
 #### 2. 分页策略选择
 
 ⚠️ **注意**:
+
 - 游标分页不支持跳页（只能上一页/下一页）
 - 需要稳定的排序字段（如 `id`、`createdAt`）
 - 前端需要适配新的分页 API
 
 ✅ **最佳实践**:
+
 ```typescript
 // ✅ 混合策略：前 50 页偏移，后续游标
 if (page <= 50) {
@@ -459,6 +481,7 @@ if (page <= 50) {
 #### 3. 数据库索引
 
 ⚠️ **必须**:
+
 - 游标分页字段必须有索引
 - 复合排序需要复合索引
 
@@ -493,4 +516,3 @@ CREATE INDEX idx_inventory_id_updated_at ON inventory(id, updated_at DESC);
 ---
 
 **下一步**: 请确认优化方案，我将开始实施 Phase 1（类型定义优化）。
-

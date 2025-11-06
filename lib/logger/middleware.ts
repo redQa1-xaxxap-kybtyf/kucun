@@ -14,7 +14,6 @@
 
 import type { NextRequest, NextResponse } from 'next/server';
 
-
 import { logger } from '@/lib/logger';
 import {
   recordApiDuration,
@@ -89,7 +88,6 @@ export function withDatabaseMetrics<T>(
     .catch(error => {
       const errorType = error instanceof Error ? error.name : 'UnknownError';
 
-       
       const { recordDatabaseError } = require('@/lib/logger/metrics');
       recordDatabaseError(operation, table, errorType);
 

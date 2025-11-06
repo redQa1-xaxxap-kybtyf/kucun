@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 // 收款方式枚举验证
 export const paymentMethodSchema = z.enum(
-  ['cash', 'bank_transfer', 'check', 'other'],
+  ['cash', 'wechat_transfer', 'abc_qr', 'icbc_qr', 'ccb_qr', 'cib_qr'],
   {
     message: '请选择有效的收款方式',
   }
@@ -116,19 +116,6 @@ export const createPaymentRecordSchema = z
   )
   .refine(
     data => {
-      // 银行转账时必须填写银行信息
-      if (data.paymentMethod === 'bank_transfer' && !data.bankInfo?.trim()) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: '银行转账时必须填写银行信息',
-      path: ['bankInfo'],
-    }
-  )
-  .refine(
-    data => {
       const expected = Number(
         (data.actualPaymentAmount + data.roundingAmount).toFixed(2)
       );
@@ -189,19 +176,6 @@ export const updatePaymentRecordSchema = z
 
     bankInfo: z.string().optional().or(z.literal('')),
   })
-  .refine(
-    data => {
-      // 银行转账时必须填写银行信息
-      if (data.paymentMethod === 'bank_transfer' && !data.bankInfo?.trim()) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: '银行转账时必须填写银行信息',
-      path: ['bankInfo'],
-    }
-  )
   .superRefine((data, ctx) => {
     const hasActual = data.actualPaymentAmount !== undefined;
     const hasRounding = data.roundingAmount !== undefined;
@@ -452,12 +426,10 @@ export const validatePaymentDate = (date: string): boolean => {
 };
 
 export const validateBankInfo = (
-  paymentMethod: string,
-  bankInfo?: string
+  _paymentMethod: string,
+  _bankInfo?: string
 ): boolean => {
-  if (paymentMethod === 'bank_transfer') {
-    return !!bankInfo?.trim();
-  }
+  // 新的收款方式不需要强制验证银行信息
   return true;
 };
 

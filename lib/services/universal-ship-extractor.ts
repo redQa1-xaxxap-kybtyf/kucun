@@ -32,7 +32,14 @@ export interface ShipData {
 
 // 提取配置
 export interface ExtractConfig {
-  siteType: 'shipxy' | 'chinaports' | 'vesselfinder' | 'shipfinder' | 'myshiptracking' | 'hifleet' | 'generic';
+  siteType:
+    | 'shipxy'
+    | 'chinaports'
+    | 'vesselfinder'
+    | 'shipfinder'
+    | 'myshiptracking'
+    | 'hifleet'
+    | 'generic';
   strategies: ExtractStrategy[];
 }
 
@@ -71,7 +78,7 @@ export class UniversalShipExtractor {
           'td:contains("状态") + td',
           'td[data-field="status"]',
           '.status',
-          '[class*="status"]'
+          '[class*="status"]',
         ],
         destination: [
           'tr:contains("目的地") + td',
@@ -79,7 +86,7 @@ export class UniversalShipExtractor {
           'td:contains("目的地") + td',
           'td[data-field="destination"]',
           '.destination',
-          '[class*="destination"]'
+          '[class*="destination"]',
         ],
         estimatedArrival: [
           'tr:contains("预到") + td',
@@ -88,7 +95,7 @@ export class UniversalShipExtractor {
           'td:contains("预到") + td',
           'td[data-field="eta"]',
           '.eta',
-          '[class*="eta"]'
+          '[class*="eta"]',
         ],
         updateTime: [
           'tr:contains("更新") + td',
@@ -96,9 +103,9 @@ export class UniversalShipExtractor {
           'td:contains("更新") + td',
           'td[data-field="update"]',
           '.update-time',
-          '[class*="update"]'
-        ]
-      }
+          '[class*="update"]',
+        ],
+      },
     },
 
     // 策略2: 卡片格式提取 (适用于vesselfinder.com, shipfinder.com)
@@ -111,30 +118,30 @@ export class UniversalShipExtractor {
           '.vessel-status',
           '[class*="status-info"]',
           'div:contains("Status") + div',
-          'span[class*="status"]'
+          'span[class*="status"]',
         ],
         destination: [
           '[data-testid="destination"]',
           '.destination-info',
           '[class*="destination"]',
           'div:contains("Destination") + div',
-          'span[class*="dest"]'
+          'span[class*="dest"]',
         ],
         estimatedArrival: [
           '[data-testid="eta"]',
           '.eta-info',
           '[class*="arrival"]',
           'div:contains("ETA") + div',
-          'time[datetime]'
+          'time[datetime]',
         ],
         updateTime: [
           '[data-testid="last-update"]',
           '.last-update',
           '[class*="timestamp"]',
           'div:contains("Last") div:contains("update")',
-          'time[title*="update"]'
-        ]
-      }
+          'time[title*="update"]',
+        ],
+      },
     },
 
     // 策略3: 通用文本匹配 (适用于所有网站)
@@ -145,24 +152,24 @@ export class UniversalShipExtractor {
         status: [
           /状态[:：]\s*([^\n\r]+)/i,
           /Status[:：]\s*([^\n\r]+)/i,
-          /船舶状态[:：]\s*([^\n\r]+)/i
+          /船舶状态[:：]\s*([^\n\r]+)/i,
         ],
         destination: [
           /目的地[:：]\s*([^\n\r]+)/i,
           /Destination[:：]\s*([^\n\r]+)/i,
-          /前往[:：]\s*([^\n\r]+)/i
+          /前往[:：]\s*([^\n\r]+)/i,
         ],
         estimatedArrival: [
           /预到时间?[:：]\s*([^\n\r]+)/i,
           /ETA[:：]\s*([^\n\r]+)/i,
-          /预计到达[:：]\s*([^\n\r]+)/i
+          /预计到达[:：]\s*([^\n\r]+)/i,
         ],
         updateTime: [
           /更新时间?[:：]\s*([^\n\r]+)/i,
           /Last Update[:：]\s*([^\n\r]+)/i,
-          /最后更新[:：]\s*([^\n\r]+)/i
-        ]
-      }
+          /最后更新[:：]\s*([^\n\r]+)/i,
+        ],
+      },
     },
 
     // 策略4: JSON数据提取 (适用于提供API的网站)
@@ -173,24 +180,21 @@ export class UniversalShipExtractor {
         status: [
           'script:contains("vesselStatus")',
           'script:contains("shipStatus")',
-          '[data-vessel-status]'
+          '[data-vessel-status]',
         ],
-        destination: [
-          'script:contains("destination")',
-          '[data-destination]'
-        ],
+        destination: ['script:contains("destination")', '[data-destination]'],
         estimatedArrival: [
           'script:contains("eta")',
           'script:contains("estimatedArrival")',
-          '[data-eta]'
+          '[data-eta]',
         ],
         updateTime: [
           'script:contains("lastUpdate")',
           'script:contains("updateTime")',
-          '[data-last-update]'
-        ]
-      }
-    }
+          '[data-last-update]',
+        ],
+      },
+    },
   ];
 
   /**
@@ -290,18 +294,46 @@ export class UniversalShipExtractor {
 
     if (strategy.selectors) {
       // CSS选择器提取
-      result.status = this.extractBySelectors(pageContent, strategy.selectors.status);
-      result.destination = this.extractBySelectors(pageContent, strategy.selectors.destination);
-      result.estimatedArrival = this.extractBySelectors(pageContent, strategy.selectors.estimatedArrival);
-      result.updateTime = this.extractBySelectors(pageContent, strategy.selectors.updateTime);
+      result.status = this.extractBySelectors(
+        pageContent,
+        strategy.selectors.status
+      );
+      result.destination = this.extractBySelectors(
+        pageContent,
+        strategy.selectors.destination
+      );
+      result.estimatedArrival = this.extractBySelectors(
+        pageContent,
+        strategy.selectors.estimatedArrival
+      );
+      result.updateTime = this.extractBySelectors(
+        pageContent,
+        strategy.selectors.updateTime
+      );
     }
 
     if (strategy.patterns) {
       // 正则表达式提取
-      if (!result.status) result.status = this.extractByPatterns(pageContent, strategy.patterns.status);
-      if (!result.destination) result.destination = this.extractByPatterns(pageContent, strategy.patterns.destination);
-      if (!result.estimatedArrival) result.estimatedArrival = this.extractByPatterns(pageContent, strategy.patterns.estimatedArrival);
-      if (!result.updateTime) result.updateTime = this.extractByPatterns(pageContent, strategy.patterns.updateTime);
+      if (!result.status)
+        result.status = this.extractByPatterns(
+          pageContent,
+          strategy.patterns.status
+        );
+      if (!result.destination)
+        result.destination = this.extractByPatterns(
+          pageContent,
+          strategy.patterns.destination
+        );
+      if (!result.estimatedArrival)
+        result.estimatedArrival = this.extractByPatterns(
+          pageContent,
+          strategy.patterns.estimatedArrival
+        );
+      if (!result.updateTime)
+        result.updateTime = this.extractByPatterns(
+          pageContent,
+          strategy.patterns.updateTime
+        );
     }
 
     return this.cleanData(result);
@@ -310,7 +342,10 @@ export class UniversalShipExtractor {
   /**
    * 通过选择器提取数据
    */
-  private static extractBySelectors(_content: string, _selectors: string[]): string | undefined {
+  private static extractBySelectors(
+    _content: string,
+    _selectors: string[]
+  ): string | undefined {
     // 这里需要实际的DOM操作，暂时返回undefined
     // 在PuppeteerService中实现真正的选择器逻辑
     return undefined;
@@ -319,7 +354,10 @@ export class UniversalShipExtractor {
   /**
    * 通过正则表达式提取数据
    */
-  private static extractByPatterns(content: string, patterns: RegExp[]): string | undefined {
+  private static extractByPatterns(
+    content: string,
+    patterns: RegExp[]
+  ): string | undefined {
     for (const pattern of patterns) {
       const match = content.match(pattern);
       if (match && match[1]) {
@@ -381,13 +419,22 @@ export class UniversalShipExtractor {
    * 检查是否有有效数据
    */
   private static hasValidData(data: ShipData): boolean {
-    return !!(data.status || data.destination || data.estimatedArrival || data.updateTime || data.lastUpdateTime);
+    return !!(
+      data.status ||
+      data.destination ||
+      data.estimatedArrival ||
+      data.updateTime ||
+      data.lastUpdateTime
+    );
   }
 
   /**
    * 计算提取置信度
    */
-  private static calculateConfidence(data: ShipData, strategy: ExtractStrategy): number {
+  private static calculateConfidence(
+    data: ShipData,
+    strategy: ExtractStrategy
+  ): number {
     let confidence = strategy.priority * 0.1; // 基础置信度
 
     // 根据提取到的数据数量调整置信度
@@ -411,10 +458,14 @@ export class UniversalShipExtractor {
     for (let i = 1; i < results.length; i++) {
       const result = results[i];
       if (!merged.status && result.status) merged.status = result.status;
-      if (!merged.destination && result.destination) merged.destination = result.destination;
-      if (!merged.estimatedArrival && result.estimatedArrival) merged.estimatedArrival = result.estimatedArrival;
-      if (!merged.updateTime && result.updateTime) merged.updateTime = result.updateTime;
-      if (!merged.lastUpdateTime && result.lastUpdateTime) merged.lastUpdateTime = result.lastUpdateTime;
+      if (!merged.destination && result.destination)
+        merged.destination = result.destination;
+      if (!merged.estimatedArrival && result.estimatedArrival)
+        merged.estimatedArrival = result.estimatedArrival;
+      if (!merged.updateTime && result.updateTime)
+        merged.updateTime = result.updateTime;
+      if (!merged.lastUpdateTime && result.lastUpdateTime)
+        merged.lastUpdateTime = result.lastUpdateTime;
     }
 
     return merged;
@@ -429,7 +480,7 @@ export class UniversalShipExtractor {
 
     return {
       siteType,
-      strategies
+      strategies,
     };
   }
 
@@ -438,7 +489,12 @@ export class UniversalShipExtractor {
    */
   static validateSelectors(selectors: Partial<ExtractSelectors>): boolean {
     // 基本的选择器语法验证
-    const selectorFields = ['status', 'destination', 'estimatedArrival', 'updateTime'];
+    const selectorFields = [
+      'status',
+      'destination',
+      'estimatedArrival',
+      'updateTime',
+    ];
 
     for (const field of selectorFields) {
       const selector = selectors[field as keyof ExtractSelectors];
@@ -459,7 +515,8 @@ export class UniversalShipExtractor {
   private static isValidSelector(selector: string): boolean {
     try {
       // 基本的CSS选择器验证
-      const validPattern = /^[#.]?[\w-]+(\s*[>+~\s]+[#.]?[\w-]+)*(\s*\[[\w-]+([\"']?)[^\"']*\1\])*(\s*:[\w-]+)*$/;
+      const validPattern =
+        /^[#.]?[\w-]+(\s*[>+~\s]+[#.]?[\w-]+)*(\s*\[[\w-]+([\"']?)[^\"']*\1\])*(\s*:[\w-]+)*$/;
       return validPattern.test(selector);
     } catch {
       return false;

@@ -135,7 +135,7 @@ function useSearchLifecycle({
     [selectedProduct?.code, selectedProduct?.name]
   );
 
-  // 打开时自动填充已选商品编码
+  // 打开时自动填充已选产品编码
   useEffect(() => {
     const wasOpen = previousOpen ?? false;
 

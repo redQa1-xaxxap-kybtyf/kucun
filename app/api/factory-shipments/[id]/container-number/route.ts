@@ -99,9 +99,12 @@ export async function PATCH(
       {
         success: false,
         message: error instanceof Error ? error.message : '更新集装箱号失败',
-        debug: process.env.NODE_ENV === 'development' ? {
-          error: error instanceof Error ? error.stack : String(error)
-        } : undefined
+        debug:
+          process.env.NODE_ENV === 'development'
+            ? {
+                error: error instanceof Error ? error.stack : String(error),
+              }
+            : undefined,
       },
       { status: 500 }
     );

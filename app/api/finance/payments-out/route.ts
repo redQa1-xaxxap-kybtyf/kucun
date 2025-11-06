@@ -84,7 +84,8 @@ export const GET = withAuth(
     if (startDate || endDate) {
       const dateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        const parsedStart = parseLocalDateString(startDate) ?? new Date(startDate);
+        const parsedStart =
+          parseLocalDateString(startDate) ?? new Date(startDate);
         dateFilter.gte = parsedStart;
       }
       if (endDate) {
@@ -204,7 +205,7 @@ export const POST = withAuth(
       // 金额验证：检查付款金额是否超过剩余应付金额
       if (data.paymentAmount > payableRecord.remainingAmount) {
         return errorResponse(
-          `付款金额超过应付金额。应付: ¥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ¥${data.paymentAmount.toFixed(2)}`,
+          `付款金额超过应付金额。应付: ￥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ￥${data.paymentAmount.toFixed(2)}`,
           400
         );
       }

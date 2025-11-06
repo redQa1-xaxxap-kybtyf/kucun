@@ -2,7 +2,7 @@
   planDate: z.string().optional(),
   shipmentDate: z.string().optional(),
   arrivalDate: z.string().optional(),
-  items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个商品项'),
+  items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个产品项'),
   receivableAmount: z.number().nonnegative('应收金额不能为负').optional(),
   depositAmount: z.number().nonnegative('定金金额不能为负').optional(),
   remarks: z.string().optional(),
@@ -38,3 +38,4 @@ async function resolveShipmentItems(
             name: true,
             specification: true,
             unit: true,
+

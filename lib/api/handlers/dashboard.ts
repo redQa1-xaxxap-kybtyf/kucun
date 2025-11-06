@@ -282,7 +282,7 @@ export async function getTodoItems() {
     },
     {
       id: 'low-stock',
-      title: '低库存商品',
+      title: '低库存产品',
       count: lowStockCount,
       priority: 'medium' as const,
       href: '/products?lowStock=true',

@@ -448,7 +448,7 @@ function CustomerInfoDisplay({ customerId }: CustomerInfoDisplayProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+      <div className="text-muted-foreground flex items-center space-x-2 text-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>加载客户信息中...</span>
       </div>
@@ -466,7 +466,7 @@ function CustomerInfoDisplay({ customerId }: CustomerInfoDisplayProps) {
 
   if (!customer) {
     return (
-      <div className="text-sm text-muted-foreground">
+      <div className="text-muted-foreground text-sm">
         <p>未找到客户信息。</p>
       </div>
     );
@@ -479,23 +479,23 @@ function CustomerInfoDisplay({ customerId }: CustomerInfoDisplayProps) {
   return (
     <div className="space-y-2 text-sm">
       <div className="flex items-center space-x-2">
-        <UserIcon className="h-4 w-4 text-muted-foreground" />
+        <UserIcon className="text-muted-foreground h-4 w-4" />
         <span className="font-medium">{customer.name}</span>
       </div>
       {customer.phone && (
-        <div className="flex items-center space-x-2 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center space-x-2">
           <Phone className="h-4 w-4" />
           <span>{customer.phone}</span>
         </div>
       )}
       {customer.address && (
-        <div className="flex items-center space-x-2 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center space-x-2">
           <Building2 className="h-4 w-4" />
           <span>{customer.address}</span>
         </div>
       )}
       {extendedInfo?.contactPerson && (
-        <div className="flex items-center space-x-2 text-muted-foreground">
+        <div className="text-muted-foreground flex items-center space-x-2">
           <span>联系人: {extendedInfo.contactPerson}</span>
         </div>
       )}

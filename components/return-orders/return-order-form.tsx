@@ -379,7 +379,7 @@ export function ReturnOrderForm({
                     <Package className="mr-2 h-5 w-5" />
                     退货明细
                   </CardTitle>
-                  <CardDescription>选择要退货的商品明细</CardDescription>
+                  <CardDescription>选择要退货的产品明细</CardDescription>
                 </div>
                 {selectedSalesOrderId && (
                   <div className="text-muted-foreground text-sm">

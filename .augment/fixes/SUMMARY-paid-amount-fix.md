@@ -7,6 +7,7 @@
 ## 根本原因
 
 API 查询收款记录时缺少了两个关键字段:
+
 - `actualPaymentAmount` - 实际到账金额
 - `roundingAmount` - 收款抹零金额
 
@@ -132,14 +133,14 @@ npm run format      # ✅ 通过
   ├─ paymentAmount: 1000        (收款金额)
   ├─ actualPaymentAmount: 998   (实际到账)
   └─ roundingAmount: 2          (抹零金额)
-  
+
 API 查询 (GET /api/sales-orders/:id)
   ↓
   ├─ 查询 payments (包含 actualPaymentAmount, roundingAmount)
   ├─ 计算 actualPaidAmount = sum(actualPaymentAmount)
   ├─ 计算 paymentRounding = sum(roundingAmount)
   └─ 计算 paidAmount = actualPaidAmount + paymentRounding
-  
+
 API 返回
   ↓
   ├─ paymentRecords: [{ actualPaymentAmount, roundingAmount, ... }]
@@ -147,7 +148,7 @@ API 返回
   ├─ paymentRounding: 2
   ├─ paidAmount: 1000
   └─ remainingAmount: 0
-  
+
 前端显示
   ↓
   ├─ 已收金额卡片: ¥998.00 (actualPaidAmount)
@@ -159,16 +160,16 @@ API 返回
 
 ```typescript
 // 1. 单条收款记录
-paymentAmount = actualPaymentAmount + roundingAmount
+paymentAmount = actualPaymentAmount + roundingAmount;
 
 // 2. 已收款汇总
-actualPaidAmount = sum(confirmedPayments.actualPaymentAmount)
-paymentRounding = sum(confirmedPayments.roundingAmount)
-paidAmount = actualPaidAmount + paymentRounding
+actualPaidAmount = sum(confirmedPayments.actualPaymentAmount);
+paymentRounding = sum(confirmedPayments.roundingAmount);
+paidAmount = actualPaidAmount + paymentRounding;
 
 // 3. 待收金额
-actualTotalAmount = totalAmount + roundingAdjustment
-remainingAmount = actualTotalAmount - paidAmount
+actualTotalAmount = totalAmount + roundingAdjustment;
+remainingAmount = actualTotalAmount - paidAmount;
 ```
 
 ## 测试场景
@@ -259,4 +260,3 @@ fix(sales-orders): 修复订单详情页面已收款金额未显示的问题
 ## 修复人员
 
 AI Assistant (Augment Agent)
-

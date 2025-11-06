@@ -349,7 +349,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
 
           if (isManual) {
             if (requireManualCode && manualCode.length === 0) {
-              return '临时商品必须填写产品编码';
+              return '临时产品必须填写产品编码';
             }
             return true;
           }
@@ -361,7 +361,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
                 ? String(value).trim()
                 : '';
 
-          return selected.length > 0 ? true : '请选择商品';
+          return selected.length > 0 ? true : '请选择产品';
         },
       }}
       render={({ field }) => (
@@ -381,7 +381,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
               onTemporaryProductAdd={handleTemporaryProductAdd}
               onSearchChange={handleProductSearch}
               isSearching={isSearchingProducts}
-              placeholder={placeholder ?? '搜索商品或添加临时商品'}
+              placeholder={placeholder ?? '搜索产品或添加临时产品'}
               className="h-8 text-xs"
               allowTemporaryProducts={true}
               temporaryProductRequirements={{

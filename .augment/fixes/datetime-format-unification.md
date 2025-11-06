@@ -33,11 +33,13 @@
 #### 1. 更新导入语句
 
 **修改前**:
+
 ```typescript
 import { formatCurrency, formatDate } from '@/lib/utils';
 ```
 
 **修改后**:
+
 ```typescript
 import { formatCurrency } from '@/lib/utils';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
@@ -47,24 +49,24 @@ import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 将所有需要显示时分信息的日期字段从 `formatDate(date, 'datetime')` 改为 `formatDateTime(date)`：
 
-| 位置 | 字段 | 修改前 | 修改后 |
-|------|------|--------|--------|
-| 第751行 | 创建时间 | `formatDate(order.createdAt, 'datetime')` | `formatDateTime(order.createdAt)` |
-| 第760行 | 发货时间 | `formatDate(order.shippedAt, 'datetime')` | `formatDateTime(order.shippedAt)` |
-| 第769行 | 更新时间 | `formatDate(order.updatedAt, 'datetime')` | `formatDateTime(order.updatedAt)` |
+| 位置     | 字段     | 修改前                                       | 修改后                               |
+| -------- | -------- | -------------------------------------------- | ------------------------------------ |
+| 第751行  | 创建时间 | `formatDate(order.createdAt, 'datetime')`    | `formatDateTime(order.createdAt)`    |
+| 第760行  | 发货时间 | `formatDate(order.shippedAt, 'datetime')`    | `formatDateTime(order.shippedAt)`    |
+| 第769行  | 更新时间 | `formatDate(order.updatedAt, 'datetime')`    | `formatDateTime(order.updatedAt)`    |
 | 第1481行 | 收款日期 | `formatDate(record.paymentDate, 'datetime')` | `formatDateTime(record.paymentDate)` |
 | 第1571行 | 收款日期 | `formatDate(record.paymentDate, 'datetime')` | `formatDateTime(record.paymentDate)` |
-| 第1645行 | 订单创建 | `formatDate(order.createdAt, 'datetime')` | `formatDateTime(order.createdAt)` |
-| 第1660行 | 订单更新 | `formatDate(order.updatedAt, 'datetime')` | `formatDateTime(order.updatedAt)` |
+| 第1645行 | 订单创建 | `formatDate(order.createdAt, 'datetime')`    | `formatDateTime(order.createdAt)`    |
+| 第1660行 | 订单更新 | `formatDate(order.updatedAt, 'datetime')`    | `formatDateTime(order.updatedAt)`    |
 
 #### 3. 保留只显示日期的字段
 
 以下字段只需要显示日期，继续使用 `formatDate`：
 
-| 位置 | 字段 | 函数调用 |
-|------|------|----------|
-| 第842行 | 退货订单创建时间 | `formatDate(returnOrder.createdAt)` |
-| 第1031行 | 生产日期 | `formatDate(item.productionDate)` |
+| 位置     | 字段             | 函数调用                            |
+| -------- | ---------------- | ----------------------------------- |
+| 第842行  | 退货订单创建时间 | `formatDate(returnOrder.createdAt)` |
+| 第1031行 | 生产日期         | `formatDate(item.productionDate)`   |
 
 ## 技术细节
 
@@ -97,11 +99,13 @@ export function formatDateTime(
 ### 显示格式对比
 
 **旧格式**（`lib/utils/format.ts`）:
+
 ```
 2025-10-23 12:34:56  // 可能显示不一致
 ```
 
 **新格式**（`lib/utils/datetime.ts`）:
+
 ```
 2025-10-23 12:34  // 统一格式，精确到分钟
 ```
@@ -111,6 +115,7 @@ export function formatDateTime(
 ### 修改前
 
 销售订单详情页面的日期时间显示：
+
 - ❌ 创建时间：2025-10-23（缺少时分信息）
 - ❌ 发货时间：2025-10-23（缺少时分信息）
 - ❌ 更新时间：2025-10-23（缺少时分信息）
@@ -119,6 +124,7 @@ export function formatDateTime(
 ### 修改后
 
 销售订单详情页面的日期时间显示：
+
 - ✅ 创建时间：2025-10-23 12:34
 - ✅ 发货时间：2025-10-23 14:56
 - ✅ 更新时间：2025-10-23 15:20
@@ -127,6 +133,7 @@ export function formatDateTime(
 ### 与其他页面的一致性
 
 现在销售订单详情页面的日期时间格式与以下页面保持一致：
+
 - ✅ 收款记录列表页面
 - ✅ 应收货款页面
 - ✅ 其他使用 `formatDateTime` 的页面
@@ -194,13 +201,14 @@ export { formatDate, formatDateTime } from './utils/datetime';
 这次修复统一了销售订单详情页面的日期时间显示格式，使用了更准确的 `date-fns` 库，确保了与其他页面的一致性。
 
 **修改内容**:
+
 - ✅ 更新导入语句，使用 `lib/utils/datetime.ts` 中的函数
 - ✅ 替换 7 处需要显示时分信息的日期字段
 - ✅ 保留 2 处只需要显示日期的字段
 - ✅ 确保日期时间格式与其他页面保持一致
 
 **后续工作**:
+
 - 建议逐步迁移项目中所有使用旧函数的地方
 - 考虑更新 `lib/utils.ts` 的导出
 - 添加 ESLint 规则防止混用
-

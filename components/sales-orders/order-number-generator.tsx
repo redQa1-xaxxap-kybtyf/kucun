@@ -61,11 +61,11 @@ export function OrderNumberGenerator({
           available: true,
           message: '订单号生成成功',
         });
-      toast({
-        title: '订单号生成成功',
-        description: `新订单号：${data.data.orderNumber}`,
-        variant: 'success',
-      });
+        toast({
+          title: '订单号生成成功',
+          description: `新订单号：${data.data.orderNumber}`,
+          variant: 'success',
+        });
       } else {
         throw new Error(data.error || '生成失败');
       }

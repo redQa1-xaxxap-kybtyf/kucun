@@ -4,10 +4,13 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import { revalidateProducts } from '@/lib/cache';
+import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { returnRefundConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import { withIdempotency } from '@/lib/utils/idempotency';
 
 import {
   ALLOWED_RETURN_SALES_ORDER_STATUSES,
@@ -63,7 +66,9 @@ export async function createReturnOrder(
 
     // 3. 生成退货单号
     const { generateReturnNumber } = await import('./return-orders.utils');
-    const returnNumber = generateReturnNumber(returnRefundConfig.returnOrderPrefix);
+    const returnNumber = generateReturnNumber(
+      returnRefundConfig.returnOrderPrefix
+    );
 
     // 4. 验证销售订单存在
     const salesOrder = await prisma.salesOrder.findUnique({
@@ -88,35 +93,45 @@ export async function createReturnOrder(
 
     // 6. 验证退货数量不超过原始数量
     {
-      const { validateReturnQuantities } = await import('./return-orders.utils');
+      const { validateReturnQuantities } = await import(
+        './return-orders.utils'
+      );
       const err = validateReturnQuantities(
-        data.items.map(i => ({ salesOrderItemId: i.salesOrderItemId, returnQuantity: i.returnQuantity })),
+        data.items.map(i => ({
+          salesOrderItemId: i.salesOrderItemId,
+          returnQuantity: i.returnQuantity,
+        })),
         salesOrder.items.map(i => ({ id: i.id, quantity: i.quantity }))
       );
       if (err) return { success: false, error: err };
     }
 
     // 7. 计算总金额
-    const { calcTotalAmount, createReturnOrderTx } = await import('./return-orders.utils');
-    const totalAmount = calcTotalAmount(data.items.map(i => ({ subtotal: i.subtotal })));
+    const { calcTotalAmount, createReturnOrderTx } = await import(
+      './return-orders.utils'
+    );
+    const totalAmount = calcTotalAmount(
+      data.items.map(i => ({ subtotal: i.subtotal }))
+    );
 
     // 8. 创建退货订单（事务）
-    const result = await prisma.$transaction(async tx =>
-      await createReturnOrderTx(
-        tx,
-        {
-          salesOrderId: data.salesOrderId,
-          customerId: data.customerId,
-          userId: session.user.id,
-          type: data.type,
-          processType: data.processType,
-          reason: data.reason,
-          remarks: data.remarks,
-          items: data.items,
-        },
-        returnNumber,
-        totalAmount
-      )
+    const result = await prisma.$transaction(
+      async tx =>
+        await createReturnOrderTx(
+          tx,
+          {
+            salesOrderId: data.salesOrderId,
+            customerId: data.customerId,
+            userId: session.user.id,
+            type: data.type,
+            processType: data.processType,
+            reason: data.reason,
+            remarks: data.remarks,
+            items: data.items,
+          },
+          returnNumber,
+          totalAmount
+        )
     );
 
     // 8. 重新验证路径
@@ -160,6 +175,7 @@ export async function updateReturnOrderStatus(
       return { success: false, error: '未授权操作' };
     }
 
+    const idempotencyKeyRaw = formData.get('idempotencyKey');
     const rawData = {
       returnOrderId: formData.get('returnOrderId') as string,
       status: formData.get('status') as string,
@@ -167,9 +183,17 @@ export async function updateReturnOrderStatus(
       refundAmount: formData.get('refundAmount')
         ? parseFloat(formData.get('refundAmount') as string)
         : undefined,
+      idempotencyKey:
+        typeof idempotencyKeyRaw === 'string' ? idempotencyKeyRaw : undefined,
     };
 
-    const data = updateReturnOrderStatusSchema.parse(rawData);
+    const data = updateReturnOrderStatusSchema.parse({
+      ...rawData,
+      idempotencyKey:
+        rawData.idempotencyKey && rawData.idempotencyKey.trim().length > 0
+          ? rawData.idempotencyKey.trim()
+          : undefined,
+    });
     returnOrderId = data.returnOrderId;
     nextStatus = data.status;
 
@@ -190,7 +214,8 @@ export async function updateReturnOrderStatus(
     }
 
     // 验证状态流转
-    const { canTransition, applyCompletionEffects, mergeRemarks } = await import('./return-orders.utils');
+    const { canTransition, applyCompletionEffects, mergeRemarks } =
+      await import('./return-orders.utils');
     if (!canTransition(returnOrder.status, data.status)) {
       return {
         success: false,
@@ -198,23 +223,59 @@ export async function updateReturnOrderStatus(
       };
     }
 
-    // 使用事务更新状态
-    await prisma.$transaction(async tx => {
-      // 更新退货订单状态
-      await tx.returnOrder.update({
-        where: { id: data.returnOrderId },
-        data: {
-          status: data.status,
-          refundAmount: data.refundAmount ?? returnOrder.refundAmount,
-          remarks: mergeRemarks(returnOrder.remarks, data.remarks),
-        },
-      });
+    const fallbackIdempotencyKey = `return-order-status:${returnOrder.id}:${returnOrder.status}->${data.status}:${returnOrder.updatedAt?.getTime() ?? Date.now()}`;
+    const resolvedIdempotencyKey =
+      data.idempotencyKey ?? fallbackIdempotencyKey;
 
-      // 如果状态变更为 completed，恢复库存
-      if (data.status === 'completed') {
-        await applyCompletionEffects(tx, returnOrder);
-      }
-    });
+    const operationResult = await withIdempotency(
+      resolvedIdempotencyKey,
+      'return_order_status_change',
+      returnOrder.id,
+      session.user.id,
+      {
+        previousStatus: returnOrder.status,
+        nextStatus: data.status,
+      },
+      async () =>
+        await prisma.$transaction(async tx => {
+          await tx.returnOrder.update({
+            where: { id: data.returnOrderId },
+            data: {
+              status: data.status,
+              refundAmount: data.refundAmount ?? returnOrder.refundAmount,
+              remarks: mergeRemarks(returnOrder.remarks, data.remarks),
+            },
+          });
+
+          let inboundResults: Array<{ productId: string }> = [];
+
+          if (data.status === 'completed') {
+            inboundResults = await applyCompletionEffects(
+              tx,
+              {
+                returnNumber: returnOrder.returnNumber,
+                items: returnOrder.items,
+              },
+              session.user.id
+            );
+          }
+
+          return { inboundResults };
+        })
+    );
+
+    if (
+      operationResult?.inboundResults &&
+      operationResult.inboundResults.length > 0
+    ) {
+      const productIds = Array.from(
+        new Set(operationResult.inboundResults.map(record => record.productId))
+      );
+      await Promise.allSettled([
+        ...productIds.map(id => invalidateInventoryCache(id)),
+        ...productIds.map(id => revalidateProducts(id)),
+      ]);
+    }
 
     revalidatePath('/return-orders');
     revalidatePath(`/return-orders/${data.returnOrderId}`);
@@ -475,13 +536,16 @@ export async function batchUpdateReturnOrderStatus(
     }
 
     // 根据操作类型执行不同的逻辑
-    const { batchUpdateReturnOrderStatusTx } = await import('./return-orders.utils');
-    const affectedSalesOrderIds = await prisma.$transaction(async tx =>
-      await batchUpdateReturnOrderStatusTx(
-        tx,
-        returnOrderIds,
-        batchAction as 'cancel' | 'approve' | 'reject'
-      )
+    const { batchUpdateReturnOrderStatusTx } = await import(
+      './return-orders.utils'
+    );
+    const affectedSalesOrderIds = await prisma.$transaction(
+      async tx =>
+        await batchUpdateReturnOrderStatusTx(
+          tx,
+          returnOrderIds,
+          batchAction as 'cancel' | 'approve' | 'reject'
+        )
     );
 
     revalidatePath('/return-orders');
@@ -524,7 +588,9 @@ export async function batchDeleteReturnOrders(
     }
 
     const { batchDeleteReturnOrdersTx } = await import('./return-orders.utils');
-    await prisma.$transaction(async tx => batchDeleteReturnOrdersTx(tx, returnOrderIds));
+    await prisma.$transaction(async tx =>
+      batchDeleteReturnOrdersTx(tx, returnOrderIds)
+    );
 
     revalidatePath('/return-orders');
     revalidatePath('/sales-orders');
@@ -541,4 +607,3 @@ export async function batchDeleteReturnOrders(
     };
   }
 }
-

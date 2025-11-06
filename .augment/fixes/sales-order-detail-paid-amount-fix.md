@@ -9,6 +9,7 @@
 ### API 层面 (`app/api/sales-orders/[id]/route.ts`)
 
 **问题**: 第112-126行的 `payments` 查询中缺少了两个关键字段:
+
 - ❌ 缺少 `actualPaymentAmount` - 实际到账金额
 - ❌ 缺少 `roundingAmount` - 收款抹零金额
 
@@ -192,22 +193,22 @@ const paidAmount = actualPaidAmount + paymentRounding;
 
 ### PaymentRecord 字段含义
 
-| 字段名 | 类型 | 说明 | 示例 |
-|--------|------|------|------|
-| `paymentAmount` | Float | 收款金额(记录金额) | 1000.00 |
-| `actualPaymentAmount` | Float | 实际到账金额 | 998.00 |
-| `roundingAmount` | Float | 收款抹零金额(优惠/减免) | 2.00 |
+| 字段名                | 类型  | 说明                    | 示例    |
+| --------------------- | ----- | ----------------------- | ------- |
+| `paymentAmount`       | Float | 收款金额(记录金额)      | 1000.00 |
+| `actualPaymentAmount` | Float | 实际到账金额            | 998.00  |
+| `roundingAmount`      | Float | 收款抹零金额(优惠/减免) | 2.00    |
 
 **关系**: `paymentAmount = actualPaymentAmount + roundingAmount`
 
 ### SalesOrderDetail 汇总字段
 
-| 字段名 | 类型 | 说明 | 计算方式 |
-|--------|------|------|----------|
+| 字段名             | 类型   | 说明             | 计算方式                                   |
+| ------------------ | ------ | ---------------- | ------------------------------------------ |
 | `actualPaidAmount` | number | 实际到账金额汇总 | sum(confirmedPayments.actualPaymentAmount) |
-| `paymentRounding` | number | 收款抹零金额汇总 | sum(confirmedPayments.roundingAmount) |
-| `paidAmount` | number | 等效已收款 | actualPaidAmount + paymentRounding |
-| `remainingAmount` | number | 待收金额 | actualTotalAmount - paidAmount |
+| `paymentRounding`  | number | 收款抹零金额汇总 | sum(confirmedPayments.roundingAmount)      |
+| `paidAmount`       | number | 等效已收款       | actualPaidAmount + paymentRounding         |
+| `remainingAmount`  | number | 待收金额         | actualTotalAmount - paidAmount             |
 
 ## 测试验证
 
@@ -237,8 +238,8 @@ curl -X GET http://localhost:3000/api/sales-orders/{id} \
 
 ```typescript
 // 验证公式:
-actualPaidAmount + paymentRounding === paidAmount
-totalAmount + roundingAdjustment - paidAmount === remainingAmount
+actualPaidAmount + paymentRounding === paidAmount;
+totalAmount + roundingAdjustment - paidAmount === remainingAmount;
 ```
 
 ## 影响范围
@@ -279,4 +280,3 @@ totalAmount + roundingAdjustment - paidAmount === remainingAmount
 1. **收款记录明细显示**: 在收款记录列表中显示 `actualPaymentAmount` 和 `roundingAmount` 的明细
 2. **统一类型定义**: 将 `PaymentRecord` 接口定义移到 `lib/types/payment.ts` 中统一管理
 3. **数据验证**: 添加前端数据验证,确保 `paymentAmount = actualPaymentAmount + roundingAmount`
-

@@ -28,7 +28,7 @@ export function OrderSummaryCard({
           <div className="space-y-2 text-center">
             <div className="text-muted-foreground text-sm">订单总金额</div>
             <div className="text-primary text-3xl font-bold">
-              ¥
+              ￥
               {totalAmount.toLocaleString('zh-CN', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -39,7 +39,7 @@ export function OrderSummaryCard({
 
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <div className="text-muted-foreground mb-1">商品种类</div>
+            <div className="text-muted-foreground mb-1">产品种类</div>
             <div className="text-xl font-semibold text-blue-600">
               {itemCount}
             </div>
@@ -58,7 +58,7 @@ export function OrderSummaryCard({
           <Alert variant="destructive" className="border-destructive/50">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription className="text-sm">
-              ⚠️ 存在 {stockWarningCount} 个商品库存不足，请检查库存
+              ⚠️ 存在 {stockWarningCount} 个产品库存不足，请检查库存
             </AlertDescription>
           </Alert>
         )}

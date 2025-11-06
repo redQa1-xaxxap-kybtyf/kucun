@@ -36,16 +36,16 @@ export function AddTemporaryProductDialog(
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" /> 添加临时商品
+            <Package className="h-5 w-5" /> 添加临时产品
           </DialogTitle>
           <DialogDescription>
-            临时商品用于记录库存外的特殊订单项，将不会同步到库存系统。
+            临时产品用于记录库存外的特殊订单项，将不会同步到库存系统。
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <Badge variant="secondary" className="bg-blue-50 text-blue-700">
-            支持快速录入商品规格、单位及每件片数信息
+            支持快速录入产品规格、单位及每件片数信息
           </Badge>
           <TemporaryProductForm
             form={form}

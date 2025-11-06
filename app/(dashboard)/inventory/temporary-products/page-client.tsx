@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 临时商品库客户端组件
+ * 外调产品库客户端组件
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -77,7 +77,7 @@ export function TemporaryProductsClient() {
   const { data: suppliersData } = useSuppliers();
   const suppliers = suppliersData?.data || [];
 
-  // 获取临时商品列表
+  // 获取外调产品列表
   const { data, isLoading, error } = useQuery({
     queryKey: [
       'temporary-products',
@@ -160,8 +160,8 @@ export function TemporaryProductsClient() {
                 <SelectContent>
                   <SelectItem value="usageCount">使用次数</SelectItem>
                   <SelectItem value="lastUsedAt">最后使用时间</SelectItem>
-                  <SelectItem value="name">商品名称</SelectItem>
-                  <SelectItem value="code">商品编码</SelectItem>
+                  <SelectItem value="name">产品名称</SelectItem>
+                  <SelectItem value="code">产品编码</SelectItem>
                   <SelectItem value="createdAt">创建时间</SelectItem>
                 </SelectContent>
               </Select>
@@ -188,7 +188,7 @@ export function TemporaryProductsClient() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-muted-foreground text-xs font-medium">
-                临时商品总数
+                外调产品总数
               </CardTitle>
               <Package className="text-muted-foreground h-3.5 w-3.5" />
             </CardHeader>
@@ -242,7 +242,7 @@ export function TemporaryProductsClient() {
         </div>
       )}
 
-      {/* 临时商品列表 */}
+      {/* 外调产品列表 */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -256,9 +256,9 @@ export function TemporaryProductsClient() {
           ) : products.length === 0 ? (
             <div className="text-muted-foreground flex flex-col items-center justify-center py-10">
               <Package className="mb-3 h-10 w-10 opacity-50" />
-              <p className="text-sm font-medium">暂无临时商品记录</p>
+              <p className="text-sm font-medium">暂无外调产品记录</p>
               <p className="mt-1 text-xs">
-                临时商品会在创建调货销售订单时自动记录
+                外调产品会在创建调货销售订单时自动记录
               </p>
             </div>
           ) : (
@@ -390,9 +390,9 @@ export function TemporaryProductsClient() {
               <Package className="h-4 w-4" />
             </div>
             <div className="space-y-0.5 text-xs">
-              <p className="font-medium text-blue-900">关于临时商品</p>
+              <p className="font-medium text-blue-900">关于外调产品</p>
               <p className="text-blue-700">
-                • 临时商品由系统在创建调货销售订单时自动记录和管理
+                • 外调产品由系统在创建调货销售订单时自动记录和管理
               </p>
               <p className="text-blue-700">
                 • 同一供应商的相同编码会自动复用,并更新使用统计
@@ -401,7 +401,7 @@ export function TemporaryProductsClient() {
                 • 此页面仅用于查询和检索,不提供手动创建/编辑/删除功能
               </p>
               <p className="text-blue-700">
-                • 使用次数反映了该临时商品在订单中被使用的总次数
+                • 使用次数反映了该外调产品在订单中被使用的总次数
               </p>
             </div>
           </div>

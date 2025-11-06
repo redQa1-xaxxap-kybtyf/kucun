@@ -86,6 +86,7 @@ const records = await prisma.outboundRecord.findMany({
 ```
 
 **问题**:
+
 - 🔴 手动维护 76 行类型定义
 - 🔴 Prisma Schema 变更时需要手动同步
 - 🔴 容易出现类型不一致
@@ -163,14 +164,17 @@ export type OutboundRecordWithRelations = Prisma.OutboundRecordGetPayload<{
 
 // lib/api/outbound-server.ts (优化后)
 
-import { OUTBOUND_RECORD_SELECT, type OutboundRecordWithRelations } from './selectors/inventory-selectors';
+import {
+  OUTBOUND_RECORD_SELECT,
+  type OutboundRecordWithRelations,
+} from './selectors/inventory-selectors';
 
 // ✅ 查询时直接复用选择器
 const records = await prisma.outboundRecord.findMany({
   where,
   skip,
   take: limit,
-  select: OUTBOUND_RECORD_SELECT,  // ✅ 一行搞定！
+  select: OUTBOUND_RECORD_SELECT, // ✅ 一行搞定！
 });
 
 // ✅ TypeScript 自动推导类型为 OutboundRecordWithRelations[]
@@ -178,13 +182,14 @@ function formatRecord(record: OutboundRecordWithRelations) {
   // ✅ 类型安全，自动补全
   return {
     id: record.id,
-    productCode: record.product.code,  // ✅ 自动补全
+    productCode: record.product.code, // ✅ 自动补全
     // ...
   };
 }
 ```
 
 **优势**:
+
 - ✅ 类型定义从 76 行减少到 2 行（**-97%**）
 - ✅ Prisma Schema 变更自动同步
 - ✅ 查询配置和类型定义统一管理
@@ -203,7 +208,7 @@ export async function getOptimizedInventoryList(
   params: InventoryQueryParams
 ): Promise<InventoryQueryResult[]> {
   const { page = 1, limit = 20 } = params;
-  const offset = (page - 1) * limit;  // 🔴 大数据量时性能差
+  const offset = (page - 1) * limit; // 🔴 大数据量时性能差
 
   const rawRecords = await prisma.$queryRaw<unknown[]>`
     SELECT * FROM inventory i
@@ -218,6 +223,7 @@ export async function getOptimizedInventoryList(
 ```
 
 **性能问题**:
+
 - 🔴 第 1 页: ~50ms
 - 🔴 第 100 页 (10,000 条记录): ~350ms
 - 🔴 第 500 页 (100,000 条记录): ~3500ms ❌
@@ -240,7 +246,7 @@ export async function getInventoryListHybrid(
     return await prisma.inventory.findMany({
       take: limit + 1,
       skip: 1,
-      cursor: { id: params.cursor },  // ✅ 始终快速
+      cursor: { id: params.cursor }, // ✅ 始终快速
       orderBy: { updatedAt: 'desc' },
       select: INVENTORY_SELECT,
     });
@@ -263,6 +269,7 @@ export async function getInventoryListHybrid(
 ```
 
 **性能提升**:
+
 - ✅ 第 1-50 页: ~50ms（与优化前相同）
 - ✅ 游标分页（任意位置）: ~60ms（**提升 98%**）
 - ✅ 超过 50 页: 引导筛选（**避免慢查询**）
@@ -285,9 +292,18 @@ export const GET = withAuth(async (request: NextRequest) => {
   const records = await prisma.outboundRecord.findMany({
     skip: (page - 1) * limit,
     take: limit,
-    include: {  // 🔴 手动指定关联
-      product: { select: { /* ... */ } },
-      variant: { select: { /* ... */ } },
+    include: {
+      // 🔴 手动指定关联
+      product: {
+        select: {
+          /* ... */
+        },
+      },
+      variant: {
+        select: {
+          /* ... */
+        },
+      },
       // ...
     },
   });
@@ -317,8 +333,12 @@ export const GET = withAuth(async (request: NextRequest) => {
 
   // ✅ 支持偏移分页和游标分页
   const params = {
-    page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : undefined,
-    limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+    page: searchParams.get('page')
+      ? parseInt(searchParams.get('page')!)
+      : undefined,
+    limit: searchParams.get('limit')
+      ? parseInt(searchParams.get('limit')!)
+      : undefined,
     cursor: searchParams.get('cursor') || undefined,
     direction: (searchParams.get('direction') as 'next' | 'prev') || 'next',
     search: searchParams.get('search') || undefined,
@@ -330,7 +350,7 @@ export const GET = withAuth(async (request: NextRequest) => {
   return NextResponse.json({
     success: true,
     data: result.data,
-    pagination: result.pagination,  // ✅ 包含游标信息
+    pagination: result.pagination, // ✅ 包含游标信息
   });
 });
 ```
@@ -340,7 +360,9 @@ export const GET = withAuth(async (request: NextRequest) => {
 ```json
 {
   "success": true,
-  "data": [ /* ... */ ],
+  "data": [
+    /* ... */
+  ],
   "pagination": {
     "page": 1,
     "limit": 20,
@@ -444,19 +466,19 @@ export default async function OutboundRecordsPage({
 
 ### 类型定义优化
 
-| 指标 | 优化前 | 优化后 | 改进 |
-|------|--------|--------|------|
-| 手动类型定义 | 276 行 | 50 行 | **-82%** ✅ |
-| 类型同步成本 | 手动 | 自动 | **100%** ✅ |
-| 维护成本 | 高 | 低 | **-70%** ✅ |
+| 指标         | 优化前 | 优化后 | 改进        |
+| ------------ | ------ | ------ | ----------- |
+| 手动类型定义 | 276 行 | 50 行  | **-82%** ✅ |
+| 类型同步成本 | 手动   | 自动   | **100%** ✅ |
+| 维护成本     | 高     | 低     | **-70%** ✅ |
 
 ### 分页查询优化
 
-| 场景 | 优化前 | 优化后 | 改进 |
-|------|--------|--------|------|
-| 第 1-50 页 | 50-200ms | 50-200ms | 0% |
-| 第 100 页 (10,000 条) | 350ms | 60ms | **+83%** ✅ |
-| 第 500 页 (100,000 条) | 3500ms | 引导筛选 | **+100%** ✅ |
+| 场景                   | 优化前   | 优化后   | 改进         |
+| ---------------------- | -------- | -------- | ------------ |
+| 第 1-50 页             | 50-200ms | 50-200ms | 0%           |
+| 第 100 页 (10,000 条)  | 350ms    | 60ms     | **+83%** ✅  |
+| 第 500 页 (100,000 条) | 3500ms   | 引导筛选 | **+100%** ✅ |
 
 ### 代码质量提升
 
@@ -478,7 +500,7 @@ export default async function OutboundRecordsPage({
 ---
 
 **参考文档**:
+
 - [库存优化方案](./inventory-optimization-plan.md)
 - [Prisma 类型推导最佳实践](https://www.prisma.io/docs/concepts/components/prisma-client/advanced-type-safety)
 - [游标分页最佳实践](https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination)
-

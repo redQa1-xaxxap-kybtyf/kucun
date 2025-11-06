@@ -15,39 +15,35 @@
 **文件**：`components/ui/toast.tsx` (第 27-47 行)
 
 ```typescript
-const toastVariants = cva(
-  '...基础样式...',
-  {
-    variants: {
-      variant: {
-        default:
-          'border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] text-[hsl(var(--color-text-primary))]',
-        destructive:
-          'destructive border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]',
-        success:
-          'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
-        warning:
-          'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
-        info:
-          'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
-      },
+const toastVariants = cva('...基础样式...', {
+  variants: {
+    variant: {
+      default:
+        'border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] text-[hsl(var(--color-text-primary))]',
+      destructive:
+        'destructive border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]',
+      success:
+        'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+      warning:
+        'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
+      info: 'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
     },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: 'default',
+  },
+});
 ```
 
 ### 颜色映射
 
-| Variant | 颜色 | 用途 | 状态 |
-|---------|------|------|------|
-| `success` | 绿色 | 成功操作（创建、更新、删除成功） | ✅ 已定义 |
-| `destructive` | 红色 | 失败/错误消息 | ✅ 已定义 |
-| `warning` | 黄色/橙色 | 警告消息 | ✅ 已定义 |
-| `info` | 蓝色 | 信息提示 | ✅ 已定义 |
-| `default` | 灰色/蓝色 | 默认消息 | ✅ 已定义 |
+| Variant       | 颜色      | 用途                             | 状态      |
+| ------------- | --------- | -------------------------------- | --------- |
+| `success`     | 绿色      | 成功操作（创建、更新、删除成功） | ✅ 已定义 |
+| `destructive` | 红色      | 失败/错误消息                    | ✅ 已定义 |
+| `warning`     | 黄色/橙色 | 警告消息                         | ✅ 已定义 |
+| `info`        | 蓝色      | 信息提示                         | ✅ 已定义 |
+| `default`     | 灰色/蓝色 | 默认消息                         | ✅ 已定义 |
 
 ---
 
@@ -61,13 +57,14 @@ const toastVariants = cva(
 **发现的文件**（部分列表）：
 
 1. **客户删除成功** - `components/customers/customer-delete-dialog.tsx:43`
+
    ```typescript
    // ❌ 错误：缺少 variant
    toast({
      title: '删除成功',
      description: `客户"${customer?.name}"已成功删除`,
    });
-   
+
    // ✅ 正确：应该添加 variant: 'success'
    toast({
      title: '删除成功',
@@ -77,6 +74,7 @@ const toastVariants = cva(
    ```
 
 2. **付款成功** - `components/finance/payables-client/PayablePaymentDialog.tsx:140`
+
    ```typescript
    // ❌ 错误
    toast({
@@ -86,12 +84,14 @@ const toastVariants = cva(
    ```
 
 3. **存储配置保存成功** - `app/(dashboard)/settings/storage/page.tsx:79`
+
    ```typescript
    // ❌ 错误
    toast({ title: '成功', description: '七牛云存储配置保存成功' });
    ```
 
 4. **用户创建成功** - `app/(dashboard)/settings/users/page.tsx:121`
+
    ```typescript
    // ❌ 错误
    toast({ title: '成功', description: '用户创建成功' });
@@ -104,6 +104,7 @@ const toastVariants = cva(
    ```
 
 **统计**：
+
 - 发现约 **50+ 处**成功消息缺少 `variant: 'success'`
 - 主要分布在：
   - 设置页面（`app/(dashboard)/settings/**`）
@@ -116,6 +117,7 @@ const toastVariants = cva(
 **正确示例**：
 
 1. **产品创建** - `components/products/product-create-client.tsx:15-19`
+
    ```typescript
    // ✅ 正确
    toast({
@@ -126,6 +128,7 @@ const toastVariants = cva(
    ```
 
 2. **客户创建** - `components/customers/erp-customer-form.tsx:99-103`
+
    ```typescript
    // ✅ 正确
    toast({
@@ -151,7 +154,12 @@ const toastVariants = cva(
 
 ```typescript
 // ✅ 推荐使用
-import { showSuccess, showError, showWarning, showInfo } from '@/lib/utils/toast-helper';
+import {
+  showSuccess,
+  showError,
+  showWarning,
+  showInfo,
+} from '@/lib/utils/toast-helper';
 
 // 成功消息
 showSuccess('操作成功', { description: '数据已保存' });
@@ -167,12 +175,14 @@ showInfo('提示', { description: '这是一条信息' });
 ```
 
 **优点**：
+
 - ✅ 自动添加正确的 variant
 - ✅ 自动添加图标（CheckCircle2、AlertCircle、AlertTriangle、Info）
 - ✅ 统一的停留时长配置
 - ✅ 更简洁的 API
 
 **问题**：
+
 - ❌ 大部分代码仍然直接使用 `toast()`
 - ❌ 没有充分利用 Toast Helper 的优势
 
@@ -185,6 +195,7 @@ showInfo('提示', { description: '这是一条信息' });
 **适用场景**：快速修复现有代码，最小化改动
 
 **步骤**：
+
 1. 搜索所有成功消息（title 包含"成功"）
 2. 添加 `variant: 'success'`
 3. 验证颜色显示正确
@@ -202,7 +213,7 @@ toast({
 toast({
   title: '删除成功',
   description: `客户"${customer?.name}"已成功删除`,
-  variant: 'success',  // ✅ 添加这一行
+  variant: 'success', // ✅ 添加这一行
 });
 ```
 
@@ -211,6 +222,7 @@ toast({
 **适用场景**：新代码或重构时使用
 
 **步骤**：
+
 1. 导入 Toast Helper
 2. 替换 `toast()` 调用为 `showSuccess()` / `showError()` 等
 3. 享受自动图标和统一样式
@@ -244,12 +256,10 @@ showSuccess('删除成功', {
 
 - [ ] **客户管理**
   - [ ] `components/customers/customer-delete-dialog.tsx:43` - 删除成功
-  
 - [ ] **财务模块**
   - [ ] `components/finance/payables-client/PayablePaymentDialog.tsx:140` - 付款成功
   - [ ] `app/(dashboard)/finance/payments/create/page.tsx:205` - 收款创建成功
   - [ ] `app/(dashboard)/finance/payments-out/create/page.tsx:409` - 付款创建成功
-  
 - [ ] **设置页面**
   - [ ] `app/(dashboard)/settings/storage/page.tsx:79` - 存储配置保存成功
   - [ ] `app/(dashboard)/settings/users/page.tsx:121` - 用户创建成功
@@ -259,7 +269,6 @@ showSuccess('删除成功', {
 
 - [ ] **库存模块**
   - [ ] `app/(dashboard)/inventory/batch/page-client.tsx:247` - 批次操作成功
-  
 - [ ] **分类管理**
   - [ ] `app/(dashboard)/categories/create/page.tsx:148` - 分类创建成功
   - [ ] `app/(dashboard)/categories/[id]/edit/page.tsx:237` - 分类更新成功
@@ -287,7 +296,7 @@ showSuccess('操作成功', { description: '数据已保存' });
 toast({
   title: '操作成功',
   description: '数据已保存',
-  variant: 'success',  // 必须指定
+  variant: 'success', // 必须指定
 });
 ```
 
@@ -302,7 +311,7 @@ showError('操作失败', { description: error.message });
 toast({
   title: '操作失败',
   description: error.message,
-  variant: 'destructive',  // 必须指定
+  variant: 'destructive', // 必须指定
 });
 ```
 
@@ -317,7 +326,7 @@ showWarning('注意', { description: '此操作不可撤销' });
 toast({
   title: '注意',
   description: '此操作不可撤销',
-  variant: 'warning',  // 必须指定
+  variant: 'warning', // 必须指定
 });
 ```
 
@@ -332,7 +341,7 @@ showInfo('提示', { description: '这是一条信息' });
 toast({
   title: '提示',
   description: '这是一条信息',
-  variant: 'info',  // 可选，默认为 default
+  variant: 'info', // 可选，默认为 default
 });
 ```
 
@@ -395,15 +404,15 @@ npx eslint "**/*.{ts,tsx}"
 
 ## 📊 修复进度跟踪
 
-| 模块 | 总数 | 已修复 | 进度 |
-|------|------|--------|------|
-| 客户管理 | 5 | 0 | 0% |
-| 财务模块 | 15 | 0 | 0% |
-| 库存模块 | 8 | 0 | 0% |
-| 设置页面 | 20 | 0 | 0% |
-| 分类管理 | 4 | 0 | 0% |
-| 其他 | 8 | 0 | 0% |
-| **总计** | **60** | **0** | **0%** |
+| 模块     | 总数   | 已修复 | 进度   |
+| -------- | ------ | ------ | ------ |
+| 客户管理 | 5      | 0      | 0%     |
+| 财务模块 | 15     | 0      | 0%     |
+| 库存模块 | 8      | 0      | 0%     |
+| 设置页面 | 20     | 0      | 0%     |
+| 分类管理 | 4      | 0      | 0%     |
+| 其他     | 8      | 0      | 0%     |
+| **总计** | **60** | **0**  | **0%** |
 
 ---
 
@@ -455,4 +464,3 @@ Toast Helper 自动添加图标：
 
 **审计完成日期**：2025-01-XX  
 **下次审计**：建议 3 个月后或重大功能上线前
-

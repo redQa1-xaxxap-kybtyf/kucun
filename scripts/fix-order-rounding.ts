@@ -38,13 +38,17 @@ async function fixOrderRounding() {
     console.log('📋 订单信息：');
     console.log(`订单号: ${order.orderNumber}`);
     console.log(`客户: ${order.customer.name}`);
-    console.log(`订单金额: ¥${Number(order.totalAmount).toFixed(2)}`);
-    console.log(`当前抹零金额: ¥${Number(order.roundingAdjustment || 0).toFixed(2)}`);
-    console.log(`已收金额: ¥${Number(order.paidAmount).toFixed(2)}`);
+    console.log(`订单金额: ￥${Number(order.totalAmount).toFixed(2)}`);
+    console.log(
+      `当前抹零金额: ￥${Number(order.roundingAdjustment || 0).toFixed(2)}`
+    );
+    console.log(`已收金额: ￥${Number(order.paidAmount).toFixed(2)}`);
     console.log('');
 
     // 计算收款信息
-    const confirmedPayments = order.payments.filter(p => p.status === 'confirmed');
+    const confirmedPayments = order.payments.filter(
+      p => p.status === 'confirmed'
+    );
     const pendingPayments = order.payments.filter(p => p.status === 'pending');
     const confirmedAmount = confirmedPayments.reduce(
       (sum, p) => sum + Number(p.paymentAmount),
@@ -56,13 +60,13 @@ async function fixOrderRounding() {
     );
 
     console.log('💰 收款信息：');
-    console.log(`已确认收款: ¥${confirmedAmount.toFixed(2)}`);
-    console.log(`待确认收款: ¥${pendingAmount.toFixed(2)}`);
+    console.log(`已确认收款: ￥${confirmedAmount.toFixed(2)}`);
+    console.log(`待确认收款: ￥${pendingAmount.toFixed(2)}`);
     console.log('');
 
     // 更新抹零金额
     const newRoundingAdjustment = -6.5;
-    console.log(`🔄 更新抹零金额为: ¥${newRoundingAdjustment.toFixed(2)}\n`);
+    console.log(`🔄 更新抹零金额为: ￥${newRoundingAdjustment.toFixed(2)}\n`);
 
     const updatedOrder = await prisma.salesOrder.update({
       where: {
@@ -82,18 +86,22 @@ async function fixOrderRounding() {
     const remainingAmount = actualTotalAmount - confirmedAmount - pendingAmount;
 
     console.log('📊 更新后的数据：');
-    console.log(`订单金额: ¥${totalAmount.toFixed(2)}`);
-    console.log(`抹零金额: ¥${roundingAdjustment.toFixed(2)}`);
-    console.log(`实际应收: ¥${actualTotalAmount.toFixed(2)} (${totalAmount.toFixed(2)} + ${roundingAdjustment.toFixed(2)})`);
-    console.log(`已确认: ¥${confirmedAmount.toFixed(2)}`);
-    console.log(`待确认: ¥${pendingAmount.toFixed(2)}`);
-    console.log(`待收金额: ¥${remainingAmount.toFixed(2)} (${actualTotalAmount.toFixed(2)} - ${confirmedAmount.toFixed(2)} - ${pendingAmount.toFixed(2)})`);
+    console.log(`订单金额: ￥${totalAmount.toFixed(2)}`);
+    console.log(`抹零金额: ￥${roundingAdjustment.toFixed(2)}`);
+    console.log(
+      `实际应收: ￥${actualTotalAmount.toFixed(2)} (${totalAmount.toFixed(2)} + ${roundingAdjustment.toFixed(2)})`
+    );
+    console.log(`已确认: ￥${confirmedAmount.toFixed(2)}`);
+    console.log(`待确认: ￥${pendingAmount.toFixed(2)}`);
+    console.log(
+      `待收金额: ￥${remainingAmount.toFixed(2)} (${actualTotalAmount.toFixed(2)} - ${confirmedAmount.toFixed(2)} - ${pendingAmount.toFixed(2)})`
+    );
     console.log('');
 
     if (Math.abs(remainingAmount) < 0.01) {
       console.log('✅ 待收金额为 0，订单已完全收款！');
     } else {
-      console.log(`⚠️  待收金额为 ¥${remainingAmount.toFixed(2)}`);
+      console.log(`⚠️  待收金额为 ￥${remainingAmount.toFixed(2)}`);
     }
   } catch (error) {
     console.error('❌ 修复失败:', error);
@@ -104,4 +112,3 @@ async function fixOrderRounding() {
 }
 
 fixOrderRounding();
-

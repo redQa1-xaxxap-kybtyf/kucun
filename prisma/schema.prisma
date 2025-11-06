@@ -32,6 +32,12 @@ model User {
   payableRecords               PayableRecord[]        @relation("UserPayables")
   paymentOutRecords            PaymentOutRecord[]     @relation("UserPaymentOuts")
   systemLogs                   SystemLog[]            @relation("UserSystemLogs")
+  expenses                     ExpenseRecord[]        @relation("UserExpenses")
+  inventoryCountsCreated       InventoryCount[]       @relation("InventoryCountCreator")
+  inventoryCountsOperated      InventoryCount[]       @relation("InventoryCountOperator")
+  inventoryCountsApproved      InventoryCount[]       @relation("InventoryCountApprover")
+  inventoryCountItemsCounted   InventoryCountItem[]   @relation("InventoryCountItemCounter")
+  purchaseOrders               PurchaseOrder[]        @relation("UserPurchaseOrders")
 
   @@index([email])
   @@index([username])
@@ -63,8 +69,9 @@ model Customer {
   parentCustomer Customer?  @relation("CustomerHierarchy", fields: [parentCustomerId], references: [id], onDelete: SetNull)
   childCustomers Customer[] @relation("CustomerHierarchy")
 
-  @@index([name])
+  @@unique([name], map: "uk_suppliers_name")
   @@index([phone])
+  @@index([createdAt])
   @@index([role], map: "idx_customers_role")
   @@index([parentCustomerId], map: "idx_customers_parent")
   @@map("customers")
@@ -87,6 +94,8 @@ model Supplier {
   payableRecords            PayableRecord[]            @relation("SupplierPayables")
   paymentOutRecords         PaymentOutRecord[]         @relation("SupplierPaymentOuts")
   supplierProductPrices     SupplierProductPrice[]     @relation("SupplierProductPrices")
+  purchaseOrders            PurchaseOrder[]            @relation("SupplierPurchaseOrders")
+  purchaseOrderItems        PurchaseOrderItem[]        @relation("PurchaseOrderItemSupplier")
 
   @@index([name])
   @@index([phone])
@@ -136,9 +145,10 @@ model Category {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // 关系定义
-  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  children Category[] @relation("CategoryHierarchy")
-  products Product[]  @relation("CategoryProducts")
+  parent          Category?        @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  children        Category[]       @relation("CategoryHierarchy")
+  products        Product[]        @relation("CategoryProducts")
+  inventoryCounts InventoryCount[]
 
   @@unique([name, parentId], map: "unique_name_per_parent")
   @@index([name])
@@ -153,7 +163,7 @@ model Product {
   code          String   @unique @db.VarChar(100)
   name          String   @db.VarChar(150)
   specification String?  @db.Text
-  unit          String   @default("piece") @db.VarChar(32)
+  unit          String   @default("sheet") @db.VarChar(32)
   piecesPerUnit Int      @default(1) @map("pieces_per_unit")
   weight        Float?
   thickness     Float?
@@ -175,9 +185,11 @@ model Product {
   inventoryAdjustments      InventoryAdjustment[]
   inboundRecords            InboundRecord[]
   batchSpecifications       BatchSpecification[]
+  inventoryCountItems       InventoryCountItem[]
   returnOrderItems          ReturnOrderItem[]          @relation("ProductReturns")
   customerProductPrices     CustomerProductPrice[]     @relation("CustomerProductPrices")
   supplierProductPrices     SupplierProductPrice[]     @relation("SupplierProductPrices")
+  purchaseOrderItems        PurchaseOrderItem[]        @relation("PurchaseOrderItemProduct")
 
   @@index([code])
   @@index([name])
@@ -208,6 +220,7 @@ model ProductVariant {
   outboundRecords      OutboundRecord[]
   inventoryAdjustments InventoryAdjustment[]
   inventory            Inventory[]
+  inventoryCountItems  InventoryCountItem[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -256,6 +269,11 @@ model SalesOrder {
   @@index([orderType], map: "idx_sales_orders_order_type")
   @@index([supplierId], map: "idx_sales_orders_supplier")
   @@index([usePrepayment], map: "idx_sales_orders_prepayment")
+  @@index([customerId, status])
+  @@index([customerId, createdAt])
+  @@index([status, createdAt], map: "idx_sales_orders_status_created")
+  @@index([status, totalAmount], map: "idx_sales_orders_status_amount")
+  @@index([status, customerId, createdAt], map: "idx_sales_orders_status_customer_created")
   @@map("sales_orders")
 }
 
@@ -417,6 +435,8 @@ model InboundRecord {
   variantId            String?  @map("variant_id") @db.Char(36)
   batchNumber          String?  @map("batch_number") @db.VarChar(100)
   batchSpecificationId String?  @map("batch_specification_id") @db.Char(36)
+  purchaseOrderId      String?  @map("purchase_order_id") @db.Char(36)
+  purchaseOrderItemId  String?  @map("purchase_order_item_id") @db.Char(36)
   quantity             Float
   unitCost             Float?   @map("unit_cost")
   totalCost            Float?   @map("total_cost")
@@ -432,6 +452,8 @@ model InboundRecord {
   variant            ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   batchSpecification BatchSpecification? @relation(fields: [batchSpecificationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   user               User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  purchaseOrder      PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  purchaseOrderItem  PurchaseOrderItem?  @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([productId], map: "idx_inbound_records_product")
   @@index([variantId], map: "idx_inbound_records_variant")
@@ -439,6 +461,8 @@ model InboundRecord {
   @@index([batchSpecificationId], map: "idx_inbound_records_batch_spec")
   @@index([userId], map: "idx_inbound_records_user")
   @@index([reason], map: "idx_inbound_records_reason")
+  @@index([purchaseOrderId], map: "idx_inbound_records_purchase_order")
+  @@index([purchaseOrderItemId], map: "idx_inbound_records_purchase_order_item")
   @@map("inbound_records")
 }
 
@@ -601,6 +625,13 @@ model FactoryShipmentOrder {
   shippingQueryError  String?   @map("shipping_query_error") @db.Text
   preferredSiteId     String?   @map("preferred_site_id")
 
+  // 成本和利润字段
+  costAmount     Float? @default(0) @map("cost_amount") // 总成本（采购价总和）
+  expenseAmount  Float? @default(0) @map("expense_amount") // 总费用（运费、仓储费等）
+  profitAmount   Float? @default(0) @map("profit_amount") // 总利润（客户货利润）
+  customerProfit Float? @default(0) @map("customer_profit") // 客户货利润
+  selfCostAmount Float? @default(0) @map("self_cost_amount") // 自有货成本
+
   // 关系定义
   customer Customer?                  @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   user     User?                      @relation("FactoryShipmentOrders", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -642,11 +673,17 @@ model FactoryShipmentOrderItem {
   manualUnit             String?   @map("manual_unit")
   displayName            String    @map("display_name")
   specification          String?   @db.Text
-  unit                   String    @default("piece")
+  unit                   String    @default("sheet")
   weight                 Float?
   remarks                String?
   createdAt              DateTime  @default(now()) @map("created_at")
   updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // 成本和利润字段
+  unitCost         Float? @map("unit_cost") // 单位成本（采购价+分摊费用/数量）
+  allocatedExpense Float? @default(0) @map("allocated_expense") // 分摊费用
+  profitAmount     Float? @default(0) @map("profit_amount") // 利润金额（客户货）
+  profitMargin     Float? @map("profit_margin") // 利润率（%）
 
   // 关系定义
   factoryShipmentOrder FactoryShipmentOrder @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
@@ -699,6 +736,7 @@ model ReturnOrder {
   @@index([returnMode, customerId, status], map: "idx_return_orders_mode_customer_status")
   @@index([salesOrderId, status], map: "idx_return_orders_order_status")
   @@index([status, type], map: "idx_return_orders_status_type")
+  @@index([customerId, status])
   @@map("return_orders")
 }
 
@@ -1034,4 +1072,239 @@ model ShippingQuery {
   @@index([queryStatus])
   @@index([factoryShipmentOrderId], map: "idx_shipping_queries_factory_shipment_order_id")
   @@map("shipping_queries")
+}
+
+// 费用记录表
+model ExpenseRecord {
+  id            String   @id @default(uuid()) @db.Char(36)
+  expenseNumber String   @unique @map("expense_number") @db.VarChar(100)
+  expenseType   String   @map("expense_type") @db.VarChar(32)
+  expenseName   String   @map("expense_name") @db.VarChar(100)
+  expenseAmount Float    @map("expense_amount")
+  expenseDate   DateTime @map("expense_date")
+
+  // 关联业务（可选）
+  relatedType   String? @map("related_type") @db.VarChar(32) // inbound | outbound | sales_order | null
+  relatedId     String? @map("related_id") @db.Char(36)
+  relatedNumber String? @map("related_number") @db.VarChar(100)
+
+  // 备注和附件
+  remarks     String? @db.Text
+  attachments String? @db.Text // JSON 数组，预留扩展
+
+  // 审计字段
+  userId    String   @map("user_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  user User @relation("UserExpenses", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // 索引
+  @@index([expenseType], map: "idx_expense_records_type")
+  @@index([expenseDate], map: "idx_expense_records_date")
+  @@index([userId], map: "idx_expense_records_user")
+  @@index([relatedType, relatedId], map: "idx_expense_records_related")
+  @@map("expense_records")
+}
+
+// 库存盘点计划表
+model InventoryCount {
+  id          String @id @default(uuid()) @db.Char(36)
+  countNumber String @unique @map("count_number") @db.VarChar(100) // 盘点编号，格式：COUNT-YYYYMMDD-序号
+  countName   String @map("count_name") @db.VarChar(200) // 盘点名称
+  countType   String @map("count_type") @db.VarChar(32) // 盘点类型：full(全盘) | partial(抽盘) | cycle(循环盘点)
+  status      String @default("draft") @db.VarChar(32) // 状态：draft(草稿) | in_progress(进行中) | completed(已完成) | cancelled(已取消)
+
+  // 盘点范围
+  location   String? @db.VarChar(100) // 盘点位置（可选，用于筛选）
+  categoryId String? @map("category_id") @db.Char(36) // 盘点分类（可选，用于筛选）
+
+  // 盘点时间
+  planDate  DateTime  @map("plan_date") // 计划盘点日期
+  startDate DateTime? @map("start_date") // 实际开始日期
+  endDate   DateTime? @map("end_date") // 实际结束日期
+
+  // 盘点结果统计
+  totalItems      Int   @default(0) @map("total_items") // 盘点项目总数
+  completedItems  Int   @default(0) @map("completed_items") // 已完成盘点项目数
+  differenceItems Int   @default(0) @map("difference_items") // 有差异的项目数
+  totalDifference Float @default(0) @map("total_difference") // 总差异数量（绝对值）
+
+  // 备注和附件
+  remarks     String? @db.Text
+  attachments String? @db.Text // JSON 数组，预留扩展
+
+  // 审计字段
+  creatorId  String    @map("creator_id") @db.Char(36) // 创建人
+  operatorId String?   @map("operator_id") @db.Char(36) // 盘点执行人
+  approverId String?   @map("approver_id") @db.Char(36) // 审批人
+  approvedAt DateTime? @map("approved_at") // 审批时间
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  // 关系定义
+  category Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  creator  User                 @relation("InventoryCountCreator", fields: [creatorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  operator User?                @relation("InventoryCountOperator", fields: [operatorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approver User?                @relation("InventoryCountApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  items    InventoryCountItem[]
+
+  // 索引
+  @@index([status], map: "idx_inventory_counts_status")
+  @@index([countType], map: "idx_inventory_counts_type")
+  @@index([planDate], map: "idx_inventory_counts_plan_date")
+  @@index([creatorId], map: "idx_inventory_counts_creator")
+  @@index([categoryId], map: "idx_inventory_counts_category")
+  @@index([location], map: "idx_inventory_counts_location")
+  @@index([status, planDate], map: "idx_inventory_counts_status_date")
+  @@map("inventory_counts")
+}
+
+// 库存盘点明细表
+model InventoryCountItem {
+  id          String  @id @default(uuid()) @db.Char(36)
+  countId     String  @map("count_id") @db.Char(36) // 盘点计划ID
+  productId   String  @map("product_id") @db.Char(36)
+  variantId   String? @map("variant_id") @db.Char(36)
+  batchNumber String? @map("batch_number") @db.VarChar(100)
+
+  // 盘点数据
+  systemQuantity Int  @map("system_quantity") // 系统库存数量
+  actualQuantity Int? @map("actual_quantity") // 实际盘点数量（未盘点时为null）
+  difference     Int  @default(0) // 差异数量（实际 - 系统）
+
+  // 盘点状态
+  status String @default("pending") @db.VarChar(32) // pending(待盘点) | counted(已盘点) | adjusted(已调整)
+
+  // 成本信息
+  unitCost  Float? @map("unit_cost") // 单位成本
+  totalCost Float? @map("total_cost") // 总成本（差异 * 单位成本）
+
+  // 盘点位置和备注
+  location String? @db.VarChar(100)
+  remarks  String? @db.Text
+
+  // 盘点人和时间
+  countedBy String?   @map("counted_by") @db.Char(36) // 盘点人
+  countedAt DateTime? @map("counted_at") // 盘点时间
+
+  // 审计字段
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  count   InventoryCount  @relation(fields: [countId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  counter User?           @relation("InventoryCountItemCounter", fields: [countedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // 索引
+  @@index([countId], map: "idx_inventory_count_items_count")
+  @@index([productId], map: "idx_inventory_count_items_product")
+  @@index([variantId], map: "idx_inventory_count_items_variant")
+  @@index([batchNumber], map: "idx_inventory_count_items_batch")
+  @@index([status], map: "idx_inventory_count_items_status")
+  @@index([countId, status], map: "idx_inventory_count_items_count_status")
+  @@map("inventory_count_items")
+}
+
+// ==================== 采购订单模块 ====================
+
+model PurchaseOrder {
+  id              String  @id @default(uuid()) @db.Char(36)
+  orderNumber     String  @unique @map("order_number")
+  supplierId      String  @map("supplier_id") @db.Char(36)
+  containerNumber String? @map("container_number")
+  userId          String  @map("user_id") @db.Char(36)
+  status          String  @default("draft") @db.VarChar(32)
+
+  // 金额字段
+  totalAmount   Float  @default(0) @map("total_amount")
+  expenseAmount Float? @default(0) @map("expense_amount")
+  costAmount    Float? @default(0) @map("cost_amount")
+
+  // 日期字段
+  orderDate        DateTime? @map("order_date")
+  shipmentDate     DateTime? @map("shipment_date")
+  estimatedArrival DateTime? @map("estimated_arrival") @db.DateTime(0)
+  arrivalDate      DateTime? @map("arrival_date")
+
+  // 物流信息
+  shippingCompany     String?   @map("shipping_company")
+  lastShippingQueryAt DateTime? @map("last_shipping_query_at")
+  shippingQueryStatus String?   @map("shipping_query_status") @db.VarChar(50)
+  shippingQueryError  String?   @map("shipping_query_error") @db.Text
+
+  remarks   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  supplier       Supplier            @relation("SupplierPurchaseOrders", fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user           User                @relation("UserPurchaseOrders", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  items          PurchaseOrderItem[]
+  inboundRecords InboundRecord[]
+
+  @@index([orderNumber], map: "idx_purchase_orders_order_number")
+  @@index([supplierId], map: "idx_purchase_orders_supplier")
+  @@index([userId], map: "idx_purchase_orders_user")
+  @@index([status], map: "idx_purchase_orders_status")
+  @@index([containerNumber], map: "idx_purchase_orders_container")
+  @@index([shippingCompany], map: "idx_purchase_orders_shipping_company")
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String  @id @default(uuid()) @db.Char(36)
+  purchaseOrderId String  @map("purchase_order_id") @db.Char(36)
+  productId       String? @map("product_id") @db.Char(36)
+  supplierId      String  @map("supplier_id") @db.Char(36)
+  productCode     String  @map("product_code") @db.VarChar(100)
+
+  // 产品信息
+  displayName   String  @map("display_name")
+  specification String? @db.Text
+  unit          String  @default("sheet")
+  weight        Float?
+
+  // 批次管理
+  batchNumber String? @map("batch_number") @db.VarChar(100)
+
+  // 数量和价格
+  quantity   Float @map("quantity")
+  unitPrice  Float @map("unit_price")
+  totalPrice Float @map("total_price")
+
+  // 成本字段
+  unitCost         Float? @map("unit_cost")
+  allocatedExpense Float? @default(0) @map("allocated_expense")
+
+  // 入库状态
+  inboundStatus     String?   @map("inbound_status")
+  inboundReceivedAt DateTime? @map("inbound_received_at")
+
+  // 手动输入产品信息
+  isManualProduct     Boolean? @map("is_manual_product")
+  manualProductName   String?  @map("manual_product_name")
+  manualSpecification String?  @map("manual_specification")
+  manualWeight        Float?   @map("manual_weight")
+  manualUnit          String?  @map("manual_unit")
+
+  remarks   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  purchaseOrder  PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product        Product?        @relation("PurchaseOrderItemProduct", fields: [productId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier       Supplier        @relation("PurchaseOrderItemSupplier", fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  inboundRecords InboundRecord[]
+
+  @@index([purchaseOrderId], map: "idx_purchase_order_items_order")
+  @@index([productId], map: "idx_purchase_order_items_product")
+  @@index([supplierId], map: "idx_purchase_order_items_supplier")
+  @@index([productCode], map: "idx_purchase_order_items_product_code")
+  @@index([batchNumber], map: "idx_purchase_order_items_batch")
+  @@map("purchase_order_items")
 }

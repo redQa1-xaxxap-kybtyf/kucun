@@ -1,7 +1,7 @@
 /**
- * 测试临时商品创建功能
+ * 测试临时产品创建功能
  *
- * 用途：模拟创建调货销售订单,测试临时商品是否正确保存
+ * 用途：模拟创建调货销售订单,测试临时产品是否正确保存
  *
  * 运行方式：
  * npx tsx scripts/test-temporary-product-creation.ts
@@ -14,7 +14,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  console.log('🧪 开始测试临时商品创建功能...\n');
+  console.log('🧪 开始测试临时产品创建功能...\n');
 
   // 1. 获取测试数据
   console.log('📊 步骤 1: 获取测试数据');
@@ -57,7 +57,7 @@ async function main() {
       {
         isManualProduct: true,
         productCode: `TEST-${Date.now()}`,
-        manualProductName: '测试临时商品',
+        manualProductName: '测试临时产品',
         manualSpecification: '300*600',
         manualWeight: 15.5,
         manualUnit: '片',
@@ -89,8 +89,8 @@ async function main() {
     console.log('订单ID:', result.id);
     console.log('订单项数量:', result.items?.length || 0);
 
-    // 4. 验证临时商品是否创建
-    console.log('\n📊 步骤 4: 验证临时商品是否创建');
+    // 4. 验证临时产品是否创建
+    console.log('\n📊 步骤 4: 验证临时产品是否创建');
 
     const orderItems = await prisma.salesOrderItem.findMany({
       where: {
@@ -113,18 +113,18 @@ async function main() {
       );
 
       if (item.temporaryProduct) {
-        console.log(`  ✅ 临时商品已创建:`);
+        console.log(`  ✅ 临时产品已创建:`);
         console.log(`     ID: ${item.temporaryProduct.id}`);
         console.log(`     编码: ${item.temporaryProduct.code}`);
         console.log(`     名称: ${item.temporaryProduct.name}`);
         console.log(`     使用次数: ${item.temporaryProduct.usageCount}`);
       } else if (item.isManualProduct) {
-        console.log(`  ❌ 临时商品未创建（这是问题！）`);
+        console.log(`  ❌ 临时产品未创建（这是问题！）`);
       }
     });
 
-    // 5. 检查临时商品表
-    console.log('\n📊 步骤 5: 检查临时商品表');
+    // 5. 检查临时产品表
+    console.log('\n📊 步骤 5: 检查临时产品表');
 
     const tempProducts = await prisma.temporaryProduct.findMany({
       where: {
@@ -137,7 +137,7 @@ async function main() {
     });
 
     console.log(
-      `供应商 ${supplier.name} 的临时商品数量: ${tempProducts.length}`
+      `供应商 ${supplier.name} 的临时产品数量: ${tempProducts.length}`
     );
     tempProducts.forEach((tp, index) => {
       console.log(

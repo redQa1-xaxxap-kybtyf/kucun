@@ -11,12 +11,14 @@
 ## 功能特性
 
 ### 🖼️ 图片导出
+
 - 高清图片输出（2倍缩放）
 - 白色背景，适合打印和分享
 - 自动生成文件名：`销售订单-{订单号}-{日期}.png`
 - 动态加载html2canvas库，不影响首屏性能
 
 ### 📊 Excel导出
+
 - 包含完整的订单明细信息
 - 自动计算毛利率
 - 中文字段标题
@@ -24,6 +26,7 @@
 - 自动生成文件名：`销售订单-{订单号}-{日期}.xlsx`
 
 ### 📋 完整Excel导出
+
 - 包含订单摘要和明细两个工作表
 - 订单摘要包含客户信息、金额汇总等
 - 订单明细包含每个产品的详细信息
@@ -41,7 +44,9 @@
    - **导出完整Excel** - 生成包含摘要的完整Excel
 
 ### 支持的订单状态
+
 所有状态的订单都可以导出，包括：
+
 - 草稿
 - 已确认
 - 已发货
@@ -113,19 +118,15 @@
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
 
 function MyComponent() {
-  const {
-    exportToImage,
-    exportToExcel,
-    isExportingImage,
-    isExportingExcel
-  } = useSalesOrderExport();
+  const { exportToImage, exportToExcel, isExportingImage, isExportingExcel } =
+    useSalesOrderExport();
 
   const handleExport = async () => {
     const element = document.getElementById('export-content');
     if (element) {
       await exportToImage(element, {
         orderId: '123',
-        orderNumber: 'SO202501001'
+        orderNumber: 'SO202501001',
       });
     }
   };
@@ -147,14 +148,14 @@ import { ExportService } from '@/lib/services/export-service';
 await ExportService.exportToImage(element, {
   filename: 'custom-name',
   scale: 2,
-  backgroundColor: '#ffffff'
+  backgroundColor: '#ffffff',
 });
 
 // 导出Excel
 ExportService.exportToExcel(data, {
   filename: 'custom-data',
   sheetName: '数据表',
-  includeHeaders: true
+  includeHeaders: true,
 });
 ```
 

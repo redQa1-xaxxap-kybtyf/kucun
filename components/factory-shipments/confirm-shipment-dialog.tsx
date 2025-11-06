@@ -108,8 +108,7 @@ function useConfirmShipmentDialogState({
   const handleError = (error: unknown) => {
     toast({
       title: '确认发货失败',
-      description:
-        error instanceof Error ? error.message : '操作失败，请重试',
+      description: error instanceof Error ? error.message : '操作失败，请重试',
       variant: 'destructive',
     });
   };
@@ -137,7 +136,7 @@ function useConfirmShipmentDialogState({
       {
         onSuccess: handleSuccess,
         onError: handleError,
-      },
+      }
     );
   });
 
@@ -166,7 +165,11 @@ function ContainerNumberField({
             集装箱号码 <span className="text-[hsl(var(--color-error))]">*</span>
           </FormLabel>
           <FormControl>
-            <Input placeholder="请输入集装箱号码" {...field} disabled={disabled} />
+            <Input
+              placeholder="请输入集装箱号码"
+              {...field}
+              disabled={disabled}
+            />
           </FormControl>
           <FormDescription>
             确认发货时必须填写货运公司提供的集装箱号
@@ -195,7 +198,11 @@ function ShippingCompanyField({
             船运公司 <span className="text-yellow-600">(推荐填写)</span>
           </FormLabel>
           <FormControl>
-            <Input placeholder="如已知,请填写船运公司" {...field} disabled={disabled} />
+            <Input
+              placeholder="如已知,请填写船运公司"
+              {...field}
+              disabled={disabled}
+            />
           </FormControl>
           <FormDescription>
             填写船运公司信息可以更好地追踪货物状态,可稍后补充
@@ -222,7 +229,11 @@ function EstimatedArrivalField({
         <FormItem>
           <FormLabel>预计到达时间</FormLabel>
           <FormControl>
-            <DateTimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+            <DateTimePicker
+              value={field.value}
+              onChange={field.onChange}
+              disabled={disabled}
+            />
           </FormControl>
           <FormDescription>可选,如有预计时间请填写</FormDescription>
           <FormMessage />
@@ -247,7 +258,11 @@ function ShipmentDateField({
         <FormItem>
           <FormLabel>发货时间</FormLabel>
           <FormControl>
-            <DateTimePicker value={field.value} onChange={field.onChange} disabled={disabled} />
+            <DateTimePicker
+              value={field.value}
+              onChange={field.onChange}
+              disabled={disabled}
+            />
           </FormControl>
           <FormMessage />
         </FormItem>
@@ -293,7 +308,12 @@ function ConfirmShipmentDialogView({
             <ShipmentDateField form={form} disabled={isPending} />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isPending}
+              >
                 取消
               </Button>
               <Button type="submit" disabled={isPending}>

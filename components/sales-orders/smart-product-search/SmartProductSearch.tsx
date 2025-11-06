@@ -44,7 +44,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
   } = useSmartProductSearchController(props);
 
   const {
-    placeholder = '搜索商品',
+    placeholder = '搜索产品',
     disabled = false,
     className,
     allowTemporaryProducts = false,
@@ -84,7 +84,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
         <PopoverContent className="w-[620px] p-0" align="start">
           <Command shouldFilter={false}>
             <CommandInput
-              placeholder="输入商品名称、编码或规格搜索..."
+              placeholder="输入产品名称、编码或规格搜索..."
               value={searchValue}
               onValueChange={handleSearchValueChange}
               className="h-10"

@@ -47,7 +47,9 @@ type ShipmentItemWithProduct = FactoryShipmentOrder['items'][number] & {
   productId: string;
 };
 
-function createInitialFormState(items: ShipmentItemWithProduct[]): Record<string, InboundFormState> {
+function createInitialFormState(
+  items: ShipmentItemWithProduct[]
+): Record<string, InboundFormState> {
   const initial: Record<string, InboundFormState> = {};
   for (const item of items) {
     initial[item.id] = {
@@ -66,16 +68,21 @@ function buildInboundPayload(
   state: InboundFormState | undefined,
   orderNumber: string
 ): CreateInboundRequest {
-  const quantity = state?.quantity && state.quantity > 0 ? state.quantity : item.quantity;
-  const piecesPerUnit = state?.piecesPerUnit && state.piecesPerUnit > 0 ? state.piecesPerUnit : 1;
+  const quantity =
+    state?.quantity && state.quantity > 0 ? state.quantity : item.quantity;
+  const piecesPerUnit =
+    state?.piecesPerUnit && state.piecesPerUnit > 0 ? state.piecesPerUnit : 1;
   return {
     idempotencyKey: crypto.randomUUID(),
     productId: item.productId,
     inputQuantity: quantity,
     inputUnit: 'units',
     quantity,
+    unitCost: 0, // TODO: 厂家发货入库需要添加成本输入
     reason: 'transfer',
-    remarks: state?.remarks?.trim() || `厂家发货补货 - ${orderNumber} - ${item.displayName}`,
+    remarks:
+      state?.remarks?.trim() ||
+      `厂家发货补货 - ${orderNumber} - ${item.displayName}`,
     batchNumber: state?.batchNumber?.trim() || undefined,
     location: state?.location?.trim() || undefined,
     piecesPerUnit,
@@ -93,7 +100,7 @@ function ManualItemsNotice({
     <div className="rounded-md border border-dashed border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-3 text-sm text-[hsl(var(--color-warning-dark))]">
       <p className="flex items-center gap-2">
         <AlertCircle className="h-4 w-4" />
-        以下自用明细缺少库存商品信息，请在库存模块手动处理：
+        以下自用明细缺少库存产品信息，请在库存模块手动处理：
       </p>
       <ul className="mt-2 list-disc space-y-1 pl-6">
         {manualItems.map(item => (
@@ -113,16 +120,25 @@ function InboundItemCard({
 }: {
   item: ShipmentItemWithProduct;
   state: InboundFormState | undefined;
-  onFieldChange: (id: string, field: keyof InboundFormState, value: string) => void;
+  onFieldChange: (
+    id: string,
+    field: keyof InboundFormState,
+    value: string
+  ) => void;
 }) {
   return (
     <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">{item.displayName}</p>
+          <p className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+            {item.displayName}
+          </p>
           <p className="text-xs text-[hsl(var(--color-text-secondary))]">
             数量：{item.quantity} {item.unit} · 单价：
-            {item.unitPrice.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {item.unitPrice.toLocaleString('zh-CN', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </p>
         </div>
       </div>
@@ -145,7 +161,9 @@ function InboundItemCard({
             min={1}
             step="1"
             value={state?.piecesPerUnit ?? 1}
-            onChange={e => onFieldChange(item.id, 'piecesPerUnit', e.target.value)}
+            onChange={e =>
+              onFieldChange(item.id, 'piecesPerUnit', e.target.value)
+            }
           />
         </div>
         <div className="space-y-2">
@@ -153,7 +171,9 @@ function InboundItemCard({
           <Input
             placeholder="填写批次号"
             value={state?.batchNumber ?? ''}
-            onChange={e => onFieldChange(item.id, 'batchNumber', e.target.value)}
+            onChange={e =>
+              onFieldChange(item.id, 'batchNumber', e.target.value)
+            }
           />
         </div>
         <div className="space-y-2">
@@ -185,7 +205,11 @@ function ItemsList({
 }: {
   items: ShipmentItemWithProduct[];
   formState: Record<string, InboundFormState>;
-  onFieldChange: (id: string, field: keyof InboundFormState, value: string) => void;
+  onFieldChange: (
+    id: string,
+    field: keyof InboundFormState,
+    value: string
+  ) => void;
 }) {
   if (items.length === 0) {
     return (
@@ -198,7 +222,12 @@ function ItemsList({
   return (
     <>
       {items.map(item => (
-        <InboundItemCard key={item.id} item={item} state={formState[item.id]} onFieldChange={onFieldChange} />
+        <InboundItemCard
+          key={item.id}
+          item={item}
+          state={formState[item.id]}
+          onFieldChange={onFieldChange}
+        />
       ))}
     </>
   );
@@ -225,7 +254,8 @@ function useInboundDialogState({
     () =>
       actionableItems.filter(
         (item): item is ShipmentItemWithProduct =>
-          typeof (item as any).productId === 'string' && (item as any).productId.length > 0
+          typeof (item as any).productId === 'string' &&
+          (item as any).productId.length > 0
       ),
     [actionableItems]
   );
@@ -235,7 +265,9 @@ function useInboundDialogState({
     [actionableItems]
   );
 
-  const [formState, setFormState] = useState<Record<string, InboundFormState>>({});
+  const [formState, setFormState] = useState<Record<string, InboundFormState>>(
+    {}
+  );
 
   useEffect(() => {
     if (open) {
@@ -252,12 +284,21 @@ function useInboundDialogState({
       ...prev,
       [itemId]: {
         ...prev[itemId],
-        [field]: field === 'quantity' || field === 'piecesPerUnit' ? Number(value) : value,
+        [field]:
+          field === 'quantity' || field === 'piecesPerUnit'
+            ? Number(value)
+            : value,
       },
     }));
   };
 
-  return { actionableItems, itemsWithProduct, manualItems, formState, handleFieldChange };
+  return {
+    actionableItems,
+    itemsWithProduct,
+    manualItems,
+    formState,
+    handleFieldChange,
+  };
 }
 
 function ConfirmInboundDialogView({
@@ -276,7 +317,11 @@ function ConfirmInboundDialogView({
   manualItems: FactoryShipmentOrder['items'];
   itemsWithProduct: ShipmentItemWithProduct[];
   formState: Record<string, InboundFormState>;
-  onFieldChange: (id: string, field: keyof InboundFormState, value: string) => void;
+  onFieldChange: (
+    id: string,
+    field: keyof InboundFormState,
+    value: string
+  ) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   isSubmitting: boolean;
   isPending: boolean;
@@ -298,7 +343,11 @@ function ConfirmInboundDialogView({
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div className="space-y-4">
-            <ItemsList items={itemsWithProduct} formState={formState} onFieldChange={onFieldChange} />
+            <ItemsList
+              items={itemsWithProduct}
+              formState={formState}
+              onFieldChange={onFieldChange}
+            />
           </div>
 
           <DialogFooter className="flex space-x-2">
@@ -312,9 +361,13 @@ function ConfirmInboundDialogView({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || isPending || itemsWithProduct.length === 0}
+              disabled={
+                isSubmitting || isPending || itemsWithProduct.length === 0
+              }
             >
-              {isSubmitting || isPending ? '处理中...' : `确认入库（${itemsWithProduct.length}）`}
+              {isSubmitting || isPending
+                ? '处理中...'
+                : `确认入库（${itemsWithProduct.length}）`}
             </Button>
           </DialogFooter>
         </form>
@@ -334,12 +387,14 @@ export function ConfirmInboundDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const createInboundMutation = useCreateInboundRecord();
-  const updateItemInboundStatusMutation = useUpdateFactoryShipmentItemInboundStatus();
+  const updateItemInboundStatusMutation =
+    useUpdateFactoryShipmentItemInboundStatus();
 
-  const { itemsWithProduct, manualItems, formState, handleFieldChange } = useInboundDialogState({
-    items,
-    open,
-  });
+  const { itemsWithProduct, manualItems, formState, handleFieldChange } =
+    useInboundDialogState({
+      items,
+      open,
+    });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -348,7 +403,7 @@ export function ConfirmInboundDialog({
     if (!itemsWithProduct.length) {
       toast({
         title: '没有可入库的自用货',
-        description: '所有自用补货均无对应库存商品，请手动处理这些明细。',
+        description: '所有自用补货均无对应库存产品，请手动处理这些明细。',
         variant: 'destructive',
       });
       return;
@@ -358,18 +413,29 @@ export function ConfirmInboundDialog({
     try {
       const processedIds: string[] = [];
       for (const item of itemsWithProduct) {
-        const payload = buildInboundPayload(item, formState[item.id], orderNumber);
+        const payload = buildInboundPayload(
+          item,
+          formState[item.id],
+          orderNumber
+        );
         await createInboundMutation.mutateAsync(payload);
         processedIds.push(item.id);
       }
 
       if (processedIds.length > 0) {
-        await updateItemInboundStatusMutation.mutateAsync({ orderId, data: { itemIds: processedIds } });
+        await updateItemInboundStatusMutation.mutateAsync({
+          orderId,
+          data: { itemIds: processedIds },
+        });
       }
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: factoryShipmentQueryKeys.detail(orderId) }),
-        queryClient.invalidateQueries({ queryKey: factoryShipmentQueryKeys.lists() }),
+        queryClient.invalidateQueries({
+          queryKey: factoryShipmentQueryKeys.detail(orderId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: factoryShipmentQueryKeys.lists(),
+        }),
       ]);
 
       toast({

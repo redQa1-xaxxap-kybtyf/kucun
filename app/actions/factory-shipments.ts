@@ -1,13 +1,22 @@
 'use server';
 
 import type { Prisma } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+  allocateExpenses,
+  roundToTwoDecimals,
+} from '@/lib/services/factory-shipment-expense-service';
+import {
+  calculateOrderProfit,
+  extractItemUpdates,
+  getFactoryShipmentExpenses,
+} from '@/lib/services/factory-shipment-profit-service';
 import { generateFactoryShipmentNumber } from '@/lib/services/simple-order-number-generator';
 import {
   FACTORY_SHIPMENT_STATUS,
@@ -91,23 +100,40 @@ export async function createFactoryShipment(
         },
       });
 
-      // 如果订单状态为已到货，增加库存
+      // 如果订单状态为已到货，处理自有货物入库
       if (status === FACTORY_SHIPMENT_STATUS.ARRIVED) {
         for (const item of itemsPayload) {
-          if (item.productId && !item.isManualProduct) {
+          // 只有自有货物才入库（客户货不进入公司库存）
+          if (
+            item.productId &&
+            !item.isManualProduct &&
+            item.ownership === 'self'
+          ) {
             const quantityDelta = Math.round(item.quantity);
             // 查找或创建库存记录
             const existingInventory = await tx.inventory.findFirst({
               where: { productId: item.productId },
             });
 
+            // 使用 unitPrice 作为入库成本（创建时还没有费用分摊）
+            const inboundUnitCost = item.unitPrice;
+
             if (existingInventory) {
+              // 计算加权平均成本
+              const newUnitCost = calculateWeightedAverageCost(
+                existingInventory.quantity,
+                existingInventory.unitCost || 0,
+                quantityDelta,
+                inboundUnitCost
+              );
+
               await tx.inventory.update({
                 where: { id: existingInventory.id },
                 data: {
                   quantity: {
                     increment: quantityDelta,
                   },
+                  unitCost: newUnitCost,
                 },
               });
             } else {
@@ -116,11 +142,45 @@ export async function createFactoryShipment(
                   productId: item.productId,
                   quantity: quantityDelta,
                   reservedQuantity: 0,
+                  unitCost: inboundUnitCost,
                 },
               });
             }
           }
         }
+
+        // 更新自有货入库状态
+        await tx.factoryShipmentOrderItem.updateMany({
+          where: {
+            factoryShipmentOrderId: shipment.id,
+            ownership: 'self',
+            selfInboundStatus: { not: 'received' },
+          },
+          data: {
+            selfInboundStatus: 'received',
+            inboundReceivedAt: new Date(),
+          },
+        });
+      }
+
+      // 创建费用记录（如果有费用项）
+      if (data.feeItems && data.feeItems.length > 0) {
+        const expenseRecords = data.feeItems.map(feeItem => ({
+          expenseNumber: `EXP-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          expenseType: feeItem.feeType,
+          expenseName: feeItem.feeName,
+          expenseAmount: feeItem.feeAmount,
+          expenseDate: new Date(),
+          relatedType: 'factory_shipment',
+          relatedId: shipment.id,
+          relatedNumber: shipment.orderNumber,
+          remarks: feeItem.remarks || undefined,
+          userId: session.user.id,
+        }));
+
+        await tx.expenseRecord.createMany({
+          data: expenseRecords,
+        });
       }
 
       return shipment;
@@ -129,6 +189,7 @@ export async function createFactoryShipment(
     // 5. 重新验证路径
     revalidatePath('/factory-shipments');
     revalidatePath('/inventory');
+    revalidatePath('/finance/expenses');
 
     return {
       success: true,
@@ -189,31 +250,72 @@ export async function updateFactoryShipmentStatus(
         data: { status: data.status },
       });
 
-      // 如果从待发货/运输中变为已到货，增加库存
+      // 如果从待发货/运输中变为已到货，处理自有货物入库
       if (
         (shipment.status === 'pending_shipment' ||
           shipment.status === 'in_transit') &&
         data.status === 'arrived'
       ) {
         for (const item of shipment.items) {
-          if (item.productId && !item.isManualProduct) {
+          // 只有自有货物才入库（客户货不进入公司库存）
+          if (
+            item.productId &&
+            !item.isManualProduct &&
+            item.ownership === 'self'
+          ) {
             const quantityDelta = Math.round(item.quantity);
             const existingInventory = await tx.inventory.findFirst({
               where: { productId: item.productId },
             });
 
+            // 使用明细的 unitCost（包含分摊费用）作为入库成本
+            // 如果 unitCost 为 null，则使用 unitPrice
+            const inboundUnitCost = item.unitCost || item.unitPrice;
+
             if (existingInventory) {
+              // 计算加权平均成本
+              const newUnitCost = calculateWeightedAverageCost(
+                existingInventory.quantity,
+                existingInventory.unitCost || 0,
+                quantityDelta,
+                inboundUnitCost
+              );
+
               await tx.inventory.update({
                 where: { id: existingInventory.id },
                 data: {
                   quantity: {
                     increment: quantityDelta,
                   },
+                  unitCost: newUnitCost,
+                },
+              });
+            } else {
+              // 如果库存不存在，创建新的库存记录
+              await tx.inventory.create({
+                data: {
+                  productId: item.productId,
+                  quantity: quantityDelta,
+                  reservedQuantity: 0,
+                  unitCost: inboundUnitCost,
                 },
               });
             }
           }
         }
+
+        // 更新自有货入库状态
+        await tx.factoryShipmentOrderItem.updateMany({
+          where: {
+            factoryShipmentOrderId: data.shipmentId,
+            ownership: 'self',
+            selfInboundStatus: { not: 'received' },
+          },
+          data: {
+            selfInboundStatus: 'received',
+            inboundReceivedAt: new Date(),
+          },
+        });
       }
     });
 
@@ -400,7 +502,7 @@ export async function updateFactoryShipment(
         throw new Error('不能修改已到港的发货单');
       }
 
-      // 删除旧的发货单项和临时商品
+      // 删除旧的发货单项和临时产品
       await tx.factoryShipmentOrderItem.deleteMany({
         where: { factoryShipmentOrderId: shipmentId },
       });
@@ -463,6 +565,142 @@ export async function updateFactoryShipment(
     return {
       success: false,
       error: error instanceof Error ? error.message : '更新厂家发货订单失败',
+    };
+  }
+}
+
+// ============================================
+// 辅助函数
+// ============================================
+
+/**
+ * 计算加权平均成本
+ *
+ * 公式: 新单位成本 = (原库存金额 + 新入库金额) / (原库存数量 + 新入库数量)
+ *
+ * @param currentStock - 当前库存数量
+ * @param currentUnitCost - 当前单位成本
+ * @param inboundQuantity - 入库数量
+ * @param inboundUnitCost - 入库单位成本
+ * @returns 新的单位成本
+ */
+function calculateWeightedAverageCost(
+  currentStock: number,
+  currentUnitCost: number,
+  inboundQuantity: number,
+  inboundUnitCost: number
+): number {
+  const currentValue = currentStock * currentUnitCost;
+  const inboundValue = inboundQuantity * inboundUnitCost;
+  const totalQuantity = currentStock + inboundQuantity;
+
+  return totalQuantity > 0
+    ? roundToTwoDecimals((currentValue + inboundValue) / totalQuantity)
+    : inboundUnitCost;
+}
+
+/**
+ * 重新计算发货单的利润和成本
+ * 用于费用录入/修改后重新计算
+ *
+ * @param factoryShipmentOrderId - 发货单ID
+ */
+export async function recalculateProfitAndCost(
+  factoryShipmentOrderId: string
+): Promise<ActionResult<void>> {
+  try {
+    // 1. 身份认证
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: '未授权操作' };
+    }
+
+    // 2. 获取发货单和明细
+    const order = await prisma.factoryShipmentOrder.findUnique({
+      where: { id: factoryShipmentOrderId },
+      include: {
+        items: {
+          include: {
+            supplier: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return { success: false, error: '发货单不存在' };
+    }
+
+    // 3. 获取费用
+    const { totalExpenses } = await getFactoryShipmentExpenses(
+      factoryShipmentOrderId
+    );
+
+    // 4. 分摊费用
+    const expenseAllocation = allocateExpenses(order.items, totalExpenses, {
+      method: 'by_value',
+    });
+
+    const expenseMap = new Map(
+      expenseAllocation.results.map(r => [r.itemId, r.allocatedAmount])
+    );
+
+    // 5. 计算利润
+    const profitSummary = calculateOrderProfit(
+      order.items,
+      order.receivableAmount || 0,
+      expenseMap
+    );
+
+    // 6. 提取更新数据
+    const itemUpdates = extractItemUpdates(
+      profitSummary,
+      order.items,
+      expenseMap
+    );
+
+    // 7. 更新数据库
+    await prisma.$transaction([
+      prisma.factoryShipmentOrder.update({
+        where: { id: factoryShipmentOrderId },
+        data: {
+          costAmount: profitSummary.totalCost,
+          expenseAmount: profitSummary.totalExpenses,
+          profitAmount: profitSummary.customerProfit,
+          customerProfit: profitSummary.customerProfit,
+          selfCostAmount: profitSummary.selfCostAmount,
+        },
+      }),
+      ...itemUpdates.map(update =>
+        prisma.factoryShipmentOrderItem.update({
+          where: { id: update.itemId },
+          data: {
+            unitCost: update.unitCost,
+            allocatedExpense: update.allocatedExpense,
+            profitAmount: update.profitAmount,
+            profitMargin: update.profitMargin,
+          },
+        })
+      ),
+    ]);
+
+    revalidatePath('/factory-shipments');
+    revalidatePath(`/factory-shipments/${factoryShipmentOrderId}`);
+
+    return { success: true };
+  } catch (error) {
+    logger.error('actions:factory-shipments', '重新计算利润和成本失败', error, {
+      action: 'recalculateProfitAndCost',
+      factoryShipmentOrderId,
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '重新计算利润和成本失败',
     };
   }
 }

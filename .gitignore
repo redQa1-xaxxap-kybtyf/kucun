@@ -85,6 +85,8 @@ playwright.config.mjs
 *.test.js
 *.test.ts
 *.spec.ts
+
+!tests-regression/**/*.test.ts
 *.spec.js
 
 # 临时测试脚本

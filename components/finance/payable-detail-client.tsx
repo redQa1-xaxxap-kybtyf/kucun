@@ -1,13 +1,7 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
-import {
-  ArrowLeft,
-  Building2,
-  DollarSign,
-  Edit,
-  FileText,
-  User,
-} from 'lucide-react';
+import { ArrowLeft, Building2, Edit, FileText, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -81,7 +75,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
               }
               className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
             >
-              <DollarSign className="mr-2 h-4 w-4" />
+              <ChineseYuan className="mr-2 h-4 w-4" />
               记录付款
             </Button>
           )}
@@ -209,7 +203,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
           <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
             <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
               <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
-                <DollarSign className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
+                <ChineseYuan className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 付款记录
               </CardTitle>
             </CardHeader>
@@ -253,7 +247,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
               ) : (
                 <EmptyState
                   icon={
-                    <DollarSign className="h-8 w-8 text-[hsl(var(--color-border-secondary))]" />
+                    <ChineseYuan className="h-8 w-8 text-[hsl(var(--color-border-secondary))]" />
                   }
                   title="暂无付款记录"
                   compact

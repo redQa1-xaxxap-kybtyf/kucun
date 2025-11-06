@@ -14,6 +14,7 @@ import {
   revalidateFinance,
   revalidateSalesOrders,
 } from '@/lib/cache';
+import { invalidateReportCache } from '@/lib/cache/finance-cache';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
@@ -99,6 +100,12 @@ const createSalesOrderHandler = withErrorHandling(
       // ✅ 关键修复：销售订单创建后，同时失效应收款缓存
       // 因为应收款数据来源于销售订单，新订单会影响应收款列表
       await revalidateFinance('receivables');
+
+      // ✅ P0修复：销售订单创建后，失效报表缓存
+      // 因为报表数据包含销售收入，新订单会影响报表统计
+      invalidateReportCache().catch(error => {
+        console.error('Failed to invalidate report cache:', error);
+      });
 
       return successResponse(order, 201, '销售订单创建成功');
     },

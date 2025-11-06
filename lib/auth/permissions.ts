@@ -37,6 +37,7 @@ export type Permission =
   | 'products:manage_price' // 管理产品价格
   // 库存权限
   | 'inventory:view' // 查看库存
+  | 'inventory:manage' // 管理库存（包括盘点）
   | 'inventory:adjust' // 调整库存
   | 'inventory:inbound' // 入库操作
   | 'inventory:outbound' // 出库操作
@@ -121,6 +122,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'products:manage_price',
     // 库存
     'inventory:view',
+    'inventory:manage',
     'inventory:adjust',
     'inventory:inbound',
     'inventory:outbound',
@@ -212,6 +214,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'products:view',
     // 库存
     'inventory:view',
+    'inventory:manage',
     'inventory:adjust',
     'inventory:inbound',
     'inventory:outbound',

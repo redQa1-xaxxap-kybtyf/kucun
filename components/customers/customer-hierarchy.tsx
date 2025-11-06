@@ -9,7 +9,12 @@ import {
   ChevronsUpDown,
 } from 'lucide-react';
 import { useState } from 'react';
-import { type Control, type FieldPath, useController, type FieldValues } from 'react-hook-form';
+import {
+  type Control,
+  type FieldPath,
+  useController,
+  type FieldValues,
+} from 'react-hook-form';
 
 // UI Components
 import { EmptyState } from '@/components/common/empty-state';
@@ -171,7 +176,7 @@ export function CustomerHierarchyTree({
                       <span className="mx-1">•</span>
                     )}
                   {node.totalAmount !== undefined && (
-                    <span>金额: ¥{node.totalAmount.toLocaleString()}</span>
+                    <span>金额: ￥{node.totalAmount.toLocaleString()}</span>
                   )}
                 </div>
               )}

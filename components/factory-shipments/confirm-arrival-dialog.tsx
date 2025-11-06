@@ -1,8 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { Calendar as CalendarIcon } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Dialog,
   DialogContent,
@@ -11,11 +16,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useUpdateFactoryShipmentOrderStatus } from '@/lib/api/factory-shipments';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
+import { cn } from '@/lib/utils';
 
 interface ConfirmArrivalDialogProps {
   orderId: string;
@@ -102,6 +120,11 @@ export function ConfirmArrivalDialog({
   );
 }
 
+type ConfirmArrivalFormValues = {
+  arrivalDate: string;
+  remarks: string;
+};
+
 function ConfirmArrivalForm({
   open,
   isPending,
@@ -113,52 +136,111 @@ function ConfirmArrivalForm({
   onCancel: () => void;
   onConfirm: (arrivalDate: string, remarks: string) => void | Promise<void>;
 }) {
-  const [arrivalDate, setArrivalDate] = useState<string>('');
-  const [remarks, setRemarks] = useState<string>('');
+  const form = useForm<ConfirmArrivalFormValues>({
+    defaultValues: {
+      arrivalDate: format(new Date(), 'yyyy-MM-dd'),
+      remarks: '',
+    },
+  });
 
   useEffect(() => {
     if (open) {
-      setArrivalDate(new Date().toISOString().slice(0, 10));
-      setRemarks('');
+      form.reset({
+        arrivalDate: format(new Date(), 'yyyy-MM-dd'),
+        remarks: '',
+      });
     }
-  }, [open]);
+  }, [open, form]);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    onConfirm(arrivalDate, remarks);
-  };
+  const handleSubmit = form.handleSubmit(async values => {
+    await onConfirm(values.arrivalDate, values.remarks);
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-3">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">到港日期</label>
-          <Input
-            type="date"
-            value={arrivalDate}
-            onChange={event => setArrivalDate(event.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
-            required
+    <Form {...form}>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-3">
+          <FormField
+            control={form.control}
+            name="arrivalDate"
+            rules={{ required: '请选择到港日期' }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>到港日期</FormLabel>
+                <FormControl>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !field.value && 'text-muted-foreground'
+                        )}
+                        disabled={isPending}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {field.value ? (
+                          format(new Date(field.value), 'PPP', {
+                            locale: zhCN,
+                          })
+                        ) : (
+                          <span>选择日期</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={
+                          field.value ? new Date(field.value) : undefined
+                        }
+                        onSelect={date =>
+                          field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
+                        }
+                        disabled={date => date > new Date()}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="remarks"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>备注（可选）</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="例如：船务确认，待安排入库。"
+                    rows={3}
+                    disabled={isPending}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">备注（可选）</label>
-          <Textarea
-            value={remarks}
-            onChange={event => setRemarks(event.target.value)}
-            placeholder="例如：船务确认，待安排入库。"
-            rows={3}
-          />
-        </div>
-      </div>
-      <DialogFooter className="flex space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
-          取消
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending ? '提交中...' : '确认到港'}
-        </Button>
-      </DialogFooter>
-    </form>
+        <DialogFooter className="flex space-x-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isPending}
+          >
+            取消
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? '提交中...' : '确认到港'}
+          </Button>
+        </DialogFooter>
+      </form>
+    </Form>
   );
 }

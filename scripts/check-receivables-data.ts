@@ -43,7 +43,9 @@ async function main() {
       const confirmedPayments = order.payments.filter(
         p => p.status === 'confirmed'
       );
-      const pendingPayments = order.payments.filter(p => p.status === 'pending');
+      const pendingPayments = order.payments.filter(
+        p => p.status === 'pending'
+      );
 
       const paidAmount = confirmedPayments.reduce(
         (sum, p) => sum + Number(p.actualPaymentAmount),
@@ -64,14 +66,14 @@ async function main() {
 
       console.log(`${index + 1}. 订单 ${order.orderNumber}`);
       console.log(`   客户: ${order.customer.name}`);
-      console.log(`   订单金额: ¥${totalAmount.toFixed(2)}`);
-      console.log(`   抹零金额: ¥${roundingAdjustment.toFixed(2)}`);
+      console.log(`   订单金额: ￥${totalAmount.toFixed(2)}`);
+      console.log(`   抹零金额: ￥${roundingAdjustment.toFixed(2)}`);
       console.log(
-        `   实际应收: ¥${actualTotalAmount.toFixed(2)} (${totalAmount} + ${roundingAdjustment})`
+        `   实际应收: ￥${actualTotalAmount.toFixed(2)} (${totalAmount} + ${roundingAdjustment})`
       );
-      console.log(`   已收金额: ¥${paidAmount.toFixed(2)}`);
-      console.log(`   待确认: ¥${pendingAmount.toFixed(2)}`);
-      console.log(`   待收金额: ¥${remainingAmount.toFixed(2)}`);
+      console.log(`   已收金额: ￥${paidAmount.toFixed(2)}`);
+      console.log(`   待确认: ￥${pendingAmount.toFixed(2)}`);
+      console.log(`   待收金额: ￥${remainingAmount.toFixed(2)}`);
       console.log(
         `   计算验证: ${actualTotalAmount} - ${paidAmount} - ${pendingAmount} = ${remainingAmount}`
       );
@@ -107,4 +109,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

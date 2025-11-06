@@ -17,11 +17,20 @@ import {
  */
 export interface UseSalesOrderExportResult {
   /** 导出为图片 */
-  exportToImage: (element: HTMLElement, options?: SalesOrderImageExportOptions) => Promise<void>;
+  exportToImage: (
+    element: HTMLElement,
+    options?: SalesOrderImageExportOptions
+  ) => Promise<void>;
   /** 导出为Excel */
-  exportToExcel: (order: SalesOrderDetail, options?: SalesOrderExcelExportOptions) => void;
+  exportToExcel: (
+    order: SalesOrderDetail,
+    options?: SalesOrderExcelExportOptions
+  ) => void;
   /** 导出为完整Excel（包含摘要和明细） */
-  exportToCompleteExcel: (order: SalesOrderDetail, options?: SalesOrderExcelExportOptions) => void;
+  exportToCompleteExcel: (
+    order: SalesOrderDetail,
+    options?: SalesOrderExcelExportOptions
+  ) => void;
   /** 是否正在导出图片 */
   isExportingImage: boolean;
   /** 是否正在导出Excel */
@@ -177,12 +186,8 @@ function useExcelExport(toast: ToastFn) {
 
 export function useSalesOrderExport(): UseSalesOrderExportResult {
   const { toast } = useToast();
-  const {
-    exportToImage,
-    isExportingImage,
-    imageError,
-    clearImageError,
-  } = useImageExport(toast);
+  const { exportToImage, isExportingImage, imageError, clearImageError } =
+    useImageExport(toast);
   const {
     exportToExcel,
     exportToCompleteExcel,

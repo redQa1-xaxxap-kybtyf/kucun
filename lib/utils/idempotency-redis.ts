@@ -364,10 +364,7 @@ export async function withIdempotency<T>(
 
         if (expiresAt <= now) {
           // 处理中记录已过期,标记为失败并重试
-          await failIdempotencyRecord(
-            idempotencyKey,
-            'processing ttl expired'
-          );
+          await failIdempotencyRecord(idempotencyKey, 'processing ttl expired');
           await waitForNextAttempt(retryDelayMs);
           continue;
         }

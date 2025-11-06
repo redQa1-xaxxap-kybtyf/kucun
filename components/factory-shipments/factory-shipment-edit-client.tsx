@@ -48,7 +48,7 @@ export function FactoryShipmentEditClient({
                   编辑厂家发货订单
                 </h1>
                 <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                  修改厂家发货订单信息，支持多供应商商品和临时商品管理
+                  修改厂家发货订单信息，支持多供应商产品和临时产品管理
                 </p>
               </div>
             </div>

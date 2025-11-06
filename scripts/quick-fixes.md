@@ -10,21 +10,25 @@
 // ❌ 当前代码 (第63行)
 const { data, isLoading, error } = useQuery({
   queryKey: ['factory-shipments', queryParams],
-  queryFn: () => getFactoryShipmentOrders({
-    ...queryParams,
-    startDate: queryParams.startDate, // string | undefined
-    endDate: queryParams.endDate,     // string | undefined
-  }),
+  queryFn: () =>
+    getFactoryShipmentOrders({
+      ...queryParams,
+      startDate: queryParams.startDate, // string | undefined
+      endDate: queryParams.endDate, // string | undefined
+    }),
 });
 
 // ✅ 修复后
 const { data, isLoading, error } = useQuery({
   queryKey: ['factory-shipments', queryParams],
-  queryFn: () => getFactoryShipmentOrders({
-    ...queryParams,
-    startDate: queryParams.startDate ? new Date(queryParams.startDate) : undefined,
-    endDate: queryParams.endDate ? new Date(queryParams.endDate) : undefined,
-  }),
+  queryFn: () =>
+    getFactoryShipmentOrders({
+      ...queryParams,
+      startDate: queryParams.startDate
+        ? new Date(queryParams.startDate)
+        : undefined,
+      endDate: queryParams.endDate ? new Date(queryParams.endDate) : undefined,
+    }),
 });
 ```
 
@@ -37,11 +41,13 @@ const { data, isLoading, error } = useQuery({
 const pagination = data?.pagination;
 
 // ✅ 修复后 - 方案1: 直接使用返回的字段
-const pagination = data ? {
-  page: data.page,
-  limit: data.limit,
-  total: data.total,
-} : undefined;
+const pagination = data
+  ? {
+      page: data.page,
+      limit: data.limit,
+      total: data.total,
+    }
+  : undefined;
 
 // ✅ 修复后 - 方案2: 更新 API 返回类型
 // 在 lib/api/factory-shipments.ts 中
@@ -50,7 +56,8 @@ export interface FactoryShipmentListResponse {
   total: number;
   page: number;
   limit: number;
-  pagination: {  // 添加这个字段
+  pagination: {
+    // 添加这个字段
     page: number;
     limit: number;
     total: number;
@@ -65,11 +72,13 @@ export interface FactoryShipmentListResponse {
 const pagination = data?.pagination;
 
 // ✅ 修复后
-const pagination = data ? {
-  page: data.page,
-  limit: data.limit,
-  total: data.total,
-} : undefined;
+const pagination = data
+  ? {
+      page: data.page,
+      limit: data.limit,
+      total: data.total,
+    }
+  : undefined;
 ```
 
 ### 1.3 修复客户表单类型问题
@@ -86,11 +95,13 @@ export const customerCreateSchema = z.object({
   name: z.string().min(1, '客户名称不能为空'),
   phone: z.string().optional(),
   address: z.string().optional(),
-  extendedInfo: z.object({
-    contactPerson: z.string().optional(),
-    email: z.string().optional(),
-    notes: z.string().optional(),
-  }).optional(),
+  extendedInfo: z
+    .object({
+      contactPerson: z.string().optional(),
+      email: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .optional(),
 });
 
 // ✅ 修复后 - 添加缺失字段
@@ -99,12 +110,14 @@ export const customerCreateSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   parentCustomerId: z.string().optional(), // 添加
-  extendedInfo: z.object({
-    contactPerson: z.string().optional(),
-    email: z.string().optional(),
-    notes: z.string().optional(),
-    tags: z.array(z.string()).optional(), // 添加
-  }).optional(),
+  extendedInfo: z
+    .object({
+      contactPerson: z.string().optional(),
+      email: z.string().optional(),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional(), // 添加
+    })
+    .optional(),
 });
 
 export const customerUpdateSchema = z.object({
@@ -113,12 +126,14 @@ export const customerUpdateSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
   parentCustomerId: z.string().optional(), // 添加
-  extendedInfo: z.object({
-    contactPerson: z.string().optional(),
-    email: z.string().optional(),
-    notes: z.string().optional(),
-    tags: z.array(z.string()).optional(), // 添加
-  }).optional(),
+  extendedInfo: z
+    .object({
+      contactPerson: z.string().optional(),
+      email: z.string().optional(),
+      notes: z.string().optional(),
+      tags: z.array(z.string()).optional(), // 添加
+    })
+    .optional(),
 });
 ```
 
@@ -133,10 +148,7 @@ if (currentTags?.includes(tag)) {
   return;
 }
 
-form.setValue(
-  'extendedInfo.tags',
-  [...(currentTags || []), tag]
-);
+form.setValue('extendedInfo.tags', [...(currentTags || []), tag]);
 
 // ✅ 修复后
 const extendedInfo = form.getValues('extendedInfo');
@@ -325,16 +337,15 @@ npx tsx scripts/database-health-check.ts
 
 ## 7. 预计修复时间
 
-| 任务 | 预计时间 | 优先级 |
-|------|---------|--------|
-| 修复日期类型问题 | 15分钟 | 高 |
-| 修复 pagination 问题 | 15分钟 | 高 |
-| 修复客户表单类型 | 45分钟 | 高 |
-| 移除 console 语句 | 30分钟 | 中 |
-| 修复 Hooks 依赖 | 15分钟 | 中 |
-| **总计** | **2小时** | - |
+| 任务                 | 预计时间  | 优先级 |
+| -------------------- | --------- | ------ |
+| 修复日期类型问题     | 15分钟    | 高     |
+| 修复 pagination 问题 | 15分钟    | 高     |
+| 修复客户表单类型     | 45分钟    | 高     |
+| 移除 console 语句    | 30分钟    | 中     |
+| 修复 Hooks 依赖      | 15分钟    | 中     |
+| **总计**             | **2小时** | -      |
 
 ---
 
 **建议**: 按照优先级顺序修复,每修复一项就提交一次,便于回滚和追溯。
-

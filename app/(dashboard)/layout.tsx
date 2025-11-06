@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
 import * as React from 'react';
 
 import { DashboardLayoutClient } from '@/components/common/DashboardLayoutClient';
@@ -46,11 +46,20 @@ export default async function DashboardLayout({
     ? getAccessibleNavItems<NavigationItem>(bottomNavigationItems, userRole)
     : [];
 
-  // ✅ 只传递导航项的 ID,避免传递 React 组件(icon)
-  const accessibleNavItemIds = accessibleNavItems.map(item => item.id);
-  const accessibleBottomNavItemIds = accessibleBottomNavItems.map(
-    item => item.id
-  );
+  // ✅ 递归提取所有导航项的 ID(包括子菜单),避免传递 React 组件(icon)
+  function extractAllIds(items: NavigationItem[]): string[] {
+    const ids: string[] = [];
+    for (const item of items) {
+      ids.push(item.id);
+      if (item.children && item.children.length > 0) {
+        ids.push(...extractAllIds(item.children));
+      }
+    }
+    return ids;
+  }
+
+  const accessibleNavItemIds = extractAllIds(accessibleNavItems);
+  const accessibleBottomNavItemIds = extractAllIds(accessibleBottomNavItems);
 
   // 传递 session 和过滤后的导航项 ID 到客户端组件
   return (

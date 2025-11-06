@@ -37,12 +37,17 @@ export function useInboundFormSubmit({
         throw new Error('最终片数计算有误，请检查输入');
       }
 
+      if (!data.unitCost || data.unitCost <= 0) {
+        throw new Error('请填写大于 0 的单位成本');
+      }
+
       const requestData: CreateInboundRequest = {
         idempotencyKey,
         productId: data.productId,
         inputQuantity: data.inputQuantity,
         inputUnit: data.inputUnit,
         quantity: data.quantity,
+        unitCost: data.unitCost,
         reason: data.reason,
       };
 

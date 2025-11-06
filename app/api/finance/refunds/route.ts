@@ -360,7 +360,7 @@ export const POST = withAuth(
 
       if (totalRefundAmount > salesOrderWithRefunds.totalAmount) {
         throw new Error(
-          `退款总额(¥${totalRefundAmount.toFixed(2)})不能超过订单金额(¥${salesOrderWithRefunds.totalAmount.toFixed(2)})`
+          `退款总额(￥${totalRefundAmount.toFixed(2)})不能超过订单金额(￥${salesOrderWithRefunds.totalAmount.toFixed(2)})`
         );
       }
 

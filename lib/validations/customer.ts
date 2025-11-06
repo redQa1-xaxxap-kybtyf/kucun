@@ -3,6 +3,10 @@ import { z } from 'zod';
 import { customerConfig, paginationConfig } from '@/lib/env';
 import type { CustomerExtendedInfo } from '@/lib/types/customer';
 
+const CUSTOMER_STATUS_VALUES = ['active', 'inactive'] as const;
+const CUSTOMER_TYPE_VALUES = ['company', 'store', 'individual'] as const;
+const CUSTOMER_LEVEL_VALUES = ['A', 'B', 'C', 'D'] as const;
+
 // 客户搜索查询验证规则
 export const customerSearchQuerySchema = z.object({
   q: z.string().optional().default(''),
@@ -31,11 +35,30 @@ export const customerQuerySchema = z.object({
   search: z.string().optional(),
 
   sortBy: z
-    .enum(['createdAt', 'name', 'totalOrders'])
+    .enum([
+      'createdAt',
+      'name',
+      'totalOrders',
+      'updatedAt',
+      'totalAmount',
+      'transactionCount',
+      'cooperationDays',
+      'returnOrderCount',
+    ])
     .optional()
     .default('createdAt'),
 
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+
+  status: z.enum(CUSTOMER_STATUS_VALUES).optional(),
+
+  customerType: z.enum(CUSTOMER_TYPE_VALUES).optional(),
+
+  level: z.enum(CUSTOMER_LEVEL_VALUES).optional(),
+
+  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+
+  region: z.string().max(50, '区域不能超过50个字符').optional(),
 });
 
 // 基础验证规则
@@ -84,13 +107,53 @@ const extendedInfoValidations = {
 
   email: z.string().email('邮箱格式不正确').optional().or(z.literal('')),
 
+  phone2: baseValidations.phone, // 备用电话1
+  phone3: baseValidations.phone, // 备用电话2
+
+  website: z.string().url('网站地址格式不正确').optional().or(z.literal('')),
+
+  creditLimit: z
+    .number({ message: '信用额度必须是数字' })
+    .min(0, { message: '信用额度不能为负数' })
+    .max(99_999_999.99, { message: '信用额度不能超过99,999,999.99' })
+    .optional(),
+
+  paymentTerms: z
+    .string()
+    .max(100, '付款条款不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+
+  customerType: z
+    .enum(CUSTOMER_TYPE_VALUES, { message: '客户类型不合法' })
+    .optional(),
+
+  industry: z
+    .string()
+    .max(100, '行业名称不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+
+  level: z
+    .enum(CUSTOMER_LEVEL_VALUES, { message: '客户等级不合法' })
+    .optional(),
+
+  region: z
+    .string()
+    .max(100, '地区信息不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+
   notes: z
     .string()
     .max(500, '备注信息不能超过500个字符')
     .optional()
     .or(z.literal('')),
 
-  tags: z.array(z.string()).optional(),
+  tags: z
+    .array(z.string().min(1, '标签不能为空').max(20, '标签不能超过20个字符'))
+    .max(customerConfig.tagLimit, `标签不能超过${customerConfig.tagLimit}个`)
+    .optional(),
 };
 
 // 客户创建表单验证
@@ -98,7 +161,12 @@ export const customerCreateSchema = z.object({
   name: baseValidations.name,
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z.string().optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal(''))
+    .transform(value => (value === '' ? undefined : value)),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
@@ -108,13 +176,22 @@ export const customerUpdateSchema = z.object({
   name: baseValidations.name.optional(),
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z.string().optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal(''))
+    .transform(value => (value === '' ? undefined : value)),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
 // 客户搜索表单验证
 export const customerSearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
+  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  customerType: z.enum(CUSTOMER_TYPE_VALUES).optional(),
+  level: z.enum(CUSTOMER_LEVEL_VALUES).optional(),
+  region: z.string().max(50, '区域不能超过50个字符').optional(),
   sortBy: z
     .enum(['name', 'createdAt', 'updatedAt', 'totalOrders', 'totalAmount'])
     .default('createdAt'),
@@ -134,6 +211,8 @@ export const customerCreateDefaults: Partial<CustomerCreateFormData> = {
   extendedInfo: {
     contactPerson: '',
     email: '',
+    phone2: '',
+    phone3: '',
     notes: '',
   },
 };
@@ -185,3 +264,45 @@ export const parseExtendedInfo = (
     return {};
   }
 };
+
+export function validateCustomerHierarchy(
+  customerId: string,
+  parentCustomerId?: string
+): boolean {
+  if (!parentCustomerId) {
+    return true;
+  }
+  return customerId !== parentCustomerId;
+}
+
+export function generateCustomerPath<
+  T extends { id: string; parentCustomerId?: string | null },
+>(customer: T, allCustomers: T[]): string[] {
+  const path: string[] = [];
+  const visited = new Set<string>();
+  let current: T | undefined = customer;
+
+  while (current) {
+    if (visited.has(current.id)) {
+      break;
+    }
+    path.unshift(current.id);
+    visited.add(current.id);
+    if (!current.parentCustomerId) {
+      break;
+    }
+    current = allCustomers.find(item => item.id === current?.parentCustomerId);
+  }
+
+  return path;
+}
+
+export function calculateCustomerLevel<
+  T extends { id: string; parentCustomerId?: string | null },
+>(customerId: string, allCustomers: T[]): number {
+  const customer = allCustomers.find(item => item.id === customerId);
+  if (!customer) {
+    return 0;
+  }
+  return generateCustomerPath(customer, allCustomers).length - 1;
+}

@@ -176,7 +176,11 @@
       "Bash(then echo \"=== .env.development ===\")",
       "mcp__serena__initial_instructions",
       "WebFetch(domain:www.scraperapi.com)",
-      "mcp__playwright__browser_handle_dialog"
+      "mcp__playwright__browser_handle_dialog",
+      "Bash(chmod:*)",
+      "Bash(scripts/api-performance-test.sh:*)",
+      "Bash(scripts/performance-test-final.sh:*)",
+      "Bash(scripts/simple-performance-test.sh:*)"
     ],
     "deny": [],
     "ask": []

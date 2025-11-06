@@ -2,10 +2,8 @@ import { z } from 'zod';
 
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
 
-export const ALLOWED_RETURN_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
-  'shipped',
-  'completed',
-];
+export const ALLOWED_RETURN_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> =
+  ['shipped', 'completed'];
 
 export const returnOrderItemSchema = z.object({
   salesOrderItemId: z.string().min(1, '请选择销售订单明细'),
@@ -63,6 +61,7 @@ export const updateReturnOrderStatusSchema = z.object({
     .min(0, '退款金额不能为负数')
     .max(999999, '退款金额不能超过999999')
     .optional(),
+  idempotencyKey: z.string().uuid('幂等性键格式不正确').optional(),
 });
 
 export const approveReturnOrderSchema = z.object({
@@ -73,6 +72,7 @@ export const approveReturnOrderSchema = z.object({
 });
 
 export type CreateReturnOrderData = z.infer<typeof createReturnOrderSchema>;
-export type UpdateReturnOrderStatusData = z.infer<typeof updateReturnOrderStatusSchema>;
+export type UpdateReturnOrderStatusData = z.infer<
+  typeof updateReturnOrderStatusSchema
+>;
 export type ApproveReturnOrderData = z.infer<typeof approveReturnOrderSchema>;
-

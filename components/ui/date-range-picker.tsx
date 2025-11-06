@@ -166,220 +166,218 @@ const DEFAULT_PRESETS: DateRangePreset[] = [
 /**
  * 日期范围选择器组件
  */
-export const DateRangePicker = React.memo(({
-  value,
-  onChange,
-  label = '日期范围',
-  placeholder = '选择日期范围',
-  showPresets = true,
-  presets = DEFAULT_PRESETS,
-  minDate,
-  maxDate,
-  disabled = false,
-  className,
-  showClearButton = true,
-}: DateRangePickerProps) => {
-  const [isOpen, setIsOpen] = React.useState(false);
+export const DateRangePicker = React.memo(
+  ({
+    value,
+    onChange,
+    label = '日期范围',
+    placeholder = '选择日期范围',
+    showPresets = true,
+    presets = DEFAULT_PRESETS,
+    minDate,
+    maxDate,
+    disabled = false,
+    className,
+    showClearButton = true,
+  }: DateRangePickerProps) => {
+    const [isOpen, setIsOpen] = React.useState(false);
 
-  // 将字符串日期转换为 Date 对象
-  const dateRange = React.useMemo<DateRange | undefined>(() => {
-    if (!value?.startDate && !value?.endDate) {
-      return undefined;
-    }
+    // 将字符串日期转换为 Date 对象
+    const dateRange = React.useMemo<DateRange | undefined>(() => {
+      if (!value?.startDate && !value?.endDate) {
+        return undefined;
+      }
 
-    return {
-      from: value.startDate ? new Date(value.startDate) : undefined,
-      to: value.endDate ? new Date(value.endDate) : undefined,
-    };
-  }, [value?.startDate, value?.endDate]);
+      return {
+        from: value.startDate ? new Date(value.startDate) : undefined,
+        to: value.endDate ? new Date(value.endDate) : undefined,
+      };
+    }, [value?.startDate, value?.endDate]);
 
-  // 格式化日期范围显示文本
-  const formattedRange = React.useMemo(() => {
-    if (!value?.startDate || !value?.endDate) {
-      return '';
-    }
+    // 格式化日期范围显示文本
+    const formattedRange = React.useMemo(() => {
+      if (!value?.startDate || !value?.endDate) {
+        return '';
+      }
 
-    try {
-      const start = new Date(value.startDate);
-      const end = new Date(value.endDate);
+      try {
+        const start = new Date(value.startDate);
+        const end = new Date(value.endDate);
 
-      // 格式化为中文日期
-      const startStr = format(start, 'yyyy年M月d日', { locale: zhCN });
-      const endStr = format(end, 'yyyy年M月d日', { locale: zhCN });
+        // 格式化为中文日期
+        const startStr = format(start, 'yyyy年M月d日', { locale: zhCN });
+        const endStr = format(end, 'yyyy年M月d日', { locale: zhCN });
 
-      return `${startStr} - ${endStr}`;
-    } catch (error) {
-      logger.error(
-        'ui:date-range-picker',
-        '日期格式化失败',
-        error,
-        {
+        return `${startStr} - ${endStr}`;
+      } catch (error) {
+        logger.error('ui:date-range-picker', '日期格式化失败', error, {
           startDate: value?.startDate,
           endDate: value?.endDate,
+        });
+        return '';
+      }
+    }, [value?.startDate, value?.endDate]);
+
+    // 处理日历日期选择
+    const handleCalendarSelect = React.useCallback(
+      (range: DateRange | undefined) => {
+        if (!range) {
+          onChange({});
+          return;
         }
-      );
-      return '';
-    }
-  }, [value?.startDate, value?.endDate]);
 
-  // 处理日历日期选择
-  const handleCalendarSelect = React.useCallback(
-    (range: DateRange | undefined) => {
-      if (!range) {
-        onChange({});
-        return;
-      }
+        const newValue: DateRangeValue = {
+          startDate: range.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+          endDate: range.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+        };
 
-      const newValue: DateRangeValue = {
-        startDate: range.from ? format(range.from, 'yyyy-MM-dd') : undefined,
-        endDate: range.to ? format(range.to, 'yyyy-MM-dd') : undefined,
-      };
+        onChange(newValue);
 
-      onChange(newValue);
+        // 如果两个日期都选中了，自动关闭弹窗
+        if (range.from && range.to) {
+          setIsOpen(false);
+        }
+      },
+      [onChange]
+    );
 
-      // 如果两个日期都选中了，自动关闭弹窗
-      if (range.from && range.to) {
+    // 处理快捷预设点击
+    const handlePresetClick = React.useCallback(
+      (preset: DateRangePreset) => {
+        const newValue = preset.getValue();
+        onChange(newValue);
         setIsOpen(false);
-      }
-    },
-    [onChange]
-  );
+      },
+      [onChange]
+    );
 
-  // 处理快捷预设点击
-  const handlePresetClick = React.useCallback(
-    (preset: DateRangePreset) => {
-      const newValue = preset.getValue();
-      onChange(newValue);
-      setIsOpen(false);
-    },
-    [onChange]
-  );
+    // 清除日期范围
+    const handleClear = React.useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onChange({});
+      },
+      [onChange]
+    );
 
-  // 清除日期范围
-  const handleClear = React.useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      onChange({});
-    },
-    [onChange]
-  );
+    return (
+      <div className={cn('flex flex-col gap-1.5', className)}>
+        {label && (
+          <label className="text-muted-foreground text-xs font-medium">
+            {label}
+          </label>
+        )}
 
-  return (
-    <div className={cn('flex flex-col gap-1.5', className)}>
-      {label && (
-        <label className="text-muted-foreground text-xs font-medium">
-          {label}
-        </label>
-      )}
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              disabled={disabled}
+              className={cn(
+                'h-8 justify-start text-left text-xs font-normal',
+                !formattedRange && 'text-muted-foreground'
+              )}
+            >
+              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+              {formattedRange || placeholder}
+              {showClearButton && formattedRange && (
+                <X
+                  className="ml-auto h-3.5 w-3.5 opacity-50 hover:opacity-100"
+                  onClick={handleClear}
+                />
+              )}
+            </Button>
+          </PopoverTrigger>
 
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            disabled={disabled}
-            className={cn(
-              'h-8 justify-start text-left text-xs font-normal',
-              !formattedRange && 'text-muted-foreground'
-            )}
-          >
-            <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-            {formattedRange || placeholder}
-            {showClearButton && formattedRange && (
-              <X
-                className="ml-auto h-3.5 w-3.5 opacity-50 hover:opacity-100"
-                onClick={handleClear}
-              />
-            )}
-          </Button>
-        </PopoverTrigger>
-
-        <PopoverContent className="w-auto p-0" align="start">
-          <div className="flex flex-col md:flex-row">
-            {/* 快捷预设区域 */}
-            {showPresets && presets.length > 0 && (
-              <div className="border-b p-3 md:border-r md:border-b-0">
-                <div className="mb-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                  快捷选择
+          <PopoverContent className="w-auto p-0" align="start">
+            <div className="flex flex-col md:flex-row">
+              {/* 快捷预设区域 */}
+              {showPresets && presets.length > 0 && (
+                <div className="border-b p-3 md:border-r md:border-b-0">
+                  <div className="mb-2 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    快捷选择
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {presets.map((preset, index) => (
+                      <Button
+                        key={index}
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 justify-start text-xs font-normal"
+                        onClick={() => handlePresetClick(preset)}
+                      >
+                        {preset.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-                <div className="flex flex-col gap-1">
-                  {presets.map((preset, index) => (
+              )}
+
+              {/* 日历选择区域 */}
+              <div className="p-3">
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={handleCalendarSelect}
+                  numberOfMonths={1}
+                  disabled={date => {
+                    if (minDate && date < minDate) return true;
+                    if (maxDate && date > maxDate) return true;
+                    return false;
+                  }}
+                  locale={zhCN}
+                />
+
+                {/* 底部操作按钮 */}
+                <div className="mt-3 flex items-center justify-between gap-2 border-t pt-3">
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {dateRange?.from && dateRange?.to
+                      ? `已选择 ${Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)) + 1} 天`
+                      : '请选择日期范围'}
+                  </div>
+                  <div className="flex gap-2">
                     <Button
-                      key={index}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="h-7 justify-start text-xs font-normal"
-                      onClick={() => handlePresetClick(preset)}
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        onChange({});
+                        setIsOpen(false);
+                      }}
                     >
-                      {preset.label}
+                      清除
                     </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 日历选择区域 */}
-            <div className="p-3">
-              <Calendar
-                mode="range"
-                selected={dateRange}
-                onSelect={handleCalendarSelect}
-                numberOfMonths={1}
-                disabled={date => {
-                  if (minDate && date < minDate) return true;
-                  if (maxDate && date > maxDate) return true;
-                  return false;
-                }}
-                locale={zhCN}
-              />
-
-              {/* 底部操作按钮 */}
-              <div className="mt-3 flex items-center justify-between gap-2 border-t pt-3">
-                <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                  {dateRange?.from && dateRange?.to
-                    ? `已选择 ${Math.ceil((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)) + 1} 天`
-                    : '请选择日期范围'}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      onChange({});
-                      setIsOpen(false);
-                    }}
-                  >
-                    清除
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setIsOpen(false)}
-                    disabled={!dateRange?.from || !dateRange?.to}
-                  >
-                    确定
-                  </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => setIsOpen(false)}
+                      disabled={!dateRange?.from || !dateRange?.to}
+                    >
+                      确定
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-});
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  }
+);
 
 /**
  * 简化版日期范围选择器（用于内联显示）
  */
-export const DateRangePickerInline = React.memo(({
-  value,
-  onChange,
-  showPresets = false,
-  className,
-  ...props
-}: DateRangePickerProps) => (
+export const DateRangePickerInline = React.memo(
+  ({
+    value,
+    onChange,
+    showPresets = false,
+    className,
+    ...props
+  }: DateRangePickerProps) => (
     <DateRangePicker
       value={value}
       onChange={onChange}
@@ -387,4 +385,5 @@ export const DateRangePickerInline = React.memo(({
       className={className}
       {...props}
     />
-  ));
+  )
+);

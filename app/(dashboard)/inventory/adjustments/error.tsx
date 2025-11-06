@@ -1,14 +1,18 @@
 'use client';
 
-import { AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { logClientError } from '@/lib/logger/client';
+import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
  * 库存调整记录错误边界
+ * Next.js 15 最佳实践：使用 error.tsx 捕获并处理组件树错误
+ * ✅ 统一使用 reportErrorBoundary 进行错误上报
+ *
+ * @see https://nextjs.org/docs/app/building-your-application/routing/error-handling
  */
 export default function AdjustmentRecordsError({
   error,
@@ -20,9 +24,10 @@ export default function AdjustmentRecordsError({
   const router = useRouter();
 
   useEffect(() => {
-    logClientError('inventory-adjustments', '库存调整记录错误', error, {
-      digest: error.digest,
-      stack: error.stack,
+    // 上报错误到监控服务
+    reportErrorBoundary(error, 'AdjustmentRecordsError', {
+      pageTitle: '库存调整记录',
+      route: '/inventory/adjustments',
     });
   }, [error]);
 

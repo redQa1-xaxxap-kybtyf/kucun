@@ -2,14 +2,17 @@
  * 财务数据缓存工具
  * 使用统一缓存系统管理财务数据缓存
  *
+ * ✅ P0修复: 添加报表缓存失效机制
  * ✅ P1修复: 集成Redis缓存失效
  */
 
 import { revalidateFinance } from '@/lib/cache/revalidate';
+import { redis } from '@/lib/redis/redis-client';
 import {
-  invalidateStatementsCache,
   invalidateFinanceSummaryCache,
+  invalidateStatementsCache,
 } from '@/lib/services/finance-statistics-cached';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 收款后清除相关缓存
@@ -63,4 +66,82 @@ export async function clearAllFinanceCache(): Promise<void> {
     '@/lib/services/finance-statistics-cached'
   );
   await Promise.all([revalidateFinance(), invalidateAllFinanceCache()]);
+}
+
+// ==================== 报表缓存失效函数 ====================
+
+/**
+ * 清除所有报表缓存
+ *
+ * 使用场景:
+ * - 费用记录创建/更新/删除后
+ * - 销售订单创建/更新后
+ * - 任何影响报表数据的操作后
+ *
+ * ✅ P0修复: 添加报表缓存失效机制
+ */
+export async function invalidateReportCache(): Promise<void> {
+  try {
+    await Promise.all([
+      redis.scanDel('finance:reports:monthly*'),
+      redis.scanDel('finance:reports:annual*'),
+      redis.scanDel('finance:reports:profit-loss*'),
+    ]);
+    logger.info('finance-cache', '报表缓存已失效');
+  } catch (error) {
+    logger.warn('finance-cache', '报表缓存失效失败', undefined, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * 清除特定月份的月度报表缓存
+ *
+ * @param year - 年份
+ * @param month - 月份 (1-12)
+ *
+ * @example
+ * ```typescript
+ * // 清除2024年1月的月度报表缓存
+ * await invalidateMonthlyReportCache(2024, 1);
+ * ```
+ */
+export async function invalidateMonthlyReportCache(
+  year: number,
+  month: number
+): Promise<void> {
+  try {
+    await redis.scanDel(`finance:reports:monthly*year=${year}*month=${month}*`);
+    logger.info('finance-cache', `月度报表缓存已失效: ${year}年${month}月`);
+  } catch (error) {
+    logger.warn('finance-cache', '月度报表缓存失效失败', undefined, {
+      year,
+      month,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+/**
+ * 清除特定年度的年度报表缓存
+ *
+ * @param year - 年份
+ *
+ * @example
+ * ```typescript
+ * // 清除2024年的年度报表缓存
+ * await invalidateAnnualReportCache(2024);
+ * ```
+ */
+export async function invalidateAnnualReportCache(year: number): Promise<void> {
+  try {
+    await redis.scanDel(`finance:reports:annual*year=${year}*`);
+    logger.info('finance-cache', `年度报表缓存已失效: ${year}年`);
+  } catch (error) {
+    logger.warn('finance-cache', '年度报表缓存失效失败', undefined, {
+      year,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }

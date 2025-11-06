@@ -262,7 +262,9 @@ async function testPerformanceComparison() {
   if (avgTime < 30) {
     console.log('\n✅ 性能优化目标达成! (< 30ms)');
   } else {
-    console.log(`\n⚠️  性能未达预期 (实际 ${avgTime.toFixed(2)}ms > 目标 30ms)`);
+    console.log(
+      `\n⚠️  性能未达预期 (实际 ${avgTime.toFixed(2)}ms > 目标 30ms)`
+    );
   }
 }
 

@@ -154,8 +154,11 @@ export function SalesOrderForm({
       // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
 
-      // ✅ 关键修复：同时失效应收款缓存
-      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+      // ✅ 关键修复：同时失效应收款缓存并强制重新获取
+      queryClient.invalidateQueries({
+        queryKey: ['finance', 'receivables'],
+        refetchType: 'active',
+      });
 
       if (onSuccess) {
         // data 是 SalesOrder 类型,需要转换为 CreateSalesOrderData
@@ -596,7 +599,7 @@ export function SalesOrderForm({
                             {/* 金额 */}
                             <TableCell className="border-r">
                               <div className="text-right text-sm font-medium">
-                                ¥{subtotal.toFixed(2)}
+                                ￥{subtotal.toFixed(2)}
                               </div>
                             </TableCell>
 
@@ -642,7 +645,7 @@ export function SalesOrderForm({
                 <div className="text-lg font-bold">
                   合计金额：
                   <span className="text-primary">
-                    ¥{totalAmount.toFixed(2)}
+                    ￥{totalAmount.toFixed(2)}
                   </span>
                 </div>
               </div>

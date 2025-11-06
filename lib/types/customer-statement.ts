@@ -243,7 +243,7 @@ export const CUSTOMER_STATEMENT_TRANSACTION_TYPES: CustomerStatementTransactionT
     {
       type: 'sales_order',
       label: '销售订单',
-      description: '客户采购商品',
+      description: '客户采购产品',
       isDebit: true,
       category: 'receivable',
     },

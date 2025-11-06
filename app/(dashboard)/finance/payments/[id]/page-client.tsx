@@ -1,11 +1,11 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import {
   ArrowLeft,
   CheckCircle,
   Clock,
   CreditCard,
-  DollarSign,
   FileText,
   Package,
   Printer,
@@ -100,7 +100,7 @@ function StatusBadge({ status }: { status: string }) {
  */
 function PaymentMethodDisplay({ method }: { method: string }) {
   const methodConfig = {
-    cash: { label: '现金', icon: DollarSign },
+    cash: { label: '现金', icon: ChineseYuan },
     bank_transfer: { label: '银行转账', icon: CreditCard },
     alipay: { label: '支付宝', icon: CreditCard },
     wechat: { label: '微信支付', icon: CreditCard },
@@ -224,7 +224,7 @@ export function PaymentDetailClient({
             <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-4 py-3">
               <div className="flex items-center gap-2">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">
-                  <DollarSign className="h-5 w-5 text-white" />
+                  <ChineseYuan className="h-5 w-5 text-white" />
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-[hsl(var(--color-text-tertiary))]">

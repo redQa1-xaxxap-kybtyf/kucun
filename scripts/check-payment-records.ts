@@ -35,7 +35,7 @@ interface PaymentStats {
   remainingAmount: number;
 }
 
-const currency = (value: number): string => `¥${value.toFixed(2)}`;
+const currency = (value: number): string => `￥${value.toFixed(2)}`;
 
 function printOrderBasics(order: OrderWithPayments) {
   console.log('📋 订单信息：');
@@ -61,16 +61,24 @@ function printPaymentRecords(payments: PaymentRecord[]) {
   payments.forEach((payment, index) => {
     console.log(`\n  收款 ${index + 1}:`);
     console.log(`    收款单号: ${payment.paymentNumber}`);
-    console.log(`    收款金额: ${currency(Number(payment.paymentAmount || 0))}`);
-    console.log(`    状态: ${payment.status === 'confirmed' ? '已确认' : '待确认'}`);
-    console.log(`    收款日期: ${payment.paymentDate.toISOString().split('T')[0]}`);
+    console.log(
+      `    收款金额: ${currency(Number(payment.paymentAmount || 0))}`
+    );
+    console.log(
+      `    状态: ${payment.status === 'confirmed' ? '已确认' : '待确认'}`
+    );
+    console.log(
+      `    收款日期: ${payment.paymentDate.toISOString().split('T')[0]}`
+    );
     console.log(`    创建时间: ${payment.createdAt.toISOString()}`);
   });
   console.log('\n');
 }
 
 function calculatePaymentStats(order: OrderWithPayments): PaymentStats {
-  const confirmedPayments = order.payments.filter(p => p.status === 'confirmed');
+  const confirmedPayments = order.payments.filter(
+    p => p.status === 'confirmed'
+  );
   const pendingPayments = order.payments.filter(p => p.status === 'pending');
   const confirmedAmount = confirmedPayments.reduce(
     (sum, p) => sum + Number(p.paymentAmount || 0),
@@ -105,7 +113,9 @@ function printPaymentStats(stats: PaymentStats) {
   console.log(
     `待确认收款: ${currency(stats.pendingAmount)} (${stats.pendingPayments.length} 笔)`
   );
-  console.log(`总收款: ${currency(stats.confirmedAmount + stats.pendingAmount)}\n`);
+  console.log(
+    `总收款: ${currency(stats.confirmedAmount + stats.pendingAmount)}\n`
+  );
 }
 
 function analyzeReceivables(stats: PaymentStats) {
@@ -141,9 +151,13 @@ function reviewPendingPayments(order: OrderWithPayments, stats: PaymentStats) {
       console.log(
         `  ⚠️  收款 ${payment.paymentNumber}: ${currency(paymentAmount)} = 订单金额（未考虑抹零）`
       );
-      console.log(`      建议修改为: ${currency(stats.actualTotalAmount)} (订单金额 + 抹零)`);
+      console.log(
+        `      建议修改为: ${currency(stats.actualTotalAmount)} (订单金额 + 抹零)`
+      );
     } else {
-      console.log(`  ❓ 收款 ${payment.paymentNumber}: ${currency(paymentAmount)}`);
+      console.log(
+        `  ❓ 收款 ${payment.paymentNumber}: ${currency(paymentAmount)}`
+      );
     }
   });
 }

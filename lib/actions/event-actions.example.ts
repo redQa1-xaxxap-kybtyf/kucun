@@ -162,7 +162,7 @@ export async function confirmPaymentAction(data: {
     type: 'notification',
     notificationType: 'success',
     title: '收款确认',
-    message: `您的付款 ${data.paymentNumber} (¥${data.amount}) 已确认收款`,
+    message: `您的付款 ${data.paymentNumber} (￥${data.amount}) 已确认收款`,
     actionUrl: `/finance/payments/${data.paymentId}`,
     actionLabel: '查看详情',
   });

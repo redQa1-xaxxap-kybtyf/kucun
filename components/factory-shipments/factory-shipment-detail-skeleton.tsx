@@ -41,7 +41,7 @@ export function FactoryShipmentDetailSkeleton() {
             </div>
           </div>
 
-          {/* 商品明细卡片骨架 */}
+          {/* 产品明细卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
             <div className="mb-4 h-6 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="space-y-4">
@@ -66,7 +66,7 @@ export function FactoryShipmentDetailSkeleton() {
             </div>
           </div>
 
-          {/* 临时商品卡片骨架 */}
+          {/* 临时产品卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
             <div className="mb-4 h-6 w-40 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="space-y-3">

@@ -10,17 +10,17 @@
 
 ### 删除统计
 
-| 目录 | 删除数量 | 保留数量 | 说明 |
-|------|---------|---------|------|
-| **根目录** | 29 个 | 3 个 | 删除已完成的修复报告和临时文件 |
-| **docs/** | 14 个 | 11 个 | 删除已完成的修复和测试报告 |
-| **docs/fixes/** | 14 个 | 0 个 | 删除所有已完成的修复报告 |
-| **docs/analysis/** | 2 个 | 0 个 | 删除已完成的分析报告 |
-| **docs/ui-improvements/** | 1 个 | 0 个 | 删除已完成的 UI 改进报告 |
-| **claudedocs/** | 59 个 | 6 个 | 删除大量已完成的修复、测试、分析报告 |
-| **claudedocs/ui-audit/** | 2 个 | 0 个 | 删除 UI 审计报告 |
-| **.augment/rules/** | 0 个 | 3 个 | 保留所有规范文档 |
-| **总计** | **121 个** | **23 个** | 清理率：84.0% |
+| 目录                      | 删除数量   | 保留数量  | 说明                                 |
+| ------------------------- | ---------- | --------- | ------------------------------------ |
+| **根目录**                | 29 个      | 3 个      | 删除已完成的修复报告和临时文件       |
+| **docs/**                 | 14 个      | 11 个     | 删除已完成的修复和测试报告           |
+| **docs/fixes/**           | 14 个      | 0 个      | 删除所有已完成的修复报告             |
+| **docs/analysis/**        | 2 个       | 0 个      | 删除已完成的分析报告                 |
+| **docs/ui-improvements/** | 1 个       | 0 个      | 删除已完成的 UI 改进报告             |
+| **claudedocs/**           | 59 个      | 6 个      | 删除大量已完成的修复、测试、分析报告 |
+| **claudedocs/ui-audit/**  | 2 个       | 0 个      | 删除 UI 审计报告                     |
+| **.augment/rules/**       | 0 个       | 3 个      | 保留所有规范文档                     |
+| **总计**                  | **121 个** | **23 个** | 清理率：84.0%                        |
 
 ---
 
@@ -29,6 +29,7 @@
 ### 根目录（29 个）
 
 #### 已完成的修复报告（12 个）
+
 1. ❌ `BUILD_ERROR_FIX_REPORT.md` - 构建错误修复报告
 2. ❌ `TYPESCRIPT-FIXES-REPORT.md` - TypeScript 修复报告
 3. ❌ `URGENT-FIX-ACTION-PLAN.md` - 紧急修复行动计划
@@ -43,12 +44,14 @@
 12. ❌ `verify-optimization.md` - 验证优化（临时文件）
 
 #### 过时的优化报告（4 个）
+
 13. ❌ `OPTIMIZATION_SUMMARY.md` - 优化总结
 14. ❌ `OPTIMIZATION_ROADMAP_7_DAYS.md` - 7天优化路线图
 15. ❌ `IMPLEMENTATION_SUMMARY.md` - 实现总结
 16. ❌ `README_INVENTORY_OPTIMIZATION.md` - 库存优化 README
 
 #### 物流相关重复报告（8 个）
+
 17. ❌ `SHIPPING_AUTO_QUERY_ANALYSIS_REPORT.md` - 物流自动查询分析报告
 18. ❌ `SHIPPING_QUERY_DEBUG_GUIDE.md` - 物流查询调试指南
 19. ❌ `SHIPPING_QUERY_IMPROVEMENTS.md` - 物流查询改进
@@ -59,6 +62,7 @@
 24. ❌ `SOLUTION_C_RATE_LIMIT_CACHE.md` - 方案C：速率限制缓存
 
 #### 其他已完成任务（5 个）
+
 25. ❌ `DATABASE_MIGRATION_GUIDE.md` - 数据库迁移指南
 26. ❌ `SEED_DATA_SUMMARY.md` - 种子数据总结
 27. ❌ `TRANSFER-SALES-REFACTORING-ASSESSMENT.md` - 转销售重构评估
@@ -70,6 +74,7 @@
 ### docs/ 目录（14 个）
 
 #### 已完成的修复和测试报告（9 个）
+
 1. ❌ `docs/COMPLETE_FIX_SUMMARY.md` - 完整修复总结
 2. ❌ `docs/e2e-test-final-report.md` - E2E 测试最终报告
 3. ❌ `docs/pagination-consistency-report.md` - 分页一致性报告
@@ -81,13 +86,15 @@
 9. ❌ `docs/shipping-query-keyword-fix-report.md` - 物流查询关键词修复报告
 10. ❌ `docs/puppeteer-debugging.md` - Puppeteer 调试
 
-#### 临时商品相关（4 个）
-11. ❌ `docs/临时商品lastUsedAt格式修改总结.md`
-12. ❌ `docs/临时商品修复验证步骤.md`
-13. ❌ `docs/临时商品问题修复指南.md`
-14. ❌ `docs/临时商品问题诊断报告.md`
+#### 临时产品相关（4 个）
+
+11. ❌ `docs/临时产品lastUsedAt格式修改总结.md`
+12. ❌ `docs/临时产品修复验证步骤.md`
+13. ❌ `docs/临时产品问题修复指南.md`
+14. ❌ `docs/临时产品问题诊断报告.md`
 
 #### 其他已完成修复（1 个）
+
 15. ❌ `docs/厂家发货表单类型错误修复总结.md`
 
 ---
@@ -95,6 +102,7 @@
 ### docs/fixes/ 目录（14 个）
 
 所有已完成的修复报告：
+
 1. ❌ `docs/fixes/customer-duplicate-title-fix.md` - 客户重复标题修复
 2. ❌ `docs/fixes/customer-edit-ui-unification.md` - 客户编辑 UI 统一
 3. ❌ `docs/fixes/inventory-search-input-bug-fix.md` - 库存搜索输入 Bug 修复
@@ -128,6 +136,7 @@
 ### claudedocs/ 目录（59 个）
 
 #### 已完成的修复报告（16 个）
+
 1. ❌ `claudedocs/batch-specification-orphan-fix-2025-01-20.md`
 2. ❌ `claudedocs/inbound-500-error-fix-2025-01-20.md`
 3. ❌ `claudedocs/inbound-timeout-fix-2025-01-21.md`
@@ -147,6 +156,7 @@
 17. ❌ `claudedocs/sales-order-performance-optimization-2025-10-22.md`
 
 #### 已完成的实现报告（7 个）
+
 18. ❌ `claudedocs/factory-shipment-automation-implementation.md`
 19. ❌ `claudedocs/factory-shipment-implementation-summary.md`
 20. ❌ `claudedocs/date-range-filter-implementation-summary.md`
@@ -156,6 +166,7 @@
 24. ❌ `claudedocs/url-params-week1-completion-report.md`
 
 #### 测试报告（9 个）
+
 25. ❌ `claudedocs/complete-testing-report-2025.md`
 26. ❌ `claudedocs/e2e-test-report-2025.md`
 27. ❌ `claudedocs/inventory-e2e-test-report-2025-10-27.md`
@@ -167,6 +178,7 @@
 33. ❌ `claudedocs/testing-summary-2025-10-21.md`
 
 #### 分析报告（23 个）
+
 34. ❌ `claudedocs/customer-address-optimization-analysis.md`
 35. ❌ `claudedocs/customer-form-layout-optimization.md`
 36. ❌ `claudedocs/dashboard-module-analysis.md`
@@ -190,6 +202,7 @@
 54. ❌ `claudedocs/性能诊断报告_2025.md`
 
 #### 数据库迁移相关（4 个）
+
 55. ❌ `claudedocs/database-migration-completed.md`
 56. ❌ `claudedocs/mysql-migration-report.md`
 57. ❌ `claudedocs/mysql-only-database-update.md`
@@ -207,6 +220,7 @@
 ## ✅ 保留的核心文档清单
 
 ### 根目录核心文档（3 个）
+
 1. ✅ `README.md` - 项目主文档
 2. ✅ `CLAUDE.md` - Claude AI 使用规范
 3. ✅ `GEMINI.md` - Gemini AI 使用规范
@@ -219,33 +233,41 @@
 10. ✅ `QUICK_START_WITH_TEST_DATA.md` - 带测试数据的快速启动
 
 ### 规范文档（.augment/rules/）（3 个）
+
 11. ✅ `.augment/rules/ESLint规范遵循指南.md`
 12. ✅ `.augment/rules/GIT提交规范.md`
 13. ✅ `.augment/rules/项目硬规则.md`
 
 ### 业务逻辑文档（docs/business-logic/）（1 个）
+
 14. ✅ `docs/business-logic/customer-statement-calculation-rules.md`
 
 ### 功能实现文档（docs/features/）（3 个）
+
 15. ✅ `docs/features/customer-statement-prepayment-implementation.md`
 16. ✅ `docs/features/prepayment-business-process.md`
 17. ✅ `docs/features/shipping-tracking-implementation-plan.md`
 
 ### 组件使用指南（docs/components/）（1 个）
+
 18. ✅ `docs/components/customer-sales-order-selector-usage.md`
 
 ### 质量规范（docs/quality/）（1 个）
+
 19. ✅ `docs/quality/TYPECHECK_ENFORCEMENT_GUIDE.md`
 
 ### 项目规则（docs/rules/）（1 个）
+
 20. ✅ `docs/rules/project_rules.md`
 
 ### 重要的诊断报告（claudedocs/）（3 个）
+
 21. ✅ `claudedocs/mysql-database-diagnostic-report.md` - MySQL 数据库诊断报告（2025-11-02）
 22. ✅ `claudedocs/prisma-relations-fix-report.md` - Prisma 关系修复报告（2025-11-02）
 23. ✅ `claudedocs/database-schema-consistency-report.md` - 数据库 Schema 一致性报告（2025-11-02）
 
 ### 测试和技术栈文档（claudedocs/）（2 个）
+
 24. ✅ `claudedocs/msw-usage-guide.md` - MSW 使用指南
 25. ✅ `claudedocs/tech-stack-compliance-report-2025-10-27.md` - 技术栈合规报告
 
@@ -317,13 +339,13 @@ e:\kucun/
 
 ### 删除前后对比
 
-| 指标 | 删除前 | 删除后 | 变化 |
-|------|--------|--------|------|
-| **总文档数** | 144 个 | 23 个 | -121 个 (-84.0%) |
-| **根目录文档** | 32 个 | 10 个 | -22 个 (-68.8%) |
-| **docs/ 文档** | 25 个 | 11 个 | -14 个 (-56.0%) |
-| **claudedocs/ 文档** | 65 个 | 6 个 | -59 个 (-90.8%) |
-| **规范文档** | 3 个 | 3 个 | 0 个 (0%) |
+| 指标                 | 删除前 | 删除后 | 变化             |
+| -------------------- | ------ | ------ | ---------------- |
+| **总文档数**         | 144 个 | 23 个  | -121 个 (-84.0%) |
+| **根目录文档**       | 32 个  | 10 个  | -22 个 (-68.8%)  |
+| **docs/ 文档**       | 25 个  | 11 个  | -14 个 (-56.0%)  |
+| **claudedocs/ 文档** | 65 个  | 6 个   | -59 个 (-90.8%)  |
+| **规范文档**         | 3 个   | 3 个   | 0 个 (0%)        |
 
 ### 清理收益
 
@@ -356,4 +378,3 @@ e:\kucun/
 **清理完成时间**：2025-11-02  
 **清理质量**：✅ 优秀  
 **项目文档健康度**：✅ 显著提升
-

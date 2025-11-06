@@ -1,7 +1,8 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery } from '@tanstack/react-query';
-import { Calendar, DollarSign, Edit, FileText, Users } from 'lucide-react';
+import { Calendar, Edit, FileText, Users } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
@@ -102,7 +103,7 @@ function ReceivableHeaderActions({
         </Button>
         {receivable.status !== 'received' && (
           <Button size="sm">
-            <DollarSign className="mr-2 h-4 w-4" />
+            <ChineseYuan className="mr-2 h-4 w-4" />
             记录收款
           </Button>
         )}
@@ -140,7 +141,9 @@ function BasicInfoFields({
           <Button
             variant="link"
             className="h-auto p-0"
-            onClick={() => router.push(`/sales-orders/${receivable.salesOrder.id}`)}
+            onClick={() =>
+              router.push(`/sales-orders/${receivable.salesOrder.id}`)
+            }
           >
             {receivable.salesOrder.orderNumber}
           </Button>
@@ -171,7 +174,7 @@ function BasicInfoFields({
         <label className="text-muted-foreground text-sm font-medium">
           到期日期
         </label>
-        <div className="mt-1 flex items中心 space-x-2">
+        <div className="items中心 mt-1 flex space-x-2">
           <Calendar className="text-muted-foreground h-4 w-4" />
           <span>{formatDate(receivable.dueDate)}</span>
         </div>
@@ -203,13 +206,17 @@ function BasicInfoExtra({ receivable }: { receivable: ReceivableDetail }) {
     <>
       {receivable.description && (
         <div>
-          <label className="text-muted-foreground text-sm font-medium">描述</label>
+          <label className="text-muted-foreground text-sm font-medium">
+            描述
+          </label>
           <p className="mt-1 text-sm">{receivable.description}</p>
         </div>
       )}
       {receivable.remarks && (
         <div>
-          <label className="text-muted-foreground text-sm font-medium">备注信息</label>
+          <label className="text-muted-foreground text-sm font-medium">
+            备注信息
+          </label>
           <p className="mt-1 text-sm">{receivable.remarks}</p>
         </div>
       )}
@@ -273,7 +280,9 @@ function PaymentRecordsCard({ receivable }: { receivable: ReceivableDetail }) {
             ))}
           </div>
         ) : (
-          <div className="text-muted-foreground py-8 text-center">暂无收款记录</div>
+          <div className="text-muted-foreground py-8 text-center">
+            暂无收款记录
+          </div>
         )}
       </CardContent>
     </Card>
@@ -295,7 +304,9 @@ function AmountSummaryCard({
       <CardContent className="space-y-4 pt-6">
         <div className="flex justify-between">
           <span className="text-muted-foreground">应收金额</span>
-          <span className="font-medium">{formatCurrency(receivable.receivableAmount)}</span>
+          <span className="font-medium">
+            {formatCurrency(receivable.receivableAmount)}
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">已收金额</span>
@@ -340,7 +351,7 @@ function QuickActionsCard() {
       </CardHeader>
       <CardContent className="space-y-2 pt-6">
         <Button className="w-full" size="sm">
-          <DollarSign className="mr-2 h-4 w-4" />
+          <ChineseYuan className="mr-2 h-4 w-4" />
           记录收款
         </Button>
         <Button variant="outline" className="w-full" size="sm">
@@ -373,7 +384,9 @@ function CustomerInfoCard({
             </p>
           )}
           {receivable.customer.phone && (
-            <p className="text-muted-foreground text-sm">电话：{receivable.customer.phone}</p>
+            <p className="text-muted-foreground text-sm">
+              电话：{receivable.customer.phone}
+            </p>
           )}
         </div>
         <Button
@@ -442,7 +455,10 @@ export default function ReceivableDetailPage() {
           <PaymentRecordsCard receivable={receivable} />
         </div>
         <div className="space-y-4">
-          <AmountSummaryCard receivable={receivable} paymentProgress={paymentProgress} />
+          <AmountSummaryCard
+            receivable={receivable}
+            paymentProgress={paymentProgress}
+          />
           {receivable.status !== 'received' && <QuickActionsCard />}
           <CustomerInfoCard receivable={receivable} router={router} />
         </div>

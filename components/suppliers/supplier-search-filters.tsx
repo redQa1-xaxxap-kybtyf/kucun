@@ -10,11 +10,13 @@ import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Card, CardContent } from '@/components/ui/card';
 import { SEARCH_CONFIG } from '@/lib/config/search';
 
+type SupplierStatusFilter = 'active' | 'inactive' | 'suspended' | undefined;
+
 interface SupplierSearchFiltersProps {
   searchValue: string;
-  statusFilter?: 'active' | 'inactive';
+  statusFilter?: SupplierStatusFilter;
   onSearchChange: (value: string) => void;
-  onStatusChange: (value: 'active' | 'inactive' | undefined) => void;
+  onStatusChange: (value: SupplierStatusFilter) => void;
 }
 
 export function SupplierSearchFilters({
@@ -26,7 +28,7 @@ export function SupplierSearchFilters({
   // 统一处理筛选器变更
   const handleFilterChange = (key: string, value: string | undefined) => {
     if (key === 'status') {
-      onStatusChange(value as 'active' | 'inactive' | undefined);
+      onStatusChange(value as SupplierStatusFilter);
     }
   };
 
@@ -47,6 +49,7 @@ export function SupplierSearchFilters({
               options: [
                 { label: '启用', value: 'active' },
                 { label: '禁用', value: 'inactive' },
+                { label: '暂停', value: 'suspended' },
               ],
               width: 'w-32',
             },

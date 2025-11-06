@@ -1,14 +1,14 @@
 /**
- * 临时商品自动创建和复用逻辑
+ * 临时产品自动创建和复用逻辑
  *
  * 功能说明:
- * - 调货销售时,自动根据供应商ID和商品编码查找或创建临时商品记录
+ * - 调货销售时,自动根据供应商ID和产品编码查找或创建临时产品记录
  * - 同一供应商+同一编码 → 复用现有记录并更新使用统计
  * - 不同供应商可以有相同编码
  *
  * 使用场景:
  * - 销售订单创建时(TRANSFER 模式)
- * - 厂家发货订单创建时(使用手动输入商品)
+ * - 厂家发货订单创建时(使用手动输入产品)
  */
 
 import type { PrismaClient } from '@prisma/client';
@@ -20,7 +20,7 @@ type PrismaTransaction = Omit<
 >;
 
 /**
- * 临时商品数据接口
+ * 临时产品数据接口
  */
 export interface TemporaryProductData {
   supplierId: string; // 供应商ID (从订单中获取)
@@ -34,7 +34,7 @@ export interface TemporaryProductData {
 }
 
 /**
- * 查找或创建临时商品
+ * 查找或创建临时产品
  *
  * 逻辑流程:
  * 1. 根据 supplierId + code 查找现有记录
@@ -42,8 +42,8 @@ export interface TemporaryProductData {
  * 3. 如果未找到: 创建新记录并初始化使用统计
  *
  * @param tx - Prisma 事务对象
- * @param data - 临时商品数据
- * @returns 临时商品记录
+ * @param data - 临时产品数据
+ * @returns 临时产品记录
  */
 export async function findOrCreateTemporaryProduct(
   tx: PrismaTransaction,
@@ -75,7 +75,7 @@ export async function findOrCreateTemporaryProduct(
       },
     });
   } else {
-    // 2b. 未找到记录 - 创建新临时商品
+    // 2b. 未找到记录 - 创建新临时产品
     tempProduct = await tx.temporaryProduct.create({
       data: {
         supplierId: data.supplierId,
@@ -96,12 +96,12 @@ export async function findOrCreateTemporaryProduct(
 }
 
 /**
- * 从销售订单项数据构建临时商品数据
+ * 从销售订单项数据构建临时产品数据
  *
  * @param item - 销售订单项数据
  * @param supplierId - 供应商ID
  * @param userId - 用户ID
- * @returns 临时商品数据或 null
+ * @returns 临时产品数据或 null
  */
 export function buildTemporaryProductDataFromOrderItem(
   item: {
@@ -116,7 +116,7 @@ export function buildTemporaryProductDataFromOrderItem(
   supplierId: string,
   userId: string
 ): TemporaryProductData | null {
-  // 只有手动输入商品且有产品编码时才创建临时商品记录
+  // 只有手动输入产品且有产品编码时才创建临时产品记录
   if (!item.isManualProduct || !item.productCode) {
     return null;
   }

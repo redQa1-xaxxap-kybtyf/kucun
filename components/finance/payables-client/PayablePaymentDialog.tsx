@@ -1,9 +1,10 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { CreditCard, DollarSign } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 import {
   useForm,
@@ -165,7 +166,7 @@ function PayableInfoCard({ payableInfo }: { payableInfo: PayableInfo }) {
     <div className="bg-muted/30 rounded-lg border p-4">
       <div className="mb-3 flex items-center gap-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))]">
-          <DollarSign className="h-4 w-4 text-white" />
+          <ChineseYuan className="h-4 w-4 text-white" />
         </div>
         <div>
           <h4 className="text-sm font-semibold">{payableInfo.payableNumber}</h4>

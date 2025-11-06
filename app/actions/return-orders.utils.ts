@@ -1,5 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 
+import {
+  executeMinimalInboundTransaction,
+  type MinimalInboundTransactionResult,
+} from '@/lib/api/minimal-inbound-transaction';
+
 export type Tx = Omit<
   PrismaClient,
   '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
@@ -23,9 +28,12 @@ export function validateReturnQuantities(
   salesOrderItems: Array<{ id: string; quantity: number }>
 ): string | null {
   for (const item of items) {
-    const salesItem = salesOrderItems.find(si => si.id === item.salesOrderItemId);
+    const salesItem = salesOrderItems.find(
+      si => si.id === item.salesOrderItemId
+    );
     if (!salesItem) return '销售订单明细不存在';
-    if (item.returnQuantity > salesItem.quantity) return '退货数量不能超过原始数量';
+    if (item.returnQuantity > salesItem.quantity)
+      return '退货数量不能超过原始数量';
   }
   return null;
 }
@@ -97,20 +105,62 @@ export function canTransition(current: string, next: string): boolean {
   return Boolean(validTransitions[current]?.includes(next));
 }
 
-export async function applyCompletionEffects(tx: Tx, returnOrder: {
-  items: Array<{ productId: string; returnQuantity: number; damagedQuantity: number | null | undefined }>;
-}) {
+export async function applyCompletionEffects(
+  tx: Tx,
+  returnOrder: {
+    returnNumber: string;
+    items: Array<{
+      productId: string;
+      returnQuantity: number;
+      damagedQuantity: number | null | undefined;
+    }>;
+  },
+  operatorId: string
+): Promise<MinimalInboundTransactionResult[]> {
+  const inboundResults: MinimalInboundTransactionResult[] = [];
+
   for (const item of returnOrder.items) {
-    if ((item.damagedQuantity ?? 0) === 0) {
-      await tx.inventory.updateMany({
-        where: { productId: item.productId },
-        data: { quantity: { increment: item.returnQuantity } },
-      });
+    const damaged = item.damagedQuantity ?? 0;
+    if (damaged !== 0) {
+      continue;
     }
+
+    const quantity = Number(item.returnQuantity) || 0;
+    if (quantity <= 0) {
+      continue;
+    }
+
+    const inventory = await tx.inventory.findFirst({
+      where: { productId: item.productId },
+    });
+
+    const unitCost =
+      typeof inventory?.unitCost === 'number' ? inventory.unitCost : 0;
+
+    const inboundRecord = await executeMinimalInboundTransaction(
+      {
+        productId: item.productId,
+        quantity,
+        unitCost,
+        reason: 'return_inbound',
+        remarks: `退货订单${returnOrder.returnNumber}入库`,
+        batchNumber: '',
+        userId: operatorId,
+      },
+      { tx }
+    );
+
+    inboundResults.push(inboundRecord);
   }
+
+  return inboundResults;
 }
 
-export function mergeRemarks(original: string | null, append?: string, prefix?: string) {
+export function mergeRemarks(
+  original: string | null,
+  append?: string,
+  prefix?: string
+) {
   if (!append) return original ?? '';
   const label = prefix ? `${prefix}: ` : '';
   return `${original || ''}${original ? '\n' : ''}${label}${append}`;
@@ -126,7 +176,9 @@ export async function batchUpdateReturnOrderStatusTx(
     where: { id: { in: ids } },
     select: { id: true, salesOrderId: true },
   });
-  orders.forEach(o => o.salesOrderId && affectedSalesOrderIds.add(o.salesOrderId));
+  orders.forEach(
+    o => o.salesOrderId && affectedSalesOrderIds.add(o.salesOrderId)
+  );
 
   if (action === 'cancel') {
     await tx.returnOrder.updateMany({
@@ -134,9 +186,15 @@ export async function batchUpdateReturnOrderStatusTx(
       data: { status: 'cancelled' },
     });
   } else if (action === 'approve') {
-    await tx.returnOrder.updateMany({ where: { id: { in: ids }, status: 'submitted' }, data: { status: 'approved' } });
+    await tx.returnOrder.updateMany({
+      where: { id: { in: ids }, status: 'submitted' },
+      data: { status: 'approved' },
+    });
   } else if (action === 'reject') {
-    await tx.returnOrder.updateMany({ where: { id: { in: ids }, status: 'submitted' }, data: { status: 'rejected' } });
+    await tx.returnOrder.updateMany({
+      where: { id: { in: ids }, status: 'submitted' },
+      data: { status: 'rejected' },
+    });
   } else {
     throw new Error('无效的操作类型');
   }
@@ -148,9 +206,13 @@ export async function batchDeleteReturnOrdersTx(tx: Tx, ids: string[]) {
   const orders = await tx.returnOrder.findMany({ where: { id: { in: ids } } });
   for (const order of orders) {
     if (order.status !== 'draft' && order.status !== 'cancelled') {
-      throw new Error(`退货订单 "${order.returnNumber}" 不是草稿或已取消状态，无法批量删除`);
+      throw new Error(
+        `退货订单 "${order.returnNumber}" 不是草稿或已取消状态，无法批量删除`
+      );
     }
   }
-  await tx.returnOrderItem.deleteMany({ where: { returnOrderId: { in: ids } } });
+  await tx.returnOrderItem.deleteMany({
+    where: { returnOrderId: { in: ids } },
+  });
   await tx.returnOrder.deleteMany({ where: { id: { in: ids } } });
 }

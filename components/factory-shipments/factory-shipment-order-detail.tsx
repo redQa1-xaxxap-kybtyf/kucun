@@ -1,4 +1,5 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -6,7 +7,6 @@ import {
   Anchor,
   ArrowLeft,
   Calendar,
-  DollarSign,
   Edit,
   Package,
   PackageCheck,
@@ -207,7 +207,7 @@ export function FactoryShipmentOrderDetail({
               <p className="text-yellow-800 dark:text-yellow-200">
                 请向货运公司询问船公司名称,以便追踪货物运输状态
               </p>
-              <div className="flex gap-2 mt-2">
+              <div className="mt-2 flex gap-2">
                 <Button
                   size="sm"
                   variant="outline"
@@ -341,7 +341,7 @@ export function FactoryShipmentOrderDetail({
       >
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
+            <ChineseYuan className="h-5 w-5" />
             金额信息
           </CardTitle>
         </CardHeader>
@@ -404,7 +404,7 @@ export function FactoryShipmentOrderDetail({
         </CardContent>
       </Card>
 
-      {/* 商品明细 */}
+      {/* 产品明细 */}
       <Card
         className="border border-[hsl(var(--color-border-primary))]"
         style={{ boxShadow: 'var(--shadow-medium)' }}
@@ -412,7 +412,7 @@ export function FactoryShipmentOrderDetail({
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            商品明细
+            产品明细
           </CardTitle>
         </CardHeader>
         <CardContent className="bg-[hsl(var(--color-bg-card))]">
@@ -421,7 +421,7 @@ export function FactoryShipmentOrderDetail({
               <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
                 <TableRow>
                   <TableHead>序号</TableHead>
-                  <TableHead>商品名称</TableHead>
+                  <TableHead>产品名称</TableHead>
                   <TableHead>供应商</TableHead>
                   <TableHead>归属</TableHead>
                   <TableHead>履约状态</TableHead>

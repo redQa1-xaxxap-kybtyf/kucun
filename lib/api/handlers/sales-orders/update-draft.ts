@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db';
 
-// 复用临时商品相关工具
+// 复用临时产品相关工具
 import {
   buildTemporaryProductDataFromOrderItem,
   findOrCreateTemporaryProduct,
@@ -8,7 +8,7 @@ import {
 
 /**
  * 更新草稿销售订单（完整覆盖式）
- * 将事务、临时商品、金额汇总分拆为若干小函数，避免巨型函数。
+ * 将事务、临时产品、金额汇总分拆为若干小函数，避免巨型函数。
  */
 export async function updateSalesOrderDraft(
   id: string,
@@ -22,14 +22,14 @@ export async function updateSalesOrderDraft(
     supplierId?: string | null;
   }
 ) {
-  const orderType = (updateData.orderType ?? existingOrder.orderType ?? 'NORMAL') as
-    | 'NORMAL'
-    | 'TRANSFER';
+  const orderType = (updateData.orderType ??
+    existingOrder.orderType ??
+    'NORMAL') as 'NORMAL' | 'TRANSFER';
   const transferMode =
     orderType === 'TRANSFER'
-      ? ((updateData.transferMode ?? existingOrder.transferMode ?? 'SUPPLIER_ONLY') as
-          | 'SUPPLIER_ONLY'
-          | 'MIXED')
+      ? ((updateData.transferMode ??
+          existingOrder.transferMode ??
+          'SUPPLIER_ONLY') as 'SUPPLIER_ONLY' | 'MIXED')
       : 'SUPPLIER_ONLY';
 
   const { itemsAmount, costAmount } = computeItemsAndCost(
@@ -39,20 +39,22 @@ export async function updateSalesOrderDraft(
   );
 
   const additionalFees = round2(
-    (updateData.feeItems?.reduce((sum: number, f: any) => sum + f.feeAmount, 0) ?? 0) *
-      1
+    (updateData.feeItems?.reduce(
+      (sum: number, f: any) => sum + f.feeAmount,
+      0
+    ) ?? 0) * 1
   );
   const roundingAdjustment = round2(updateData.roundingAdjustment ?? 0);
   const totalAmount = round2(itemsAmount + additionalFees + roundingAdjustment);
   const profitAmount =
     orderType === 'TRANSFER' ? round2(itemsAmount - costAmount) : 0;
 
-  // 事务内更新（删除旧明细、创建新明细、同步临时商品）
+  // 事务内更新（删除旧明细、创建新明细、同步临时产品）
   const updatedOrder = await prisma.$transaction(async tx => {
     await tx.salesOrderItem.deleteMany({ where: { salesOrderId: id } });
     await tx.salesOrderFeeItem.deleteMany({ where: { salesOrderId: id } });
 
-    // 临时商品映射：仅调货订单才处理
+    // 临时产品映射：仅调货订单才处理
     const temporaryProductIds = new Map<number, string>();
     const effectiveSupplierId =
       orderType === 'TRANSFER'
@@ -166,7 +168,7 @@ function computeItemsAndCost(
 
     const effectiveTransferQuantity =
       orderType === 'TRANSFER' && transferMode === 'MIXED'
-        ? item.transferQuantity ?? 0
+        ? (item.transferQuantity ?? 0)
         : quantity;
     const unitCost = item.unitCost ?? 0;
     costAmount += unitCost * effectiveTransferQuantity;
@@ -187,18 +189,18 @@ function buildOrderItemPayload(
 
   const localQuantity =
     orderType === 'TRANSFER' && transferMode === 'MIXED'
-      ? item.localQuantity ?? 0
+      ? (item.localQuantity ?? 0)
       : 0;
   const transferQuantity =
     orderType === 'TRANSFER'
       ? transferMode === 'MIXED'
-        ? item.transferQuantity ?? 0
+        ? (item.transferQuantity ?? 0)
         : quantity
       : 0;
   const effectiveCostQuantity =
     orderType === 'TRANSFER'
       ? transferMode === 'MIXED'
-        ? item.transferQuantity ?? 0
+        ? (item.transferQuantity ?? 0)
         : quantity
       : 0;
 
@@ -316,4 +318,3 @@ function selectUpdatedOrder() {
     },
   } as const;
 }
-

@@ -104,7 +104,7 @@ function useContainerNumberEditDialogState({
       {
         onSuccess: handleSuccess,
         onError: handleError,
-      },
+      }
     );
   });
 
@@ -183,7 +183,12 @@ function ContainerNumberEditDialogView({
             <ContainerNumberField form={form} disabled={isPending} />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={onCancel} disabled={isPending}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onCancel}
+                disabled={isPending}
+              >
                 取消
               </Button>
               <Button type="submit" disabled={isPending}>

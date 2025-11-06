@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import {
+  InboundCostField,
   InboundOptionalFields,
   InboundQuantityFields,
   InboundReasonField,
@@ -141,6 +142,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
                 {/* 产品规格信息 */}
                 <InboundSpecificationFields form={form} />
+
+                {/* 单位成本 */}
+                <InboundCostField form={form} />
 
                 {/* 入库原因 */}
                 <InboundReasonField form={form} />

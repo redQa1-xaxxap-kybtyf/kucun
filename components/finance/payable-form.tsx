@@ -1,10 +1,19 @@
 'use client';
 
-import { AlertCircle, Building2, CreditCard, FileText } from 'lucide-react';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import {
+  AlertCircle,
+  Building2,
+  Calendar as CalendarIcon,
+  CreditCard,
+  FileText,
+} from 'lucide-react';
 
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -23,6 +32,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -36,6 +50,7 @@ import {
   PAYABLE_STATUS_LABELS,
   type PayableRecordDetail,
 } from '@/lib/types/payable';
+import { cn } from '@/lib/utils';
 
 interface PayableFormProps {
   mode: 'create' | 'edit';
@@ -173,12 +188,41 @@ export function PayableForm({
                     <FormItem>
                       <FormLabel>到期日期</FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          disabled={isLoading}
-                          {...field}
-                          value={field.value || ''}
-                        />
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                'w-full justify-start text-left font-normal',
+                                !field.value && 'text-muted-foreground'
+                              )}
+                              disabled={isLoading}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {field.value ? (
+                                format(new Date(field.value), 'PPP', {
+                                  locale: zhCN,
+                                })
+                              ) : (
+                                <span>选择日期</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                              onSelect={date =>
+                                field.onChange(
+                                  date ? format(date, 'yyyy-MM-dd') : ''
+                                )
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
                       </FormControl>
                       <FormDescription>应付款的到期日期</FormDescription>
                       <FormMessage />

@@ -91,7 +91,7 @@ async function verifySeedData() {
       (sum, o) => sum + o.totalAmount,
       0
     );
-    console.log(`   订单总金额: ¥${totalOrderAmount.toFixed(2)}`);
+    console.log(`   订单总金额: ￥${totalOrderAmount.toFixed(2)}`);
 
     // 9. 验证收款记录
     console.log('\n💰 验证收款记录...');
@@ -101,7 +101,7 @@ async function verifySeedData() {
       (sum, p) => sum + p.paymentAmount,
       0
     );
-    console.log(`   收款总金额: ¥${totalPayment.toFixed(2)}`);
+    console.log(`   收款总金额: ￥${totalPayment.toFixed(2)}`);
     console.log(
       `   现金: ${paymentRecords.filter(p => p.paymentMethod === 'cash').length}`
     );
@@ -117,9 +117,9 @@ async function verifySeedData() {
       (sum, p) => sum + p.payableAmount,
       0
     );
-    console.log(`   应付款总金额: ¥${totalPayable.toFixed(2)}`);
+    console.log(`   应付款总金额: ￥${totalPayable.toFixed(2)}`);
     const totalPaid = payableRecords.reduce((sum, p) => sum + p.paidAmount, 0);
-    console.log(`   已付款金额: ¥${totalPaid.toFixed(2)}`);
+    console.log(`   已付款金额: ￥${totalPaid.toFixed(2)}`);
     console.log(
       `   待付款: ${payableRecords.filter(p => p.status === 'pending').length}`
     );
@@ -138,7 +138,7 @@ async function verifySeedData() {
       (sum, p) => sum + p.paymentAmount,
       0
     );
-    console.log(`   付款总金额: ¥${totalPaymentOut.toFixed(2)}`);
+    console.log(`   付款总金额: ￥${totalPaymentOut.toFixed(2)}`);
 
     // 12. 验证厂家发货订单
     console.log('\n🚚 验证厂家发货订单...');
@@ -162,7 +162,7 @@ async function verifySeedData() {
       (sum, o) => sum + o.totalAmount,
       0
     );
-    console.log(`   订单总金额: ¥${totalFactoryAmount.toFixed(2)}`);
+    console.log(`   订单总金额: ￥${totalFactoryAmount.toFixed(2)}`);
 
     // 13. 验证退货订单
     console.log('\n↩️  验证退货订单...');
@@ -191,7 +191,7 @@ async function verifySeedData() {
       (sum, r) => sum + r.refundAmount,
       0
     );
-    console.log(`   退款总金额: ¥${totalRefund.toFixed(2)}`);
+    console.log(`   退款总金额: ￥${totalRefund.toFixed(2)}`);
     console.log(
       `   已完成: ${refundRecords.filter(r => r.status === 'completed').length}`
     );

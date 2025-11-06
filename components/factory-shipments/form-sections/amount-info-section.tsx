@@ -1,6 +1,6 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
-import { DollarSign } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +34,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))]">
         <CardTitle className="flex items-center gap-3 text-lg">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm">
-            <DollarSign className="h-5 w-5" />
+            <ChineseYuan className="h-5 w-5" />
           </div>
           <span className="font-semibold text-[hsl(var(--color-text-primary))]">
             金额信息
@@ -49,7 +49,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
               订单总金额
             </p>
             <p className="mt-1 text-2xl font-bold text-blue-700 dark:text-blue-300">
-              ¥{totalAmount.toFixed(2)}
+              ￥{totalAmount.toFixed(2)}
             </p>
           </div>
           <div className="rounded-lg bg-gradient-to-br from-green-50 to-green-100/50 p-4 dark:from-green-950/30 dark:to-green-900/20">
@@ -57,7 +57,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
               应收金额
             </p>
             <p className="mt-1 text-2xl font-bold text-green-700 dark:text-green-300">
-              ¥{receivableAmount.toFixed(2)}
+              ￥{receivableAmount.toFixed(2)}
             </p>
           </div>
           <div className="rounded-lg bg-gradient-to-br from-purple-50 to-purple-100/50 p-4 dark:from-purple-950/30 dark:to-purple-900/20">
@@ -65,7 +65,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
               已收定金
             </p>
             <p className="mt-1 text-2xl font-bold text-purple-700 dark:text-purple-300">
-              ¥{depositAmount.toFixed(2)}
+              ￥{depositAmount.toFixed(2)}
             </p>
           </div>
           <div className="rounded-lg bg-gradient-to-br from-amber-50 to-amber-100/50 p-4 dark:from-amber-950/30 dark:to-amber-900/20">
@@ -73,7 +73,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
               待收余额
             </p>
             <p className="mt-1 text-2xl font-bold text-amber-700 dark:text-amber-300">
-              ¥{balanceAmount.toFixed(2)}
+              ￥{balanceAmount.toFixed(2)}
             </p>
           </div>
         </div>
@@ -87,7 +87,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  订单总金额（¥）
+                  订单总金额（￥）
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -116,7 +116,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  应收金额（¥）
+                  应收金额（￥）
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -145,7 +145,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  定金金额（¥）
+                  定金金额（￥）
                 </FormLabel>
                 <FormControl>
                   <Input

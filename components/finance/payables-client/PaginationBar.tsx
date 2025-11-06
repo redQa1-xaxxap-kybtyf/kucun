@@ -12,7 +12,13 @@ interface Props {
   onPageChange: (page: number) => void;
 }
 
-export function PaginationBar({ page, totalPages, total, isLoading, onPageChange }: Props) {
+export function PaginationBar({
+  page,
+  totalPages,
+  total,
+  isLoading,
+  onPageChange,
+}: Props) {
   return (
     <div className="mt-6 flex items-center justify-between">
       <p className="text-muted-foreground text-sm">共 {total || 0} 条记录</p>
@@ -25,7 +31,9 @@ export function PaginationBar({ page, totalPages, total, isLoading, onPageChange
         >
           上一页
         </Button>
-        <span className="text-muted-foreground text-sm">第 {page} / {Math.max(1, totalPages)} 页</span>
+        <span className="text-muted-foreground text-sm">
+          第 {page} / {Math.max(1, totalPages)} 页
+        </span>
         <Button
           variant="outline"
           size="sm"

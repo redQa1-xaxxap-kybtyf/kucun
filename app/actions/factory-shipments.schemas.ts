@@ -26,7 +26,7 @@ export const factoryShipmentItemSchema = z
     manualSpecification: z.string().optional(),
     manualWeight: z.number().nonnegative('重量不能为负数').optional(),
     manualUnit: z.string().optional(),
-    displayName: z.string().min(1, '商品名称不能为空'),
+    displayName: z.string().min(1, '产品名称不能为空'),
     specification: z.string().optional(),
     unit: z.string().optional(),
     weight: z.number().nonnegative('重量不能为负数').optional(),
@@ -43,18 +43,26 @@ export const factoryShipmentItemSchema = z
     if (!isManual && !hasProduct) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: '请选择商品或启用手动商品',
+        message: '请选择产品或启用手动产品',
       });
     }
 
     if (isManual && !trimmedManualName) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: '手动商品必须填写名称',
+        message: '手动产品必须填写名称',
         path: ['manualProductName'],
       });
     }
   });
+
+// 费用项 schema
+export const factoryShipmentFeeItemSchema = z.object({
+  feeType: z.enum(['shipping', 'storage', 'customs', 'other']),
+  feeName: z.string().min(1, '费用名称不能为空'),
+  feeAmount: z.number().nonnegative('费用金额不能为负'),
+  remarks: z.string().optional(),
+});
 
 export const createFactoryShipmentSchema = z.object({
   customerId: z.string().min(1, '客户 ID 不能为空'),
@@ -62,10 +70,11 @@ export const createFactoryShipmentSchema = z.object({
   status: factoryShipmentStatusEnum.default(FACTORY_SHIPMENT_STATUS.DRAFT),
   shipmentDate: z.string().optional(),
   arrivalDate: z.string().optional(),
-  items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个商品项'),
+  items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个产品项'),
   receivableAmount: z.number().nonnegative('应收金额不能为负').optional(),
   depositAmount: z.number().nonnegative('定金金额不能为负').optional(),
   remarks: z.string().optional(),
+  feeItems: z.array(factoryShipmentFeeItemSchema).optional().default([]),
 });
 
 export const updateFactoryShipmentStatusSchema = z.object({
@@ -73,6 +82,9 @@ export const updateFactoryShipmentStatusSchema = z.object({
   status: factoryShipmentStatusEnum,
 });
 
-export type FactoryShipmentItemInput = z.infer<typeof factoryShipmentItemSchema>;
-export type FactoryShipmentFormData = z.infer<typeof createFactoryShipmentSchema>;
-
+export type FactoryShipmentItemInput = z.infer<
+  typeof factoryShipmentItemSchema
+>;
+export type FactoryShipmentFormData = z.infer<
+  typeof createFactoryShipmentSchema
+>;

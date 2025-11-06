@@ -12,6 +12,8 @@ export function formatSupplierStatus(status: string): string {
       return '活跃';
     case 'inactive':
       return '停用';
+    case 'suspended':
+      return '暂停';
     default:
       return '未知';
   }

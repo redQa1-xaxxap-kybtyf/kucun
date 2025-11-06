@@ -63,7 +63,7 @@ export function UnifiedProductInput({
   const manualProductName = form.watch(`items.${index}.manualProductName`);
   const isManualProduct = form.watch(`items.${index}.isManualProduct`);
 
-  // 智能检测：如果用户开始输入商品名称，自动切换到手动模式
+  // 智能检测：如果用户开始输入产品名称，自动切换到手动模式
   React.useEffect(() => {
     if (manualProductName && manualProductName.trim() !== '') {
       if (!isManualProduct) {
@@ -74,7 +74,7 @@ export function UnifiedProductInput({
     }
   }, [manualProductName, isManualProduct, form, index, onProductChange]);
 
-  // 处理库存商品选择
+  // 处理库存产品选择
   const handleProductSelect = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (product) {
@@ -104,7 +104,7 @@ export function UnifiedProductInput({
   // 显示手动输入字段
   const handleShowManualFields = () => {
     setShowManualFields(true);
-    // 清空库存商品选择
+    // 清空库存产品选择
     form.setValue(`items.${index}.productId`, '');
     form.setValue(`items.${index}.isManualProduct`, true);
     onProductChange?.(null);
@@ -114,9 +114,9 @@ export function UnifiedProductInput({
     <div className="space-y-3">
       {/* 主要产品选择区域 */}
       <div className="space-y-2">
-        <Label className="text-xs font-medium">商品信息</Label>
+        <Label className="text-xs font-medium">产品信息</Label>
 
-        {/* 库存商品选择 */}
+        {/* 库存产品选择 */}
         <FormField
           control={form.control}
           name={`items.${index}.productId`}
@@ -150,7 +150,7 @@ export function UnifiedProductInput({
                     field.onChange(value);
                     handleProductSelect(value);
                   }}
-                  placeholder="搜索并选择商品，或在下方手动输入"
+                  placeholder="搜索并选择产品，或在下方手动输入"
                   className="h-8 text-xs"
                 />
               </FormControl>
@@ -182,7 +182,7 @@ export function UnifiedProductInput({
               className="h-8 w-full border-dashed text-xs"
             >
               <Plus className="mr-1 h-3 w-3" />
-              手动输入临时商品信息
+              手动输入临时产品信息
             </Button>
           ) : showManualFields || manualProductName ? (
             // 手动输入字段
@@ -190,10 +190,10 @@ export function UnifiedProductInput({
               <div className="mb-2 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3 text-amber-600" />
                 <span className="text-xs font-medium text-amber-700">
-                  临时商品信息
+                  临时产品信息
                 </span>
                 <Badge variant="outline" className="text-xs">
-                  不会保存到商品库
+                  不会保存到产品库
                 </Badge>
               </div>
 
@@ -204,12 +204,12 @@ export function UnifiedProductInput({
                   render={({ field }) => (
                     <FormItem>
                       <Label className="text-xs">
-                        商品名称 <span className="text-red-500">*</span>
+                        产品名称 <span className="text-red-500">*</span>
                       </Label>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="输入商品名称"
+                          placeholder="输入产品名称"
                           className="h-8 text-xs"
                           maxLength={100}
                         />

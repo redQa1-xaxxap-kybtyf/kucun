@@ -439,9 +439,9 @@ export function ERPSalesOrderList({
   // 格式化金额
   const formatAmount = (amount?: number) => {
     if (!amount) {
-      return '¥0.00';
+      return '￥0.00';
     }
-    return `¥${amount.toFixed(2)}`;
+    return `￥${amount.toFixed(2)}`;
   };
 
   // 获取收款状态Badge
@@ -567,7 +567,7 @@ export function ERPSalesOrderList({
                 // 搜索配置
                 searchValue={searchValue ?? initialParams?.search ?? ''}
                 onSearchChange={handleSearch}
-                searchPlaceholder="搜索订单号、客户名称、商品编码..."
+                searchPlaceholder="搜索订单号、客户名称、产品编码..."
                 debounceDelay={0}
                 compact={true}
                 isSearching={isSearching || isRefetching}

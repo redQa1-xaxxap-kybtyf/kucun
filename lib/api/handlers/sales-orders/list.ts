@@ -80,7 +80,7 @@ const buildWhere = ({
       { customer: { phone: { contains: search } } },
       { customer: { address: { contains: search } } },
       { remarks: { contains: search } },
-      // 增加对商品编码的搜索支持
+      // 增加对产品编码的搜索支持
       { items: { some: { product: { code: { contains: search } } } } },
       { items: { some: { product: { name: { contains: search } } } } },
     ];

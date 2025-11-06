@@ -1,17 +1,8 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  DollarSign,
-  Download,
-  Edit,
-  MoreHorizontal,
-  Printer,
-  Receipt,
-  ShoppingCart,
-  Truck,
-} from 'lucide-react';
+import { ArrowLeft, Download, Edit, MoreHorizontal, Printer, Receipt, ShoppingCart, Truck } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -584,7 +575,7 @@ export default function SalesOrderDetailPage() {
                       <>
                         <p className="flex items-center gap-1.5">
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">✓</span>
-                          <span><strong>混合发货模式:</strong> 部分商品从本地仓库发货,部分由供应商直接发货</span>
+                          <span><strong>混合发货模式:</strong> 部分产品从本地仓库发货,部分由供应商直接发货</span>
                         </p>
                         <p className="ml-5.5 text-amber-700">供应商: <strong>{order.supplier?.name}</strong></p>
                       </>
@@ -592,7 +583,7 @@ export default function SalesOrderDetailPage() {
                       <>
                         <p className="flex items-center gap-1.5">
                           <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white">!</span>
-                          <span><strong>纯调货模式:</strong> 所有商品均由供应商直接发货</span>
+                          <span><strong>纯调货模式:</strong> 所有产品均由供应商直接发货</span>
                         </p>
                         <p className="ml-5.5 text-amber-700">供应商: <strong>{order.supplier?.name}</strong></p>
                       </>
@@ -1068,7 +1059,7 @@ export default function SalesOrderDetailPage() {
                             ? item.productCode.trim()
                             : '';
                         const displayProductName = item.isManualProduct
-                          ? manualName || manualCode || '临时商品'
+                          ? manualName || manualCode || '临时产品'
                           : item.product?.name || '-';
                         const displayProductCode = item.isManualProduct
                           ? manualCode || '-'
@@ -1295,7 +1286,7 @@ export default function SalesOrderDetailPage() {
                 <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
                   <CardTitle className="flex items-center justify-between text-base text-[hsl(var(--color-text-primary))]">
                     <div className="flex items-center">
-                      <DollarSign className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                      <ChineseYuan className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
                       额外费用明细
                     </div>
                     <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
@@ -1434,7 +1425,7 @@ export default function SalesOrderDetailPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
-                          <DollarSign className="h-4 w-4 text-white" />
+                          <ChineseYuan className="h-4 w-4 text-white" />
                         </div>
                         <span className="text-sm font-semibold text-gray-700">
                           订单总金额

@@ -1,7 +1,7 @@
 /**
- * 临时商品保存问题诊断脚本
+ * 临时产品保存问题诊断脚本
  *
- * 用途：检查调货销售订单中临时商品未保存到数据库的问题
+ * 用途：检查调货销售订单中临时产品未保存到数据库的问题
  *
  * 运行方式：
  * npx tsx scripts/diagnose-temporary-products.ts
@@ -14,10 +14,10 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
-  console.log('🔍 开始诊断临时商品保存问题...\n');
+  console.log('🔍 开始诊断临时产品保存问题...\n');
 
-  // 1. 检查临时商品表
-  console.log('📊 步骤 1: 检查临时商品表数据');
+  // 1. 检查临时产品表
+  console.log('📊 步骤 1: 检查临时产品表数据');
   const temporaryProducts = await prisma.temporaryProduct.findMany({
     include: {
       supplier: {
@@ -39,9 +39,9 @@ async function main() {
     take: 10,
   });
 
-  console.log(`✅ 临时商品总数: ${temporaryProducts.length}`);
+  console.log(`✅ 临时产品总数: ${temporaryProducts.length}`);
   if (temporaryProducts.length > 0) {
-    console.log('\n最近的临时商品:');
+    console.log('\n最近的临时产品:');
     temporaryProducts.forEach((tp, index) => {
       console.log(`  ${index + 1}. [${tp.code}] ${tp.name}`);
       console.log(`     供应商: ${tp.supplier.name}`);
@@ -54,7 +54,7 @@ async function main() {
       );
     });
   } else {
-    console.log('⚠️  临时商品表为空！');
+    console.log('⚠️  临时产品表为空！');
   }
 
   // 2. 检查调货销售订单
@@ -97,17 +97,17 @@ async function main() {
       console.log(`     订单项数量: ${order.items.length}`);
 
       const manualItems = order.items.filter(item => item.isManualProduct);
-      console.log(`     手动商品数量: ${manualItems.length}`);
+      console.log(`     手动产品数量: ${manualItems.length}`);
 
       if (manualItems.length > 0) {
-        console.log('     手动商品详情:');
+        console.log('     手动产品详情:');
         manualItems.forEach((item, idx) => {
           console.log(
-            `       ${idx + 1}. 商品名称: ${item.manualProductName || '未填写'}`
+            `       ${idx + 1}. 产品名称: ${item.manualProductName || '未填写'}`
           );
           console.log(`          产品编码: ${item.productCode || '未填写'}`);
           console.log(
-            `          临时商品ID: ${item.temporaryProductId || '❌ 未关联'}`
+            `          临时产品ID: ${item.temporaryProductId || '❌ 未关联'}`
           );
         });
       }
@@ -116,8 +116,8 @@ async function main() {
     console.log('⚠️  没有找到调货销售订单！');
   }
 
-  // 3. 检查订单项中的临时商品关联
-  console.log('\n📊 步骤 3: 检查订单项中的临时商品关联');
+  // 3. 检查订单项中的临时产品关联
+  console.log('\n📊 步骤 3: 检查订单项中的临时产品关联');
   const itemsWithTempProduct = await prisma.salesOrderItem.findMany({
     where: {
       temporaryProductId: {
@@ -136,19 +136,19 @@ async function main() {
     take: 10,
   });
 
-  console.log(`✅ 关联了临时商品的订单项数量: ${itemsWithTempProduct.length}`);
+  console.log(`✅ 关联了临时产品的订单项数量: ${itemsWithTempProduct.length}`);
   if (itemsWithTempProduct.length > 0) {
-    console.log('\n关联了临时商品的订单项:');
+    console.log('\n关联了临时产品的订单项:');
     itemsWithTempProduct.forEach((item, index) => {
       console.log(`  ${index + 1}. 订单: ${item.salesOrder.orderNumber}`);
       console.log(
-        `     临时商品: [${item.temporaryProduct?.code}] ${item.temporaryProduct?.name}`
+        `     临时产品: [${item.temporaryProduct?.code}] ${item.temporaryProduct?.name}`
       );
     });
   }
 
-  // 4. 检查手动商品但未关联临时商品的订单项
-  console.log('\n📊 步骤 4: 检查手动商品但未关联临时商品的订单项（问题项）');
+  // 4. 检查手动产品但未关联临时产品的订单项
+  console.log('\n📊 步骤 4: 检查手动产品但未关联临时产品的订单项（问题项）');
   const problematicItems = await prisma.salesOrderItem.findMany({
     where: {
       isManualProduct: true,
@@ -176,14 +176,14 @@ async function main() {
 
   console.log(`⚠️  问题订单项数量: ${problematicItems.length}`);
   if (problematicItems.length > 0) {
-    console.log('\n问题订单项详情（手动商品但未关联临时商品）:');
+    console.log('\n问题订单项详情（手动产品但未关联临时产品）:');
     problematicItems.forEach((item, index) => {
       console.log(`\n  ${index + 1}. 订单: ${item.salesOrder.orderNumber}`);
       console.log(
         `     供应商: ${item.salesOrder.supplier?.name || '❌ 未设置'}`
       );
       console.log(`     产品编码: ${item.productCode || '❌ 未填写'}`);
-      console.log(`     商品名称: ${item.manualProductName || '❌ 未填写'}`);
+      console.log(`     产品名称: ${item.manualProductName || '❌ 未填写'}`);
       console.log(`     isManualProduct: ${item.isManualProduct}`);
       console.log(
         `     temporaryProductId: ${item.temporaryProductId || '❌ NULL'}`
@@ -198,13 +198,13 @@ async function main() {
         issues.push('订单项未填写产品编码');
       }
       if (!item.manualProductName) {
-        issues.push('订单项未填写商品名称');
+        issues.push('订单项未填写产品名称');
       }
 
       if (issues.length > 0) {
         console.log(`     ❌ 问题原因: ${issues.join(', ')}`);
       } else {
-        console.log(`     ⚠️  数据完整但未创建临时商品（可能是逻辑问题）`);
+        console.log(`     ⚠️  数据完整但未创建临时产品（可能是逻辑问题）`);
       }
     });
   } else {
@@ -242,21 +242,21 @@ async function main() {
 
   console.log('统计数据:');
   console.log(`  调货销售订单总数: ${stats.totalTransferOrders}`);
-  console.log(`  手动商品订单项总数: ${stats.totalManualItems}`);
-  console.log(`  已关联临时商品的订单项: ${stats.manualItemsWithTempProduct}`);
+  console.log(`  手动产品订单项总数: ${stats.totalManualItems}`);
+  console.log(`  已关联临时产品的订单项: ${stats.manualItemsWithTempProduct}`);
   console.log(
-    `  未关联临时商品的订单项: ${stats.manualItemsWithoutTempProduct}`
+    `  未关联临时产品的订单项: ${stats.manualItemsWithoutTempProduct}`
   );
-  console.log(`  临时商品表记录数: ${stats.totalTemporaryProducts}`);
+  console.log(`  临时产品表记录数: ${stats.totalTemporaryProducts}`);
 
   if (stats.manualItemsWithoutTempProduct > 0) {
     const successRate = (
       (stats.manualItemsWithTempProduct / stats.totalManualItems) *
       100
     ).toFixed(2);
-    console.log(`\n  ⚠️  临时商品创建成功率: ${successRate}%`);
+    console.log(`\n  ⚠️  临时产品创建成功率: ${successRate}%`);
   } else {
-    console.log('\n  ✅ 所有手动商品都已正确关联临时商品！');
+    console.log('\n  ✅ 所有手动产品都已正确关联临时产品！');
   }
 
   console.log('\n✅ 诊断完成！');

@@ -93,7 +93,7 @@ const SupplierPriceSelectorComponent = React.memo<SupplierPriceSelectorProps>(
             form.setValue(`items.${index}.unitPrice`, supplierPrice);
             toast({
               title: '已自动填充供应商历史价格',
-              description: `供应商对该产品的上次报价：¥${supplierPrice}`,
+              description: `供应商对该产品的上次报价：￥${supplierPrice}`,
               duration: 2000,
             });
           }

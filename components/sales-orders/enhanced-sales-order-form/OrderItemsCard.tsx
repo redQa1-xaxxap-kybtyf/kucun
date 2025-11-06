@@ -50,7 +50,7 @@ export function OrderItemsCard({
           <CardTitle className="text-lg">订单明细</CardTitle>
           <Button type="button" onClick={onAddItem}>
             <Plus className="mr-2 h-4 w-4" />
-            添加商品
+            添加产品
           </Button>
         </div>
       </CardHeader>
@@ -287,7 +287,7 @@ function OrderItemRow({
       </TableCell>
 
       <TableCell>
-        <div className="font-medium">¥{subtotal.toFixed(2)}</div>
+        <div className="font-medium">￥{subtotal.toFixed(2)}</div>
       </TableCell>
 
       <TableCell>
@@ -308,8 +308,8 @@ function OrderItemRow({
 function OrderItemsEmptyState() {
   return (
     <div className="text-muted-foreground py-8 text-center">
-      <p className="mb-2 font-medium">暂无商品明细</p>
-      <p className="text-sm">点击“添加商品”按钮开始添加</p>
+      <p className="mb-2 font-medium">暂无产品明细</p>
+      <p className="text-sm">点击“添加产品”按钮开始添加</p>
     </div>
   );
 }

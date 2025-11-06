@@ -1,19 +1,10 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 // 付款记录管理页面
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import {
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Download,
-  Filter,
-  Plus,
-  Search,
-  TrendingUp,
-  Wallet,
-} from 'lucide-react';
+import { CheckCircle, Clock, Download, Filter, Plus, Search, TrendingUp, Wallet } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -149,7 +140,7 @@ export default function PaymentsOutPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">总付款金额</CardTitle>
-              <DollarSign className="h-4 w-4 text-[hsl(var(--color-success))]" />
+              <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-success))]" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
@@ -281,7 +272,7 @@ export default function PaymentsOutPage() {
               ) : !paymentsData?.data?.length ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
-                    <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+                    <ChineseYuan className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                     <p className="text-muted-foreground">暂无付款记录</p>
                   </div>
                 </div>

@@ -7,6 +7,7 @@
 ## 需求
 
 在收款记录列表中，每条记录需要显示关联订单的抹零金额：
+
 - 显示格式：在订单金额旁边显示抹零金额
 - 如果抹零金额为0，不显示
 - 抹零金额为正数时用红色显示（+）
@@ -153,7 +154,7 @@ interface PaymentRecord {
             {formatCurrency(orderTotal)}
           </div>
         </div>
-        
+
         {/* ✅ 新增: 抹零金额显示(只在有抹零时显示) */}
         {hasRounding && (
           <div className="rounded bg-white/80 p-2 text-center">
@@ -168,7 +169,7 @@ interface PaymentRecord {
             </div>
           </div>
         )}
-        
+
         {/* 已确认、待确认、待收款 */}
         {/* ... */}
       </div>
@@ -313,4 +314,3 @@ const orderRoundingAdjustment = Number(
 3. **可维护性**：
    - 抹零显示逻辑封装在 IIFE 中
    - 易于理解和维护
-

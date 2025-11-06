@@ -68,7 +68,9 @@ async function fixShippingSelectors() {
       },
     });
 
-    console.log(`📋 找到 ${sitesWithWrongSelectors.length} 个使用错误选择器的站点`);
+    console.log(
+      `📋 找到 ${sitesWithWrongSelectors.length} 个使用错误选择器的站点`
+    );
 
     // 4. 为这些站点生成更智能的选择器
     for (const site of sitesWithWrongSelectors) {
@@ -87,7 +89,10 @@ async function fixShippingSelectors() {
         searchInputSelector = '#txtBill';
         searchButtonSelector = '#btnQuery';
         resultContainerSelector = '.result-area';
-      } else if (site.url.includes('yto.net.cn') || site.name.includes('圆通')) {
+      } else if (
+        site.url.includes('yto.net.cn') ||
+        site.name.includes('圆通')
+      ) {
         searchInputSelector = 'input[name="mailNo"]';
         searchButtonSelector = '.query-btn';
         resultContainerSelector = '.trace-list';
@@ -96,9 +101,12 @@ async function fixShippingSelectors() {
       // 生成通用的��取选择器
       const extractSelectors = JSON.stringify({
         status: '[class*="status"], .status, td:contains("状态") + td',
-        destination: '[class*="destination"], .location, td:contains("目的地") + td',
-        estimatedArrival: '[class*="arrival"], [class*="eta"], td:contains("预到") + td',
-        updateTime: '[class*="update"], [class*="time"], td:contains("更新") + td',
+        destination:
+          '[class*="destination"], .location, td:contains("目的地") + td',
+        estimatedArrival:
+          '[class*="arrival"], [class*="eta"], td:contains("预到") + td',
+        updateTime:
+          '[class*="update"], [class*="time"], td:contains("更新") + td',
       });
 
       await prisma.shippingSite.update({
@@ -119,14 +127,15 @@ async function fixShippingSelectors() {
     // 5. 显示修复统计
     const totalSites = await prisma.shippingSite.count();
     const activeSites = await prisma.shippingSite.count({
-      where: { status: 'active' }
+      where: { status: 'active' },
     });
 
     console.log(`📊 修复统计:`);
     console.log(`   - 总站点数: ${totalSites}`);
     console.log(`   - 活跃站点: ${activeSites}`);
-    console.log(`   - 修复站点: ${shipxySites.length + sitesWithWrongSelectors.length}`);
-
+    console.log(
+      `   - 修复站点: ${shipxySites.length + sitesWithWrongSelectors.length}`
+    );
   } catch (error) {
     console.error('❌ 修复过程中出现错误:', error);
     throw error;
@@ -142,7 +151,7 @@ if (require.main === module) {
       console.log('✅ 脚本执行完成');
       process.exit(0);
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('❌ 脚本执行失败:', error);
       process.exit(1);
     });

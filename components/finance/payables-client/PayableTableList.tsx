@@ -1,6 +1,7 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
-import { Clock, DollarSign, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Clock, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -49,7 +50,11 @@ interface Props {
 
 type HeaderAlign = 'left' | 'right' | 'center';
 
-const TABLE_HEADERS: Array<{ key: string; label: string; align?: HeaderAlign }> = [
+const TABLE_HEADERS: Array<{
+  key: string;
+  label: string;
+  align?: HeaderAlign;
+}> = [
   { key: 'payableNumber', label: '应付单号' },
   { key: 'supplier', label: '供应商' },
   { key: 'sourceType', label: '来源类型' },
@@ -65,8 +70,14 @@ const TABLE_HEADERS: Array<{ key: string; label: string; align?: HeaderAlign }> 
 
 // 状态标签渲染
 const getStatusBadge = (status: string) => (
-  <Badge variant={PAYABLE_STATUS_VARIANTS[status as keyof typeof PAYABLE_STATUS_VARIANTS] || 'secondary'}>
-    {PAYABLE_STATUS_LABELS[status as keyof typeof PAYABLE_STATUS_LABELS] || status}
+  <Badge
+    variant={
+      PAYABLE_STATUS_VARIANTS[status as keyof typeof PAYABLE_STATUS_VARIANTS] ||
+      'secondary'
+    }
+  >
+    {PAYABLE_STATUS_LABELS[status as keyof typeof PAYABLE_STATUS_LABELS] ||
+      status}
   </Badge>
 );
 
@@ -76,7 +87,9 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
   const remainingAmount = payable.remainingAmount || 0;
 
   if (payable.status === 'cancelled') {
-    return <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>;
+    return (
+      <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>
+    );
   }
 
   if (remainingAmount <= 0.01) {
@@ -120,7 +133,7 @@ const PayableLoadingState = () => (
 
 const PayableEmptyState = () => (
   <EmptyState
-    icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+    icon={<ChineseYuan className="text-muted-foreground h-8 w-8" />}
     title="暂无应付款记录"
     compact
   />
@@ -133,7 +146,11 @@ interface PayableRowProps {
   onDelete: (payable: PayableRecordDetail, event: React.MouseEvent) => void;
 }
 
-const PayableIdentifiersCell = ({ payable }: { payable: PayableRecordDetail }) => (
+const PayableIdentifiersCell = ({
+  payable,
+}: {
+  payable: PayableRecordDetail;
+}) => (
   <TableCell className="h-8 text-xs">
     <div className="flex flex-col gap-1">
       <span className="font-mono font-semibold text-[hsl(var(--color-primary))]">
@@ -163,7 +180,11 @@ const PayableSupplierCell = ({ payable }: { payable: PayableRecordDetail }) => (
   </TableCell>
 );
 
-const PayableSourceTypeCell = ({ payable }: { payable: PayableRecordDetail }) => (
+const PayableSourceTypeCell = ({
+  payable,
+}: {
+  payable: PayableRecordDetail;
+}) => (
   <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
     {payable.sourceType ? (
       <Badge variant="outline" className="text-xs">
@@ -176,9 +197,7 @@ const PayableSourceTypeCell = ({ payable }: { payable: PayableRecordDetail }) =>
 );
 
 const PayableStatusCell = ({ status }: { status: string }) => (
-  <TableCell className="h-8 text-xs">
-    {getStatusBadge(status)}
-  </TableCell>
+  <TableCell className="h-8 text-xs">{getStatusBadge(status)}</TableCell>
 );
 
 const PayableAmountCell = ({
@@ -193,7 +212,11 @@ const PayableAmountCell = ({
   </TableCell>
 );
 
-const PayablePaymentStatusCell = ({ payable }: { payable: PayableRecordDetail }) => (
+const PayablePaymentStatusCell = ({
+  payable,
+}: {
+  payable: PayableRecordDetail;
+}) => (
   <TableCell className="h-8 text-xs">
     {getPaymentStatusBadge(payable)}
   </TableCell>
@@ -211,7 +234,9 @@ const PayableDueDateCell = ({ payable }: { payable: PayableRecordDetail }) => {
   const isOverdue =
     new Date(payable.dueDate) < new Date() &&
     (payable.remainingAmount ?? 0) > 0;
-  const dueDateClassName = isOverdue ? 'text-red-600 font-medium' : 'font-medium';
+  const dueDateClassName = isOverdue
+    ? 'text-red-600 font-medium'
+    : 'font-medium';
 
   return (
     <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
@@ -294,15 +319,10 @@ const PayableActionsCell: React.FC<PayableActionsCellProps> = ({
   </TableCell>
 );
 
-function PayableRow({
-  payable,
-  onView,
-  onPayNow,
-  onDelete,
-}: PayableRowProps) {
+function PayableRow({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
   return (
     <TableRow
-      className="cursor-pointer hover:bg-muted/50"
+      className="hover:bg-muted/50 cursor-pointer"
       onClick={() => onView(payable.id)}
       onKeyDown={event => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -361,9 +381,7 @@ const PayableDeleteDialog: React.FC<PayableDeleteDialogProps> = ({
         <AlertDialogTitle>确认删除应付款记录</AlertDialogTitle>
         <AlertDialogDescription>
           确定要删除应付款记录
-          <span className="font-semibold">
-            {payable?.payableNumber}
-          </span>
+          <span className="font-semibold">{payable?.payableNumber}</span>
           吗？此操作不可撤销。
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -380,10 +398,16 @@ const PayableDeleteDialog: React.FC<PayableDeleteDialogProps> = ({
   </AlertDialog>
 );
 
-export function PayableTableList({ items, isLoading, onView, onPayNow }: Props) {
+export function PayableTableList({
+  items,
+  isLoading,
+  onView,
+  onPayNow,
+}: Props) {
   const { toast } = useToast();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
-  const [payablePendingDelete, setPayablePendingDelete] = React.useState<PayableRecordDetail | null>(null);
+  const [payablePendingDelete, setPayablePendingDelete] =
+    React.useState<PayableRecordDetail | null>(null);
 
   const handleDeleteDialogOpenChange = React.useCallback((open: boolean) => {
     setDeleteConfirmOpen(open);
@@ -397,11 +421,11 @@ export function PayableTableList({ items, isLoading, onView, onPayNow }: Props) 
       return;
     }
 
-      toast({
-        title: '删除成功',
-        description: `应付款记录 ${payablePendingDelete.payableNumber} 已删除`,
-        variant: 'success',
-      });
+    toast({
+      title: '删除成功',
+      description: `应付款记录 ${payablePendingDelete.payableNumber} 已删除`,
+      variant: 'success',
+    });
 
     setDeleteConfirmOpen(false);
     setPayablePendingDelete(null);
@@ -435,9 +459,9 @@ export function PayableTableList({ items, isLoading, onView, onPayNow }: Props) 
                   key={header.key}
                   className={`h-8 text-xs font-medium${
                     header.align === 'right'
-                      ? ' text-right'
+                      ? 'text-right'
                       : header.align === 'center'
-                        ? ' text-center'
+                        ? 'text-center'
                         : ''
                   }`}
                 >

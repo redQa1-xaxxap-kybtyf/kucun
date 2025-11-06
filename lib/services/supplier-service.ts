@@ -7,15 +7,17 @@
  * - 可被 API Route 和服务器组件复用
  */
 
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { generateSupplierCode } from '@/lib/utils/supplier-utils';
 
 // ==================== 类型定义 ====================
 
 export interface SupplierItem {
   id: string;
   name: string;
+  supplierCode: string | null;
   phone: string | null;
   address: string | null;
   status: string;
@@ -27,7 +29,7 @@ export interface SupplierQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'suspended';
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -46,6 +48,7 @@ export interface CreateSupplierParams {
   name: string;
   phone?: string | null;
   address?: string | null;
+  supplierCode?: string | null;
 }
 
 interface SupplierBasicInfo {
@@ -62,7 +65,7 @@ interface SupplierBasicInfo {
  */
 function buildWhereConditions(params: {
   search?: string;
-  status?: 'active' | 'inactive';
+  status?: 'active' | 'inactive' | 'suspended';
 }): Prisma.SupplierWhereInput {
   const where: Prisma.SupplierWhereInput = {};
 
@@ -116,6 +119,7 @@ export async function getSuppliers(
       select: {
         id: true,
         name: true,
+        supplierCode: true,
         phone: true,
         address: true,
         status: true,
@@ -144,39 +148,79 @@ export async function getSuppliers(
 export async function createSupplier(
   params: CreateSupplierParams
 ): Promise<SupplierItem> {
-  // 检查供应商名称是否已存在 - 只需要 id 字段
-  const existingSupplier = await prisma.supplier.findFirst({
-    where: { name: params.name },
-    select: {
-      id: true,
-    },
-  });
+  try {
+    return await prisma.$transaction(async tx => {
+      // 检查供应商名称是否已存在 - 只需要 id 字段
+      const existingSupplier = await tx.supplier.findFirst({
+        where: { name: params.name },
+        select: {
+          id: true,
+        },
+      });
 
-  if (existingSupplier) {
-    throw new Error('供应商名称已存在');
+      if (existingSupplier) {
+        throw new Error('供应商名称已存在');
+      }
+
+      const customCode =
+        typeof params.supplierCode === 'string'
+          ? params.supplierCode.trim()
+          : '';
+      const shouldUseCustomCode = customCode.length > 0;
+      const supplierCode = shouldUseCustomCode
+        ? customCode
+        : await generateSupplierCode(tx);
+
+      if (shouldUseCustomCode) {
+        const existingCode = await tx.supplier.findFirst({
+          where: { supplierCode },
+          select: { id: true },
+        });
+
+        if (existingCode) {
+          throw new Error('供应商编码已存在');
+        }
+      }
+
+      // 创建供应商 - 使用 select 指定返回字段
+      const supplier = await tx.supplier.create({
+        data: {
+          name: params.name,
+          supplierCode,
+          phone: params.phone ?? null,
+          address: params.address ?? null,
+          status: 'active',
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          address: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          supplierCode: true,
+        },
+      });
+
+      return supplier;
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      const target = error.meta?.target;
+      const fields = Array.isArray(target) ? target : target ? [target] : [];
+      if (fields.includes('supplier_code') || fields.includes('supplierCode')) {
+        throw new Error('供应商编码已存在');
+      }
+      if (fields.includes('name')) {
+        throw new Error('供应商名称已存在');
+      }
+    }
+    throw error;
   }
-
-  // 创建供应商 - 使用 select 指定返回字段
-  const supplier = await prisma.supplier.create({
-    data: {
-      name: params.name,
-      phone: params.phone || null,
-      address: params.address || null,
-      status: 'active',
-    },
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      address: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  // 直接返回，无需转换
-  return supplier;
 }
 
 /**
@@ -190,6 +234,7 @@ export async function getSupplierById(
     select: {
       id: true,
       name: true,
+      supplierCode: true,
       phone: true,
       address: true,
       status: true,
@@ -299,21 +344,37 @@ export async function ensureSupplierCanBeDeleted(
     throw new Error('供应商不存在');
   }
 
-  const [salesOrderCount, shipmentItemCount, payableCount, paymentOutCount] =
-    await prisma.$transaction([
-      prisma.salesOrder.count({
-        where: { supplierId },
-      }),
-      prisma.factoryShipmentOrderItem.count({
-        where: { supplierId },
-      }),
-      prisma.payableRecord.count({
-        where: { supplierId },
-      }),
-      prisma.paymentOutRecord.count({
-        where: { supplierId },
-      }),
-    ]);
+  const [
+    salesOrderCount,
+    shipmentItemCount,
+    payableCount,
+    paymentOutCount,
+    temporaryProductCount,
+    purchaseOrderCount,
+    purchaseOrderItemCount,
+  ] = await prisma.$transaction([
+    prisma.salesOrder.count({
+      where: { supplierId },
+    }),
+    prisma.factoryShipmentOrderItem.count({
+      where: { supplierId },
+    }),
+    prisma.payableRecord.count({
+      where: { supplierId },
+    }),
+    prisma.paymentOutRecord.count({
+      where: { supplierId },
+    }),
+    prisma.temporaryProduct.count({
+      where: { supplierId },
+    }),
+    prisma.purchaseOrder.count({
+      where: { supplierId },
+    }),
+    prisma.purchaseOrderItem.count({
+      where: { supplierId },
+    }),
+  ]);
 
   if (salesOrderCount > 0) {
     throw new Error(
@@ -336,6 +397,24 @@ export async function ensureSupplierCanBeDeleted(
   if (paymentOutCount > 0) {
     throw new Error(
       `供应商 "${basicInfo.name}" 有 ${paymentOutCount} 条付款记录，无法删除`
+    );
+  }
+
+  if (temporaryProductCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${temporaryProductCount} 个关联的临时产品，无法删除`
+    );
+  }
+
+  if (purchaseOrderCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${purchaseOrderCount} 个关联的采购订单，无法删除`
+    );
+  }
+
+  if (purchaseOrderItemCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${purchaseOrderItemCount} 个关联的采购订单明细，无法删除`
     );
   }
 }
@@ -422,6 +501,7 @@ export async function updateSupplier(
     select: {
       id: true,
       name: true,
+      supplierCode: true,
       phone: true,
       address: true,
       status: true,

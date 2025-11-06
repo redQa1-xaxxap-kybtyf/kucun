@@ -65,7 +65,7 @@ interface SuppliersPageClientProps {
     page: number;
     limit: number;
     search?: string;
-    status?: 'active' | 'inactive';
+    status?: Supplier['status'];
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   };
@@ -81,7 +81,7 @@ export function SuppliersPageClient({
 
   // 本地状态
   const [searchInput, setSearchInput] = useState(initialParams.search || '');
-  const [status, setStatus] = useState<'active' | 'inactive' | undefined>(
+  const [status, setStatus] = useState<Supplier['status'] | undefined>(
     initialParams.status
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -195,7 +195,7 @@ export function SuppliersPageClient({
 
   // 处理状态筛选
   const handleStatusChange = useCallback(
-    (value: 'active' | 'inactive' | undefined) => {
+    (value: Supplier['status'] | undefined) => {
       if (searchDebounceRef.current) {
         clearTimeout(searchDebounceRef.current);
         searchDebounceRef.current = null;

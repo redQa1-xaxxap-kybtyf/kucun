@@ -44,7 +44,7 @@ async function fixPaymentAmount() {
     console.log(`收款单号: ${payment.paymentNumber}`);
     console.log(`客户: ${payment.customer.name}`);
     console.log(`订单号: ${payment.salesOrder.orderNumber}`);
-    console.log(`当前收款金额: ¥${Number(payment.paymentAmount).toFixed(2)}`);
+    console.log(`当前收款金额: ￥${Number(payment.paymentAmount).toFixed(2)}`);
     console.log(
       `状态: ${payment.status === 'confirmed' ? '已确认' : '待确认'}`
     );
@@ -57,14 +57,14 @@ async function fixPaymentAmount() {
     const actualTotalAmount = totalAmount + roundingAdjustment;
 
     console.log('📊 订单金额信息：');
-    console.log(`订单金额: ¥${totalAmount.toFixed(2)}`);
-    console.log(`抹零金额: ¥${roundingAdjustment.toFixed(2)}`);
-    console.log(`实际应收: ¥${actualTotalAmount.toFixed(2)}`);
+    console.log(`订单金额: ￥${totalAmount.toFixed(2)}`);
+    console.log(`抹零金额: ￥${roundingAdjustment.toFixed(2)}`);
+    console.log(`实际应收: ￥${actualTotalAmount.toFixed(2)}`);
     console.log('');
 
     // 更新收款金额
     const newPaymentAmount = actualTotalAmount;
-    console.log(`🔄 更新收款金额为: ¥${newPaymentAmount.toFixed(2)}\n`);
+    console.log(`🔄 更新收款金额为: ￥${newPaymentAmount.toFixed(2)}\n`);
 
     const updatedPayment = await prisma.paymentRecord.update({
       where: {
@@ -79,7 +79,7 @@ async function fixPaymentAmount() {
 
     console.log('📊 更新后的数据：');
     console.log(
-      `收款金额: ¥${Number(updatedPayment.paymentAmount).toFixed(2)}`
+      `收款金额: ￥${Number(updatedPayment.paymentAmount).toFixed(2)}`
     );
     console.log('');
 

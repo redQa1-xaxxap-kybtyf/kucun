@@ -8,6 +8,7 @@
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Package } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -20,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
 
 interface VirtualizedInventoryTableProps {
@@ -36,47 +38,59 @@ interface VirtualizedInventoryTableProps {
 /**
  * 表头组件
  */
-const TableHeaderComponent = React.memo(() => (
-  <TableHeader className="bg-muted/30 sticky top-0 z-10">
-    <TableRow>
-      <TableHead className="text-xs">产品编码</TableHead>
-      <TableHead className="text-xs">产品名称</TableHead>
-      <TableHead className="text-xs">规格</TableHead>
-      <TableHead className="text-xs">包装信息</TableHead>
-      <TableHead className="text-xs">批次号</TableHead>
-      <TableHead className="text-xs">库存数量</TableHead>
-      <TableHead className="text-xs">预留数量</TableHead>
-      <TableHead className="text-xs">可用数量</TableHead>
-      <TableHead className="text-xs">库存状态</TableHead>
-      <TableHead className="text-xs">最后更新</TableHead>
-      <TableHead className="w-20 text-xs">操作</TableHead>
-    </TableRow>
-  </TableHeader>
-));
+const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
+  ({ hasFinancePermission }) => (
+    <TableHeader className="bg-muted/30 sticky top-0 z-10">
+      <TableRow>
+        <TableHead className="text-xs">产品编码</TableHead>
+        <TableHead className="text-xs">产品名称</TableHead>
+        <TableHead className="text-xs">规格</TableHead>
+        <TableHead className="text-xs">包装信息</TableHead>
+        <TableHead className="text-xs">批次号</TableHead>
+        <TableHead className="text-xs">库存数量</TableHead>
+        <TableHead className="text-xs">预留数量</TableHead>
+        <TableHead className="text-xs">可用数量</TableHead>
+        {hasFinancePermission && (
+          <>
+            <TableHead className="text-right text-xs">单位成本（元）</TableHead>
+            <TableHead className="text-right text-xs">
+              库存总成本（元）
+            </TableHead>
+          </>
+        )}
+        <TableHead className="text-xs">库存状态</TableHead>
+        <TableHead className="text-xs">最后更新</TableHead>
+        <TableHead className="w-20 text-xs">操作</TableHead>
+      </TableRow>
+    </TableHeader>
+  )
+);
 
 TableHeaderComponent.displayName = 'TableHeaderComponent';
 
 /**
  * 空状态组件
  */
-const InventoryEmptyState = React.memo(() => (
-  <div className="bg-card rounded border">
-    <Table>
-      <TableHeaderComponent />
-      <TableBody>
-        <TableRow>
-          <TableCell colSpan={11} className="p-8">
-            <EmptyState
-              title="暂无库存数据"
-              icon={<Package className="text-muted-foreground h-6 w-6" />}
-              compact
-            />
-          </TableCell>
-        </TableRow>
-      </TableBody>
-    </Table>
-  </div>
-));
+const InventoryEmptyState = React.memo<{ hasFinancePermission: boolean }>(
+  ({ hasFinancePermission }) => (
+    <div className="bg-card rounded border">
+      <Table>
+        <TableHeaderComponent hasFinancePermission={hasFinancePermission} />
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={hasFinancePermission ? 13 : 11} className="p-8">
+              <EmptyState
+                title="暂无库存数据"
+                icon={<Package className="text-muted-foreground h-6 w-6" />}
+                compact
+              />
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </div>
+  )
+);
 
 InventoryEmptyState.displayName = 'InventoryEmptyState';
 
@@ -94,6 +108,13 @@ export const VirtualizedInventoryTable =
       overscan = 5,
     }) => {
       const parentRef = React.useRef<HTMLDivElement>(null);
+      const { data: session } = useSession();
+
+      // 检查用户是否有财务查看权限
+      const hasFinancePermission = React.useMemo(
+        () => can(session?.user ?? null, 'finance:view'),
+        [session?.user]
+      );
 
       // 虚拟化配置 - 遵循 TanStack Virtual 最佳实践
       const rowVirtualizer = useVirtualizer({
@@ -105,7 +126,9 @@ export const VirtualizedInventoryTable =
 
       // 空状态
       if (data.length === 0) {
-        return <InventoryEmptyState />;
+        return (
+          <InventoryEmptyState hasFinancePermission={hasFinancePermission} />
+        );
       }
 
       return (
@@ -126,7 +149,9 @@ export const VirtualizedInventoryTable =
             >
               <Table>
                 {/* 固定表头 */}
-                <TableHeaderComponent />
+                <TableHeaderComponent
+                  hasFinancePermission={hasFinancePermission}
+                />
 
                 {/* 虚拟化表体 - 只渲染可见行 */}
                 <TableBody>
@@ -138,6 +163,7 @@ export const VirtualizedInventoryTable =
                         key={item.id}
                         item={item}
                         onAdjust={onAdjust}
+                        hasFinancePermission={hasFinancePermission}
                         style={{
                           position: 'absolute',
                           top: 0,

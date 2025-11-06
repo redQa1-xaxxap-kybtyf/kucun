@@ -38,10 +38,7 @@ function useStubbedChannel<TEvent>(
 ): WebSocketConnectionState {
   const [isConnected, setIsConnected] = useState(false);
   const handlerRef = useHandlerRef(handler);
-  const depsKey = useMemo(
-    () => deps.map(dep => String(dep)).join('|'),
-    [deps]
-  );
+  const depsKey = useMemo(() => deps.map(dep => String(dep)).join('|'), [deps]);
 
   useEffect(() => {
     setIsConnected(true);

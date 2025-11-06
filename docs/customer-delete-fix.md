@@ -11,11 +11,13 @@
 ### 1. 缺失的 Prisma 关系定义
 
 **问题**：
+
 - `CustomerProductPrice` 表通过 `customerId` 字段关联客户
 - 但在 `Customer` 模型中**没有定义反向关系** `productPrices`
 - 在 `CustomerProductPrice` 模型中也**没有定义正向关系** `customer`
 
 **影响**：
+
 - 删除客户时，代码只检查了在 `Customer` 模型中明确定义的关系
 - **遗漏了 `CustomerProductPrice` 表的检查**
 - 如果客户有产品价格记录，删除时会因为数据库外键约束失败
@@ -25,6 +27,7 @@
 
 **问题**：
 `lib/api/customer-handlers.ts` 中的 `deleteCustomer` 函数检查了以下关联：
+
 - ✅ 子客户 (`childCustomers`)
 - ✅ 销售订单 (`salesOrders`)
 - ✅ 退货订单 (`returnOrders`)
@@ -43,6 +46,7 @@
 **文件**：`prisma/schema.prisma`
 
 **修改前**（第 53-63 行）：
+
 ```prisma
   // 关系定义
   factoryShipmentOrders FactoryShipmentOrder[]
@@ -58,6 +62,7 @@
 ```
 
 **修改后**（第 53-64 行）：
+
 ```prisma
   // 关系定义
   factoryShipmentOrders FactoryShipmentOrder[]
@@ -76,6 +81,7 @@
 #### 在 `CustomerProductPrice` 模型中添加 `customer` 关系
 
 **修改前**（第 323-337 行）：
+
 ```prisma
 model CustomerProductPrice {
   id         String   @id @default(uuid()) @db.Char(36)
@@ -95,6 +101,7 @@ model CustomerProductPrice {
 ```
 
 **修改后**（第 323-340 行）：
+
 ```prisma
 model CustomerProductPrice {
   id         String   @id @default(uuid()) @db.Char(36)
@@ -117,6 +124,7 @@ model CustomerProductPrice {
 ```
 
 **关键点**：
+
 - 使用 `@relation("CustomerProductPrices")` 建立双向关系
 - 使用 `onDelete: Cascade` 确保删除客户时自动删除关联的价格记录
 - 这样可以避免外键约束错误
@@ -128,20 +136,22 @@ model CustomerProductPrice {
 **修改位置**：第 441-450 行（在所有检查通过之前）
 
 **新增代码**：
-```typescript
-  // 检查是否有关联的客户产品价格记录
-  const customerProductPriceCount = await prisma.customerProductPrice.count({
-    where: { customerId: id },
-  });
 
-  if (customerProductPriceCount > 0) {
-    throw new Error(
-      `无法删除客户,该客户有 ${customerProductPriceCount} 个关联的产品价格记录`
-    );
-  }
+```typescript
+// 检查是否有关联的客户产品价格记录
+const customerProductPriceCount = await prisma.customerProductPrice.count({
+  where: { customerId: id },
+});
+
+if (customerProductPriceCount > 0) {
+  throw new Error(
+    `无法删除客户,该客户有 ${customerProductPriceCount} 个关联的产品价格记录`
+  );
+}
 ```
 
 **完整的检查流程**：
+
 1. 检查客户是否存在
 2. 检查子客户
 3. 检查销售订单
@@ -158,6 +168,7 @@ model CustomerProductPrice {
 ### 成功删除的情况
 
 客户可以被删除，当且仅当：
+
 - ✅ 没有子客户
 - ✅ 没有销售订单
 - ✅ 没有退货订单
@@ -176,6 +187,7 @@ model CustomerProductPrice {
 ```
 
 例如：
+
 - `无法删除客户,该客户有 3 个关联的销售订单`
 - `无法删除客户,该客户有 5 个关联的产品价格记录`
 - `无法删除客户,该客户有 2 个子客户`
@@ -244,6 +256,7 @@ npx tsc --noEmit lib/api/customer-handlers.ts
 **不需要数据库迁移**！
 
 原因：
+
 - 只是在 Prisma ORM 层面添加关系定义
 - 数据库表结构和外键约束没有变化
 - `CustomerProductPrice` 表的 `customerId` 字段已经存在
@@ -271,11 +284,13 @@ npx tsc --noEmit lib/api/customer-handlers.ts
 ### 1. 考虑实现软删除
 
 **优点**：
+
 - 保留数据历史
 - 可以恢复误删的客户
 - 不影响关联数据的完整性
 
 **实现方式**：
+
 - 在 `Customer` 模型添加 `deletedAt` 字段
 - 修改查询逻辑过滤已删除的客户
 - 删除操作改为更新 `deletedAt` 字段
@@ -283,9 +298,11 @@ npx tsc --noEmit lib/api/customer-handlers.ts
 ### 2. 添加级联删除选项
 
 **场景**：
+
 - 管理员需要彻底删除客户及其所有关联数据
 
 **实现方式**：
+
 - 添加 `forceDelete` 参数
 - 在删除客户前先删除所有关联数据
 - 需要管理员权限和二次确认
@@ -293,10 +310,12 @@ npx tsc --noEmit lib/api/customer-handlers.ts
 ### 3. 批量删除功能
 
 **场景**：
+
 - 清理测试数据
 - 批量删除无效客户
 
 **实现方式**：
+
 - 添加批量删除 API
 - 前端添加批量选择功能
 - 显示删除进度和结果
@@ -328,4 +347,3 @@ npx tsc --noEmit lib/api/customer-handlers.ts
 **测试状态**：✅ 通过  
 **代码质量**：✅ 符合规范  
 **破坏性变更**：❌ 无
-

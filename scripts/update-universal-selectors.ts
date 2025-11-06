@@ -33,7 +33,7 @@ const UNIVERSAL_SELECTORS = {
       '[data-vessel-status]',
       '.vessel-status',
       '[class*="status"]',
-      'div:contains("Status") + div'
+      'div:contains("Status") + div',
     ],
     destination: [
       'tr:contains("目的地：") + td',
@@ -42,7 +42,7 @@ const UNIVERSAL_SELECTORS = {
       '[data-destination]',
       '.destination',
       '[class*="destination"]',
-      'div:contains("Destination") + div'
+      'div:contains("Destination") + div',
     ],
     estimatedArrival: [
       'tr:contains("预到时间：") + td',
@@ -52,7 +52,7 @@ const UNIVERSAL_SELECTORS = {
       '.eta',
       '[class*="eta"]',
       'div:contains("ETA") + div',
-      'time[datetime]'
+      'time[datetime]',
     ],
     updateTime: [
       'tr:contains("更新时间：") + td',
@@ -62,9 +62,9 @@ const UNIVERSAL_SELECTORS = {
       '.last-update',
       '[class*="update"]',
       'div:contains("Last") div:contains("update")',
-      'time[title*="update"]'
-    ]
-  })
+      'time[title*="update"]',
+    ],
+  }),
 };
 
 /**
@@ -103,7 +103,6 @@ async function updateUniversalSelectors() {
     console.log(`📊 更新统计:`);
     console.log(`   - 总站点数: ${allSites.length}`);
     console.log(`   - 更新站点: ${updateCount}`);
-
   } catch (error) {
     console.error('❌ 更新��程中出现错误:', error);
     throw error;
@@ -128,7 +127,8 @@ async function optimizeSelectorsBySiteType() {
       // 根据网站类型优化选择器
       if (url.includes('shipxy.com')) {
         // shipxy.com 特定优化
-        optimizedSelectors.searchInputSelector = '#txtKey, input[placeholder*="船舶"]';
+        optimizedSelectors.searchInputSelector =
+          '#txtKey, input[placeholder*="船舶"]';
         optimizedSelectors.searchButtonSelector = ''; // shipxy.com使用Enter键
         optimizedSelectors.resultContainerSelector = 'table, #shipAIS';
       } else if (url.includes('chinaports.com')) {
@@ -138,7 +138,8 @@ async function optimizeSelectorsBySiteType() {
       } else if (url.includes('vesselfinder.com')) {
         // vesselfinder.com 特定优化
         optimizedSelectors.searchInputSelector = 'input[type="search"]';
-        optimizedSelectors.resultContainerSelector = '.vessel-details, .result-container';
+        optimizedSelectors.resultContainerSelector =
+          '.vessel-details, .result-container';
       }
 
       // 更新站点配置
@@ -156,7 +157,6 @@ async function optimizeSelectorsBySiteType() {
     }
 
     console.log('🎉 选择器智能优化完成！');
-
   } catch (error) {
     console.error('❌ 优化过程中出现错误:', error);
     throw error;
@@ -196,7 +196,7 @@ async function validateSelectors() {
         const basicSelectors = [
           site.searchInputSelector,
           site.searchButtonSelector,
-          site.resultContainerSelector
+          site.resultContainerSelector,
         ];
 
         let isValid = true;
@@ -224,7 +224,6 @@ async function validateSelectors() {
     console.log(`   - 有效配置: ${validCount}`);
     console.log(`   - 无效配置: ${invalidCount}`);
     console.log(`   - 总配置数: ${sites.length}`);
-
   } catch (error) {
     console.error('❌ 验证过程中出现错误:', error);
     throw error;
@@ -243,12 +242,15 @@ function isValidSelector(selector: string): boolean {
     }
 
     // 基本的CSS选择器验证
-    const validPattern = /^[#.]?[\w-]+(\s*[>+~\s]+[#.]?[\w-]+)*(\s*\[[\w-]+([\"']?)[^\"']*\1\])*(\s*:[\w-]+)*$/;
+    const validPattern =
+      /^[#.]?[\w-]+(\s*[>+~\s]+[#.]?[\w-]+)*(\s*\[[\w-]+([\"']?)[^\"']*\1\])*(\s*:[\w-]+)*$/;
 
     // 支持逗号分隔的多选择器
     const selectors = selector.split(',').map(s => s.trim());
 
-    return selectors.every(s => validPattern.test(s) || s.includes(':contains('));
+    return selectors.every(
+      s => validPattern.test(s) || s.includes(':contains(')
+    );
   } catch {
     return false;
   }
@@ -276,10 +278,18 @@ async function main() {
       break;
     default:
       console.log('用法:');
-      console.log('  node update-universal-selectors.js update   - 更新通用选择器');
-      console.log('  node update-universal-selectors.js optimize - 智能优化选择器');
-      console.log('  node update-universal-selectors.js validate - 验证选择器配置');
-      console.log('  node update-universal-selectors.js all      - 执行完整流程');
+      console.log(
+        '  node update-universal-selectors.js update   - 更新通用选择器'
+      );
+      console.log(
+        '  node update-universal-selectors.js optimize - 智能优化选择器'
+      );
+      console.log(
+        '  node update-universal-selectors.js validate - 验证选择器配置'
+      );
+      console.log(
+        '  node update-universal-selectors.js all      - 执行完整流程'
+      );
   }
 }
 
@@ -290,10 +300,14 @@ if (require.main === module) {
       console.log('✅ 脚本执行完成');
       process.exit(0);
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('❌ 脚本执行失败:', error);
       process.exit(1);
     });
 }
 
-export { updateUniversalSelectors, optimizeSelectorsBySiteType, validateSelectors };
+export {
+  updateUniversalSelectors,
+  optimizeSelectorsBySiteType,
+  validateSelectors,
+};

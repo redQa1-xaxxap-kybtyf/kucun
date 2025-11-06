@@ -14,9 +14,7 @@ export const receivablesParamsSchema = z.object({
   search: z.string().default(''),
 
   // 支付状态筛选
-  paymentStatus: z
-    .enum(['unpaid', 'partial', 'pending', 'paid'])
-    .optional(),
+  paymentStatus: z.enum(['unpaid', 'partial', 'pending', 'paid']).optional(),
 
   // 排序字段
   sortBy: z
@@ -42,8 +40,14 @@ export const receivablesParamsSchema = z.object({
   limit: z.number().int().positive().max(100).default(50),
 
   // 日期范围筛选
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 /**

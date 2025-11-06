@@ -106,7 +106,9 @@ try {
 
   console.log('   ✅ variant 字段可选性验证通过');
   console.log(`   - 产品: ${inventoryWithoutVariant.product.name}`);
-  console.log(`   - 变体: ${inventoryWithoutVariant.variant?.colorName || '无'}`);
+  console.log(
+    `   - 变体: ${inventoryWithoutVariant.variant?.colorName || '无'}`
+  );
 } catch (error) {
   console.error('   ❌ variant 可选性验证失败:', error);
   process.exit(1);
@@ -152,14 +154,20 @@ console.log(`   - 实际字段数: ${actualFields.length}`);
 // 测试 5: 验证嵌套选择器
 console.log('\n📍 测试 5: 验证嵌套选择器');
 try {
-  if (INVENTORY_SELECT.variant && typeof INVENTORY_SELECT.variant === 'object') {
+  if (
+    INVENTORY_SELECT.variant &&
+    typeof INVENTORY_SELECT.variant === 'object'
+  ) {
     const variantSelect = INVENTORY_SELECT.variant.select;
     const variantFields = Object.keys(variantSelect);
     console.log('   ✅ variant 嵌套选择器正确');
     console.log(`   - variant 字段: ${variantFields.join(', ')}`);
   }
 
-  if (INVENTORY_SELECT.product && typeof INVENTORY_SELECT.product === 'object') {
+  if (
+    INVENTORY_SELECT.product &&
+    typeof INVENTORY_SELECT.product === 'object'
+  ) {
     const productSelect = INVENTORY_SELECT.product.select;
     const productFields = Object.keys(productSelect);
     console.log('   ✅ product 嵌套选择器正确');
@@ -178,4 +186,3 @@ console.log('   - INVENTORY_SELECT 可以在 Prisma 查询中使用');
 console.log('   - InventoryWithRelations 类型会自动推导');
 console.log('   - variant 字段是可选的，支持无变体的产品');
 console.log('   - 所有嵌套关系都已正确定义');
-

@@ -34,7 +34,7 @@ export const returnOrderItemSchema = z
     subtotal: z.number().min(0, '小计不能为负数'),
     reason: z.string().optional(),
     condition: z.enum(['good', 'damaged', 'defective'], {
-      error: '请选择商品状态',
+      error: '请选择产品状态',
     }),
   })
   .refine(

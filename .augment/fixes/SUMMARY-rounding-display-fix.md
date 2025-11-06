@@ -3,6 +3,7 @@
 ## 修复概述
 
 修复了销售订单详情页面中与抹零金额和收款记录显示相关的三个问题:
+
 1. 订单抹零金额显示格式不统一
 2. 收款记录中缺少抹零金额明细
 3. 多笔收款时的金额计算验证
@@ -13,16 +14,19 @@
 
 **问题**: 抹零金额根据正负值显示不同颜色和符号，用户难以理解
 
-**解决方案**: 
+**解决方案**:
+
 - 统一使用橙色主题
 - 统一显示负号(-)，表示这是对订单总额的调整
 - 在副标题中说明是"加价"还是"减价"
 
 **修改位置**:
+
 - 顶部统计卡片 (第572-591行)
 - 收款记录区域 (第1330-1343行)
 
 **修改前**:
+
 ```typescript
 // 根据正负值显示不同颜色
 className={`${order.roundingAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`}
@@ -32,6 +36,7 @@ className={`${order.roundingAdjustment > 0 ? 'text-red-600' : 'text-green-600'}`
 ```
 
 **修改后**:
+
 ```typescript
 // 统一使用橙色
 className="text-orange-600"
@@ -46,15 +51,18 @@ className="text-orange-600"
 **问题**: 收款记录只显示总金额，没有显示实际到账和抹零的明细
 
 **解决方案**:
+
 - 在收款金额下方显示: "实际到账 ¥XXX + 抹零 ¥XXX"
 - 只在有抹零时显示明细
 - 使用灰色文字，不干扰主要信息
 
 **修改位置**:
+
 - 已确认收款记录 (第1553-1582行)
 - 待确认收款记录 (第1463-1492行)
 
 **新增代码**:
+
 ```typescript
 {/* ✅ 新增: 显示实际到账和抹零明细 */}
 {record.roundingAmount !== 0 && (
@@ -73,21 +81,22 @@ className="text-orange-600"
 **验证结果**: ✅ 计算逻辑正确
 
 **计算公式**:
+
 ```typescript
 // 1. 实际到账金额汇总
-actualPaidAmount = sum(confirmedPayments.actualPaymentAmount)
+actualPaidAmount = sum(confirmedPayments.actualPaymentAmount);
 
 // 2. 收款抹零金额汇总
-paymentRounding = sum(confirmedPayments.roundingAmount)
+paymentRounding = sum(confirmedPayments.roundingAmount);
 
 // 3. 等效已收款
-paidAmount = actualPaidAmount + paymentRounding
+paidAmount = actualPaidAmount + paymentRounding;
 
 // 4. 实际应收金额
-actualTotalAmount = totalAmount + roundingAdjustment
+actualTotalAmount = totalAmount + roundingAdjustment;
 
 // 5. 待收金额
-remainingAmount = actualTotalAmount - paidAmount
+remainingAmount = actualTotalAmount - paidAmount;
 ```
 
 ## 修改文件
@@ -130,6 +139,7 @@ remainingAmount = actualTotalAmount - paidAmount
 ### 订单抹零卡片
 
 **修改前**:
+
 ```
 订单抹零
 +¥10.00  (红色，加价时)
@@ -138,6 +148,7 @@ remainingAmount = actualTotalAmount - paidAmount
 ```
 
 **修改后**:
+
 ```
 订单抹零
 -¥10.00  (橙色，统一格式)
@@ -147,12 +158,14 @@ remainingAmount = actualTotalAmount - paidAmount
 ### 收款记录
 
 **修改前**:
+
 ```
 ¥1,010.00
 已确认第 1 笔
 ```
 
 **修改后**:
+
 ```
 ¥1,010.00
 实际到账 ¥1,008.00 + 抹零 ¥2.00
@@ -166,14 +179,17 @@ remainingAmount = actualTotalAmount - paidAmount
 **含义**: 订单创建时对订单总额的调整
 
 **数据库存储**:
+
 - 正数: 加价 (例如: +10 表示订单总额增加10元)
 - 负数: 减价/抹零 (例如: -10 表示订单总额减少10元)
 
 **显示格式**:
+
 - 统一显示负号: -¥10.00
 - 副标题说明: (加价) 或 (减价)
 
 **计算公式**:
+
 ```
 实际应收金额 = 订单总额 + 订单抹零
 ```
@@ -183,13 +199,16 @@ remainingAmount = actualTotalAmount - paidAmount
 **含义**: 单笔收款时的优惠/减免金额
 
 **数据库存储**:
+
 - 正数: 优惠/减免 (例如: +2 表示优惠2元)
 - 负数: 客户多付 (例如: -2 表示客户多付2元)
 
 **显示格式**:
+
 - 实际到账 ¥998.00 + 抹零 ¥2.00
 
 **计算公式**:
+
 ```
 收款金额 = 实际到账金额 + 抹零金额
 ```
@@ -300,4 +319,3 @@ fix(sales-orders): 修复订单详情页面抹零金额显示问题
 2. **数据验证**: 添加前端验证确保 paymentAmount = actualPaymentAmount + roundingAmount
 3. **报表统计**: 在财务报表中区分实际到账金额和抹零金额
 4. **代码重构**: 考虑将订单详情页面拆分为更小的组件(当前文件过长)
-

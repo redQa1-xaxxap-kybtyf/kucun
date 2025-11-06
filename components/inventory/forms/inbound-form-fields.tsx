@@ -237,6 +237,47 @@ export function InboundReasonField({ form }: InboundFormFieldsProps) {
   );
 }
 
+export function InboundCostField({ form }: InboundFormFieldsProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="unitCost"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-sm font-semibold text-gray-900">
+            单位成本（元） *
+          </FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min="0.01"
+              step="0.01"
+              placeholder="请输入单位成本"
+              className="h-9"
+              name={field.name}
+              ref={field.ref}
+              value={field.value && field.value > 0 ? field.value : ''}
+              onBlur={field.onBlur}
+              onChange={e => {
+                const { value } = e.target;
+                if (value === '') {
+                  field.onChange(undefined);
+                  return;
+                }
+                const parsed = Number.parseFloat(value);
+                field.onChange(
+                  Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
+                );
+              }}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
 export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
   return (
     <div className="grid grid-cols-2 gap-4">

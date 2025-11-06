@@ -23,7 +23,7 @@ function addResult(result: FixResult) {
   console.log(`\n${result.fixed > 0 ? '✅' : '⚠️'} ${result.issue}`);
   console.log(`   修复: ${result.fixed}条, 失败: ${result.failed}条`);
   if (result.details.length > 0) {
-    result.details.slice(0, 3).forEach((detail) => console.log(`   - ${detail}`));
+    result.details.slice(0, 3).forEach(detail => console.log(`   - ${detail}`));
     if (result.details.length > 3) {
       console.log(`   ... 还有 ${result.details.length - 3} 条`);
     }
@@ -187,7 +187,7 @@ async function deleteOrphanedRecords() {
     const result = await prisma.salesOrderItem.deleteMany({
       where: {
         id: {
-          in: orphanedItems.map((item) => item.id),
+          in: orphanedItems.map(item => item.id),
         },
       },
     });
@@ -209,7 +209,7 @@ async function deleteOrphanedRecords() {
     const result = await prisma.statementTransaction.deleteMany({
       where: {
         id: {
-          in: orphanedTransactions.map((tx) => tx.id),
+          in: orphanedTransactions.map(tx => tx.id),
         },
       },
     });
@@ -231,7 +231,7 @@ async function deleteOrphanedRecords() {
     const result = await prisma.inventory.deleteMany({
       where: {
         id: {
-          in: orphanedInventory.map((inv) => inv.id),
+          in: orphanedInventory.map(inv => inv.id),
         },
       },
     });
@@ -276,7 +276,9 @@ async function main() {
     console.log('✅ 修复完成!');
     console.log('='.repeat(80));
     console.log('\n建议操作:');
-    console.log('1. 重新运行健康检查: npx tsx scripts/database-health-check.ts');
+    console.log(
+      '1. 重新运行健康检查: npx tsx scripts/database-health-check.ts'
+    );
     console.log('2. 测试相关功能确保正常工作');
     console.log('3. 如有问题可从备份恢复\n');
 
@@ -292,4 +294,3 @@ async function main() {
 }
 
 main();
-

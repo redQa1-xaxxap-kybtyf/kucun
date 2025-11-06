@@ -17,6 +17,7 @@
 #### API 层面
 
 **修复前**:
+
 ```typescript
 payments: {
   select: {
@@ -35,6 +36,7 @@ payments: {
 ```
 
 **修复后**:
+
 ```typescript
 payments: {
   select: {
@@ -55,6 +57,7 @@ payments: {
 #### 前端类型定义
 
 **修复前**:
+
 ```typescript
 interface PaymentRecord {
   id: string;
@@ -71,6 +74,7 @@ interface PaymentRecord {
 ```
 
 **修复后**:
+
 ```typescript
 interface PaymentRecord {
   id: string;
@@ -307,11 +311,13 @@ curl -X POST http://localhost:3000/api/payments \
 ### 问题1: 已收金额显示为 0
 
 **可能原因**:
+
 - API 未返回 `actualPaymentAmount` 字段
 - 收款记录状态不是 'confirmed'
 - 前端类型定义缺少字段
 
 **排查步骤**:
+
 1. 检查 API 返回数据: `curl http://localhost:3000/api/sales-orders/{id}`
 2. 检查收款记录状态: `record.status === 'confirmed'`
 3. 检查浏览器控制台是否有类型错误
@@ -319,11 +325,13 @@ curl -X POST http://localhost:3000/api/payments \
 ### 问题2: 金额计算不正确
 
 **可能原因**:
+
 - 浮点数精度问题
 - 字段类型转换错误
 - 计算公式错误
 
 **排查步骤**:
+
 1. 检查 `Number()` 转换是否正确
 2. 检查是否使用了 `|| 0` 处理空值
 3. 验证计算公式是否符合业务逻辑
@@ -331,11 +339,13 @@ curl -X POST http://localhost:3000/api/payments \
 ### 问题3: TypeScript 类型错误
 
 **可能原因**:
+
 - 接口定义不完整
 - 字段名拼写错误
 - 类型不匹配
 
 **排查步骤**:
+
 1. 运行 `npm run type-check`
 2. 检查接口定义是否包含所有字段
 3. 检查字段类型是否正确 (number vs string)
@@ -359,4 +369,3 @@ curl -X POST http://localhost:3000/api/payments \
 - [修复详情文档](.augment/fixes/sales-order-detail-paid-amount-fix.md)
 - [收款抹零功能](.augment/fixes/payment-rounding-display-fix.md)
 - [订单抹零功能](.augment/fixes/sales-order-detail-rounding-display-fix.md)
-

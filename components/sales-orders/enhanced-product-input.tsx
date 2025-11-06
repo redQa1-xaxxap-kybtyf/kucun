@@ -103,8 +103,8 @@ export function EnhancedProductInput({
             <CardTitle className="text-sm">产品信息</CardTitle>
             <CardDescription className="text-xs">
               {isTransferSale
-                ? '选择库存商品或手动输入临时商品'
-                : '选择库存商品'}
+                ? '选择库存产品或手动输入临时产品'
+                : '选择库存产品'}
             </CardDescription>
           </div>
           {isTransferSale && (
@@ -143,7 +143,7 @@ export function EnhancedProductInput({
               name={`items.${index}.productId`}
               render={({ field }) => (
                 <FormItem>
-                  <Label className="text-xs">选择商品</Label>
+                  <Label className="text-xs">选择产品</Label>
                   <FormControl>
                     <EnhancedProductSelector
                       products={
@@ -190,7 +190,7 @@ export function EnhancedProductInput({
                           onProductChange?.(null);
                         }
                       }}
-                      placeholder="搜索并选择商品"
+                      placeholder="搜索并选择产品"
                     />
                   </FormControl>
                   <FormMessage className="text-xs" />
@@ -203,7 +203,7 @@ export function EnhancedProductInput({
                 <div className="flex items-center gap-1">
                   <Package className="h-3 w-3 text-blue-600" />
                   <span className="text-xs text-blue-700">
-                    库存选择模式：从现有商品库存中选择
+                    库存选择模式：从现有产品库存中选择
                   </span>
                 </div>
               </div>
@@ -219,12 +219,12 @@ export function EnhancedProductInput({
                 render={({ field }) => (
                   <FormItem>
                     <Label className="text-xs">
-                      商品名称 <span className="text-red-500">*</span>
+                      产品名称 <span className="text-red-500">*</span>
                     </Label>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="输入商品名称"
+                        placeholder="输入产品名称"
                         className="h-8 text-xs"
                         maxLength={100}
                       />
@@ -315,7 +315,7 @@ export function EnhancedProductInput({
               <div className="flex items-center gap-1">
                 <PenTool className="h-3 w-3 text-amber-600" />
                 <span className="text-xs text-amber-700">
-                  手动输入模式：输入临时商品信息，不会保存到商品库存
+                  手动输入模式：输入临时产品信息，不会保存到产品库存
                 </span>
               </div>
             </div>

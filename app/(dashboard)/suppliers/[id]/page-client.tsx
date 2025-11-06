@@ -1,8 +1,9 @@
 'use client';
 
-import { Calendar, DollarSign, Edit, MapPin, Phone, Truck } from 'lucide-react';
+import { Calendar, Edit, MapPin, Phone, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,8 +105,8 @@ export function SupplierDetailPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4">
+      <div className="space-y-4">
         {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -118,27 +119,28 @@ export function SupplierDetailPageClient({
             <Button
               variant="outline"
               size="sm"
+              className="h-9"
               onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
             >
               <Edit className="mr-2 h-4 w-4" />
               编辑
             </Button>
-            <Button size="sm">
+            <Button size="sm" className="h-9">
               <Truck className="mr-2 h-4 w-4" />
               创建发货
             </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* 基本信息 */}
           <div className="lg:col-span-2">
             <Card>
               <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
                 <CardTitle>基本信息</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3 p-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-muted-foreground text-sm font-medium">
                       供应商状态
@@ -196,19 +198,19 @@ export function SupplierDetailPageClient({
           </div>
 
           {/* 统计信息 */}
-          <div className="space-y-6">
+          <div className="space-y-3">
             <Card>
               <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
                 <CardTitle>交易统计</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
                     {formatCurrency(totalShipmentAmount)}
                   </p>
                   <p className="text-muted-foreground text-sm">累计发货金额</p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
                     <p className="text-lg font-semibold">
                       {supplier._count.factoryShipments}
@@ -229,7 +231,7 @@ export function SupplierDetailPageClient({
               <CardHeader>
                 <CardTitle>应付款统计</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-[hsl(var(--color-error))]">
                     {formatCurrency(totalRemainingAmount)}
@@ -266,18 +268,18 @@ export function SupplierDetailPageClient({
                   value="payables"
                   className="flex items-center space-x-2"
                 >
-                  <DollarSign className="h-4 w-4" />
+                  <ChineseYuan className="h-4 w-4" />
                   <span>应付款 ({supplier._count.payableRecords})</span>
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="shipments" className="space-y-4">
+              <TabsContent value="shipments" className="mt-3 space-y-2">
                 {supplier.factoryShipments.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {supplier.factoryShipments.map(shipment => (
                       <div
                         key={shipment.id}
-                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                         onClick={() =>
                           router.push(`/factory-shipments/${shipment.id}`)
                         }
@@ -306,13 +308,13 @@ export function SupplierDetailPageClient({
                 )}
               </TabsContent>
 
-              <TabsContent value="payables" className="space-y-4">
+              <TabsContent value="payables" className="mt-3 space-y-2">
                 {supplier.payableRecords.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {supplier.payableRecords.map(record => (
                       <div
                         key={record.id}
-                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                         onClick={() =>
                           router.push(`/finance/payables/${record.id}`)
                         }

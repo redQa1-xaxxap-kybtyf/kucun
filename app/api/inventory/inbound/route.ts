@@ -27,8 +27,10 @@ import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfillment';
 import { withIdempotency } from '@/lib/utils/idempotency-redis'; // 🚀 使用 Redis 优化版本
 import { createInboundSchema } from '@/lib/validations/inbound';
+import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
 
 // ==========================================
 // GET /api/inventory/inbound - 获取入库记录列表
@@ -60,12 +62,72 @@ const postInboundRecordHandler = withAuth(
       // 步骤1: 解析和验证请求数据
       const body = await request.json();
       const validatedData = createInboundSchema.parse(body);
-      const { idempotencyKey, productId, piecesPerUnit, weight } =
-        validatedData;
+      const {
+        idempotencyKey,
+        productId,
+        piecesPerUnit,
+        weight,
+        purchaseOrderId,
+        purchaseOrderItemId,
+      } = validatedData;
 
       // 步骤2: 产品验证 (事务外执行,快速失败)
       const productInfo =
         await validateProductExistsOutsideTransaction(productId);
+
+      // 步骤2.1: 验证采购订单关联信息
+      if (purchaseOrderId) {
+        const purchaseOrder = await prisma.purchaseOrder.findUnique({
+          where: { id: purchaseOrderId },
+          select: {
+            id: true,
+            status: true,
+            items: {
+              select: {
+                id: true,
+                productId: true,
+              },
+            },
+          },
+        });
+
+        if (!purchaseOrder) {
+          return NextResponse.json(
+            { error: '关联的采购订单不存在' },
+            { status: 400 }
+          );
+        }
+
+        if (
+          purchaseOrder.status === PURCHASE_ORDER_STATUS.DRAFT ||
+          purchaseOrder.status === PURCHASE_ORDER_STATUS.CANCELLED
+        ) {
+          return NextResponse.json(
+            { error: '采购订单状态不允许入库操作' },
+            { status: 400 }
+          );
+        }
+
+        if (purchaseOrderItemId) {
+          const targetItem = purchaseOrder.items.find(
+            item => item.id === purchaseOrderItemId
+          );
+
+          if (!targetItem) {
+            return NextResponse.json(
+              { error: '采购订单明细不存在' },
+              { status: 400 }
+            );
+          }
+
+          if (targetItem.productId && targetItem.productId !== productId) {
+            return NextResponse.json(
+              { error: '采购订单明细与入库产品不匹配' },
+              { status: 400 }
+            );
+          }
+        }
+      }
 
       // 步骤3: 批次号生成 (事务外执行,允许重试)
       const batchNumber = await generateBatchNumberOutsideTransaction(
@@ -85,10 +147,13 @@ const postInboundRecordHandler = withAuth(
             productId: validatedData.productId,
             variantId: validatedData.variantId,
             quantity: validatedData.quantity,
+            unitCost: validatedData.unitCost, // 传递入库单位成本
             reason: validatedData.reason,
             remarks: validatedData.remarks,
             batchNumber, // 使用预生成的批次号
             userId: context.user.id,
+            purchaseOrderId,
+            purchaseOrderItemId,
           })
       );
 
@@ -115,6 +180,12 @@ const postInboundRecordHandler = withAuth(
       }
 
       // 步骤6: 立即返回成功响应
+      if (purchaseOrderId) {
+        await prisma.$transaction(async tx => {
+          await refreshPurchaseOrderFulfillment(tx, purchaseOrderId);
+        });
+      }
+
       try {
         await Promise.all([
           invalidateInventoryCache(validatedData.productId),

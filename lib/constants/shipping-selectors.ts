@@ -337,7 +337,7 @@ export const WEBSITE_SPECIFIC_SELECTORS = {
       destination: 'td:contains("目的地：") + td',
       eta: 'td:contains("预到时间：") + td',
       updateTime: 'td:contains("更新时间：") + td',
-    }
+    },
   },
 
   // 顺丰快递
@@ -349,7 +349,7 @@ export const WEBSITE_SPECIFIC_SELECTORS = {
       status: '.waybill-status',
       location: '.current-city',
       estimatedTime: '.arrival-time',
-    }
+    },
   },
 
   // 中通快递
@@ -361,7 +361,7 @@ export const WEBSITE_SPECIFIC_SELECTORS = {
       status: '.status-info',
       location: '.location-info',
       time: '.time-info',
-    }
+    },
   },
 
   // 通用物流网站
@@ -373,8 +373,8 @@ export const WEBSITE_SPECIFIC_SELECTORS = {
       status: '.status',
       location: '.location',
       time: '.time',
-    }
-  }
+    },
+  },
 } as const;
 
 /**
@@ -411,7 +411,7 @@ export const SELECTOR_TEMPLATES = {
     status: '.panel-status',
     location: '.panel-location',
     time: '.panel-time',
-  }
+  },
 } as const;
 
 /**
@@ -437,5 +437,5 @@ export const COMMON_SELECTOR_COMBINATIONS = {
     searchInput: SHIPPING_SELECTORS.searchInput.slice(0, 3),
     searchButton: SHIPPING_SELECTORS.searchButton.slice(0, 3),
     resultContainer: SHIPPING_SELECTORS.resultContainer.slice(0, 3),
-  }
+  },
 } as const;

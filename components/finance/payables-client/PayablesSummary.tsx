@@ -1,6 +1,7 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
-import { CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { CheckCircle, Clock } from 'lucide-react';
 import * as React from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,15 +27,18 @@ export function PayablesSummary({ statistics }: Props) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">总应付金额</CardTitle>
-          <DollarSign className="h-4 w-4 text-[hsl(var(--color-error))]" />
+          <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-error))]" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
             {formatCurrency(statistics.totalPayables)}
           </div>
-          <p className="text-muted-foreground text-xs">共 {totalTrackedCount} 个应付订单</p>
           <p className="text-muted-foreground text-xs">
-            待付款 {statistics.pendingCount} · 部分付款 {statistics.partialCount}
+            共 {totalTrackedCount} 个应付订单
+          </p>
+          <p className="text-muted-foreground text-xs">
+            待付款 {statistics.pendingCount} · 部分付款{' '}
+            {statistics.partialCount}
           </p>
         </CardContent>
       </Card>
@@ -51,7 +55,9 @@ export function PayablesSummary({ statistics }: Props) {
           <p className="text-muted-foreground text-xs">
             付款率{' '}
             {statistics.totalPayables > 0
-              ? Math.round((statistics.totalPaidAmount / statistics.totalPayables) * 100)
+              ? Math.round(
+                  (statistics.totalPaidAmount / statistics.totalPayables) * 100
+                )
               : 0}
             %
           </p>

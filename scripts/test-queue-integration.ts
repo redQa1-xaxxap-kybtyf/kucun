@@ -3,10 +3,13 @@
  * 验证入库队列架构是否正常工作
  */
 
-import { prisma } from '@/lib/db';
 import { generateBatchNumberOutsideTransaction } from '@/lib/api/batch-number-generator';
 import { executeMinimalInboundTransaction } from '@/lib/api/minimal-inbound-transaction';
-import { addInboundPostProcessingJob, getInboundQueueStats } from '@/lib/queue/inbound-queue';
+import { prisma } from '@/lib/db';
+import {
+  addInboundPostProcessingJob,
+  getInboundQueueStats,
+} from '@/lib/queue/inbound-queue';
 
 async function testQueueIntegration() {
   console.log('🧪 开始队列集成测试...\n');
@@ -41,6 +44,7 @@ async function testQueueIntegration() {
     const inboundRecord = await executeMinimalInboundTransaction({
       productId: product.id,
       quantity: 10,
+      unitCost: 10.5, // 测试单位成本
       reason: 'test',
       remarks: '队列集成测试',
       batchNumber,
@@ -54,7 +58,9 @@ async function testQueueIntegration() {
 
     // 验证事务耗时
     if (transactionTime > 2000) {
-      console.warn(`⚠️  警告: 事务耗时 ${transactionTime}ms 超过预期(< 2000ms)`);
+      console.warn(
+        `⚠️  警告: 事务耗时 ${transactionTime}ms 超过预期(< 2000ms)`
+      );
     }
 
     // 步骤4: 队列任务测试
@@ -101,16 +107,21 @@ async function testQueueIntegration() {
     }
 
     console.log(`✅ 入库记录验证通过: ${verifyRecord.quantity} 件`);
-    console.log(`✅ 库存记录验证通过: 当前库存 ${verifyInventory.quantity} 件\n`);
+    console.log(
+      `✅ 库存记录验证通过: 当前库存 ${verifyInventory.quantity} 件\n`
+    );
 
     // 成功总结
     console.log('='.repeat(60));
     console.log('🎉 集成测试全部通过!\n');
     console.log('性能指标:');
-    console.log(`  ✅ 事务耗时: ${transactionTime}ms ${transactionTime < 1000 ? '(优秀)' : transactionTime < 2000 ? '(良好)' : '(需优化)'}`);
-    console.log(`  ✅ 队列健康度: ${stats.failed === 0 ? '健康' : '有失败任务'}`);
+    console.log(
+      `  ✅ 事务耗时: ${transactionTime}ms ${transactionTime < 1000 ? '(优秀)' : transactionTime < 2000 ? '(良好)' : '(需优化)'}`
+    );
+    console.log(
+      `  ✅ 队列健康度: ${stats.failed === 0 ? '健康' : '有失败任务'}`
+    );
     console.log('='.repeat(60));
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     throw error;
@@ -125,7 +136,7 @@ testQueueIntegration()
     console.log('\n✅ 测试完成,进程退出');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
   });

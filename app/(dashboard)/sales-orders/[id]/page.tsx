@@ -50,7 +50,6 @@ async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
   return result.data;
 }
 
-
 export default function SalesOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -182,9 +181,8 @@ export default function SalesOrderDetailPage() {
     );
   }
 
-
   const orderItems = order.items ?? [];
-        const userName = order.user?.name ?? '-';
+  const userName = order.user?.name ?? '-';
 
   const totalDisplayQuantity = orderItems.reduce(
     (sum, item) =>
@@ -221,7 +219,7 @@ export default function SalesOrderDetailPage() {
 
   const canEditOrder = order.status === 'draft';
 
-    return (
+  return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div id="sales-order-export-content" className="space-y-6">
         <HeaderCard
@@ -230,7 +228,9 @@ export default function SalesOrderDetailPage() {
           canEditOrder={canEditOrder}
           isUpdatingStatus={isUpdatingStatus}
           onConfirmShipment={handleConfirmShipment}
-          onShowToast={(title, description, variant = 'default') => toast({ title, description, variant })}
+          onShowToast={(title, description, variant = 'default') =>
+            toast({ title, description, variant })
+          }
         />
 
         <TransferModeInfoCard order={order} />
@@ -266,7 +266,10 @@ export default function SalesOrderDetailPage() {
       </div>
 
       {/* 隐藏的打印模板 - 用于生成专业的销售单据 */}
-      <div id="sales-order-print-template" style={{ position: 'absolute', left: '-9999px', top: 0 }}>
+      <div
+        id="sales-order-print-template"
+        style={{ position: 'absolute', left: '-9999px', top: 0 }}
+      >
         <SalesOrderPrintTemplate order={order} />
       </div>
     </div>

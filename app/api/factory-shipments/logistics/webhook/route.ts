@@ -39,7 +39,8 @@ function computeIdempotencyKey(
   eventId?: string
 ) {
   return (
-    eventId ?? `logistics-${containerNumber}-${eventType}-${eventTime ?? Date.now()}`
+    eventId ??
+    `logistics-${containerNumber}-${eventType}-${eventTime ?? Date.now()}`
   );
 }
 
@@ -58,7 +59,8 @@ type ValidatedPayload = {
 };
 
 function ensureValidPayload(payload: LogisticsEventPayload): ValidatedPayload {
-  const { eventId, containerNumber, eventType, eventTime, remarks, location } = payload;
+  const { eventId, containerNumber, eventType, eventTime, remarks, location } =
+    payload;
   if (!containerNumber || !eventType) {
     throw new Error('缺少集装箱号码或事件类型');
   }
@@ -66,7 +68,15 @@ function ensureValidPayload(payload: LogisticsEventPayload): ValidatedPayload {
   if (!targetStatus) {
     throw new Error(`不支持的物流事件类型: ${eventType}`);
   }
-  return { eventId, containerNumber, eventType, eventTime, remarks, location, targetStatus };
+  return {
+    eventId,
+    containerNumber,
+    eventType,
+    eventTime,
+    remarks,
+    location,
+    targetStatus,
+  };
 }
 
 async function findOrderByContainer(containerNumber: string) {
@@ -90,7 +100,15 @@ async function applyStatusUpdateIdempotent(
     parsedEventTime: Date;
   }
 ) {
-  const { containerNumber, targetStatus, eventType, eventTime, remarks, location, parsedEventTime } = data;
+  const {
+    containerNumber,
+    targetStatus,
+    eventType,
+    eventTime,
+    remarks,
+    location,
+    parsedEventTime,
+  } = data;
   return withIdempotency(
     idempotencyKey,
     'factory_shipment_status_change',
@@ -102,9 +120,13 @@ async function applyStatusUpdateIdempotent(
         containerNumber,
         remarks,
         shipmentDate:
-          targetStatus === FACTORY_SHIPMENT_STATUS.SHIPPED ? parsedEventTime : undefined,
+          targetStatus === FACTORY_SHIPMENT_STATUS.SHIPPED
+            ? parsedEventTime
+            : undefined,
         arrivalDate:
-          targetStatus === FACTORY_SHIPMENT_STATUS.ARRIVED ? parsedEventTime : undefined,
+          targetStatus === FACTORY_SHIPMENT_STATUS.ARRIVED
+            ? parsedEventTime
+            : undefined,
       })
   );
 }
@@ -121,7 +143,10 @@ export async function POST(request: NextRequest) {
     try {
       parsed = ensureValidPayload(payload);
     } catch (e) {
-      return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+      return NextResponse.json(
+        { error: (e as Error).message },
+        { status: 400 }
+      );
     }
 
     const order = await findOrderByContainer(parsed.containerNumber);
@@ -148,15 +173,20 @@ export async function POST(request: NextRequest) {
 
     let result;
     try {
-      result = await applyStatusUpdateIdempotent(order.id, order.status as FactoryShipmentStatus, idempotencyKey, {
-        containerNumber: parsed.containerNumber,
-        targetStatus: parsed.targetStatus,
-        eventType: parsed.eventType,
-        eventTime: parsed.eventTime,
-        remarks: parsed.remarks,
-        location: parsed.location,
-        parsedEventTime,
-      });
+      result = await applyStatusUpdateIdempotent(
+        order.id,
+        order.status as FactoryShipmentStatus,
+        idempotencyKey,
+        {
+          containerNumber: parsed.containerNumber,
+          targetStatus: parsed.targetStatus,
+          eventType: parsed.eventType,
+          eventTime: parsed.eventTime,
+          remarks: parsed.remarks,
+          location: parsed.location,
+          parsedEventTime,
+        }
+      );
     } catch (error) {
       if (error instanceof Error && error.message.includes('订单状态不能')) {
         return NextResponse.json({ error: error.message }, { status: 409 });

@@ -1,26 +1,37 @@
-"use client";
+'use client';
 
-import { Receipt } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Receipt } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RETURN_ORDER_STATUS_LABELS, RETURN_ORDER_STATUS_VARIANTS, type ReturnOrderStatus } from "@/lib/types/return-order";
-import { formatDate } from "@/lib/utils/datetime";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  RETURN_ORDER_STATUS_LABELS,
+  RETURN_ORDER_STATUS_VARIANTS,
+  type ReturnOrderStatus,
+} from '@/lib/types/return-order';
+import { formatDate } from '@/lib/utils/datetime';
 
-import type { SalesOrderDetail } from "./types";
+import type { SalesOrderDetail } from './types';
 
-export function RelatedReturnOrdersCard({ order }: { order: SalesOrderDetail }) {
+export function RelatedReturnOrdersCard({
+  order,
+}: {
+  order: SalesOrderDetail;
+}) {
   const router = useRouter();
   const relatedReturnOrders = order.returnOrders ?? [];
   if (relatedReturnOrders.length === 0) return null;
 
   const isReturnOrderStatus = (value: unknown): value is ReturnOrderStatus =>
-    typeof value === "string" && value in RETURN_ORDER_STATUS_LABELS;
+    typeof value === 'string' && value in RETURN_ORDER_STATUS_LABELS;
 
   return (
-    <Card className="overflow-hidden border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: "var(--shadow-medium)" }}>
+    <Card
+      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+      style={{ boxShadow: 'var(--shadow-medium)' }}
+    >
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
           <Receipt className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -40,22 +51,38 @@ export function RelatedReturnOrdersCard({ order }: { order: SalesOrderDetail }) 
             </thead>
             <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
               {relatedReturnOrders.map(returnOrder => {
-                const status = isReturnOrderStatus(returnOrder.status) ? returnOrder.status : "draft";
+                const status = isReturnOrderStatus(returnOrder.status)
+                  ? returnOrder.status
+                  : 'draft';
                 return (
-                  <tr key={returnOrder.id} className="text-[hsl(var(--color-text-primary))]">
-                    <td className="px-4 py-3 font-mono text-[hsl(var(--color-primary))]">{returnOrder.returnNumber}</td>
+                  <tr
+                    key={returnOrder.id}
+                    className="text-[hsl(var(--color-text-primary))]"
+                  >
+                    <td className="px-4 py-3 font-mono text-[hsl(var(--color-primary))]">
+                      {returnOrder.returnNumber}
+                    </td>
                     <td className="px-4 py-3">
-                      <Badge variant={RETURN_ORDER_STATUS_VARIANTS[status] ?? "secondary"} className="text-xs">
+                      <Badge
+                        variant={
+                          RETURN_ORDER_STATUS_VARIANTS[status] ?? 'secondary'
+                        }
+                        className="text-xs"
+                      >
                         {RETURN_ORDER_STATUS_LABELS[status] ?? status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">{formatDate(returnOrder.createdAt)}</td>
+                    <td className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {formatDate(returnOrder.createdAt)}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <Button
                         variant="link"
                         size="sm"
                         className="px-0 text-[hsl(var(--color-primary))]"
-                        onClick={() => router.push(`/return-orders/${returnOrder.id}`)}
+                        onClick={() =>
+                          router.push(`/return-orders/${returnOrder.id}`)
+                        }
                       >
                         查看详情
                       </Button>

@@ -4,8 +4,15 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import {
+  executeMinimalInboundTransaction,
+  type MinimalInboundTransactionResult,
+} from '@/lib/api/minimal-inbound-transaction';
+import { revalidateProducts } from '@/lib/cache';
+import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { withIdempotency } from '@/lib/utils/idempotency';
 
 /**
  * 销售订单模块 Server Actions
@@ -51,7 +58,7 @@ const salesOrderItemSchema = z
   })
   .superRefine((item, ctx) => {
     if (item.isManualProduct) {
-      // 临时商品只需要产品编码，商品名称为可选
+      // 临时产品只需要产品编码，产品名称为可选
       // 不再强制要求 manualProductName
     } else {
       const productId = item.productId?.trim();
@@ -79,6 +86,8 @@ const createSalesOrderSchema = z.object({
 const updateSalesOrderStatusSchema = z.object({
   orderId: z.string().min(1, '订单 ID 不能为空'),
   status: z.enum(['draft', 'confirmed', 'shipped', 'delivered', 'cancelled']),
+  cancelReason: z.string().max(500, '取消原因不能超过500个字符').optional(),
+  idempotencyKey: z.string().uuid('幂等性键格式不正确').optional(),
 });
 
 // ============================================
@@ -219,64 +228,174 @@ export async function updateSalesOrderStatus(
       return { success: false, error: '未授权操作' };
     }
 
+    const cancelReasonRaw = formData.get('cancelReason');
+    const idempotencyKeyRaw = formData.get('idempotencyKey');
     const rawData = {
       orderId: formData.get('orderId') as string,
       status: formData.get('status') as string,
+      cancelReason:
+        typeof cancelReasonRaw === 'string' ? cancelReasonRaw : undefined,
+      idempotencyKey:
+        typeof idempotencyKeyRaw === 'string' ? idempotencyKeyRaw : undefined,
     };
 
-    const data = updateSalesOrderStatusSchema.parse(rawData);
+    const data = updateSalesOrderStatusSchema.parse({
+      ...rawData,
+      cancelReason:
+        rawData.cancelReason && rawData.cancelReason.trim().length > 0
+          ? rawData.cancelReason.trim()
+          : undefined,
+      idempotencyKey:
+        rawData.idempotencyKey && rawData.idempotencyKey.trim().length > 0
+          ? rawData.idempotencyKey.trim()
+          : undefined,
+    });
     orderIdForLog = data.orderId;
     statusForLog = data.status;
 
-    await prisma.$transaction(async tx => {
-      // 获取订单详情
-      const order = await tx.salesOrder.findUnique({
-        where: { id: data.orderId },
-        include: { items: true },
-      });
-
-      if (!order) {
-        throw new Error('订单不存在');
-      }
-
-      // 更新订单状态
-      await tx.salesOrder.update({
-        where: { id: data.orderId },
-        data: { status: data.status },
-      });
-
-      // 如果从草稿变为已确认，减少库存
-      if (order.status === 'draft' && data.status === 'confirmed') {
-        for (const item of order.items) {
-          if (item.productId && !item.isManualProduct) {
-            await tx.inventory.updateMany({
-              where: { productId: item.productId },
-              data: {
-                quantity: {
-                  decrement: item.quantity,
-                },
-              },
-            });
-          }
-        }
-      }
-
-      // 如果从已确认变为取消，恢复库存
-      if (order.status === 'confirmed' && data.status === 'cancelled') {
-        for (const item of order.items) {
-          if (item.productId && !item.isManualProduct) {
-            await tx.inventory.updateMany({
-              where: { productId: item.productId },
-              data: {
-                quantity: {
-                  increment: item.quantity,
-                },
-              },
-            });
-          }
-        }
-      }
+    const orderSnapshot = await prisma.salesOrder.findUnique({
+      where: { id: data.orderId },
+      select: { status: true, updatedAt: true },
     });
+
+    if (!orderSnapshot) {
+      return { success: false, error: '订单不存在' };
+    }
+
+    const fallbackIdempotencyKey = `sales-order-status:${data.orderId}:${orderSnapshot.status}->${data.status}:${orderSnapshot.updatedAt.getTime()}`;
+    const resolvedIdempotencyKey =
+      data.idempotencyKey ?? fallbackIdempotencyKey;
+
+    const operationResult = await withIdempotency(
+      resolvedIdempotencyKey,
+      'sales_order_status_change',
+      data.orderId,
+      session.user.id,
+      {
+        previousStatus: orderSnapshot.status,
+        nextStatus: data.status,
+        cancelReason: data.cancelReason ?? null,
+      },
+      async () =>
+        await prisma.$transaction(async tx => {
+          const order = await tx.salesOrder.findUnique({
+            where: { id: data.orderId },
+            include: { items: true },
+          });
+
+          if (!order) {
+            throw new Error('订单不存在');
+          }
+
+          const updatedOrder = await tx.salesOrder.update({
+            where: { id: data.orderId },
+            data: { status: data.status },
+          });
+
+          const inboundResults: MinimalInboundTransactionResult[] = [];
+          let inventoryUpdated = false;
+          let reservedInventoryReleased = false;
+
+          if (order.status === 'draft' && data.status === 'confirmed') {
+            for (const item of order.items) {
+              if (item.productId && !item.isManualProduct) {
+                await tx.inventory.updateMany({
+                  where: { productId: item.productId },
+                  data: {
+                    quantity: {
+                      decrement: item.quantity,
+                    },
+                  },
+                });
+                inventoryUpdated = true;
+              }
+            }
+          }
+
+          if (order.status === 'confirmed' && data.status === 'cancelled') {
+            const cancellationRemarkBase = `销售订单${order.orderNumber}取消回库`;
+            const cancellationRemark = data.cancelReason
+              ? `${cancellationRemarkBase}，原因：${data.cancelReason}`
+              : cancellationRemarkBase;
+
+            for (const item of order.items) {
+              if (!item.productId || item.isManualProduct) {
+                continue;
+              }
+
+              const inventory = await tx.inventory.findFirst({
+                where: {
+                  productId: item.productId,
+                  variantId: item.variantId || null,
+                  batchNumber: item.batchNumber || null,
+                },
+              });
+
+              const inboundQuantity = Number(item.quantity) || 0;
+              if (inboundQuantity <= 0) {
+                continue;
+              }
+
+              const unitCost =
+                typeof inventory?.unitCost === 'number'
+                  ? inventory.unitCost
+                  : (item.unitCost ?? 0);
+
+              const inboundRecord = await executeMinimalInboundTransaction(
+                {
+                  productId: item.productId,
+                  variantId: item.variantId ?? undefined,
+                  quantity: inboundQuantity,
+                  unitCost,
+                  reason: 'sales_cancel',
+                  remarks: cancellationRemark,
+                  batchNumber: item.batchNumber ?? '',
+                  userId: session.user.id,
+                },
+                { tx }
+              );
+
+              inboundResults.push(inboundRecord);
+              inventoryUpdated = true;
+
+              if (inventory?.id) {
+                const releaseQuantity = Math.min(
+                  inboundQuantity,
+                  inventory.reservedQuantity || 0
+                );
+                if (releaseQuantity > 0) {
+                  await tx.inventory.update({
+                    where: { id: inventory.id },
+                    data: {
+                      reservedQuantity: {
+                        decrement: releaseQuantity,
+                      },
+                    },
+                  });
+                  reservedInventoryReleased = true;
+                }
+              }
+            }
+          }
+
+          return {
+            order: updatedOrder,
+            inventoryUpdated,
+            reservedInventoryReleased,
+            inboundResults,
+          };
+        })
+    );
+
+    if (operationResult.inboundResults.length > 0) {
+      const productIds = Array.from(
+        new Set(operationResult.inboundResults.map(record => record.productId))
+      );
+      await Promise.allSettled([
+        ...productIds.map(id => invalidateInventoryCache(id)),
+        ...productIds.map(id => revalidateProducts(id)),
+      ]);
+    }
 
     revalidatePath('/sales-orders');
     revalidatePath(`/sales-orders/${data.orderId}`);

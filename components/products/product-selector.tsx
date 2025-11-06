@@ -1,9 +1,10 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Plus } from 'lucide-react';
 import React from 'react';
 
+import { QuickCreateProductDialog } from '@/components/products/quick-create-product-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -72,10 +73,12 @@ function ProductLabel({
   product,
   showCode,
   showSpecification,
+  compactMode = false,
 }: {
   product: Product;
   showCode: boolean;
   showSpecification: boolean;
+  compactMode?: boolean;
 }) {
   // 格式化规格显示（限制11个字符，避免JSON字符串显示）
   const formattedSpecification = React.useMemo(() => {
@@ -105,6 +108,20 @@ function ProductLabel({
     // 普通字符串，直接截断
     return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
   }, [product.specification]);
+
+  // 紧凑模式：只显示产品编码
+  if (compactMode && product.code) {
+    return (
+      <div className="flex items-center gap-2">
+        <Badge
+          variant="outline"
+          className="border-blue-200 bg-blue-50 font-mono text-xs font-semibold text-blue-700"
+        >
+          {product.code}
+        </Badge>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -140,7 +157,7 @@ interface ProductSelectorProps {
   showSpecification?: boolean;
   filterStatus?: ProductStatusFilter;
   label?: string;
-  onProductChange?: (productId: string) => void;
+  onProductChange?: (product: Product | null) => void;
 }
 
 export function ProductSelector({
@@ -157,6 +174,7 @@ export function ProductSelector({
 }: ProductSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
+  const [showQuickCreate, setShowQuickCreate] = React.useState(false);
   const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 
   const queryInput = React.useMemo(
@@ -202,7 +220,7 @@ export function ProductSelector({
   const handleSelect = React.useCallback(
     (product: Product) => {
       onValueChange(product.id);
-      onProductChange?.(product.id);
+      onProductChange?.(product);
       setSearchValue('');
       setOpen(false);
     },
@@ -217,7 +235,7 @@ export function ProductSelector({
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (nextOpen && selectedProduct) {
-        // 打开时，如果有已选商品，自动填充搜索框以便用户快速定位（优先使用编码）
+        // 打开时，如果有已选产品，自动填充搜索框以便用户快速定位（优先使用编码）
         setSearchValue(selectedProduct.code || selectedProduct.name || '');
       } else if (!nextOpen) {
         // 关闭时清空搜索框
@@ -227,78 +245,123 @@ export function ProductSelector({
     [selectedProduct]
   );
 
+  const handleQuickCreateSuccess = React.useCallback(
+    (product: Product) => {
+      // 选中新创建的产品
+      onValueChange(product.id);
+      onProductChange?.(product);
+      // 关闭选择器
+      setOpen(false);
+      setSearchValue('');
+    },
+    [onProductChange, onValueChange]
+  );
+
+  const handleOpenQuickCreate = React.useCallback(() => {
+    setShowQuickCreate(true);
+    setOpen(false);
+  }, []);
+
   return (
-    <div className="space-y-2">
-      {label && <label className="text-sm font-medium">{label}</label>}
-      <Popover open={open} onOpenChange={handleOpenChange}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              'w-full justify-between',
-              !value && 'text-muted-foreground',
-              className
-            )}
-            disabled={disabled}
-          >
-            {selectedProduct ? (
-              <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                <ProductLabel
-                  product={selectedProduct}
-                  showCode={showCode}
-                  showSpecification={showSpecification}
-                />
-              </div>
-            ) : (
-              <span className="truncate">{placeholder}</span>
-            )}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <CommandInput
-              placeholder="搜索产品..."
-              value={searchValue}
-              onValueChange={handleSearchChange}
-            />
-            <CommandList>
-              <CommandEmpty>
-                {isFetching ? '加载中...' : '未找到产品'}
-              </CommandEmpty>
-              <CommandGroup>
-                {hasMoreResults && (
-                  <div className="text-muted-foreground px-2 py-1.5 text-xs">
-                    显示前 {MAX_DISPLAY_PRODUCTS} 个结果，请细化搜索
-                  </div>
-                )}
-                {products.map(product => (
-                  <CommandItem
-                    key={product.id}
-                    value={product.id}
-                    onSelect={() => handleSelect(product)}
-                  >
-                    <ProductLabel
-                      product={product}
-                      showCode={showCode}
-                      showSpecification={showSpecification}
-                    />
-                    <Check
-                      className={cn(
-                        'ml-2 h-4 w-4',
-                        value === product.id ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <>
+      <div className="space-y-2">
+        {label && <label className="text-sm font-medium">{label}</label>}
+        <Popover open={open} onOpenChange={handleOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={cn(
+                'w-full justify-between',
+                !value && 'text-muted-foreground',
+                className
+              )}
+              disabled={disabled}
+            >
+              {selectedProduct ? (
+                <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                  <ProductLabel
+                    product={selectedProduct}
+                    showCode={showCode}
+                    showSpecification={showSpecification}
+                    compactMode={true}
+                  />
+                </div>
+              ) : (
+                <span className="truncate">{placeholder}</span>
+              )}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput
+                placeholder="搜索产品..."
+                value={searchValue}
+                onValueChange={handleSearchChange}
+              />
+              <CommandList>
+                <CommandEmpty>
+                  {isFetching ? (
+                    '加载中...'
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-6">
+                      <p className="text-muted-foreground text-sm">
+                        未找到产品
+                      </p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenQuickCreate}
+                        className="gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        快速添加产品
+                      </Button>
+                    </div>
+                  )}
+                </CommandEmpty>
+                <CommandGroup>
+                  {hasMoreResults && (
+                    <div className="text-muted-foreground px-2 py-1.5 text-xs">
+                      显示前 {MAX_DISPLAY_PRODUCTS} 个结果，请细化搜索
+                    </div>
+                  )}
+                  {products.map(product => (
+                    <CommandItem
+                      key={product.id}
+                      value={product.id}
+                      onSelect={() => handleSelect(product)}
+                    >
+                      <ProductLabel
+                        product={product}
+                        showCode={showCode}
+                        showSpecification={showSpecification}
+                      />
+                      <Check
+                        className={cn(
+                          'ml-2 h-4 w-4',
+                          value === product.id ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      <QuickCreateProductDialog
+        open={showQuickCreate}
+        onOpenChange={setShowQuickCreate}
+        onSuccess={handleQuickCreateSuccess}
+        defaultCode={searchValue}
+      />
+    </>
   );
 }
 

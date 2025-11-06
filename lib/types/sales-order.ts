@@ -1,4 +1,4 @@
-﻿// 销售订单管理相关类型定义
+// 销售订单管理相关类型定义
 // 遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
 import type { Customer } from './customer';
@@ -40,9 +40,9 @@ export interface SalesOrderItem {
   localQuantity?: number; // 本地仓发货数量
   transferQuantity?: number; // 调货发货数量
 
-  // 手动输入商品信息（调货销售时使用）
-  isManualProduct?: boolean; // 是否为手动输入的商品
-  manualProductName?: string; // 手动输入的商品名称
+  // 手动输入产品信息（调货销售时使用）
+  isManualProduct?: boolean; // 是否为手动输入的产品
+  manualProductName?: string; // 手动输入的产品名称
   manualSpecification?: string; // 手动输入的规格
   manualWeight?: number; // 手动输入的重量
   manualUnit?: string; // 手动输入的单位
@@ -70,7 +70,7 @@ export interface SalesOrder {
   supplierId?: string;
   costAmount?: number;
   profitAmount?: number;
-  itemsAmount?: number; // 商品总额
+  itemsAmount?: number; // 产品总额
   additionalFees?: number; // 额外费用总额
   roundingAdjustment?: number; // 抹零金额
   totalAmount: number; // 总金额 = itemsAmount + additionalFees
@@ -185,7 +185,7 @@ export interface SalesOrderUpdateInput {
 
 // 销售订单明细创建输入类型
 export interface SalesOrderItemCreateInput {
-  productId?: string; // 可选：手动输入商品时不需要 productId
+  productId?: string; // 可选：手动输入产品时不需要 productId
   variantId?: string; // 产品变体ID
   productCode?: string;
   batchNumber?: string;
@@ -201,9 +201,9 @@ export interface SalesOrderItemCreateInput {
   localQuantity?: number; // 本地仓发货数量（调货混合模式使用）
   transferQuantity?: number; // 调货发货数量
 
-  // 手动输入商品信息（调货销售时使用）
-  isManualProduct?: boolean; // 是否为手动输入的商品
-  manualProductName?: string; // 手动输入的商品名称
+  // 手动输入产品信息（调货销售时使用）
+  isManualProduct?: boolean; // 是否为手动输入的产品
+  manualProductName?: string; // 手动输入的产品名称
   manualSpecification?: string; // 手动输入的规格
   manualWeight?: number; // 手动输入的重量
   manualUnit?: string; // 手动输入的单位
@@ -220,7 +220,7 @@ export interface SalesOrderItemCreateInput {
 // 销售订单明细更新输入类型
 export interface SalesOrderItemUpdateInput {
   id?: string; // 新增明细时为空
-  productId?: string; // 可选：手动输入商品时不需要 productId
+  productId?: string; // 可选：手动输入产品时不需要 productId
   productCode?: string;
   batchNumber?: string;
   colorCode?: string;
@@ -233,9 +233,9 @@ export interface SalesOrderItemUpdateInput {
   localQuantity?: number; // 本地仓发货数量（调货混合模式使用）
   transferQuantity?: number; // 调货发货数量
 
-  // 手动输入商品信息（调货销售时使用）
-  isManualProduct?: boolean; // 是否为手动输入的商品
-  manualProductName?: string; // 手动输入的商品名称
+  // 手动输入产品信息（调货销售时使用）
+  isManualProduct?: boolean; // 是否为手动输入的产品
+  manualProductName?: string; // 手动输入的产品名称
   manualSpecification?: string; // 手动输入的规格
   manualWeight?: number; // 手动输入的重量
   manualUnit?: string; // 手动输入的单位

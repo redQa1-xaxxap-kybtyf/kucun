@@ -543,3 +543,113 @@ export async function generateRefundNumber(): Promise<string> {
 
   throw new Error('生成退款单号失败:超出最大重试次数');
 }
+
+/**
+ * 生成唯一的采购订单号
+ * 格式: PO-YYYYMMDD-XXXX
+ *
+ * @returns Promise<string> 生成的订单号
+ */
+export async function generatePurchaseOrderNumber(): Promise<string> {
+  const prefix = 'PO';
+  const numberLength = 4;
+  const maxRetries = 15;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      return await prisma.$transaction(
+        async tx => {
+          const today = new Date();
+          const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
+          const fullPrefix = `${prefix}${dateKey}`;
+
+          const lastOrder = await tx.purchaseOrder.findFirst({
+            where: {
+              orderNumber: {
+                startsWith: fullPrefix,
+              },
+            },
+            orderBy: {
+              orderNumber: 'desc',
+            },
+            select: {
+              orderNumber: true,
+            },
+          });
+
+          let sequence = 1;
+          if (lastOrder) {
+            const lastSequence = parseInt(
+              lastOrder.orderNumber.slice(-numberLength)
+            );
+            sequence = lastSequence + 1;
+          }
+
+          const randomOffset = Math.floor(Math.random() * 50);
+          const retryOffset = attempt * 10;
+          const timeOffset = Date.now() % 100;
+          const finalSequence =
+            sequence + randomOffset + retryOffset + timeOffset;
+
+          const orderNumber = `${fullPrefix}${finalSequence
+            .toString()
+            .padStart(numberLength, '0')}`;
+
+          const existingOrder = await tx.purchaseOrder.findFirst({
+            where: { orderNumber },
+            select: { id: true },
+          });
+
+          if (existingOrder) {
+            throw new Error(`采购订单号冲突: ${orderNumber}`);
+          }
+
+          return orderNumber;
+        },
+        {
+          timeout: 10000,
+        }
+      );
+    } catch (error) {
+      attempt++;
+
+      const isRetryableError =
+        error instanceof Error &&
+        (error.message.includes('Deadlock') ||
+          error.message.includes('Serialization failure') ||
+          error.message.includes('采购订单号冲突') ||
+          error.message.includes('UNIQUE constraint failed') ||
+          error.message.includes('unique constraint') ||
+          error.message.includes('duplicate key') ||
+          error.message.includes('Unique constraint failed on the fields'));
+
+      if (isRetryableError && attempt < maxRetries) {
+        const baseDelay = 50;
+        const randomDelay = Math.random() * 150;
+        const backoffDelay = attempt * 25;
+        const totalDelay = baseDelay + randomDelay + backoffDelay;
+
+        logger.warn('order-number', '采购订单号生成冲突，准备重试', undefined, {
+          attempt,
+          delayMs: Math.round(totalDelay),
+        });
+
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
+        continue;
+      }
+
+      if (attempt >= maxRetries) {
+        throw new Error(
+          `生成采购订单号失败,已重试${maxRetries}次: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error('生成采购订单号失败:超出最大重试次数');
+}

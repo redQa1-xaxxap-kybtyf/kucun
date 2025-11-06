@@ -145,7 +145,7 @@ export function OrderItemsEditor<
             </div>
             <Badge variant="outline" className="text-base font-medium">
               <Calculator className="mr-1 h-4 w-4" />
-              总计：¥{orderTotal.toLocaleString()}
+              总计：￥{orderTotal.toLocaleString()}
             </Badge>
           </div>
         </CardTitle>
@@ -212,7 +212,7 @@ export function OrderItemsEditor<
                   订单总金额
                 </div>
                 <div className="text-primary text-2xl font-bold">
-                  ¥{orderTotal.toLocaleString()}
+                  ￥{orderTotal.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -477,7 +477,7 @@ function OrderItemRow({
             <div className="flex items-center justify-between lg:col-span-6">
               <div className="text-right">
                 <div className="text-muted-foreground text-xs">小计</div>
-                <div className="font-medium">¥{subtotal.toLocaleString()}</div>
+                <div className="font-medium">￥{subtotal.toLocaleString()}</div>
               </div>
               <Button
                 type="button"

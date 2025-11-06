@@ -1,6 +1,7 @@
 # 销售订单详情页面抹零金额显示修复
 
 ## 修复日期
+
 2024-01-XX
 
 ## 问题描述
@@ -8,16 +9,19 @@
 销售订单详情页面中与抹零金额和收款记录显示相关的三个问题:
 
 ### 问题1: 订单抹零金额显示格式错误
+
 - **位置**: 销售订单详情页面的订单信息区域
 - **问题**: 抹零金额显示时带有正负号(+/-)，颜色也不统一
 - **影响**: 用户难以理解抹零金额的含义
 
 ### 问题2: 收款记录中缺少抹零金额显示
+
 - **位置**: 销售订单详情页面的收款记录列表区域
 - **问题**: 每条收款记录没有显示该笔收款的抹零金额(roundingAmount)
 - **影响**: 用户无法了解每笔收款的实际到账金额和抹零明细
 
 ### 问题3: 多笔收款时的实际收款金额显示不准确
+
 - **位置**: 销售订单详情页面的收款统计区域
 - **问题**: 存在多笔收款记录时，实际收款金额的显示或计算可能不准确
 - **影响**: 收款统计数据不准确
@@ -31,6 +35,7 @@
 #### 1.1 顶部统计卡片 (第572-591行)
 
 **修改前**:
+
 ```typescript
 {order.roundingAdjustment !== 0 && (
   <Card
@@ -51,6 +56,7 @@
 ```
 
 **修改后**:
+
 ```typescript
 {order.roundingAdjustment !== 0 && (
   <Card
@@ -72,6 +78,7 @@
 ```
 
 **改进点**:
+
 - ✅ 统一使用橙色主题，不再根据正负值改变颜色
 - ✅ 统一显示负号(-)，表示这是从订单总额中扣除的金额
 - ✅ 在副标题中说明是加价还是减价
@@ -79,6 +86,7 @@
 #### 1.2 收款记录区域 (第1330-1343行)
 
 **修改前**:
+
 ```typescript
 {order.roundingAdjustment !== 0 && (
   <div className="flex items-center justify-between rounded-md bg-white/60 px-3 py-2">
@@ -94,6 +102,7 @@
 ```
 
 **修改后**:
+
 ```typescript
 {order.roundingAdjustment !== 0 && (
   <div className="flex items-center justify-between rounded-md bg-white/60 px-3 py-2">
@@ -111,6 +120,7 @@
 ```
 
 **改进点**:
+
 - ✅ 统一使用橙色，不再根据正负值改变颜色
 - ✅ 统一显示负号(-)
 - ✅ 标签改为"订单抹零"更明确
@@ -123,6 +133,7 @@
 #### 2.1 已确认收款记录 (第1553-1582行)
 
 **修改前**:
+
 ```typescript
 <div className="mb-2 flex items-start justify-between">
   <div>
@@ -140,6 +151,7 @@
 ```
 
 **修改后**:
+
 ```typescript
 <div className="mb-2 flex items-start justify-between">
   <div>
@@ -165,6 +177,7 @@
 ```
 
 **改进点**:
+
 - ✅ 显示收款金额的组成: 实际到账 + 抹零
 - ✅ 只在有抹零时显示明细
 - ✅ 使用灰色文字，不干扰主要信息
@@ -178,6 +191,7 @@
 **文件**: `app/api/sales-orders/[id]/route.ts`
 
 **计算逻辑** (第152-173行):
+
 ```typescript
 // 计算收款统计
 const confirmedPayments = salesOrder.payments.filter(
@@ -201,8 +215,7 @@ const paidAmount = actualPaidAmount + paymentRounding;
 
 // 实际应收金额 = 订单总额 + 订单抹零
 const actualTotalAmount =
-  Number(salesOrder.totalAmount) +
-  Number(salesOrder.roundingAdjustment || 0);
+  Number(salesOrder.totalAmount) + Number(salesOrder.roundingAdjustment || 0);
 
 // 待收金额
 const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
@@ -222,6 +235,7 @@ const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
 ```
 
 **业务含义**:
+
 - 正数: 订单加价，实际应收 = 订单总额 + 抹零金额
 - 负数: 订单减价(抹零)，实际应收 = 订单总额 + 抹零金额
 - 统一显示负号: 表示这是对订单总额的调整
@@ -242,13 +256,13 @@ const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
 
 ```typescript
 // 1. 实际应收金额
-actualTotalAmount = totalAmount + roundingAdjustment
+actualTotalAmount = totalAmount + roundingAdjustment;
 
 // 2. 等效已收款
-paidAmount = actualPaidAmount + paymentRounding
+paidAmount = actualPaidAmount + paymentRounding;
 
 // 3. 待收金额
-remainingAmount = actualTotalAmount - paidAmount
+remainingAmount = actualTotalAmount - paidAmount;
 ```
 
 ## 测试场景
@@ -332,4 +346,3 @@ remainingAmount = actualTotalAmount - paidAmount
 1. **用户教育**: 在界面上添加提示说明抹零金额的含义
 2. **数据验证**: 添加前端验证确保 paymentAmount = actualPaymentAmount + roundingAmount
 3. **报表统计**: 在财务报表中区分实际到账金额和抹零金额
-

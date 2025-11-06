@@ -18,7 +18,8 @@ export type OperationType =
   | 'factory_shipment_status_change'
   | 'sales_order_create'
   | 'sales_order_update'
-  | 'sales_order_status_change';
+  | 'sales_order_status_change'
+  | 'purchase_order_status_change';
 
 export interface IdempotencyResult<T> {
   isNew: boolean;

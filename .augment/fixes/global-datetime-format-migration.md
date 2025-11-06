@@ -7,6 +7,7 @@
 ## 背景
 
 项目中存在两个日期格式化实现：
+
 1. **`lib/utils/format.ts`** - 使用 `Intl.DateTimeFormat` API（旧实现，精度较低）
 2. **`lib/utils/datetime.ts`** - 使用 `date-fns` 库（新实现，更准确，推荐使用）
 
@@ -15,86 +16,107 @@
 ### 已迁移的文件（7个）
 
 #### 1. 财务报表基本信息组件
+
 **文件**: `app/(dashboard)/finance/statements/[id]/components/statement-basic-info.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatDate } from '@/lib/utils/format'` → `import { formatDate } from '@/lib/utils/datetime'`
 - 函数调用：`formatDate(date, 'date')` → `formatDate(date)`
 
 **影响字段**:
+
 - 最后交易日期
 - 最近收付日期
 
 #### 2. 财务报表交易记录组件
+
 **文件**: `app/(dashboard)/finance/statements/[id]/components/statement-transactions.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatCurrency, formatDate } from '@/lib/utils/format'` → `import { formatCurrency } from '@/lib/utils/format'; import { formatDateTime } from '@/lib/utils/datetime'`
 - 函数调用：`formatDate(date, 'datetime')` → `formatDateTime(date)`
 
 **影响字段**:
+
 - 交易日期（显示时分信息）
 
 #### 3. 客户对账单列表页面
+
 **文件**: `app/(dashboard)/finance/customer-statements/page-client.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatCurrency, formatDate } from '@/lib/utils'` → `import { formatCurrency } from '@/lib/utils'; import { formatDate } from '@/lib/utils/datetime'`
 - 函数调用：`formatDate(date)` → `formatDate(date)`（保持不变，但使用新实现）
 
 **影响字段**:
+
 - 最后交易日期
 
 #### 4. 客户对账单详情页面
+
 **文件**: `app/(dashboard)/finance/customer-statements/[customerId]/page.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatCurrency, formatDate } from '@/lib/utils'` → `import { formatCurrency } from '@/lib/utils'; import { formatDate, formatDateTime } from '@/lib/utils/datetime'`
 - 函数调用：
   - `formatDate(date, 'date')` → `formatDate(date)`
   - `formatDate(date, 'datetime')` → `formatDateTime(date)`
 
 **影响字段**:
+
 - 对账期间（期初、期末日期）
 - 数据生成时间（显示时分信息）
 - 交易日期（显示时分信息）
 
 #### 5. 应收款详情页面
+
 **文件**: `app/(dashboard)/finance/receivables/[id]/page.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatCurrency, formatDate } from '@/lib/utils'` → `import { formatCurrency } from '@/lib/utils'; import { formatDate, formatDateTime } from '@/lib/utils/datetime'`
 - 函数调用：
   - `formatDate(date)` → `formatDate(date)`（到期日期、收款日期）
   - `formatDate(date)` → `formatDateTime(date)`（创建时间、更新时间）
 
 **影响字段**:
+
 - 到期日期（只显示日期）
 - 收款日期（只显示日期）
 - 创建时间（显示时分信息）
 - 更新时间（显示时分信息）
 
 #### 6. 退货订单详情页面
+
 **文件**: `app/(dashboard)/return-orders/[id]/page-client.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatCurrency, formatDate } from '@/lib/utils'` → `import { formatCurrency } from '@/lib/utils'; import { formatDateTime } from '@/lib/utils/datetime'`
 - 函数调用：`formatDate(date)` → `formatDateTime(date)`
 
 **影响字段**:
+
 - 创建时间（显示时分信息）
 - 更新时间（显示时分信息）
 - 退货申请创建时间（显示时分信息）
 - 状态更新时间（显示时分信息）
 
 #### 7. 供应商详情页面
+
 **文件**: `app/(dashboard)/suppliers/[id]/page-client.tsx`
 
 **修改内容**:
+
 - 导入语句：`import { formatCurrency, formatDate } from '@/lib/utils'` → `import { formatCurrency } from '@/lib/utils'; import { formatDate, formatDateTime } from '@/lib/utils/datetime'`
 - 函数调用：`formatDate(date)` → `formatDateTime(date)`
 
 **影响字段**:
+
 - 创建时间（显示时分信息）
 - 厂家发货订单创建时间（显示时分信息）
 
@@ -102,11 +124,11 @@
 
 ### 函数替换规则
 
-| 旧代码 | 新代码 | 说明 |
-|--------|--------|------|
-| `formatDate(date, 'datetime')` | `formatDateTime(date)` | 显示日期时间（yyyy-MM-dd HH:mm） |
-| `formatDate(date, 'date')` | `formatDate(date)` | 只显示日期（yyyy-MM-dd） |
-| `formatDate(date)` | `formatDate(date)` 或 `formatDateTime(date)` | 根据上下文决定 |
+| 旧代码                         | 新代码                                       | 说明                             |
+| ------------------------------ | -------------------------------------------- | -------------------------------- |
+| `formatDate(date, 'datetime')` | `formatDateTime(date)`                       | 显示日期时间（yyyy-MM-dd HH:mm） |
+| `formatDate(date, 'date')`     | `formatDate(date)`                           | 只显示日期（yyyy-MM-dd）         |
+| `formatDate(date)`             | `formatDate(date)` 或 `formatDateTime(date)` | 根据上下文决定                   |
 
 ### 判断标准
 
@@ -129,12 +151,14 @@ npm run type-check
 ### 显示格式对比
 
 **旧格式**（`lib/utils/format.ts`）:
+
 ```
 2025-10-23  # 只显示日期
 2025-10-23 12:34:56  # 显示日期时间（可能不一致）
 ```
 
 **新格式**（`lib/utils/datetime.ts`）:
+
 ```
 2025-10-23  # 只显示日期
 2025-10-23 12:34  # 显示日期时间（统一格式，精确到分钟）
@@ -230,6 +254,7 @@ export function formatDate(
 ## 总结
 
 **迁移完成**:
+
 - ✅ 迁移了 7 个文件
 - ✅ 统一了日期时间格式化实现
 - ✅ 使用更准确的 `date-fns` 库
@@ -237,10 +262,10 @@ export function formatDate(
 - ✅ 确保了日期时间显示格式的一致性
 
 **显示效果**:
+
 - ✅ 所有创建时间、更新时间现在都显示时分信息（格式：`yyyy-MM-dd HH:mm`）
 - ✅ 所有交易日期、收款日期现在都显示时分信息
 - ✅ 到期日期、期初期末日期只显示日期（格式：`yyyy-MM-dd`）
 - ✅ 与项目中其他页面的格式完全一致
 
 现在项目中所有使用 `formatDate` 的页面都已经迁移到统一的 `date-fns` 实现，用户体验更加一致！🚀
-

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @deprecated 此文件已弃用，建议使用 @/lib/auth/permissions
  *
  * 权限管理工具函数 (旧系统 - 客户端组件使用)
@@ -275,7 +275,7 @@ export function getAccessibleMenuItems(role: UserRole | undefined) {
       id: 'finance',
       title: '财务管理',
       href: '/finance',
-      icon: 'DollarSign',
+      icon: 'ChineseYuan',
       requiredPermissions: [PERMISSIONS.FINANCE_READ],
     },
     {

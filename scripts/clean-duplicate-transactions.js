@@ -41,7 +41,7 @@ async function cleanDuplicates() {
       console.log(`📌 Reference ID: ${dup.reference_id}`);
       console.log(`📌 Transaction Type: ${dup.transaction_type}`);
       console.log(`📌 重复次数: ${dup.count}`);
-      
+
       const ids = dup.transaction_ids.split(',');
       const amounts = dup.amounts.split(',');
       const dates = dup.dates.split(',');
@@ -55,16 +55,18 @@ async function cleanDuplicates() {
         const idsToDelete = ids.slice(1);
         console.log(`\n删除记录 (${idsToDelete.length}条):`);
         idsToDelete.forEach((id, index) => {
-          console.log(`  ID: ${id}, 金额: ${amounts[index + 1]}, 创建时间: ${dates[index + 1]}`);
+          console.log(
+            `  ID: ${id}, 金额: ${amounts[index + 1]}, 创建时间: ${dates[index + 1]}`
+          );
         });
 
         // 执行删除
         const result = await prisma.statementTransaction.deleteMany({
           where: {
             id: {
-              in: idsToDelete
-            }
-          }
+              in: idsToDelete,
+            },
+          },
         });
 
         console.log(`\n✅ 已删除 ${result.count} 条重复记录`);
@@ -76,10 +78,11 @@ async function cleanDuplicates() {
     console.log('='.repeat(80));
     console.log(`\n✅ 清理完成! 共删除 ${totalDeleted} 条重复记录\n`);
     console.log('下一步操作:');
-    console.log('1. 运行检查脚本确认已清理: node scripts/check-duplicate-transactions.js');
+    console.log(
+      '1. 运行检查脚本确认已清理: node scripts/check-duplicate-transactions.js'
+    );
     console.log('2. 应用数据库约束: npx prisma db push --accept-data-loss');
     console.log('3. 重新生成Prisma Client: npx prisma generate\n');
-
   } catch (error) {
     console.error('❌ 清理失败:', error);
     throw error;
@@ -89,4 +92,3 @@ async function cleanDuplicates() {
 }
 
 cleanDuplicates();
-

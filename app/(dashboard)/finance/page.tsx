@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Calendar,
   CreditCard,
-  DollarSign,
   Receipt,
   TrendingDown,
   TrendingUp,
@@ -11,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import Link from 'next/link';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -69,7 +69,7 @@ function FinancePageHeader({ dateLabel }: { dateLabel: string }) {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">财务管理</h1>
         <p className="text-muted-foreground">
-          管理应收账款、退款处理和往来账单
+          管理应收账款、退款处理、费用记录和往来账单
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ function FinanceOverviewCards({ overview }: { overview: FinanceOverview }) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">本月收款</CardTitle>
-          <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+          <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
@@ -321,6 +321,20 @@ function buildFinanceModules(overview: FinanceOverview): FinanceModule[] {
         amount: summary.totalAmount,
         count: summary.totalOrders,
         label: '累计账单',
+      },
+    },
+    {
+      id: 'expenses',
+      title: '费用记录',
+      description: '记录和管理各类费用支出',
+      href: '/finance/expenses',
+      icon: Receipt,
+      color: 'text-[hsl(var(--color-error))]',
+      bgColor: 'bg-[hsl(var(--color-error-light))]',
+      stats: {
+        amount: 0,
+        count: '-',
+        label: '费用支出',
       },
     },
   ];

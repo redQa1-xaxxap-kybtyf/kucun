@@ -1,17 +1,6 @@
 'use client';
 
-import {
-  DollarSign,
-  FolderTree,
-  HelpCircle,
-  LayoutDashboard,
-  Package,
-  RotateCcw,
-  Settings,
-  ShoppingCart,
-  Users,
-  Warehouse,
-} from 'lucide-react';
+import { ChevronDown, Package } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
@@ -32,79 +21,10 @@ import type { NavigationItem } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
 
-/**
- * 移动端导航菜单配置
- * 与桌面端保持一致的功能模块
- */
-const mobileNavigationItems: NavigationItem[] = [
-  {
-    id: 'dashboard',
-    title: '仪表盘',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    id: 'inventory',
-    title: '库存管理',
-    href: '/inventory',
-    icon: Warehouse,
-  },
-  {
-    id: 'products',
-    title: '产品管理',
-    href: '/products',
-    icon: Package,
-  },
-  {
-    id: 'categories',
-    title: '分类管理',
-    href: '/categories',
-    icon: FolderTree,
-  },
-  {
-    id: 'sales-orders',
-    title: '销售订单',
-    href: '/sales-orders',
-    icon: ShoppingCart,
-  },
-  {
-    id: 'return-orders',
-    title: '退货订单',
-    href: '/return-orders',
-    icon: RotateCcw,
-  },
-  {
-    id: 'customers',
-    title: '客户管理',
-    href: '/customers',
-    icon: Users,
-  },
-  {
-    id: 'finance',
-    title: '财务管理',
-    href: '/finance',
-    icon: DollarSign,
-  },
-  {
-    id: 'settings',
-    title: '系统设置',
-    href: '/settings',
-    icon: Settings,
-    requiredRoles: ['admin'],
-  },
-];
-
-/**
- * 移动端底部辅助功能导航
- */
-const mobileBottomNavigationItems: NavigationItem[] = [
-  {
-    id: 'help',
-    title: '帮助中心',
-    href: '/help',
-    icon: HelpCircle,
-  },
-];
+import {
+  bottomNavigationItems,
+  navigationItems,
+} from './sidebar-navigation-config';
 
 interface MobileNavProps {
   /** 是否打开 */
@@ -149,6 +69,7 @@ function MobileNavComponent({ open, onOpenChange, className }: MobileNavProps) {
         bottomNavItems={bottomNavItems}
         isPathActive={isPathActive}
         onItemClick={handleNavItemClick}
+        pathname={pathname}
       />
     </Sheet>
   );
@@ -165,10 +86,10 @@ const useAccessibleNavigation = (userRole?: UserRole): AccessibleNavigation =>
       return { mainNavItems: [], bottomNavItems: [] };
     }
 
-    const castItems = mobileNavigationItems as Array<{
+    const castItems = navigationItems as Array<{
       requiredRoles?: UserRole[];
     }>;
-    const castBottomItems = mobileBottomNavigationItems as Array<{
+    const castBottomItems = bottomNavigationItems as Array<{
       requiredRoles?: UserRole[];
     }>;
 
@@ -230,6 +151,7 @@ interface MobileNavSheetContentProps {
   bottomNavItems: NavigationItem[];
   isPathActive: (href: string) => boolean;
   onItemClick: () => void;
+  pathname: string;
 }
 
 const MobileNavSheetContent = ({
@@ -239,6 +161,7 @@ const MobileNavSheetContent = ({
   bottomNavItems,
   isPathActive,
   onItemClick,
+  pathname,
 }: MobileNavSheetContentProps) => (
   <SheetContent
     side="left"
@@ -262,6 +185,7 @@ const MobileNavSheetContent = ({
         onItemClick={onItemClick}
         isPathActive={isPathActive}
         ariaLabel="主导航"
+        pathname={pathname}
       />
 
       {bottomNavItems.length > 0 ? (
@@ -272,6 +196,7 @@ const MobileNavSheetContent = ({
             onItemClick={onItemClick}
             isPathActive={isPathActive}
             ariaLabel="辅助导航"
+            pathname={pathname}
           />
         </>
       ) : null}
@@ -284,6 +209,7 @@ interface NavSectionProps {
   isPathActive: (href: string) => boolean;
   onItemClick: () => void;
   ariaLabel: string;
+  pathname: string;
 }
 
 const NavSection = ({
@@ -291,6 +217,7 @@ const NavSection = ({
   isPathActive,
   onItemClick,
   ariaLabel,
+  pathname,
 }: NavSectionProps) => (
   <nav className="space-y-2" role="navigation" aria-label={ariaLabel}>
     {items.map(item => (
@@ -299,6 +226,7 @@ const NavSection = ({
         item={item}
         isActive={isPathActive(item.href)}
         onClick={onItemClick}
+        pathname={pathname}
       />
     ))}
   </nav>
@@ -308,46 +236,135 @@ interface MobileNavItemProps {
   item: NavigationItem;
   isActive: boolean;
   onClick: () => void;
+  pathname?: string;
 }
 
 /**
  * 移动端导航项组件
- * 优化的移动端交互体验
+ * 优化的移动端交互体验,支持子菜单展开/收起
  */
 const MobileNavItem = React.memo(
-  ({ item, isActive, onClick }: MobileNavItemProps) => {
+  ({ item, isActive, onClick, pathname }: MobileNavItemProps) => {
     const Icon = item.icon;
     const [isPressed, setIsPressed] = React.useState(false);
+    const [isExpanded, setIsExpanded] = React.useState(false);
 
+    // 检查是否有子菜单
+    const hasChildren = item.children && item.children.length > 0;
+
+    // 检查是否有激活的子菜单项
+    const hasActiveChild = React.useMemo(
+      () =>
+        pathname &&
+        item.children?.some(
+          child =>
+            pathname === child.href || pathname.startsWith(`${child.href}/`)
+        ),
+      [item.children, pathname]
+    );
+
+    // 如果有激活的子菜单项,自动展开
+    React.useEffect(() => {
+      if (hasActiveChild) {
+        setIsExpanded(true);
+      }
+    }, [hasActiveChild]);
+
+    // 处理点击事件
+    const handleClick = React.useCallback(
+      (e: React.MouseEvent) => {
+        if (hasChildren) {
+          e.preventDefault();
+          setIsExpanded(prev => !prev);
+        } else {
+          onClick();
+        }
+      },
+      [hasChildren, onClick]
+    );
+
+    // 如果没有子菜单,渲染普通链接
+    if (!hasChildren) {
+      return (
+        <Link
+          href={item.href}
+          onClick={onClick}
+          className={cn(
+            'block rounded-lg transition-all duration-200',
+            isPressed && 'scale-95'
+          )}
+          onTouchStart={() => setIsPressed(true)}
+          onTouchEnd={() => setIsPressed(false)}
+          onTouchCancel={() => setIsPressed(false)}
+          aria-label={item.title}
+        >
+          <Button
+            variant={isActive ? 'secondary' : 'ghost'}
+            className={cn(
+              'h-12 w-full justify-start px-4 transition-all duration-200',
+              isActive && 'bg-secondary font-medium shadow-xs',
+              'touch-manipulation active:scale-95'
+            )}
+            disabled={item.disabled}
+            asChild
+          >
+            <div>
+              <Icon className="mr-3 h-5 w-5" />
+              <span className="flex-1 text-left text-base">{item.title}</span>
+            </div>
+          </Button>
+        </Link>
+      );
+    }
+
+    // 渲染带子菜单的项
     return (
-      <Link
-        href={item.href}
-        onClick={onClick}
-        className={cn(
-          'block rounded-lg transition-all duration-200',
-          isPressed && 'scale-95'
-        )}
-        onTouchStart={() => setIsPressed(true)}
-        onTouchEnd={() => setIsPressed(false)}
-        onTouchCancel={() => setIsPressed(false)}
-        aria-label={item.title}
-      >
+      <div className="space-y-1">
         <Button
-          variant={isActive ? 'secondary' : 'ghost'}
+          variant={isActive || hasActiveChild ? 'secondary' : 'ghost'}
           className={cn(
             'h-12 w-full justify-start px-4 transition-all duration-200',
-            isActive && 'bg-secondary font-medium shadow-xs',
+            (isActive || hasActiveChild) &&
+              'bg-secondary font-medium shadow-xs',
             'touch-manipulation active:scale-95'
           )}
           disabled={item.disabled}
-          asChild
+          onClick={handleClick}
+          onTouchStart={() => setIsPressed(true)}
+          onTouchEnd={() => setIsPressed(false)}
+          onTouchCancel={() => setIsPressed(false)}
+          aria-expanded={isExpanded}
         >
-          <div>
-            <Icon className="mr-3 h-5 w-5" />
-            <span className="flex-1 text-left text-base">{item.title}</span>
-          </div>
+          <Icon className="mr-3 h-5 w-5" />
+          <span className="flex-1 text-left text-base">{item.title}</span>
+          <ChevronDown
+            className={cn(
+              'h-4 w-4 transition-transform duration-200',
+              isExpanded && 'rotate-180'
+            )}
+          />
         </Button>
-      </Link>
+
+        {/* 子菜单 */}
+        {isExpanded && (
+          <div className="border-border ml-4 space-y-1 border-l-2 pl-2">
+            {item.children?.map(child => {
+              const isChildActive =
+                pathname === child.href ||
+                (pathname && pathname.startsWith(`${child.href}/`));
+              return (
+                <MobileNavItem
+                  key={child.id}
+                  item={child}
+                  isActive={!!isChildActive}
+                  onClick={onClick}
+                  pathname={pathname}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   }
 );

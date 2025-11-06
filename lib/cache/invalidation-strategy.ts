@@ -123,7 +123,7 @@ export const ORDER_STATUS_CHANGE_INVALIDATION: InvalidationLevel = {
 export const FINANCE_CHANGE_INVALIDATION: InvalidationLevel = {
   immediate: [
     'finance:receivables:*', // 应收账款必须立即失效
-    'finance:statements:*', // 往来账单必须立即失效
+    'finance:statements:list*', // 往来账单列表必须立即失效
   ],
   deferred: [
     'dashboard:overview:*', // 仪表盘概览延迟失效

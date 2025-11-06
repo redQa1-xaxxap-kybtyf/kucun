@@ -47,7 +47,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     }
 
     const dateFields = convertDateFields(validated);
-    const enableSmartTransition = validated.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
+    const enableSmartTransition =
+      validated.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
 
     const result = await applyStatusUpdate({
       id,
@@ -186,14 +187,13 @@ async function applyStatusUpdate({
   );
 }
 
-async function fetchOrderWithRelations(
-  prisma: PrismaClient,
-  id: string
-) {
+async function fetchOrderWithRelations(prisma: PrismaClient, id: string) {
   return prisma.factoryShipmentOrder.findUnique({
     where: { id },
     include: {
-      customer: { select: { id: true, name: true, phone: true, address: true } },
+      customer: {
+        select: { id: true, name: true, phone: true, address: true },
+      },
       user: { select: { id: true, name: true, email: true } },
       items: {
         include: {

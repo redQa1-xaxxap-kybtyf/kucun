@@ -133,7 +133,7 @@ export function TransferProductSelector({
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (nextOpen && selectedProduct) {
-        // 打开时，如果有已选商品，自动填充搜索框以便用户快速定位（优先使用编码）
+        // 打开时，如果有已选产品，自动填充搜索框以便用户快速定位（优先使用编码）
         setSearchValue(selectedProduct.code || selectedProduct.name || '');
       } else if (!nextOpen) {
         // 关闭时清空搜索框
@@ -240,7 +240,7 @@ export function TransferProductSelector({
 
                       {/* 价格信息 */}
                       <div className="text-muted-foreground text-xs">
-                        价格：¥
+                        价格：￥
                         {'price' in product && typeof product.price === 'number'
                           ? product.price.toFixed(2)
                           : '0.00'}

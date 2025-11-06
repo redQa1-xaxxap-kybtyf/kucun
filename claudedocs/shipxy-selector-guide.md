@@ -3,6 +3,7 @@
 ## 问题总结
 
 CSS.escape 运行时错误已完全修复（9/9 实例）：
+
 - ✅ cheerio-html-parser.ts: 7 个实例已修复
 - ✅ enhanced-page-analyzer-cheerio.ts: 2 个实例已修复
 - ✅ cssEscape 函数已导出为公共 API
@@ -53,11 +54,13 @@ shipxy.com 使用 **列表结构（List-based）** 而非传统表格结构来�
 **容器**: `<ul class="right-top-list-ul">`
 
 **字段项**: 每个 `<li>` 包含：
+
 - 标签 `<span class="title">` - 字段名称
 - 分隔符 `<span>：</span>`
 - 值 `<span class="ship-mmsi">` - 字段值
 
 **关键类名**:
+
 - `.right-top-list-ul` - 主容器
 - `.title` - 字段标签
 - `.ship-mmsi` - 字段值（统一类名）
@@ -66,11 +69,11 @@ shipxy.com 使用 **列表结构（List-based）** 而非传统表格结构来�
 
 ### 基本配置
 
-| 配置项 | 推荐选择器 | 备选方案 |
-|--------|-----------|---------|
-| **搜索框** | `input[placeholder*="搜索"]` | `input[type="text"]` |
-| **搜索按钮** | （留空） | shipxy 使用回车键搜索 |
-| **结果容器** | `.right-top-list-ul` | `ul.right-top-list-ul` |
+| 配置项       | 推荐选择器                   | 备选方案               |
+| ------------ | ---------------------------- | ---------------------- |
+| **搜索框**   | `input[placeholder*="搜索"]` | `input[type="text"]`   |
+| **搜索按钮** | （留空）                     | shipxy 使用回车键搜索  |
+| **结果容器** | `.right-top-list-ul`         | `ul.right-top-list-ul` |
 
 ### 数据提取字段
 
@@ -78,41 +81,45 @@ shipxy.com 使用 **列表结构（List-based）** 而非传统表格结构来�
 
 最稳定的选择器，直接匹配字段标签：
 
-| 字段 | 键值 | 显示名称 | CSS 选择器 | 描述 |
-|------|------|---------|-----------|------|
-| MMSI | `mmsi` | MMSI | `li:has(span.title:contains("MMSI")) span.ship-mmsi` | 船舶唯一标识 |
-| 状态 | `status` | 状态 | `li:has(span.title:contains("状态")) span.ship-mmsi` | 航行状态 |
-| 航速 | `speed` | 航速 | `li:has(span.title:contains("航速")) span.ship-mmsi` | 当前航速 |
-| 目的地 | `destination` | 目的地 | `li:has(span.title:contains("目的地")) span.ship-mmsi` | 目标港口 |
+| 字段     | 键值               | 显示名称 | CSS 选择器                                               | 描述         |
+| -------- | ------------------ | -------- | -------------------------------------------------------- | ------------ |
+| MMSI     | `mmsi`             | MMSI     | `li:has(span.title:contains("MMSI")) span.ship-mmsi`     | 船舶唯一标识 |
+| 状态     | `status`           | 状态     | `li:has(span.title:contains("状态")) span.ship-mmsi`     | 航行状态     |
+| 航速     | `speed`            | 航速     | `li:has(span.title:contains("航速")) span.ship-mmsi`     | 当前航速     |
+| 目的地   | `destination`      | 目的地   | `li:has(span.title:contains("目的地")) span.ship-mmsi`   | 目标港口     |
 | 预到时间 | `estimatedArrival` | 预到时间 | `li:has(span.title:contains("预到时间")) span.ship-mmsi` | 预计到达时间 |
-| 更新时间 | `updateTime` | 更新时间 | `li:has(span.title:contains("更新时间")) span.ship-mmsi` | 数据更新时间 |
+| 更新时间 | `updateTime`       | 更新时间 | `li:has(span.title:contains("更新时间")) span.ship-mmsi` | 数据更新时间 |
 
 **优点**:
+
 - ✅ 最准确，直接匹配字段语义
 - ✅ 不依赖 DOM 结构顺序
 - ✅ 字段位置变化不受影响
 
 **限制**:
+
 - ⚠️ 需要浏览器支持 `:has()` 和 `:contains()`（大部分现代浏览器已支持）
 
 #### 方案 2: 基于结构位置
 
 使用 `nth-child` 定位，适用于字段顺序固定的情况：
 
-| 字段 | CSS 选择器 | 位置 |
-|------|-----------|------|
-| MMSI | `.right-top-list-ul > li:nth-child(1) span.ship-mmsi` | 第 1 项 |
-| 状态 | `.right-top-list-ul > li:nth-child(2) span.ship-mmsi` | 第 2 项 |
-| 航速 | `.right-top-list-ul > li:nth-child(3) span.ship-mmsi` | 第 3 项 |
-| 目的地 | `.right-top-list-ul > li:nth-child(4) span.ship-mmsi` | 第 4 项 |
+| 字段     | CSS 选择器                                            | 位置    |
+| -------- | ----------------------------------------------------- | ------- |
+| MMSI     | `.right-top-list-ul > li:nth-child(1) span.ship-mmsi` | 第 1 项 |
+| 状态     | `.right-top-list-ul > li:nth-child(2) span.ship-mmsi` | 第 2 项 |
+| 航速     | `.right-top-list-ul > li:nth-child(3) span.ship-mmsi` | 第 3 项 |
+| 目的地   | `.right-top-list-ul > li:nth-child(4) span.ship-mmsi` | 第 4 项 |
 | 预到时间 | `.right-top-list-ul > li:nth-child(5) span.ship-mmsi` | 第 5 项 |
 | 更新时间 | `.right-top-list-ul > li:nth-child(6) span.ship-mmsi` | 第 6 项 |
 
 **优点**:
+
 - ✅ 简单直接
 - ✅ 兼容性好
 
 **缺点**:
+
 - ❌ 字段顺序变化会失效
 - ❌ 新增/删除字段会破坏位置
 
@@ -144,25 +151,33 @@ shipxy.com 使用 **列表结构（List-based）** 而非传统表格结构来�
 ### 3. 配置页面选择器
 
 #### 搜索框选择器
+
 ```css
 input[placeholder*="搜索"]
 ```
+
 或者
+
 ```css
 input[type="text"]
 ```
 
 #### 搜索按钮选择器
+
 ```
 （留空）
 ```
+
 > **注意**: shipxy.com 使用回车键触发搜索，不需要点击按钮
 
 #### 结果容器选择器
+
 ```css
 .right-top-list-ul
 ```
+
 或者
+
 ```css
 ul.right-top-list-ul
 ```
@@ -172,6 +187,7 @@ ul.right-top-list-ul
 点击 **"添加字段"** 按钮，逐个添加以下字段：
 
 #### 字段 1: MMSI
+
 ```yaml
 字段键值: mmsi
 显示名称: MMSI
@@ -181,6 +197,7 @@ CSS选择器: li:has(span.title:contains("MMSI")) span.ship-mmsi
 ```
 
 #### 字段 2: 状态
+
 ```yaml
 字段键值: status
 显示名称: 状态
@@ -189,6 +206,7 @@ CSS选择器: li:has(span.title:contains("状态")) span.ship-mmsi
 ```
 
 #### 字段 3: 航速
+
 ```yaml
 字段键值: speed
 显示名称: 航速
@@ -197,6 +215,7 @@ CSS选择器: li:has(span.title:contains("航速")) span.ship-mmsi
 ```
 
 #### 字段 4: 目的地
+
 ```yaml
 字段键值: destination
 显示名称: 目的地
@@ -205,6 +224,7 @@ CSS选择器: li:has(span.title:contains("目的地")) span.ship-mmsi
 ```
 
 #### 字段 5: 预到时间
+
 ```yaml
 字段键值: estimatedArrival
 显示名称: 预到时间
@@ -213,6 +233,7 @@ CSS选择器: li:has(span.title:contains("预到时间")) span.ship-mmsi
 ```
 
 #### 字段 6: 更新时间
+
 ```yaml
 字段键值: updateTime
 显示名称: 更新时间
@@ -234,10 +255,11 @@ CSS选择器: li:has(span.title:contains("更新时间")) span.ship-mmsi
 
 ```javascript
 // 测试结果容器
-document.querySelector('.right-top-list-ul')
+document.querySelector('.right-top-list-ul');
 
 // 测试 MMSI 提取
-document.querySelector('li:has(span.title:contains("MMSI")) span.ship-mmsi')?.textContent
+document.querySelector('li:has(span.title:contains("MMSI")) span.ship-mmsi')
+  ?.textContent;
 
 // 测试所有字段
 document.querySelectorAll('.right-top-list-ul li').forEach(li => {
@@ -335,10 +357,10 @@ function generateListFieldSelector(
 
 ```typescript
 const confidence = {
-  semanticListSelector: 0.95,  // 基于标签文本的列表选择器
+  semanticListSelector: 0.95, // 基于标签文本的列表选择器
   structuralListSelector: 0.75, // 基于位置的列表选择器
-  tableSelector: 0.85,          // 表格选择器
-  genericSelector: 0.5,         // 通用class选择器
+  tableSelector: 0.85, // 表格选择器
+  genericSelector: 0.5, // 通用class选择器
 };
 ```
 
@@ -347,11 +369,13 @@ const confidence = {
 ### CSS :has() 和 :contains() 支持
 
 **:has() 伪类**:
+
 - Chrome 105+ ✅
 - Firefox 121+ ✅
 - Safari 15.4+ ✅
 
 **:contains() 伪类**:
+
 - jQuery 特有，原生 CSS 不支持 ❌
 - 需要使用 JavaScript 或 XPath 替代
 
@@ -381,12 +405,14 @@ const status = extractFieldByLabel('状态');
 ### Q1: 为什么智能识别生成的选择器不准确？
 
 **A**: 当前智能识别主要针对表格结构优化，shipxy.com 使用列表结构，所以生成的选择器过于泛化。建议：
+
 1. 按本文档手动配置选择器（推荐）
 2. 等待列表结构识别功能增强
 
 ### Q2: 选择器在某些浏览器中不工作？
 
 **A**: `:has()` 和 `:contains()` 是较新的CSS特性，旧浏览器不支持。解决方案：
+
 - 使用方案 2（基于位置的选择器）
 - 使用方案 3（XPath 表达式）
 - 确保浏览器版本符合要求
@@ -394,9 +420,10 @@ const status = extractFieldByLabel('状态');
 ### Q3: 如何测试选择器是否正确？
 
 **A**: 在浏览器开发者工具中：
+
 ```javascript
 // F12 打开开发者工具 -> Console 标签
-document.querySelector('你的选择器')?.textContent
+document.querySelector('你的选择器')?.textContent;
 ```
 
 如果返回正确的文本内容，说明选择器有效。
@@ -404,6 +431,7 @@ document.querySelector('你的选择器')?.textContent
 ### Q4: 字段顺序变化导致提取失败怎么办？
 
 **A**:
+
 - 方案 1（推荐）不受字段顺序影响
 - 如果使用方案 2，需要更新 `nth-child` 的序号
 
@@ -412,15 +440,18 @@ document.querySelector('你的选择器')?.textContent
 shipxy.com 采用列表结构展示数据，推荐使用 **方案 1（基于标题文本）** 进行配置：
 
 ✅ **优点**:
+
 - 精确匹配字段语义
 - 不受字段顺序影响
 - 可维护性强
 
 ⚠️ **注意事项**:
+
 - 需要现代浏览器支持
 - 手动配置比智能识别更可靠
 
 📝 **配置要点**:
+
 1. 结果容器: `.right-top-list-ul`
 2. 字段选择器: `li:has(span.title:contains("字段名")) span.ship-mmsi`
 3. 必填字段: MMSI

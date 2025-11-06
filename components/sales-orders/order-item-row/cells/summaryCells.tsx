@@ -21,7 +21,7 @@ export function AmountCell({ amount }: { amount: number }) {
   return (
     <TableCell className={`${baseCellClass} min-w-[100px]`}>
       <div className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
-        ¥{amount.toFixed(2)}
+        ￥{amount.toFixed(2)}
       </div>
     </TableCell>
   );

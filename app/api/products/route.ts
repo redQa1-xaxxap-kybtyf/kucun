@@ -5,7 +5,7 @@ import { ApiError, handlePrismaError } from '@/lib/api/errors';
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
-import { revalidateProducts, publishDataUpdate } from '@/lib/cache';
+import { publishDataUpdate, revalidateProducts } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
@@ -143,7 +143,7 @@ export const POST = withAuth(
             name: name || code, // 如果name为空,使用code作为name
             specification,
             description,
-            unit: 'piece', // 默认单位为"件"
+            unit: 'sheet', // 默认单位为"片"（符合业务规则）
             thickness,
             categoryId: processedCategoryId ?? null,
             thumbnailUrl,

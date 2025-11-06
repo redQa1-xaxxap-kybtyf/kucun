@@ -1,14 +1,8 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { format } from 'date-fns';
-import {
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Receipt,
-  TrendingUp,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle, Clock, Receipt, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -208,7 +202,7 @@ export function PaymentsOutClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总付款金额</CardTitle>
-            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+            <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
@@ -355,7 +349,7 @@ export function PaymentsOutClient({
           <div className="mt-6 space-y-4">
             {payments.length === 0 ? (
               <EmptyState
-                icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+                icon={<ChineseYuan className="text-muted-foreground h-8 w-8" />}
                 title="暂无付款记录"
                 compact
               />

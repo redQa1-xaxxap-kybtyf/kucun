@@ -107,10 +107,10 @@ model PaymentRecord {
 
 #### 结果:
 
-- 预收款: ¥5000 (全部冲抵)
-- 订单应付: ¥10,000
-- 订单已付: ¥5,000
-- 订单欠款: ¥5,000
+- 预收款: ￥5000 (全部冲抵)
+- 订单应付: ￥10,000
+- 订单已付: ￥5,000
+- 订单欠款: ￥5,000
 
 ### 场景 2: 订单后付款(现有流程)
 
@@ -290,7 +290,7 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
   {availablePrepayments > 0 && (
     <PrepaymentPanel>
       <Checkbox checked={usePrepayment} onChange={setUsePrepayment}>
-        使用预收款冲抵 (可用: ¥{availablePrepayments})
+        使用预收款冲抵 (可用: ￥{availablePrepayments})
       </Checkbox>
 
       {usePrepayment && (
@@ -306,7 +306,7 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
         {prepaymentRecords.map(p => (
           <PrepaymentItem key={p.id}>
             <span>{p.paymentNumber}</span>
-            <span>可用: ¥{p.paymentAmount - p.appliedAmount}</span>
+            <span>可用: ￥{p.paymentAmount - p.appliedAmount}</span>
             <span>{formatDate(p.paymentDate)}</span>
           </PrepaymentItem>
         ))}
@@ -316,9 +316,9 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
 
   {/* 金额汇总 */}
   <OrderSummary>
-    <div>订单总额: ¥{orderTotal}</div>
-    <div>预收款抵扣: -¥{prepaymentAmount}</div>
-    <div>应付金额: ¥{orderTotal - prepaymentAmount}</div>
+    <div>订单总额: ￥{orderTotal}</div>
+    <div>预收款抵扣: -￥{prepaymentAmount}</div>
+    <div>应付金额: ￥{orderTotal - prepaymentAmount}</div>
   </OrderSummary>
 </SalesOrderForm>
 ```

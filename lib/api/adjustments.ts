@@ -3,7 +3,10 @@
  * 提供调整记录的查询和管理功能
  */
 
-import { INVENTORY_ACTIVITY_GC_TIME_MS, INVENTORY_ACTIVITY_STALE_TIME_MS } from '@/lib/constants/cache';
+import {
+  INVENTORY_ACTIVITY_GC_TIME_MS,
+  INVENTORY_ACTIVITY_STALE_TIME_MS,
+} from '@/lib/constants/cache';
 import type { ApiResponse } from '@/lib/types/api';
 import type {
   AdjustmentQueryParams,

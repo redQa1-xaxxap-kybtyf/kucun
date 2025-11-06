@@ -306,7 +306,7 @@ export async function createTransferPayableRecord(
           status: 'pending',
           paymentTerms: '30天',
           description: `调货销售订单 ${orderNumber} 确认后自动生成应付款`,
-          remarks: `关联销售订单：${orderNumber}，成本金额：¥${costAmount.toFixed(2)}`,
+          remarks: `关联销售订单：${orderNumber}，成本金额：￥${costAmount.toFixed(2)}`,
         },
       });
     });

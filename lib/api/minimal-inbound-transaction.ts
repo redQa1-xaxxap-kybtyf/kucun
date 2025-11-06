@@ -17,6 +17,10 @@ import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { INBOUND_REASON_LABELS } from '@/lib/types/inbound';
+import {
+  calculateTotalCost,
+  calculateWeightedAverageCost,
+} from '@/lib/utils/cost-calculation';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks } from '@/lib/validations/inbound';
 
@@ -37,10 +41,13 @@ export interface MinimalInboundTransactionData {
   productId: string;
   variantId?: string;
   quantity: number;
+  unitCost: number; // 入库单位成本（必填）
   reason: string;
   remarks?: string;
   batchNumber: string; // 事务外预生成
   userId: string;
+  purchaseOrderId?: string;
+  purchaseOrderItemId?: string;
 }
 
 /**
@@ -58,6 +65,8 @@ export interface MinimalInboundTransactionResult {
   batchNumber: string;
   createdAt: string;
   updatedAt: string;
+  purchaseOrderId?: string;
+  purchaseOrderItemId?: string;
   product: {
     id: string;
     name: string;
@@ -91,9 +100,10 @@ export interface MinimalInboundTransactionResult {
  * @returns 入库记录信息
  */
 export async function executeMinimalInboundTransaction(
-  data: MinimalInboundTransactionData
+  data: MinimalInboundTransactionData,
+  options?: { tx?: Prisma.TransactionClient }
 ): Promise<MinimalInboundTransactionResult> {
-  return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  const run = async (tx: Prisma.TransactionClient) => {
     // 🎯 核心操作 1: 创建入库记录
     // 生成唯一记录编号
     const recordNumber = generateInboundRecordNumber();
@@ -102,17 +112,24 @@ export async function executeMinimalInboundTransaction(
     const finalRemarks =
       cleanRemarks(data.remarks) || generateDefaultRemarks(data.reason);
 
+    // 计算入库总成本
+    const totalCost = calculateTotalCost(data.quantity, data.unitCost);
+
     const inboundRecord = await tx.inboundRecord.create({
       data: {
         recordNumber,
         productId: data.productId,
         variantId: data.variantId || null,
-        batchNumber: data.batchNumber,
+        batchNumber: data.batchNumber || null,
         batchSpecificationId: null, // 批次规格关联将在异步队列中处理
         quantity: data.quantity,
+        unitCost: data.unitCost, // 记录入库单位成本
+        totalCost, // 记录入库总成本
         reason: data.reason,
         remarks: finalRemarks,
         userId: data.userId,
+        purchaseOrderId: data.purchaseOrderId || null,
+        purchaseOrderItemId: data.purchaseOrderItemId || null,
       },
       include: {
         product: {
@@ -132,7 +149,7 @@ export async function executeMinimalInboundTransaction(
       },
     });
 
-    // 🎯 核心操作 2: 原子更新库存
+    // 🎯 核心操作 2: 原子更新库存（包含成本计算）
     // 使用 findFirst + create/update 模式,因为 upsert 的 where 条件无法正确匹配 NULL 值
     const existingInventory = await tx.inventory.findFirst({
       where: {
@@ -142,17 +159,30 @@ export async function executeMinimalInboundTransaction(
       },
     });
 
+    let newUnitCost: number;
+
     if (existingInventory) {
-      // 更新现有库存
+      // 计算加权平均成本
+      newUnitCost = calculateWeightedAverageCost(
+        existingInventory.quantity,
+        existingInventory.unitCost || 0, // 如果原成本为null，视为0
+        data.quantity,
+        data.unitCost
+      );
+
+      // 更新现有库存（包含成本）
       await tx.inventory.update({
         where: { id: existingInventory.id },
         data: {
           quantity: { increment: data.quantity }, // 原子递增
+          unitCost: newUnitCost, // 更新加权平均成本
           updatedAt: new Date(),
         },
       });
     } else {
-      // 创建新库存记录
+      // 新建库存记录，直接使用入库成本
+      newUnitCost = data.unitCost;
+
       await tx.inventory.create({
         data: {
           productId: data.productId,
@@ -160,6 +190,7 @@ export async function executeMinimalInboundTransaction(
           batchNumber: data.batchNumber || null,
           quantity: data.quantity,
           reservedQuantity: 0,
+          unitCost: newUnitCost, // 设置初始成本
         },
       });
     }
@@ -177,6 +208,8 @@ export async function executeMinimalInboundTransaction(
       batchNumber: inboundRecord.batchNumber || '',
       createdAt: toISOString(inboundRecord.createdAt) || '',
       updatedAt: toISOString(inboundRecord.updatedAt) || '',
+      purchaseOrderId: inboundRecord.purchaseOrderId || undefined,
+      purchaseOrderItemId: inboundRecord.purchaseOrderItemId || undefined,
       product: {
         id: inboundRecord.product.id,
         name: inboundRecord.product.name,
@@ -193,7 +226,13 @@ export async function executeMinimalInboundTransaction(
       productUnit: inboundRecord.product.unit as ProductUnit,
       userName: inboundRecord.user.name,
     };
-  }, getStandardTransactionOptions()); // 🚀 使用标准事务超时(10秒),事务更快,超时风险极低
+  };
+
+  if (options?.tx) {
+    return run(options.tx);
+  }
+
+  return await prisma.$transaction(run, getStandardTransactionOptions()); // 🚀 使用标准事务超时(10秒),事务更快,超时风险极低
 }
 
 /**

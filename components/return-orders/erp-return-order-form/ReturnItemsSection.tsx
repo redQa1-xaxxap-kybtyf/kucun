@@ -91,7 +91,7 @@ export function ReturnItemsSection({
         <div className="flex items-center justify-between">
           <div className="text-muted-foreground text-xs">退货明细</div>
           <div className="text-muted-foreground text-xs">
-            总金额: ¥{calculateTotal().toFixed(2)}
+            总金额: ￥{calculateTotal().toFixed(2)}
           </div>
         </div>
       </div>
@@ -99,7 +99,7 @@ export function ReturnItemsSection({
         {isMultiOrder && selectedCustomerId && (
           <div className="mb-4">
             <div className="mb-2 text-xs font-medium">
-              从销售订单中选择退货商品
+              从销售订单中选择退货产品
             </div>
             <MultiOrderItemSelector
               customerId={selectedCustomerId}
@@ -122,7 +122,7 @@ export function ReturnItemsSection({
           <div className="text-muted-foreground py-8 text-center text-xs">
             {isSingleOrder
               ? '暂无退货明细，请先选择销售订单'
-              : '暂无退货明细，请从上方选择要退货的商品'}
+              : '暂无退货明细，请从上方选择要退货的产品'}
           </div>
         ) : (
           <div className="rounded border">
@@ -274,7 +274,7 @@ export function ReturnItemsSection({
                       </TableCell>
                       <TableCell className="h-8 px-2">
                         <span className="font-mono text-xs">
-                          ¥
+                          ￥
                           {form.watch(`items.${index}.subtotal`)?.toFixed(2) ||
                             '0.00'}
                         </span>

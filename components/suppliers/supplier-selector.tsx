@@ -102,12 +102,9 @@ export function SupplierSelector({
         if (controller.signal.aborted) {
           return;
         }
-        logger.error(
-          'suppliers:selector',
-          '获取供应商列表失败',
-          error,
-          { search: normalizedSearch }
-        );
+        logger.error('suppliers:selector', '获取供应商列表失败', error, {
+          search: normalizedSearch,
+        });
         setError('获取供应商列表失败，请稍后重试');
       } finally {
         setLoading(false);

@@ -5,6 +5,7 @@
 设置日志页面调用 `/api/settings/logs` 接口时返回 500 错误。
 
 **错误原因**：
+
 - Prisma schema 中 `SystemLog` 模型缺少与 `User` 模型的关系定义
 - API 代码尝试使用 `include: { user: ... }` 查询用户信息，但关系不存在
 - 导致 Prisma 查询失败，返回 500 错误
@@ -16,10 +17,11 @@
 **文件**：`prisma/schema.prisma`
 
 #### 在 User 模型中添加关系（第 34 行）：
+
 ```prisma
 model User {
   // ... 其他字段
-  
+
   // 关系定义
   factoryShipmentOrders        FactoryShipmentOrder[] @relation("FactoryShipmentOrders")
   salesOrders                  SalesOrder[]           @relation("UserSalesOrders")
@@ -29,6 +31,7 @@ model User {
 ```
 
 #### 在 SystemLog 模型中添加关系（第 877 行）：
+
 ```prisma
 model SystemLog {
   id          String   @id @default(uuid()) @db.Char(36)
@@ -38,10 +41,10 @@ model SystemLog {
   description String   @db.VarChar(255)
   userId      String?  @map("user_id") @db.Char(36)
   // ... 其他字段
-  
+
   // 关系定义  ← 新增
   user User? @relation("UserSystemLogs", fields: [userId], references: [id], onDelete: SetNull)
-  
+
   @@index([type])
   @@index([level])
   @@index([action])
@@ -98,6 +101,7 @@ npx prisma generate
 ```
 
 应该看到：
+
 ```
 ✔ Generated Prisma Client (v5.x.x) to ./node_modules/@prisma/client
 ```
@@ -171,4 +175,3 @@ const logs = await prisma.systemLog.findMany({
 **修复完成时间**：2025-11-02  
 **修复人员**：AI Assistant  
 **影响范围**：系统日志查询功能
-

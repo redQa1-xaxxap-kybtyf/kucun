@@ -6,6 +6,7 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
+import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { AmountInfoSection } from '@/components/factory-shipments/form-sections/amount-info-section';
 import { BasicInfoSection } from '@/components/factory-shipments/form-sections/basic-info-section';
 import { ItemListSection } from '@/components/factory-shipments/form-sections/item-list-section';
@@ -88,10 +89,11 @@ export function FactoryShipmentOrderForm({
       depositAmount: 0,
       remarks: '',
       items: [createEmptyItem()],
+      feeItems: [],
     },
   });
 
-  // 商品明细字段数组
+  // 产品明细字段数组
   const fieldArray = useFieldArray({
     control: form.control,
     name: 'items',
@@ -175,11 +177,12 @@ export function FactoryShipmentOrderForm({
           ownershipRemarks: item.ownershipRemarks || '', // 归属备注（可选）
           remarks: item.remarks || '', // 备注（可选）
         })) || [createEmptyItem()],
+        feeItems: [], // 编辑模式下费用项暂时为空（后续可从 ExpenseRecord 加载）
       });
     }
   }, [orderDetail, isEditing, form]);
 
-  // 监听商品明细变化，自动计算总金额
+  // 监听产品明细变化，自动计算总金额
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name?.startsWith('items')) {
@@ -259,6 +262,7 @@ export function FactoryShipmentOrderForm({
             depositAmount: 0,
             remarks: '',
             items: [createEmptyItem()],
+            feeItems: [],
           });
         },
         onError: error => {
@@ -307,7 +311,7 @@ export function FactoryShipmentOrderForm({
           onRefreshCustomers={handleRefreshCustomers}
         />
 
-        {/* 商品明细 */}
+        {/* 产品明细 */}
         <ItemListSection
           form={form}
           fieldArray={fieldArray}
@@ -318,6 +322,17 @@ export function FactoryShipmentOrderForm({
 
         {/* 金额信息 */}
         <AmountInfoSection form={form} />
+
+        {/* 费用项目 */}
+        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+          <CardContent className="p-6">
+            <FactoryShipmentFeeItemsInput
+              feeItems={form.watch('feeItems') || []}
+              onChange={feeItems => form.setValue('feeItems', feeItems)}
+              disabled={isLoading}
+            />
+          </CardContent>
+        </Card>
 
         {/* 操作按钮 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))] shadow-md">

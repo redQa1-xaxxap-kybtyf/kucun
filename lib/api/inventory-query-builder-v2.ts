@@ -1,11 +1,11 @@
 /**
  * 库存查询构建器 V2 - 混合分页策略
- * 
+ *
  * 核心优化：
  * 1. 前 N 页使用偏移分页（支持跳页，用户体验好）
  * 2. 后续使用游标分页（性能优化，不受数据量影响）
  * 3. 引导用户使用筛选条件缩小范围
- * 
+ *
  * 性能对比：
  * - 偏移分页（第 500 页，100,000 条记录）: ~3500ms ❌
  * - 游标分页（任意位置，100,000 条记录）: ~60ms ✅
@@ -122,7 +122,7 @@ export interface PaginatedInventoryResponse<T> {
 
 /**
  * 混合分页查询
- * 
+ *
  * @param params 查询参数
  * @returns 分页结果
  */
@@ -299,7 +299,8 @@ async function getCursorBasedPage(
   }
 
   // 获取新的游标
-  const nextCursor = direction === 'next' && hasMore ? data[data.length - 1]?.id : null;
+  const nextCursor =
+    direction === 'next' && hasMore ? data[data.length - 1]?.id : null;
   const prevCursor = direction === 'prev' && hasMore ? data[0]?.id : null;
 
   // 获取总数（可选，游标分页通常不需要总数）
@@ -325,7 +326,9 @@ async function getCursorBasedPage(
  * 构建 WHERE 子句
  * 复用现有逻辑
  */
-function buildWhereClause(params: HybridPaginationParams): Prisma.InventoryWhereInput {
+function buildWhereClause(
+  params: HybridPaginationParams
+): Prisma.InventoryWhereInput {
   const where: Prisma.InventoryWhereInput = {};
 
   // 搜索条件
@@ -370,7 +373,10 @@ function buildOrderBy(
 ): Prisma.InventoryOrderByWithRelationInput {
   const order = sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
 
-  const validSortFields: Record<string, Prisma.InventoryOrderByWithRelationInput> = {
+  const validSortFields: Record<
+    string,
+    Prisma.InventoryOrderByWithRelationInput
+  > = {
     updatedAt: { updatedAt: order },
     quantity: { quantity: order },
     productId: { productId: order },
@@ -384,4 +390,3 @@ function buildOrderBy(
 // ==================== 导出 ====================
 
 export { HYBRID_PAGINATION_CONFIG };
-

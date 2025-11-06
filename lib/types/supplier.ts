@@ -2,7 +2,7 @@
 // 遵循命名约定：前端使用 camelCase
 
 // 供应商状态类型
-export type SupplierStatus = 'active' | 'inactive';
+export type SupplierStatus = 'active' | 'inactive' | 'suspended';
 
 // 供应商基础信息
 export interface Supplier {
@@ -76,6 +76,7 @@ export interface BatchUpdateSupplierStatusInput {
 export interface BatchUpdateSupplierStatusResult {
   success: boolean;
   updatedCount: number;
+  unchangedCount?: number;
   failedCount: number;
   failedSuppliers?: {
     id: string;

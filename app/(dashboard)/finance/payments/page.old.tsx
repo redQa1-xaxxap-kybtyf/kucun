@@ -1,3 +1,4 @@
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 /**
  * 收款记录页面
  * 显示所有收款记录，支持筛选、搜索和分页
@@ -8,18 +9,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import {
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Download,
-  Filter,
-  Plus,
-  Receipt,
-  Search,
-  TrendingUp,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle, Clock, Download, Filter, Plus, Receipt, Search, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -252,7 +242,7 @@ export default function PaymentsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">总收款金额</CardTitle>
-              <DollarSign className="h-4 w-4 text-[hsl(var(--color-success))]" />
+              <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-success))]" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
@@ -382,7 +372,7 @@ export default function PaymentsPage() {
               ) : !payments.length ? (
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
-                    <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+                    <ChineseYuan className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                     <p className="text-muted-foreground">暂无收款记录</p>
                   </div>
                 </div>

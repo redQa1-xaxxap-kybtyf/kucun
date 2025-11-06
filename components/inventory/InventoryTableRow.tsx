@@ -22,11 +22,14 @@ import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatDateTime } from '@/lib/utils/datetime';
+import { formatCurrency } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryTableRowProps {
   item: Inventory;
   onAdjust: (id: string) => void;
+  /** 是否有财务查看权限 */
+  hasFinancePermission?: boolean;
   /** 自定义样式（用于虚拟化） */
   style?: React.CSSProperties;
   /** 自定义类名 */
@@ -158,6 +161,7 @@ function useInventoryRowData(item: Inventory) {
 interface InventoryRowViewProps {
   item: Inventory;
   onAdjust: () => void;
+  hasFinancePermission?: boolean;
   style?: React.CSSProperties;
   className?: string;
   packaging: number;
@@ -172,6 +176,7 @@ interface InventoryRowViewProps {
 function InventoryRowView({
   item,
   onAdjust,
+  hasFinancePermission = false,
   style,
   className,
   packaging,
@@ -208,6 +213,21 @@ function InventoryRowView({
       <TableCell className="font-medium">{quantityDisplay}</TableCell>
       <TableCell>{reservedDisplay}</TableCell>
       <TableCell className="font-medium">{availableDisplay}</TableCell>
+      {/* 成本信息（仅财务权限可见） */}
+      {hasFinancePermission && (
+        <>
+          {/* 单位成本 */}
+          <TableCell className="text-right font-medium">
+            {item.unitCost ? formatCurrency(item.unitCost) : '-'}
+          </TableCell>
+          {/* 库存总成本 */}
+          <TableCell className="text-right font-semibold">
+            {item.unitCost
+              ? formatCurrency(item.quantity * item.unitCost)
+              : '-'}
+          </TableCell>
+        </>
+      )}
       <TableCell>{stockBadge}</TableCell>
       <TableCell>{formattedDate}</TableCell>
       <TableCell>
@@ -235,7 +255,7 @@ function InventoryRowView({
  * 使用React.memo优化重渲染性能
  */
 export const InventoryTableRow = React.memo<InventoryTableRowProps>(
-  ({ item, onAdjust, style, className }) => {
+  ({ item, onAdjust, hasFinancePermission = false, style, className }) => {
     const { handleAdjust } = useInventoryRowHandlers(item, onAdjust);
     const rowData = useInventoryRowData(item);
 
@@ -243,6 +263,7 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
       <InventoryRowView
         item={item}
         onAdjust={handleAdjust}
+        hasFinancePermission={hasFinancePermission}
         style={style}
         className={className}
         {...rowData}

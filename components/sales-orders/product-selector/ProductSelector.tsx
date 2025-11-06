@@ -231,7 +231,7 @@ function useProductSelectorController({
     (nextOpen: boolean) => {
       setOpen(nextOpen);
       if (nextOpen && selectedProduct) {
-        // 打开时，如果有已选商品，自动填充搜索框以便用户快速定位（优先使用编码）
+        // 打开时，如果有已选产品，自动填充搜索框以便用户快速定位（优先使用编码）
         setSearchValue(selectedProduct.code || selectedProduct.name || '');
       } else if (!nextOpen) {
         // 关闭时清空搜索框
@@ -420,7 +420,7 @@ function useBatchProductSelectorController({
       // 关闭时清空搜索框
       setSearchValue('');
     }
-    // 注意：批量选择器不自动填充搜索框，因为有多个已选商品
+    // 注意：批量选择器不自动填充搜索框，因为有多个已选产品
   }, []);
 
   return {

@@ -23,16 +23,16 @@ export function ProductSearchEmptyState({
       <div className="space-y-3">
         <div className="text-muted-foreground">
           {isSearching ? (
-            '正在搜索商品...'
+            '正在搜索产品...'
           ) : searchValue ? (
             <span>
-              未找到匹配的商品{' '}
+              未找到匹配的产品{' '}
               <mark className="rounded bg-amber-100 px-1 text-amber-900">
                 {displayValue}
               </mark>
             </span>
           ) : (
-            '请输入关键词搜索商品'
+            '请输入关键词搜索产品'
           )}
         </div>
         {allowTemporaryProducts && searchValue && !isSearching && (
@@ -43,7 +43,7 @@ export function ProductSearchEmptyState({
             className="mx-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
-            添加为临时商品
+            添加为临时产品
           </Button>
         )}
       </div>

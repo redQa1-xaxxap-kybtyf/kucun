@@ -138,6 +138,14 @@ export function ERPSalesOrderForm({
     [suppliersQueryParams]
   );
 
+  const [resolvedCustomer, setResolvedCustomer] =
+    React.useState<Customer | null>(() => initialData?.customer ?? null);
+  React.useEffect(() => {
+    if (mode === 'edit' && initialData?.customer) {
+      setResolvedCustomer(initialData.customer);
+    }
+  }, [mode, initialData?.customer]);
+
   const mapFormDataForTransform = React.useCallback(
     (payload: CreateSalesOrderData): SalesOrderFormData => ({
       customerId: payload.customerId,
@@ -301,8 +309,11 @@ export function ERPSalesOrderForm({
       // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
 
-      // ✅ 关键修复：同时失效应收款缓存
-      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+      // ✅ 关键修复：同时失效应收款缓存并强制重新获取
+      queryClient.invalidateQueries({
+        queryKey: ['finance', 'receivables'],
+        refetchType: 'active',
+      });
 
       onSuccess?.(data);
     },
@@ -500,7 +511,7 @@ export function ERPSalesOrderForm({
         let weightKg: number | undefined;
 
         if (item.isManualProduct) {
-          // 手动输入商品：manualWeight是用户输入的重量，根据displayUnit判断是每件还是每片
+          // 手动输入产品：manualWeight是用户输入的重量，根据displayUnit判断是每件还是每片
           const manualWeight = Number(item.manualWeight ?? 0);
           if (manualWeight > 0) {
             if (item.displayUnit === '件') {
@@ -512,7 +523,7 @@ export function ERPSalesOrderForm({
             }
           }
         } else {
-          // 库存商品：weight字段存储的是每件的重量(kg)，不是每片
+          // 库存产品：weight字段存储的是每件的重量(kg)，不是每片
           const weightPerUnit =
             (batchSpec && batchSpec.weight && batchSpec.weight > 0
               ? batchSpec.weight
@@ -535,8 +546,8 @@ export function ERPSalesOrderForm({
 
           // 调试日志：输出重量计算详情
           if (productId && index === 0) {
-            // 只输出第一个商品的调试信息，避免刷屏
-            logger.debug('sales-orders', '重量计算调试 [第1个商品]', {
+            // 只输出第一个产品的调试信息，避免刷屏
+            logger.debug('sales-orders', '重量计算调试 [第1个产品]', {
               productCode: product?.code,
               productName: product?.name,
               batchNumber: item.batchNumber,
@@ -561,7 +572,7 @@ export function ERPSalesOrderForm({
     [watchedItems, productMap]
   );
 
-  // 添加商品
+  // 添加产品
   const addOrderItem = () => {
     append({
       productId: '',
@@ -759,6 +770,12 @@ export function ERPSalesOrderForm({
       variant: 'success',
     });
   };
+  const handleCustomerResolved = React.useCallback(
+    (customer: Customer | undefined) => {
+      setResolvedCustomer(customer ?? null);
+    },
+    []
+  );
 
   const handleSupplierCreated = (supplier: Supplier) => {
     queryClient.setQueryData<SuppliersResponse | undefined>(
@@ -965,6 +982,8 @@ export function ERPSalesOrderForm({
                           onValueChange={field.onChange}
                           placeholder="搜索并选择客户"
                           onCustomerCreated={handleCustomerCreated}
+                          onCustomerResolved={handleCustomerResolved}
+                          initialCustomer={initialData?.customer}
                           className="h-9"
                         />
                       </FormControl>
@@ -1022,7 +1041,21 @@ export function ERPSalesOrderForm({
                       客户地址
                     </Label>
                     <div className="flex min-h-[36px] items-center rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
-                      <span className="text-gray-400">请选择客户查看地址</span>
+                      {resolvedCustomer ? (
+                        resolvedCustomer.address?.trim() ? (
+                          <span className="truncate">
+                            {resolvedCustomer.address.trim()}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">
+                            该客户暂无地址，可在客户资料中维护
+                          </span>
+                        )
+                      ) : (
+                        <span className="text-gray-400">
+                          正在加载客户地址...
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1159,7 +1192,7 @@ export function ERPSalesOrderForm({
               <div className="flex items-center justify-between rounded border bg-amber-50/60 px-3 py-2">
                 <span className="text-muted-foreground text-xs">费用合计</span>
                 <span className="text-sm font-semibold text-amber-600">
-                  ¥{formatCurrency(additionalFees)}
+                  ￥{formatCurrency(additionalFees)}
                 </span>
               </div>
               <FeeItemsInput
@@ -1199,7 +1232,7 @@ export function ERPSalesOrderForm({
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                 <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">
-                    商品种类
+                    产品种类
                   </span>
                   <span className="text-sm font-semibold text-blue-600">
                     {fields.length} 种
@@ -1225,10 +1258,10 @@ export function ERPSalesOrderForm({
                 </div>
                 <div className="flex items-center justify-between rounded border bg-orange-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">
-                    商品金额
+                    产品金额
                   </span>
                   <span className="text-lg font-bold text-orange-600">
-                    ¥{formatCurrency(totalAmount)}
+                    ￥{formatCurrency(totalAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded border bg-amber-50/60 px-3 py-2">
@@ -1236,7 +1269,7 @@ export function ERPSalesOrderForm({
                     额外费用
                   </span>
                   <span className="text-sm font-semibold text-amber-600">
-                    ¥{formatCurrency(additionalFees)}
+                    ￥{formatCurrency(additionalFees)}
                   </span>
                 </div>
                 {Math.abs(roundingAdjustment) > 0.0001 && (
@@ -1245,7 +1278,7 @@ export function ERPSalesOrderForm({
                       抹零调整
                     </span>
                     <span className="text-sm font-semibold text-slate-700">
-                      ¥{formatCurrency(roundingAdjustment)}
+                      ￥{formatCurrency(roundingAdjustment)}
                     </span>
                   </div>
                 )}
@@ -1254,7 +1287,7 @@ export function ERPSalesOrderForm({
                     订单总金额
                   </span>
                   <span className="text-lg font-bold text-orange-700">
-                    ¥{formatCurrency(orderTotalWithFees)}
+                    ￥{formatCurrency(orderTotalWithFees)}
                   </span>
                 </div>
 
@@ -1298,7 +1331,7 @@ export function ERPSalesOrderForm({
                       总成本
                     </span>
                     <span className="text-sm font-semibold text-blue-600">
-                      ¥
+                      ￥
                       {formatCurrency(
                         watchedItems.reduce((sum, item) => {
                           const unitCost = Number(item.unitCost) || 0;

@@ -9,7 +9,7 @@
  */
 export function formatCurrency(amount: number, precision: number = 2): string {
   if (typeof amount !== 'number' || Number.isNaN(amount)) {
-    return '¥0.00';
+    return '￥0.00';
   }
 
   const formatted = amount.toLocaleString('zh-CN', {
@@ -17,7 +17,7 @@ export function formatCurrency(amount: number, precision: number = 2): string {
     maximumFractionDigits: precision,
   });
 
-  return `¥${formatted}`;
+  return `￥${formatted}`;
 }
 
 /**

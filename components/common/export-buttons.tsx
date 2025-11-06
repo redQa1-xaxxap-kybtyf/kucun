@@ -24,7 +24,13 @@ export interface ExportButtonsProps {
   /** 尺寸 */
   size?: 'default' | 'sm' | 'lg' | 'icon';
   /** 变体 */
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
   /** 类名 */
   className?: string;
   /** 导出图片回调 */
@@ -50,7 +56,7 @@ export function ExportButtons({
   onExportImage,
   onExportExcel,
   onExportCompleteExcel,
-  showCompleteExcel = true
+  showCompleteExcel = true,
 }: ExportButtonsProps) {
   const isLoading = isExportingImage || isExportingExcel;
 
@@ -77,10 +83,7 @@ export function ExportButtons({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuItem
-          onClick={onExportImage}
-          disabled={isExportingImage}
-        >
+        <DropdownMenuItem onClick={onExportImage} disabled={isExportingImage}>
           {isExportingImage ? (
             <>
               <Spinner className="mr-2 h-4 w-4" />
@@ -96,10 +99,7 @@ export function ExportButtons({
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem
-          onClick={onExportExcel}
-          disabled={isExportingExcel}
-        >
+        <DropdownMenuItem onClick={onExportExcel} disabled={isExportingExcel}>
           {isExportingExcel ? (
             <>
               <Spinner className="mr-2 h-4 w-4" />
@@ -143,7 +143,13 @@ export interface SimpleExportButtonProps {
   /** 尺寸 */
   size?: 'default' | 'sm' | 'lg' | 'icon';
   /** 变体 */
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  variant?:
+    | 'default'
+    | 'destructive'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link';
   /** 类名 */
   className?: string;
   /** 点击回调 */
@@ -160,7 +166,7 @@ export function SimpleExportButton({
   variant = 'outline',
   className = '',
   onClick,
-  text
+  text,
 }: SimpleExportButtonProps) {
   const getIcon = () => {
     switch (type) {

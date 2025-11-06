@@ -7,6 +7,7 @@
 ## 需求
 
 在销售订单详情页面的两个区域添加抹零金额显示：
+
 1. **顶部统计卡片**：添加抹零金额卡片
 2. **收款记录区域**：在订单金额总览中显示抹零金额和实际应收金额
 
@@ -19,6 +20,7 @@
 #### 1.1 动态布局
 
 根据是否有抹零金额，动态调整卡片布局：
+
 - **无抹零**：4列布局（订单总金额、已收金额、待收金额、毛利金额）
 - **有抹零**：5列布局（订单总金额、抹零金额、已收金额、待收金额、毛利金额）
 
@@ -59,6 +61,7 @@
 ```
 
 **显示规则**：
+
 - 抹零金额 > 0：红色背景和文字（增加应收）
 - 抹零金额 < 0：绿色背景和文字（减少应收）
 - 显示实际应收金额（订单总额 + 抹零）
@@ -278,9 +281,10 @@ const actualReceivable = order.totalAmount + order.roundingAdjustment;
 基于实际应收金额计算：
 
 ```typescript
-const progress = order.totalAmount + order.roundingAdjustment > 0
-  ? (order.paidAmount / (order.totalAmount + order.roundingAdjustment)) * 100
-  : 0;
+const progress =
+  order.totalAmount + order.roundingAdjustment > 0
+    ? (order.paidAmount / (order.totalAmount + order.roundingAdjustment)) * 100
+    : 0;
 ```
 
 ## 相关文档
@@ -306,4 +310,3 @@ const progress = order.totalAmount + order.roundingAdjustment > 0
 4. **数据类型**：
    - `order.roundingAdjustment` 已经是 `number` 类型
    - 无需额外的类型转换
-

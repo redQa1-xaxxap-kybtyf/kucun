@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { publishInventoryChange } from '@/lib/events';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 
@@ -284,7 +285,7 @@ const getOutboundRecordsHandler = withAuth(
           ? `${record.productId}-${record.batchNumber}`
           : null;
         const piecesPerUnit = batchKey
-          ? batchSpecMap.get(batchKey) ?? record.product.piecesPerUnit
+          ? (batchSpecMap.get(batchKey) ?? record.product.piecesPerUnit)
           : record.product.piecesPerUnit;
 
         return {
@@ -361,6 +362,10 @@ async function executeOutboundTransaction(
     // 记录出库前的数量（用于事件发布）
     const oldQuantity = availableInventory.quantity;
 
+    // 获取当前库存成本
+    const currentUnitCost = availableInventory.unitCost || 0;
+    const totalCost = calculateTotalCost(quantity, currentUnitCost);
+
     // 检查可用库存
     const availableQuantity =
       availableInventory.quantity - availableInventory.reservedQuantity;
@@ -403,7 +408,7 @@ async function executeOutboundTransaction(
       },
     });
 
-    // 4. 创建出库记录
+    // 4. 创建出库记录（包含成本信息）
     const recordNumber = `OUT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
 
     await tx.outboundRecord.create({
@@ -412,6 +417,8 @@ async function executeOutboundTransaction(
         productId,
         inventoryId: availableInventory.id,
         quantity,
+        unitCost: currentUnitCost, // 记录出库单位成本
+        totalCost, // 记录出库总成本
         reason: reason || 'manual_outbound',
         batchNumber: availableInventory.batchNumber,
         variantId: availableInventory.variantId,

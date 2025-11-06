@@ -1,7 +1,8 @@
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 // 收款记录表单组件
 // 使用React Hook Form + Zod实现收款记录的创建和编辑表单
 
-'use client';
+('use client');
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
@@ -10,7 +11,6 @@ import {
   Building2,
   CalendarIcon,
   Check,
-  DollarSign,
   Loader2,
   Receipt,
   X,
@@ -191,7 +191,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
       <Card className={cn('w-full', className)} ref={ref} {...props}>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <DollarSign className="h-5 w-5" />
+            <ChineseYuan className="h-5 w-5" />
             <span>{isEditing ? '编辑收款记录' : '创建收款记录'}</span>
           </CardTitle>
           <CardDescription>
@@ -343,7 +343,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <DollarSign className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                          <ChineseYuan className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                           <Input
                             type="number"
                             step="0.01"
@@ -375,7 +375,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <DollarSign className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                          <ChineseYuan className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                           <Input
                             type="number"
                             step="0.01"
@@ -431,7 +431,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                               value={displayValue}
                               className="bg-muted pl-10"
                             />
-                            <DollarSign className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                            <ChineseYuan className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                           </div>
                         </FormControl>
                         <FormDescription>
@@ -566,35 +566,30 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                 )}
               </div>
 
-              {/* 银行信息（银行转账时显示） */}
-              {watchedPaymentMethod === 'bank_transfer' && (
-                <FormField
-                  control={form.control}
-                  name="bankInfo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center space-x-2">
-                        <Building2 className="h-4 w-4" />
-                        <span>{PAYMENT_FORM_FIELDS.bankInfo.label}</span>
-                        <Badge variant="destructive" className="text-xs">
-                          必填
-                        </Badge>
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder={PAYMENT_FORM_FIELDS.bankInfo.placeholder}
-                          className="min-h-[80px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        请填写银行名称、账号、户名等转账相关信息
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
+              {/* 银行信息（可选） */}
+              <FormField
+                control={form.control}
+                name="bankInfo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center space-x-2">
+                      <Building2 className="h-4 w-4" />
+                      <span>{PAYMENT_FORM_FIELDS.bankInfo.label}</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder={PAYMENT_FORM_FIELDS.bankInfo.placeholder}
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      请填写银行名称、账号、户名等转账相关信息
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               {/* 备注 */}
               <FormField

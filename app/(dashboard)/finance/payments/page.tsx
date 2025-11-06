@@ -17,9 +17,11 @@ import { parseLocalDateString } from '@/lib/utils/datetime';
 
 const ALLOWED_PAYMENT_METHODS: PaymentMethod[] = [
   'cash',
-  'bank_transfer',
-  'check',
-  'other',
+  'wechat_transfer',
+  'abc_qr',
+  'icbc_qr',
+  'ccb_qr',
+  'cib_qr',
 ];
 
 const ALLOWED_PAYMENT_SORT_FIELDS = [
@@ -132,6 +134,11 @@ async function getPaymentsData(searchParams: {
     }
     whereConditions.paymentDate = paymentDateFilter;
   }
+
+  // 仅显示有实际收款的记录，避免展示系统自动生成的应收占位记录
+  whereConditions.actualPaymentAmount = {
+    gt: 0,
+  };
 
   // 查询收款记录
   const [payments, total] = await Promise.all([

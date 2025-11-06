@@ -70,23 +70,23 @@ describe('数据库事务选项工具', () => {
       expect(options.isolationLevel).toBeUndefined();
     });
 
-    it('MySQL 应返回 isolationLevel 和 timeout', () => {
+    it('MySQL 应返回 ReadCommitted 隔离级别和超时', () => {
       process.env.DATABASE_URL = 'mysql://user:password@localhost:3306/mydb';
       const options = getTransactionOptions(15000);
 
       expect(options).toEqual({
-        isolationLevel: 'Serializable',
+        isolationLevel: 'ReadCommitted',
         timeout: 15000,
       });
     });
 
-    it('PostgreSQL 应返回 isolationLevel 和 timeout', () => {
+    it('PostgreSQL 应返回 ReadCommitted 隔离级别和超时', () => {
       process.env.DATABASE_URL =
         'postgresql://user:password@localhost:5432/mydb';
       const options = getTransactionOptions(20000);
 
       expect(options).toEqual({
-        isolationLevel: 'Serializable',
+        isolationLevel: 'ReadCommitted',
         timeout: 20000,
       });
     });
@@ -115,19 +115,19 @@ describe('数据库事务选项工具', () => {
     it('getStandardTransactionOptions 应返回 10 秒超时', () => {
       const options = getStandardTransactionOptions();
       expect(options.timeout).toBe(10000);
-      expect(options.isolationLevel).toBe('Serializable');
+      expect(options.isolationLevel).toBe('ReadCommitted');
     });
 
-    it('getLongTransactionOptions 应返回 15 秒超时', () => {
+    it('getLongTransactionOptions 应返回 20 秒超时', () => {
       const options = getLongTransactionOptions();
-      expect(options.timeout).toBe(15000);
-      expect(options.isolationLevel).toBe('Serializable');
+      expect(options.timeout).toBe(20000);
+      expect(options.isolationLevel).toBe('ReadCommitted');
     });
 
     it('getShortTransactionOptions 应返回 5 秒超时', () => {
       const options = getShortTransactionOptions();
       expect(options.timeout).toBe(5000);
-      expect(options.isolationLevel).toBe('Serializable');
+      expect(options.isolationLevel).toBe('ReadCommitted');
     });
   });
 
@@ -142,21 +142,21 @@ describe('数据库事务选项工具', () => {
       expect(options.timeout).toBe(10000);
     });
 
-    it('MySQL 环境下的事务配置应包含 Serializable 隔离级别', () => {
+    it('MySQL 环境下的事务配置应包含 ReadCommitted 隔离级别', () => {
       process.env.DATABASE_URL = 'mysql://root@localhost:3306/kucun';
       const options = getLongTransactionOptions();
 
       // MySQL 支持 isolationLevel 配置
-      expect(options.isolationLevel).toBe('Serializable');
-      expect(options.timeout).toBe(15000);
+      expect(options.isolationLevel).toBe('ReadCommitted');
+      expect(options.timeout).toBe(20000);
     });
 
-    it('PostgreSQL 环境下的事务配置应包含 Serializable 隔离级别', () => {
+    it('PostgreSQL 环境下的事务配置应包含 ReadCommitted 隔离级别', () => {
       process.env.DATABASE_URL = 'postgresql://admin@localhost:5432/inventory';
       const options = getShortTransactionOptions();
 
       // PostgreSQL 支持 isolationLevel 配置
-      expect(options.isolationLevel).toBe('Serializable');
+      expect(options.isolationLevel).toBe('ReadCommitted');
       expect(options.timeout).toBe(5000);
     });
   });
@@ -199,13 +199,13 @@ describe('数据库事务选项工具', () => {
  *
  * 2. MySQL 测试（生产环境）
  *    DATABASE_URL=mysql://user:password@host/database
- *    - 事务应使用 Serializable 隔离级别
+ *    - 事务应使用 ReadCommitted 隔离级别
  *    - 并发事务应正确隔离
  *    - 应防止脏读、不可重复读、幻读
  *
  * 3. PostgreSQL 测试（备选环境）
  *    DATABASE_URL=postgresql://user:password@host/database
- *    - 事务应使用 Serializable 隔离级别
+ *    - 事务应使用 ReadCommitted 隔离级别
  *    - MVCC 机制应正常工作
  *    - 高并发场景下性能良好
  *

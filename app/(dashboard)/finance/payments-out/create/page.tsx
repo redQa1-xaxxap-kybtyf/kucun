@@ -1,21 +1,24 @@
+'use client';
+
 /**
  * 创建付款记录页面
  * 支持从应付款记录创建付款记录，包含供应商信息和应付款信息
  * 严格遵循全局约定规范和ESLint规范遵循指南
  */
 
-'use client';
-
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowLeft, DollarSign, Save } from 'lucide-react';
+import { zhCN } from 'date-fns/locale';
+import { ArrowLeft, Calendar as CalendarIcon, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -34,6 +37,11 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,7 +52,7 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 // 创建付款记录表单Schema
 const createPaymentOutSchema = z.object({
@@ -93,7 +101,7 @@ function PayableInfoSidebar({
     <Card>
       <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
         <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
+          <ChineseYuan className="h-5 w-5" />
           应付款信息
         </CardTitle>
       </CardHeader>
@@ -266,7 +274,37 @@ function PaymentOutFormFields({
             <FormItem>
               <FormLabel>付款日期</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !field.value && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {field.value ? (
+                        format(new Date(field.value), 'PPP', {
+                          locale: zhCN,
+                        })
+                      ) : (
+                        <span>选择日期</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.value ? new Date(field.value) : undefined}
+                      onSelect={date =>
+                        field.onChange(date ? format(date, 'yyyy-MM-dd') : '')
+                      }
+                      disabled={date => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -489,7 +527,7 @@ export default function CreatePaymentOutPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <DollarSign className="h-6 w-6 text-white" />
+                  <ChineseYuan className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">

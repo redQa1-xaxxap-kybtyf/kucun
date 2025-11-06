@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { env } from './env';
 
@@ -17,6 +17,7 @@ const protectedPaths = [
   '/suppliers',
   '/categories',
   '/factory-shipments',
+  '/purchase-orders', // 采购订单页面
   '/settings',
   '/help',
 
@@ -32,6 +33,7 @@ const protectedPaths = [
   '/api/suppliers',
   '/api/categories',
   '/api/factory-shipments',
+  '/api/purchase-orders', // 采购订单 API
   '/api/return-orders',
   '/api/payments',
   '/api/dashboard',

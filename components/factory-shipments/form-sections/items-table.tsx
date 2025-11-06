@@ -182,7 +182,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                         index={index}
                         products={products}
                         onProductChange={handleProductChange(index)}
-                        placeholder="搜索商品或添加临时商品"
+                        placeholder="搜索产品或添加临时产品"
                       />
                     </TableCell>
 
@@ -327,7 +327,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                     {/* 金额（自动计算） */}
                     <TableCell className="border-r p-2 text-right font-medium">
                       <span className="text-xs">
-                        ¥{calculateItemAmount(index).toFixed(2)}
+                        ￥{calculateItemAmount(index).toFixed(2)}
                       </span>
                     </TableCell>
 

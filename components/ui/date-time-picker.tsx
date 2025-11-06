@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useMemo } from 'react';
 
@@ -29,7 +29,15 @@ function formatDateToLocalInput(date?: Date) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export function DateTimePicker({ value, onChange, disabled, id, name, className, placeholder }: DateTimePickerProps) {
+export function DateTimePicker({
+  value,
+  onChange,
+  disabled,
+  id,
+  name,
+  className,
+  placeholder,
+}: DateTimePickerProps) {
   const inputValue = useMemo(() => formatDateToLocalInput(value), [value]);
 
   return (

@@ -53,7 +53,8 @@ export function BatchSpecificationForm({
     null
   );
 
-  const initialValues = useMemo<FormValues>(() => ({
+  const initialValues = useMemo<FormValues>(
+    () => ({
       productId: defaultValues?.productId ?? '',
       batchNumber: defaultValues?.batchNumber ?? '',
       piecesPerUnit:
@@ -61,7 +62,9 @@ export function BatchSpecificationForm({
         batchSpecificationDefaults.piecesPerUnit,
       weight: defaultValues?.weight,
       thickness: defaultValues?.thickness,
-    }), [defaultValues]);
+    }),
+    [defaultValues]
+  );
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),

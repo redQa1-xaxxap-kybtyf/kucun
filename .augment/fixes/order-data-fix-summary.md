@@ -3,6 +3,7 @@
 ## 问题描述
 
 用户在应收货款页面发现订单数据异常：
+
 - 订单金额：¥696.50
 - 抹零金额：没有显示（应该显示 -¥6.50）
 - 待收金额：¥6.50（错误！应该是 ¥0.00）
@@ -18,6 +19,7 @@
 **影响**：使用发票导向表单创建的订单，抹零金额会丢失（保存为 0）。
 
 **修复**：
+
 - 在 `onSubmit` 函数中添加 `roundingAdjustment: submitData.roundingAdjustment`
 - 在表单默认值中添加 `roundingAdjustment: undefined`
 
@@ -26,6 +28,7 @@
 **原因**：由于问题 1，订单创建时抹零金额未保存，数据库中 `roundingAdjustment = 0`。
 
 **影响**：
+
 - 实际应收计算错误：696.50 + 0 = 696.50（应该是 696.50 + (-6.50) = 690.00）
 - 待收金额计算错误：696.50 - 690 = 6.50（应该是 690 - 690 = 0）
 
@@ -36,6 +39,7 @@
 **原因**：收款记录的金额是 ¥696.50（订单金额），而不是 ¥690.00（实际应收）。
 
 **影响**：
+
 - 待收金额计算错误：690 - 0 - 696.50 = -6.50（多收了 6.50）
 
 **修复**：使用脚本 `scripts/fix-payment-amount.ts` 将收款金额更新为 ¥690.00。
@@ -97,6 +101,7 @@ npx tsx scripts/fix-order-rounding.ts
 ```
 
 **结果**：
+
 - ✅ 订单 SO202510230100 的 `roundingAdjustment` 从 0 更新为 -6.50
 - ✅ 实际应收金额：¥690.00
 
@@ -109,6 +114,7 @@ npx tsx scripts/fix-payment-amount.ts
 ```
 
 **结果**：
+
 - ✅ 收款记录 SK-20251023-002 的金额从 ¥696.50 更新为 ¥690.00
 - ✅ 待收金额：¥0.00
 
@@ -121,6 +127,7 @@ npx tsx scripts/update-order-status.ts
 ```
 
 **结果**：
+
 - ✅ 订单状态从 `cancelled` 更新为 `confirmed`
 - ✅ 订单会在应收货款页面显示
 
@@ -216,11 +223,13 @@ const remainingAmount = actualTotalAmount - confirmedAmount - pendingAmount;
 ### 3. 订单状态与应收款显示
 
 应收货款页面只显示以下状态的订单：
+
 - `confirmed` - 已确认
 - `shipped` - 已发货
 - `completed` - 已完成
 
 不显示以下状态的订单：
+
 - `draft` - 草稿
 - `cancelled` - 已取消
 
@@ -235,6 +244,7 @@ const remainingAmount = actualTotalAmount - confirmedAmount - pendingAmount;
 ### 2. 数据一致性检查
 
 建议定期运行数据一致性检查脚本：
+
 - 检查订单的实际应收是否等于订单金额 + 抹零金额
 - 检查收款金额是否等于实际应收金额
 - 检查待收金额计算是否正确
@@ -263,4 +273,3 @@ const remainingAmount = actualTotalAmount - confirmedAmount - pendingAmount;
 4. ✅ **数据问题**：订单状态为 cancelled → 已更新为 confirmed
 
 现在订单数据完全正确，应收货款页面应该能正确显示抹零金额和待收金额了！🎉
-

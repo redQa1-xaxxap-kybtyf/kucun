@@ -1,24 +1,33 @@
-"use client";
+'use client';
 
-import { Truck } from "lucide-react";
+import { Truck } from 'lucide-react';
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { TRANSFER_MODE_LABELS } from "@/lib/types/sales-order";
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { TRANSFER_MODE_LABELS } from '@/lib/types/sales-order';
 
-import type { SalesOrderDetail } from "./types";
+import type { SalesOrderDetail } from './types';
 
 export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
-  if (order.orderType !== "TRANSFER") return null;
+  if (order.orderType !== 'TRANSFER') return null;
 
   const getTransferModeBadge = (mode: string | undefined) => {
-    const label = mode === "MIXED" ? TRANSFER_MODE_LABELS.MIXED : TRANSFER_MODE_LABELS.SUPPLIER_ONLY;
-    return mode === "MIXED" ? (
-      <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-700">
+    const label =
+      mode === 'MIXED'
+        ? TRANSFER_MODE_LABELS.MIXED
+        : TRANSFER_MODE_LABELS.SUPPLIER_ONLY;
+    return mode === 'MIXED' ? (
+      <Badge
+        variant="outline"
+        className="border-sky-200 bg-sky-50 text-sky-700"
+      >
         {label}
       </Badge>
     ) : (
-      <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+      <Badge
+        variant="outline"
+        className="border-amber-200 bg-amber-50 text-amber-700"
+      >
         {label}
       </Badge>
     );
@@ -37,12 +46,15 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
               {getTransferModeBadge(order.transferMode)}
             </div>
             <div className="space-y-1 text-xs text-amber-800">
-              {order.transferMode === "MIXED" ? (
+              {order.transferMode === 'MIXED' ? (
                 <>
                   <p className="flex items-center gap-1.5">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">✓</span>
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-sky-500 text-[10px] font-bold text-white">
+                      ✓
+                    </span>
                     <span>
-                      <strong>混合发货模式:</strong> 部分商品从本地仓库发货,部分由供应商直接发货
+                      <strong>混合发货模式:</strong>{' '}
+                      部分产品从本地仓库发货,部分由供应商直接发货
                     </span>
                   </p>
                   <p className="ml-5.5 text-amber-700">
@@ -52,9 +64,11 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
               ) : (
                 <>
                   <p className="flex items-center gap-1.5">
-                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white">!</span>
+                    <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-[10px] font-bold text-white">
+                      !
+                    </span>
                     <span>
-                      <strong>纯调货模式:</strong> 所有商品均由供应商直接发货
+                      <strong>纯调货模式:</strong> 所有产品均由供应商直接发货
                     </span>
                   </p>
                   <p className="ml-5.5 text-amber-700">
@@ -69,4 +83,3 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
     </Card>
   );
 }
-

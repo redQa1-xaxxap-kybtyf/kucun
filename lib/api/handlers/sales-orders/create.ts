@@ -2,9 +2,14 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { getLongTransactionOptions } from '@/lib/db/transaction-options';
+import {
+  executeInvalidation,
+  ORDER_STATUS_CHANGE_INVALIDATION,
+} from '@/lib/cache/invalidation-strategy';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
+import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 import {
@@ -91,7 +96,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
     await ensureSupplierExists(tx, validatedData.supplierId);
     await ensureProductsExist(tx, validatedData.items);
 
-    // 处理临时商品：为调货销售的手动输入商品创建/查找临时商品记录
+    // 处理临时产品：为调货销售的手动输入产品创建/查找临时产品记录
     const temporaryProductIds = new Map<number, string>(); // itemIndex -> temporaryProductId
 
     if (validatedData.orderType === 'TRANSFER' && validatedData.supplierId) {
@@ -153,6 +158,31 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       orderNumber: salesOrder.orderNumber,
     });
 
+    if (
+      salesOrder.status === 'confirmed' &&
+      Number(financials.totalAmount) > 0
+    ) {
+      const paymentNumber = await generatePaymentNumber(tx);
+      const paymentAmount = Number(financials.totalAmount);
+      await tx.paymentRecord.create({
+        data: {
+          paymentNumber,
+          salesOrderId: salesOrder.id,
+          customerId: salesOrder.customerId,
+          userId,
+          paymentType: 'order_payment',
+          paymentMethod: 'cash',
+          paymentAmount,
+          actualPaymentAmount: 0,
+          roundingAmount: Number(financials.roundingAdjustment),
+          appliedAmount: 0,
+          paymentDate: new Date(),
+          status: 'pending',
+          remarks: `系统自动生成：销售订单 ${salesOrder.orderNumber} 确认应收`,
+        },
+      });
+    }
+
     if (validatedData.usePrepayment) {
       const prepaymentResult = await applyPrepaymentToOrder(
         tx,
@@ -175,6 +205,18 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
 
     return salesOrder;
   }, getLongTransactionOptions());
+
+  try {
+    await executeInvalidation(ORDER_STATUS_CHANGE_INVALIDATION, {
+      orderId: order.id,
+      customerId: order.customerId,
+    });
+  } catch (error) {
+    logger.error('sales-orders', '缓存失效失败', error, {
+      orderId: order.id,
+      customerId: order.customerId,
+    });
+  }
 
   const ledgerEligibleStatuses = new Set(['confirmed', 'shipped', 'completed']);
   const totalAmount = Number(order.totalAmount ?? 0);

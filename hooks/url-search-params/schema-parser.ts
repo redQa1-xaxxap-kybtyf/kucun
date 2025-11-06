@@ -38,6 +38,7 @@ function extractFromZodSchema<T extends Record<string, any>>(
  */
 function parseZodField(field: z.ZodTypeAny): ParamConfig {
   let innerType = field;
+  let isOptional = false;
 
   // 处理optional/nullable/default包装
   while (
@@ -58,6 +59,7 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
         default: defaultValue,
       };
     }
+    isOptional = true;
     innerType = (innerType._def as any).innerType as z.ZodTypeAny;
   }
 
@@ -65,7 +67,7 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
   if (innerType instanceof z.ZodString) {
     return {
       type: 'string',
-      default: '',
+      default: isOptional ? undefined : '',
     };
   }
 
@@ -77,7 +79,7 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
 
     return {
       type: 'number',
-      default: 1,
+      default: isOptional ? undefined : 1,
       min: minCheck?.value,
       max: maxCheck?.value,
     };
@@ -87,18 +89,22 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
   if (innerType instanceof z.ZodBoolean) {
     return {
       type: 'boolean',
-      default: false,
+      default: isOptional ? undefined : false,
     };
   }
 
   // 枚举类型
   if (innerType instanceof z.ZodEnum) {
     const enumDef = innerType._def as any;
-    const values = enumDef.values as readonly any[];
+    const rawValues = enumDef.values ?? enumDef.entries;
+    const values = Array.isArray(rawValues)
+      ? rawValues
+      : Object.values(rawValues ?? {});
     return {
       type: 'enum',
       values,
-      default: values && values.length > 0 ? values[0] : undefined,
+      default:
+        isOptional || !values || values.length === 0 ? undefined : values[0],
     };
   }
 
@@ -106,7 +112,7 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
   if (innerType instanceof z.ZodArray) {
     return {
       type: 'array',
-      default: [],
+      default: isOptional ? undefined : [],
       separator: ',',
     };
   }
@@ -114,7 +120,7 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
   // 默认为字符串
   return {
     type: 'string',
-    default: '',
+    default: isOptional ? undefined : '',
   };
 }
 

@@ -5,7 +5,15 @@
 
 'use client';
 
-import { Loader2, CheckCircle, AlertCircle, Brain, Search, Table, Zap } from 'lucide-react';
+import {
+  Loader2,
+  CheckCircle,
+  AlertCircle,
+  Brain,
+  Search,
+  Table,
+  Zap,
+} from 'lucide-react';
 import React from 'react';
 
 interface AnalysisStep {
@@ -123,18 +131,26 @@ function getStepIcon(step: AnalysisStep) {
     return <AlertCircle className="h-4 w-4 text-red-600" />;
   }
 
-  return step.icon ?? <div className="h-4 w-4 rounded-full border-2 border-gray-300" />;
+  return (
+    step.icon ?? (
+      <div className="h-4 w-4 rounded-full border-2 border-gray-300" />
+    )
+  );
 }
 
-const AnalysisStepItem = ({ step, isAnalyzing }: { step: AnalysisStep; isAnalyzing: boolean }) => (
+const AnalysisStepItem = ({
+  step,
+  isAnalyzing,
+}: {
+  step: AnalysisStep;
+  isAnalyzing: boolean;
+}) => (
   <div
-    className={`flex items-center gap-3 p-2 rounded-lg border transition-all duration-300 ${getStepColor(step.status)}`}
+    className={`flex items-center gap-3 rounded-lg border p-2 transition-all duration-300 ${getStepColor(step.status)}`}
   >
-    <div className="flex-shrink-0">
-      {getStepIcon(step)}
-    </div>
+    <div className="flex-shrink-0">{getStepIcon(step)}</div>
 
-    <div className="flex-1 min-w-0">
+    <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2">
         <p className="text-sm font-medium">{step.name}</p>
         {step.duration && (
@@ -142,14 +158,17 @@ const AnalysisStepItem = ({ step, isAnalyzing }: { step: AnalysisStep; isAnalyzi
         )}
       </div>
       {step.description && (
-        <p className="text-xs text-gray-600 mt-1">{step.description}</p>
+        <p className="mt-1 text-xs text-gray-600">{step.description}</p>
       )}
     </div>
 
     {isAnalyzing && step.status === 'running' && (
-      <div className="flex-1 max-w-20">
-        <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-          <div className="h-full bg-blue-600 animate-pulse" style={{ width: '60%' }} />
+      <div className="max-w-20 flex-1">
+        <div className="h-1 overflow-hidden rounded-full bg-gray-200">
+          <div
+            className="h-full animate-pulse bg-blue-600"
+            style={{ width: '60%' }}
+          />
         </div>
       </div>
     )}
@@ -161,7 +180,7 @@ export function AnalysisProgress({
   currentStep,
   steps = [],
   error,
-  className = ""
+  className = '',
 }: AnalysisProgressProps) {
   const analysisSteps = steps.length > 0 ? steps : DEFAULT_ANALYSIS_STEPS;
   const updatedSteps = resolveStepStatuses({
@@ -176,7 +195,7 @@ export function AnalysisProgress({
   }
 
   return (
-    <div className={`rounded-lg border bg-white p-4 space-y-3 ${className}`}>
+    <div className={`space-y-3 rounded-lg border bg-white p-4 ${className}`}>
       <div className="flex items-center gap-2">
         {isAnalyzing ? (
           <>
@@ -199,20 +218,24 @@ export function AnalysisProgress({
       {/* 分析步骤 */}
       <div className="space-y-2">
         {updatedSteps.map(step => (
-          <AnalysisStepItem key={step.id} step={step} isAnalyzing={isAnalyzing} />
+          <AnalysisStepItem
+            key={step.id}
+            step={step}
+            isAnalyzing={isAnalyzing}
+          />
         ))}
       </div>
 
       {/* 错误信息 */}
       {error && (
-        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
           <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
       {/* 分析提示 */}
       {isAnalyzing && (
-        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
           <p className="text-sm text-blue-800">
             💡 正在使用增强智能分析算法识别页面结构，请稍候...
           </p>
@@ -274,23 +297,33 @@ export function useAnalysisProgress() {
     setStartTime(Date.now());
   };
 
-  const updateStep = (stepId: string, status: AnalysisStep['status'], duration?: number) => {
-    setSteps(prev => prev.map(step =>
-      step.id === stepId
-        ? { ...step, status, duration }
-        : step
-    ));
+  const updateStep = (
+    stepId: string,
+    status: AnalysisStep['status'],
+    duration?: number
+  ) => {
+    setSteps(prev =>
+      prev.map(step =>
+        step.id === stepId ? { ...step, status, duration } : step
+      )
+    );
     setCurrentStep(stepId);
   };
 
   const completeAnalysis = () => {
     if (startTime) {
       const totalDuration = Date.now() - startTime;
-      setSteps(prev => prev.map(step =>
-        step.status === 'completed' || step.status === 'running'
-          ? { ...step, status: 'completed' as const, duration: Math.round(totalDuration / prev.length) }
-          : step
-      ));
+      setSteps(prev =>
+        prev.map(step =>
+          step.status === 'completed' || step.status === 'running'
+            ? {
+                ...step,
+                status: 'completed' as const,
+                duration: Math.round(totalDuration / prev.length),
+              }
+            : step
+        )
+      );
     }
     setCurrentStep('completed');
   };

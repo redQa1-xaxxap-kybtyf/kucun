@@ -9,7 +9,6 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
-
 /**
  * 分类管理模块 Server Actions
  *
@@ -447,9 +446,7 @@ export async function batchUpdateCategoryStatus(
       return { success: false, error: '未授权操作' };
     }
 
-    categoryIds = JSON.parse(
-      formData.get('categoryIds') as string
-    ) as string[];
+    categoryIds = JSON.parse(formData.get('categoryIds') as string) as string[];
     status = formData.get('status') as 'active' | 'inactive';
 
     if (!categoryIds || categoryIds.length === 0) {

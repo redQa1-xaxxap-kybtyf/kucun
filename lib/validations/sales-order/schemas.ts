@@ -184,12 +184,12 @@ export const salesOrderItemSchema = z.object({
       .multipleOf(0.01, '调货数量最多保留2位小数')
   ),
 
-  // 手动输入商品信息（调货销售时使用）
+  // 手动输入产品信息（调货销售时使用）
   isManualProduct: z.boolean().optional(),
 
   manualProductName: z
     .string()
-    .max(100, '商品名称不能超过100个字符')
+    .max(100, '产品名称不能超过100个字符')
     .optional()
     .or(z.literal('')),
 

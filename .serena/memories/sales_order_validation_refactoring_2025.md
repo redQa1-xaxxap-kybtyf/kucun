@@ -50,7 +50,7 @@ lib/validations/
 - `validateItemCombinations()` - 验证明细唯一性
 - `validateTransferQuantities()` - 验证调货数量关系
 - `validateRequiredFields()` - 验证必填字段
-- `validateManualProductFields()` - 验证手动输入商品
+- `validateManualProductFields()` - 验证手动输入产品
 
 **优势**：
 
@@ -222,3 +222,4 @@ lib/validations/
 - ✅ 通过TypeScript类型检查
 
 这是一次成功的代码质量改进实践。
+

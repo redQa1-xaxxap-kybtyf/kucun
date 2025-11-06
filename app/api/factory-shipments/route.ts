@@ -202,7 +202,7 @@ async function ensureProductsExist(
   const missing = productIds.filter(id => !existingIds.has(id));
   if (missing.length > 0) {
     throw new NextResponse(
-      JSON.stringify({ error: `商品不存在: ${missing.join(', ')}` }),
+      JSON.stringify({ error: `产品不存在: ${missing.join(', ')}` }),
       { status: 400 }
     ) as unknown as Error;
   }
@@ -511,7 +511,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     // 验证客户是否存在
     await ensureCustomerExists(customerId);
 
-    // 验证库存商品是否存在（排除手动输入的商品）
+    // 验证库存产品是否存在（排除手动输入的产品）
     await ensureProductsExist(items);
 
     // 验证供应商是否存在

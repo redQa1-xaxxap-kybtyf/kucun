@@ -1,14 +1,8 @@
 'use client';
-import {
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Receipt,
-  TrendingUp,
-  XCircle,
-} from 'lucide-react';
+import { CheckCircle, Clock, Receipt, TrendingUp, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
@@ -280,7 +274,7 @@ export function PaymentsClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总收款金额</CardTitle>
-            <DollarSign className="h-4 w-4 text-[hsl(var(--color-success))]" />
+            <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-success))]">

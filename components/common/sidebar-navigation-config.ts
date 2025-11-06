@@ -1,7 +1,10 @@
 import {
   ArrowUpRight,
+  BarChart3,
+  Calendar,
+  CalendarDays,
+  ClipboardCheck,
   CreditCard,
-  DollarSign,
   Edit,
   FileText,
   FolderTree,
@@ -9,6 +12,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   Package,
+  PackageCheck,
   PackageSearch,
   Plus,
   Receipt,
@@ -22,6 +26,8 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
+
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import type { NavigationItem } from '@/lib/types/layout';
 
@@ -80,9 +86,15 @@ export const navigationItems: NavigationItem[] = [
       },
       {
         id: 'inventory-temporary-products',
-        title: '临时商品库',
+        title: '外调产品库',
         href: '/inventory/temporary-products',
         icon: FileText,
+      },
+      {
+        id: 'inventory-counts',
+        title: '库存盘点',
+        href: '/inventory/counts',
+        icon: ClipboardCheck,
       },
     ],
   },
@@ -109,6 +121,20 @@ export const navigationItems: NavigationItem[] = [
     title: '厂家发货',
     href: '/factory-shipments',
     icon: Truck,
+    children: [
+      {
+        id: 'factory-shipments-customer-direct',
+        title: '客户直发',
+        href: '/factory-shipments',
+        icon: PackageCheck,
+      },
+      {
+        id: 'factory-shipments-warehouse-inbound',
+        title: '仓库进货',
+        href: '/purchase-orders',
+        icon: Warehouse,
+      },
+    ],
   },
   {
     id: 'return-orders',
@@ -132,8 +158,34 @@ export const navigationItems: NavigationItem[] = [
     id: 'finance',
     title: '财务管理',
     href: '/finance',
-    icon: DollarSign,
+    icon: ChineseYuan,
     children: [
+      {
+        id: 'finance-reports',
+        title: '财务报表',
+        href: '/finance/reports/monthly',
+        icon: BarChart3,
+        children: [
+          {
+            id: 'finance-reports-monthly',
+            title: '月度报表',
+            href: '/finance/reports/monthly',
+            icon: Calendar,
+          },
+          {
+            id: 'finance-reports-annual',
+            title: '年度报表',
+            href: '/finance/reports/annual',
+            icon: CalendarDays,
+          },
+          {
+            id: 'finance-reports-profit-loss',
+            title: '盈亏分析',
+            href: '/finance/reports/profit-loss',
+            icon: TrendingUp,
+          },
+        ],
+      },
       {
         id: 'finance-receivables',
         title: '应收货款',
@@ -168,6 +220,12 @@ export const navigationItems: NavigationItem[] = [
         id: 'finance-statements',
         title: '往来账单',
         href: '/finance/statements',
+        icon: Receipt,
+      },
+      {
+        id: 'finance-expenses',
+        title: '费用记录',
+        href: '/finance/expenses',
         icon: Receipt,
       },
     ],

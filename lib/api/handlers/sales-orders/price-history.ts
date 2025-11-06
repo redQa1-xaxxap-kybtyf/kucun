@@ -20,7 +20,7 @@ const hasPriceRecord = (
  * 性能优化 (2025-10-22):
  * - 从逐条 create (N次数据库操作) 改为 createMany (1次数据库操作)
  * - 使用 skipDuplicates 自动忽略重复记录
- * - 预期性能提升: 10个商品从 50-100ms 降至 5-10ms (提升 90%)
+ * - 预期性能提升: 10个产品从 50-100ms 降至 5-10ms (提升 90%)
  *
  * @param tx - 数据库事务对象
  * @param data - 销售订单创建数据

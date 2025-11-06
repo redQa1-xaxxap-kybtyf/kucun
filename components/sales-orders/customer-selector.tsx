@@ -39,6 +39,7 @@ interface CustomerSelectorProps {
   disabled?: boolean;
   className?: string;
   onCustomerCreated?: (customer: Customer) => void;
+  onCustomerResolved?: (customer: Customer | undefined) => void;
   // 可选：初始客户列表（用于显示已选客户）
   initialCustomer?: Customer;
 }
@@ -69,6 +70,7 @@ export function CustomerSelector({
   disabled = false,
   className,
   onCustomerCreated,
+  onCustomerResolved,
   initialCustomer,
 }: CustomerSelectorProps) {
   const [open, setOpen] = React.useState(false);
@@ -88,13 +90,17 @@ export function CustomerSelector({
     return () => clearTimeout(timer);
   }, [searchValue]);
 
-  // 搜索客户（只在输入 2 个字符以上时搜索）
-  const shouldSearch = debouncedSearch.trim().length >= 2;
-  const { data: searchResults, isLoading: isSearching } = useQuery({
-    queryKey: customerQueryKeys.search(debouncedSearch, { limit: 20 }),
-    queryFn: () => searchCustomersLightweight(debouncedSearch, { limit: 20 }),
+  const normalizedSearch = debouncedSearch.trim().toLowerCase();
+  const shouldSearch = normalizedSearch.length >= 2;
+
+  const { data: searchResults, isFetching: isSearching } = useQuery({
+    queryKey: customerQueryKeys.search(normalizedSearch || '', { limit: 20 }),
+    queryFn: () => searchCustomersLightweight(normalizedSearch, { limit: 20 }),
     enabled: shouldSearch && open,
     staleTime: 5 * 60 * 1000, // 5分钟缓存
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true,
   });
 
   // 客户列表：搜索结果或空数组（使用 useMemo 避免重复渲染）
@@ -106,8 +112,8 @@ export function CustomerSelector({
       return [];
     }
 
-    const normalizedSearch = searchValue.trim().toLowerCase();
     const collapseSpaces = (value: string) => value.replace(/\s+/g, '');
+    const normalized = collapseSpaces(normalizedSearch);
 
     // 服务端已经做了基础搜索，这里只做拼音增强
     return customers.filter((customer: Customer) => {
@@ -128,27 +134,25 @@ export function CustomerSelector({
       const pinyinFull = collapseSpaces(
         chineseToPinyinUppercase(name).toLowerCase()
       );
-      if (pinyinFull && pinyinFull.includes(collapseSpaces(normalizedSearch))) {
+      if (pinyinFull && pinyinFull.includes(normalized)) {
         return true;
       }
 
       const pinyinInitials = collapseSpaces(
         chineseToPinyinInitialsUppercase(name).toLowerCase()
       );
-      if (
-        pinyinInitials &&
-        pinyinInitials.includes(collapseSpaces(normalizedSearch))
-      ) {
+      if (pinyinInitials && pinyinInitials.includes(normalized)) {
         return true;
       }
 
       return false;
     });
-  }, [customers, searchValue, shouldSearch]);
+  }, [customers, normalizedSearch, shouldSearch]);
 
   // 处理客户选择
   const handleSelect = (customer: Customer) => {
     setSelectedCustomer(customer);
+    onCustomerResolved?.(customer);
     onValueChange?.(customer.id);
     setOpen(false);
   };
@@ -166,6 +170,7 @@ export function CustomerSelector({
 
     // 通知父组件
     onCustomerCreated?.(customer);
+    onCustomerResolved?.(customer);
 
     // 自动选择新创建的客户
     onValueChange?.(customer.id);
@@ -176,16 +181,40 @@ export function CustomerSelector({
 
   // 当 value 变化时，更新 selectedCustomer
   React.useEffect(() => {
-    if (value && !selectedCustomer) {
-      // 如果有 value 但没有 selectedCustomer，尝试从搜索结果中找
-      const customer = customers.find((c: Customer) => c.id === value);
-      if (customer) {
-        setSelectedCustomer(customer);
-      }
-    } else if (!value) {
-      setSelectedCustomer(undefined);
+    if (initialCustomer && initialCustomer.id !== selectedCustomer?.id) {
+      setSelectedCustomer(initialCustomer);
+      onCustomerResolved?.(initialCustomer);
     }
-  }, [value, selectedCustomer, customers]);
+  }, [initialCustomer, onCustomerResolved, selectedCustomer?.id]);
+
+  React.useEffect(() => {
+    if (!value) {
+      if (selectedCustomer) {
+        setSelectedCustomer(undefined);
+      }
+      onCustomerResolved?.(undefined);
+      return;
+    }
+
+    const matched = customers.find(
+      (customer: Customer) => customer.id === value
+    );
+    if (!matched) {
+      return;
+    }
+
+    const hasChanged =
+      !selectedCustomer ||
+      matched.id !== selectedCustomer.id ||
+      matched.address !== selectedCustomer.address ||
+      matched.phone !== selectedCustomer.phone ||
+      matched.name !== selectedCustomer.name;
+
+    if (hasChanged) {
+      setSelectedCustomer(matched);
+      onCustomerResolved?.(matched);
+    }
+  }, [value, customers, onCustomerResolved, selectedCustomer]);
 
   return (
     <>

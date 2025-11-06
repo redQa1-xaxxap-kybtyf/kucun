@@ -108,7 +108,7 @@ async function executeOrderStatusUpdateWithInventory(
   for (const item of existingOrder.items) {
     const productId = item.productId;
     if (!productId) {
-      continue; // 跳过手动输入的商品
+      continue; // 跳过手动输入的产品
     }
 
     // 预先生成出库单号
@@ -124,7 +124,7 @@ async function executeOrderStatusUpdateWithInventory(
   }
 
   return await withTransaction(async tx => {
-    // 第一步：先检查所有商品的库存，收集库存不足的信息
+    // 第一步：先检查所有产品的库存，收集库存不足的信息
     const insufficientStockItems: Array<{
       productCode: string;
       productName: string;
@@ -135,16 +135,20 @@ async function executeOrderStatusUpdateWithInventory(
       unit: string;
     }> = [];
 
-  const inventoryChecks: Array<{
-    item: (typeof existingOrder.items)[0];
-    productId: string;
-    outboundRecordNumber: string;
-    inventory: NonNullable<
-      Awaited<ReturnType<typeof findAvailableInventory>>
-    >;
-  }> = [];
+    const inventoryChecks: Array<{
+      item: (typeof existingOrder.items)[0];
+      productId: string;
+      outboundRecordNumber: string;
+      inventory: NonNullable<
+        Awaited<ReturnType<typeof findAvailableInventory>>
+      >;
+    }> = [];
 
-  for (const { item, productId, outboundRecordNumber } of itemsWithInventory) {
+    for (const {
+      item,
+      productId,
+      outboundRecordNumber,
+    } of itemsWithInventory) {
       // 使用类型安全的库存查找（支持变体和批次映射）
       const inventory = await findAvailableInventory(productId, item.quantity, {
         colorCode: item.colorCode,
@@ -152,7 +156,7 @@ async function executeOrderStatusUpdateWithInventory(
         tx,
       });
 
-      // 如果没有找到库存记录，跳过该商品（可能是调货商品）
+      // 如果没有找到库存记录，跳过该产品（可能是调货产品）
       if (!inventory) {
         continue;
       }
@@ -178,11 +182,16 @@ async function executeOrderStatusUpdateWithInventory(
         });
       } else {
         // 库存充足，保存检查结果用于后续更新
-        inventoryChecks.push({ item, productId, outboundRecordNumber, inventory });
+        inventoryChecks.push({
+          item,
+          productId,
+          outboundRecordNumber,
+          inventory,
+        });
       }
     }
 
-    // 如果有库存不足的商品，抛出详细的错误信息
+    // 如果有库存不足的产品，抛出详细的错误信息
     if (insufficientStockItems.length > 0) {
       if (insufficientStockItems.length === 1) {
         const item = insufficientStockItems[0];
@@ -195,7 +204,7 @@ async function executeOrderStatusUpdateWithInventory(
             `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}${item.unit}，需要 ${item.requiredQty}${item.unit}，缺少 ${item.shortage}${item.unit}`
         );
         throw new Error(
-          `以下 ${insufficientStockItems.length} 个商品库存不足：\n${errorMessages.join('\n')}`
+          `以下 ${insufficientStockItems.length} 个产品库存不足：\n${errorMessages.join('\n')}`
         );
       }
     }
@@ -325,7 +334,7 @@ async function executeOrderCancellation(
     for (const item of existingOrder.items) {
       if (!item.productId) {
         continue;
-      } // 跳过手动输入的商品
+      } // 跳过手动输入的产品
 
       // 查找对应的库存记录
       const inventory = await tx.inventory.findFirst({
@@ -350,6 +359,22 @@ async function executeOrderCancellation(
         });
       }
     }
+
+    const cancellationRemark =
+      remarks && remarks.trim().length > 0
+        ? `订单取消原因：${remarks.trim()}`
+        : '系统自动标记：销售订单取消关闭应收款';
+
+    await tx.paymentRecord.updateMany({
+      where: {
+        salesOrderId: orderId,
+        status: 'pending',
+      },
+      data: {
+        status: 'cancelled',
+        remarks: cancellationRemark,
+      },
+    });
 
     return {
       order,
@@ -400,7 +425,7 @@ export async function updateSalesOrderStatus(
   operatorId?: string
 ): Promise<OrderStatusUpdateResult> {
   // 如果状态变更为已发货或已完成，尝试更新库存
-  // 库存扣减逻辑已改为"柔性"处理：有库存就扣，没有就跳过（支持调货商品）
+  // 库存扣减逻辑已改为"柔性"处理：有库存就扣，没有就跳过（支持调货产品）
   const shouldUpdateInventory =
     ['shipped', 'completed'].includes(newStatus) &&
     currentStatus === 'confirmed';

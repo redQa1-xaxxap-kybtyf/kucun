@@ -9,6 +9,21 @@ import {
   FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
 
+// 厂家发货订单费用项验证
+export const factoryShipmentFeeItemSchema = z.object({
+  feeType: z.enum(['shipping', 'storage', 'customs', 'other']),
+  feeName: z
+    .string()
+    .min(1, '费用名称不能为空')
+    .max(100, '费用名称不能超过100个字符'),
+  feeAmount: z.number().min(0, '费用金额不能为负数'),
+  remarks: z
+    .string()
+    .max(500, '备注不能超过500个字符')
+    .optional()
+    .or(z.literal('')),
+});
+
 // 厂家发货订单状态验证
 export const factoryShipmentStatusSchema = z.enum([
   FACTORY_SHIPMENT_STATUS.DRAFT,
@@ -24,7 +39,7 @@ export const factoryShipmentStatusSchema = z.enum([
 export const factoryShipmentOrderItemSchema = z
   .object({
     productId: z
-      .union([z.string().uuid('商品ID格式不正确'), z.literal('')])
+      .union([z.string().uuid('产品ID格式不正确'), z.literal('')])
       .optional()
       .transform(value =>
         value && value.trim().length > 0 ? value : undefined
@@ -52,11 +67,11 @@ export const factoryShipmentOrderItemSchema = z
       .optional()
       .or(z.literal('')),
 
-    // 手动输入商品信息（临时商品）
+    // 手动输入产品信息（临时产品）
     isManualProduct: z.boolean().optional(),
     manualProductName: z
       .string()
-      .max(100, '商品名称不能超过100个字符')
+      .max(100, '产品名称不能超过100个字符')
       .optional()
       .or(z.literal('')),
     manualSpecification: z
@@ -72,7 +87,7 @@ export const factoryShipmentOrderItemSchema = z
       .or(z.literal('')),
 
     // 通用显示字段
-    displayName: z.string().max(100, '商品名称不能超过100个字符').default(''),
+    displayName: z.string().max(100, '产品名称不能超过100个字符').default(''),
     specification: z
       .string()
       .max(200, '规格不能超过200个字符')
@@ -89,18 +104,18 @@ export const factoryShipmentOrderItemSchema = z
   })
   .refine(
     data => {
-      // 如果是手动输入商品，必须填写商品名称
+      // 如果是手动输入产品，必须填写产品名称
       if (data.isManualProduct && !data.manualProductName) {
         return false;
       }
-      // 如果不是手动输入商品，必须有productId
+      // 如果不是手动输入产品，必须有productId
       if (!data.isManualProduct && !data.productId) {
         return false;
       }
       return true;
     },
     {
-      message: '手动输入商品必须填写商品名称，库存商品必须选择商品',
+      message: '手动输入产品必须填写产品名称，库存产品必须选择产品',
       path: ['manualProductName'],
     }
   )
@@ -152,7 +167,8 @@ export const createFactoryShipmentOrderSchema = z
       .or(z.literal('')),
     items: z
       .array(factoryShipmentOrderItemSchema)
-      .min(1, '至少需要添加一个商品'),
+      .min(1, '至少需要添加一个产品'),
+    feeItems: z.array(factoryShipmentFeeItemSchema).optional().default([]),
   })
   .refine(
     data => {
@@ -207,7 +223,7 @@ export const updateFactoryShipmentOrderSchema = z
     completionDate: z.date().optional(),
     items: z
       .array(factoryShipmentOrderItemSchema)
-      .min(1, '至少需要添加一个商品')
+      .min(1, '至少需要添加一个产品')
       .optional(),
   })
   .refine(

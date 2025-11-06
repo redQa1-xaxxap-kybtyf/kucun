@@ -3,7 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 
-import { INVENTORY_ACTIVITY_GC_TIME_MS, INVENTORY_ACTIVITY_STALE_TIME_MS } from '@/lib/constants/cache';
+import {
+  INVENTORY_ACTIVITY_GC_TIME_MS,
+  INVENTORY_ACTIVITY_STALE_TIME_MS,
+} from '@/lib/constants/cache';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
   OutboundRecord,

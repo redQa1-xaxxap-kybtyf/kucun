@@ -5,6 +5,7 @@
 在应收款页面，当订单存在抹零金额时，待收金额计算错误。
 
 **示例**：
+
 - 订单金额：361元
 - 抹零金额：-1元（减少1元）
 - 实际收款：360元
@@ -27,6 +28,7 @@ const paidAmount = confirmedPayments.reduce(
 ```
 
 **问题**：
+
 1. `order.totalAmount` 是 `Prisma.Decimal` 类型
 2. `order.roundingAdjustment` 是 `Prisma.Decimal | null` 类型
 3. `payment.actualPaymentAmount` 是 `Prisma.Decimal` 类型
@@ -181,6 +183,7 @@ remainingAmount = Math.max(0, 360 - 300 - 0) = 60 ✅
 Prisma 使用 `Decimal` 类型来表示数据库中的 `DECIMAL` 字段，这是一个特殊的对象类型，不是原生的 JavaScript `number`。
 
 **正确的转换方式**：
+
 ```typescript
 // ✅ 正确
 const num = Number(decimalValue);
@@ -235,4 +238,3 @@ const total = a + b + c; // a, b, c 是 Decimal 类型
 3. **单元测试**：
    - 添加金额计算的单元测试
    - 覆盖各种边界情况（抹零、部分收款、全额收款等）
-

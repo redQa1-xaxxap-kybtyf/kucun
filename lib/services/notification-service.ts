@@ -86,7 +86,7 @@ export async function notifyOrderCreated(
     type: 'order_created',
     priority: 'normal',
     title: '订单创建成功',
-    message: `订单 ${orderNumber} 创建成功，总金额 ¥${totalAmount}`,
+    message: `订单 ${orderNumber} 创建成功，总金额 ￥${totalAmount}`,
     data: {
       orderId,
       orderNumber,
@@ -132,7 +132,7 @@ export async function notifyPaymentReceived(
     type: 'payment_received',
     priority: 'high',
     title: '支付成功',
-    message: `订单 ${orderNumber} 收到支付 ¥${amount}（${paymentMethod}）`,
+    message: `订单 ${orderNumber} 收到支付 ￥${amount}（${paymentMethod}）`,
     data: {
       orderId,
       orderNumber,

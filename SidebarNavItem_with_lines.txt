@@ -1,0 +1,414 @@
+0001: 'use client';
+0002: 
+0003: import { ChevronDown } from 'lucide-react';
+0004: import Link from 'next/link';
+0005: import * as React from 'react';
+0006: 
+0007: import { Button } from '@/components/ui/button';
+0008: import type { NavigationItem } from '@/lib/types/layout';
+0009: import { cn } from '@/lib/utils';
+0010: 
+0011: /**
+0012:  * 子菜单项组件（支持三级菜单）
+0013:  */
+0014: interface SubMenuItemProps {
+0015:   item: NavigationItem;
+0016:   pathname: string;
+0017:   isActive: boolean;
+0018:   level: number;
+0019: }
+0020: 
+0021: const SubMenuItem = React.memo(
+0022:   ({ item, pathname, isActive, level }: SubMenuItemProps) => {
+0023:     const Icon = item.icon;
+0024:     const [isExpanded, setIsExpanded] = React.useState(false);
+0025: 
+0026:     // 检查是否有子菜单
+0027:     const hasChildren = item.children && item.children.length > 0;
+0028: 
+0029:     // 检查是否有激活的子菜单项
+0030:     const hasActiveChild = React.useMemo(
+0031:       () =>
+0032:         item.children?.some(
+0033:           child =>
+0034:             pathname === child.href || pathname.startsWith(`${child.href}/`)
+0035:         ) ?? false,
+0036:       [item.children, pathname]
+0037:     );
+0038: 
+0039:     // 如果有激活的子菜单项，自动展开
+0040:     React.useEffect(() => {
+0041:       if (hasActiveChild) {
+0042:         setIsExpanded(true);
+0043:       }
+0044:     }, [hasActiveChild]);
+0045: 
+0046:     // 处理子菜单展开/收起
+0047:     const handleToggle = React.useCallback((e: React.MouseEvent) => {
+0048:       e.preventDefault();
+0049:       e.stopPropagation();
+0050:       setIsExpanded(prev => !prev);
+0051:     }, []);
+0052: 
+0053:     // 计算缩进（每级增加 12px）
+0054:     const indentClass = level === 2 ? 'ml-0' : `ml-${(level - 2) * 3}`;
+0055: 
+0056:     // 如果没有子菜单，渲染普通链接
+0057:     if (!hasChildren) {
+0058:       return (
+0059:         <Link
+0060:           href={item.href}
+0061:           prefetch={false}
+0062:           className="block rounded-md transition-all duration-150"
+0063:         >
+0064:           <Button
+0065:             variant="ghost"
+0066:             className={cn(
+0067:               'group relative h-9 w-full justify-start rounded-md px-3 text-sm font-medium transition-colors duration-150',
+0068:               indentClass,
+0069:               'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0070:               'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+0071:               'disabled:opacity-60',
+0072:               isActive &&
+0073:                 'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
+0074:             )}
+0075:             disabled={item.disabled}
+0076:             asChild
+0077:           >
+0078:             <div className="flex items-center">
+0079:               {Icon && (
+0080:                 <Icon
+0081:                   className={cn(
+0082:                     'mr-3 h-3.5 w-3.5 text-[hsl(var(--sidebar-icon-muted))] transition-colors duration-150',
+0083:                     'group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0084:                     isActive && 'text-[hsl(var(--sidebar-hover-foreground))]'
+0085:                   )}
+0086:                 />
+0087:               )}
+0088:               <span className="flex-1 text-left">{item.title}</span>
+0089:             </div>
+0090:           </Button>
+0091:         </Link>
+0092:       );
+0093:     }
+0094: 
+0095:     // 渲染带子菜单的项（三级菜单）
+0096:     return (
+0097:       <div className="space-y-1">
+0098:         <Button
+0099:           variant="ghost"
+0100:           className={cn(
+0101:             'group relative h-9 w-full justify-start rounded-md px-3 text-sm font-medium transition-colors duration-150',
+0102:             indentClass,
+0103:             'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0104:             'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+0105:             'disabled:opacity-60',
+0106:             (isActive || hasActiveChild) &&
+0107:               'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm'
+0108:           )}
+0109:           disabled={item.disabled}
+0110:           onClick={handleToggle}
+0111:           aria-expanded={isExpanded}
+0112:         >
+0113:           {Icon && (
+0114:             <Icon
+0115:               className={cn(
+0116:                 'mr-3 h-3.5 w-3.5 text-[hsl(var(--sidebar-icon-muted))] transition-colors duration-150',
+0117:                 'group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0118:                 (isActive || hasActiveChild) &&
+0119:                   'text-[hsl(var(--sidebar-hover-foreground))]'
+0120:               )}
+0121:             />
+0122:           )}
+0123:           <span className="flex-1 text-left">{item.title}</span>
+0124:           <ChevronDown
+0125:             className={cn(
+0126:               'h-3.5 w-3.5 text-[hsl(var(--sidebar-text-tertiary))] transition-transform duration-150',
+0127:               (isActive || hasActiveChild) &&
+0128:                 'text-[hsl(var(--sidebar-hover-foreground))]',
+0129:               isExpanded && 'rotate-180'
+0130:             )}
+0131:           />
+0132:         </Button>
+0133: 
+0134:         {/* 递归渲染子菜单 */}
+0135:         {isExpanded && (
+0136:           <div className="ml-3 space-y-1">
+0137:             {item.children?.map((child, index) => {
+0138:               const isChildActive =
+0139:                 pathname === child.href ||
+0140:                 pathname.startsWith(`${child.href}/`);
+0141:               return (
+0142:                 <SubMenuItem
+0143:                   key={`child-${item.id}-${child.id || child.href || index}-${index}`}
+0144:                   item={child}
+0145:                   pathname={pathname}
+0146:                   isActive={isChildActive}
+0147:                   level={level + 1}
+0148:                 />
+0149:               );
+0150:             })}
+0151:           </div>
+0152:         )}
+0153:       </div>
+0154:     );
+0155:   }
+0156: );
+0157: 
+0158: SubMenuItem.displayName = 'SubMenuItem';
+0159: 
+0160: /**
+0161:  * 子菜单列表组件（优化：接收 pathname 作为 prop，避免重复订阅路由）
+0162:  */
+0163: interface ChildMenuListProps {
+0164:   items: NavigationItem[];
+0165:   pathname: string;
+0166:   parentId: string;
+0167: }
+0168: 
+0169: const ChildMenuList = React.memo(
+0170:   ({ items, pathname, parentId }: ChildMenuListProps) => {
+0171:     // 找到最佳匹配的子菜单（最长路径匹配）
+0172:     const bestMatch = React.useMemo(
+0173:       () =>
+0174:         items
+0175:           .filter(
+0176:             child =>
+0177:               pathname === child.href || pathname.startsWith(`${child.href}/`)
+0178:           )
+0179:           .sort((a, b) => b.href.length - a.href.length)[0],
+0180:       [items, pathname]
+0181:     );
+0182: 
+0183:     return (
+0184:       <div className="mt-2 ml-3 space-y-1 rounded-md border border-[hsl(var(--sidebar-subtle-border))] bg-[hsl(var(--sidebar-subtle-bg))] p-2">
+0185:         {items.map((child, index) => {
+0186:           const isChildActive = bestMatch?.id === child.id;
+0187: 
+0188:           return (
+0189:             <SubMenuItem
+0190:               key={`sublist-${parentId}-${child.id || child.href || index}-${index}`}
+0191:               item={child}
+0192:               pathname={pathname}
+0193:               isActive={isChildActive}
+0194:               level={2}
+0195:             />
+0196:           );
+0197:         })}
+0198:       </div>
+0199:     );
+0200:   }
+0201: );
+0202: 
+0203: ChildMenuList.displayName = 'ChildMenuList';
+0204: 
+0205: interface SidebarNavItemProps {
+0206:   item: NavigationItem;
+0207:   pathname: string;
+0208:   isActive: boolean;
+0209:   isCollapsed: boolean;
+0210:   isFocused?: boolean;
+0211:   tabIndex?: number;
+0212: }
+0213: 
+0214: /**
+0215:  * 侧边栏导航项 Client Component
+0216:  * 优化版本：通过 props 接收 pathname，避免每个导航项都订阅路由
+0217:  *
+0218:  * 性能优化点:
+0219:  * 1. pathname 通过 props 传递，避免重复订阅
+0220:  * 2. 使用 React.memo 避免不必要的重渲染
+0221:  * 3. 使用 useCallback 优化事件处理函数
+0222:  * 4. 禁用 Link 预取 (prefetch={false})
+0223:  * 5. 减少动画时长 (200ms -> 150ms)
+0224:  */
+0225: export const SidebarNavItem = React.memo(
+0226:   React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
+0227:     (
+0228:       { item, pathname, isActive, isCollapsed, isFocused = false, tabIndex },
+0229:       ref
+0230:     ) => {
+0231:       const Icon = item.icon;
+0232:       const [isExpanded, setIsExpanded] = React.useState(false);
+0233: 
+0234:       // ✅ 检查是否有子菜单项处于激活状态（使用 useMemo 优化）
+0235:       const hasActiveChild = React.useMemo(
+0236:         () =>
+0237:           item.children?.some(
+0238:             child =>
+0239:               (pathname === child.href ||
+0240:                 pathname.startsWith(`${child.href}/`)) &&
+0241:               child.href !== item.href
+0242:           ) ?? false,
+0243:         [item.children, item.href, pathname]
+0244:       );
+0245: 
+0246:       // ✅ 如果有激活的子菜单项，自动展开
+0247:       React.useEffect(() => {
+0248:         if (hasActiveChild && !isCollapsed) {
+0249:           setIsExpanded(true);
+0250:         }
+0251:       }, [hasActiveChild, isCollapsed]);
+0252: 
+0253:       // ✅ 处理子菜单展开/收起 (使用 useCallback 优化)
+0254:       const handleSubMenuToggle = React.useCallback(() => {
+0255:         setIsExpanded(prev => !prev);
+0256:       }, []);
+0257: 
+0258:       // 如果没有子菜单，渲染普通导航项
+0259:       if (!item.children || item.children.length === 0) {
+0260:         return (
+0261:           <Link
+0262:             href={item.href}
+0263:             ref={ref}
+0264:             tabIndex={tabIndex}
+0265:             prefetch={true}
+0266:             className={cn(
+0267:               'block rounded-md transition-all duration-150',
+0268:               isFocused &&
+0269:                 'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+0270:             )}
+0271:             aria-label={item.title}
+0272:             title={isCollapsed ? item.title : undefined}
+0273:           >
+0274:             <Button
+0275:               variant="ghost"
+0276:               className={cn(
+0277:                 'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
+0278:                 isCollapsed ? 'px-2' : 'px-3',
+0279:                 'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0280:                 'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+0281:                 'disabled:opacity-60',
+0282:                 isActive &&
+0283:                   'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
+0284:               )}
+0285:               disabled={item.disabled}
+0286:               asChild
+0287:             >
+0288:               <div className="flex items-center">
+0289:                 {Icon && (
+0290:                   <Icon
+0291:                     className={cn(
+0292:                       'h-4 w-4 transition-colors duration-150',
+0293:                       !isCollapsed && 'mr-3',
+0294:                       'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0295:                       isActive && 'text-[hsl(var(--sidebar-icon-active))]'
+0296:                     )}
+0297:                   />
+0298:                 )}
+0299:                 {!isCollapsed && (
+0300:                   <span className="flex-1 text-left">{item.title}</span>
+0301:                 )}
+0302:               </div>
+0303:             </Button>
+0304:           </Link>
+0305:         );
+0306:       }
+0307: 
+0308:       // 渲染带子菜单的导航项
+0309:       return (
+0310:         <div className="space-y-1">
+0311:           {/* 折叠状态下，父菜单可点击导航 */}
+0312:           {isCollapsed ? (
+0313:             <Link
+0314:               href={item.href}
+0315:               prefetch={true}
+0316:               className={cn(
+0317:                 'block rounded-md transition-all duration-150',
+0318:                 isFocused &&
+0319:                   'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+0320:               )}
+0321:               aria-label={item.title}
+0322:               title={item.title}
+0323:             >
+0324:               <Button
+0325:                 variant="ghost"
+0326:                 className={cn(
+0327:                   'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
+0328:                   'px-2',
+0329:                   'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0330:                   'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+0331:                   'disabled:opacity-60',
+0332:                   (isActive || hasActiveChild) &&
+0333:                     'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
+0334:                 )}
+0335:                 disabled={item.disabled}
+0336:                 asChild
+0337:               >
+0338:                 <div className="flex items-center justify-center">
+0339:                   {Icon && (
+0340:                     <Icon
+0341:                       className={cn(
+0342:                         'h-4 w-4 transition-colors duration-150',
+0343:                         'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0344:                         (isActive || hasActiveChild) &&
+0345:                           'text-[hsl(var(--sidebar-icon-active))]'
+0346:                       )}
+0347:                     />
+0348:                   )}
+0349:                 </div>
+0350:               </Button>
+0351:             </Link>
+0352:           ) : (
+0353:             /* 展开状态下，父菜单用于切换子菜单显示 */
+0354:             <div>
+0355:               <Button
+0356:                 variant="ghost"
+0357:                 className={cn(
+0358:                   'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
+0359:                   'px-3',
+0360:                   'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0361:                   'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+0362:                   'disabled:opacity-60',
+0363:                   (isActive || hasActiveChild) &&
+0364:                     'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]',
+0365:                   isFocused &&
+0366:                     'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+0367:                 )}
+0368:                 disabled={item.disabled}
+0369:                 onClick={handleSubMenuToggle}
+0370:                 aria-label={item.title}
+0371:                 aria-expanded={isExpanded}
+0372:                 tabIndex={tabIndex}
+0373:               >
+0374:                 <div className="flex w-full items-center">
+0375:                   {Icon && (
+0376:                     <Icon
+0377:                       className={cn(
+0378:                         'mr-3 h-4 w-4 transition-colors duration-150',
+0379:                         'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+0380:                         (isActive || hasActiveChild) &&
+0381:                           'text-[hsl(var(--sidebar-icon-active))]'
+0382:                       )}
+0383:                     />
+0384:                   )}
+0385:                   <span className="flex-1 text-left">{item.title}</span>
+0386:                   <ChevronDown
+0387:                     className={cn(
+0388:                       'h-4 w-4 text-[hsl(var(--sidebar-text-tertiary))] transition-transform duration-150',
+0389:                       (isActive || hasActiveChild) &&
+0390:                         'text-[hsl(var(--sidebar-icon-active))]',
+0391:                       isExpanded &&
+0392:                         'rotate-180 text-[hsl(var(--sidebar-hover-foreground))]'
+0393:                     )}
+0394:                   />
+0395:                 </div>
+0396:               </Button>
+0397: 
+0398:               {/* 子菜单 */}
+0399:               {isExpanded && (
+0400:                 <ChildMenuList
+0401:                   pathname={pathname}
+0402:                   items={item.children ?? []}
+0403:                   parentId={item.id}
+0404:                 />
+0405:               )}
+0406:             </div>
+0407:           )}
+0408:         </div>
+0409:       );
+0410:     }
+0411:   )
+0412: );
+0413: 
+0414: SidebarNavItem.displayName = 'SidebarNavItem';

@@ -1,8 +1,8 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import {
   Calendar,
-  DollarSign,
   Hash,
   MapPin,
   Phone,
@@ -136,7 +136,7 @@ export function OrderStatusBar({
 
         {/* 订单总金额 */}
         <div className="flex items-center gap-2">
-          <DollarSign className="text-muted-foreground h-4 w-4" />
+          <ChineseYuan className="text-muted-foreground h-4 w-4" />
           <div className="space-y-1">
             <div className="text-muted-foreground text-xs">订单金额</div>
             <div className="text-lg font-medium">

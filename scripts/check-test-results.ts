@@ -45,9 +45,7 @@ async function main() {
     console.log(
       `   - 最后查询时间: ${order.lastShippingQueryAt?.toISOString() || '未查询'}`
     );
-    console.log(
-      `   - 查询状态: ${order.shippingQueryStatus || '未设置'}`
-    );
+    console.log(`   - 查询状态: ${order.shippingQueryStatus || '未设置'}`);
     if (order.shippingQueryError) {
       console.log(`   - 错误信息: ${order.shippingQueryError}`);
     }
@@ -95,9 +93,7 @@ async function main() {
         console.log(`   - 目的地: ${record.destination}`);
       }
       if (record.estimatedArrival) {
-        console.log(
-          `   - 预计到达: ${record.estimatedArrival.toISOString()}`
-        );
+        console.log(`   - 预计到达: ${record.estimatedArrival.toISOString()}`);
       }
       if (record.errorMessage) {
         console.log(`   - 错误信息: ${record.errorMessage}`);
@@ -140,7 +136,9 @@ async function main() {
       console.log(`   - 船公司: ${job.data.shippingCompany}`);
       console.log(`   - 柜号: ${job.data.containerNumber || '无'}`);
       console.log(`   - 失败原因: ${job.failedReason}`);
-      console.log(`   - 尝试次数: ${job.attemptsMade}/${job.opts.attempts || 3}`);
+      console.log(
+        `   - 尝试次数: ${job.attemptsMade}/${job.opts.attempts || 3}`
+      );
       console.log('');
     }
   }
@@ -150,9 +148,7 @@ async function main() {
   console.log('📋 测试结果总结\n');
 
   const hasQueryRecords = queryRecords.length > 0;
-  const hasUpdatedOrders = testOrders.some(
-    o => o.lastShippingQueryAt !== null
-  );
+  const hasUpdatedOrders = testOrders.some(o => o.lastShippingQueryAt !== null);
 
   console.log('✅ 测试数据创建: 成功');
   console.log('✅ BullMQ 队列: 正常运行');
@@ -188,4 +184,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

@@ -88,7 +88,7 @@ function populateProductSelection({
       form.setValue(`items.${index}.unitPrice`, latestPrice);
       toast({
         title: '已自动填充历史价格',
-        // description: `产品编码 "${product.code}" 的上次价格：¥${latestPrice}`,
+        // description: `产品编码 "${product.code}" 的上次价格：￥${latestPrice}`,
         duration: 2000,
       });
     }
@@ -147,7 +147,7 @@ export function OrderItemsSection({
             disabled={isSubmitting}
           >
             <Plus className="h-3 w-3" />
-            添加商品
+            添加产品
           </Button>
         </div>
 
@@ -156,10 +156,10 @@ export function OrderItemsSection({
             <Package className="h-6 w-6 text-[hsl(var(--color-text-tertiary))]" />
             <div>
               <p className="text-sm text-[hsl(var(--color-text-primary))]">
-                暂无商品明细
+                暂无产品明细
               </p>
               <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                点击“添加商品”按钮开始添加
+                点击“添加产品”按钮开始添加
               </p>
             </div>
           </div>

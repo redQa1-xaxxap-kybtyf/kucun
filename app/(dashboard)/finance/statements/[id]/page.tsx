@@ -1,10 +1,10 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
 import {
   ArrowLeft,
-  DollarSign,
   FileText,
   RefreshCw,
   TrendingDown,
@@ -311,7 +311,7 @@ export default function StatementDetailPage() {
                   </p>
                 </div>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-purple-200 dark:bg-purple-800">
-                  <DollarSign className="h-6 w-6 text-purple-700 dark:text-purple-300" />
+                  <ChineseYuan className="h-6 w-6 text-purple-700 dark:text-purple-300" />
                 </div>
               </div>
             </CardContent>

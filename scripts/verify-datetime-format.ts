@@ -15,8 +15,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🧪 验证日期时间格式化修改...\n');
 
-  // 1. 获取一些临时商品数据
-  console.log('📊 步骤 1: 获取临时商品数据');
+  // 1. 获取一些临时产品数据
+  console.log('📊 步骤 1: 获取临时产品数据');
   const temporaryProducts = await prisma.temporaryProduct.findMany({
     take: 5,
     orderBy: {
@@ -32,11 +32,11 @@ async function main() {
   });
 
   if (temporaryProducts.length === 0) {
-    console.log('⚠️  没有临时商品数据，无法验证');
+    console.log('⚠️  没有临时产品数据，无法验证');
     return;
   }
 
-  console.log(`✅ 找到 ${temporaryProducts.length} 个临时商品\n`);
+  console.log(`✅ 找到 ${temporaryProducts.length} 个临时产品\n`);
 
   // 2. 测试不同的日期格式化方法
   console.log('📊 步骤 2: 测试日期格式化\n');

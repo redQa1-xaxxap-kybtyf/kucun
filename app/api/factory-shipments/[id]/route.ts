@@ -12,7 +12,6 @@ import {
   type FactoryShipmentOrderItemData,
   type UpdateFactoryShipmentOrderData,
 } from '@/lib/validations/factory-shipment';
- 
 
 interface RouteParams {
   params: Promise<{
@@ -36,12 +35,16 @@ const fullOrderInclude = {
           weight: true,
         },
       },
-      supplier: { select: { id: true, name: true, phone: true, address: true } },
+      supplier: {
+        select: { id: true, name: true, phone: true, address: true },
+      },
     },
   },
 } as const;
 
-function fulfillmentSummary(items: Array<{ ownership: string; totalPrice: number }>) {
+function fulfillmentSummary(
+  items: Array<{ ownership: string; totalPrice: number }>
+) {
   return {
     customerOwnedAmount: items
       .filter(item => item.ownership === 'customer')
@@ -52,13 +55,20 @@ function fulfillmentSummary(items: Array<{ ownership: string; totalPrice: number
   };
 }
 
-function computeAmountSummary(items?: Array<{ quantity: number; unitPrice: number; ownership?: 'customer' | 'self' }>) {
+function computeAmountSummary(
+  items?: Array<{
+    quantity: number;
+    unitPrice: number;
+    ownership?: 'customer' | 'self';
+  }>
+) {
   if (!items) return undefined;
   return items.reduce(
     (acc, item) => {
       const lineTotal = item.quantity * item.unitPrice;
       acc.total += lineTotal;
-      if ((item.ownership || 'customer') === 'customer') acc.customer += lineTotal;
+      if ((item.ownership || 'customer') === 'customer')
+        acc.customer += lineTotal;
       else acc.self += lineTotal;
       return acc;
     },
@@ -70,29 +80,53 @@ async function validateEntities({
   items,
   customerId,
 }: {
-  items?: Array<{ isManualProduct?: boolean; productId?: string | null; supplierId: string }>;
+  items?: Array<{
+    isManualProduct?: boolean;
+    productId?: string | null;
+    supplierId: string;
+  }>;
   customerId?: string;
 }) {
   if (customerId) {
-    const customer = await prisma.customer.findUnique({ where: { id: customerId } });
+    const customer = await prisma.customer.findUnique({
+      where: { id: customerId },
+    });
     if (!customer) return { code: 400 as const, message: '客户不存在' };
   }
 
   if (items && items.length > 0) {
-    const inventoryItems = items.filter(item => !item.isManualProduct && item.productId);
+    const inventoryItems = items.filter(
+      item => !item.isManualProduct && item.productId
+    );
     if (inventoryItems.length > 0) {
       const productIds = inventoryItems.map(i => i.productId || '');
-      const existingProducts = await prisma.product.findMany({ where: { id: { in: productIds } }, select: { id: true } });
+      const existingProducts = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true },
+      });
       const existingSet = new Set(existingProducts.map(p => p.id));
       const missing = productIds.filter(id => !existingSet.has(id));
-      if (missing.length > 0) return { code: 400 as const, message: `商品不存在: ${missing.join(', ')}` };
+      if (missing.length > 0)
+        return {
+          code: 400 as const,
+          message: `产品不存在: ${missing.join(', ')}`,
+        };
     }
 
     const supplierIds = [...new Set(items.map(i => i.supplierId))];
-    const existingSuppliers = await prisma.supplier.findMany({ where: { id: { in: supplierIds } }, select: { id: true } });
+    const existingSuppliers = await prisma.supplier.findMany({
+      where: { id: { in: supplierIds } },
+      select: { id: true },
+    });
     const existingSupplierSet = new Set(existingSuppliers.map(s => s.id));
-    const missingSuppliers = supplierIds.filter(id => !existingSupplierSet.has(id));
-    if (missingSuppliers.length > 0) return { code: 400 as const, message: `供应商不存在: ${missingSuppliers.join(', ')}` };
+    const missingSuppliers = supplierIds.filter(
+      id => !existingSupplierSet.has(id)
+    );
+    if (missingSuppliers.length > 0)
+      return {
+        code: 400 as const,
+        message: `供应商不存在: ${missingSuppliers.join(', ')}`,
+      };
   }
 
   return null;
@@ -109,8 +143,11 @@ function mapItemCreate(item: FactoryShipmentOrderItemData) {
     ownership: item.ownership || 'customer',
     ownershipRemarks: item.ownershipRemarks || null,
     customerDeliveryStatus:
-      item.ownership === 'customer' ? (item.customerDeliveryStatus ?? 'pending') : null,
-    selfInboundStatus: item.ownership === 'self' ? (item.selfInboundStatus ?? 'pending') : null,
+      item.ownership === 'customer'
+        ? (item.customerDeliveryStatus ?? 'pending')
+        : null,
+    selfInboundStatus:
+      item.ownership === 'self' ? (item.selfInboundStatus ?? 'pending') : null,
     deliveryConfirmedAt: null,
     inboundReceivedAt: null,
     isManualProduct: item.isManualProduct || false,
@@ -159,7 +196,8 @@ function buildUpdateData(
   if (arrivalDate !== undefined) data.arrivalDate = arrivalDate;
   if (deliveryDate !== undefined) data.deliveryDate = deliveryDate;
   if (completionDate !== undefined) data.completionDate = completionDate;
-  if (calculatedTotalAmount !== undefined) data.totalAmount = calculatedTotalAmount;
+  if (calculatedTotalAmount !== undefined)
+    data.totalAmount = calculatedTotalAmount;
   if (items) {
     data.items = { deleteMany: {}, create: items.map(mapItemCreate) };
     // 如果未显式提供 receivableAmount，按客户归属总额覆盖
@@ -178,8 +216,20 @@ async function applyStatusChangeAndFetchFullOrder(
   validatedData: UpdateFactoryShipmentOrderData,
   newStatus: NonNullable<UpdateFactoryShipmentOrderData['status']>
 ) {
-  const { idempotencyKey, containerNumber, shippingCompany, estimatedArrival, remarks, shipmentDate, arrivalDate, deliveryDate, completionDate } = validatedData;
-  const { updateFactoryShipmentStatus } = await import('@/lib/api/handlers/factory-shipment-status');
+  const {
+    idempotencyKey,
+    containerNumber,
+    shippingCompany,
+    estimatedArrival,
+    remarks,
+    shipmentDate,
+    arrivalDate,
+    deliveryDate,
+    completionDate,
+  } = validatedData;
+  const { updateFactoryShipmentStatus } = await import(
+    '@/lib/api/handlers/factory-shipment-status'
+  );
   const result = await withIdempotency(
     idempotencyKey,
     'factory_shipment_status_change',
@@ -306,24 +356,36 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         validatedData,
         status
       );
-      return NextResponse.json({ ...fullOrder, receivableCreated: result.receivableCreated });
+      return NextResponse.json({
+        ...fullOrder,
+        receivableCreated: result.receivableCreated,
+      });
     }
 
     // 验证实体存在性
     const validationError = await validateEntities({ items, customerId });
     if (validationError) {
-      return NextResponse.json({ error: validationError.message }, { status: validationError.code });
+      return NextResponse.json(
+        { error: validationError.message },
+        { status: validationError.code }
+      );
     }
 
-    // 计算订单金额与归属汇总（如果更新了商品明细）
+    // 计算订单金额与归属汇总（如果更新了产品明细）
     const amountSummary = computeAmountSummary(items);
     const calculatedTotalAmount = amountSummary?.total;
 
     // 更新厂家发货订单
-    await prisma.factoryShipmentOrder.update({ where: { id }, data: buildUpdateData(validatedData, calculatedTotalAmount) });
+    await prisma.factoryShipmentOrder.update({
+      where: { id },
+      data: buildUpdateData(validatedData, calculatedTotalAmount),
+    });
 
     // 重新查询更新后的订单（包含关联数据）
-    const updatedOrder = await prisma.factoryShipmentOrder.findUnique({ where: { id }, include: fullOrderInclude });
+    const updatedOrder = await prisma.factoryShipmentOrder.findUnique({
+      where: { id },
+      include: fullOrderInclude,
+    });
 
     if (!updatedOrder) {
       return NextResponse.json({ error: '订单不存在' }, { status: 404 });

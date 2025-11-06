@@ -98,7 +98,7 @@ testRedisConnection()
     console.log('\n✅ 测试完成');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
   });

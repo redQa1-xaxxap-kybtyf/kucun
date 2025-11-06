@@ -199,8 +199,8 @@ export const INVENTORY_ALERT_TYPE_LABELS: Record<string, string> = {
   low_stock: '库存不足',
   out_of_stock: '缺货',
   overstock: '库存过多',
-  expired: '过期商品',
-  damaged: '损坏商品',
+  expired: '过期产品',
+  damaged: '损坏产品',
 } as const;
 
 // 库存警报类型变体

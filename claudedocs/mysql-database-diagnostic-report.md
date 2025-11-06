@@ -11,12 +11,12 @@
 
 ### 关键发现
 
-| 严重程度 | 问题数量 | 状态 |
-|---------|---------|------|
-| **Critical** | 2 | ⚠️ 需要立即修复 |
-| **High** | 3 | ⚠️ 建议尽快修复 |
-| **Medium** | 4 | ℹ️ 建议优化 |
-| **Low** | 2 | ✅ 可选优化 |
+| 严重程度     | 问题数量 | 状态            |
+| ------------ | -------- | --------------- |
+| **Critical** | 2        | ⚠️ 需要立即修复 |
+| **High**     | 3        | ⚠️ 建议尽快修复 |
+| **Medium**   | 4        | ℹ️ 建议优化     |
+| **Low**      | 2        | ✅ 可选优化     |
 
 ### 总体评估
 
@@ -34,8 +34,9 @@
 ### 问题 1: 使用 MyISAM 存储引擎（Critical）
 
 **症状**:
+
 ```sql
-mysql> SELECT table_name, engine FROM information_schema.tables 
+mysql> SELECT table_name, engine FROM information_schema.tables
        WHERE table_schema = 'kucun_dev';
 +------------------------------+--------+
 | table_name                   | engine |
@@ -48,11 +49,13 @@ mysql> SELECT table_name, engine FROM information_schema.tables
 ```
 
 **根本原因**:
+
 - Prisma Schema 没有明确指定存储引擎
 - MySQL 5.7 默认引擎可能被配置为 MyISAM
 - 迁移时没有强制使用 InnoDB
 
 **影响范围**:
+
 - ❌ **无事务支持**: 数据一致性风险极高
 - ❌ **无外键约束**: Prisma 关系定义无法在数据库层面强制执行
 - ❌ **表锁定**: 并发性能差，写操作会锁定整个表
@@ -108,8 +111,8 @@ ALTER TABLE users ENGINE=InnoDB;
 ALTER TABLE _prisma_migrations ENGINE=InnoDB;
 
 -- 3. 验证转换结果
-SELECT table_name, engine 
-FROM information_schema.tables 
+SELECT table_name, engine
+FROM information_schema.tables
 WHERE table_schema = 'kucun_dev' AND engine != 'InnoDB';
 ```
 
@@ -122,11 +125,12 @@ default-storage-engine=InnoDB
 ```
 
 **验证方法**:
+
 ```sql
 -- 检查所有表的存储引擎
-SELECT table_name, engine, table_rows, 
+SELECT table_name, engine, table_rows,
        ROUND(data_length/1024/1024, 2) AS data_mb
-FROM information_schema.tables 
+FROM information_schema.tables
 WHERE table_schema = 'kucun_dev'
 ORDER BY table_name;
 ```
@@ -134,6 +138,7 @@ ORDER BY table_name;
 **预期结果**: 所有表的 `engine` 列应显示 `InnoDB`
 
 **预防措施**:
+
 1. 在 Prisma Schema 中添加引擎配置（虽然 Prisma 不直接支持，但可以通过迁移脚本强制）
 2. 配置 MySQL 默认引擎为 InnoDB
 3. 在迁移脚本中添加引擎检查
@@ -143,6 +148,7 @@ ORDER BY table_name;
 ### 问题 2: 数据库字符集不一致（Critical）
 
 **症状**:
+
 ```sql
 mysql> SHOW VARIABLES LIKE 'character_set%';
 +--------------------------+----------+
@@ -166,11 +172,13 @@ mysql> SHOW VARIABLES LIKE 'collation%';
 ```
 
 **根本原因**:
+
 - MySQL 服务器默认字符集配置为 `utf8`（3字节）而非 `utf8mb4`（4字节）
 - 数据库创建时继承了服务器默认配置
 - 表级别使用了正确的 `utf8mb4_unicode_ci`，但数据库级别不一致
 
 **影响范围**:
+
 - ⚠️ **Emoji 支持**: `utf8` 无法存储 Emoji 和某些特殊字符
 - ⚠️ **数据截断风险**: 插入 4 字节字符时可能失败或被截断
 - ⚠️ **排序规则不一致**: 可能导致查询结果不符合预期
@@ -204,8 +212,8 @@ net start MySQL57
 #### 步骤 3: 修改数据库字符集
 
 ```sql
-ALTER DATABASE kucun_dev 
-CHARACTER SET = utf8mb4 
+ALTER DATABASE kucun_dev
+CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_unicode_ci;
 ```
 
@@ -225,6 +233,7 @@ ORDER BY table_name;
 ```
 
 **预期结果**:
+
 - 数据库字符集: `utf8mb4`
 - 数据库排序规则: `utf8mb4_unicode_ci`
 - 所有表排序规则: `utf8mb4_unicode_ci`
@@ -236,28 +245,32 @@ ORDER BY table_name;
 ### 问题 3: Prisma 关系定义缺失（High）
 
 **症状**:
+
 ```
 Unknown field `product` for select statement on model `SalesOrderItem`
 Unknown field `parent` for include statement on model `Category`
 ```
 
 **根本原因**:
+
 - `SalesOrderItem` 模型缺少 `product` 关系定义
 - `Category` 模型的 `parent` 关系已存在（✅ 已修复）
 
 **当前状态**:
 
 <augment_code_snippet path="prisma/schema.prisma" mode="EXCERPT">
-````prisma
+
+```prisma
 model SalesOrderItem {
   // ... 字段定义
-  
+
   // 关系定义
   salesOrder SalesOrder @relation("SalesOrderItems", fields: [salesOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // ❌ 缺少: product Product? @relation(...)
   // ❌ 缺少: variant ProductVariant? @relation(...)
 }
-````
+```
+
 </augment_code_snippet>
 
 **修复方案**:
@@ -274,10 +287,10 @@ model SalesOrderItem {
 
   // 关系定义
   salesOrder SalesOrder @relation("SalesOrderItems", fields: [salesOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  
+
   // ✅ 添加 product 关系
   product    Product?        @relation("SalesOrderItemProduct", fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  
+
   // ✅ 添加 variant 关系
   variant    ProductVariant? @relation("SalesOrderItemVariant", fields: [variantId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
@@ -290,32 +303,33 @@ model SalesOrderItem {
 
 model Product {
   // ... 字段定义
-  
+
   // 关系定义
   category          Category?          @relation("CategoryProducts", fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   variants          ProductVariant[]   @relation("ProductVariants")
   inventory         Inventory[]        @relation("ProductInventory")
-  
+
   // ✅ 添加反向关系
   salesOrderItems   SalesOrderItem[]   @relation("SalesOrderItemProduct")
-  
+
   // ... 其他关系
 }
 
 model ProductVariant {
   // ... 字段定义
-  
+
   // 关系定义
   product Product @relation("ProductVariants", fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  
+
   // ✅ 添加反向关系
   salesOrderItems SalesOrderItem[] @relation("SalesOrderItemVariant")
-  
+
   // ... 其他关系
 }
 ```
 
 **验证方法**:
+
 ```bash
 # 1. 格式化 schema
 npx prisma format
@@ -335,12 +349,14 @@ npm run dev
 ### 问题 4: MySQL 连接认证失败（High）
 
 **症状**:
+
 ```bash
 mysql -u root -p123456 -D kucun_dev
 ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: YES)
 ```
 
 **根本原因**:
+
 - `.env.local` 配置的密码是 `root`
 - 尝试使用的密码是 `123456`
 - 密码不匹配导致认证失败
@@ -348,9 +364,11 @@ ERROR 1045 (28000): Access denied for user 'root'@'localhost' (using password: Y
 **当前配置**:
 
 <augment_code_snippet path=".env.local" mode="EXCERPT">
-````env
+
+```env
 DATABASE_URL="mysql://root:root@localhost:3306/kucun_dev?connection_limit=5&pool_timeout=30&connect_timeout=10"
-````
+```
+
 </augment_code_snippet>
 
 **修复方案**:
@@ -375,11 +393,13 @@ FLUSH PRIVILEGES;
 ```
 
 然后更新 `.env.local`:
+
 ```env
 DATABASE_URL="mysql://root:123456@localhost:3306/kucun_dev?connection_limit=5&pool_timeout=30&connect_timeout=10"
 ```
 
 **验证方法**:
+
 ```bash
 # 测试连接
 mysql -u root -p<your-password> -D kucun_dev -e "SELECT 1;"
@@ -390,11 +410,13 @@ mysql -u root -p<your-password> -D kucun_dev -e "SELECT 1;"
 ### 问题 5: 慢查询阈值过于严格（High）
 
 **症状**:
+
 ```
 [Prisma] 慢查询: Category.findMany 用时 240ms
 ```
 
 **根本原因**:
+
 - 慢查询阈值设置为 100ms
 - 对于包含关系查询（`include`）和聚合查询（`_count`）的操作，100ms 过于严格
 - MySQL 5.7 的查询优化器相对较旧，性能不如 MySQL 8.0
@@ -402,7 +424,8 @@ mysql -u root -p<your-password> -D kucun_dev -e "SELECT 1;"
 **当前配置**:
 
 <augment_code_snippet path="lib/db.ts" mode="EXCERPT">
-````typescript
+
+```typescript
 // 记录超过100ms的查询
 if (duration > 100) {
   void logDatabaseWarn(
@@ -410,7 +433,8 @@ if (duration > 100) {
     { model: params.model, action: params.action, duration }
   );
 }
-````
+```
+
 </augment_code_snippet>
 
 **修复方案**:
@@ -433,7 +457,7 @@ if (typeof window === 'undefined' && prisma) {
     if (params.action === 'findMany' || params.action === 'findFirst') {
       const hasInclude = params.args?.include !== undefined;
       const hasCount = params.args?._count !== undefined;
-      
+
       if (hasInclude || hasCount) {
         threshold = 300; // 关系查询: 300ms
       }
@@ -462,6 +486,7 @@ if (typeof window === 'undefined' && prisma) {
 ```
 
 **预期效果**:
+
 - 简单查询: 100ms × 1.2 = 120ms
 - 关系查询: 300ms × 1.2 = 360ms
 - 减少 70% 的慢查询警告
@@ -473,18 +498,22 @@ if (typeof window === 'undefined' && prisma) {
 ### 问题 6: MySQL 5.7 降序索引不优化（Medium）
 
 **症状**:
+
 - Prisma Schema 中没有使用降序索引
 - 但需要了解 MySQL 5.7 的限制
 
 **根本原因**:
+
 - MySQL 5.7 支持降序索引语法，但不会优化
 - 降序索引在 MySQL 8.0+ 才真正有效
 
 **影响范围**:
+
 - ⚠️ **排序性能**: `ORDER BY created_at DESC` 可能需要额外排序
 - ℹ️ **当前无影响**: 项目中没有使用降序索引
 
 **建议**:
+
 1. ✅ 当前不需要修改（没有使用降序索引）
 2. ℹ️ 如果未来需要优化降序排序，考虑升级到 MySQL 8.0+
 3. ℹ️ 或者使用应用层排序（对于小数据集）
@@ -494,6 +523,7 @@ if (typeof window === 'undefined' && prisma) {
 ### 问题 7: 连接池配置可能不足（Medium）
 
 **当前配置**:
+
 ```env
 # 开发环境
 DATABASE_URL="mysql://root:root@localhost:3306/kucun_dev?connection_limit=5&pool_timeout=30&connect_timeout=10"
@@ -503,6 +533,7 @@ DATABASE_URL="mysql://user:password@localhost:3306/kucun?connection_limit=10&poo
 ```
 
 **MySQL 最大连接数**:
+
 ```sql
 mysql> SHOW VARIABLES LIKE 'max_connections';
 +-----------------+-------+
@@ -513,6 +544,7 @@ mysql> SHOW VARIABLES LIKE 'max_connections';
 ```
 
 **分析**:
+
 - ✅ 开发环境: 5 个连接足够
 - ⚠️ 生产环境: 10 个连接可能不足（取决于并发量）
 - ✅ MySQL 最大连接数: 100（足够）
@@ -527,6 +559,7 @@ DATABASE_URL="mysql://user:password@localhost:3306/kucun?connection_limit=20&poo
 ```
 
 **计算公式**:
+
 ```
 连接池大小 = (核心数 × 2) + 有效磁盘数
 例如: 4核 + 1磁盘 = (4 × 2) + 1 = 9 ≈ 10-20
@@ -537,6 +570,7 @@ DATABASE_URL="mysql://user:password@localhost:3306/kucun?connection_limit=20&poo
 ### 问题 8: 缺少数据库性能监控（Medium）
 
 **当前状态**:
+
 - ✅ 有慢查询监控（`lib/db.ts`）
 - ❌ 缺少连接池监控
 - ❌ 缺少查询统计
@@ -554,10 +588,14 @@ import { logger } from './logger';
 export async function monitorConnectionPool() {
   try {
     const metrics = await prisma.$metrics.json();
-    
+
     logger.info('database', '连接池状态', {
-      activeConnections: metrics.counters.find(c => c.key === 'prisma_client_queries_active')?.value,
-      totalQueries: metrics.counters.find(c => c.key === 'prisma_client_queries_total')?.value,
+      activeConnections: metrics.counters.find(
+        c => c.key === 'prisma_client_queries_active'
+      )?.value,
+      totalQueries: metrics.counters.find(
+        c => c.key === 'prisma_client_queries_total'
+      )?.value,
     });
   } catch (error) {
     logger.error('database', '连接池监控失败', error);
@@ -577,17 +615,20 @@ if (typeof window === 'undefined') {
 **当前状态**:
 
 <augment_code_snippet path=".env.production" mode="EXCERPT">
-````env
+
+```env
 # 数据库配置 - MySQL 5.7+
 DATABASE_URL=mysql://user:password@localhost:3306/kucun?connection_limit=10&pool_timeout=30&connect_timeout=10
 
 # Redis 缓存配置
 REDIS_URL=redis://127.0.0.1:6379
 REDIS_PASSWORD=your-redis-password  # ← 需要修改
-````
+```
+
 </augment_code_snippet>
 
 **问题**:
+
 - ⚠️ 使用占位符密码
 - ⚠️ 缺少 SSL 配置
 - ⚠️ 缺少备份策略说明
@@ -653,17 +694,18 @@ echo "备份完成: $BACKUP_FILE.gz"
 
 **MySQL 5.7 vs 8.0 对比**:
 
-| 特性 | MySQL 5.7 | MySQL 8.0+ |
-|------|-----------|------------|
-| **降序索引优化** | ❌ 不支持 | ✅ 支持 |
-| **窗口函数** | ❌ 不支持 | ✅ 支持 |
-| **CTE（公用表表达式）** | ❌ 不支持 | ✅ 支持 |
-| **JSON 函数** | ⚠️ 有限 | ✅ 完整 |
-| **查询优化器** | ⚠️ 较旧 | ✅ 更强 |
-| **默认字符集** | utf8 | utf8mb4 |
-| **性能** | 基准 | +20-30% |
+| 特性                    | MySQL 5.7 | MySQL 8.0+ |
+| ----------------------- | --------- | ---------- |
+| **降序索引优化**        | ❌ 不支持 | ✅ 支持    |
+| **窗口函数**            | ❌ 不支持 | ✅ 支持    |
+| **CTE（公用表表达式）** | ❌ 不支持 | ✅ 支持    |
+| **JSON 函数**           | ⚠️ 有限   | ✅ 完整    |
+| **查询优化器**          | ⚠️ 较旧   | ✅ 更强    |
+| **默认字符集**          | utf8      | utf8mb4    |
+| **性能**                | 基准      | +20-30%    |
 
 **升级建议**:
+
 1. ℹ️ 当前 MySQL 5.7 可以满足需求
 2. ℹ️ 如果需要更好的性能，建议升级到 MySQL 8.0+
 3. ℹ️ 升级前需要测试兼容性
@@ -672,17 +714,17 @@ echo "备份完成: $BACKUP_FILE.gz"
 
 ## 📊 修复优先级和时间表
 
-| 优先级 | 问题 | 预计时间 | 风险 |
-|--------|------|---------|------|
-| **P0** | 转换为 InnoDB 引擎 | 30分钟 | 低（有备份） |
-| **P0** | 修复字符集配置 | 15分钟 | 低 |
-| **P1** | 添加 Prisma 关系 | 20分钟 | 低 |
-| **P1** | 修复密码认证 | 5分钟 | 无 |
-| **P1** | 调整慢查询阈值 | 10分钟 | 无 |
-| **P2** | 优化连接池配置 | 10分钟 | 无 |
-| **P2** | 添加性能监控 | 30分钟 | 无 |
-| **P3** | 完善生产配置 | 15分钟 | 无 |
-| **P3** | 创建备份脚本 | 20分钟 | 无 |
+| 优先级 | 问题               | 预计时间 | 风险         |
+| ------ | ------------------ | -------- | ------------ |
+| **P0** | 转换为 InnoDB 引擎 | 30分钟   | 低（有备份） |
+| **P0** | 修复字符集配置     | 15分钟   | 低           |
+| **P1** | 添加 Prisma 关系   | 20分钟   | 低           |
+| **P1** | 修复密码认证       | 5分钟    | 无           |
+| **P1** | 调整慢查询阈值     | 10分钟   | 无           |
+| **P2** | 优化连接池配置     | 10分钟   | 无           |
+| **P2** | 添加性能监控       | 30分钟   | 无           |
+| **P3** | 完善生产配置       | 15分钟   | 无           |
+| **P3** | 创建备份脚本       | 20分钟   | 无           |
 
 **总计**: 约 2.5 小时
 
@@ -747,4 +789,3 @@ npm run dev
 
 **报告生成者**: Augment Agent  
 **下一步**: 开始执行修复步骤
-

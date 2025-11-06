@@ -38,10 +38,12 @@ async function main() {
 
   console.log('订单总额:', order?.totalAmount);
 
-  const itemsTotal = order?.items.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+  const itemsTotal =
+    order?.items.reduce((sum, item) => sum + item.subtotal, 0) || 0;
   console.log('明细合计:', itemsTotal);
 
-  const feesTotal = order?.feeItems.reduce((sum, fee) => sum + fee.feeAmount, 0) || 0;
+  const feesTotal =
+    order?.feeItems.reduce((sum, fee) => sum + fee.feeAmount, 0) || 0;
   console.log('费用合计:', feesTotal);
 
   console.log('应该的总额:', itemsTotal + feesTotal);
@@ -52,8 +54,7 @@ async function main() {
       'manualProductName' in item
         ? ((item as { manualProductName?: string }).manualProductName ?? '')
         : '';
-    const itemName =
-      (item.product?.name ?? manualName) || '未知产品';
+    const itemName = (item.product?.name ?? manualName) || '未知产品';
     console.log(
       `  ${index + 1}. ${itemName} x ${item.quantity} = ${item.subtotal}`
     );
@@ -68,4 +69,3 @@ async function main() {
 }
 
 main();
-

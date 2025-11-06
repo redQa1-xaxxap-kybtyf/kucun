@@ -45,8 +45,14 @@ export const inventoryParamsSchema = z.object({
   limit: z.number().int().positive().max(100).default(50),
 
   // 日期范围筛选
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 
   // 可选的其他筛选
   productId: z.string().optional(),

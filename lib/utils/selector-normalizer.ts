@@ -98,12 +98,24 @@ export function normalizeSelectorGroup<
   return Object.fromEntries(entries) as { [K in keyof T]: string };
 }
 
-const CANONICAL_KEYS = ['status', 'destination', 'estimatedArrival', 'updateTime'] as const;
+const CANONICAL_KEYS = [
+  'status',
+  'destination',
+  'estimatedArrival',
+  'updateTime',
+] as const;
 type CanonicalKey = (typeof CANONICAL_KEYS)[number];
 
 const SHIPPING_SELECTOR_ALIASES: Record<CanonicalKey, string[]> = {
   status: ['shipstatus', 'logisticsstatus', 'currentstatus', 'state'],
-  destination: ['dest', 'location', 'arrivalport', 'port', 'to', 'destinationport'],
+  destination: [
+    'dest',
+    'location',
+    'arrivalport',
+    'port',
+    'to',
+    'destinationport',
+  ],
   estimatedArrival: [
     'eta',
     'estimatedtime',
@@ -145,12 +157,15 @@ function toSelectorObject(
     }, {});
   }
 
-  return Object.entries(raw).reduce<Record<string, string>>((acc, [key, value]) => {
-    if (typeof value === 'string') {
-      acc[key] = value;
-    }
-    return acc;
-  }, {});
+  return Object.entries(raw).reduce<Record<string, string>>(
+    (acc, [key, value]) => {
+      if (typeof value === 'string') {
+        acc[key] = value;
+      }
+      return acc;
+    },
+    {}
+  );
 }
 
 export function normalizeShippingExtractSelectors(

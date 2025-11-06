@@ -152,7 +152,9 @@ async function main() {
   });
 
   console.log('\n💡 下一步:');
-  console.log('   1. 运行测试脚本: npx tsx scripts/test-shipping-query-system.ts');
+  console.log(
+    '   1. 运行测试脚本: npx tsx scripts/test-shipping-query-system.ts'
+  );
   console.log('   2. 或启动 Worker: npm run scheduler:start');
   console.log(
     '   3. 或测试 API 端点（需要登录）: http://localhost:3001/settings/shipping-query'
@@ -179,4 +181,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

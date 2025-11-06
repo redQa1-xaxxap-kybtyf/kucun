@@ -1,13 +1,13 @@
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 // 应收账款组件
 // 实现应收账款查询和统计展示
 
-'use client';
+('use client');
 
 import { format } from 'date-fns';
 import {
   CheckCircle,
   Clock,
-  DollarSign,
   Eye,
   MoreHorizontal,
   Plus,
@@ -400,7 +400,7 @@ const AccountsReceivableComponent = React.forwardRef<
                     {paymentUtils.formatAmount(statistics.totalReceivable)}
                   </p>
                 </div>
-                <DollarSign className="h-8 w-8 text-blue-500" />
+                <ChineseYuan className="h-8 w-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
@@ -508,7 +508,7 @@ const AccountsReceivableComponent = React.forwardRef<
           <Card>
             <CardContent className="p-8">
               <EmptyState
-                icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+                icon={<ChineseYuan className="text-muted-foreground h-8 w-8" />}
                 title="暂无应收账款"
                 compact
               />

@@ -104,18 +104,19 @@ const nextConfig = {
     return config;
   },
 
+  // 🔒 服务器端专用包配置（Puppeteer 相关包只在服务器端使用）
+  // Next.js 15+ 已将此配置从 experimental 移至顶层
+  serverExternalPackages: [
+    'puppeteer',
+    'puppeteer-core',
+    'puppeteer-extra',
+    'puppeteer-extra-plugin-stealth',
+  ],
+
   // 实验性功能
   experimental: {
     // 优化包导入
     optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
-
-    // 🔒 服务器端专用包配置（Puppeteer 相关包只在服务器端使用）
-    serverComponentsExternalPackages: [
-      'puppeteer',
-      'puppeteer-core',
-      'puppeteer-extra',
-      'puppeteer-extra-plugin-stealth',
-    ],
   },
 
   // CDN 配置 (可选 - 取消注释以启用)

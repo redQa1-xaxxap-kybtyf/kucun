@@ -1,6 +1,6 @@
 /**
  * 清空厂家发货数据和客户数据
- * 
+ *
  * 警告：此操作不可逆！请确保已备份重要数据！
  */
 
@@ -86,7 +86,7 @@ async function clearData() {
     console.log('='.repeat(80));
 
     // 3. 按顺序删除数据（避免外键约束错误）
-    
+
     // 3.1 删除厂家发货订单明细（子表）
     console.log('\n📍 步骤 1/4: 删除厂家发货订单明细...');
     const deletedItems = await prisma.factoryShipmentOrderItem.deleteMany({});
@@ -104,7 +104,7 @@ async function clearData() {
 
     // 3.4 删除客户（主表）
     console.log('\n📍 步骤 4/4: 删除客户...');
-    
+
     // 先检查是否有其他关联数据
     const customersWithRelations = await prisma.customer.findMany({
       include: {
@@ -181,9 +181,7 @@ async function clearData() {
       `  - 厂家发货订单明细: ${finalStats.factoryShipmentOrderItems} 条`
     );
     console.log(`  - 客户: ${finalStats.customers} 个`);
-    console.log(
-      `  - 客户产品价格记录: ${finalStats.customerProductPrices} 条`
-    );
+    console.log(`  - 客户产品价格记录: ${finalStats.customerProductPrices} 条`);
 
     console.log('');
     console.log('='.repeat(80));
@@ -216,4 +214,3 @@ clearData().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

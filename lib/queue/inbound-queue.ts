@@ -43,7 +43,7 @@ class InboundPostProcessingQueue {
         console.error('Inbound queue error:', error);
       });
 
-      InboundPostProcessingQueue.instance.on('waiting', (job) => {
+      InboundPostProcessingQueue.instance.on('waiting', job => {
         // eslint-disable-next-line no-console
         console.log(`Job ${job.id} is waiting`);
       });

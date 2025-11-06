@@ -9,7 +9,7 @@ const baseTemporaryProductSchema = z.object({
     .transform(value => (value ?? '').trim()),
   name: z
     .string()
-    .max(100, '商品名称不能超过100个字符')
+    .max(100, '产品名称不能超过100个字符')
     .optional()
     .or(z.literal(''))
     .transform(value => (value ?? '').trim()),
@@ -63,7 +63,7 @@ export function createTemporaryProductSchema(
     if (requireName && (!data.name || data.name.length === 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: '商品名称不能为空',
+        message: '产品名称不能为空',
         path: ['name'],
       });
     }

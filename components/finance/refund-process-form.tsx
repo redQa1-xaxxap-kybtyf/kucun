@@ -1,10 +1,12 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   AlertCircle,
-  Calendar,
+  Calendar as CalendarIcon,
   CheckCircle,
-  DollarSign,
   FileText,
   XCircle,
 } from 'lucide-react';
@@ -13,10 +15,16 @@ import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -28,6 +36,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useProcessRefund } from '@/lib/api/finance';
 import { useRefundDetail } from '@/lib/api/refunds';
+import { cn } from '@/lib/utils';
 
 type RefundFormState = {
   processedAmount: string;
@@ -98,7 +107,7 @@ export function RefundProcessForm({
       processing: {
         label: '处理中',
         variant: 'default' as const,
-        icon: Calendar,
+        icon: CalendarIcon,
       },
       completed: {
         label: '已完成',
@@ -371,7 +380,7 @@ export function RefundProcessForm({
         <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
             <CardTitle className="flex items-center gap-2 text-[hsl(var(--color-text-primary))]">
-              <DollarSign className="h-5 w-5 text-[hsl(var(--color-primary))]" />
+              <ChineseYuan className="h-5 w-5 text-[hsl(var(--color-primary))]" />
               退款处理
             </CardTitle>
           </CardHeader>
@@ -399,15 +408,46 @@ export function RefundProcessForm({
 
               <div className="space-y-2">
                 <Label htmlFor="processedDate">处理日期 *</Label>
-                <Input
-                  id="processedDate"
-                  type="date"
-                  value={formData.processedDate}
-                  onChange={event =>
-                    handleInputChange('processedDate', event.target.value)
-                  }
-                  required
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      id="processedDate"
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        'w-full justify-start text-left font-normal',
+                        !formData.processedDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.processedDate ? (
+                        format(new Date(formData.processedDate), 'PPP', {
+                          locale: zhCN,
+                        })
+                      ) : (
+                        <span>选择日期</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={
+                        formData.processedDate
+                          ? new Date(formData.processedDate)
+                          : undefined
+                      }
+                      onSelect={date =>
+                        handleInputChange(
+                          'processedDate',
+                          date ? format(date, 'yyyy-MM-dd') : ''
+                        )
+                      }
+                      disabled={date => date > new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">

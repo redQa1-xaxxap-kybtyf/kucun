@@ -34,7 +34,7 @@
 ```typescript
 触发: 订单创建
 操作人: 业务员
-必填字段: 客户、商品明细
+必填字段: 客户、产品明细
 可选字段: 集装箱号(可预填)、船运公司(可预填)
 ```
 
@@ -45,7 +45,7 @@
 操作人: 业务员(无需主管审核)
 业务含义: 订单信息确认完整,可以安排发货
 前置条件:
-  - 商品明细不为空
+  - 产品明细不为空
   - 订单金额 > 0
 ```
 
@@ -180,7 +180,7 @@ export function validateStatusPrerequisites(
   switch (newStatus) {
     case FACTORY_SHIPMENT_STATUS.CONFIRMED:
       if (!order.items || order.items.length === 0) {
-        return { valid: false, message: '必须有商品明细才能确认订单' };
+        return { valid: false, message: '必须有产品明细才能确认订单' };
       }
       if (!order.totalAmount || order.totalAmount <= 0) {
         return { valid: false, message: '订单金额必须大于0才能确认' };

@@ -58,7 +58,7 @@ const CACHE_TTL = {
  * 缓存键前缀
  */
 const CACHE_PREFIX = {
-  STATEMENTS: 'finance:statements',
+  STATEMENTS: 'finance:statements:list',
   SUMMARY: 'finance:summary',
   CUSTOMER: 'finance:customer',
   SUPPLIER: 'finance:supplier',

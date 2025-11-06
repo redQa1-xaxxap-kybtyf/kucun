@@ -1,6 +1,7 @@
 'use client';
+import { ChineseYuan } from '@/components/icons/chinese-yuan';
 
-import { DollarSign, Download, Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -370,7 +371,7 @@ export function PaymentsPageClient({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-success))] shadow-lg shadow-green-600/30">
-                  <DollarSign className="h-6 w-6 text-white" />
+                  <ChineseYuan className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">

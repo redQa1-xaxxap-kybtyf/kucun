@@ -3,12 +3,14 @@
 ## 问题描述
 
 用户在应收货款页面发现：
+
 - 订单金额：¥696.50
 - 已收金额：¥0.00
 - **待收金额：¥6.50**（错误！应该是 ¥690.00）
 - 抹零金额没有显示
 
 经过排查发现：
+
 - 订单的 `roundingAdjustment` 字段值是 0，而不是 6.50
 - 这导致待收金额计算错误：696.5 - 0 - 690 = 6.5（应该是：690 - 0 - 690 = 0）
 
@@ -119,11 +121,13 @@ const form = useForm<CreateSalesOrderData>({
    - ✅ 待收金额：¥0.00（之前错误显示 ¥6.50）
 
 4. **检查数据库**：
+
    ```sql
-   SELECT orderNumber, totalAmount, roundingAdjustment 
-   FROM sales_orders 
+   SELECT orderNumber, totalAmount, roundingAdjustment
+   FROM sales_orders
    WHERE orderNumber = 'SO202510230100';
    ```
+
    - ✅ `roundingAdjustment` 应该是 -6.50，而不是 0
 
 ## 影响范围
@@ -223,4 +227,3 @@ const remainingAmount = actualTotalAmount - paidAmount - pendingAmount;
 ## 总结
 
 这个问题是由于发票导向表单在提交订单时遗漏了 `roundingAdjustment` 字段导致的。修复后，所有订单表单都能正确保存和显示抹零金额，应收货款的计算也完全正确了。
-

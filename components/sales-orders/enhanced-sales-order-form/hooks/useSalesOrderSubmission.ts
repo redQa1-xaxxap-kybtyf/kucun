@@ -32,6 +32,14 @@ export function useSalesOrderSubmission(
   const createMutation = useMutation({
     mutationFn: createSalesOrder,
     onSuccess: data => {
+      // 🔍 调试日志：订单创建成功
+      console.group('🎯 [DEBUG] Sales Order Created');
+      console.log('Order Number:', data.orderNumber);
+      console.log('Order ID:', data.id);
+      console.log('Order Status:', (data as any).status || 'N/A');
+      console.log('Full Order Data:', data);
+      console.groupEnd();
+
       toast({
         title: '创建成功',
         description: `销售订单 “${data.orderNumber}” 创建成功！`,
@@ -42,9 +50,11 @@ export function useSalesOrderSubmission(
 
       // ✅ 关键修复：同时失效应收款缓存
       // 因为新订单会影响应收款列表数据
+      console.log('🔄 [DEBUG] Invalidating receivables cache...');
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.receivables(),
       });
+      console.log('✅ [DEBUG] Receivables cache invalidated');
 
       if (onSuccess) {
         onSuccess(data);

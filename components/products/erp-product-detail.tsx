@@ -102,11 +102,11 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => (
-      <Badge variant={getCommonStatusBadgeVariant(status)} className="text-xs">
-        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
-          status}
-      </Badge>
-    );
+    <Badge variant={getCommonStatusBadgeVariant(status)} className="text-xs">
+      {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
+        status}
+    </Badge>
+  );
 
   // 删除确认处理
   const handleDelete = () => {

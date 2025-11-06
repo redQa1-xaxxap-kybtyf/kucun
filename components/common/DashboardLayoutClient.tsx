@@ -49,19 +49,22 @@ function getNavItemsByIds(
   const result: NavigationItem[] = [];
 
   for (const item of allItems) {
-    if (ids.includes(item.id)) {
-      result.push(item);
+    const childItems =
+      item.children && item.children.length > 0
+        ? getNavItemsByIds(ids, item.children)
+        : undefined;
+
+    const shouldIncludeSelf = ids.includes(item.id);
+    const shouldIncludeChildren = Boolean(childItems && childItems.length > 0);
+
+    if (!shouldIncludeSelf && !shouldIncludeChildren) {
+      continue;
     }
-    // 递归处理子菜单
-    if (item.children && item.children.length > 0) {
-      const childItems = getNavItemsByIds(ids, item.children);
-      if (childItems.length > 0) {
-        result.push({
-          ...item,
-          children: childItems,
-        });
-      }
-    }
+
+    result.push({
+      ...item,
+      children: shouldIncludeChildren ? childItems : undefined,
+    });
   }
 
   return result;

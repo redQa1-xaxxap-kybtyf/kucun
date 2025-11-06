@@ -286,7 +286,7 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
         {
           id: 'inventory-inbound',
           title: '库存入库',
-          description: '商品入库操作',
+          description: '产品入库操作',
           icon: 'upload',
           href: '/inventory/inbound',
           color: 'yellow',
@@ -294,7 +294,7 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
         {
           id: 'inventory-outbound',
           title: '库存出库',
-          description: '商品出库操作',
+          description: '产品出库操作',
           icon: 'download',
           href: '/inventory/outbound',
           color: 'red',

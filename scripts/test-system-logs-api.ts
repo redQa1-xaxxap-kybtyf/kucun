@@ -31,7 +31,7 @@ async function testSystemLogsQuery() {
     });
 
     console.log(`   ✅ 查询成功，返回 ${logs.length} 条日志`);
-    
+
     if (logs.length > 0) {
       const firstLog = logs[0];
       console.log('\n   示例日志：');
@@ -41,7 +41,9 @@ async function testSystemLogsQuery() {
       console.log(`   - 操作: ${firstLog.action}`);
       console.log(`   - 描述: ${firstLog.description}`);
       console.log(`   - 用户ID: ${firstLog.userId || '无'}`);
-      console.log(`   - 用户信息: ${firstLog.user ? `${firstLog.user.name} (${firstLog.user.username})` : '无'}`);
+      console.log(
+        `   - 用户信息: ${firstLog.user ? `${firstLog.user.name} (${firstLog.user.username})` : '无'}`
+      );
       console.log(`   - IP地址: ${firstLog.ipAddress || '无'}`);
       console.log(`   - IP位置: ${firstLog.ipLocation || '无'}`);
       console.log(`   - 创建时间: ${firstLog.createdAt.toISOString()}`);
@@ -112,7 +114,9 @@ async function testSystemLogsQuery() {
 
     console.log(`   ✅ 找到 ${logsWithUser.length} 条有用户关联的日志`);
     logsWithUser.forEach((log, index) => {
-      console.log(`   ${index + 1}. ${log.action} - ${log.user?.name} (${log.user?.username})`);
+      console.log(
+        `   ${index + 1}. ${log.action} - ${log.user?.name} (${log.user?.username})`
+      );
     });
 
     // 测试 6: 查询无用户关联的日志（系统日志）
@@ -132,7 +136,6 @@ async function testSystemLogsQuery() {
     console.log('\n' + '='.repeat(80));
     console.log('✅ 所有测试通过！系统日志 API 修复成功！');
     console.log('='.repeat(80));
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     if (error instanceof Error) {
@@ -147,4 +150,3 @@ async function testSystemLogsQuery() {
 
 // 运行测试
 testSystemLogsQuery();
-

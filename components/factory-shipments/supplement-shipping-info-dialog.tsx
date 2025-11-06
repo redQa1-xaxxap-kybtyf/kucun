@@ -106,8 +106,7 @@ function useSupplementShippingInfoDialogState({
   const handleError = (error: unknown) => {
     toast({
       title: '补充信息失败',
-      description:
-        error instanceof Error ? error.message : '操作失败,请重试',
+      description: error instanceof Error ? error.message : '操作失败,请重试',
       variant: 'destructive',
     });
   };
@@ -135,7 +134,7 @@ function useSupplementShippingInfoDialogState({
       {
         onSuccess: () => handleSuccess(data.autoStartTracking),
         onError: handleError,
-      },
+      }
     );
   });
 
@@ -282,7 +281,7 @@ function SupplementShippingInfoDialogView({
               <AlertTitle className="text-sm font-medium text-blue-900">
                 集装箱号
               </AlertTitle>
-              <AlertDescription className="text-base font-semibold text-blue-900 mt-1">
+              <AlertDescription className="mt-1 text-base font-semibold text-blue-900">
                 {containerNumber}
               </AlertDescription>
             </Alert>

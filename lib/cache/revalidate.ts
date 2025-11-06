@@ -17,6 +17,7 @@ import { publish, subscribe } from '@/lib/redis/redis-pubsub';
 
 import { invalidateNamespace } from './cache';
 import { CacheTags, RedisCachePrefix } from './tags';
+import { invalidateStatementsCache } from '@/lib/services/finance-statistics-cached';
 
 /**
  * 缓存失效选项
@@ -245,11 +246,30 @@ async function cascadeInvalidate(tag: string): Promise<void> {
   for (const key of immediateKeys) {
     if (tag === key || tag.startsWith(`${key}:`)) {
       const relatedTags = immediateCascadeMap[key];
-      await Promise.all(
-        relatedTags.map(relatedTag =>
-          revalidateCache(relatedTag, { cascade: false })
-        )
+      const hasStatementsList = relatedTags.includes(
+        CacheTags.Finance.statementsList
       );
+
+      if (hasStatementsList) {
+        await Promise.all([
+          invalidateStatementsCache(),
+          revalidateCache(CacheTags.Finance.statementsList, {
+            cascade: false,
+          }),
+        ]);
+      }
+
+      const tagsToRevalidate = relatedTags.filter(
+        tagItem => tagItem !== CacheTags.Finance.statementsList
+      );
+
+      if (tagsToRevalidate.length > 0) {
+        await Promise.all(
+          tagsToRevalidate.map(relatedTag =>
+            revalidateCache(relatedTag, { cascade: false })
+          )
+        );
+      }
       break; // 只执行第一个匹配的规则
     }
   }

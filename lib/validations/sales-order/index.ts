@@ -83,7 +83,6 @@ const baseSalesOrderSchema = z
       .max(1000, '备注不能超过1000个字符')
       .optional()
       .or(z.literal('')),
-
     items: z
       .array(salesOrderItemSchema)
       .min(0, '订单明细不能为负')
@@ -91,7 +90,7 @@ const baseSalesOrderSchema = z
 
     feeItems: z.array(salesOrderFeeItemSchema).optional().default([]),
 
-    itemsAmount: z.number().min(0, '商品金额不能为负数').optional(),
+    itemsAmount: z.number().min(0, '产品金额不能为负数').optional(),
     additionalFees: z.number().min(0, '额外费用不能为负数').optional(),
     totalAmount: z.number().min(0, '总金额不能为负数').optional(),
 
@@ -164,18 +163,14 @@ export const salesOrderCreateSchema = baseSalesOrderSchema
       path: ['supplierId'],
     }
   )
-  .refine(
-    data =>
-      validateManualProductFields(
-        data.items,
-        data.status ?? 'draft',
-        data.orderType
-      ),
-    {
-      message: '手动输入商品缺少必填信息（临时商品必须填写产品编码）',
-      path: ['items'],
-    }
-  );
+  .superRefine((data, ctx) => {
+    validateManualProductFields(
+      data.items,
+      ctx,
+      data.status ?? 'draft',
+      data.orderType
+    );
+  });
 
 /**
  * 销售订单更新验证规则

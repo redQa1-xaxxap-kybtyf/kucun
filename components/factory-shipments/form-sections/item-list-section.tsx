@@ -17,8 +17,8 @@ interface ItemListSectionProps {
 }
 
 /**
- * 厂家发货订单商品明细列表
- * 使用表格形式展示和编辑商品明细
+ * 厂家发货订单产品明细列表
+ * 使用表格形式展示和编辑产品明细
  */
 export function ItemListSection({
   form,
@@ -29,7 +29,7 @@ export function ItemListSection({
 }: ItemListSectionProps) {
   const { fields, append, remove } = fieldArray;
 
-  // 添加商品
+  // 添加产品
   const handleAddItem = () => {
     append({
       productId: undefined,
@@ -46,7 +46,7 @@ export function ItemListSection({
     });
   };
 
-  // 删除商品
+  // 删除产品
   const handleRemoveItem = (index: number) => {
     remove(index);
   };

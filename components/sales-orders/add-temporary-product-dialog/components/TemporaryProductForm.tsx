@@ -98,13 +98,15 @@ function NameField({
       render={({ field }) => (
         <FormItem>
           <FormLabel>
-            商品名称
+            产品名称
             {requireName && <span className="text-red-500"> *</span>}
           </FormLabel>
           <FormControl>
             <Input
               {...field}
-              placeholder={requireName ? '输入商品名称' : '输入商品名称（可选）'}
+              placeholder={
+                requireName ? '输入产品名称' : '输入产品名称（可选）'
+              }
               maxLength={100}
             />
           </FormControl>
@@ -230,7 +232,7 @@ function FormActions({ onCancel }: { onCancel: () => void }) {
       <Button type="button" variant="outline" onClick={onCancel}>
         取消
       </Button>
-      <Button type="submit">添加商品</Button>
+      <Button type="submit">添加产品</Button>
     </div>
   );
 }

@@ -76,7 +76,7 @@ export function ProductNameCell({
               ? {
                   validate: value => {
                     const trimmed = (value ?? '').toString().trim();
-                    return trimmed.length > 0 || '请输入商品名称';
+                    return trimmed.length > 0 || '请输入产品名称';
                   },
                 }
               : undefined
@@ -89,7 +89,7 @@ export function ProductNameCell({
                   value={field.value ?? ''}
                   className="h-8 text-xs"
                   placeholder={
-                    requireManualName ? '手动商品名称' : '手动商品名称（可选）'
+                    requireManualName ? '手动产品名称' : '手动产品名称（可选）'
                   }
                   onChange={event => {
                     const next = event.target.value;

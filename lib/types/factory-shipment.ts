@@ -69,7 +69,7 @@ export const FACTORY_SHIPMENT_STATUS_VARIANTS: Record<
 export interface FactoryShipmentOrderItem {
   id: string;
   factoryShipmentOrderId: string;
-  productId?: string;
+  productId?: string | null;
   supplierId: string;
   productCode: string; // 产品编码（必填）
   quantity: number;
@@ -84,7 +84,7 @@ export interface FactoryShipmentOrderItem {
   deliveryConfirmedAt?: Date | string | null;
   inboundReceivedAt?: Date | string | null;
 
-  // 手动输入商品信息（临时商品）
+  // 手动输入产品信息（临时产品）
   isManualProduct?: boolean;
   manualProductName?: string;
   manualSpecification?: string;
@@ -100,6 +100,12 @@ export interface FactoryShipmentOrderItem {
   remarks?: string;
   createdAt: Date;
   updatedAt: Date;
+
+  // 成本和利润字段
+  unitCost?: number; // 单位成本（采购价+分摊费用/数量）
+  allocatedExpense?: number; // 分摊费用
+  profitAmount?: number; // 利润金额（客户货）
+  profitMargin?: number; // 利润率（%）
 
   // 关联数据
   product?: {
@@ -144,6 +150,13 @@ export interface FactoryShipmentOrder {
   createdAt: Date;
   updatedAt: Date;
 
+  // 成本和利润字段
+  costAmount?: number; // 总成本（采购价总和）
+  expenseAmount?: number; // 总费用（运费、仓储费等）
+  profitAmount?: number; // 总利润（客户货利润）
+  customerProfit?: number; // 客户货利润
+  selfCostAmount?: number; // 自有货成本
+
   // 关联数据
   customer: {
     id: string;
@@ -183,7 +196,7 @@ export interface CreateFactoryShipmentOrderItemData {
   selfInboundStatus?: FactoryShipmentItemInboundStatus;
   ownershipRemarks?: string;
 
-  // 手动输入商品信息（临时商品）
+  // 手动输入产品信息（临时产品）
   isManualProduct?: boolean;
   manualProductName?: string;
   manualSpecification?: string;
@@ -250,4 +263,72 @@ export interface FactoryShipmentOrderStats {
   totalReceivable: number;
   totalPaid: number;
   statusCounts: Record<FactoryShipmentStatus, number>;
+}
+
+// ==================== 费用分摊相关类型 ====================
+
+/**
+ * 费用分摊方式
+ */
+export type ExpenseAllocationMethod =
+  | 'by_value' // 按货值比例分摊
+  | 'by_weight' // 按重量比例分摊
+  | 'by_quantity' // 按数量比例分摊
+  | 'by_ownership'; // 按归属分摊（客户货 vs 自有货）
+
+/**
+ * 费用分摊结果（单个明细）
+ */
+export interface ExpenseAllocationResult {
+  itemId: string; // 明细ID
+  allocatedAmount: number; // 分摊金额
+  allocationRatio: number; // 分摊比例（%）
+}
+
+/**
+ * 费用分摊选项
+ */
+export interface ExpenseAllocationOptions {
+  method: ExpenseAllocationMethod; // 分摊方式
+  totalExpenses: number; // 费用总额
+  items: FactoryShipmentOrderItem[]; // 订单明细列表
+}
+
+/**
+ * 费用分摊汇总结果
+ */
+export interface ExpenseAllocationSummary {
+  method: ExpenseAllocationMethod; // 使用的分摊方式
+  totalExpenses: number; // 费用总额
+  allocatedTotal: number; // 实际分摊总额
+  difference: number; // 差额（应为0或接近0）
+  results: ExpenseAllocationResult[]; // 各明细的分摊结果
+}
+
+// ==================== 利润计算相关类型 ====================
+
+/**
+ * 利润计算结果（单个明细）
+ */
+export interface ItemProfitResult {
+  itemId: string; // 明细ID
+  profitAmount: number; // 利润金额
+  profitMargin: number; // 利润率（%）
+  unitCost: number; // 单位成本（采购价 + 分摊费用/数量）
+  revenue: number; // 收入（应收金额）
+  cost: number; // 成本（采购价）
+  allocatedExpense: number; // 分摊费用
+}
+
+/**
+ * 订单利润汇总
+ */
+export interface OrderProfitSummary {
+  customerProfit: number; // 客户货总利润
+  selfCostAmount: number; // 自有货总成本
+  totalRevenue: number; // 客户货总收入
+  totalCost: number; // 客户货总成本（采购价）
+  totalExpenses: number; // 总费用
+  averageProfitMargin: number; // 平均利润率（%）
+  itemResults: ItemProfitResult[]; // 各明细利润
 }

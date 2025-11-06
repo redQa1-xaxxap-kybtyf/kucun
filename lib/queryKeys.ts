@@ -168,7 +168,7 @@ export const returnOrderKeys = {
   // 退货统计
   stats: () => [...returnOrderKeys.all, 'stats'] as const,
 
-  // 销售订单可退货商品
+  // 销售订单可退货产品
   salesOrderItems: (salesOrderId: string) =>
     [...returnOrderKeys.all, 'sales-order-items', salesOrderId] as const,
 } as const;
@@ -228,6 +228,25 @@ export const inventoryKeys = {
   // 库存可用性检查
   availability: (productId: string, variantId?: string) =>
     [...inventoryKeys.all, 'availability', productId, variantId] as const,
+
+  // 库存盘点
+  counts: () => [...inventoryKeys.all, 'counts'] as const,
+  countsList: (
+    filters?: BaseFilters & {
+      status?: string;
+      countType?: string;
+      location?: string;
+      categoryId?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) => [...inventoryKeys.counts(), 'list', filters] as const,
+  count: (id: string) => [...inventoryKeys.counts(), id] as const,
+  countsStatistics: (params?: {
+    startDate?: string;
+    endDate?: string;
+    status?: string;
+  }) => [...inventoryKeys.counts(), 'statistics', params] as const,
 } as const;
 
 /**
@@ -280,6 +299,39 @@ export const financeKeys = {
   // 财务统计
   stats: () => [...financeKeys.all, 'stats'] as const,
   overview: () => [...financeKeys.all, 'overview'] as const,
+
+  // 费用记录
+  expenses: () => [...financeKeys.all, 'expenses'] as const,
+  expensesList: (
+    filters?: BaseFilters & {
+      expenseType?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+      relatedType?: string | null;
+    }
+  ) => [...financeKeys.expenses(), 'list', filters] as const,
+  expense: (id: string) => [...financeKeys.expenses(), id] as const,
+  expensesStatistics: (params?: {
+    startDate: string;
+    endDate: string;
+    groupBy?: string;
+    expenseType?: string | null;
+  }) => [...financeKeys.expenses(), 'statistics', params] as const,
+
+  // 财务报表
+  reports: () => [...financeKeys.all, 'reports'] as const,
+
+  // 月度报表
+  monthlyReport: (params: { year: number; month: number }) =>
+    [...financeKeys.reports(), 'monthly', params] as const,
+
+  // 年度报表
+  annualReport: (params: { year: number }) =>
+    [...financeKeys.reports(), 'annual', params] as const,
+
+  // 盈亏分析
+  profitLoss: (params: { startDate: string; endDate: string }) =>
+    [...financeKeys.reports(), 'profit-loss', params] as const,
 } as const;
 
 /**

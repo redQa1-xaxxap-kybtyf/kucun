@@ -36,10 +36,10 @@ import type {
 } from '@/lib/types/customer';
 import {
   customerCreateSchema as CreateCustomerSchema,
-  type CustomerCreateFormData as CreateCustomerData,
   customerCreateDefaults,
   parseExtendedInfo,
   processExtendedInfo,
+  type CustomerCreateFormData as CreateCustomerData,
 } from '@/lib/validations/customer';
 
 interface ERPCustomerFormProps {
@@ -189,8 +189,8 @@ function BasicInfoSection({
 }) {
   return (
     <Card className="overflow-hidden">
-      <CardContent className="space-y-6 p-6">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <CardContent className="space-y-4 p-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="name"
@@ -218,6 +218,42 @@ function BasicInfoSection({
                 <FormControl>
                   <Input
                     placeholder="请输入联系电话"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="extendedInfo.phone2"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>备用电话1</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="请输入备用电话（可选）"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="extendedInfo.phone3"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>备用电话2</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="请输入备用电话（可选）"
                     disabled={isLoading}
                     {...field}
                   />
@@ -254,42 +290,6 @@ function BasicInfoSection({
   );
 }
 
-function ExtendedInfoSection({
-  form,
-  isLoading,
-}: {
-  form: CustomerFormInstance;
-  isLoading: boolean;
-}) {
-  return (
-    <Card className="overflow-hidden">
-      <CardContent className="space-y-6 p-6">
-        <h3 className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-          扩展信息（可选）
-        </h3>
-        <FormField
-          control={form.control}
-          name="extendedInfo.contactPerson"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>联系人</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="请输入联系人姓名"
-                  disabled={isLoading}
-                  {...field}
-                  value={field.value ?? ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
 function FormActions({
   isLoading,
   mode,
@@ -300,14 +300,14 @@ function FormActions({
   onCancel: () => void;
 }) {
   return (
-    <div className="flex items-center justify-end gap-4">
+    <div className="flex items-center justify-end gap-3">
       <Button
         type="button"
         variant="outline"
         size="lg"
         onClick={onCancel}
         disabled={isLoading}
-        className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+        className="h-10 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
       >
         <ArrowLeft className="h-4 w-4" />
         取消
@@ -316,7 +316,7 @@ function FormActions({
         type="submit"
         size="lg"
         disabled={isLoading}
-        className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
+        className="h-10 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
       >
         {isLoading ? (
           <>
@@ -390,12 +390,11 @@ export function ERPCustomerForm({
       />
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <BasicInfoSection form={form} isLoading={isLoading} />
-          <ExtendedInfoSection form={form} isLoading={isLoading} />
 
           <Card className="overflow-hidden">
-            <CardContent className="p-6">
+            <CardContent className="p-4">
               <FormActions
                 isLoading={isLoading}
                 mode={mode}

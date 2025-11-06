@@ -15,7 +15,9 @@ import type {
 const isValidSortField = (
   value: string | undefined
 ): value is PayableRecordQuery['sortBy'] =>
-  value === 'createdAt' || value === 'payableAmount' || value === 'remainingAmount';
+  value === 'createdAt' ||
+  value === 'payableAmount' ||
+  value === 'remainingAmount';
 
 const areQueriesEqual = (a: PayableRecordQuery, b: PayableRecordQuery) =>
   a.page === b.page &&
@@ -54,28 +56,37 @@ function useDerivedPayablesQuery(
     const rawSearch =
       typeof initialParams?.search === 'string'
         ? initialParams.search
-        : searchParams.get('search') ?? undefined;
+        : (searchParams.get('search') ?? undefined);
 
     const rawStatus =
-      initialParams?.status ?? ((searchParams.get('status') as PayableStatus) || undefined);
+      initialParams?.status ??
+      ((searchParams.get('status') as PayableStatus) || undefined);
 
     const rawSourceType =
       initialParams?.sourceType ??
       ((searchParams.get('sourceType') as PayableSourceType) || undefined);
 
     const sortByFromParams = searchParams.get('sortBy') || undefined;
-    const rawSortBy = initialParams?.sortBy ?? (isValidSortField(sortByFromParams) ? sortByFromParams : undefined);
+    const rawSortBy =
+      initialParams?.sortBy ??
+      (isValidSortField(sortByFromParams) ? sortByFromParams : undefined);
 
-    const rawSortOrder = initialParams?.sortOrder ?? (searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc');
+    const rawSortOrder =
+      initialParams?.sortOrder ??
+      (searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc');
 
-    const rawStartDate = initialParams?.startDate ?? searchParams.get('startDate') ?? undefined;
-    const rawEndDate = initialParams?.endDate ?? searchParams.get('endDate') ?? undefined;
+    const rawStartDate =
+      initialParams?.startDate ?? searchParams.get('startDate') ?? undefined;
+    const rawEndDate =
+      initialParams?.endDate ?? searchParams.get('endDate') ?? undefined;
 
     const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
 
     const normalizedSearch =
-      typeof rawSearch === 'string' && rawSearch.trim().length > 0 ? rawSearch.trim() : undefined;
+      typeof rawSearch === 'string' && rawSearch.trim().length > 0
+        ? rawSearch.trim()
+        : undefined;
 
     const sortBy = rawSortBy ?? 'createdAt';
     const sortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc';
@@ -126,14 +137,18 @@ function useHandleFilterChange(
         let changed = false;
 
         if (key === 'status') {
-          const nextStatus = value === 'all' || !value ? undefined : (value as PayableStatus);
+          const nextStatus =
+            value === 'all' || !value ? undefined : (value as PayableStatus);
           if (next.status !== nextStatus) {
             next.status = nextStatus;
             next.page = 1;
             changed = true;
           }
         } else if (key === 'sourceType') {
-          const nextSource = value === 'all' || !value ? undefined : (value as PayableSourceType);
+          const nextSource =
+            value === 'all' || !value
+              ? undefined
+              : (value as PayableSourceType);
           if (next.sourceType !== nextSource) {
             next.sourceType = nextSource;
             next.page = 1;
@@ -200,7 +215,9 @@ function useHandlePageChange(
 ) {
   return React.useCallback(
     (newPage: number) => {
-      setQuery(prev => (prev.page === newPage ? prev : { ...prev, page: newPage }));
+      setQuery(prev =>
+        prev.page === newPage ? prev : { ...prev, page: newPage }
+      );
       if (onPageChange) {
         onPageChange(newPage);
       } else {
@@ -212,7 +229,8 @@ function useHandlePageChange(
 }
 
 export function usePayablesController(options: UsePayablesControllerOptions) {
-  const { initialParams, onSearch, onFilter, onDateRangeChange, onPageChange } = options;
+  const { initialParams, onSearch, onFilter, onDateRangeChange, onPageChange } =
+    options;
   const searchParams = useSearchParams();
 
   const derivedQuery = useDerivedPayablesQuery(initialParams, searchParams);
@@ -220,7 +238,9 @@ export function usePayablesController(options: UsePayablesControllerOptions) {
   const [query, setQuery] = React.useState<PayableRecordQuery>(derivedQuery);
 
   React.useEffect(() => {
-    setQuery(prev => (areQueriesEqual(prev, derivedQuery) ? prev : derivedQuery));
+    setQuery(prev =>
+      areQueriesEqual(prev, derivedQuery) ? prev : derivedQuery
+    );
   }, [derivedQuery]);
 
   const { data: payablesData, isLoading } = usePayableRecords(query);
@@ -232,7 +252,10 @@ export function usePayablesController(options: UsePayablesControllerOptions) {
 
   const handleFilterChange = useHandleFilterChange(onFilter, setQuery);
 
-  const handleDateRangeChange = useHandleDateRangeChange(onDateRangeChange, setQuery);
+  const handleDateRangeChange = useHandleDateRangeChange(
+    onDateRangeChange,
+    setQuery
+  );
 
   const handlePageChange = useHandlePageChange(onPageChange, setQuery);
 

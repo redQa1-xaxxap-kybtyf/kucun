@@ -29,9 +29,9 @@ async function testQueue() {
     console.log('⚙️  步骤2: 创建测试 Worker...');
     const worker = new Worker<TestJobData>(
       'test-queue',
-      async (job) => {
+      async job => {
         console.log(`🔄 处理任务 ${job.id}: ${job.data.message}`);
-        await new Promise((resolve) => setTimeout(resolve, 100)); // 模拟处理
+        await new Promise(resolve => setTimeout(resolve, 100)); // 模拟处理
         console.log(`✅ 任务 ${job.id} 完成`);
       },
       { connection }
@@ -48,7 +48,7 @@ async function testQueue() {
 
     // Step 4: 等待任务完成
     console.log('⏳ 步骤4: 等待任务完成...');
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     // Step 5: 检查队列统计
     console.log('\n📊 步骤5: 检查队列统计...');
@@ -93,7 +93,7 @@ testQueue()
     console.log('\n✅ 测试完成,进程退出');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
   });

@@ -156,6 +156,12 @@ export function buildWhereConditions(params: {
     }
   }
 
+  // 🔍 调试日志：查询条件
+  console.log(
+    '🔎 [DEBUG] Receivables WHERE Conditions:',
+    JSON.stringify(where, null, 2)
+  );
+
   return where;
 }
 

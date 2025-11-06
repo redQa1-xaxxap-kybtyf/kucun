@@ -1,6 +1,7 @@
 # 销售订单详情页面收款日期显示修复
 
 ## 修复日期
+
 2024-01-XX
 
 ## 问题描述
@@ -23,6 +24,7 @@ paymentRecords: salesOrder.payments,  // ❌ 错误: Date 对象未转换
 ```
 
 Prisma 返回的数据结构:
+
 ```typescript
 {
   paymentDate: Date,      // Date 对象
@@ -32,6 +34,7 @@ Prisma 返回的数据结构:
 ```
 
 前端期望的数据结构:
+
 ```typescript
 {
   paymentDate: string,    // ISO 字符串 "2024-01-15T10:30:00.000Z"
@@ -49,6 +52,7 @@ Prisma 返回的数据结构:
 **修改位置**: 第175-199行
 
 **修改前**:
+
 ```typescript
 const { returnOrders, ...rest } = salesOrder;
 
@@ -63,7 +67,7 @@ return NextResponse.json({
       status: order.status,
       createdAt: order.createdAt.toISOString(),
     })),
-    paymentRecords: salesOrder.payments,  // ❌ 错误: Date 对象未转换
+    paymentRecords: salesOrder.payments, // ❌ 错误: Date 对象未转换
     actualPaidAmount,
     paymentRounding,
     paidAmount,
@@ -73,6 +77,7 @@ return NextResponse.json({
 ```
 
 **修改后**:
+
 ```typescript
 const { returnOrders, ...rest } = salesOrder;
 
@@ -102,6 +107,7 @@ return NextResponse.json({
 ```
 
 **改进点**:
+
 - ✅ 将 `paymentDate` 从 Date 对象转换为 ISO 字符串
 - ✅ 将 `createdAt` 从 Date 对象转换为 ISO 字符串
 - ✅ 保持与其他时间字段的格式一致
@@ -214,10 +220,10 @@ interface PaymentRecord {
   actualPaymentAmount: number;
   roundingAmount: number;
   paymentMethod: string;
-  paymentDate: string;  // ISO 字符串
+  paymentDate: string; // ISO 字符串
   status: string;
   remarks?: string;
-  createdAt: string;    // ISO 字符串
+  createdAt: string; // ISO 字符串
 }
 ```
 
@@ -270,6 +276,7 @@ API 返回:
 ### 验证步骤
 
 1. **API 测试**:
+
 ```bash
 curl -X GET http://localhost:3000/api/sales-orders/{id} \
   -H "Cookie: your-session-cookie" | jq '.data.paymentRecords[0].paymentDate'
@@ -278,12 +285,14 @@ curl -X GET http://localhost:3000/api/sales-orders/{id} \
 ```
 
 2. **前端测试**:
+
 - 打开销售订单详情页面
 - 滚动到收款记录区域
 - 检查收款日期显示格式
 - 预期: "2024-01-15 10:30"
 
 3. **浏览器控制台验证**:
+
 ```javascript
 // 检查 API 返回的数据
 fetch('/api/sales-orders/{id}')
@@ -317,6 +326,7 @@ fetch('/api/sales-orders/{id}')
 ### API 返回时间字段的标准做法
 
 1. **统一使用 ISO 8601 格式**:
+
 ```typescript
 {
   createdAt: date.toISOString(),
@@ -326,20 +336,25 @@ fetch('/api/sales-orders/{id}')
 ```
 
 2. **使用 DateTimeTransformer 工具类**:
+
 ```typescript
 import { DateTimeTransformer } from '@/lib/utils/datetime';
 
-const formattedData = DateTimeTransformer.transformObject(
-  data,
-  ['createdAt', 'updatedAt', 'paymentDate']
-);
+const formattedData = DateTimeTransformer.transformObject(data, [
+  'createdAt',
+  'updatedAt',
+  'paymentDate',
+]);
 ```
 
 3. **前端统一使用 formatDateTime 函数**:
+
 ```typescript
 import { formatDateTime } from '@/lib/utils/datetime';
 
-{formatDateTime(record.paymentDate)}
+{
+  formatDateTime(record.paymentDate);
+}
 ```
 
 ## 验证清单
@@ -364,4 +379,3 @@ import { formatDateTime } from '@/lib/utils/datetime';
 2. **使用工具类**: 考虑使用 `DateTimeTransformer` 工具类自动转换时间字段
 3. **添加单元测试**: 为时间格式化函数添加单元测试
 4. **时区处理**: 考虑添加时区转换功能，支持不同时区的用户
-

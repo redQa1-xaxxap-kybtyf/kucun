@@ -298,7 +298,7 @@ export const POST = withAuth(
           },
         });
 
-        // 验证所有商品都找到了
+        // 验证所有产品都找到了
         if (salesOrderItems.length !== data.items.length) {
           return NextResponse.json(
             { success: false, error: '部分销售订单明细不存在' },
@@ -306,13 +306,13 @@ export const POST = withAuth(
           );
         }
 
-        // 验证所有商品都属于同一个客户
+        // 验证所有产品都属于同一个客户
         const customerIds = new Set(
           salesOrderItems.map(item => item.salesOrder.customerId)
         );
         if (customerIds.size > 1) {
           return NextResponse.json(
-            { success: false, error: '退货商品必须属于同一个客户' },
+            { success: false, error: '退货产品必须属于同一个客户' },
             { status: 400 }
           );
         }

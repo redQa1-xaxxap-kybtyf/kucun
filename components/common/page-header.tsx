@@ -20,7 +20,7 @@ interface PageHeaderProps {
   /** 页面标题 */
   title: string;
   /** 页面描述 */
-  description: string;
+  description: React.ReactNode;
   /** 图标元素 */
   icon: React.ReactNode;
   /** 操作按钮区域 */
@@ -105,9 +105,9 @@ export function PageHeader({
               <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                 {title}
               </h1>
-              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+              <div className="text-sm text-[hsl(var(--color-text-secondary))]">
                 {description}
-              </p>
+              </div>
             </div>
           </div>
 

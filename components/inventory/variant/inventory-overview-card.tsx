@@ -83,7 +83,7 @@ export function InventoryOverviewCard({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-info))]">
-              ¥{inventory.averageUnitCost?.toFixed(2) || '0.00'}
+              ￥{inventory.averageUnitCost?.toFixed(2) || '0.00'}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
               平均成本

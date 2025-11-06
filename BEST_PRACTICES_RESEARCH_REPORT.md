@@ -51,11 +51,11 @@ const browser = await puppeteer.launch({
 
 #### 成功率对比
 
-| 方案 | 成功率 | 说明 |
-|------|--------|------|
-| 原生 Puppeteer | ~30% | 容易被检测 |
-| Puppeteer + Stealth Plugin | ~87% | 行业标准 |
-| Puppeteer + Stealth + 人类行为模拟 | ~95% | 最佳实践 |
+| 方案                               | 成功率 | 说明       |
+| ---------------------------------- | ------ | ---------- |
+| 原生 Puppeteer                     | ~30%   | 容易被检测 |
+| Puppeteer + Stealth Plugin         | ~87%   | 行业标准   |
+| Puppeteer + Stealth + 人类行为模拟 | ~95%   | 最佳实践   |
 
 ---
 
@@ -64,24 +64,27 @@ const browser = await puppeteer.launch({
 #### 最佳实践
 
 1. **使用真实的 User-Agent**:
+
    ```javascript
    const USER_AGENTS = [
      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
    ];
-   
-   const userAgent = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+
+   const userAgent =
+     USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
    await page.setUserAgent(userAgent);
    ```
 
 2. **设置完整的 Headers**:
    ```javascript
    await page.setExtraHTTPHeaders({
-     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+     Accept:
+       'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
      'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
      'Accept-Encoding': 'gzip, deflate, br',
-     'Connection': 'keep-alive',
+     Connection: 'keep-alive',
      'Upgrade-Insecure-Requests': '1',
      'Sec-Fetch-Dest': 'document',
      'Sec-Fetch-Mode': 'navigate',
@@ -98,13 +101,13 @@ const browser = await puppeteer.launch({
 
 **行业推荐的延迟范围**：
 
-| 场景 | 最小延迟 | 最大延迟 | 说明 |
-|------|----------|----------|------|
-| 页面加载后 | 1000ms | 3000ms | 模拟用户浏览页面 |
-| 点击前 | 300ms | 1000ms | 模拟鼠标移动 |
-| 输入后 | 500ms | 2000ms | 模拟用户检查输入 |
-| 滚动后 | 500ms | 1500ms | 模拟用户阅读 |
-| 结果加载后 | 1000ms | 3000ms | 模拟用户阅读结果 |
+| 场景       | 最小延迟 | 最大延迟 | 说明             |
+| ---------- | -------- | -------- | ---------------- |
+| 页面加载后 | 1000ms   | 3000ms   | 模拟用户浏览页面 |
+| 点击前     | 300ms    | 1000ms   | 模拟鼠标移动     |
+| 输入后     | 500ms    | 2000ms   | 模拟用户检查输入 |
+| 滚动后     | 500ms    | 1500ms   | 模拟用户阅读     |
+| 结果加载后 | 1000ms   | 3000ms   | 模拟用户阅读结果 |
 
 #### 人类打字速度模拟
 
@@ -116,10 +119,12 @@ async function humanType(element, text) {
     // 50-150ms 每个字符（人类打字速度）
     const delay = Math.floor(Math.random() * 100) + 50;
     await element.type(char, { delay });
-    
+
     // 偶尔添加更长的停顿（思考时间）
     if (Math.random() < 0.1) {
-      await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 500));
+      await new Promise(resolve =>
+        setTimeout(resolve, 300 + Math.random() * 500)
+      );
     }
   }
 }
@@ -134,9 +139,9 @@ import { humanize } from 'puppeteer-humanize';
 
 // 添加打字错误和修正
 await humanize(page).type(selector, text, {
-  mistakes: true,      // 添加打字错误
+  mistakes: true, // 添加打字错误
   mistakeChance: 0.05, // 5% 错误率
-  delay: [50, 150],    // 随机延迟范围
+  delay: [50, 150], // 随机延迟范围
 });
 ```
 
@@ -206,15 +211,15 @@ module.exports = nextConfig;
 #### 官方说明
 
 > Dependencies used inside Server Components and Route Handlers will automatically be bundled by Next.js.
-> 
+>
 > If a dependency is using Node.js specific features, you can choose to opt-out specific dependencies from the Server Components bundling and use native Node.js `require`.
 
 #### Next.js 15 的变化
 
-| 版本 | 配置名称 | 位置 |
-|------|----------|------|
-| Next.js 14 | `serverComponentsExternalPackages` | `experimental` |
-| Next.js 15 | `serverExternalPackages` | `experimental` (稳定) |
+| 版本       | 配置名称                           | 位置                  |
+| ---------- | ---------------------------------- | --------------------- |
+| Next.js 14 | `serverComponentsExternalPackages` | `experimental`        |
+| Next.js 15 | `serverExternalPackages`           | `experimental` (稳定) |
 
 #### 官方预设的服务器端专用包
 
@@ -247,7 +252,7 @@ webpack: (config, { isServer }) => {
       'puppeteer-extra-plugin-stealth': 'puppeteer-extra-plugin-stealth',
     });
   }
-  
+
   return config;
 },
 ```
@@ -316,10 +321,10 @@ webpack: (config, { isServer }) => {
 
 #### 推荐的访问频率
 
-| 网站类型 | 推荐频率 | 说明 |
-|----------|----------|------|
-| 小型网站 | 1-2 请求/秒 | 避免过载 |
-| 中型网站 | 5-10 请求/秒 | 适度爬取 |
+| 网站类型 | 推荐频率      | 说明     |
+| -------- | ------------- | -------- |
+| 小型网站 | 1-2 请求/秒   | 避免过载 |
+| 中型网站 | 5-10 请求/秒  | 适度爬取 |
 | 大型网站 | 10-20 请求/秒 | 可以更快 |
 
 #### 实现方案
@@ -343,17 +348,17 @@ class RateLimiter {
     this.timeWindow = timeWindow;
     this.requests = [];
   }
-  
+
   async acquire() {
     const now = Date.now();
     this.requests = this.requests.filter(t => now - t < this.timeWindow);
-    
+
     if (this.requests.length >= this.maxRequests) {
       const oldestRequest = this.requests[0];
       const waitTime = this.timeWindow - (now - oldestRequest);
       await new Promise(resolve => setTimeout(resolve, waitTime));
     }
-    
+
     this.requests.push(Date.now());
   }
 }
@@ -370,10 +375,10 @@ await queryShipping(url);
 
 #### 推荐的缓存时间
 
-| 数据类型 | 缓存时间 | 说明 |
-|----------|----------|------|
-| 静态数据 | 24 小时 | 很少变化的数据 |
-| 动态数据 | 1-6 小时 | 经常变化的数据 |
+| 数据类型 | 缓存时间  | 说明             |
+| -------- | --------- | ---------------- |
+| 静态数据 | 24 小时   | 很少变化的数据   |
+| 动态数据 | 1-6 小时  | 经常变化的数据   |
 | 实时数据 | 5-15 分钟 | 需要实时性的数据 |
 
 #### 实现方案
@@ -386,11 +391,12 @@ const cache = new Map();
 async function cachedQuery(url, keyword) {
   const cacheKey = `${url}:${keyword}`;
   const cached = cache.get(cacheKey);
-  
-  if (cached && Date.now() - cached.timestamp < 3600000) { // 1小时
+
+  if (cached && Date.now() - cached.timestamp < 3600000) {
+    // 1小时
     return cached.data;
   }
-  
+
   const data = await queryShipping(url, keyword);
   cache.set(cacheKey, { data, timestamp: Date.now() });
   return data;
@@ -407,11 +413,11 @@ const redis = new Redis();
 async function cachedQuery(url, keyword) {
   const cacheKey = `shipping:${url}:${keyword}`;
   const cached = await redis.get(cacheKey);
-  
+
   if (cached) {
     return JSON.parse(cached);
   }
-  
+
   const data = await queryShipping(url, keyword);
   await redis.setex(cacheKey, 3600, JSON.stringify(data)); // 1小时
   return data;
@@ -442,13 +448,13 @@ async function cachedQuery(url, keyword) {
 
 ### 我们的实现质量评估
 
-| 方面 | 评分 | 说明 |
-|------|------|------|
+| 方面                 | 评分             | 说明             |
+| -------------------- | ---------------- | ---------------- |
 | **Puppeteer 反爬虫** | ⭐⭐⭐⭐⭐ (5/5) | 完全符合最佳实践 |
-| **Next.js 配置** | ⭐⭐⭐⭐⭐ (5/5) | 完全符合官方文档 |
-| **Rate Limiting** | ⭐☆☆☆☆ (1/5) | 尚未实施 |
-| **缓存机制** | ⭐☆☆☆☆ (1/5) | 尚未实施 |
-| **合规性** | ⭐⭐⭐☆☆ (3/5) | 部分符合 |
+| **Next.js 配置**     | ⭐⭐⭐⭐⭐ (5/5) | 完全符合官方文档 |
+| **Rate Limiting**    | ⭐☆☆☆☆ (1/5)     | 尚未实施         |
+| **缓存机制**         | ⭐☆☆☆☆ (1/5)     | 尚未实施         |
+| **合规性**           | ⭐⭐⭐☆☆ (3/5)   | 部分符合         |
 
 ### 下一步建议
 
@@ -475,4 +481,3 @@ async function cachedQuery(url, keyword) {
 ---
 
 **总结**: 我们的 Puppeteer 反爬虫实现已经达到行业最佳实践水平（~90-95% 成功率），Next.js 配置完全符合官方文档。下一步应该专注于实施 Rate Limiting 和缓存机制（方案 C），以提升系统的可靠性和合规性。
-

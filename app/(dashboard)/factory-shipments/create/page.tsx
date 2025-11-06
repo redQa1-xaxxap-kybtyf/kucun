@@ -48,7 +48,7 @@ export default function CreateFactoryShipmentPage() {
                     创建厂家发货订单
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    创建新的厂家发货订单，支持多供应商商品和临时商品管理
+                    创建新的厂家发货订单，支持多供应商产品和临时产品管理
                   </p>
                 </div>
               </div>

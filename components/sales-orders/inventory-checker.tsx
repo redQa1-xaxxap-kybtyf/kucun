@@ -158,7 +158,7 @@ export function InventoryChecker({
     return null;
   }
 
-  // 如果所有商品库存都充足，完全隐藏库存检查组件
+  // 如果所有产品库存都充足，完全隐藏库存检查组件
   if (stats.errors === 0 && stats.warnings === 0) {
     return null;
   }
@@ -189,7 +189,7 @@ export function InventoryChecker({
             ) : (
               <div>
                 <div className="mb-1">
-                  以下 {errorItems.length} 个商品库存不足：
+                  以下 {errorItems.length} 个产品库存不足：
                 </div>
                 <div className="space-y-0.5 text-sm">
                   {errorItems.map((item, index) => (
@@ -225,7 +225,7 @@ export function InventoryChecker({
             ) : (
               <div>
                 <div className="mb-1">
-                  以下 {warningItems.length} 个商品库存偏低，建议及时补货：
+                  以下 {warningItems.length} 个产品库存偏低，建议及时补货：
                 </div>
                 <div className="space-y-0.5 text-sm">
                   {warningItems.map((item, index) => (

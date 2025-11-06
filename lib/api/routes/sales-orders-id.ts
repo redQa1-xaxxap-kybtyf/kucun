@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
+import {
+  getAffectedProductIds,
+  updateSalesOrderStatus,
+} from '@/lib/api/handlers/sales-order-status';
+import { getSalesOrderDetailWithPayments } from '@/lib/api/handlers/sales-orders/detail';
+import { updateSalesOrderDraft } from '@/lib/api/handlers/sales-orders/update-draft';
+import type { ApiHandler } from '@/lib/auth/api-helpers';
+import { invalidateReportCache } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
@@ -9,14 +17,6 @@ import {
 } from '@/lib/services/sales-order-service';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
-
-import { getSalesOrderDetailWithPayments } from '@/lib/api/handlers/sales-orders/detail';
-import {
-  getAffectedProductIds,
-  updateSalesOrderStatus,
-} from '@/lib/api/handlers/sales-order-status';
-import { updateSalesOrderDraft } from '@/lib/api/handlers/sales-orders/update-draft';
-import type { ApiHandler } from '@/lib/auth/api-helpers';
 
 async function resolveId(
   params?: Promise<Record<string, string>> | Record<string, string>
@@ -37,7 +37,10 @@ export const getSalesOrderRoute: ApiHandler = async (_request, { params }) => {
 
 // PUT /api/sales-orders/[id] — 更新状态
 // eslint-disable-next-line max-lines-per-function -- Complex order status update logic requires comprehensive validation and transaction handling
-export const putSalesOrderRoute: ApiHandler = async (request, { user, params }) => {
+export const putSalesOrderRoute: ApiHandler = async (
+  request,
+  { user, params }
+) => {
   const id = await resolveId(params);
   const userId = user.id;
   const body = await request.json();
@@ -45,7 +48,11 @@ export const putSalesOrderRoute: ApiHandler = async (request, { user, params }) 
   const parsed = updateOrderStatusSchema.safeParse({ id, ...body });
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: '输入数据格式不正确', details: parsed.error.issues },
+      {
+        success: false,
+        error: '输入数据格式不正确',
+        details: parsed.error.issues,
+      },
       { status: 400 }
     );
   }
@@ -93,10 +100,12 @@ export const putSalesOrderRoute: ApiHandler = async (request, { user, params }) 
     });
     if (o) {
       const paid = o.payments.reduce(
-        (s, r) => s + Number(r.actualPaymentAmount) + Number(r.roundingAmount || 0),
+        (s, r) =>
+          s + Number(r.actualPaymentAmount) + Number(r.roundingAmount || 0),
         0
       );
-      const actualTotal = Number(o.totalAmount) + Number(o.roundingAdjustment || 0);
+      const actualTotal =
+        Number(o.totalAmount) + Number(o.roundingAdjustment || 0);
       const remaining = actualTotal - paid;
       if (remaining > 0.01) {
         return NextResponse.json(
@@ -129,7 +138,9 @@ export const putSalesOrderRoute: ApiHandler = async (request, { user, params }) 
 
   // 库存相关缓存失效
   if (result.inventoryUpdated || result.reservedInventoryReleased) {
-    const { invalidateInventoryCache } = await import('@/lib/cache/inventory-cache');
+    const { invalidateInventoryCache } = await import(
+      '@/lib/cache/inventory-cache'
+    );
     const productIds = await getAffectedProductIds(id);
     for (const productId of productIds) {
       await invalidateInventoryCache(productId);
@@ -170,6 +181,11 @@ export const putSalesOrderRoute: ApiHandler = async (request, { user, params }) 
             ? '销售订单已取消'
             : '销售订单更新成功';
 
+  // ✅ P0修复：销售订单状态更新后，失效报表缓存
+  invalidateReportCache().catch(error => {
+    console.error('Failed to invalidate report cache:', error);
+  });
+
   return NextResponse.json({ success: true, data, message });
 };
 
@@ -178,16 +194,22 @@ export const patchSalesOrderRoute: ApiHandler = async (request, { params }) => {
   const id = await resolveId(params);
   const body = await request.json();
 
-  const { salesOrderUpdateSchema } = await import('@/lib/validations/sales-order');
+  const { salesOrderUpdateSchema } = await import(
+    '@/lib/validations/sales-order'
+  );
   const parsed = salesOrderUpdateSchema.safeParse({ id, ...body });
   if (!parsed.success) {
     return NextResponse.json(
-      { success: false, error: '输入数据格式不正确', details: parsed.error.issues },
+      {
+        success: false,
+        error: '输入数据格式不正确',
+        details: parsed.error.issues,
+      },
       { status: 400 }
     );
   }
 
-  const existingOrder = await prisma.salesOrder.findUnique({
+  const existingOrder = (await prisma.salesOrder.findUnique({
     where: { id },
     select: {
       id: true,
@@ -197,7 +219,7 @@ export const patchSalesOrderRoute: ApiHandler = async (request, { params }) => {
       transferMode: true,
       supplierId: true,
     },
-  }) as {
+  })) as {
     id: string;
     status: string;
     orderNumber: string;
@@ -219,11 +241,24 @@ export const patchSalesOrderRoute: ApiHandler = async (request, { params }) => {
   }
 
   const data = await updateSalesOrderDraft(id, parsed.data, existingOrder);
-  return NextResponse.json({ success: true, data, message: '销售订单更新成功' });
+
+  // ✅ P0修复：销售订单草稿更新后，失效报表缓存
+  invalidateReportCache().catch(error => {
+    console.error('Failed to invalidate report cache:', error);
+  });
+
+  return NextResponse.json({
+    success: true,
+    data,
+    message: '销售订单更新成功',
+  });
 };
 
 // DELETE /api/sales-orders/[id]
-export const deleteSalesOrderRoute: ApiHandler = async (_request, { params }) => {
+export const deleteSalesOrderRoute: ApiHandler = async (
+  _request,
+  { params }
+) => {
   const id = await resolveId(params);
   const existingOrder = await prisma.salesOrder.findUnique({
     where: { id },
@@ -246,6 +281,12 @@ export const deleteSalesOrderRoute: ApiHandler = async (_request, { params }) =>
     await tx.salesOrderFeeItem.deleteMany({ where: { salesOrderId: id } });
     await tx.salesOrder.delete({ where: { id } });
   });
+
+  // ✅ P0修复：销售订单删除后，失效报表缓存
+  invalidateReportCache().catch(error => {
+    console.error('Failed to invalidate report cache:', error);
+  });
+
   return NextResponse.json({
     success: true,
     data: { id },
@@ -253,10 +294,7 @@ export const deleteSalesOrderRoute: ApiHandler = async (_request, { params }) =>
   });
 };
 
-async function maybeAutoCompleteAfterShipped(
-  id: string,
-  orderNumber: string
-) {
+async function maybeAutoCompleteAfterShipped(id: string, orderNumber: string) {
   const o = await prisma.salesOrder.findUnique({
     where: { id },
     select: {
@@ -276,14 +314,21 @@ async function maybeAutoCompleteAfterShipped(
   const actualTotal = Number(o.totalAmount) + Number(o.roundingAdjustment || 0);
   const remaining = actualTotal - paid;
   if (remaining <= 0.01) {
-    await prisma.salesOrder.update({ where: { id }, data: { status: 'completed' } });
-    logger.info('sales-orders', `订单 ${orderNumber} 发货后检测到已全额收款,自动完成订单`, {
-      orderId: id,
-      orderNumber,
-      totalAmount: o.totalAmount,
-      roundingAdjustment: o.roundingAdjustment,
-      paidAmount: paid,
-      remainingAmount: remaining,
+    await prisma.salesOrder.update({
+      where: { id },
+      data: { status: 'completed' },
     });
+    logger.info(
+      'sales-orders',
+      `订单 ${orderNumber} 发货后检测到已全额收款,自动完成订单`,
+      {
+        orderId: id,
+        orderNumber,
+        totalAmount: o.totalAmount,
+        roundingAdjustment: o.roundingAdjustment,
+        paidAmount: paid,
+        remainingAmount: remaining,
+      }
+    );
   }
 }

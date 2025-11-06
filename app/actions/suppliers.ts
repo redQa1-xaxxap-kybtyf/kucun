@@ -1,6 +1,6 @@
 'use server';
 
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -10,6 +10,7 @@ import { can } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
+  createSupplier as createSupplierService,
   ensureSupplierCanBeDeactivated,
   ensureSupplierCanBeDeleted,
 } from '@/lib/services/supplier-service';
@@ -77,12 +78,12 @@ const updateSupplierSchema = z.object({
     .max(200, '地址不能超过200个字符')
     .optional()
     .or(z.literal('')),
-  status: z.enum(['active', 'inactive']).optional(),
+  status: z.enum(['active', 'inactive', 'suspended']).optional(),
 });
 
 const updateSupplierStatusSchema = z.object({
   supplierId: z.string().min(1, '供应商 ID 不能为空'),
-  status: z.enum(['active', 'inactive']),
+  status: z.enum(['active', 'inactive', 'suspended']),
 });
 
 // ============================================
@@ -129,84 +130,21 @@ export async function createSupplier(
     const rawData = JSON.parse(formData.get('data') as string);
     const data = createSupplierSchema.parse(rawData);
 
-    // 3. 生成供应商编码
-    // 格式: SUP + 年月日 + 4位序号 (例如: SUP20250107001)
-    const today = new Date();
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-
-    // 查询今天创建的最后一个供应商编码
-    const lastSupplier = await prisma.supplier.findFirst({
-      where: {
-        supplierCode: {
-          startsWith: `SUP${dateStr}`,
-        },
-      },
-      orderBy: {
-        supplierCode: 'desc',
-      },
+    const supplier = await createSupplierService({
+      name: data.name,
+      phone: data.phone ?? null,
+      address: data.address ?? null,
     });
 
-    let sequenceNumber = 1;
-    if (lastSupplier?.supplierCode) {
-      // 提取序号并加1
-      const lastSequence = parseInt(lastSupplier.supplierCode.slice(-4));
-      sequenceNumber = lastSequence + 1;
-    }
-
-    const maxRetries = 5;
-    let supplierCode = '';
-    let createdSupplier: {
-      id: string;
-      name: string;
-      supplierCode: string | null;
-    } | null = null;
-
-    for (let attempt = 0; attempt < maxRetries; attempt += 1) {
-      supplierCode = `SUP${dateStr}${sequenceNumber.toString().padStart(4, '0')}`;
-
-      // 4. 创建供应商
-      try {
-        const supplier = await prisma.supplier.create({
-          data: {
-            name: data.name,
-            supplierCode,
-            phone: data.phone || null,
-            address: data.address || null,
-            status: 'active',
-          },
-          select: {
-            id: true,
-            name: true,
-            supplierCode: true,
-          },
-        });
-        createdSupplier = supplier;
-        break;
-      } catch (error) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
-          sequenceNumber += 1;
-          continue;
-        }
-        throw error;
-      }
-    }
-
-    if (!createdSupplier) {
-      return { success: false, error: '创建供应商失败，请稍后重试' };
-    }
-
-    // 5. 重新验证路径
+    // 3. 重新验证路径
     revalidatePath('/suppliers');
 
     return {
       success: true,
       data: {
-        id: createdSupplier.id,
-        name: createdSupplier.name,
-        supplierCode: createdSupplier.supplierCode ?? supplierCode,
+        id: supplier.id,
+        name: supplier.name,
+        supplierCode: supplier.supplierCode ?? '',
       },
     };
   } catch (error) {
@@ -215,6 +153,9 @@ export async function createSupplier(
     });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message || '创建供应商失败' };
     }
     return { success: false, error: '创建供应商失败' };
   }
@@ -258,7 +199,11 @@ export async function updateSupplier(
       return { success: false, error: '供应商不存在' };
     }
 
-    if (data.status === 'inactive' && existingSupplier.status !== 'inactive') {
+    if (
+      data.status &&
+      data.status !== 'active' &&
+      existingSupplier.status !== data.status
+    ) {
       try {
         await ensureSupplierCanBeDeactivated(supplierId, existingSupplier.name);
       } catch (error) {
@@ -348,7 +293,7 @@ export async function updateSupplierStatus(
       return { success: false, error: '供应商不存在' };
     }
 
-    if (data.status === 'inactive' && supplier.status !== 'inactive') {
+    if (data.status !== 'active' && supplier.status !== data.status) {
       try {
         await ensureSupplierCanBeDeactivated(data.supplierId, supplier.name);
       } catch (error) {
@@ -451,7 +396,10 @@ export async function batchUpdateSupplierStatus(
     const supplierIds = JSON.parse(
       formData.get('supplierIds') as string
     ) as string[];
-    const status = formData.get('status') as 'active' | 'inactive';
+    const status = formData.get('status') as
+      | 'active'
+      | 'inactive'
+      | 'suspended';
 
     if (!supplierIds || supplierIds.length === 0) {
       return { success: false, error: '未选择供应商' };
@@ -471,7 +419,7 @@ export async function batchUpdateSupplierStatus(
     }
 
     // 如果要停用供应商，需要检查每个供应商
-    if (status === 'inactive') {
+    if (status !== 'active') {
       for (const supplier of suppliers) {
         if (supplier.status === 'inactive') {
           continue;

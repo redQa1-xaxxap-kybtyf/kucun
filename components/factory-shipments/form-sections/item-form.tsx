@@ -42,8 +42,8 @@ interface ItemFormProps {
 }
 
 /**
- * 厂家发货订单商品明细表单
- * 单个商品的表单项
+ * 厂家发货订单产品明细表单
+ * 单个产品的表单项
  * 使用 React.memo 优化性能，避免不必要的重新渲染
  */
 export const ItemForm = React.memo<ItemFormProps>(
@@ -105,7 +105,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                 <span className="text-sm font-bold">{index + 1}</span>
               </div>
               <h4 className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
-                商品 {index + 1}
+                产品 {index + 1}
               </h4>
             </div>
             {canRemove && (
@@ -114,7 +114,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                 variant="ghost"
                 size="sm"
                 onClick={onRemove}
-                title="删除商品"
+                title="删除产品"
                 className="h-8 w-8 rounded-lg text-[hsl(var(--color-error))] transition-all duration-200 hover:bg-[hsl(var(--color-error))]/10 hover:text-[hsl(var(--color-error))]"
               >
                 <Minus className="h-4 w-4" />
@@ -123,7 +123,7 @@ export const ItemForm = React.memo<ItemFormProps>(
           </div>
 
           <div className="space-y-5">
-            {/* 第一行：商品搜索（全宽） */}
+            {/* 第一行：产品搜索（全宽） */}
             <div className="w-full">
               <IntelligentProductInput
                 form={form}
@@ -141,7 +141,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                       form.setValue(`items.${index}.unitPrice`, customerPrice);
                       toast({
                         title: '已自动填充客户历史价格',
-                        description: `产品编码 "${product.code}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
+                        description: `产品编码 "${product.code}" 的上次厂家发货价格：￥${customerPrice.toFixed(2)}`,
                         duration: 2000,
                       });
                     }
@@ -309,7 +309,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                      单价（¥）{' '}
+                      单价（￥）{' '}
                       <span className="text-[hsl(var(--color-error))]">*</span>
                     </FormLabel>
                     <FormControl>
