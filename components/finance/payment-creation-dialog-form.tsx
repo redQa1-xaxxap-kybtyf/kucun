@@ -1,7 +1,6 @@
 import { Save } from 'lucide-react';
 import { type SubmitHandler, type UseFormReturn } from 'react-hook-form';
 
-
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import {
@@ -24,7 +23,10 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 
-import { PAYMENT_METHODS, type PaymentFormData } from './payment-creation-dialog.config';
+import {
+  PAYMENT_METHODS,
+  type PaymentFormData,
+} from './payment-creation-dialog.config';
 
 export interface PaymentFormProps {
   form: UseFormReturn<PaymentFormData>;
@@ -114,7 +116,9 @@ function PaymentAmountInput({ form }: FormComponentProps) {
               min="0"
               placeholder="0.00"
               {...field}
-              onChange={event => field.onChange(parseFloat(event.target.value) || 0)}
+              onChange={event =>
+                field.onChange(parseFloat(event.target.value) || 0)
+              }
             />
           </FormControl>
           <FormDescription>
@@ -163,12 +167,16 @@ function ActualAmountField({ form }: FormComponentProps) {
               value={field.value}
               onChange={event =>
                 field.onChange(
-                  event.target.value === '' ? 0 : parseFloat(event.target.value) || 0
+                  event.target.value === ''
+                    ? 0
+                    : parseFloat(event.target.value) || 0
                 )
               }
             />
           </FormControl>
-          <FormDescription>客户实际支付的金额（可以少于收款金额）</FormDescription>
+          <FormDescription>
+            客户实际支付的金额（可以少于收款金额）
+          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -235,7 +243,15 @@ interface BankInfoFieldProps extends FormComponentProps {
 }
 
 function BankInfoField({ form, paymentMethod }: BankInfoFieldProps) {
-  if (paymentMethod !== 'bank_transfer' && paymentMethod !== 'check') {
+  // ✅ 微信转账和银行收款码可选填写备注信息
+  const shouldShowBankInfo =
+    paymentMethod === 'wechat_transfer' ||
+    paymentMethod === 'abc_qr' ||
+    paymentMethod === 'icbc_qr' ||
+    paymentMethod === 'ccb_qr' ||
+    paymentMethod === 'cib_qr';
+
+  if (!shouldShowBankInfo) {
     return null;
   }
 
@@ -245,11 +261,11 @@ function BankInfoField({ form, paymentMethod }: BankInfoFieldProps) {
       name="bankInfo"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>银行信息</FormLabel>
+          <FormLabel>收款账户信息（可选）</FormLabel>
           <FormControl>
-            <Input placeholder="银行名称、账号等信息" {...field} />
+            <Input placeholder="收款账户、交易流水号等信息" {...field} />
           </FormControl>
-          <FormDescription>银行转账或支票的相关信息</FormDescription>
+          <FormDescription>记录收款账户或交易流水号等信息</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -287,7 +303,12 @@ interface FormActionsProps {
 function FormActions({ onCancel, isSubmitting }: FormActionsProps) {
   return (
     <DialogFooter>
-      <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onCancel}
+        disabled={isSubmitting}
+      >
         取消
       </Button>
       <Button
@@ -301,4 +322,3 @@ function FormActions({ onCancel, isSubmitting }: FormActionsProps) {
     </DialogFooter>
   );
 }
-

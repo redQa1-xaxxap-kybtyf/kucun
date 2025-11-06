@@ -1,20 +1,26 @@
 import { z } from 'zod';
 
-
+// ✅ 与后端保持一致的收款方式枚举
 export const PAYMENT_METHODS = [
   { value: 'cash', label: '现金' },
-  { value: 'bank_transfer', label: '银行转账' },
-  { value: 'check', label: '支票' },
-  { value: 'other', label: '其他' },
+  { value: 'wechat_transfer', label: '微信转账' },
+  { value: 'abc_qr', label: '农业银行收款码' },
+  { value: 'icbc_qr', label: '工商银行收款码' },
+  { value: 'ccb_qr', label: '建设银行收款码' },
+  { value: 'cib_qr', label: '兴业银行收款码' },
 ] as const;
 
 export const paymentSchema = z.object({
   paymentType: z.literal('order_payment').default('order_payment'),
   salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
   customerId: z.string().min(1, { message: '客户ID不能为空' }),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
-    message: '请选择收款方式',
-  }),
+  // ✅ 与后端 lib/validations/payment.ts 保持一致
+  paymentMethod: z.enum(
+    ['cash', 'wechat_transfer', 'abc_qr', 'icbc_qr', 'ccb_qr', 'cib_qr'],
+    {
+      message: '请选择收款方式',
+    }
+  ),
   paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
   actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
   roundingAmount: z.number().default(0),
@@ -35,4 +41,3 @@ export interface OrderInfo {
   paidAmount: number;
   remainingAmount: number;
 }
-
