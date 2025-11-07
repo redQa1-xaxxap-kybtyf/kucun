@@ -159,11 +159,12 @@ export function useRecordCustomerPrice() {
       return response.json();
     },
     onSuccess: (_, variables) => {
-      // 刷新相关的价格历史查询
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建价格历史后立即看到新记录
+      queryClient.refetchQueries({
         queryKey: queryKeys.customers.priceHistory({
           customerId: variables.customerId,
         }),
+        type: 'active',
       });
     },
   });
@@ -198,11 +199,12 @@ export function useRecordSupplierPrice() {
       return response.json();
     },
     onSuccess: (_, variables) => {
-      // 刷新相关的价格历史查询
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除价格历史后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.suppliers.priceHistory({
           supplierId: variables.supplierId,
         }),
+        type: 'active',
       });
     },
   });
