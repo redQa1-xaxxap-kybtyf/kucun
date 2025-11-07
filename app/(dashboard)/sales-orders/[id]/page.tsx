@@ -115,12 +115,39 @@ export default function SalesOrderDetailPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      // ✅ 关键修复：使用 refetchQueries 强制立即重新获取数据
+      // invalidateQueries 只是标记为过期，不会立即刷新（受 staleTime 影响）
+      // refetchQueries 会强制立即重新获取，无论 staleTime 如何设置
+      queryClient.refetchQueries({
         queryKey: queryKeys.salesOrders.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: queryKeys.salesOrders.lists(),
+        type: 'active',
       });
+
+      // ✅ 刷新库存相关缓存
+      // 因为确认发货会扣减库存，需要立即刷新库存数据
+      queryClient.refetchQueries({
+        queryKey: queryKeys.inventory.all,
+        type: 'active',
+      });
+
+      // ✅ 刷新库存预警缓存
+      // 因为库存扣减可能触发新的库存预警
+      queryClient.refetchQueries({
+        queryKey: queryKeys.inventory.alerts(),
+        type: 'active',
+      });
+
+      // ✅ 刷新应收款缓存
+      // 因为订单状态变更会影响应收款数据
+      queryClient.refetchQueries({
+        queryKey: queryKeys.finance.receivables(),
+        type: 'active',
+      });
+
       toast({
         title: '操作成功',
         description: '订单状态已更新',
