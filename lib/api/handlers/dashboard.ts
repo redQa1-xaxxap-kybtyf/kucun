@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { inventoryConfig } from '@/lib/env';
 import type { DashboardData, TimeRange } from '@/lib/types/dashboard';
 
 /**
@@ -225,7 +226,7 @@ export async function getInventoryAlerts() {
       inventory: {
         some: {
           quantity: {
-            lte: 10,
+            lte: inventoryConfig.lowStockThreshold,
           },
         },
       },
@@ -244,7 +245,7 @@ export async function getInventoryAlerts() {
     id: product.id,
     productName: product.name,
     currentStock: product.inventory.reduce((sum, inv) => sum + inv.quantity, 0),
-    minStock: 10,
+    minStock: inventoryConfig.lowStockThreshold,
     severity: 'warning' as const,
   }));
 }
