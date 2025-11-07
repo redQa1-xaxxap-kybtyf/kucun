@@ -91,7 +91,8 @@ export function CustomerSelector({
   }, [searchValue]);
 
   const normalizedSearch = debouncedSearch.trim().toLowerCase();
-  const shouldSearch = normalizedSearch.length >= 2;
+  // 允许1个字符开始搜索，支持中文单字搜索（如"张"、"李"等）
+  const shouldSearch = normalizedSearch.length >= 1;
 
   const { data: searchResults, isFetching: isSearching } = useQuery({
     queryKey: customerQueryKeys.search(normalizedSearch || '', { limit: 20 }),
@@ -266,7 +267,7 @@ export function CustomerSelector({
                 ) : !shouldSearch ? (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground mb-3 text-sm">
-                      输入至少 2 个字符开始搜索客户
+                      输入关键词开始搜索客户
                     </div>
                     <Button
                       variant="outline"
