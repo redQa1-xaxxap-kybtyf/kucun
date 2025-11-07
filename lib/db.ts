@@ -59,6 +59,14 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+const MIN_SLOW_QUERY_THRESHOLD_MS = 50;
+const defaultSlowQueryThresholdMs =
+  env.NODE_ENV === 'production' ? 1000 : 500;
+const slowQueryThresholdMs = Math.max(
+  MIN_SLOW_QUERY_THRESHOLD_MS,
+  env.PRISMA_SLOW_QUERY_THRESHOLD_MS ?? defaultSlowQueryThresholdMs
+);
+
 // 防止在客户端环境中初始化 Prisma
 function createPrismaClient() {
   // 客户端环境检测
@@ -94,21 +102,22 @@ if (typeof window === 'undefined' && env.NODE_ENV !== 'production') {
 
 // 慢查询监控（仅在服务端环境）
 if (typeof window === 'undefined' && prisma) {
-  // 优化：降低阈值到100ms，增加详细日志，开发环境也启用
+  // 通过环境变量/默认值控制慢查询阈值，避免噪声同时保留可观测性
   prisma.$use(async (params, next) => {
     const before = Date.now();
     const result = await next(params);
     const after = Date.now();
     const duration = after - before;
 
-    // 记录超过100ms的查询（优化前：1000ms）
-    if (duration > 100) {
+    // 记录超过阈值的查询（默认开发500ms / 生产1000ms，可配置）
+    if (duration > slowQueryThresholdMs) {
       void logDatabaseWarn(
-        `[Prisma] 慢查询: ${params.model}.${params.action} 用时 ${duration}ms`,
+        `[Prisma] 慢查询: ${params.model}.${params.action} 用时 ${duration}ms (阈值: ${slowQueryThresholdMs}ms)`,
         {
           model: params.model,
           action: params.action,
           duration,
+          threshold: slowQueryThresholdMs,
         }
       );
     }

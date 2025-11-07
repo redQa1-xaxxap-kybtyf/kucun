@@ -77,6 +77,17 @@ const envSchema = zod_1.z.object({
     .enum(['development', 'production', 'test'])
     .default('development')
     .describe('应用运行环境'),
+  PRISMA_SLOW_QUERY_THRESHOLD_MS: zod_1.z
+    .string()
+    .regex(/^[\d]+$/, 'PRISMA_SLOW_QUERY_THRESHOLD_MS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 50 && val <= 60000, {
+      message: 'PRISMA_SLOW_QUERY_THRESHOLD_MS 必须在 50-60000 之间',
+    })
+    .optional()
+    .describe(
+      'Prisma 慢查询日志阈值（毫秒，可选，默认开发500/生产1000）'
+    ),
   // Redis 配置（缓存层）
   REDIS_URL: zod_1.z
     .string()
@@ -1006,6 +1017,7 @@ exports.rateLimitConfig = {
 exports.monitoringConfig = {
   enableMemoryMonitor: exports.env.ENABLE_MEMORY_MONITOR,
   token: exports.env.MONITORING_TOKEN,
+  prismaSlowQueryThresholdMs: exports.env.PRISMA_SLOW_QUERY_THRESHOLD_MS,
 };
 /**
  * 运输查询调度器配置对象
