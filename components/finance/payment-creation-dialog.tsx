@@ -207,12 +207,18 @@ export function PaymentCreationDialog({
 
       // ✅ 检查HTTP状态码
       if (!response.ok) {
-        throw new Error(result.error || '创建收款记录失败');
+        throw new Error(result?.error || '创建收款记录失败');
       }
 
-      // ✅ 检查业务状态码（后端返回 { success, data, error }）
-      if (result.success === false) {
-        throw new Error(result.error || '创建收款记录失败');
+      // ✅ 严格检查业务状态码（后端返回 { success, data, error }）
+      // 必须明确返回 success: true 才算成功
+      if (result?.success !== true) {
+        throw new Error(result?.error || '创建收款记录失败：服务器响应异常');
+      }
+
+      // ✅ 验证返回数据完整性
+      if (!result.data) {
+        throw new Error('创建收款记录失败：返回数据不完整');
       }
 
       return result;
