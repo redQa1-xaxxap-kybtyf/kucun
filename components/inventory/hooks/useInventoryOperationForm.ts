@@ -413,11 +413,14 @@ function combineLoadingState({
 async function invalidateInventoryQueries(
   queryClient: ReturnType<typeof useQueryClient>
 ) {
-  await queryClient.invalidateQueries({
+  // ✅ 使用 refetchQueries 强制立即刷新，确保用户操作库存后立即看到变化
+  await queryClient.refetchQueries({
     queryKey: queryKeys.inventory.lists(),
+    type: 'active',
   });
-  await queryClient.invalidateQueries({
+  await queryClient.refetchQueries({
     queryKey: queryKeys.inventory.all,
+    type: 'active',
   });
 }
 

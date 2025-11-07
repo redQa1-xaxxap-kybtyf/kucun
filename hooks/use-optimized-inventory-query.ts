@@ -178,7 +178,11 @@ export function useOptimizedInventoryQuery({
     () => ({
       // 使查询无效
       invalidate: () => {
-        queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.lists() });
+        // ✅ 使用 refetchQueries 强制立即刷新，确保用户操作后立即看到最新数据
+        queryClient.refetchQueries({
+          queryKey: inventoryQueryKeys.lists(),
+          type: 'active',
+        });
       },
 
       // 移除特定查询缓存
@@ -310,8 +314,11 @@ export function useInventoryMutations() {
       return response.json();
     },
     onSuccess: () => {
-      // 使所有库存相关查询无效
-      queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户调整库存后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: inventoryQueryKeys.all,
+        type: 'active',
+      });
     },
   });
 
