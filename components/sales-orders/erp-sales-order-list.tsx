@@ -256,18 +256,19 @@ export function ERPSalesOrderList({
       return response.json();
     },
     onSuccess: () => {
-      // ✅ 失效销售订单缓存并强制立即重新获取
-      // refetchType: 'active' 确保所有活跃的查询立即重新获取数据
-      queryClient.invalidateQueries({
+      // ✅ 关键修复：使用 refetchQueries 强制立即重新获取数据
+      // invalidateQueries 只是标记为过期，不会立即刷新（受 staleTime 影响）
+      // refetchQueries 会强制立即重新获取，无论 staleTime 如何设置
+      queryClient.refetchQueries({
         queryKey: salesOrderQueryKeys.lists(),
-        refetchType: 'active',
+        type: 'active',
       });
 
-      // ✅ 关键修复：同时失效应收款缓存
+      // ✅ 同时刷新应收款缓存
       // 因为订单状态变更会影响应收款数据
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: ['finance', 'receivables'],
-        refetchType: 'active',
+        type: 'active',
       });
 
       toast({
@@ -358,9 +359,9 @@ export function ERPSalesOrderList({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: salesOrderQueryKeys.lists(),
-        refetchType: 'active',
+        type: 'active',
       });
       toast({
         title: '删除成功',
