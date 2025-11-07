@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
-import { payablesApi, payableQueryKeys } from '@/lib/api/payables';
+import { payableQueryKeys, payablesApi } from '@/lib/api/payables';
 import type {
   CreatePayableRecordData,
   PayableRecordDetail,
@@ -99,9 +99,10 @@ function usePayableMutations({
         description: `应付款单号 "${data.payableNumber}" 创建成功！`,
       });
 
-      await queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建应付款后立即看到新记录
+      await queryClient.refetchQueries({
         queryKey: payableQueryKeys.lists(),
-        refetchType: 'active',
+        type: 'active',
       });
 
       if (onSuccess) {
@@ -125,14 +126,15 @@ function usePayableMutations({
         description: `应付款单号 "${data.payableNumber}" 更新成功！`,
       });
 
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新应付款后立即看到变化
       await Promise.all([
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
           queryKey: payableQueryKeys.lists(),
-          refetchType: 'active',
+          type: 'active',
         }),
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
           queryKey: payableQueryKeys.detail(data.id),
-          refetchType: 'active',
+          type: 'active',
         }),
       ]);
 
