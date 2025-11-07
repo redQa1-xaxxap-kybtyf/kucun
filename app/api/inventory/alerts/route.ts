@@ -13,6 +13,9 @@ import { inventoryAlertsQuerySchema } from '@/lib/validations/inventory-queries'
  * GET /api/inventory/alerts
  */
 const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
+  // 记录查询开始时间（用于性能监控）
+  const startTime = Date.now();
+
   try {
     // 解析并验证查询参数
     const { searchParams } = request.nextUrl;
@@ -24,10 +27,22 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
       categoryId: searchParams.get('categoryId') || undefined,
     };
 
+    // 记录查询参数
+    logger.info('inventory-alerts', '开始查询库存预警', {
+      params: queryParams,
+      threshold: inventoryConfig.lowStockThreshold,
+      criticalThreshold: inventoryConfig.criticalMinQuantity,
+    });
+
     // 使用 Zod schema 验证
     const validationResult = inventoryAlertsQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
+      logger.warn('inventory-alerts', '查询参数验证失败', {
+        params: queryParams,
+        errors: validationResult.error.issues,
+      });
+
       return NextResponse.json(
         {
           success: false,
@@ -293,21 +308,46 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
 
     const alertsData = alerts || [];
 
+    // 计算查询耗时
+    const duration = Date.now() - startTime;
+
+    // 统计预警级别分布
+    const summary = {
+      critical: alertsData.filter(a => a.severity === 'critical').length,
+      warning: alertsData.filter(a => a.severity === 'warning').length,
+      info: alertsData.filter(
+        a => a.severity === 'warning' || a.severity === 'critical'
+      ).length,
+    };
+
+    // 记录查询结果
+    if (alertsData.length === 0) {
+      logger.warn('inventory-alerts', '未找到库存预警数据', {
+        params: { severity, limit, productId, categoryId },
+        duration: `${duration}ms`,
+      });
+    } else {
+      logger.info('inventory-alerts', '库存预警查询成功', {
+        total: alertsData.length,
+        summary,
+        duration: `${duration}ms`,
+        threshold: inventoryConfig.lowStockThreshold,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       data: alertsData,
       total: alertsData.length,
-      summary: {
-        critical: alertsData.filter(a => a.severity === 'critical').length,
-        warning: alertsData.filter(a => a.severity === 'warning').length,
-        info: alertsData.filter(
-          a => a.severity === 'warning' || a.severity === 'critical'
-        ).length,
-      },
+      summary,
     });
   } catch (error) {
+    // 计算查询耗时（即使失败也记录）
+    const duration = Date.now() - startTime;
+
     logger.error('inventory-alerts', '获取库存预警失败', error, {
       search: request.nextUrl.search,
+      duration: `${duration}ms`,
     });
     return NextResponse.json(
       {
