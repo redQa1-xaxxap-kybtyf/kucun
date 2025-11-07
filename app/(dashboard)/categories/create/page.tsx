@@ -157,10 +157,15 @@ function useCreateCategoryController(): CreateCategoryController {
         queryKey: categoryQueryKeys.options(),
       });
 
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建分类后立即看到新记录
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: categoryQueryKeys.lists() }),
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
+          queryKey: categoryQueryKeys.lists(),
+          type: 'active',
+        }),
+        queryClient.refetchQueries({
           queryKey: queryKeys.categories.lists(),
+          type: 'active',
         }),
         // 主动重新获取分类选项数据，确保产品表单能立即看到新分类
         queryClient.refetchQueries({

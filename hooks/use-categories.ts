@@ -60,7 +60,11 @@ export function useCategories(initialParams?: CategoryQueryParams) {
   const deleteMutation = useMutation({
     mutationFn: deleteCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除分类后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: categoryQueryKeys.all,
+        type: 'active',
+      });
       setDeleteDialog({ open: false, categoryId: null, categoryName: '' });
       showSuccess('删除成功', {
         description: '分类删除成功！相关数据已清理完毕。',
@@ -82,7 +86,11 @@ export function useCategories(initialParams?: CategoryQueryParams) {
       status: 'active' | 'inactive';
     }) => updateCategoryStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新分类状态后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: categoryQueryKeys.all,
+        type: 'active',
+      });
       setUpdatingStatusId(null);
       showSuccess('状态更新成功', {
         description: '分类状态已更新！',

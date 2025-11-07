@@ -246,10 +246,15 @@ function useUpdateCategoryMutation({
         queryKey: categoryQueryKeys.options(),
       });
 
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新分类后立即看到变化
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.categories.all }),
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
+          queryKey: queryKeys.categories.all,
+          type: 'active',
+        }),
+        queryClient.refetchQueries({
           queryKey: queryKeys.categories.detail(categoryId),
+          type: 'active',
         }),
         // 主动重新获取分类选项数据，确保产品表单能立即看到更新后的分类
         queryClient.refetchQueries({
