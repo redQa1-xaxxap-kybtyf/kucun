@@ -322,14 +322,6 @@ export function BatchSpecificationPageClient({
     });
   };
 
-  const handleLimitChange = (value: string) => {
-    const nextLimit = Number.parseInt(value, 10);
-    updateParams({
-      limit: Number.isFinite(nextLimit) ? nextLimit : DEFAULT_LIMIT,
-      page: DEFAULT_PAGE,
-    });
-  };
-
   const handleRefresh = () => {
     router.refresh();
   };
@@ -450,24 +442,6 @@ export function BatchSpecificationPageClient({
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-                  每页数量
-                </label>
-                <Select
-                  value={String(queryParams.limit)}
-                  onValueChange={handleLimitChange}
-                >
-                  <SelectTrigger className="h-10 w-[110px] justify-between">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </div>
 
@@ -482,7 +456,7 @@ export function BatchSpecificationPageClient({
               重置筛选
             </Button>
             <div className="text-muted-foreground text-xs">
-              共 {pagination.total} 条记录
+              共 {pagination.total} 条记录，每页显示 {queryParams.limit} 条
             </div>
           </div>
         </div>

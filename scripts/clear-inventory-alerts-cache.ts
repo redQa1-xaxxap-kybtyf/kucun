@@ -6,8 +6,7 @@
 import * as readline from 'readline';
 
 import { logger } from '@/lib/logger';
-
-import { redis } from '@/lib/cache/redis';
+import { redis } from '@/lib/redis';
 
 /**
  * 询问用户确认
@@ -50,7 +49,23 @@ async function clearInventoryAlertsCache() {
 
     let allKeys: string[] = [];
     for (const pattern of patterns) {
-      const keys = await redis.keys(pattern);
+      // 使用 SCAN 命令查找键（更安全，不会阻塞 Redis）
+      const client = redis.getClient();
+      let cursor = '0';
+      const keys: string[] = [];
+
+      do {
+        const [nextCursor, foundKeys] = await client.scan(
+          cursor,
+          'MATCH',
+          pattern,
+          'COUNT',
+          100
+        );
+        cursor = nextCursor;
+        keys.push(...foundKeys);
+      } while (cursor !== '0');
+
       allKeys = allKeys.concat(keys);
       console.log(`   找到 ${keys.length} 个 "${pattern}" 缓存键`);
     }
@@ -90,14 +105,17 @@ async function clearInventoryAlertsCache() {
     let deletedCount = 0;
 
     // 批量删除（每次最多 100 个）
+    const client = redis.getClient();
     const batchSize = 100;
     for (let i = 0; i < allKeys.length; i += batchSize) {
       const batch = allKeys.slice(i, i + batchSize);
-      const result = await redis.del(...batch);
-      deletedCount += result;
-      console.log(
-        `   已删除 ${Math.min(i + batchSize, allKeys.length)}/${allKeys.length} 个缓存键`
-      );
+      if (batch.length > 0) {
+        const result = await client.del(...batch);
+        deletedCount += result;
+        console.log(
+          `   已删除 ${Math.min(i + batchSize, allKeys.length)}/${allKeys.length} 个缓存键`
+        );
+      }
     }
 
     console.log(`   ✅ 成功删除 ${deletedCount} 个缓存键\n`);
@@ -123,7 +141,8 @@ async function clearInventoryAlertsCache() {
     process.exit(1);
   } finally {
     // 关闭 Redis 连接
-    await redis.quit();
+    const client = redis.getClient();
+    await client.quit();
   }
 }
 
