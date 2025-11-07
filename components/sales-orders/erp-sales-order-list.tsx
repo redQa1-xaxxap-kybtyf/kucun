@@ -12,8 +12,8 @@ import {
   Filter,
   MoreHorizontal,
   Package,
-  Truck,
   Trash2,
+  Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -256,12 +256,19 @@ export function ERPSalesOrderList({
       return response.json();
     },
     onSuccess: () => {
-      // ✅ 失效销售订单缓存
-      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+      // ✅ 失效销售订单缓存并强制立即重新获取
+      // refetchType: 'active' 确保所有活跃的查询立即重新获取数据
+      queryClient.invalidateQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        refetchType: 'active',
+      });
 
       // ✅ 关键修复：同时失效应收款缓存
       // 因为订单状态变更会影响应收款数据
-      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+      queryClient.invalidateQueries({
+        queryKey: ['finance', 'receivables'],
+        refetchType: 'active',
+      });
 
       toast({
         title: '操作成功',
@@ -351,7 +358,10 @@ export function ERPSalesOrderList({
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        refetchType: 'active',
+      });
       toast({
         title: '删除成功',
         description: '销售订单已删除',
