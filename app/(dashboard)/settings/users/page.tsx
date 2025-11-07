@@ -124,7 +124,11 @@ export default function UsersSettingsPage() {
         variant: 'success',
       });
       setUserFormOpen(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: queryKeys.users.all,
+        type: 'active',
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -156,7 +160,11 @@ export default function UsersSettingsPage() {
         variant: 'success',
       });
       setUserFormOpen(false);
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: queryKeys.users.all,
+        type: 'active',
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -187,7 +195,11 @@ export default function UsersSettingsPage() {
         description: '用户删除成功',
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: queryKeys.users.all,
+        type: 'active',
+      });
     },
     onError: (error: Error) => {
       toast({
@@ -224,7 +236,11 @@ export default function UsersSettingsPage() {
         description: '用户状态更新成功',
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户状态更新后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: queryKeys.users.all,
+        type: 'active',
+      });
     },
     onError: (error: Error) => {
       toast({
