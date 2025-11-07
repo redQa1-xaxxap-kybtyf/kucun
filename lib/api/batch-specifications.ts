@@ -157,8 +157,10 @@ export function useCreateBatchSpecification() {
   return useMutation({
     mutationFn: createBatchSpecification,
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建批量规格后立即看到新记录
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.batchSpecifications(),
+        type: 'active',
       });
     },
   });
@@ -176,12 +178,15 @@ export function useUpdateBatchSpecification() {
       data: UpdateBatchSpecificationRequest;
     }) => updateBatchSpecification(id, data),
     onSuccess: result => {
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新批量规格后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.batchSpecifications(),
+        type: 'active',
       });
       if (result?.id) {
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
           queryKey: queryKeys.inventory.batchSpecification(result.id),
+          type: 'active',
         });
       }
     },
@@ -194,8 +199,10 @@ export function useDeleteBatchSpecification() {
   return useMutation({
     mutationFn: deleteBatchSpecification,
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除批量规格后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.batchSpecifications(),
+        type: 'active',
       });
     },
   });
