@@ -359,14 +359,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             throw new Error('销售订单不存在');
           }
 
+          // 计算已确认的收款金额
           const confirmedAmountCents = salesOrder.payments
             .filter(payment => payment.status === 'confirmed')
-            .reduce(
-              (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
-              0
-            );
-          const pendingAmountCents = salesOrder.payments
-            .filter(payment => payment.status === 'pending')
             .reduce(
               (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
               0
@@ -376,13 +371,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             toMinorUnits(salesOrder.roundingAdjustment);
           const newPaymentCents = toMinorUnits(data.paymentAmount);
 
-          // 验证收款金额不超过订单总额
-          if (
-            confirmedAmountCents + pendingAmountCents + newPaymentCents >
-            orderTotalCents
-          ) {
-            throw new Error('收款金额超过订单总额');
-          }
+          // 注意：金额验证已在事务前完成（第252-273行），此处不再重复验证
+          // 事务中只需要判断是否需要更新订单状态
 
           // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
           const newTotalPaidCents = confirmedAmountCents + newPaymentCents;
