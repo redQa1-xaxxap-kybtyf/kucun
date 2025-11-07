@@ -90,6 +90,10 @@ function buildInboundPayload(
   };
 }
 
+/**
+ * 手动处理项提示组件
+ * 显示需要手动处理的自用明细（缺少库存产品信息）
+ */
 function ManualItemsNotice({
   manualItems,
 }: {
@@ -97,14 +101,14 @@ function ManualItemsNotice({
 }) {
   if (manualItems.length === 0) return null;
   return (
-    <div className="rounded-md border border-dashed border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-3 text-sm text-[hsl(var(--color-warning-dark))]">
-      <p className="flex items-center gap-2">
+    <div className="rounded-lg border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-4 shadow-[var(--shadow-light)]">
+      <p className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--color-warning-dark))]">
         <AlertCircle className="h-4 w-4" />
         以下自用明细缺少库存产品信息，请在库存模块手动处理：
       </p>
-      <ul className="mt-2 list-disc space-y-1 pl-6">
+      <ul className="mt-3 space-y-1.5 pl-6 text-sm text-[hsl(var(--color-warning-dark))]">
         {manualItems.map(item => (
-          <li key={item.id}>
+          <li key={item.id} className="list-disc">
             {item.displayName}（数量：{item.quantity}，单位：{item.unit}）
           </li>
         ))}
@@ -113,6 +117,38 @@ function ManualItemsNotice({
   );
 }
 
+/**
+ * 表单字段组件 - 带标签和描述的输入框
+ */
+function FormFieldWithDescription({
+  label,
+  required,
+  description,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  description: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+        {label}
+        {required && <span className="text-[hsl(var(--color-error))]"> *</span>}
+      </Label>
+      {children}
+      <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * 入库项卡片组件
+ * 优化后的 UI 样式，与客户直发页面保持一致
+ */
 function InboundItemCard({
   item,
   state,
@@ -127,14 +163,15 @@ function InboundItemCard({
   ) => void;
 }) {
   return (
-    <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-sm">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-[var(--shadow-light)]">
+      {/* 产品信息头部 */}
+      <div className="mb-4 flex flex-col gap-2 border-b border-[hsl(var(--color-border-secondary))] pb-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
             {item.displayName}
           </p>
-          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-            数量：{item.quantity} {item.unit} · 单价：
+          <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+            订单数量：{item.quantity} {item.unit} · 单价：¥
             {item.unitPrice.toLocaleString('zh-CN', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
@@ -143,61 +180,87 @@ function InboundItemCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">入库数量</Label>
+      {/* 表单字段 */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormFieldWithDescription
+          label="入库数量"
+          required
+          description="实际入库的数量，默认为订单数量"
+        >
           <Input
             type="number"
             min={0}
             step="0.01"
+            placeholder="请输入入库数量"
             value={state?.quantity ?? item.quantity}
             onChange={e => onFieldChange(item.id, 'quantity', e.target.value)}
+            className="h-10"
           />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">每单位片数</Label>
+        </FormFieldWithDescription>
+
+        <FormFieldWithDescription
+          label="每单位片数"
+          required
+          description="每个单位包含的片数，用于库存计算"
+        >
           <Input
             type="number"
             min={1}
             step="1"
+            placeholder="请输入每单位片数"
             value={state?.piecesPerUnit ?? 1}
             onChange={e =>
               onFieldChange(item.id, 'piecesPerUnit', e.target.value)
             }
+            className="h-10"
           />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">批次号（可选）</Label>
+        </FormFieldWithDescription>
+
+        <FormFieldWithDescription
+          label="批次号"
+          description="用于追溯和管理，建议填写"
+        >
           <Input
-            placeholder="填写批次号"
+            placeholder="填写批次号（可选）"
             value={state?.batchNumber ?? ''}
             onChange={e =>
               onFieldChange(item.id, 'batchNumber', e.target.value)
             }
+            className="h-10"
           />
-        </div>
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">库位（可选）</Label>
+        </FormFieldWithDescription>
+
+        <FormFieldWithDescription label="库位" description="货物存放的具体位置">
           <Input
-            placeholder="填写库位信息"
+            placeholder="填写库位信息（可选）"
             value={state?.location ?? ''}
             onChange={e => onFieldChange(item.id, 'location', e.target.value)}
+            className="h-10"
           />
-        </div>
+        </FormFieldWithDescription>
+
         <div className="md:col-span-2">
-          <Label className="text-sm font-medium">备注（可选）</Label>
-          <Textarea
-            placeholder="补充说明，例如质检情况、特殊处理要求等"
-            rows={2}
-            value={state?.remarks ?? ''}
-            onChange={e => onFieldChange(item.id, 'remarks', e.target.value)}
-          />
+          <FormFieldWithDescription
+            label="备注"
+            description="记录质检情况、特殊处理要求等信息"
+          >
+            <Textarea
+              placeholder="补充说明，例如质检情况、特殊处理要求等（可选）"
+              rows={2}
+              value={state?.remarks ?? ''}
+              onChange={e => onFieldChange(item.id, 'remarks', e.target.value)}
+              className="resize-none"
+            />
+          </FormFieldWithDescription>
         </div>
       </div>
     </div>
   );
 }
 
+/**
+ * 入库项列表组件
+ */
 function ItemsList({
   items,
   formState,
@@ -213,14 +276,16 @@ function ItemsList({
 }) {
   if (items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-md border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/40 p-6 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-        <Boxes className="mb-2 h-6 w-6 opacity-70" />
-        当前没有需要入库的自用补货明细。
+      <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/40 p-8 text-center">
+        <Boxes className="mb-3 h-8 w-8 text-[hsl(var(--color-text-secondary))] opacity-70" />
+        <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+          当前没有需要入库的自用补货明细
+        </p>
       </div>
     );
   }
   return (
-    <>
+    <div className="space-y-4">
       {items.map(item => (
         <InboundItemCard
           key={item.id}
@@ -229,7 +294,7 @@ function ItemsList({
           onFieldChange={onFieldChange}
         />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -254,14 +319,17 @@ function useInboundDialogState({
     () =>
       actionableItems.filter(
         (item): item is ShipmentItemWithProduct =>
-          typeof (item as any).productId === 'string' &&
-          (item as any).productId.length > 0
+          typeof (item as ShipmentItemWithProduct).productId === 'string' &&
+          (item as ShipmentItemWithProduct).productId.length > 0
       ),
     [actionableItems]
   );
 
   const manualItems = useMemo(
-    () => actionableItems.filter(item => !(item as any).productId),
+    () =>
+      actionableItems.filter(
+        item => !(item as ShipmentItemWithProduct).productId
+      ),
     [actionableItems]
   );
 
@@ -301,6 +369,10 @@ function useInboundDialogState({
   };
 }
 
+/**
+ * 对话框视图组件
+ * 优化后的 UI 样式，与客户直发页面保持一致
+ */
 function ConfirmInboundDialogView({
   open,
   onOpenChange,
@@ -331,26 +403,26 @@ function ConfirmInboundDialogView({
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[720px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <PackageCheck className="h-5 w-5" />
+            <PackageCheck className="h-5 w-5 text-[hsl(var(--color-primary))]" />
             确认自用货入库
           </DialogTitle>
           <DialogDescription>
-            自动为自用补货创建入库记录，并更新厂家发货明细状态。
+            自动为自用补货创建入库记录，并更新厂家发货明细状态
           </DialogDescription>
         </DialogHeader>
 
+        {/* 手动处理项提示 */}
         <ManualItemsNotice manualItems={manualItems} />
 
+        {/* 表单 */}
         <form onSubmit={onSubmit} className="space-y-6">
-          <div className="space-y-4">
-            <ItemsList
-              items={itemsWithProduct}
-              formState={formState}
-              onFieldChange={onFieldChange}
-            />
-          </div>
+          <ItemsList
+            items={itemsWithProduct}
+            formState={formState}
+            onFieldChange={onFieldChange}
+          />
 
-          <DialogFooter className="flex space-x-2">
+          <DialogFooter className="gap-2">
             <Button
               type="button"
               variant="outline"
