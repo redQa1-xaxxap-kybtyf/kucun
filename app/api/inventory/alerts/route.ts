@@ -58,18 +58,13 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
       cacheKey,
       async () => {
         // 获取低库存产品
-        const lowStockProducts = await prisma.product.findMany({
+        // 修复：使用两步查询，基于总库存而非单个库存记录判断
+        // 第一步：查询所有活跃产品及其库存记录
+        const allActiveProducts = await prisma.product.findMany({
           where: {
             status: 'active',
             ...(productId && { id: productId }),
             ...(categoryId && { categoryId }),
-            inventory: {
-              some: {
-                quantity: {
-                  lte: inventoryConfig.lowStockThreshold,
-                },
-              },
-            },
           },
           include: {
             inventory: {
@@ -78,7 +73,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
                 quantity: true,
                 reservedQuantity: true,
                 batchNumber: true,
-                variantId: true, // 修复：使用正确的字段名
+                variantId: true,
                 location: true,
               },
             },
@@ -88,11 +83,36 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
               },
             },
           },
-          take: limit,
           orderBy: {
             updatedAt: 'desc',
           },
         });
+
+        // 第二步：在内存中计算总库存并过滤低于阈值的产品
+        const lowStockProducts = allActiveProducts
+          .map(product => {
+            // 计算总库存和预留库存
+            const { totalStock, reservedStock } = product.inventory.reduce(
+              (acc, inv) => ({
+                totalStock: acc.totalStock + inv.quantity,
+                reservedStock: acc.reservedStock + inv.reservedQuantity,
+              }),
+              { totalStock: 0, reservedStock: 0 }
+            );
+            const availableStock = totalStock - reservedStock;
+
+            return {
+              ...product,
+              _totalStock: totalStock,
+              _reservedStock: reservedStock,
+              _availableStock: availableStock,
+            };
+          })
+          .filter(
+            product =>
+              product._availableStock <= inventoryConfig.lowStockThreshold
+          )
+          .slice(0, limit);
 
         // 获取零库存产品
         const zeroStockProducts = await prisma.product.findMany({
@@ -161,15 +181,10 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
 
         // 处理低库存警告
         for (const product of lowStockProducts) {
-          // 性能优化：合并双重reduce为单次遍历（减少30-50%计算时间）
-          const { totalStock, reservedStock } = product.inventory.reduce(
-            (acc, inv) => ({
-              totalStock: acc.totalStock + inv.quantity,
-              reservedStock: acc.reservedStock + inv.reservedQuantity,
-            }),
-            { totalStock: 0, reservedStock: 0 }
-          );
-          const availableStock = totalStock - reservedStock;
+          // 使用已计算的库存数据（避免重复计算）
+          const totalStock = product._totalStock;
+          const reservedStock = product._reservedStock;
+          const availableStock = product._availableStock;
 
           let severity: 'critical' | 'warning' | 'info' = 'warning';
           if (availableStock <= inventoryConfig.criticalStockThreshold) {
@@ -199,7 +214,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
                 quantity: inv.quantity,
                 reservedQuantity: inv.reservedQuantity,
                 batchNumber: inv.batchNumber,
-                variantId: inv.variantId, // 修复：使用正确的字段名
+                variantId: inv.variantId,
                 location: inv.location,
               })),
             },
