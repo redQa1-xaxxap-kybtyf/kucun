@@ -1,112 +1,110 @@
 import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
-import { buildCacheKey, getOrSetWithLock, CACHE_STRATEGY } from '@/lib/cache';
-import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
-// 获取库存预警数据
-export const GET = withAuth(async () => {
+/**
+ * 仪表盘库存预警 API
+ * 重构：调用统一的库存预警 API，避免重复代码
+ */
+export const GET = withAuth(async request => {
   try {
-    // 使用缓存键构建
-    const cacheKey = buildCacheKey('dashboard:alerts', {});
+    // 调用统一的库存预警 API
+    const baseUrl =
+      process.env.NEXTAUTH_URL ||
+      `http://localhost:${process.env.PORT || 3000}`;
+    const inventoryAlertsUrl = new URL('/api/inventory/alerts', baseUrl);
 
-    // 使用分布式锁防止缓存击穿
-    const alerts = await getOrSetWithLock(
-      cacheKey,
-      async () => {
-        // 获取库存数据，包含产品信息
-        const inventoryData = await prisma.inventory.findMany({
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                status: true,
-              },
-            },
-          },
-          where: {
-            product: {
-              status: 'active',
-            },
-          },
-          orderBy: {
-            quantity: 'asc',
-          },
-        });
+    // 设置查询参数：限制数量为仪表盘配置的预警数量
+    inventoryAlertsUrl.searchParams.set(
+      'limit',
+      inventoryConfig.alertLimit.toString()
+    );
 
-        // 生成库存预警
-        return inventoryData
-          .map(inventory => {
-            const safetyStock = inventoryConfig.defaultMinQuantity; // 使用环境配置的安全库存
-            const currentStock = inventory.quantity;
-
-            let alertLevel: 'warning' | 'danger' | 'critical';
-            let alertType:
-              | 'low_stock'
-              | 'out_of_stock'
-              | 'overstock'
-              | 'expired';
-            let suggestedAction: string;
-
-            if (currentStock === 0) {
-              alertLevel = 'critical';
-              alertType = 'out_of_stock';
-              suggestedAction = '立即补货';
-            } else if (currentStock <= inventoryConfig.criticalMinQuantity) {
-              alertLevel = 'danger';
-              alertType = 'low_stock';
-              suggestedAction = '紧急补货';
-            } else if (currentStock <= safetyStock) {
-              alertLevel = 'warning';
-              alertType = 'low_stock';
-              suggestedAction = '计划补货';
-            } else {
-              return null; // 库存正常，不需要预警
-            }
-
-            // 计算预计缺货天数（使用环境配置的平均日销量）
-            const averageDailySales = inventoryConfig.averageDailySales;
-            const daysUntilStockout =
-              currentStock > 0
-                ? Math.floor(currentStock / averageDailySales)
-                : 0;
-
-            return {
-              id: `alert-${inventory.id}`,
-              productId: inventory.productId,
-              productName: inventory.product.name,
-              productCode: inventory.product.code,
-
-              currentStock,
-              safetyStock,
-              alertLevel,
-              alertType,
-              lastUpdated: inventory.updatedAt.toISOString(),
-              daysUntilStockout:
-                daysUntilStockout > 0 ? daysUntilStockout : undefined,
-              suggestedAction,
-            };
-          })
-          .filter(Boolean) // 过滤掉null值
-          .slice(0, inventoryConfig.alertLimit); // 使用环境配置的限制数量
+    // 调用库存预警 API
+    const response = await fetch(inventoryAlertsUrl.toString(), {
+      headers: {
+        // 转发认证信息
+        cookie: request.headers.get('cookie') || '',
       },
-      CACHE_STRATEGY.aggregateData.redisTTL, // 统计数据缓存 10 分钟（与overview一致）
-      {
-        lockTTL: 10, // 锁 10 秒
-        enableRandomTTL: true, // 防止缓存雪崩
-        enableNullCache: false, // 预警数据不缓存 null
+    });
+
+    if (!response.ok) {
+      throw new Error(`库存预警 API 调用失败: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success) {
+      throw new Error(result.error || '获取库存预警失败');
+    }
+
+    // 转换数据格式以适配仪表盘组件
+    const dashboardAlerts = result.data.map(
+      (alert: {
+        id: string;
+        productId: string;
+        productName: string;
+        productCode: string;
+        currentStock: number;
+        availableStock: number;
+        threshold: number;
+        severity: 'critical' | 'warning' | 'info';
+        type: string;
+        createdAt: string;
+      }) => {
+        // 计算预计缺货天数
+        const averageDailySales = inventoryConfig.averageDailySales;
+        const daysUntilStockout =
+          alert.availableStock > 0
+            ? Math.floor(alert.availableStock / averageDailySales)
+            : 0;
+
+        // 转换预警级别
+        let alertLevel: 'warning' | 'danger' | 'critical';
+        if (alert.severity === 'critical') {
+          alertLevel = 'critical';
+        } else if (
+          alert.availableStock <= inventoryConfig.criticalMinQuantity
+        ) {
+          alertLevel = 'danger';
+        } else {
+          alertLevel = 'warning';
+        }
+
+        // 生成建议操作
+        let suggestedAction: string;
+        if (alert.availableStock === 0) {
+          suggestedAction = '立即补货';
+        } else if (
+          alert.availableStock <= inventoryConfig.criticalMinQuantity
+        ) {
+          suggestedAction = '紧急补货';
+        } else {
+          suggestedAction = '计划补货';
+        }
+
+        return {
+          id: alert.id,
+          productId: alert.productId,
+          productName: alert.productName,
+          productCode: alert.productCode,
+          currentStock: alert.currentStock,
+          safetyStock: alert.threshold,
+          alertLevel,
+          alertType: alert.type,
+          lastUpdated: alert.createdAt,
+          daysUntilStockout:
+            daysUntilStockout > 0 ? daysUntilStockout : undefined,
+          suggestedAction,
+        };
       }
     );
 
     return NextResponse.json({
       success: true,
-      data: alerts,
-      _cached: true, // 标识数据来自缓存
-      _cacheKey: cacheKey,
+      data: dashboardAlerts,
     });
   } catch (error) {
     logger.error('dashboard', '获取库存预警失败', error);
