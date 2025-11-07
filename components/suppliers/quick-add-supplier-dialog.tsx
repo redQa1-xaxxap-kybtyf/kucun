@@ -82,7 +82,11 @@ export function QuickAddSupplierDialog({
         variant: 'success',
       });
 
-      queryClient.invalidateQueries({ queryKey: supplierQueryKeys.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建供应商后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: supplierQueryKeys.all,
+        type: 'active',
+      });
       onSupplierCreated?.(supplier);
 
       form.reset(supplierCreateDefaults);

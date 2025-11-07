@@ -151,7 +151,11 @@ export function SuppliersPageClient({
         description: data.message || '供应商删除成功',
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除供应商后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: supplierQueryKeys.lists(),
+        type: 'active',
+      });
       setDeleteDialogOpen(false);
       setSupplierToDelete(null);
     },
