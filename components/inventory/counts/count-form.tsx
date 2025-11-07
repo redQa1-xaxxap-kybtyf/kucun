@@ -124,9 +124,10 @@ export function CountForm({
         description: '盘点计划已成功创建',
       });
 
-      // 刷新盘点计划列表
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建盘点计划后立即看到新记录
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
 
       onSuccess?.(data.data.id);
@@ -162,13 +163,15 @@ export function CountForm({
         description: '盘点计划已成功更新',
       });
 
-      // 刷新盘点计划列表和详情
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新盘点计划后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
       if (countId) {
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
           queryKey: queryKeys.inventory.count(countId),
+          type: 'active',
         });
       }
 

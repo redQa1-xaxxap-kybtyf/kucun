@@ -113,11 +113,14 @@ function useCountMutations({
   router: ReturnType<typeof useRouter>;
 }) {
   const invalidateCount = React.useCallback(() => {
-    queryClient.invalidateQueries({
+    // ✅ 使用 refetchQueries 强制立即刷新，确保用户操作后立即看到变化
+    queryClient.refetchQueries({
       queryKey: queryKeys.inventory.count(countId),
+      type: 'active',
     });
-    queryClient.invalidateQueries({
+    queryClient.refetchQueries({
       queryKey: queryKeys.inventory.counts(),
+      type: 'active',
     });
   }, [countId, queryClient]);
 
@@ -162,8 +165,10 @@ function useCountMutations({
       }).then(handleResponse('删除失败')),
     onSuccess: () => {
       toast({ title: '删除成功', description: '盘点计划已成功删除' });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除盘点计划后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
       router.push('/inventory/counts');
     },

@@ -81,11 +81,14 @@ export function ExecuteCountPageClient({
         description: '盘点数据已成功提交',
       });
 
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户提交盘点数据后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.count(countId),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
     },
     onError: (error: Error) => {
@@ -120,11 +123,14 @@ export function ExecuteCountPageClient({
         description: '盘点计划已完成',
       });
 
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户完成盘点后立即看到状态变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.count(countId),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
 
       router.push(`/inventory/counts/${countId}`);

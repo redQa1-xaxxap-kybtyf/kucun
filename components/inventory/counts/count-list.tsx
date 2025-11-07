@@ -100,8 +100,10 @@ export function CountList({ filters }: CountListProps) {
         description: '盘点计划已成功删除',
       });
 
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除盘点计划后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
     },
     onError: (error: Error) => {
@@ -133,8 +135,10 @@ export function CountList({ filters }: CountListProps) {
         description: '盘点计划已开始',
       });
 
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户开始盘点后立即看到状态变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.inventory.counts(),
+        type: 'active',
       });
     },
     onError: (error: Error) => {
