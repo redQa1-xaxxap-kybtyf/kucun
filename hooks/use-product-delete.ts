@@ -24,10 +24,10 @@ export function useProductDelete({
         description: '产品已成功删除',
       });
 
-      // 立即失效所有产品相关的查询缓存,确保数据最新
-      await queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除产品后立即看到变化
+      await queryClient.refetchQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
+        type: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
 
       // 强制刷新Router Cache,确保Server Component数据也更新

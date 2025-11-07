@@ -207,9 +207,10 @@ function useCreateProductMutation({
         queryKey: productQueryKeys.lists(),
       });
 
-      // 标记所有产品相关查询为过期
-      await queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
+      await queryClient.refetchQueries({
         queryKey: productQueryKeys.all,
+        type: 'active',
       });
 
       const shouldNavigate = await handleSuccessCallback(onSuccess, product);
@@ -251,9 +252,10 @@ function useUpdateProductMutation({
         queryKey: productQueryKeys.lists(),
       });
 
-      // 标记所有产品相关查询为过期
-      await queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新产品后立即看到变化
+      await queryClient.refetchQueries({
         queryKey: productQueryKeys.all,
+        type: 'active',
       });
 
       const shouldNavigate = await handleSuccessCallback(onSuccess, product);

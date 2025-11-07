@@ -124,8 +124,11 @@ export function QuickCreateProductDialog({
       if (result.success && result.data) {
         toast.success('产品创建成功');
 
-        // 使产品列表缓存失效
-        await queryClient.invalidateQueries({ queryKey: ['products'] });
+        // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
+        await queryClient.refetchQueries({
+          queryKey: ['products'],
+          type: 'active',
+        });
 
         // 获取新创建的产品详情
         const productId = result.data.id;
