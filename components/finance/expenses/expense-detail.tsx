@@ -67,12 +67,14 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         description: '费用记录已成功删除',
       });
 
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除费用后立即看到变化
+      queryClient.refetchQueries({
         queryKey: queryKeys.finance.expenses(),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: queryKeys.finance.expensesStatistics(),
-        exact: false,
+        type: 'active',
       });
 
       router.push('/finance/expenses');
