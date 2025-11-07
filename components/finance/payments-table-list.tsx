@@ -179,7 +179,7 @@ function PaymentTableRow({
       {/* 关联订单 */}
       <TableCell>
         <Link
-          href={`/sales/orders/${payment.salesOrder.id}`}
+          href={`/sales-orders/${payment.salesOrder.id}`}
           className="font-mono text-sm text-blue-600 hover:underline"
         >
           {payment.salesOrder.orderNumber}
@@ -402,7 +402,7 @@ function PaymentRowActions({
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href={`/sales/orders/${payment.salesOrder.id}`}>
+            <Link href={`/sales-orders/${payment.salesOrder.id}`}>
               <Receipt className="mr-2 h-4 w-4" />
               查看订单
             </Link>
