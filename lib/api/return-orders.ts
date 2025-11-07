@@ -566,8 +566,15 @@ export function useBatchReturnOrderOperation(
   return useMutation({
     mutationFn: batchReturnOrderOperation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.stats() });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户批量操作后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.stats(),
+        type: 'active',
+      });
     },
     ...options,
   });
