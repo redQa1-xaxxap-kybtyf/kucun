@@ -247,9 +247,10 @@ export function useCreateFactoryShipmentOrder() {
   return useMutation({
     mutationFn: createFactoryShipmentOrder,
     onSuccess: () => {
-      // 刷新列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建发货单后立即看到新记录
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
+        type: 'active',
       });
     },
   });
@@ -270,12 +271,14 @@ export function useUpdateFactoryShipmentOrder() {
       data: UpdateFactoryShipmentOrderData;
     }) => updateFactoryShipmentOrder(id, data),
     onSuccess: (_, { id }) => {
-      // 刷新详情和列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新发货单后立即看到变化
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
+        type: 'active',
       });
     },
   });
@@ -296,12 +299,14 @@ export function useUpdateFactoryShipmentOrderStatus() {
       data: UpdateFactoryShipmentOrderStatusData;
     }) => updateFactoryShipmentOrderStatus(id, data),
     onSuccess: (_, { id }) => {
-      // 刷新详情和列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
+        type: 'active',
       });
     },
   });
@@ -316,9 +321,10 @@ export function useDeleteFactoryShipmentOrder() {
   return useMutation({
     mutationFn: deleteFactoryShipmentOrder,
     onSuccess: () => {
-      // 刷新列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除发货单后立即看到变化
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
+        type: 'active',
       });
     },
   });
@@ -339,12 +345,14 @@ export function useUpdateFactoryShipmentOrderContainerNumber() {
       data: { containerNumber: string };
     }) => updateFactoryShipmentOrderContainerNumber(id, data),
     onSuccess: (_, { id }) => {
-      // 刷新详情和列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新集装箱号后立即看到变化
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.lists(),
+        type: 'active',
       });
     },
   });

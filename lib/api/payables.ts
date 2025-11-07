@@ -326,9 +326,14 @@ export const useCreatePayableRecord = () => {
   return useMutation({
     mutationFn: payablesApi.createPayableRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建应付款后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: payableQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -340,10 +345,18 @@ export const useUpdatePayableRecord = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdatePayableRecordData }) =>
       payablesApi.updatePayableRecord(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.detail(id) });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新应付款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.detail(id),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: payableQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -354,9 +367,14 @@ export const useDeletePayableRecord = () => {
   return useMutation({
     mutationFn: payablesApi.deletePayableRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除应付款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: payableQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -367,10 +385,18 @@ export const useCreatePaymentOutRecord = () => {
   return useMutation({
     mutationFn: payablesApi.createPaymentOutRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建付款后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: paymentOutQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: payableQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -387,13 +413,22 @@ export const useUpdatePaymentOutRecord = () => {
       data: UpdatePaymentOutRecordData;
     }) => payablesApi.updatePaymentOutRecord(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: paymentOutQueryKeys.detail(id),
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新付款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: paymentOutQueryKeys.lists(),
+        type: 'active',
       });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
+        queryKey: paymentOutQueryKeys.detail(id),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: payableQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -404,10 +439,18 @@ export const useDeletePaymentOutRecord = () => {
   return useMutation({
     mutationFn: payablesApi.deletePaymentOutRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除付款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: paymentOutQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: payableQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: payableQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });

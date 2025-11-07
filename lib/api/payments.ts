@@ -404,12 +404,18 @@ export const useCreatePaymentRecord = () => {
   return useMutation({
     mutationFn: paymentsApi.createPaymentRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建收款后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.lists(),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.accountsReceivable(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: paymentQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -422,13 +428,22 @@ export const useUpdatePaymentRecord = () => {
     mutationFn: ({ id, data }: { id: string; data: UpdatePaymentRecordData }) =>
       paymentsApi.updatePaymentRecord(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新收款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.accountsReceivable(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: paymentQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -440,12 +455,18 @@ export const useDeletePaymentRecord = () => {
   return useMutation({
     mutationFn: paymentsApi.deletePaymentRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除收款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.lists(),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.accountsReceivable(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: paymentQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -458,13 +479,22 @@ export const useConfirmPayment = () => {
     mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
       paymentsApi.confirmPayment(id, notes),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户确认收款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.accountsReceivable(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: paymentQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });
@@ -477,13 +507,22 @@ export const useCancelPayment = () => {
     mutationFn: ({ id, notes }: { id: string; notes?: string }) =>
       paymentsApi.cancelPayment(id, notes),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: paymentQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户取消收款后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: paymentQueryKeys.accountsReceivable(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: paymentQueryKeys.statistics(),
+        type: 'active',
       });
     },
   });

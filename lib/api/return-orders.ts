@@ -408,8 +408,15 @@ export function useCreateReturnOrder(
   return useMutation({
     mutationFn: createReturnOrder,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.stats() });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建后立即看到新订单
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.stats(),
+        type: 'active',
+      });
     },
     ...options,
   });
@@ -430,11 +437,19 @@ export function useUpdateReturnOrder(
   return useMutation({
     mutationFn: ({ id, data }) => updateReturnOrder(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新后立即看到变化
+      queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.stats() });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.stats(),
+        type: 'active',
+      });
     },
     ...options,
   });
@@ -456,11 +471,19 @@ export function useUpdateReturnOrderStatus(
     mutationFn: ({ id, status, remarks, refundAmount }) =>
       updateReturnOrderStatus(id, status, remarks, refundAmount),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
+      queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.stats() });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.stats(),
+        type: 'active',
+      });
     },
     ...options,
   });
@@ -481,11 +504,19 @@ export function useApproveReturnOrder(
   return useMutation({
     mutationFn: ({ id, data }) => approveReturnOrder(id, data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户审核后立即看到变化
+      queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.stats() });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.stats(),
+        type: 'active',
+      });
     },
     ...options,
   });
@@ -506,8 +537,15 @@ export function useDeleteReturnOrder(
   return useMutation({
     mutationFn: deleteReturnOrder,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: returnOrderQueryKeys.stats() });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: returnOrderQueryKeys.stats(),
+        type: 'active',
+      });
     },
     ...options,
   });
