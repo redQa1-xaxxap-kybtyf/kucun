@@ -113,13 +113,15 @@ export function CustomerEditDialog({
         variant: 'success',
       });
 
-      // 刷新相关查询
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新客户后立即看到变化
+      queryClient.refetchQueries({
         queryKey: customerQueryKeys.lists(),
+        type: 'active',
       });
       if (customerId) {
-        queryClient.invalidateQueries({
+        queryClient.refetchQueries({
           queryKey: customerQueryKeys.detail(customerId),
+          type: 'active',
         });
       }
 

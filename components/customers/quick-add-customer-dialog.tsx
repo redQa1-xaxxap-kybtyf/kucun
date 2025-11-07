@@ -83,8 +83,11 @@ export function QuickAddCustomerDialog({
         variant: 'success',
       });
 
-      // 刷新客户列表
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建客户后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: customerQueryKeys.all,
+        type: 'active',
+      });
 
       // 回调通知父组件
       onCustomerCreated?.(data);

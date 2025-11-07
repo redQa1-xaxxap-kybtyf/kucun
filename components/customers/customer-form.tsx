@@ -94,7 +94,11 @@ export function CustomerForm({
   const createMutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建客户后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: customerQueryKeys.lists(),
+        type: 'active',
+      });
       if (onSuccess) {
         onSuccess(response);
       } else {
@@ -115,9 +119,14 @@ export function CustomerForm({
       return updateCustomer(initialData.id, data);
     },
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新客户后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: customerQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: customerQueryKeys.detail(response.id),
+        type: 'active',
       });
       if (onSuccess) {
         onSuccess(response);

@@ -101,7 +101,11 @@ function useCustomerFormActions({
         description: `客户 "${data.name}" 创建成功！`,
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建客户后立即看到新记录
+      queryClient.refetchQueries({
+        queryKey: customerQueryKeys.all,
+        type: 'active',
+      });
       if (onSuccess) {
         onSuccess();
       } else {
@@ -126,9 +130,14 @@ function useCustomerFormActions({
         description: `客户 "${data.name}" 更新成功！`,
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新客户后立即看到变化
+      queryClient.refetchQueries({
+        queryKey: customerQueryKeys.all,
+        type: 'active',
+      });
+      queryClient.refetchQueries({
         queryKey: customerQueryKeys.detail(initialData?.id || ''),
+        type: 'active',
       });
       if (onSuccess) {
         onSuccess();

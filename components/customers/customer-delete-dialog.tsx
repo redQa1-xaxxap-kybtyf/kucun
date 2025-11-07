@@ -45,9 +45,10 @@ export function CustomerDeleteDialog({
         variant: 'success',
       });
 
-      // 刷新客户列表
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除客户后立即看到变化
+      queryClient.refetchQueries({
         queryKey: customerQueryKeys.lists(),
+        type: 'active',
       });
 
       onOpenChange(false);
