@@ -13,6 +13,17 @@ import {
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
 
+const toMinorUnits = (amount: number | null | undefined): number => {
+  const parsed = Number(amount ?? 0);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+  return Math.round(parsed * 100);
+};
+
+const fromMinorUnits = (amountInCents: number): number =>
+  Number((amountInCents / 100).toFixed(2));
+
 /**
  * GET /api/payments - 获取收款记录列表
  * 支持分页、搜索、筛选等查询参数
@@ -213,6 +224,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           id: true,
           customerId: true,
           totalAmount: true,
+          roundingAdjustment: true,
           status: true,
           payments: {
             where: { status: 'confirmed' },
@@ -237,18 +249,24 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       }
 
       // 金额验证：计算已收款金额和剩余应收金额
-      const totalPaid = salesOrder.payments.reduce(
-        (sum, p) => sum + p.paymentAmount,
+      const orderTotalCents =
+        toMinorUnits(salesOrder.totalAmount) +
+        toMinorUnits(salesOrder.roundingAdjustment);
+      const totalPaidCents = salesOrder.payments.reduce(
+        (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
         0
       );
-      const remainingAmount = salesOrder.totalAmount - totalPaid;
+      const remainingCents = Math.max(orderTotalCents - totalPaidCents, 0);
+      const paymentCents = toMinorUnits(data.paymentAmount);
 
       // 验证收款金额不超过剩余应收金额
-      if (data.paymentAmount > remainingAmount) {
+      // paymentAmount 代表本次要核销的应收账款金额
+      // actualPaymentAmount 是实际收到的金额，可能因差额调整而不同
+      if (paymentCents > remainingCents) {
         return NextResponse.json(
           {
             success: false,
-            error: `收款金额超过应收金额。应收: ¥${remainingAmount.toFixed(2)}, 本次收款: ¥${data.paymentAmount.toFixed(2)}`,
+            error: `收款金额超过应收金额。应收: ¥${fromMinorUnits(remainingCents).toFixed(2)}, 本次收款: ¥${data.paymentAmount.toFixed(2)}`,
           },
           { status: 400 }
         );
@@ -325,6 +343,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             where: { id: data.salesOrderId },
             select: {
               totalAmount: true,
+              roundingAdjustment: true,
               status: true,
               payments: {
                 where: {
@@ -340,25 +359,35 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             throw new Error('销售订单不存在');
           }
 
-          const confirmedAmount = salesOrder.payments
+          const confirmedAmountCents = salesOrder.payments
             .filter(payment => payment.status === 'confirmed')
-            .reduce((sum, payment) => sum + payment.paymentAmount, 0);
-          const pendingAmount = salesOrder.payments
+            .reduce(
+              (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
+              0
+            );
+          const pendingAmountCents = salesOrder.payments
             .filter(payment => payment.status === 'pending')
-            .reduce((sum, payment) => sum + payment.paymentAmount, 0);
+            .reduce(
+              (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
+              0
+            );
+          const orderTotalCents =
+            toMinorUnits(salesOrder.totalAmount) +
+            toMinorUnits(salesOrder.roundingAdjustment);
+          const newPaymentCents = toMinorUnits(data.paymentAmount);
 
           // 验证收款金额不超过订单总额
           if (
-            confirmedAmount + pendingAmount + data.paymentAmount >
-            salesOrder.totalAmount
+            confirmedAmountCents + pendingAmountCents + newPaymentCents >
+            orderTotalCents
           ) {
             throw new Error('收款金额超过订单总额');
           }
 
           // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
-          const newTotalPaid = confirmedAmount + data.paymentAmount;
+          const newTotalPaidCents = confirmedAmountCents + newPaymentCents;
           if (
-            newTotalPaid >= salesOrder.totalAmount &&
+            newTotalPaidCents >= orderTotalCents &&
             salesOrder.status === 'shipped'
           ) {
             await tx.salesOrder.update({

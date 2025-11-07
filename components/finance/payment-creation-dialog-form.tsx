@@ -51,7 +51,7 @@ export function PaymentForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <PaymentMethodSelect form={form} />
-        <PaymentAmountInput form={form} />
+        <PaymentAmountInput form={form} enableRounding={enableRounding} />
         <RoundingToggle checked={enableRounding} onToggle={onRoundingToggle} />
         {enableRounding && (
           <>
@@ -101,14 +101,18 @@ function PaymentMethodSelect({ form }: FormComponentProps) {
   );
 }
 
-function PaymentAmountInput({ form }: FormComponentProps) {
+interface PaymentAmountInputProps extends FormComponentProps {
+  enableRounding: boolean;
+}
+
+function PaymentAmountInput({ form, enableRounding }: PaymentAmountInputProps) {
   return (
     <FormField
       control={form.control}
       name="paymentAmount"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>收款金额 *</FormLabel>
+          <FormLabel>应收金额 *</FormLabel>
           <FormControl>
             <Input
               type="number"
@@ -119,10 +123,16 @@ function PaymentAmountInput({ form }: FormComponentProps) {
               onChange={event =>
                 field.onChange(parseFloat(event.target.value) || 0)
               }
+              disabled={enableRounding}
+              className={
+                enableRounding ? 'bg-muted cursor-not-allowed opacity-60' : ''
+              }
             />
           </FormControl>
           <FormDescription>
-            输入本次实际收款金额（支持全额或部分收款）
+            {enableRounding
+              ? '启用差额调整后，应收金额不可修改，请在"实际到账金额"中输入'
+              : '输入本次收款金额（支持全额或部分收款）'}
           </FormDescription>
           <FormMessage />
         </FormItem>
