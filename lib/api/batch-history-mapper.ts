@@ -16,6 +16,7 @@ type InboundRecordSource = {
   product: MovementProductSource;
   variant: MovementVariantSource | null;
   user: MovementUserSource | null;
+  batchSpecification: MovementBatchSpecSource | null;
 };
 
 type OutboundRecordSource = {
@@ -86,6 +87,10 @@ type MovementCustomerSource = {
 type MovementSalesOrderSource = {
   id: string;
   orderNumber: string;
+};
+
+type MovementBatchSpecSource = {
+  piecesPerUnit: number;
 };
 
 type MovementProduct = NonNullable<InventoryMovementEntry['product']>;
@@ -217,6 +222,8 @@ function buildMovementEntry(
         : undefined,
       product: productInfo,
       variant: variantInfo,
+      // 批次级别的 piecesPerUnit（优先使用批次规格参数）
+      batchPiecesPerUnit: data.batchSpecification?.piecesPerUnit,
     };
   }
 
@@ -238,6 +245,8 @@ function buildMovementEntry(
       product: productInfo,
       variant: variantInfo,
       referenceNumber: data.salesOrder?.orderNumber,
+      // 出库记录没有 batchSpecification 关联，使用 undefined
+      batchPiecesPerUnit: undefined,
     };
   }
 
@@ -258,6 +267,8 @@ function buildMovementEntry(
     variant: variantInfo,
     beforeQuantitySnapshot: data.beforeQuantity ?? undefined,
     afterQuantitySnapshot: data.afterQuantity ?? undefined,
+    // 调整记录没有 batchSpecification 关联，使用 undefined
+    batchPiecesPerUnit: undefined,
   };
 }
 

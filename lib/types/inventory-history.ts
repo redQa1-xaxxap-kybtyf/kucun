@@ -34,6 +34,12 @@ export interface InventoryMovementEntry {
     colorCode: string | null;
     colorName?: string | null;
   };
+  /**
+   * 批次级别的每件片数
+   * 优先使用此值进行单位换算，如果不存在则回退到 product.piecesPerUnit
+   * 来源：BatchSpecification 表中的 piecesPerUnit 字段
+   */
+  batchPiecesPerUnit?: number;
 }
 
 export interface BatchMovementGroup {

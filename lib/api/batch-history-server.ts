@@ -171,6 +171,12 @@ function fetchInboundRecords(where: Prisma.InboundRecordWhereInput) {
           name: true,
         },
       },
+      // 关联批次规格参数，用于获取批次级别的 piecesPerUnit
+      batchSpecification: {
+        select: {
+          piecesPerUnit: true,
+        },
+      },
     },
   });
 }

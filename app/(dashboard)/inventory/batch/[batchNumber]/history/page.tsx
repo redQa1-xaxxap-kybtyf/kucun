@@ -501,7 +501,11 @@ function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
 
 function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
   const meta = MOVEMENT_META[entry.type];
-  const piecesPerUnit = entry.product?.piecesPerUnit || 0;
+  // 优先使用批次级别的 piecesPerUnit，回退到产品级别，最后默认为 0
+  // 批次级别：来自 BatchSpecification 表，更准确反映该批次的实际规格
+  // 产品级别：来自 Product 表，作为默认值
+  const piecesPerUnit =
+    entry.batchPiecesPerUnit ?? entry.product?.piecesPerUnit ?? 0;
   const absChange = Math.abs(entry.quantityChange);
   const changePrefix =
     entry.quantityChange > 0 ? '+' : entry.quantityChange < 0 ? '-' : '';
