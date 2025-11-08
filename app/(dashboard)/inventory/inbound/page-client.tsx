@@ -34,34 +34,38 @@ export function InboundRecordsPageClient({
   }, [router]);
 
   return (
-    <div className="space-y-6 p-6">
-      {/* 页面标题 */}
-      <PageHeader
-        title="入库记录"
-        description="查看和管理产品入库记录，跟踪库存增加情况"
-        icon={<PackageCheck className="h-6 w-6 text-white" />}
-        variant="solid"
-        actions={
-          <Button
-            size="lg"
-            onClick={handleCreateNew}
-            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-          >
-            新增入库
-          </Button>
-        }
-      />
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="mb-6 flex-shrink-0">
+        {/* 页面标题 */}
+        <PageHeader
+          title="入库记录"
+          description="查看和管理产品入库记录，跟踪库存增加情况"
+          icon={<PackageCheck className="h-6 w-6 text-white" />}
+          variant="solid"
+          actions={
+            <Button
+              size="lg"
+              onClick={handleCreateNew}
+              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            >
+              新增入库
+            </Button>
+          }
+        />
+      </div>
 
-      {/* 入库记录列表 */}
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">加载中...</div>
-          </div>
-        }
-      >
-        <ERPInboundRecords initialParams={initialParams} />
-      </Suspense>
+      <div className="flex-1">
+        {/* 入库记录列表 */}
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          }
+        >
+          <ERPInboundRecords initialParams={initialParams} />
+        </Suspense>
+      </div>
     </div>
   );
 }
