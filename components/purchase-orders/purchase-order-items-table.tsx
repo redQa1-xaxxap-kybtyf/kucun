@@ -33,15 +33,6 @@ function PurchaseOrderItemsTableComponent({
 }: PurchaseOrderItemsTableProps) {
   const { toast } = useToast();
 
-  const calculateItemAmount = useCallback(
-    (index: number): number => {
-      const quantity = Number(form.watch(`items.${index}.quantity`) || 0);
-      const unitPrice = Number(form.watch(`items.${index}.unitPrice`) || 0);
-      return quantity * unitPrice;
-    },
-    [form]
-  );
-
   const handleProductChange = useCallback(
     (index: number, product: Product | null) => {
       if (product && product.code) {
@@ -105,7 +96,6 @@ function PurchaseOrderItemsTableComponent({
       onProductChange={handleProductChange}
       onQuantityChange={handleQuantityChange}
       onUnitPriceChange={handleUnitPriceChange}
-      calculateItemAmount={calculateItemAmount}
     />
   );
 }
@@ -123,7 +113,6 @@ interface PurchaseOrderItemsTableViewProps {
   onProductChange: (index: number, product: Product | null) => void;
   onQuantityChange: (index: number, value: string) => void;
   onUnitPriceChange: (index: number, value: string) => void;
-  calculateItemAmount: (index: number) => number;
 }
 
 function PurchaseOrderItemsTableView({
@@ -134,7 +123,6 @@ function PurchaseOrderItemsTableView({
   onProductChange,
   onQuantityChange,
   onUnitPriceChange,
-  calculateItemAmount,
 }: PurchaseOrderItemsTableViewProps) {
   return (
     <div className="space-y-3">
@@ -207,7 +195,6 @@ function PurchaseOrderItemsTableView({
                 onProductChange={onProductChange}
                 onQuantityChange={onQuantityChange}
                 onUnitPriceChange={onUnitPriceChange}
-                calculateItemAmount={calculateItemAmount}
               />
             ))}
           </TableBody>

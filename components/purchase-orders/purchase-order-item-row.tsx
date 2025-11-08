@@ -2,7 +2,7 @@
 
 import { Trash2 } from 'lucide-react';
 import React from 'react';
-import type { UseFormReturn } from 'react-hook-form';
+import { useWatch, type UseFormReturn } from 'react-hook-form';
 
 import { BatchSelector } from '@/components/batches/batch-selector';
 import { ProductSelector } from '@/components/products/product-selector';
@@ -34,7 +34,6 @@ interface PurchaseOrderItemRowProps {
   onProductChange: (index: number, product: Product | null) => void;
   onQuantityChange: (index: number, value: string) => void;
   onUnitPriceChange: (index: number, value: string) => void;
-  calculateItemAmount: (index: number) => number;
 }
 
 export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
@@ -46,12 +45,20 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
     onProductChange,
     onQuantityChange,
     onUnitPriceChange,
-    calculateItemAmount,
   }) => {
     const productId = form.watch(`items.${index}.productId`);
     const productCode = form.watch(`items.${index}.productCode`);
     const supplierId = form.watch(`items.${index}.supplierId`);
     const specification = form.watch(`items.${index}.specification`);
+    const watchedQuantity = useWatch({
+      control: form.control,
+      name: `items.${index}.quantity`,
+    });
+    const watchedUnitPrice = useWatch({
+      control: form.control,
+      name: `items.${index}.unitPrice`,
+    });
+    const amount = Number(watchedQuantity || 0) * Number(watchedUnitPrice || 0);
 
     return (
       <TableRow className="h-12">
@@ -97,7 +104,7 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
           index={index}
           onUnitPriceChange={onUnitPriceChange}
         />
-        <TotalAmountCell amount={calculateItemAmount(index)} />
+        <TotalAmountCell amount={amount} />
         <TextInputCell
           form={form}
           index={index}
