@@ -43,16 +43,14 @@ export function ERPInboundRecords({
 
   if (error) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <InboundRecordsToolbar onCreateNew={handleCreateNew} />
-          <div
-            className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center"
-            style={{ boxShadow: 'var(--shadow-light)' }}
-          >
-            <div className="text-sm text-[hsl(var(--color-error))]">
-              加载入库记录失败，请稍后重试
-            </div>
+      <div className="space-y-6">
+        <InboundRecordsToolbar onCreateNew={handleCreateNew} />
+        <div
+          className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center"
+          style={{ boxShadow: 'var(--shadow-light)' }}
+        >
+          <div className="text-sm text-[hsl(var(--color-error))]">
+            加载入库记录失败，请稍后重试
           </div>
         </div>
       </div>
@@ -60,21 +58,19 @@ export function ERPInboundRecords({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <InboundRecordsToolbar onCreateNew={handleCreateNew} />
+    <>
+      {/* 页面标题 */}
+      <InboundRecordsToolbar onCreateNew={handleCreateNew} />
 
-        {/* 筛选条件 */}
-        <InboundRecordsFilters
-          queryParams={queryParams}
-          onFilter={handleFilter}
-          onReset={handleResetFilters}
-        />
+      {/* 筛选条件 */}
+      <InboundRecordsFilters
+        queryParams={queryParams}
+        onFilter={handleFilter}
+        onReset={handleResetFilters}
+      />
 
-        {/* 入库记录表格 */}
-        <InboundRecordsTable records={inboundRecords} isLoading={isLoading} />
-      </div>
-    </div>
+      {/* 入库记录表格 */}
+      <InboundRecordsTable records={inboundRecords} isLoading={isLoading} />
+    </>
   );
 }

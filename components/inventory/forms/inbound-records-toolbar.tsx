@@ -30,16 +30,6 @@ export function InboundRecordsToolbar({
   const router = useRouter();
   const { data: session } = useSession();
 
-  // 🐛 调试日志 - 查看 session 数据
-  console.log('🐛 [InboundRecordsToolbar] Session 数据:', {
-    hasSession: !!session,
-    hasUser: !!session?.user,
-    userId: session?.user?.id,
-    username: session?.user?.username,
-    role: session?.user?.role,
-    fullSession: session,
-  });
-
   // 检查用户是否有入库操作权限
   const hasInboundPermission = can(
     session?.user
@@ -54,13 +44,6 @@ export function InboundRecordsToolbar({
       : null,
     'inventory:inbound'
   );
-
-  // 🐛 调试日志 - 查看权限检查结果
-  console.log('🐛 [InboundRecordsToolbar] 权限检查:', {
-    hasInboundPermission,
-    userRole: session?.user?.role,
-    expectedRoles: ['admin', 'warehouse'],
-  });
 
   return (
     <PageHeader
