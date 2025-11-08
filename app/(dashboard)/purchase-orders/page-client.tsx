@@ -8,28 +8,14 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { PurchaseOrderList } from '@/components/purchase-orders/purchase-order-list';
-import { SupplierSelector } from '@/components/suppliers/supplier-selector';
+import { PurchaseOrderSearchToolbar } from '@/components/purchase-orders/purchase-order-search-toolbar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  PURCHASE_ORDER_STATUS,
-  PURCHASE_ORDER_STATUS_LABELS,
-  type PurchaseOrderStatus,
-} from '@/lib/types/purchase-order';
+import type { PurchaseOrderStatus } from '@/lib/types/purchase-order';
 
 interface PurchaseOrderQueryParams {
   page?: number;
   limit?: number;
-  search?: string;
+  containerNumber?: string;
   status?: PurchaseOrderStatus;
   supplierId?: string;
   sortBy?: string;
@@ -42,275 +28,152 @@ interface PurchaseOrdersPageClientProps {
   initialParams: PurchaseOrderQueryParams;
 }
 
+interface FilterSnapshot {
+  search: string;
+  status: PurchaseOrderStatus | 'all';
+  supplierId?: string;
+}
+
 export function PurchaseOrdersPageClient({
   initialParams,
 }: PurchaseOrdersPageClientProps) {
   const router = useRouter();
   const [, startTransition] = React.useTransition();
 
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [status, setStatus] = React.useState(initialParams.status);
-  const [supplierId, setSupplierId] = React.useState(initialParams.supplierId);
-  const [sortBy, _setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
+  const [searchValue, setSearchValue] = React.useState(
+    initialParams.containerNumber || ''
   );
-  const [sortOrder, _setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
-  );
-  const [startDate, setStartDate] = React.useState(initialParams.startDate);
-  const [endDate, setEndDate] = React.useState(initialParams.endDate);
+  const [statusFilter, setStatusFilter] = React.useState<
+    PurchaseOrderStatus | 'all'
+  >(initialParams.status ?? 'all');
+  const [supplierFilter, setSupplierFilter] = React.useState<
+    string | undefined
+  >(initialParams.supplierId);
+  const sortBy = initialParams.sortBy || 'createdAt';
+  const sortOrder = initialParams.sortOrder || 'desc';
 
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: PurchaseOrderQueryParams) => {
+  const buildSnapshot = React.useCallback(
+    (overrides: Partial<FilterSnapshot> = {}): FilterSnapshot => ({
+      search: overrides.search ?? searchValue,
+      status: overrides.status ?? statusFilter,
+      supplierId: overrides.supplierId ?? supplierFilter,
+    }),
+    [searchValue, statusFilter, supplierFilter]
+  );
+
+  const syncFiltersToURL = useDebouncedCallback(
+    (snapshot: FilterSnapshot) => {
       startTransition(() => {
         const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
+        const trimmedSearch = snapshot.search.trim();
+
+        if (trimmedSearch) {
+          params.set('search', trimmedSearch);
         }
-        if (filters.status) {
-          params.set('status', filters.status);
+        if (snapshot.status !== 'all') {
+          params.set('status', snapshot.status);
         }
-        if (filters.supplierId) {
-          params.set('supplierId', filters.supplierId);
+        if (snapshot.supplierId) {
+          params.set('supplierId', snapshot.supplierId);
         }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
+        if (sortBy && sortBy !== 'createdAt') {
+          params.set('sortBy', sortBy);
         }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
+        if (sortOrder && sortOrder !== 'desc') {
+          params.set('sortOrder', sortOrder);
         }
-        if (filters.startDate) {
-          params.set(
-            'startDate',
-            filters.startDate.toISOString().split('T')[0]
-          );
-        }
-        if (filters.endDate) {
-          params.set('endDate', filters.endDate.toISOString().split('T')[0]);
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
         }
 
-        router.push(`/purchase-orders?${params.toString()}`);
+        const queryString = params.toString();
+        router.push(
+          queryString ? `/purchase-orders?${queryString}` : '/purchase-orders'
+        );
       });
     },
-    300
+    300,
+    [router, startTransition, initialParams.limit, sortBy, sortOrder]
   );
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        status,
-        supplierId,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-      });
+      setSearchValue(value);
+      syncFiltersToURL(buildSnapshot({ search: value }));
     },
-    [
-      debouncedUpdateURL,
-      initialParams,
-      status,
-      supplierId,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    ]
+    [buildSnapshot, syncFiltersToURL]
   );
 
   const handleStatusChange = React.useCallback(
-    (value: string) => {
-      const newStatus =
-        value === 'all' ? undefined : (value as PurchaseOrderStatus);
-      setStatus(newStatus);
-      debouncedUpdateURL(search, {
-        ...initialParams,
-        search,
-        status: newStatus,
-        supplierId,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-      });
+    (value: PurchaseOrderStatus | 'all') => {
+      setStatusFilter(value);
+      syncFiltersToURL(buildSnapshot({ status: value }));
     },
-    [
-      debouncedUpdateURL,
-      search,
-      initialParams,
-      supplierId,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    ]
+    [buildSnapshot, syncFiltersToURL]
   );
 
   const handleSupplierChange = React.useCallback(
-    (value: string) => {
-      const newSupplierId = value === 'all' ? undefined : value;
-      setSupplierId(newSupplierId);
-      debouncedUpdateURL(search, {
-        ...initialParams,
-        search,
-        status,
-        supplierId: newSupplierId,
-        sortBy,
-        sortOrder,
-        startDate,
-        endDate,
-      });
+    (value: string | undefined) => {
+      setSupplierFilter(value);
+      syncFiltersToURL(buildSnapshot({ supplierId: value }));
     },
-    [
-      debouncedUpdateURL,
-      search,
-      initialParams,
-      status,
-      sortBy,
-      sortOrder,
-      startDate,
-      endDate,
-    ]
-  );
-
-  const handleDateRangeChange = React.useCallback(
-    (range: { startDate?: string; endDate?: string }) => {
-      const start = range.startDate ? new Date(range.startDate) : undefined;
-      const end = range.endDate ? new Date(range.endDate) : undefined;
-      setStartDate(start);
-      setEndDate(end);
-      debouncedUpdateURL(search, {
-        ...initialParams,
-        search,
-        status,
-        supplierId,
-        sortBy,
-        sortOrder,
-        startDate: start,
-        endDate: end,
-      });
-    },
-    [
-      debouncedUpdateURL,
-      search,
-      initialParams,
-      status,
-      supplierId,
-      sortBy,
-      sortOrder,
-    ]
+    [buildSnapshot, syncFiltersToURL]
   );
 
   const handleClearFilters = React.useCallback(() => {
-    setStatus(undefined);
-    setSupplierId(undefined);
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setSearch('');
-    router.push('/purchase-orders');
-  }, [router]);
+    setSearchValue('');
+    setStatusFilter('all');
+    setSupplierFilter(undefined);
+    startTransition(() => {
+      router.push('/purchase-orders');
+    });
+  }, [router, startTransition]);
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="仓库进货"
-        description="管理采购订单和仓库进货记录"
-        icon={<Warehouse className="h-5 w-5" />}
-        actions={
-          <Link href="/purchase-orders/create">
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              新建采购订单
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="mb-6 flex-shrink-0">
+        <PageHeader
+          title="仓库进货"
+          description="管理采购订单与到货进度，实时掌握仓库补货情况"
+          icon={<Warehouse className="h-6 w-6 text-white" />}
+          variant="solid"
+          actions={
+            <Button
+              size="lg"
+              asChild
+              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            >
+              <Link href="/purchase-orders/create">
+                <Plus className="mr-2 h-4 w-4" />
+                新建采购订单
+              </Link>
             </Button>
-          </Link>
-        }
-      />
+          }
+        />
+      </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <div className="mb-6 space-y-4">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-              <div className="flex-1">
-                <Input
-                  type="text"
-                  placeholder="搜索集装箱号或订单号..."
-                  value={search}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+      <div className="flex-1 space-y-4">
+        <PurchaseOrderSearchToolbar
+          searchValue={searchValue}
+          statusFilter={statusFilter}
+          supplierId={supplierFilter}
+          isSearching={false}
+          onSearch={handleSearch}
+          onStatusChange={handleStatusChange}
+          onSupplierChange={handleSupplierChange}
+          onClearFilters={handleClearFilters}
+        />
 
-              <Select
-                value={status || 'all'}
-                onValueChange={handleStatusChange}
-              >
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="选择状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  {Object.entries(PURCHASE_ORDER_STATUS).map(
-                    ([_key, value]) => (
-                      <SelectItem key={value} value={value}>
-                        {PURCHASE_ORDER_STATUS_LABELS[value]}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
-
-              <div className="w-full md:w-[220px]">
-                <SupplierSelector
-                  value={supplierId}
-                  onValueChange={handleSupplierChange}
-                  placeholder="选择供应商"
-                />
-              </div>
-
-              <DateRangePicker
-                value={{
-                  startDate: startDate?.toISOString().split('T')[0],
-                  endDate: endDate?.toISOString().split('T')[0],
-                }}
-                onChange={handleDateRangeChange}
-                placeholder="选择日期范围"
-                showPresets
-                showClearButton
-                className="w-full md:w-[240px]"
-              />
-
-              <Button
-                variant="outline"
-                onClick={handleClearFilters}
-                className="w-full md:w-auto"
-              >
-                重置筛选
-              </Button>
-            </div>
-          </div>
-
-          <PurchaseOrderList
-            page={initialParams.page}
-            limit={initialParams.limit}
-            search={search}
-            status={status}
-            supplierId={supplierId}
-            startDate={startDate}
-            endDate={endDate}
-            sortBy={sortBy}
-            sortOrder={sortOrder}
-          />
-        </CardContent>
-      </Card>
+        <PurchaseOrderList
+          page={initialParams.page}
+          limit={initialParams.limit}
+          search={searchValue}
+          status={statusFilter === 'all' ? undefined : statusFilter}
+          supplierId={supplierFilter}
+          sortBy={sortBy}
+          sortOrder={sortOrder}
+        />
+      </div>
     </div>
   );
 }

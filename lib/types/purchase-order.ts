@@ -89,6 +89,7 @@ export interface PurchaseOrderItem {
   specification?: string;
   unit: string;
   weight?: number;
+  piecesPerUnit?: number | null;
 
   remarks?: string;
   createdAt: Date;
@@ -198,6 +199,7 @@ export interface CreatePurchaseOrderItemData {
   specification?: string;
   unit: string;
   weight?: number;
+  piecesPerUnit?: number;
 
   remarks?: string;
 }

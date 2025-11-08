@@ -35,8 +35,8 @@ function PurchaseOrderItemsTableComponent({
 
   const calculateItemAmount = useCallback(
     (index: number): number => {
-      const quantity = form.watch(`items.${index}.quantity`) || 0;
-      const unitPrice = form.watch(`items.${index}.unitPrice`) || 0;
+      const quantity = Number(form.watch(`items.${index}.quantity`) || 0);
+      const unitPrice = Number(form.watch(`items.${index}.unitPrice`) || 0);
       return quantity * unitPrice;
     },
     [form]
@@ -53,6 +53,10 @@ function PurchaseOrderItemsTableComponent({
           product.specification || ''
         );
         form.setValue(`items.${index}.unit`, product.unit || 'piece');
+        form.setValue(
+          `items.${index}.piecesPerUnit`,
+          product.piecesPerUnit ?? undefined
+        );
         form.setValue(`items.${index}.isManualProduct`, false);
 
         toast({
@@ -60,6 +64,9 @@ function PurchaseOrderItemsTableComponent({
           description: '产品信息已自动填充',
           duration: 2000,
         });
+      } else {
+        form.setValue(`items.${index}.productId`, undefined);
+        form.setValue(`items.${index}.piecesPerUnit`, undefined);
       }
     },
     [form, toast]
@@ -67,20 +74,24 @@ function PurchaseOrderItemsTableComponent({
 
   const handleQuantityChange = useCallback(
     (index: number, value: string) => {
-      const quantity = parseFloat(value) || 0;
-      form.setValue(`items.${index}.quantity`, quantity);
-      const unitPrice = form.watch(`items.${index}.unitPrice`) || 0;
-      form.setValue(`items.${index}.totalPrice`, quantity * unitPrice);
+      const quantity = parseFloat(value);
+      const safeQuantity = Number.isFinite(quantity) ? quantity : 0;
+      const unitPrice = Number(form.getValues(`items.${index}.unitPrice`) || 0);
+      form.setValue(`items.${index}.totalPrice`, safeQuantity * unitPrice, {
+        shouldDirty: true,
+      });
     },
     [form]
   );
 
   const handleUnitPriceChange = useCallback(
     (index: number, value: string) => {
-      const unitPrice = parseFloat(value) || 0;
-      form.setValue(`items.${index}.unitPrice`, unitPrice);
-      const quantity = form.watch(`items.${index}.quantity`) || 0;
-      form.setValue(`items.${index}.totalPrice`, quantity * unitPrice);
+      const unitPrice = parseFloat(value);
+      const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
+      const quantity = Number(form.getValues(`items.${index}.quantity`) || 0);
+      form.setValue(`items.${index}.totalPrice`, quantity * safeUnitPrice, {
+        shouldDirty: true,
+      });
     },
     [form]
   );
@@ -167,6 +178,9 @@ function PurchaseOrderItemsTableView({
               </TableHead>
               <TableHead className="h-9 w-[80px] border-r py-2 text-xs">
                 单位
+              </TableHead>
+              <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
+                每件片数
               </TableHead>
               <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
                 单价 *

@@ -94,6 +94,12 @@ export const purchaseOrderItemSchema = z
       message: '请选择有效的计量单位',
     }),
     weight: z.number().min(0, '重量不能为负数').optional(),
+    piecesPerUnit: z
+      .number()
+      .int('每件片数必须为整数')
+      .min(1, '每件片数必须大于0')
+      .max(10000, '每件片数不能超过10000')
+      .optional(),
 
     remarks: z
       .string()

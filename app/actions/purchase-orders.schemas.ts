@@ -30,6 +30,12 @@ export const purchaseOrderItemSchema = z
     specification: z.string().optional(),
     unit: z.string().optional(),
     weight: z.number().nonnegative('重量不能为负数').optional(),
+    piecesPerUnit: z
+      .number()
+      .int('每件片数必须为整数')
+      .min(1, '每件片数必须大于 0')
+      .max(10000, '每件片数不能超过 10000')
+      .optional(),
     quantity: z.number().positive('数量必须大于 0'),
     unitPrice: z.number().nonnegative('单价不能为负'),
     totalPrice: z.number().nonnegative('总价不能为负'),

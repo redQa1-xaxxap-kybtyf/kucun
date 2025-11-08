@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarIcon, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import {
@@ -11,6 +12,7 @@ import {
 } from '@/app/actions/purchase-orders';
 import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { PurchaseOrderItemsTable } from '@/components/purchase-orders/purchase-order-items-table';
+import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -47,9 +49,9 @@ const generateIdempotencyKey = (): string => {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
 
-const createEmptyItem = () => ({
+const createEmptyItem = (presetSupplierId?: string) => ({
   productId: undefined as string | undefined,
-  supplierId: '',
+  supplierId: presetSupplierId ?? '',
   productCode: '',
   quantity: 1,
   unitPrice: 0,
@@ -59,6 +61,7 @@ const createEmptyItem = () => ({
   batchNumber: '',
   unit: 'piece',
   weight: undefined as number | undefined,
+  piecesPerUnit: undefined as number | undefined,
   remarks: '',
   isManualProduct: false,
 });
@@ -106,6 +109,8 @@ export function PurchaseOrderForm({
             specification: item.specification || '',
             unit: item.unit,
             weight: item.weight || undefined,
+            piecesPerUnit:
+              item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined,
             remarks: item.remarks || '',
             isManualProduct: !item.productId,
           })),
@@ -122,6 +127,22 @@ export function PurchaseOrderForm({
           feeItems: [],
         },
   });
+
+  const supplierIdValue = form.watch('supplierId');
+
+  useEffect(() => {
+    if (!supplierIdValue) {
+      return;
+    }
+    const items = form.getValues('items') || [];
+    items.forEach((item, index) => {
+      if (!item?.supplierId) {
+        form.setValue(`items.${index}.supplierId`, supplierIdValue, {
+          shouldDirty: true,
+        });
+      }
+    });
+  }, [form, supplierIdValue]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -174,7 +195,7 @@ export function PurchaseOrderForm({
             <CardTitle className="text-base">基本信息</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               <FormField
                 control={form.control}
                 name="orderDate"
@@ -209,6 +230,24 @@ export function PurchaseOrderForm({
                         />
                       </PopoverContent>
                     </Popover>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="supplierId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">供应商 *</FormLabel>
+                    <FormControl>
+                      <SupplierSelector
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="请选择采购供应商"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -262,7 +301,9 @@ export function PurchaseOrderForm({
             <PurchaseOrderItemsTable
               form={form}
               fields={fields}
-              onAddItem={() => append(createEmptyItem())}
+              onAddItem={() =>
+                append(createEmptyItem(form.getValues('supplierId')))
+              }
               onRemoveItem={remove}
             />
           </CardContent>

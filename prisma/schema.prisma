@@ -1268,6 +1268,7 @@ model PurchaseOrderItem {
   specification String? @db.Text
   unit          String  @default("sheet")
   weight        Float?
+  piecesPerUnit Int?    @map("pieces_per_unit")
 
   // 批次管理
   batchNumber String? @map("batch_number") @db.VarChar(100)

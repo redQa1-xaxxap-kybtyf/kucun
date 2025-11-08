@@ -91,6 +91,7 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
           onQuantityChange={onQuantityChange}
         />
         <UnitCell form={form} index={index} />
+        <PiecesPerUnitCell form={form} index={index} />
         <UnitPriceCell
           form={form}
           index={index}
@@ -258,8 +259,22 @@ function QuantityCell({
                 type="number"
                 step="0.01"
                 {...field}
-                value={field.value || ''}
-                onChange={e => onQuantityChange(index, e.target.value)}
+                value={
+                  typeof field.value === 'number'
+                    ? field.value
+                    : (field.value ?? '')
+                }
+                onChange={e => {
+                  const { value } = e.target;
+                  if (value === '') {
+                    field.onChange(undefined);
+                    onQuantityChange(index, '0');
+                    return;
+                  }
+                  const parsed = Number(value);
+                  field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                  onQuantityChange(index, value);
+                }}
                 className="h-8 text-right"
               />
             </FormControl>
@@ -317,9 +332,63 @@ function UnitPriceCell({
                 type="number"
                 step="0.01"
                 {...field}
-                value={field.value || ''}
-                onChange={e => onUnitPriceChange(index, e.target.value)}
+                value={
+                  typeof field.value === 'number'
+                    ? field.value
+                    : (field.value ?? '')
+                }
+                onChange={e => {
+                  const { value } = e.target;
+                  if (value === '') {
+                    field.onChange(undefined);
+                    onUnitPriceChange(index, '0');
+                    return;
+                  }
+                  const parsed = Number(value);
+                  field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                  onUnitPriceChange(index, value);
+                }}
                 className="h-8 text-right"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </TableCell>
+  );
+}
+
+function PiecesPerUnitCell({ form, index }: FormCellProps) {
+  return (
+    <TableCell className="border-r py-2">
+      <FormField
+        control={form.control}
+        name={`items.${index}.piecesPerUnit`}
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <Input
+                type="number"
+                step="1"
+                min="1"
+                {...field}
+                value={
+                  typeof field.value === 'number'
+                    ? field.value
+                    : (field.value ?? '')
+                }
+                onChange={e => {
+                  const { value } = e.target;
+                  if (value === '') {
+                    field.onChange(undefined);
+                    return;
+                  }
+                  const parsed = Number(value);
+                  field.onChange(Number.isNaN(parsed) ? undefined : parsed);
+                }}
+                className="h-8 text-right"
+                placeholder="—"
               />
             </FormControl>
             <FormMessage />
