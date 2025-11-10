@@ -178,7 +178,7 @@ export async function GET(request: NextRequest) {
           data: null,
           error: {
             message: '参数验证失败',
-            details: error.errors,
+            details: error.issues,
           },
         },
         { status: 400 }

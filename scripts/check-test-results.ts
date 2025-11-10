@@ -131,10 +131,22 @@ async function main() {
     console.log(`\n最近 ${failedJobs.length} 个失败任务:\n`);
 
     for (const job of failedJobs) {
+      const jobData = job.data as {
+        orderId?: string;
+        factoryShipmentOrderId?: string;
+        targetType?: string;
+        shippingCompany?: string;
+        containerNumber?: string;
+      };
+      const resolvedOrderId =
+        jobData.orderId ?? jobData.factoryShipmentOrderId ?? '未知';
+      const resolvedTargetType = jobData.targetType ?? 'factory_shipment';
+
       console.log(`任务 ID: ${job.id}`);
-      console.log(`   - 订单 ID: ${job.data.factoryShipmentOrderId}`);
-      console.log(`   - 船公司: ${job.data.shippingCompany}`);
-      console.log(`   - 柜号: ${job.data.containerNumber || '无'}`);
+      console.log(`   - 订单类型: ${resolvedTargetType}`);
+      console.log(`   - 订单 ID: ${resolvedOrderId}`);
+      console.log(`   - 船公司: ${jobData.shippingCompany || '未知'}`);
+      console.log(`   - 柜号: ${jobData.containerNumber || '无'}`);
       console.log(`   - 失败原因: ${job.failedReason}`);
       console.log(
         `   - 尝试次数: ${job.attemptsMade}/${job.opts.attempts || 3}`
@@ -144,7 +156,7 @@ async function main() {
   }
 
   // 总结
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('📋 测试结果总结\n');
 
   const hasQueryRecords = queryRecords.length > 0;

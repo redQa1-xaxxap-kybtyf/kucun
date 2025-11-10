@@ -29,7 +29,10 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
 
     // 记录查询参数
     logger.info('inventory-alerts', '开始查询库存预警', {
-      params: queryParams,
+      severity: queryParams.severity ?? 'all',
+      limit: queryParams.limit ?? undefined,
+      productId: queryParams.productId,
+      categoryId: queryParams.categoryId,
       threshold: inventoryConfig.lowStockThreshold,
       criticalThreshold: inventoryConfig.criticalMinQuantity,
     });
@@ -38,10 +41,17 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
     const validationResult = inventoryAlertsQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
-      logger.warn('inventory-alerts', '查询参数验证失败', {
-        params: queryParams,
-        errors: validationResult.error.issues,
-      });
+      logger.warn(
+        'inventory-alerts',
+        '查询参数验证失败',
+        {
+          severity: queryParams.severity ?? 'all',
+          limit: queryParams.limit ?? undefined,
+          productId: queryParams.productId,
+          categoryId: queryParams.categoryId,
+        },
+        { errors: validationResult.error.issues }
+      );
 
       return NextResponse.json(
         {
@@ -312,26 +322,44 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
     const duration = Date.now() - startTime;
 
     // 统计预警级别分布
+    const criticalCount = alertsData.filter(
+      a => a.severity === 'critical'
+    ).length;
+    const warningCount = alertsData.filter(
+      a => a.severity === 'warning'
+    ).length;
+    const infoCount = Math.max(
+      0,
+      alertsData.length - criticalCount - warningCount
+    );
+
     const summary = {
-      critical: alertsData.filter(a => a.severity === 'critical').length,
-      warning: alertsData.filter(a => a.severity === 'warning').length,
-      info: alertsData.filter(
-        a => a.severity === 'warning' || a.severity === 'critical'
-      ).length,
+      critical: criticalCount,
+      warning: warningCount,
+      info: infoCount,
     };
 
     // 记录查询结果
     if (alertsData.length === 0) {
       logger.warn('inventory-alerts', '未找到库存预警数据', {
-        params: { severity, limit, productId, categoryId },
-        duration: `${duration}ms`,
+        severity,
+        limit,
+        productId: productId ?? 'all',
+        categoryId: categoryId ?? 'all',
+        durationMs: duration,
       });
     } else {
       logger.info('inventory-alerts', '库存预警查询成功', {
         total: alertsData.length,
-        summary,
-        duration: `${duration}ms`,
+        severity,
+        limit,
+        productId: productId ?? 'all',
+        categoryId: categoryId ?? 'all',
+        durationMs: duration,
         threshold: inventoryConfig.lowStockThreshold,
+        criticalCount: summary.critical,
+        warningCount: summary.warning,
+        infoCount: summary.info,
       });
     }
 

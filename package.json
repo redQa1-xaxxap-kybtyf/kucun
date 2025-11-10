@@ -7,6 +7,8 @@
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" next dev",
     "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
     "start": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next start",
+    "dev:with-scheduler": "tsx scripts/start-with-scheduler.ts dev",
+    "start:with-scheduler": "cross-env NODE_ENV=production tsx scripts/start-with-scheduler.ts prod",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",

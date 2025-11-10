@@ -511,8 +511,8 @@ model InventoryOperation {
   operationType  String    @map("operation_type")
   productId      String    @map("product_id") @db.Char(36)
   status         String    @default("processing") @db.VarChar(32)
-  requestData    String    @map("request_data")
-  responseData   String?   @map("response_data")
+  requestData    String    @map("request_data") @db.LongText
+  responseData   String?   @map("response_data") @db.LongText
   errorMessage   String?   @map("error_message")
   operatorId     String    @map("operator_id") @db.Char(36)
   createdAt      DateTime  @default(now()) @map("created_at")
@@ -658,6 +658,7 @@ model FactoryShipmentOrderItem {
   temporaryProductId     String?   @map("temporary_product_id") @db.Char(36)
   supplierId             String    @map("supplier_id") @db.Char(36)
   productCode            String    @map("product_code") @db.VarChar(100)
+  batchNumber            String?   @map("batch_number") @db.VarChar(100)
   quantity               Float
   unitPrice              Float     @map("unit_price")
   totalPrice             Float     @map("total_price")
@@ -675,6 +676,7 @@ model FactoryShipmentOrderItem {
   displayName            String    @map("display_name")
   specification          String?   @db.Text
   unit                   String    @default("sheet")
+  piecesPerUnit          Int?      @map("pieces_per_unit")
   weight                 Float?
   remarks                String?
   createdAt              DateTime  @default(now()) @map("created_at")
