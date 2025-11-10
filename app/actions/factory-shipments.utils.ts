@@ -76,6 +76,10 @@ export async function resolveShipmentItems(
       batchNumber: item.batchNumber?.trim() || undefined,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
+      unitCost:
+        typeof item.unitCost === 'number' && !Number.isNaN(item.unitCost)
+          ? item.unitCost
+          : null,
       totalPrice: item.totalPrice,
       isManualProduct: item.isManualProduct ? true : undefined,
       manualProductName: item.isManualProduct

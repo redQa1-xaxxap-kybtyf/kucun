@@ -346,6 +346,11 @@ function FactoryShipmentOrderRow({
   const canEditShippingCompany =
     canEditShippingInfo && !order.lastShippingQueryAt;
 
+  const payableAmount = Math.max(
+    0,
+    (order.costAmount ?? 0) - (order.depositAmount ?? 0)
+  );
+
   // 手动查询按钮显示逻辑：
   // 1. 必须是已发货状态
   // 2. 必须有物流公司
@@ -761,7 +766,16 @@ function FactoryShipmentOrderRow({
           </div>
         </TableCell>
         <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
-          {formatAmount(order.costAmount || 0)}
+          <div className="flex flex-col items-end gap-1 leading-tight">
+            <span className="font-semibold text-[hsl(var(--color-text-primary))]">
+              {formatAmount(payableAmount)}
+            </span>
+            {order.depositAmount > 0 && (
+              <span className="text-xs font-medium text-[hsl(var(--color-success))]">
+                已付定金 {formatAmount(order.depositAmount)}
+              </span>
+            )}
+          </div>
         </TableCell>
         <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] lg:table-cell">
           {order.shipmentDate ? (

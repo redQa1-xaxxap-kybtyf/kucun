@@ -17,7 +17,48 @@
  * - 失败时不影响主业务流程
  */
 
-import { logger } from '@/lib/logger';
+type AppLogger = {
+  error: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+};
+
+let cachedLogger: AppLogger | null = null;
+
+async function getAppLogger(): Promise<AppLogger> {
+  if (cachedLogger) {
+    return cachedLogger;
+  }
+
+  if (typeof window === 'undefined') {
+    try {
+      const loggerModule = await import('@/lib/logger');
+      cachedLogger = loggerModule.logger;
+      return cachedLogger;
+    } catch (error) {
+      const consoleLogger =
+        typeof globalThis !== 'undefined' ? globalThis.console : undefined;
+      consoleLogger?.error?.(
+        '[error-reporting] Failed to load server logger',
+        error
+      );
+    }
+  }
+
+  const consoleRef =
+    typeof globalThis !== 'undefined' ? globalThis.console : undefined;
+
+  cachedLogger = {
+    error: (...args: unknown[]) =>
+      consoleRef?.error?.('[error-reporting]', ...args),
+    warn: (...args: unknown[]) =>
+      consoleRef?.warn?.('[error-reporting]', ...args),
+    info: (...args: unknown[]) =>
+      consoleRef?.info?.('[error-reporting]', ...args),
+  };
+
+  return cachedLogger;
+}
 
 /**
  * 错误严重程度
@@ -114,7 +155,7 @@ export class ErrorReportingService {
     // 开发环境默认不上报（除非明确指定）
     if (!this.isProduction && !reportInDevelopment) {
       if (logLocally) {
-        this.logErrorLocally(error, severity, context);
+        await this.logErrorLocally(error, severity, context);
       }
       return;
     }
@@ -122,7 +163,7 @@ export class ErrorReportingService {
     try {
       // 1. 记录到本地日志
       if (logLocally) {
-        this.logErrorLocally(error, severity, context);
+        await this.logErrorLocally(error, severity, context);
       }
 
       // 2. 收集错误信息
@@ -136,6 +177,7 @@ export class ErrorReportingService {
         await this.sendAlert(errorData);
       }
     } catch (reportError) {
+      const logger = await getAppLogger();
       // 错误上报失败不应该影响主业务
       logger.error(
         'error-reporting-service',
@@ -152,11 +194,12 @@ export class ErrorReportingService {
   /**
    * 记录错误到本地日志
    */
-  private logErrorLocally(
+  private async logErrorLocally(
     error: Error,
     severity: ErrorSeverity,
     context: ErrorContext
-  ): void {
+  ): Promise<void> {
+    const logger = await getAppLogger();
     // 构建符合 LogContext 类型的上下文对象
     const logContext = {
       severity: severity as string,
@@ -242,6 +285,7 @@ export class ErrorReportingService {
   private async sendToMonitoring(
     errorData: Record<string, unknown>
   ): Promise<void> {
+    const logger = await getAppLogger();
     // 当前实现：记录到结构化日志
     // 使用 metadata 参数传递复杂对象
     logger.info(
@@ -278,6 +322,7 @@ export class ErrorReportingService {
    * TODO: 集成告警系统（邮件、短信、钉钉等）
    */
   private async sendAlert(errorData: Record<string, unknown>): Promise<void> {
+    const logger = await getAppLogger();
     // 使用 metadata 参数传递复杂对象
     logger.error(
       'error-alert',

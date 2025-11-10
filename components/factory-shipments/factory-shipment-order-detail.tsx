@@ -136,6 +136,10 @@ export function FactoryShipmentOrderDetail({
         item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF &&
         item.selfInboundStatus !== 'received'
     ) ?? false;
+  const payableAmount = Math.max(
+    0,
+    (order.costAmount ?? 0) - (order.depositAmount ?? 0)
+  );
 
   return (
     <div className="space-y-6">
@@ -405,8 +409,13 @@ export function FactoryShipmentOrderDetail({
                   应付金额（成本）
                 </p>
                 <p className="text-2xl font-bold text-amber-600">
-                  {formatAmount(order.costAmount || 0)}
+                  {formatAmount(payableAmount)}
                 </p>
+                {order.depositAmount > 0 && (
+                  <p className="text-xs text-[hsl(var(--color-success))]">
+                    已付定金 {formatAmount(order.depositAmount)}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <p className="text-xs font-medium tracking-wide text-[hsl(var(--color-text-tertiary))] uppercase">

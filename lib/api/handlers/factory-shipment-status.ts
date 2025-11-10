@@ -9,7 +9,10 @@ import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
-import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+import {
+  generatePaymentNumber,
+  generatePayableNumber,
+} from '@/lib/utils/payment-number-generator';
 
 /**
  * 状态流转规则
@@ -135,6 +138,8 @@ export interface OrderStatusUpdateResult {
   };
   receivableCreated: boolean;
   paymentRecordId?: string | null;
+  payableCreated: boolean;
+  payableRecordIds?: string[];
 }
 
 /**
@@ -238,6 +243,10 @@ export async function updateFactoryShipmentStatus(
         items: true,
         containerNumber: true,
         shippingCompany: true,
+        shipmentDate: true,
+        arrivalDate: true,
+        deliveryDate: true,
+        costAmount: true,
       },
     });
 
@@ -303,12 +312,18 @@ export async function updateFactoryShipmentStatus(
           depositAmount: true,
           containerNumber: true,
           shippingCompany: true,
+          shipmentDate: true,
+          arrivalDate: true,
+          deliveryDate: true,
+          costAmount: true,
         },
       });
     }
 
     let receivableCreated = false;
     let paymentRecordId: string | null = null;
+    let payableCreated = false;
+    const payableRecordIds: string[] = [];
 
     // 当订单状态变更为已到港时，自动标记客户货为已交付
     const finalStatus = statusPath[statusPath.length - 1];
@@ -357,6 +372,14 @@ export async function updateFactoryShipmentStatus(
 
         if (outstandingAmount > 0) {
           const paymentNumber = await generatePaymentNumber(tx);
+          const paymentDate =
+            data.shipmentDate ??
+            order.shipmentDate ??
+            data.arrivalDate ??
+            order.arrivalDate ??
+            data.deliveryDate ??
+            order.deliveryDate ??
+            new Date();
           const paymentRecord = await tx.paymentRecord.create({
             data: {
               paymentNumber,
@@ -369,7 +392,7 @@ export async function updateFactoryShipmentStatus(
               paymentAmount: outstandingAmount,
               actualPaymentAmount: outstandingAmount,
               roundingAmount: 0,
-              paymentDate: data.deliveryDate ?? new Date(),
+              paymentDate,
               status: 'pending',
               remarks: '系统自动生成应收（厂家直发）',
             },
@@ -384,6 +407,164 @@ export async function updateFactoryShipmentStatus(
       }
     }
 
+    const roundCurrency = (value: number): number =>
+      Math.round((value + Number.EPSILON) * 100) / 100;
+
+    if (
+      finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED ||
+      finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED
+    ) {
+      const existingPayableCount = await tx.payableRecord.count({
+        where: {
+          sourceType: 'factory_shipment',
+          sourceId: orderId,
+        },
+      });
+
+      if (existingPayableCount === 0) {
+        const supplierTotalsMap = new Map<string, number>();
+        for (const item of orderItems) {
+          if (!item.supplierId) continue;
+          const quantity = Number(item.quantity ?? 0);
+          const unitCost =
+            typeof item.unitCost === 'number' && !Number.isNaN(item.unitCost)
+              ? item.unitCost
+              : null;
+          const fallbackTotal = Number(item.totalPrice ?? 0);
+          const computedCost =
+            unitCost !== null ? quantity * unitCost : fallbackTotal;
+          const roundedCost = roundCurrency(computedCost);
+          if (roundedCost <= 0) {
+            continue;
+          }
+          supplierTotalsMap.set(
+            item.supplierId,
+            roundCurrency(
+              (supplierTotalsMap.get(item.supplierId) ?? 0) + roundedCost
+            )
+          );
+        }
+
+        const supplierEntries = Array.from(supplierTotalsMap.entries());
+        if (supplierEntries.length > 0) {
+          const supplierTotalsSum = supplierEntries.reduce(
+            (sum, [, amount]) => sum + Math.max(0, amount),
+            0
+          );
+          const orderCostAmount =
+            typeof order.costAmount === 'number' && order.costAmount > 0
+              ? order.costAmount
+              : undefined;
+          const baseCost = roundCurrency(
+            orderCostAmount !== undefined ? orderCostAmount : supplierTotalsSum
+          );
+
+          if (baseCost > 0) {
+            const payableDateBase =
+              data.shipmentDate ??
+              order.shipmentDate ??
+              data.arrivalDate ??
+              order.arrivalDate ??
+              new Date();
+            const computeDueDate = () => {
+              const dueDate = new Date(payableDateBase);
+              dueDate.setDate(dueDate.getDate() + 30);
+              return dueDate;
+            };
+
+            const creationQueue: Array<{
+              supplierId: string;
+              amount: number;
+            }> = [];
+            let allocatedBase = 0;
+            let allocatedDeposit = 0;
+            const depositAmount = roundCurrency(
+              Math.min(
+                baseCost,
+                Math.max(
+                  0,
+                  typeof order.depositAmount === 'number'
+                    ? order.depositAmount
+                    : 0
+                )
+              )
+            );
+
+            supplierEntries.forEach(([supplierId, supplierCost], index) => {
+              const normalizedCost = Math.max(0, supplierCost);
+              const proportion =
+                supplierTotalsSum > 0
+                  ? normalizedCost / supplierTotalsSum
+                  : 1 / supplierEntries.length;
+
+              const grossAmount =
+                index === supplierEntries.length - 1
+                  ? roundCurrency(baseCost - allocatedBase)
+                  : roundCurrency(baseCost * proportion);
+
+              if (grossAmount <= 0) {
+                return;
+              }
+
+              allocatedBase = roundCurrency(allocatedBase + grossAmount);
+
+              let depositShare = 0;
+              if (depositAmount > 0) {
+                depositShare =
+                  index === supplierEntries.length - 1
+                    ? roundCurrency(depositAmount - allocatedDeposit)
+                    : roundCurrency(depositAmount * proportion);
+                allocatedDeposit = roundCurrency(
+                  allocatedDeposit + depositShare
+                );
+              }
+
+              const netAmount = roundCurrency(grossAmount - depositShare);
+
+              if (netAmount <= 0) {
+                return;
+              }
+
+              creationQueue.push({ supplierId, amount: netAmount });
+            });
+
+            for (const payable of creationQueue) {
+              const payableNumber = await generatePayableNumber(tx);
+              const description =
+                depositAmount > 0
+                  ? `厂家直发订单 ${order.orderNumber} 自动生成应付款（已扣除定金）`
+                  : `厂家直发订单 ${order.orderNumber} 自动生成应付款`;
+              const createdPayable = await tx.payableRecord.create({
+                data: {
+                  payableNumber,
+                  supplierId: payable.supplierId,
+                  userId: order.userId,
+                  sourceType: 'factory_shipment',
+                  sourceId: orderId,
+                  sourceNumber: order.orderNumber,
+                  payableAmount: payable.amount,
+                  remainingAmount: payable.amount,
+                  dueDate: computeDueDate(),
+                  status: 'pending',
+                  paymentTerms: '30天',
+                  description,
+                  remarks: `关联厂家直发订单：${order.orderNumber}`,
+                },
+                select: {
+                  id: true,
+                },
+              });
+              payableRecordIds.push(createdPayable.id);
+            }
+
+            if (payableRecordIds.length > 0) {
+              payableCreated = true;
+            }
+          }
+        }
+      }
+    }
+
     return {
       order: {
         id: order.id,
@@ -393,6 +574,8 @@ export async function updateFactoryShipmentStatus(
       },
       receivableCreated,
       paymentRecordId,
+      payableCreated,
+      payableRecordIds,
     };
   });
 }

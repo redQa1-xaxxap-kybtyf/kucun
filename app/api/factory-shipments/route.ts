@@ -13,6 +13,7 @@ import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
@@ -390,6 +391,21 @@ async function createOrderInTransaction(
     },
   });
 
+  const targetStatus = status ?? FACTORY_SHIPMENT_STATUS.DRAFT;
+  if (
+    targetStatus !== FACTORY_SHIPMENT_STATUS.DRAFT &&
+    targetStatus !== FACTORY_SHIPMENT_STATUS.CANCELLED &&
+    finalReceivableAmount > 0
+  ) {
+    await createInitialReceivableForShipment(tx, {
+      orderId: newOrder.id,
+      orderNumber,
+      customerId,
+      userId,
+      receivableAmount: finalReceivableAmount,
+    });
+  }
+
   // 价格历史（客户）
   const customerPriceData = items.reduce<
     Array<{
@@ -446,6 +462,46 @@ async function createOrderInTransaction(
   }
 
   return newOrder;
+}
+
+async function createInitialReceivableForShipment(
+  tx: Prisma.TransactionClient,
+  params: {
+    orderId: string;
+    orderNumber: string;
+    customerId: string;
+    userId: string;
+    receivableAmount: number;
+  }
+) {
+  const { orderId, orderNumber, customerId, userId, receivableAmount } = params;
+  if (receivableAmount <= 0) return;
+
+  const existing = await tx.paymentRecord.findFirst({
+    where: { factoryShipmentOrderId: orderId },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  const paymentNumber = await generatePaymentNumber(tx);
+  await tx.paymentRecord.create({
+    data: {
+      paymentNumber,
+      factoryShipmentOrderId: orderId,
+      salesOrderId: null,
+      customerId,
+      userId,
+      paymentType: 'order_payment',
+      paymentMethod: 'other',
+      paymentAmount: receivableAmount,
+      actualPaymentAmount: receivableAmount,
+      roundingAmount: 0,
+      appliedAmount: 0,
+      paymentDate: new Date(),
+      status: 'pending',
+      remarks: `系统自动生成应收（厂家直发）：订单 ${orderNumber}`,
+    },
+  });
 }
 
 // 获取厂家发货订单列表

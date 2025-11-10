@@ -200,6 +200,8 @@ export async function POST(request: NextRequest) {
       nextStatus: parsed.targetStatus,
       receivableCreated: result.receivableCreated,
       paymentRecordId: result.paymentRecordId ?? null,
+      payableCreated: result.payableCreated,
+      payableRecordIds: result.payableRecordIds ?? [],
     });
   } catch (error) {
     logger.error('factory-shipments', '物流状态推送处理失败', error);

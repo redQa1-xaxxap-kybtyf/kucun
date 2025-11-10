@@ -33,6 +33,7 @@ export const factoryShipmentItemSchema = z
     piecesPerUnit: z.number().int().min(1, '每件片数必须大于0').optional(),
     weight: z.number().nonnegative('重量不能为负数').optional(),
     quantity: z.number().positive('数量必须大于 0'),
+    unitCost: z.number().nonnegative('进货价不能为负').optional(),
     unitPrice: z.number().nonnegative('单价不能为负'),
     totalPrice: z.number().nonnegative('总价不能为负'),
     remarks: z.string().optional(),

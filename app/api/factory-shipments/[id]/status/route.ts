@@ -64,6 +64,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       ...updatedOrder,
       receivableCreated: result.receivableCreated,
       paymentRecordId: result.paymentRecordId ?? null,
+      payableCreated: result.payableCreated,
+      payableRecordIds: result.payableRecordIds ?? [],
     });
   } catch (error) {
     logger.error('factory-shipments', '更新厂家发货订单状态失败', error, {

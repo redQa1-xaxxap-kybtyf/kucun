@@ -362,6 +362,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({
         ...fullOrder,
         receivableCreated: result.receivableCreated,
+        paymentRecordId: result.paymentRecordId ?? null,
+        payableCreated: result.payableCreated,
+        payableRecordIds: result.payableRecordIds ?? [],
       });
     }
 
