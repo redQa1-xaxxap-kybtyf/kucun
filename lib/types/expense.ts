@@ -34,6 +34,7 @@ export type ExpenseRelatedType =
   | 'inbound' // 入库记录
   | 'outbound' // 出库记录
   | 'sales_order' // 销售订单
+  | 'purchase_order' // 采购订单
   | null; // 无关联
 
 // 关联业务类型标签映射
@@ -44,6 +45,7 @@ export const EXPENSE_RELATED_TYPE_LABELS: Record<
   inbound: '入库记录',
   outbound: '出库记录',
   sales_order: '销售订单',
+  purchase_order: '采购订单',
 };
 
 // 关联业务类型选项
@@ -67,6 +69,7 @@ export interface ExpenseRecord {
   relatedType?: ExpenseRelatedType;
   relatedId?: string;
   relatedNumber?: string;
+  containerNumber?: string;
 
   // 备注和附件
   remarks?: string;

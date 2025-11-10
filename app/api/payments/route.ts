@@ -24,6 +24,11 @@ const toMinorUnits = (amount: number | null | undefined): number => {
 const fromMinorUnits = (amountInCents: number): number =>
   Number((amountInCents / 100).toFixed(2));
 
+const serializeError = (error: unknown) =>
+  error instanceof Error
+    ? { name: error.name, message: error.message, stack: error.stack }
+    : { value: String(error) };
+
 /**
  * GET /api/payments - 获取收款记录列表
  * 支持分页、搜索、筛选等查询参数
@@ -399,10 +404,15 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     try {
       await clearCacheAfterPayment();
     } catch (error) {
-      logger.warn('payments', '清除收款缓存失败', error, {
-        paymentId: payment.id,
-        paymentNumber: payment.paymentNumber,
-      });
+      logger.warn(
+        'payments',
+        '清除收款缓存失败',
+        {
+          paymentId: payment.id,
+          paymentNumber: payment.paymentNumber,
+        },
+        { error: serializeError(error) }
+      );
     }
 
     if (
@@ -432,10 +442,15 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         });
       } catch (error) {
-        logger.warn('payments', '记录收款往来账失败', error, {
-          paymentId: payment.id,
-          paymentNumber: payment.paymentNumber,
-        });
+        logger.warn(
+          'payments',
+          '记录收款往来账失败',
+          {
+            paymentId: payment.id,
+            paymentNumber: payment.paymentNumber,
+          },
+          { error: serializeError(error) }
+        );
       }
     }
 
@@ -452,10 +467,15 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         userId,
       });
     } catch (error) {
-      logger.warn('payments', '发布收款事件失败', error, {
-        paymentId: payment.id,
-        paymentNumber: payment.paymentNumber,
-      });
+      logger.warn(
+        'payments',
+        '发布收款事件失败',
+        {
+          paymentId: payment.id,
+          paymentNumber: payment.paymentNumber,
+        },
+        { error: serializeError(error) }
+      );
     }
 
     return NextResponse.json({

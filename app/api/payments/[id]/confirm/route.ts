@@ -8,6 +8,11 @@ import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 
+const serializeError = (error: unknown) =>
+  error instanceof Error
+    ? { name: error.name, message: error.message, stack: error.stack }
+    : { value: String(error) };
+
 function appendRemark(existing: string | null, note?: string): string | null {
   if (!note?.trim()) {
     return existing;
@@ -174,10 +179,15 @@ export const POST = withAuth(
             },
           });
         } catch (error) {
-          logger.warn('payments', '确认收款后同步往来账失败', error, {
-            paymentId: updated.id,
-            paymentNumber: updated.paymentNumber,
-          });
+          logger.warn(
+            'payments',
+            '确认收款后同步往来账失败',
+            {
+              paymentId: updated.id,
+              paymentNumber: updated.paymentNumber,
+            },
+            { error: serializeError(error) }
+          );
         }
       }
 

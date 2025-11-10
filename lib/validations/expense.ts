@@ -19,6 +19,7 @@ export const expenseRelatedTypeSchema = z.enum([
   'inbound', // 入库记录
   'outbound', // 出库记录
   'sales_order', // 销售订单
+  'purchase_order', // 采购订单
 ] as const);
 
 // 创建费用记录验证规则
@@ -304,7 +305,7 @@ export const validateExpenseType = (type: string): type is ExpenseType =>
 export const validateExpenseRelatedType = (
   type: string
 ): type is ExpenseRelatedType =>
-  ['inbound', 'outbound', 'sales_order'].includes(type);
+  ['inbound', 'outbound', 'sales_order', 'purchase_order'].includes(type);
 
 // 金额格式化辅助函数
 export const formatExpenseAmount = (amount: number): number =>

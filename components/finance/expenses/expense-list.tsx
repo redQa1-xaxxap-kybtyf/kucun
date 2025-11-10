@@ -272,6 +272,12 @@ export function ExpenseList({
                               <div className="font-medium">
                                 {expense.relatedNumber}
                               </div>
+                              {expense.expenseType === 'shipping' &&
+                                expense.containerNumber && (
+                                  <div className="text-muted-foreground text-xs">
+                                    集装箱号：{expense.containerNumber}
+                                  </div>
+                                )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground">-</span>

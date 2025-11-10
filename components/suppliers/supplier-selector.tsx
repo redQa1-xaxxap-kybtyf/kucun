@@ -2,6 +2,7 @@
 
 import { Check, ChevronsUpDown } from 'lucide-react';
 import * as React from 'react';
+import { ZodError } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +34,7 @@ interface SupplierSelectorProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  onBlur?: () => void;
 }
 
 /**
@@ -45,6 +47,7 @@ export function SupplierSelector({
   disabled = false,
   placeholder = '选择供应商...',
   className,
+  onBlur,
 }: SupplierSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
@@ -53,6 +56,32 @@ export function SupplierSelector({
   const [error, setError] = React.useState<string | null>(null);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const cacheRef = React.useRef<Map<string, Supplier[]>>(new Map());
+
+  const notifyBlur = React.useCallback(() => {
+    if (!onBlur) {
+      return;
+    }
+
+    const handleError = (error: unknown) => {
+      if (error instanceof ZodError) {
+        return;
+      }
+      logger.error(
+        'suppliers:selector',
+        'supplier-selector:onBlur failed',
+        error
+      );
+    };
+
+    try {
+      const result = onBlur();
+      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+        (result as Promise<unknown>).catch(handleError);
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  }, [onBlur]);
 
   // 获取供应商列表
   React.useEffect(() => {
@@ -125,7 +154,15 @@ export function SupplierSelector({
   const selectedSupplier = suppliers.find(s => s.id === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={nextOpen => {
+        setOpen(nextOpen);
+        if (!nextOpen) {
+          notifyBlur();
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -169,6 +206,7 @@ export function SupplierSelector({
                           currentValue === value ? '' : currentValue
                         );
                         setOpen(false);
+                        notifyBlur();
                       }}
                     >
                       <Check

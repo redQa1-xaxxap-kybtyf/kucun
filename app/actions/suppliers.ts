@@ -86,6 +86,8 @@ const updateSupplierStatusSchema = z.object({
   status: z.enum(['active', 'inactive', 'suspended']),
 });
 
+type SupplierStatus = z.infer<typeof updateSupplierStatusSchema>['status'];
+
 // ============================================
 // Server Actions
 // ============================================
@@ -257,7 +259,7 @@ export async function updateSupplierStatus(
   formData: FormData
 ): Promise<ActionResult> {
   let supplierId: string | undefined;
-  let status: 'active' | 'inactive' | undefined;
+  let status: SupplierStatus | undefined;
 
   try {
     const session = await auth();

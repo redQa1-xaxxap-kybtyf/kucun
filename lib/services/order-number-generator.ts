@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { salesOrderConfig } from '@/lib/env';
@@ -42,77 +44,87 @@ export const ORDER_NUMBER_CONFIGS = {
  * @returns Promise<string> 生成的订单号
  */
 export async function generateUniqueOrderNumber(
-  config: OrderNumberConfig = ORDER_NUMBER_CONFIGS.SALES_ORDER
+  config: OrderNumberConfig = ORDER_NUMBER_CONFIGS.SALES_ORDER,
+  options?: { tx?: Prisma.TransactionClient }
 ): Promise<string> {
+  const runGeneration = async (
+    db: Prisma.TransactionClient
+  ): Promise<string> => {
+    const today = new Date();
+    const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
+
+    // SQLite兼容的原子操作：先尝试插入，如果失败则更新
+    try {
+      // 尝试插入新记录
+      await db.orderSequence.create({
+        data: {
+          sequenceType: config.sequenceType,
+          dateKey,
+          currentSequence: 1,
+        },
+      });
+    } catch (_error) {
+      // 如果记录已存在，则更新序列号
+      await db.orderSequence.updateMany({
+        where: {
+          sequenceType: config.sequenceType,
+          dateKey,
+        },
+        data: {
+          currentSequence: {
+            increment: 1,
+          },
+        },
+      });
+    }
+
+    // 获取更新后的序列号
+    const result = await db.orderSequence.findFirst({
+      where: {
+        sequenceType: config.sequenceType,
+        dateKey,
+      },
+      select: {
+        currentSequence: true,
+      },
+    });
+
+    if (!result) {
+      throw new Error('无法获取序列号');
+    }
+
+    const currentSequence = result.currentSequence;
+    const orderNumber = `${config.prefix}${dateKey}${currentSequence
+      .toString()
+      .padStart(config.numberLength, '0')}`;
+
+    // 双重检查：确保生成的订单号在目标表中不存在
+    if (config.sequenceType === 'sales_order') {
+      const existingOrder = await db.salesOrder.findFirst({
+        where: { orderNumber },
+        select: { id: true },
+      });
+
+      if (existingOrder) {
+        throw new Error('订单号冲突，正在重试...');
+      }
+    }
+
+    return orderNumber;
+  };
+
+  if (options?.tx) {
+    // 已处于事务上下文，由调用方负责事务边界
+    return runGeneration(options.tx);
+  }
+
   const maxRetries = 5;
   let attempt = 0;
 
   while (attempt < maxRetries) {
     try {
       return await prisma.$transaction(
-        async tx => {
-          const today = new Date();
-          const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
-
-          // SQLite兼容的原子操作：先尝试插入，如果失败则更新
-          try {
-            // 尝试插入新记录
-            await tx.orderSequence.create({
-              data: {
-                sequenceType: config.sequenceType,
-                dateKey,
-                currentSequence: 1,
-              },
-            });
-          } catch (_error) {
-            // 如果记录已存在，则更新序列号
-            await tx.orderSequence.updateMany({
-              where: {
-                sequenceType: config.sequenceType,
-                dateKey,
-              },
-              data: {
-                currentSequence: {
-                  increment: 1,
-                },
-              },
-            });
-          }
-
-          // 获取更新后的序列号
-          const result = await tx.orderSequence.findFirst({
-            where: {
-              sequenceType: config.sequenceType,
-              dateKey,
-            },
-            select: {
-              currentSequence: true,
-            },
-          });
-
-          if (!result) {
-            throw new Error('无法获取序列号');
-          }
-
-          const currentSequence = result.currentSequence;
-          const orderNumber = `${config.prefix}${dateKey}${currentSequence
-            .toString()
-            .padStart(config.numberLength, '0')}`;
-
-          // 双重检查：确保生成的订单号在目标表中不存在
-          if (config.sequenceType === 'sales_order') {
-            const existingOrder = await tx.salesOrder.findFirst({
-              where: { orderNumber },
-              select: { id: true },
-            });
-
-            if (existingOrder) {
-              throw new Error('订单号冲突，正在重试...');
-            }
-          }
-
-          return orderNumber;
-        },
+        async tx => runGeneration(tx),
         getLongTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
       );
     } catch (error) {

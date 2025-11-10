@@ -5,6 +5,7 @@
  */
 
 import { prisma, withTransaction } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   generateUniqueOrderNumber,
   type OrderNumberConfig,
@@ -13,6 +14,7 @@ import {
   findAvailableInventory,
   getAvailableQuantity,
   hasEnoughInventory,
+  mapProductionDateToBatchNumber,
 } from '@/lib/utils/inventory-variant-mapper';
 
 /**
@@ -98,28 +100,59 @@ async function executeOrderStatusUpdateWithInventory(
   // 如果没有提供操作员ID,使用订单创建人ID
   const finalOperatorId = operatorId || existingOrder.userId;
 
-  // 预先生成所有出库单号（在事务外部，避免嵌套事务）
+  // 预先收集需要扣减库存的产品，订单级别的调货/临时产品会在后续逻辑中跳过
+  type SalesOrderItemEntity = (typeof existingOrder.items)[0];
+  type TransferReason =
+    | 'MANUAL_PRODUCT'
+    | 'TEMPORARY_PRODUCT'
+    | 'TRANSFER_ORDER';
+
+  const resolveTransferReason = (
+    item: SalesOrderItemEntity
+  ): TransferReason | null => {
+    if (item.isManualProduct) {
+      return 'MANUAL_PRODUCT';
+    }
+    const temporaryProductId = (
+      item as {
+        temporaryProductId?: string | null;
+      }
+    ).temporaryProductId;
+    if (temporaryProductId) {
+      return 'TEMPORARY_PRODUCT';
+    }
+    if (existingOrder.orderType === 'TRANSFER') {
+      return 'TRANSFER_ORDER';
+    }
+    return null;
+  };
+
   const itemsWithInventory: Array<{
-    item: (typeof existingOrder.items)[0];
+    item: SalesOrderItemEntity;
     productId: string;
-    outboundRecordNumber: string;
+    transferReason: TransferReason | null;
   }> = [];
 
   for (const item of existingOrder.items) {
+    const transferReason = resolveTransferReason(item);
     const productId = item.productId;
     if (!productId) {
-      continue; // 跳过手动输入的产品
+      if (transferReason) {
+        logger.info('sales-order-status', '跳过调货产品库存扣减', {
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          salesOrderItemId: item.id,
+          reason: transferReason,
+          detail: '无产品ID，无法扣减库存',
+        });
+      }
+      continue; // 跳过没有产品ID的手动输入产品
     }
-
-    // 预先生成出库单号
-    const outboundRecordNumber = await generateUniqueOrderNumber(
-      OUTBOUND_RECORD_CONFIG
-    );
 
     itemsWithInventory.push({
       item,
       productId,
-      outboundRecordNumber,
+      transferReason,
     });
   }
 
@@ -133,22 +166,29 @@ async function executeOrderStatusUpdateWithInventory(
       requiredQty: number;
       shortage: number;
       unit: string;
+      batchNumber: string;
+      location: string;
     }> = [];
 
     const inventoryChecks: Array<{
       item: (typeof existingOrder.items)[0];
       productId: string;
-      outboundRecordNumber: string;
       inventory: NonNullable<
         Awaited<ReturnType<typeof findAvailableInventory>>
       >;
     }> = [];
 
-    for (const {
-      item,
-      productId,
-      outboundRecordNumber,
-    } of itemsWithInventory) {
+    for (const { item, productId, transferReason } of itemsWithInventory) {
+      if (transferReason) {
+        logger.info('sales-order-status', '跳过调货产品库存扣减', {
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber,
+          salesOrderItemId: item.id,
+          reason: transferReason,
+        });
+        continue;
+      }
+
       // 使用类型安全的库存查找（支持变体和批次映射）
       const inventory = await findAvailableInventory(productId, item.quantity, {
         colorCode: item.colorCode,
@@ -156,9 +196,14 @@ async function executeOrderStatusUpdateWithInventory(
         tx,
       });
 
-      // 如果没有找到库存记录，跳过该产品（可能是调货产品）
+      // 正常产品找不到库存，明确提示需要入库
       if (!inventory) {
-        continue;
+        const productCode = item.product?.code || '未知编码';
+        const productName = item.product?.name || '未知产品';
+        const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
+        throw new Error(
+          `产品 [${productCode}] ${productName}${colorInfo} 在仓库中尚未建立库存记录，请先入库或同步库存后再发货`
+        );
       }
 
       // 检查库存是否足够（考虑预留量）
@@ -170,6 +215,14 @@ async function executeOrderStatusUpdateWithInventory(
         const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
         // 系统内部统一使用"片"作为单位，因为库存和订单数量都是以片为单位存储的
         const unitLabel = '片';
+        const derivedBatch =
+          item.batchNumber ||
+          (item.productionDate
+            ? mapProductionDateToBatchNumber(item.productionDate)
+            : null) ||
+          inventory.batchNumber ||
+          '未设置';
+        const resolvedLocation = inventory.location || '未设置';
 
         insufficientStockItems.push({
           productCode,
@@ -179,13 +232,14 @@ async function executeOrderStatusUpdateWithInventory(
           requiredQty: item.quantity,
           shortage,
           unit: unitLabel,
+          batchNumber: derivedBatch,
+          location: resolvedLocation,
         });
       } else {
         // 库存充足，保存检查结果用于后续更新
         inventoryChecks.push({
           item,
           productId,
-          outboundRecordNumber,
           inventory,
         });
       }
@@ -193,15 +247,18 @@ async function executeOrderStatusUpdateWithInventory(
 
     // 如果有库存不足的产品，抛出详细的错误信息
     if (insufficientStockItems.length > 0) {
+      const formatTraceInfo = (item: (typeof insufficientStockItems)[number]) =>
+        `批次:${item.batchNumber} 位置:${item.location}`;
+
       if (insufficientStockItems.length === 1) {
         const item = insufficientStockItems[0];
         throw new Error(
-          `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}${item.unit}，需要：${item.requiredQty}${item.unit}，缺少：${item.shortage}${item.unit}`
+          `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}${item.unit}，需要：${item.requiredQty}${item.unit}，缺少：${item.shortage}${item.unit}（${formatTraceInfo(item)}）`
         );
       } else {
         const errorMessages = insufficientStockItems.map(
           item =>
-            `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}${item.unit}，需要 ${item.requiredQty}${item.unit}，缺少 ${item.shortage}${item.unit}`
+            `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}${item.unit}，需要 ${item.requiredQty}${item.unit}，缺少 ${item.shortage}${item.unit}（${formatTraceInfo(item)}）`
         );
         throw new Error(
           `以下 ${insufficientStockItems.length} 个产品库存不足：\n${errorMessages.join('\n')}`
@@ -209,30 +266,8 @@ async function executeOrderStatusUpdateWithInventory(
       }
     }
 
-    // 第二步：更新订单状态
-    const order = await tx.salesOrder.update({
-      where: { id: orderId },
-      data: {
-        status,
-        ...(remarks !== undefined && { remarks }),
-        // 如果状态变更为已发货，记录发货时间
-        ...(status === 'shipped' && { shippedAt: new Date() }),
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        remarks: true,
-      },
-    });
-
-    // 第三步：更新库存并创建出库记录 - 使用乐观锁
-    for (const {
-      item,
-      productId,
-      outboundRecordNumber,
-      inventory,
-    } of inventoryChecks) {
+    // 第二步：更新库存并创建出库记录 - 使用乐观锁
+    for (const { item, productId, inventory } of inventoryChecks) {
       // 使用乐观锁更新库存 - 确保并发安全
       const updatedCount = await tx.inventory.updateMany({
         where: {
@@ -254,13 +289,28 @@ async function executeOrderStatusUpdateWithInventory(
         );
       }
 
-      // 创建出库记录（使用预先生成的单号）
+      const mappedBatchNumber = item.productionDate
+        ? mapProductionDateToBatchNumber(item.productionDate)
+        : null;
+      // 批次号优先级：生产日期映射 > 订单批次号 > 库存批次号
+      const finalBatchNumber =
+        mappedBatchNumber ||
+        item.batchNumber ||
+        inventory.batchNumber ||
+        undefined;
+
+      const outboundRecordNumber = await generateUniqueOrderNumber(
+        OUTBOUND_RECORD_CONFIG,
+        { tx }
+      );
+
+      // 创建出库记录（使用事务内生成的单号）
       await tx.outboundRecord.create({
         data: {
           recordNumber: outboundRecordNumber,
           productId,
           variantId: inventory.variantId,
-          batchNumber: item.batchNumber || inventory.batchNumber || undefined,
+          batchNumber: finalBatchNumber,
           inventoryId: inventory.id,
           quantity: item.quantity,
           unitCost: item.unitCost || inventory.unitCost || undefined,
@@ -277,6 +327,23 @@ async function executeOrderStatusUpdateWithInventory(
         },
       });
     }
+
+    // 第三步：更新订单状态（确保库存扣减成功后再标记发货）
+    const order = await tx.salesOrder.update({
+      where: { id: orderId },
+      data: {
+        status,
+        ...(remarks !== undefined && { remarks }),
+        // 如果状态变更为已发货，记录发货时间
+        ...(status === 'shipped' && { shippedAt: new Date() }),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        remarks: true,
+      },
+    });
 
     return {
       order,

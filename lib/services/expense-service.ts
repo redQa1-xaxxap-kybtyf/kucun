@@ -17,6 +17,41 @@ import {
   type UpdateExpenseRequest,
 } from '@/lib/types/expense';
 
+async function getPurchaseOrderContainerMap(
+  orderIds: string[]
+): Promise<Map<string, string | null>> {
+  if (orderIds.length === 0) {
+    return new Map();
+  }
+
+  const orders = await prisma.purchaseOrder.findMany({
+    where: { id: { in: orderIds } },
+    select: {
+      id: true,
+      containerNumber: true,
+    },
+  });
+
+  const map = new Map<string, string | null>();
+  orders.forEach(order => {
+    map.set(order.id, order.containerNumber);
+  });
+  return map;
+}
+
+async function getPurchaseOrderContainer(
+  orderId?: string | null
+): Promise<string | undefined> {
+  if (!orderId) {
+    return undefined;
+  }
+  const order = await prisma.purchaseOrder.findUnique({
+    where: { id: orderId },
+    select: { containerNumber: true },
+  });
+  return order?.containerNumber ?? undefined;
+}
+
 /**
  * 生成费用编号
  * 格式：EXP-YYYYMMDD-序号
@@ -106,6 +141,12 @@ export async function createExpenseRecord(
     });
   });
 
+  const containerNumber =
+    expense.expenseType === 'shipping' &&
+    expense.relatedType === 'purchase_order'
+      ? await getPurchaseOrderContainer(expense.relatedId)
+      : undefined;
+
   // 转换为 ExpenseRecord 类型
   return {
     id: expense.id,
@@ -117,6 +158,7 @@ export async function createExpenseRecord(
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
     relatedNumber: expense.relatedNumber || undefined,
+    containerNumber,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
     userId: expense.userId,
@@ -197,6 +239,17 @@ export async function getExpenseRecords(
     },
   });
 
+  const shippingOrderIds = expenses
+    .filter(
+      expense =>
+        expense.expenseType === 'shipping' &&
+        expense.relatedType === 'purchase_order' &&
+        expense.relatedId
+    )
+    .map(expense => expense.relatedId!) as string[];
+
+  const containerMap = await getPurchaseOrderContainerMap(shippingOrderIds);
+
   // 转换为 ExpenseRecord 类型
   const records: ExpenseRecord[] = expenses.map(expense => ({
     id: expense.id,
@@ -208,6 +261,11 @@ export async function getExpenseRecords(
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
     relatedNumber: expense.relatedNumber || undefined,
+    containerNumber:
+      expense.expenseType === 'shipping' &&
+      expense.relatedType === 'purchase_order'
+        ? containerMap.get(expense.relatedId || '') || undefined
+        : undefined,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
     userId: expense.userId,
@@ -251,6 +309,12 @@ export async function getExpenseRecordById(
     return null;
   }
 
+  const containerNumber =
+    expense.expenseType === 'shipping' &&
+    expense.relatedType === 'purchase_order'
+      ? await getPurchaseOrderContainer(expense.relatedId)
+      : undefined;
+
   // 转换为 ExpenseRecord 类型
   return {
     id: expense.id,
@@ -262,6 +326,7 @@ export async function getExpenseRecordById(
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
     relatedNumber: expense.relatedNumber || undefined,
+    containerNumber,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
     userId: expense.userId,
@@ -307,6 +372,12 @@ export async function updateExpenseRecord(
     },
   });
 
+  const containerNumber =
+    expense.expenseType === 'shipping' &&
+    expense.relatedType === 'purchase_order'
+      ? await getPurchaseOrderContainer(expense.relatedId)
+      : undefined;
+
   // 转换为 ExpenseRecord 类型
   return {
     id: expense.id,
@@ -318,6 +389,7 @@ export async function updateExpenseRecord(
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
     relatedNumber: expense.relatedNumber || undefined,
+    containerNumber,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
     userId: expense.userId,

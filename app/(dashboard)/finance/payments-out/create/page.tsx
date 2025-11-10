@@ -486,7 +486,7 @@ export default function CreatePaymentOutPage() {
   });
 
   const watchedPayableId = form.watch('payableRecordId');
-  const _watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedPaymentMethod = form.watch('paymentMethod');
 
   // 获取数据
   const payableRecord = usePayableData(watchedPayableId || '');
