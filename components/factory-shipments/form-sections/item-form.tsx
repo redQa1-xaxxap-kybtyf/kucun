@@ -131,6 +131,29 @@ export const ItemForm = React.memo<ItemFormProps>(
                 products={products}
                 onProductChange={product => {
                   if (product && selectedCustomerId && product.code) {
+                    // 自动填充产品信息
+                    if (product.specification) {
+                      form.setValue(
+                        `items.${index}.specification`,
+                        product.specification
+                      );
+                    }
+                    if (product.unit) {
+                      form.setValue(
+                        `items.${index}.unit`,
+                        product.unit as '片' | '件'
+                      );
+                    }
+                    if (product.piecesPerUnit) {
+                      form.setValue(
+                        `items.${index}.piecesPerUnit`,
+                        product.piecesPerUnit
+                      );
+                    }
+                    if (product.weight) {
+                      form.setValue(`items.${index}.weight`, product.weight);
+                    }
+
                     // 自动填充客户历史价格（基于产品编码匹配）
                     const customerPrice = getLatestPrice(
                       customerPriceHistoryData?.data,
@@ -140,8 +163,14 @@ export const ItemForm = React.memo<ItemFormProps>(
                     if (customerPrice !== undefined) {
                       form.setValue(`items.${index}.unitPrice`, customerPrice);
                       toast({
-                        title: '已自动填充客户历史价格',
-                        description: `产品编码 "${product.code}" 的上次厂家发货价格：￥${customerPrice.toFixed(2)}`,
+                        title: '已自动填充',
+                        description: `产品信息和历史价格已自动填充`,
+                        duration: 2000,
+                      });
+                    } else {
+                      toast({
+                        title: '已自动填充',
+                        description: `产品信息已自动填充`,
                         duration: 2000,
                       });
                     }
@@ -212,6 +241,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                     index={index}
                     value={field.value}
                     onChange={field.onChange}
+                    onBlur={field.onBlur}
                   />
                 )}
               />
