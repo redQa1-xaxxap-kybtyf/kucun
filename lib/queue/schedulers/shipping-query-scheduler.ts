@@ -11,7 +11,11 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 import { defaultQueueConfig } from '../config';
-import { addShippingQueryJob } from '../shipping-query-queue';
+import {
+  addShippingQueryJob,
+  SHIPPING_QUERY_TARGETS,
+  type ShippingQueryTargetType,
+} from '../shipping-query-queue';
 
 /**
  * 调度器配置
@@ -181,16 +185,14 @@ class ShippingQueryScheduler {
       // 2. 未到达（arrivalDate 为空）
       // 3. 有船公司信息或柜号
       // 4. 距离上次查询超过最小间隔时间（或从未查询过）
-      const orders = await prisma.factoryShipmentOrder.findMany({
+      const factoryOrders = await prisma.factoryShipmentOrder.findMany({
         where: {
           status: 'shipped',
           arrivalDate: null,
+          shippingCompany: { not: null },
           AND: [
             {
-              OR: [
-                { shippingCompany: { not: null } },
-                { containerNumber: { not: null } },
-              ],
+              shippingCompany: { not: '' },
             },
             {
               OR: [
@@ -211,28 +213,62 @@ class ShippingQueryScheduler {
         take: 100,
       });
 
-      logger.info(
-        'shipping-scheduler',
-        `找到 ${orders.length} 个需要查询的订单`
-      );
+      const purchaseOrders = await prisma.purchaseOrder.findMany({
+        where: {
+          status: { in: ['shipped', 'in_transit'] },
+          arrivalDate: null,
+          shippingCompany: { not: null },
+          AND: [
+            {
+              shippingCompany: { not: '' },
+            },
+            {
+              OR: [
+                { lastShippingQueryAt: null },
+                { lastShippingQueryAt: { lt: minQueryTime } },
+              ],
+            },
+          ],
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          shippingCompany: true,
+          containerNumber: true,
+          lastShippingQueryAt: true,
+        },
+        take: 100,
+      });
+
+      const totalCandidates = factoryOrders.length + purchaseOrders.length;
+
+      logger.info('shipping-scheduler', '找到需要查询的订单', undefined, {
+        factoryShipments: factoryOrders.length,
+        purchaseOrders: purchaseOrders.length,
+        total: totalCandidates,
+      });
 
       // 为每个订单添加查询任务
       let successCount = 0;
       let failCount = 0;
 
-      for (const order of orders) {
+      const enqueueOrder = async (
+        order: (typeof factoryOrders)[number] | (typeof purchaseOrders)[number],
+        targetType: ShippingQueryTargetType
+      ) => {
         try {
           // 使用订单ID作为 jobId 实现任务去重
           // 如果该订单已有待处理的任务，则不会重复添加
           await addShippingQueryJob(
             {
-              factoryShipmentOrderId: order.id,
+              targetType,
+              orderId: order.id,
               shippingCompany: order.shippingCompany || '',
               containerNumber: order.containerNumber || undefined,
             },
             {
               // 使用订单ID作为 jobId 确保同一订单不会重复添加任务
-              jobId: `shipping-query-${order.id}`,
+              jobId: `shipping-query-${targetType}-${order.id}`,
               // 优先级：越久未查询的订单优先级越高
               priority: order.lastShippingQueryAt
                 ? Math.floor(
@@ -252,6 +288,7 @@ class ShippingQueryScheduler {
             orderNumber: order.orderNumber,
             shippingCompany: order.shippingCompany,
             containerNumber: order.containerNumber,
+            targetType,
           });
         } catch (error) {
           failCount++;
@@ -263,15 +300,24 @@ class ShippingQueryScheduler {
             {
               orderId: order.id,
               orderNumber: order.orderNumber,
+              targetType,
             }
           );
         }
+      };
+
+      for (const order of factoryOrders) {
+        await enqueueOrder(order, SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT);
+      }
+
+      for (const order of purchaseOrders) {
+        await enqueueOrder(order, SHIPPING_QUERY_TARGETS.PURCHASE_ORDER);
       }
 
       const duration = Date.now() - startTime;
 
       logger.info('shipping-scheduler', '运输查询调度完成', undefined, {
-        totalOrders: orders.length,
+        totalOrders: totalCandidates,
         successCount,
         failCount,
         durationMs: duration,

@@ -76,7 +76,8 @@ async function main() {
       try {
         const job = await addShippingQueryJob(
           {
-            factoryShipmentOrderId: testOrder.id,
+            targetType: 'factory_shipment',
+            orderId: testOrder.id,
             shippingCompany: testOrder.shippingCompany || '',
             containerNumber: testOrder.containerNumber || undefined,
           },
@@ -189,7 +190,7 @@ async function main() {
     console.log(`   - 失败: ${failed}`);
 
     // 步骤 7: 测试总结
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('📋 测试总结\n');
 
     const checks = [

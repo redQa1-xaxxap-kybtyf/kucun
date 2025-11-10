@@ -13,6 +13,74 @@ import type {
   UpdateFactoryShipmentOrderStatusData,
 } from '@/lib/validations/factory-shipment';
 
+export type FactoryShipmentValidationIssue = {
+  path?: string;
+  message: string;
+  code?: string;
+};
+
+export class FactoryShipmentValidationError extends Error {
+  public readonly details: FactoryShipmentValidationIssue[];
+  public readonly status: number;
+
+  constructor(
+    message: string,
+    details: FactoryShipmentValidationIssue[] = [],
+    status = 422
+  ) {
+    super(message);
+    this.name = 'FactoryShipmentValidationError';
+    this.details = details;
+    this.status = status;
+  }
+}
+
+type ErrorPayload = {
+  error?: string;
+  message?: string;
+  details?: FactoryShipmentValidationIssue[];
+};
+
+function isValidationErrorPayload(payload: unknown): payload is ErrorPayload {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    Array.isArray((payload as ErrorPayload).details)
+  );
+}
+
+async function parseErrorResponse(
+  response: Response
+): Promise<ErrorPayload | null> {
+  try {
+    return (await response.json()) as ErrorPayload;
+  } catch {
+    return null;
+  }
+}
+
+async function throwFactoryShipmentError(
+  response: Response,
+  fallbackMessage: string
+): Promise<never> {
+  const payload = await parseErrorResponse(response);
+
+  if (response.status === 422 && isValidationErrorPayload(payload)) {
+    throw new FactoryShipmentValidationError(
+      payload?.error || payload?.message || '数据验证失败',
+      payload?.details ?? [],
+      response.status
+    );
+  }
+
+  const message =
+    payload?.error ||
+    payload?.message ||
+    `${fallbackMessage}: ${response.statusText || `HTTP ${response.status}`}`;
+
+  throw new Error(message);
+}
+
 // Query Keys
 export const factoryShipmentQueryKeys = {
   all: ['factory-shipments'] as const,
@@ -104,8 +172,7 @@ export async function createFactoryShipmentOrder(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '创建厂家发货订单失败');
+    await throwFactoryShipmentError(response, '创建厂家发货订单失败');
   }
 
   return response.json();
@@ -127,8 +194,7 @@ export async function updateFactoryShipmentOrder(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || '更新厂家发货订单失败');
+    await throwFactoryShipmentError(response, '更新厂家发货订单失败');
   }
 
   return response.json();
@@ -248,8 +314,11 @@ export function useCreateFactoryShipmentOrder() {
     mutationFn: createFactoryShipmentOrder,
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建发货单后立即看到新记录
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
         type: 'active',
       });
     },
@@ -272,12 +341,16 @@ export function useUpdateFactoryShipmentOrder() {
     }) => updateFactoryShipmentOrder(id, data),
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新发货单后立即看到变化
+      // 刷新详情页
       queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
         type: 'active',
       });
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
         type: 'active',
       });
     },
@@ -300,12 +373,16 @@ export function useUpdateFactoryShipmentOrderStatus() {
     }) => updateFactoryShipmentOrderStatus(id, data),
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
+      // 刷新详情页
       queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
         type: 'active',
       });
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
         type: 'active',
       });
     },
@@ -322,8 +399,11 @@ export function useDeleteFactoryShipmentOrder() {
     mutationFn: deleteFactoryShipmentOrder,
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除发货单后立即看到变化
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
         type: 'active',
       });
     },
@@ -346,12 +426,16 @@ export function useUpdateFactoryShipmentOrderContainerNumber() {
     }) => updateFactoryShipmentOrderContainerNumber(id, data),
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新集装箱号后立即看到变化
+      // 刷新详情页
       queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
         type: 'active',
       });
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
         type: 'active',
       });
     },
@@ -386,6 +470,31 @@ export async function updateFactoryShipmentOrderShippingCompany(
 }
 
 /**
+ * 手动触发运输查询
+ */
+export async function triggerFactoryShipmentShippingQuery(id: string): Promise<{
+  orderId: string;
+  nextAvailableAt?: string;
+  message?: string;
+}> {
+  const response = await fetch(`/api/factory-shipments/${id}/shipping-query`, {
+    method: 'POST',
+  });
+
+  const payload = await response.json();
+
+  if (!response.ok) {
+    throw new Error(payload.error || '手动查询失败，请稍后重试');
+  }
+
+  return {
+    orderId: payload?.data?.orderId ?? id,
+    nextAvailableAt: payload?.data?.nextAvailableAt,
+    message: payload?.message,
+  };
+}
+
+/**
  * 更新厂家发货订单船公司名称的 Hook
  */
 export function useUpdateFactoryShipmentOrderShippingCompany() {
@@ -400,12 +509,37 @@ export function useUpdateFactoryShipmentOrderShippingCompany() {
       data: { shippingCompany: string };
     }) => updateFactoryShipmentOrderShippingCompany(id, data),
     onSuccess: (_, { id }) => {
-      // 刷新详情和列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新船公司名称后立即看到变化
+      // 刷新详情页
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
+        type: 'active',
+      });
+    },
+  });
+}
+
+/**
+ * 手动触发运输查询的 Hook
+ */
+export function useTriggerFactoryShipmentShippingQuery() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => triggerFactoryShipmentShippingQuery(id),
+    onSuccess: () => {
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
+        type: 'active',
       });
     },
   });
@@ -420,12 +554,18 @@ export function useCancelFactoryShipmentOrder() {
   return useMutation({
     mutationFn: cancelFactoryShipmentOrder,
     onSuccess: (_, id) => {
-      // 刷新详情和列表数据
-      queryClient.invalidateQueries({
+      // ✅ 使用 refetchQueries 强制立即刷新，确保用户取消订单后立即看到变化
+      // 刷新详情页
+      queryClient.refetchQueries({
         queryKey: factoryShipmentQueryKeys.detail(id),
+        type: 'active',
       });
-      queryClient.invalidateQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+      // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'factory-shipments' &&
+          query.queryKey[1] === 'list',
+        type: 'active',
       });
     },
   });

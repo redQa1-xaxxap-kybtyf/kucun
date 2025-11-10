@@ -16,16 +16,26 @@ import {
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { addShippingQueryJob } from '@/lib/queue/shipping-query-queue';
+import {
+  addShippingQueryJob,
+  SHIPPING_QUERY_TARGETS,
+  type ShippingQueryTargetType,
+} from '@/lib/queue/shipping-query-queue';
 
 /**
  * 请求体验证 Schema
  */
+const orderTypeEnum = z.enum([
+  SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT,
+  SHIPPING_QUERY_TARGETS.PURCHASE_ORDER,
+] as const);
+
 const batchQuerySchema = z.object({
-  factoryShipmentOrderIds: z
+  orderIds: z
     .array(z.string().uuid('订单 ID 格式无效'))
     .min(1, '至少需要提供一个订单 ID')
     .max(50, '最多支持 50 个订单批量查询'),
+  orderType: orderTypeEnum.default(SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT),
   force: z.boolean().optional().default(false),
 });
 
@@ -56,6 +66,7 @@ async function processOrderQuery(
       lastShippingQueryAt: Date | null;
     }
   >,
+  orderType: ShippingQueryTargetType,
   force: boolean,
   minIntervalMs: number,
   minIntervalHours: number,
@@ -104,12 +115,13 @@ async function processOrderQuery(
   try {
     const job = await addShippingQueryJob(
       {
-        factoryShipmentOrderId: order.id,
+        targetType: orderType,
+        orderId: order.id,
         shippingCompany: order.shippingCompany || '',
         containerNumber: order.containerNumber || undefined,
       },
       {
-        jobId: `batch-${order.id}-${Date.now()}`,
+        jobId: `batch-${orderType}-${order.id}-${Date.now()}`,
         priority: 2,
       }
     );
@@ -149,30 +161,54 @@ export const POST = withErrorHandling(
   withAuth(async (request: NextRequest, { user }) => {
     try {
       // 解析和验证请求体
-      const body: unknown = await request.json();
-      const validatedData = batchQuerySchema.parse(body);
-      const { factoryShipmentOrderIds, force } = validatedData;
+      const rawBody = (await request.json()) as Record<string, unknown>;
+      const normalizedPayload = {
+        orderIds:
+          (rawBody.orderIds as string[] | undefined) ??
+          (rawBody.factoryShipmentOrderIds as string[] | undefined),
+        orderType: rawBody.orderType,
+        force: rawBody.force,
+      };
+      const validatedData = batchQuerySchema.parse(normalizedPayload);
+      const { orderIds, orderType, force } = validatedData;
 
       logger.info('shipping-query-batch', `用户 ${user.id} 触发批量运输查询`, {
-        orderCount: factoryShipmentOrderIds.length,
+        orderCount: orderIds.length,
         force,
+        orderType,
       });
 
       // 批量查询订单信息
-      const orders = await prisma.factoryShipmentOrder.findMany({
-        where: {
-          id: { in: factoryShipmentOrderIds },
-        },
-        select: {
-          id: true,
-          orderNumber: true,
-          containerNumber: true,
-          shippingCompany: true,
-          status: true,
-          lastShippingQueryAt: true,
-          shippingQueryStatus: true,
-        },
-      });
+      const orders =
+        orderType === SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT
+          ? await prisma.factoryShipmentOrder.findMany({
+              where: {
+                id: { in: orderIds },
+              },
+              select: {
+                id: true,
+                orderNumber: true,
+                containerNumber: true,
+                shippingCompany: true,
+                status: true,
+                lastShippingQueryAt: true,
+                shippingQueryStatus: true,
+              },
+            })
+          : await prisma.purchaseOrder.findMany({
+              where: {
+                id: { in: orderIds },
+              },
+              select: {
+                id: true,
+                orderNumber: true,
+                containerNumber: true,
+                shippingCompany: true,
+                status: true,
+                lastShippingQueryAt: true,
+                shippingQueryStatus: true,
+              },
+            });
 
       // 创建订单 ID 到订单的映射
       const orderMap = new Map(orders.map(order => [order.id, order]));
@@ -184,10 +220,11 @@ export const POST = withErrorHandling(
 
       // 处理每个订单
       const results: BatchQueryResultItem[] = [];
-      for (const orderId of factoryShipmentOrderIds) {
+      for (const orderId of orderIds) {
         const result = await processOrderQuery(
           orderId,
           orderMap,
+          orderType,
           force,
           minIntervalMs,
           minIntervalHours,
@@ -202,7 +239,7 @@ export const POST = withErrorHandling(
       const failedCount = results.filter(r => r.status === 'failed').length;
 
       logger.info('shipping-query-batch', `批量查询任务处理完成`, {
-        total: factoryShipmentOrderIds.length,
+        total: orderIds.length,
         queued: queuedCount,
         skipped: skippedCount,
         failed: failedCount,
@@ -210,7 +247,7 @@ export const POST = withErrorHandling(
 
       // 返回批量处理结果
       return successResponse({
-        total: factoryShipmentOrderIds.length,
+        total: orderIds.length,
         queued: queuedCount,
         skipped: skippedCount,
         failed: failedCount,

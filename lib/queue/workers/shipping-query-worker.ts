@@ -7,11 +7,24 @@
 import { type Job, Worker } from 'bullmq';
 
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { defaultWorkerConfig, QUEUE_NAMES } from '@/lib/queue/config';
-import type { ShippingQueryJobData } from '@/lib/queue/shipping-query-queue';
+import {
+  SHIPPING_QUERY_TARGETS,
+  type ShippingQueryJobData,
+} from '@/lib/queue/shipping-query-queue';
 import { PuppeteerService } from '@/lib/services/puppeteer-service';
 import type { ExtractSelectors } from '@/lib/types/shipping';
+import { safeJSONParse } from '@/lib/utils/safe-json';
+import {
+  normalizeSelector,
+  normalizeShippingExtractSelectors,
+} from '@/lib/utils/selector-normalizer';
+
+const SITE_COOLDOWN_MS = env.SHIPPING_QUERY_SITE_COOLDOWN_MS;
+const sleep = (ms: number) =>
+  new Promise<void>(resolve => setTimeout(resolve, ms));
 
 /**
  * 处理运输查询任务
@@ -28,10 +41,13 @@ import type { ExtractSelectors } from '@/lib/types/shipping';
 async function processShippingQueryJob(
   job: Job<ShippingQueryJobData>
 ): Promise<void> {
-  const { factoryShipmentOrderId, shippingCompany, containerNumber } = job.data;
+  const { targetType, orderId, shippingCompany, containerNumber } = job.data;
+  const isFactoryShipment =
+    targetType === SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT;
 
   logger.info('shipping-query-worker', `开始处理运输查询任务 ${job.id}`, {
-    factoryShipmentOrderId,
+    targetType,
+    orderId,
     shippingCompany,
     containerNumber,
   });
@@ -52,14 +68,25 @@ async function processShippingQueryJob(
       logger.error('shipping-query-worker', errorMessage);
 
       // 更新订单状态为失败
-      await prisma.factoryShipmentOrder.update({
-        where: { id: factoryShipmentOrderId },
-        data: {
-          lastShippingQueryAt: new Date(),
-          shippingQueryStatus: 'failed',
-          shippingQueryError: errorMessage,
-        },
-      });
+      if (isFactoryShipment) {
+        await prisma.factoryShipmentOrder.update({
+          where: { id: orderId },
+          data: {
+            lastShippingQueryAt: new Date(),
+            shippingQueryStatus: 'failed',
+            shippingQueryError: errorMessage,
+          },
+        });
+      } else {
+        await prisma.purchaseOrder.update({
+          where: { id: orderId },
+          data: {
+            lastShippingQueryAt: new Date(),
+            shippingQueryStatus: 'failed',
+            shippingQueryError: errorMessage,
+          },
+        });
+      }
 
       throw new Error(errorMessage);
     }
@@ -73,24 +100,48 @@ async function processShippingQueryJob(
     let querySuccess = false;
     let lastError: string | null = null;
 
-    // 优先使用船公司名称作为查询关键词，柜号作为备选
+    // 优先使用船公司名称作为查询关键词，柜号仅在缺失时作为备选
+    const keywordSource = shippingCompany
+      ? 'shippingCompany'
+      : 'containerNumber';
     const keyword = (shippingCompany || containerNumber || '').toUpperCase();
 
     if (!keyword) {
       throw new Error('缺少查询关键词：必须提供船公司名称或柜号');
     }
 
-    for (const site of activeSites) {
+    logger.info('shipping-query-worker', '使用查询关键词', {
+      orderId,
+      targetType,
+      keywordSource,
+      keyword,
+    });
+
+    for (const [index, site] of activeSites.entries()) {
       try {
         logger.info('shipping-query-worker', `尝试站点: ${site.name}`, {
           siteId: site.id,
           url: site.url,
         });
 
-        // 解析提取选择器配置
-        const extractSelectors: ExtractSelectors = JSON.parse(
-          site.extractSelectors
+        // 解析提取选择器配置，兼容新旧格式
+        const parsedSelectors = safeJSONParse<Partial<ExtractSelectors>>(
+          site.extractSelectors,
+          {},
+          {
+            logError: true,
+            context: 'shipping-query-worker:extract-selectors',
+            includeRawJSON: false,
+          }
         );
+        const canonicalSelectors =
+          normalizeShippingExtractSelectors(parsedSelectors);
+        const extractSelectors: ExtractSelectors = {
+          status: canonicalSelectors.status ?? '',
+          destination: canonicalSelectors.destination ?? '',
+          estimatedArrival: canonicalSelectors.estimatedArrival ?? '',
+          updateTime: canonicalSelectors.updateTime ?? '',
+        };
 
         // 调用 PuppeteerService 查询运输信息
         const result = await PuppeteerService.queryShipping(
@@ -98,9 +149,9 @@ async function processShippingQueryJob(
           site.url,
           keyword,
           {
-            searchInput: site.searchInputSelector,
-            searchButton: site.searchButtonSelector,
-            resultContainer: site.resultContainerSelector,
+            searchInput: normalizeSelector(site.searchInputSelector),
+            searchButton: normalizeSelector(site.searchButtonSelector),
+            resultContainer: normalizeSelector(site.resultContainerSelector),
           },
           extractSelectors
         );
@@ -113,24 +164,35 @@ async function processShippingQueryJob(
             siteId: site.id,
             status: result.status,
             destination: result.destination,
+            targetType,
+            orderId,
           });
 
-          // 步骤3: 更新工厂发货订单
-          await prisma.factoryShipmentOrder.update({
-            where: { id: factoryShipmentOrderId },
-            data: {
-              lastShippingQueryAt: new Date(),
-              shippingQueryStatus: 'success',
-              shippingQueryError: null,
-              preferredSiteId: site.id, // 记录成功的站点
-              // 如果查询到预计到达时间，更新订单的预计到达时间
-              ...(result.estimatedArrival && {
-                estimatedArrival: new Date(result.estimatedArrival),
-              }),
-            },
-          });
+          const successPayload = {
+            lastShippingQueryAt: new Date(),
+            shippingQueryStatus: 'success',
+            shippingQueryError: null,
+            ...(result.estimatedArrival && {
+              estimatedArrival: new Date(result.estimatedArrival),
+            }),
+          };
 
-          // 步骤4: 创建查询记录
+          if (isFactoryShipment) {
+            await prisma.factoryShipmentOrder.update({
+              where: { id: orderId },
+              data: {
+                ...successPayload,
+                preferredSiteId: site.id,
+              },
+            });
+          } else {
+            await prisma.purchaseOrder.update({
+              where: { id: orderId },
+              data: successPayload,
+            });
+          }
+
+          // 步骤4: 创建查询记录（采购订单沿用相同表，后续重构为通用记录）
           await prisma.shippingQuery.create({
             data: {
               siteId: site.id,
@@ -146,12 +208,13 @@ async function processShippingQueryJob(
                 : null,
               queryStatus: 'success',
               errorMessage: null,
-              factoryShipmentOrderId,
+              factoryShipmentOrderId: orderId,
             },
           });
 
           logger.info('shipping-query-worker', `✅ 任务完成: ${job.id}`, {
-            factoryShipmentOrderId,
+            orderId,
+            targetType,
             siteId: site.id,
           });
 
@@ -179,6 +242,15 @@ async function processShippingQueryJob(
         // 继续尝试下一个站点
         continue;
       }
+
+      const isLastSite = index === activeSites.length - 1;
+      if (!querySuccess && !isLastSite && SITE_COOLDOWN_MS > 0) {
+        logger.debug(
+          'shipping-query-worker',
+          `等待 ${SITE_COOLDOWN_MS}ms 后继续尝试下一站点`
+        );
+        await sleep(SITE_COOLDOWN_MS);
+      }
     }
 
     // 步骤5: 如果所有站点都失败，更新订单状态
@@ -187,14 +259,23 @@ async function processShippingQueryJob(
 
       logger.error('shipping-query-worker', errorMessage);
 
-      await prisma.factoryShipmentOrder.update({
-        where: { id: factoryShipmentOrderId },
-        data: {
-          lastShippingQueryAt: new Date(),
-          shippingQueryStatus: 'failed',
-          shippingQueryError: errorMessage,
-        },
-      });
+      const failurePayload = {
+        lastShippingQueryAt: new Date(),
+        shippingQueryStatus: 'failed',
+        shippingQueryError: errorMessage,
+      };
+
+      if (isFactoryShipment) {
+        await prisma.factoryShipmentOrder.update({
+          where: { id: orderId },
+          data: failurePayload,
+        });
+      } else {
+        await prisma.purchaseOrder.update({
+          where: { id: orderId },
+          data: failurePayload,
+        });
+      }
 
       throw new Error(errorMessage);
     }

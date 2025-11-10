@@ -15,21 +15,130 @@ import {
 } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { shippingQueryQueue } from '@/lib/queue/shipping-query-queue';
+import {
+  SHIPPING_QUERY_TARGETS,
+  shippingQueryQueue,
+  type ShippingQueryJobData,
+  type ShippingQueryTargetType,
+} from '@/lib/queue/shipping-query-queue';
 
 /**
  * 查询参数验证 Schema
  */
+const orderTypeEnum = z.enum([
+  SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT,
+  SHIPPING_QUERY_TARGETS.PURCHASE_ORDER,
+] as const);
+
 const statusQuerySchema = z
   .object({
     jobId: z.string().optional(),
     orderId: z.string().uuid('订单 ID 格式无效').optional(),
+    orderType: orderTypeEnum.optional(),
   })
   .refine(data => data.jobId || data.orderId, {
     message: '必须提供 jobId 或 orderId 参数',
   });
 
-type StatusQueryInput = z.infer<typeof statusQuerySchema>;
+type _StatusQueryInput = z.infer<typeof statusQuerySchema>;
+
+type OrderSummary = {
+  id: string;
+  orderNumber: string;
+  containerNumber: string | null;
+  shippingCompany: string | null;
+  lastShippingQueryAt: Date | null;
+  shippingQueryStatus: string | null;
+  shippingQueryError: string | null;
+};
+
+type LegacyJobData = ShippingQueryJobData & {
+  factoryShipmentOrderId?: string;
+};
+
+function resolveJobTarget(jobData: LegacyJobData): {
+  orderId?: string;
+  orderType: ShippingQueryTargetType;
+} {
+  const resolvedOrderId = jobData.orderId ?? jobData.factoryShipmentOrderId;
+  const resolvedType =
+    jobData.targetType ??
+    (jobData.factoryShipmentOrderId
+      ? SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT
+      : SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT);
+
+  return { orderId: resolvedOrderId, orderType: resolvedType };
+}
+
+async function fetchOrderSummary(
+  orderType: ShippingQueryTargetType,
+  orderId: string
+): Promise<OrderSummary | null> {
+  if (orderType === SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT) {
+    return await prisma.factoryShipmentOrder.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        containerNumber: true,
+        shippingCompany: true,
+        lastShippingQueryAt: true,
+        shippingQueryStatus: true,
+        shippingQueryError: true,
+      },
+    });
+  }
+
+  return await prisma.purchaseOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      orderNumber: true,
+      containerNumber: true,
+      shippingCompany: true,
+      lastShippingQueryAt: true,
+      shippingQueryStatus: true,
+      shippingQueryError: true,
+    },
+  });
+}
+
+async function detectOrderType(
+  orderId: string,
+  requestedType?: ShippingQueryTargetType
+): Promise<{
+  orderType: ShippingQueryTargetType | null;
+  order: OrderSummary | null;
+}> {
+  if (requestedType) {
+    const order = await fetchOrderSummary(requestedType, orderId);
+    return { orderType: order ? requestedType : null, order };
+  }
+
+  const factoryOrder = await fetchOrderSummary(
+    SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT,
+    orderId
+  );
+  if (factoryOrder) {
+    return {
+      orderType: SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT,
+      order: factoryOrder,
+    };
+  }
+
+  const purchaseOrder = await fetchOrderSummary(
+    SHIPPING_QUERY_TARGETS.PURCHASE_ORDER,
+    orderId
+  );
+  if (purchaseOrder) {
+    return {
+      orderType: SHIPPING_QUERY_TARGETS.PURCHASE_ORDER,
+      order: purchaseOrder,
+    };
+  }
+
+  return { orderType: null, order: null };
+}
 
 /**
  * GET /api/shipping/query/status
@@ -41,18 +150,21 @@ export const GET = withErrorHandling(
     try {
       // 解析查询参数
       const { searchParams } = new URL(request.url);
-      const queryParams: StatusQueryInput = {
+      const typeParam = searchParams.get('orderType');
+      const queryParams = {
         jobId: searchParams.get('jobId') || undefined,
         orderId: searchParams.get('orderId') || undefined,
+        orderType: typeParam ?? undefined,
       };
 
       // 验证查询参数
       const validatedParams = statusQuerySchema.parse(queryParams);
-      const { jobId, orderId } = validatedParams;
+      const { jobId, orderId, orderType } = validatedParams;
 
       logger.info('shipping-query-status', `用户 ${user.id} 查询任务状态`, {
         jobId,
         orderId,
+        orderType,
       });
 
       // 如果提供了 jobId，直接查询任务状态
@@ -63,27 +175,28 @@ export const GET = withErrorHandling(
           return errorResponse('任务不存在或已过期', 404);
         }
 
+        const jobData = job.data as LegacyJobData;
+        const { orderId: resolvedOrderId, orderType: resolvedOrderType } =
+          resolveJobTarget(jobData);
+
+        if (!resolvedOrderId) {
+          return errorResponse('任务缺少关联订单信息', 500);
+        }
+
         const state = await job.getState();
         const progress = job.progress;
 
         // 获取任务关联的订单信息
-        const order = await prisma.factoryShipmentOrder.findUnique({
-          where: { id: job.data.factoryShipmentOrderId },
-          select: {
-            id: true,
-            orderNumber: true,
-            containerNumber: true,
-            shippingCompany: true,
-            lastShippingQueryAt: true,
-            shippingQueryStatus: true,
-            shippingQueryError: true,
-          },
-        });
+        const order = await fetchOrderSummary(
+          resolvedOrderType,
+          resolvedOrderId
+        );
 
         // 构建响应数据
         const responseData: Record<string, unknown> = {
           jobId: job.id,
-          orderId: job.data.factoryShipmentOrderId,
+          orderId: resolvedOrderId,
+          orderType: resolvedOrderType,
           orderNumber: order?.orderNumber || '未知',
           status: state,
           progress: typeof progress === 'number' ? progress : undefined,
@@ -101,7 +214,7 @@ export const GET = withErrorHandling(
           // 查询最近的查询记录
           const latestQuery = await prisma.shippingQuery.findFirst({
             where: {
-              factoryShipmentOrderId: order.id,
+              factoryShipmentOrderId: resolvedOrderId,
             },
             orderBy: {
               queriedAt: 'desc',
@@ -140,21 +253,13 @@ export const GET = withErrorHandling(
 
       // 如果提供了 orderId，查找该订单最近的查询任务
       if (orderId) {
-        // 查询订单信息
-        const order = await prisma.factoryShipmentOrder.findUnique({
-          where: { id: orderId },
-          select: {
-            id: true,
-            orderNumber: true,
-            containerNumber: true,
-            shippingCompany: true,
-            lastShippingQueryAt: true,
-            shippingQueryStatus: true,
-            shippingQueryError: true,
-          },
-        });
+        // 查询订单信息并确定类型
+        const { orderType: detectedType, order } = await detectOrderType(
+          orderId,
+          orderType
+        );
 
-        if (!order) {
+        if (!order || !detectedType) {
           return errorResponse('订单不存在', 404);
         }
 
@@ -169,17 +274,22 @@ export const GET = withErrorHandling(
         ]);
 
         // 查找匹配该订单的最近任务
-        const matchingJob = jobs.find(
-          job => job.data.factoryShipmentOrderId === orderId
-        );
+        const matchingJob = jobs.find(job => {
+          const { orderId: jobOrderId } = resolveJobTarget(
+            job.data as LegacyJobData
+          );
+          return jobOrderId === orderId;
+        });
 
         if (matchingJob) {
           const state = await matchingJob.getState();
           const progress = matchingJob.progress;
+          const jobInfo = resolveJobTarget(matchingJob.data as LegacyJobData);
 
           const responseData: Record<string, unknown> = {
             jobId: matchingJob.id,
             orderId: order.id,
+            orderType: jobInfo.orderType,
             orderNumber: order.orderNumber,
             status: state,
             progress: typeof progress === 'number' ? progress : undefined,
@@ -238,6 +348,7 @@ export const GET = withErrorHandling(
         // 如果没有找到队列中的任务，返回订单的最后查询状态
         return successResponse({
           orderId: order.id,
+          orderType: detectedType,
           orderNumber: order.orderNumber,
           status: order.shippingQueryStatus || 'unknown',
           lastQueryAt: order.lastShippingQueryAt

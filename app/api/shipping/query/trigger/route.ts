@@ -16,16 +16,22 @@ import {
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { addShippingQueryJob } from '@/lib/queue/shipping-query-queue';
+import {
+  addShippingQueryJob,
+  SHIPPING_QUERY_TARGETS,
+} from '@/lib/queue/shipping-query-queue';
 
 /**
  * 请求体验证 Schema
  */
 const triggerQuerySchema = z.object({
-  factoryShipmentOrderId: z
-    .string()
-    .min(1, '订单 ID 不能为空')
-    .uuid('订单 ID 格式无效'),
+  orderId: z.string().min(1, '订单 ID 不能为空').uuid('订单 ID 格式无效'),
+  orderType: z
+    .enum([
+      SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT,
+      SHIPPING_QUERY_TARGETS.PURCHASE_ORDER,
+    ] as const)
+    .default(SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT),
   force: z.boolean().optional().default(false),
 });
 
@@ -39,26 +45,40 @@ export const POST = withErrorHandling(
       // 解析和验证请求体
       const body: unknown = await request.json();
       const validatedData = triggerQuerySchema.parse(body);
-      const { factoryShipmentOrderId, force } = validatedData;
+      const { orderId, orderType, force } = validatedData;
 
       logger.info('shipping-query-trigger', `用户 ${user.id} 触发运输查询`, {
-        factoryShipmentOrderId,
+        orderId,
+        orderType,
         force,
       });
 
-      // 查询订单信息
-      const order = await prisma.factoryShipmentOrder.findUnique({
-        where: { id: factoryShipmentOrderId },
-        select: {
-          id: true,
-          orderNumber: true,
-          containerNumber: true,
-          shippingCompany: true,
-          status: true,
-          lastShippingQueryAt: true,
-          shippingQueryStatus: true,
-        },
-      });
+      const order =
+        orderType === SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT
+          ? await prisma.factoryShipmentOrder.findUnique({
+              where: { id: orderId },
+              select: {
+                id: true,
+                orderNumber: true,
+                containerNumber: true,
+                shippingCompany: true,
+                status: true,
+                lastShippingQueryAt: true,
+                shippingQueryStatus: true,
+              },
+            })
+          : await prisma.purchaseOrder.findUnique({
+              where: { id: orderId },
+              select: {
+                id: true,
+                orderNumber: true,
+                containerNumber: true,
+                shippingCompany: true,
+                status: true,
+                lastShippingQueryAt: true,
+                shippingQueryStatus: true,
+              },
+            });
 
       // 验证订单是否存在
       if (!order) {
@@ -91,12 +111,13 @@ export const POST = withErrorHandling(
       // 添加查询任务到队列
       const job = await addShippingQueryJob(
         {
-          factoryShipmentOrderId: order.id,
+          targetType: orderType,
+          orderId: order.id,
           shippingCompany: order.shippingCompany || '',
           containerNumber: order.containerNumber || undefined,
         },
         {
-          jobId: `manual-${order.id}-${Date.now()}`, // 使用唯一 jobId 避免重复
+          jobId: `manual-${orderType}-${order.id}-${Date.now()}`, // 使用唯一 jobId 避免重复
           priority: 1, // 手动触发的任务优先级更高
         }
       );
@@ -111,6 +132,7 @@ export const POST = withErrorHandling(
       return successResponse({
         jobId: job.id,
         orderId: order.id,
+        orderType,
         orderNumber: order.orderNumber,
         status: 'queued' as const,
         message: '查询任务已添加到队列',

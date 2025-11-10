@@ -8,12 +8,22 @@ import { Queue } from 'bullmq';
 
 import { defaultQueueConfig, QUEUE_NAMES } from './config';
 
+export const SHIPPING_QUERY_TARGETS = {
+  FACTORY_SHIPMENT: 'factory_shipment',
+  PURCHASE_ORDER: 'purchase_order',
+} as const;
+
+export type ShippingQueryTargetType =
+  (typeof SHIPPING_QUERY_TARGETS)[keyof typeof SHIPPING_QUERY_TARGETS];
+
 /**
  * 运输查询任务数据类型
  */
 export interface ShippingQueryJobData {
-  /** 工厂发货订单ID */
-  factoryShipmentOrderId: string;
+  /** 任务目标类型 */
+  targetType: ShippingQueryTargetType;
+  /** 目标订单ID */
+  orderId: string;
   /** 船公司名称 */
   shippingCompany: string;
   /** 柜号（可选） */

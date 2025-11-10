@@ -85,9 +85,7 @@ const envSchema = zod_1.z.object({
       message: 'PRISMA_SLOW_QUERY_THRESHOLD_MS 必须在 50-60000 之间',
     })
     .optional()
-    .describe(
-      'Prisma 慢查询日志阈值（毫秒，可选，默认开发500/生产1000）'
-    ),
+    .describe('Prisma 慢查询日志阈值（毫秒，可选，默认开发500/生产1000）'),
   // Redis 配置（缓存层）
   REDIS_URL: zod_1.z
     .string()
@@ -571,12 +569,21 @@ const envSchema = zod_1.z.object({
   SHIPPING_QUERY_MIN_INTERVAL_HOURS: zod_1.z
     .string()
     .regex(/^[\d]+$/, 'SHIPPING_QUERY_MIN_INTERVAL_HOURS 必须是数字')
+    .default('2')
     .transform(val => parseInt(val, 10))
     .refine(val => val >= 1 && val <= 12, {
       message: 'SHIPPING_QUERY_MIN_INTERVAL_HOURS 必须在 1-12 之间',
     })
-    .default(2)
     .describe('两次运输查询之间的最小间隔（小时）'),
+  SHIPPING_QUERY_SITE_COOLDOWN_MS: zod_1.z
+    .string()
+    .regex(/^[\d]+$/, 'SHIPPING_QUERY_SITE_COOLDOWN_MS 必须是数字')
+    .default('5000')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 0 && val <= 60000, {
+      message: 'SHIPPING_QUERY_SITE_COOLDOWN_MS 必须在 0-60000 之间',
+    })
+    .describe('运输查询 Worker 在尝试下一个站点前的冷却时间（毫秒）'),
   SHIPPING_QUERY_AUTO_ENABLED: zod_1.z
     .enum(['true', 'false'])
     .default('true')
@@ -681,6 +688,7 @@ function validateEnv() {
         MONITORING_TOKEN: 'dev-token',
         SHIPPING_QUERY_INTERVAL_HOURS: 6,
         SHIPPING_QUERY_MIN_INTERVAL_HOURS: 2,
+        SHIPPING_QUERY_SITE_COOLDOWN_MS: 5000,
         SHIPPING_QUERY_AUTO_ENABLED: true,
       };
     } catch (_error) {
@@ -767,6 +775,7 @@ function validateEnv() {
         MONITORING_TOKEN: 'dev-token',
         SHIPPING_QUERY_INTERVAL_HOURS: 6,
         SHIPPING_QUERY_MIN_INTERVAL_HOURS: 2,
+        SHIPPING_QUERY_SITE_COOLDOWN_MS: 5000,
         SHIPPING_QUERY_AUTO_ENABLED: true,
       };
     }
@@ -1025,6 +1034,7 @@ exports.monitoringConfig = {
 exports.shippingQuerySchedulerConfig = {
   intervalHours: exports.env.SHIPPING_QUERY_INTERVAL_HOURS,
   minQueryIntervalHours: exports.env.SHIPPING_QUERY_MIN_INTERVAL_HOURS,
+  siteCooldownMs: exports.env.SHIPPING_QUERY_SITE_COOLDOWN_MS,
   enabled: exports.env.SHIPPING_QUERY_AUTO_ENABLED,
 };
 // 在开发环境下打印配置信息（不包含敏感信息）
@@ -1123,7 +1133,7 @@ if (exports.isDevelopment) {
   );
   // eslint-disable-next-line no-console
   console.log(
-    `  - 运输查询调度: 间隔${exports.env.SHIPPING_QUERY_INTERVAL_HOURS}小时/最小间隔${exports.env.SHIPPING_QUERY_MIN_INTERVAL_HOURS}小时/启用${exports.env.SHIPPING_QUERY_AUTO_ENABLED}`
+    `  - 运输查询调度: 间隔${exports.env.SHIPPING_QUERY_INTERVAL_HOURS}小时/最小间隔${exports.env.SHIPPING_QUERY_MIN_INTERVAL_HOURS}小时/站点冷却${exports.env.SHIPPING_QUERY_SITE_COOLDOWN_MS}ms/启用${exports.env.SHIPPING_QUERY_AUTO_ENABLED}`
   );
 }
 /* eslint-enable max-lines */
