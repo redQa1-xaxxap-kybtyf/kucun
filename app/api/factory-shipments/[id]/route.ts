@@ -2,7 +2,7 @@
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
 import type { Prisma } from '@prisma/client';
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -137,8 +137,10 @@ function mapItemCreate(item: FactoryShipmentOrderItemData) {
     productId: item.isManualProduct ? null : item.productId,
     supplierId: item.supplierId,
     productCode: item.productCode,
+    batchNumber: item.batchNumber?.trim() || null,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    unitCost: item.unitCost ?? null,
     totalPrice: item.quantity * item.unitPrice,
     ownership: item.ownership || 'customer',
     ownershipRemarks: item.ownershipRemarks || null,
@@ -158,6 +160,7 @@ function mapItemCreate(item: FactoryShipmentOrderItemData) {
     displayName: item.displayName || '',
     specification: item.specification,
     unit: item.unit,
+    piecesPerUnit: item.piecesPerUnit ?? null,
     weight: item.weight,
     remarks: item.remarks,
   };

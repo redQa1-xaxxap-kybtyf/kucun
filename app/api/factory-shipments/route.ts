@@ -73,9 +73,20 @@ function buildWhere(params: ListParams): Prisma.FactoryShipmentOrderWhereInput {
   const where: Prisma.FactoryShipmentOrderWhereInput = {};
   if (params.status) where.status = params.status;
   if (params.customerId) where.customerId = params.customerId;
-  if (params.containerNumber)
+
+  // ✅ 搜索逻辑：如果同时提供了 containerNumber 和 orderNumber，使用 OR 条件
+  // 这样可以搜索船公司名称或订单号
+  if (params.containerNumber && params.orderNumber) {
+    where.OR = [
+      { containerNumber: { contains: params.containerNumber } },
+      { orderNumber: { contains: params.orderNumber } },
+    ];
+  } else if (params.containerNumber) {
     where.containerNumber = { contains: params.containerNumber };
-  if (params.orderNumber) where.orderNumber = { contains: params.orderNumber };
+  } else if (params.orderNumber) {
+    where.orderNumber = { contains: params.orderNumber };
+  }
+
   if (params.startDate || params.endDate) {
     where.createdAt = {};
     if (params.startDate) where.createdAt.gte = params.startDate;
@@ -88,12 +99,28 @@ const orderListSelect = {
   id: true,
   orderNumber: true,
   containerNumber: true,
+  shippingCompany: true,
   customerId: true,
   userId: true,
   status: true,
+  lastShippingQueryAt: true,
+  shippingQueryStatus: true,
+  shippingQueryError: true,
+  preferredSiteId: true,
+  plan_date: true,
+  shipmentDate: true,
+  estimatedArrival: true,
+  arrivalDate: true,
+  deliveryDate: true,
+  completionDate: true,
   totalAmount: true,
   receivableAmount: true,
   depositAmount: true,
+  costAmount: true,
+  expenseAmount: true,
+  profitAmount: true,
+  customerProfit: true,
+  selfCostAmount: true,
   remarks: true,
   createdAt: true,
   updatedAt: true,
@@ -108,6 +135,10 @@ const orderListSelect = {
       quantity: true,
       unitPrice: true,
       totalPrice: true,
+      unitCost: true,
+      allocatedExpense: true,
+      profitAmount: true,
+      profitMargin: true,
       ownership: true,
       ownershipRemarks: true,
       customerDeliveryStatus: true,
@@ -274,8 +305,10 @@ async function createOrderInTransaction(
           productId: item.isManualProduct ? null : item.productId,
           supplierId: item.supplierId,
           productCode: item.productCode,
+          batchNumber: item.batchNumber?.trim() || null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          unitCost: item.unitCost ?? null,
           totalPrice: item.quantity * item.unitPrice,
           ownership: item.ownership ?? FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
           ownershipRemarks: item.ownershipRemarks || null,
@@ -297,6 +330,7 @@ async function createOrderInTransaction(
           displayName: item.displayName || '',
           specification: item.specification,
           unit: item.unit,
+          piecesPerUnit: item.piecesPerUnit ?? null,
           weight: item.weight,
           remarks: item.remarks,
         })),
@@ -495,14 +529,38 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     // 解析请求体
     const body = await request.json();
 
+    const parsed = createFactoryShipmentOrderSchema.safeParse(body);
+    if (!parsed.success) {
+      const details = parsed.error.issues.map(issue => ({
+        path: issue.path.length > 0 ? issue.path.join('.') : 'root',
+        message: issue.message,
+        code: issue.code,
+      }));
+
+      logger.warn(
+        'factory-shipments',
+        '创建厂家发货订单参数验证失败',
+        { userId },
+        { errors: details }
+      );
+
+      return NextResponse.json(
+        {
+          error: '参数验证失败',
+          details,
+        },
+        { status: 422 }
+      );
+    }
+
     // 验证输入数据
-    const validatedData = createFactoryShipmentOrderSchema.parse(body);
+    const validatedData = parsed.data;
     const {
       containerNumber,
       customerId,
       status,
       totalAmount,
-      receivableAmount,
+      receivableAmount: _receivableAmount,
       depositAmount,
       remarks,
       items,
@@ -539,10 +597,12 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     // 使用服务器计算的金额
     const finalTotalAmount = calculatedTotalAmount;
-    const finalReceivableAmount =
-      receivableAmount !== undefined
-        ? receivableAmount
-        : amountSummary.customer;
+    const customerAmount = amountSummary.customer;
+    const finalDepositAmount = depositAmount || 0;
+    const finalReceivableAmount = Math.max(
+      0,
+      customerAmount - finalDepositAmount
+    );
 
     const order = await prisma.$transaction(tx =>
       createOrderInTransaction(tx, {
@@ -553,7 +613,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         status,
         finalTotalAmount,
         finalReceivableAmount,
-        depositAmount,
+        depositAmount: finalDepositAmount,
         remarks,
         items,
       })
