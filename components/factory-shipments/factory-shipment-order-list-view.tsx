@@ -255,14 +255,15 @@ function FactoryShipmentOrderRow({
     (event: React.MouseEvent) => {
       event.stopPropagation();
 
-      // 检查订单状态：已发货和运输中的订单不允许修改集装箱号
+      // 检查订单状态：已发货、运输中和已到港的订单不允许修改集装箱号
       if (
         order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-        order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+        order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+        order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
       ) {
         toast({
           title: '无法编辑',
-          description: '已发货或运输中的订单不能修改集装箱号',
+          description: '已发货、运输中或已到港的订单不能修改集装箱号',
           variant: 'destructive',
         });
         return;
@@ -286,7 +287,17 @@ function FactoryShipmentOrderRow({
     (event: React.MouseEvent) => {
       event.stopPropagation();
 
-      // 业务规则：如果订单已经进行过物流查询，不允许修改船运公司
+      // 业务规则1：已到港的订单不允许修改船运公司
+      if (order.status === FACTORY_SHIPMENT_STATUS.ARRIVED) {
+        toast({
+          title: '无法修改船运公司',
+          description: '已到港的订单不允许修改船运公司',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // 业务规则2：如果订单已经进行过物流查询，不允许修改船运公司
       if (order.lastShippingQueryAt) {
         toast({
           title: '无法修改船运公司',
@@ -299,7 +310,7 @@ function FactoryShipmentOrderRow({
 
       setIsShippingCompanyDialogOpen(true);
     },
-    [order.lastShippingQueryAt, toast]
+    [order.lastShippingQueryAt, order.status, toast]
   );
 
   const handleShippingCompanyDialogClose = React.useCallback(() => {
