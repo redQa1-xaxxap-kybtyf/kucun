@@ -101,6 +101,13 @@ export const getFactoryShipmentStatusBadgeVariant = (
 /**
  * 获取运输查询状态徽章样式
  * 根据查询状态返回不同的徽章颜色
+ *
+ * 颜色规则：
+ * - 绿色 (success): 已到港、已送达、已签收等完成状态
+ * - 蓝色 (info): 运输中、在途、锚泊、靠泊等进行中状态
+ * - 红色 (destructive): 失败、错误、异常等错误状态
+ * - 黄色 (warning): 等待、待处理等待状态
+ * - 灰色 (secondary): 其他未分类状态
  */
 export const getShippingQueryStatusVariant = (
   status: string
@@ -114,12 +121,16 @@ export const getShippingQueryStatusVariant = (
   | 'info' => {
   const statusLower = status.toLowerCase();
 
-  // 成功状态 - 绿色
+  // 已到港/完成状态 - 绿色
   if (
-    statusLower.includes('成功') ||
+    statusLower.includes('已到港') ||
+    statusLower.includes('到港') ||
     statusLower.includes('已送达') ||
     statusLower.includes('已签收') ||
+    statusLower.includes('已完成') ||
+    statusLower.includes('完成') ||
     statusLower.includes('delivered') ||
+    statusLower.includes('arrived') ||
     statusLower.includes('success')
   ) {
     return 'success';
@@ -136,14 +147,20 @@ export const getShippingQueryStatusVariant = (
     return 'destructive';
   }
 
-  // 进行中状态 - 蓝色
+  // 运输中/进行中状态 - 蓝色
+  // 包括：运输中、在途、锚泊、靠泊、派送中等
   if (
     statusLower.includes('运输中') ||
     statusLower.includes('在途') ||
+    statusLower.includes('锚泊') ||
+    statusLower.includes('靠泊') ||
     statusLower.includes('派送中') ||
+    statusLower.includes('状态') || // 通用"状态"字段，表示有状态更新
     statusLower.includes('transit') ||
     statusLower.includes('shipping') ||
-    statusLower.includes('delivering')
+    statusLower.includes('delivering') ||
+    statusLower.includes('anchored') ||
+    statusLower.includes('berthed')
   ) {
     return 'info';
   }
