@@ -6,6 +6,10 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import {
+  ensurePurchaseOrderPayable,
+  shouldCreatePayable,
+} from '@/lib/services/purchase-order-payable';
 import { generatePurchaseOrderNumber } from '@/lib/services/simple-order-number-generator';
 import {
   PURCHASE_ORDER_STATUS,
@@ -90,6 +94,7 @@ const orderListSelect = {
   id: true,
   orderNumber: true,
   containerNumber: true,
+  shippingCompany: true,
   supplierId: true,
   userId: true,
   status: true,
@@ -273,25 +278,54 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
     const userId = user.id;
     const body = await request.json();
-    const validatedData = createPurchaseOrderSchema.parse(body);
-    const { containerNumber, supplierId, status, remarks, items, feeItems } =
-      validatedData;
+    const parsed = createPurchaseOrderSchema.safeParse(body);
+    if (!parsed.success) {
+      const details = parsed.error.issues.map(issue => ({
+        path: issue.path.length > 0 ? issue.path.join('.') : 'root',
+        message: issue.message,
+        code: issue.code,
+      }));
 
-    await ensureSupplierExists(supplierId);
+      logger.warn(
+        'purchase-orders',
+        '创建采购订单参数验证失败',
+        { userId },
+        { errors: details }
+      );
+
+      return NextResponse.json(
+        { error: '参数验证失败', details },
+        { status: 422 }
+      );
+    }
+    const { containerNumber, supplierId, status, remarks, items, feeItems } =
+      parsed.data;
+
+    if (!supplierId || !supplierId.trim()) {
+      return NextResponse.json(
+        { error: '订单级别供应商不能为空' },
+        { status: 400 }
+      );
+    }
+    const normalizedSupplierId = supplierId.trim();
+    await ensureSupplierExists(normalizedSupplierId);
     await ensureProductsExist(items);
 
     const orderNumber = await generatePurchaseOrderNumber();
     const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const expenseAmount =
+      feeItems?.reduce((sum, fee) => sum + fee.feeAmount, 0) || 0;
 
     const order = await prisma.$transaction(async tx => {
       const newOrder = await tx.purchaseOrder.create({
         data: {
           orderNumber,
           containerNumber: containerNumber?.trim() || null,
-          supplierId,
+          supplierId: normalizedSupplierId,
           userId,
           status: status ?? PURCHASE_ORDER_STATUS.DRAFT,
           totalAmount,
+          expenseAmount,
           remarks: remarks?.trim() || null,
           items: {
             create: items.map(item => ({
@@ -338,6 +372,16 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         },
       });
+
+      if (shouldCreatePayable(newOrder.status as PurchaseOrderStatus)) {
+        await ensurePurchaseOrderPayable(tx, {
+          id: newOrder.id,
+          supplierId: newOrder.supplierId,
+          userId,
+          orderNumber: newOrder.orderNumber,
+          totalAmount,
+        });
+      }
 
       if (feeItems && feeItems.length > 0) {
         const expenseRecords = feeItems.map(feeItem => ({

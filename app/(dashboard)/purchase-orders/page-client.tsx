@@ -61,40 +61,36 @@ export function PurchaseOrdersPageClient({
     [searchValue, statusFilter, supplierFilter]
   );
 
-  const syncFiltersToURL = useDebouncedCallback(
-    (snapshot: FilterSnapshot) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        const trimmedSearch = snapshot.search.trim();
+  const syncFiltersToURL = useDebouncedCallback((snapshot: FilterSnapshot) => {
+    startTransition(() => {
+      const params = new URLSearchParams();
+      const trimmedSearch = snapshot.search.trim();
 
-        if (trimmedSearch) {
-          params.set('search', trimmedSearch);
-        }
-        if (snapshot.status !== 'all') {
-          params.set('status', snapshot.status);
-        }
-        if (snapshot.supplierId) {
-          params.set('supplierId', snapshot.supplierId);
-        }
-        if (sortBy && sortBy !== 'createdAt') {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder && sortOrder !== 'desc') {
-          params.set('sortOrder', sortOrder);
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
+      if (trimmedSearch) {
+        params.set('search', trimmedSearch);
+      }
+      if (snapshot.status !== 'all') {
+        params.set('status', snapshot.status);
+      }
+      if (snapshot.supplierId) {
+        params.set('supplierId', snapshot.supplierId);
+      }
+      if (sortBy && sortBy !== 'createdAt') {
+        params.set('sortBy', sortBy);
+      }
+      if (sortOrder && sortOrder !== 'desc') {
+        params.set('sortOrder', sortOrder);
+      }
+      if (initialParams.limit) {
+        params.set('limit', initialParams.limit.toString());
+      }
 
-        const queryString = params.toString();
-        router.push(
-          queryString ? `/purchase-orders?${queryString}` : '/purchase-orders'
-        );
-      });
-    },
-    300,
-    [router, startTransition, initialParams.limit, sortBy, sortOrder]
-  );
+      const queryString = params.toString();
+      router.push(
+        queryString ? `/purchase-orders?${queryString}` : '/purchase-orders'
+      );
+    });
+  }, 300);
 
   const handleSearch = React.useCallback(
     (value: string) => {

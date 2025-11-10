@@ -108,6 +108,17 @@ export function OrderSummaryCard({
             <p>{order.containerNumber || '-'}</p>
           </div>
           <div>
+            <p className="text-muted-foreground text-sm">船运公司</p>
+            <p>
+              {order.shippingCompany
+                ? order.shippingCompany
+                : currentStatus === PURCHASE_ORDER_STATUS.SHIPPED ||
+                    currentStatus === PURCHASE_ORDER_STATUS.IN_TRANSIT
+                  ? '待补充'
+                  : '-'}
+            </p>
+          </div>
+          <div>
             <p className="text-muted-foreground text-sm">创建时间</p>
             <p>{new Date(order.createdAt).toLocaleString('zh-CN')}</p>
           </div>

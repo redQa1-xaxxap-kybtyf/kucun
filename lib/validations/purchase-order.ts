@@ -5,7 +5,10 @@ import { z } from 'zod';
 
 import { PRODUCT_UNIT_VALUES } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
-import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
+import {
+  PURCHASE_ORDER_STATUS,
+  type PurchaseOrderStatus,
+} from '@/lib/types/purchase-order';
 
 // 采购订单费用项验证（复用厂家发货的费用项验证）
 export const purchaseOrderFeeItemSchema = z.object({
@@ -282,9 +285,13 @@ export const updatePurchaseOrderStatusSchema = z
   )
   .refine(
     data => {
-      // 如果状态为已发货，船运公司必填
+      const requireShippingCompanyStatuses: PurchaseOrderStatus[] = [
+        PURCHASE_ORDER_STATUS.IN_TRANSIT,
+        PURCHASE_ORDER_STATUS.ARRIVED,
+        PURCHASE_ORDER_STATUS.COMPLETED,
+      ];
       if (
-        data.status === PURCHASE_ORDER_STATUS.SHIPPED &&
+        requireShippingCompanyStatuses.includes(data.status) &&
         (!data.shippingCompany || data.shippingCompany.trim() === '')
       ) {
         return false;
@@ -292,7 +299,7 @@ export const updatePurchaseOrderStatusSchema = z
       return true;
     },
     {
-      message: '确认发货时必须填写船运公司信息(用于自动查询运输状态)',
+      message: '运输中及之后的状态必须填写船运公司信息(用于自动查询运输状态)',
       path: ['shippingCompany'],
     }
   );

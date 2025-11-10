@@ -4,6 +4,12 @@ import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
+import {
+  updatePurchaseOrderSchema as baseUpdatePurchaseOrderSchema,
+  updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema,
+  type UpdatePurchaseOrderData,
+  type UpdatePurchaseOrderStatusData,
+} from '@/lib/validations/purchase-order';
 
 const PURCHASE_ORDER_STATUS_VALUES = Object.values(
   PURCHASE_ORDER_STATUS
@@ -21,6 +27,11 @@ export const purchaseOrderItemSchema = z
     productId: z.string().optional(),
     supplierId: z.string().min(1, '供应商 ID 不能为空'),
     productCode: z.string().min(1, '产品编码不能为空'),
+    batchNumber: z
+      .string()
+      .max(100, '批次号不能超过100个字符')
+      .optional()
+      .or(z.literal('')),
     isManualProduct: z.boolean().optional(),
     manualProductName: z.string().optional(),
     manualSpecification: z.string().optional(),
@@ -80,10 +91,21 @@ export const createPurchaseOrderSchema = z.object({
   feeItems: z.array(purchaseOrderFeeItemSchema).optional().default([]),
 });
 
-export const updatePurchaseOrderStatusSchema = z.object({
-  orderId: z.string().min(1, '订单 ID 不能为空'),
-  status: purchaseOrderStatusEnum,
-});
+export const updatePurchaseOrderSchema = baseUpdatePurchaseOrderSchema;
 
-export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema>;
+export const updatePurchaseOrderStatusSchema =
+  baseUpdatePurchaseOrderStatusSchema.extend({
+    orderId: z.string().min(1, '订单 ID 不能为空'),
+  });
+
+export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema> & {
+  batchNumber?: string | null;
+  piecesPerUnit?: number;
+};
 export type PurchaseOrderFormData = z.infer<typeof createPurchaseOrderSchema>;
+export type UpdatePurchaseOrderFormData = PurchaseOrderFormData &
+  UpdatePurchaseOrderData;
+export type UpdatePurchaseOrderStatusFormData =
+  UpdatePurchaseOrderStatusData & {
+    orderId: string;
+  };

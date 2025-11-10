@@ -151,6 +151,7 @@ export interface PurchaseOrder {
   };
   items: PurchaseOrderItem[];
   expenses?: ExpenseRecord[];
+  expenses?: ExpenseRecord[];
 }
 
 // 费用记录类型（简化版，用于采购订单详情）
@@ -319,3 +320,4 @@ export interface OrderCostSummary {
   totalCost: number; // 总成本（采购总额 + 总费用）
   itemResults: ItemCostResult[]; // 各明细成本
 }
+import type { ExpenseRecord } from './expense';

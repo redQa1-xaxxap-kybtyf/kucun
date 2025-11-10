@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CalendarIcon, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import {
   createPurchaseOrder,
@@ -32,12 +32,14 @@ import {
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
 import { cn } from '@/lib/utils';
 import {
   createPurchaseOrderSchema,
-  type CreatePurchaseOrderData,
-} from '@/lib/validations/purchase-order';
+  updatePurchaseOrderSchema,
+  type PurchaseOrderFormData,
+} from '@/lib/validations/purchase-order-form';
 
 const generateIdempotencyKey = (): string => {
   if (
@@ -74,6 +76,8 @@ interface PurchaseOrderFormProps {
   onCancel?: () => void;
 }
 
+type PurchaseOrderFormValues = PurchaseOrderFormData;
+
 export function PurchaseOrderForm({
   mode = 'create',
   orderId,
@@ -84,17 +88,21 @@ export function PurchaseOrderForm({
   const { toast } = useToast();
   const _router = useRouter();
 
-  const form = useForm<CreatePurchaseOrderData>({
+  const form = useForm<PurchaseOrderFormValues>({
     resolver: zodResolver(
       mode === 'edit' ? updatePurchaseOrderSchema : createPurchaseOrderSchema
     ),
+    mode: 'onBlur', // ✅ 用户离开字段时验证
+    reValidateMode: 'onChange', // ✅ 提交后实时验证
+    criteriaMode: 'all', // ✅ 显示所有错误
+    shouldFocusError: true,
     defaultValues: initialData
       ? {
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: initialData.containerNumber || '',
           supplierId: initialData.supplierId || '',
           orderDate: initialData.orderDate
-            ? new Date(initialData.orderDate)
+            ? new Date(initialData.orderDate).toISOString()
             : undefined,
           status: initialData.status,
           remarks: initialData.remarks || '',
@@ -102,6 +110,7 @@ export function PurchaseOrderForm({
             productId: item.productId || undefined,
             supplierId: item.supplierId,
             productCode: item.productCode,
+            batchNumber: item.batchNumber || '',
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
@@ -120,13 +129,19 @@ export function PurchaseOrderForm({
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: '',
           supplierId: '', // 订单级别供应商(可选,支持多供应商采购)
-          orderDate: new Date(), // 默认为当前日期
+          orderDate: new Date().toISOString(), // 默认为当前日期
           status: PURCHASE_ORDER_STATUS.DRAFT,
           remarks: '',
           items: [createEmptyItem()],
           feeItems: [],
         },
   });
+
+  const { notifyBlur, showValidationToast, applyServerValidationErrors } =
+    useFormErrorHandling({
+      form,
+      toast,
+    });
 
   const supplierIdValue = form.watch('supplierId');
 
@@ -149,7 +164,7 @@ export function PurchaseOrderForm({
     name: 'items',
   });
 
-  const handleSubmit = async (data: CreatePurchaseOrderData) => {
+  const handleSubmit = async (data: PurchaseOrderFormValues) => {
     try {
       const formData = new FormData();
       if (mode === 'edit' && orderId) {
@@ -172,9 +187,12 @@ export function PurchaseOrderForm({
         });
         onSuccess?.();
       } else {
+        const validationMessage = applyServerValidationErrors(
+          result.validationErrors ?? null
+        );
         toast({
           title: mode === 'edit' ? '更新失败' : '创建失败',
-          description: result.error,
+          description: validationMessage ?? result.error,
           variant: 'destructive',
         });
       }
@@ -186,10 +204,20 @@ export function PurchaseOrderForm({
       });
     }
   };
+  const handleInvalidSubmit = (
+    errors: FieldErrors<PurchaseOrderFormValues>
+  ) => {
+    showValidationToast(errors, {
+      description: '请检查标红字段后再次提交。所有带 * 的字段均为必填项。',
+    });
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(handleSubmit, handleInvalidSubmit)}
+        className="space-y-4"
+      >
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">基本信息</CardTitle>
@@ -224,8 +252,14 @@ export function PurchaseOrderForm({
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
+                          selected={
+                            field.value ? new Date(field.value) : undefined
+                          }
+                          onSelect={value =>
+                            field.onChange(
+                              value ? value.toISOString() : undefined
+                            )
+                          }
                           initialFocus
                         />
                       </PopoverContent>
@@ -246,6 +280,7 @@ export function PurchaseOrderForm({
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="请选择采购供应商"
+                        onBlur={notifyBlur('supplierId', field.onBlur)}
                       />
                     </FormControl>
                     <FormMessage />
