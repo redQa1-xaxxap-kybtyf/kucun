@@ -3,8 +3,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
-import { useEffect } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useFieldArray,
+  useForm,
+  type FieldErrors,
+  type Path,
+} from 'react-hook-form';
 
 import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { AmountInfoSection } from '@/components/factory-shipments/form-sections/amount-info-section';
@@ -17,9 +22,11 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCustomerPriceHistory } from '@/hooks/use-price-history';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
+  FactoryShipmentValidationError,
   useCreateFactoryShipmentOrder,
   useFactoryShipmentOrder,
   useUpdateFactoryShipmentOrder,
+  type FactoryShipmentValidationIssue,
 } from '@/lib/api/factory-shipments';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Customer } from '@/lib/types/customer';
@@ -46,12 +53,15 @@ const createEmptyItem = () => ({
   productId: undefined as string | undefined,
   supplierId: '',
   productCode: '', // 产品编码（必填）
+  batchNumber: '',
   quantity: 1,
   unitPrice: 0,
+  unitCost: 0, // 进货价（必填）
   ownership: 'customer' as const,
-  displayName: '', // 产品名称（必填，默认空字符串）
+  displayName: '', // 产品名称（必填，用户选择产品后自动填充）
   specification: '', // 规格（可选，默认空字符串）
   unit: '片' as '片' | '件',
+  piecesPerUnit: undefined as number | undefined,
   weight: undefined as number | undefined, // 重量（可选）
   ownershipRemarks: '', // 归属备注（可选，默认空字符串）
   remarks: '', // 备注（可选，默认空字符串）
@@ -63,10 +73,73 @@ interface FactoryShipmentOrderFormProps {
   onCancel?: () => void;
 }
 
-/**
- * 厂家发货订单表单组件
- * 重构后的版本，拆分为多个子组件，符合代码质量标准
- */
+interface FirstErrorResult {
+  path?: string;
+  message?: string;
+}
+
+function findFirstErrorPath(
+  errors: FieldErrors<CreateFactoryShipmentOrderData>,
+  segments: Array<string | number> = []
+): FirstErrorResult {
+  for (const [key, value] of Object.entries(errors)) {
+    if (!value) {
+      continue;
+    }
+
+    if (key === 'root' && typeof value === 'object') {
+      const rootMessage = (value as { message?: string }).message;
+      if (rootMessage) {
+        return { path: segments.join('.'), message: rootMessage };
+      }
+      continue;
+    }
+
+    const currentPath = [...segments, key];
+
+    if (Array.isArray(value)) {
+      for (let index = 0; index < value.length; index += 1) {
+        const child = value[index];
+        if (!child) {
+          continue;
+        }
+        const result = findFirstErrorPath(child, [...currentPath, index]);
+        if (result.path || result.message) {
+          return result;
+        }
+      }
+      continue;
+    }
+
+    if (typeof value === 'object') {
+      const message = (value as { message?: string }).message;
+      if (message) {
+        return {
+          path: currentPath.join('.'),
+          message,
+        };
+      }
+
+      const nested = findFirstErrorPath(
+        value as FieldErrors<CreateFactoryShipmentOrderData>,
+        currentPath
+      );
+      if (nested.path || nested.message) {
+        return nested;
+      }
+    }
+  }
+
+  return {};
+}
+
+function normalizeFieldPath(path?: string | null): string | undefined {
+  if (!path || path === 'root') {
+    return undefined;
+  }
+  return path.replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '');
+}
+
 export function FactoryShipmentOrderForm({
   orderId,
   onSuccess,
@@ -75,10 +148,18 @@ export function FactoryShipmentOrderForm({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = Boolean(orderId);
+  const submitIntentRef = useRef<'draft' | 'confirm'>('confirm');
+  const [submitIntent, setSubmitIntent] = useState<'draft' | 'confirm'>(
+    'confirm'
+  );
 
   // 表单配置
   const form = useForm<CreateFactoryShipmentOrderData>({
     resolver: zodResolver(createFactoryShipmentOrderSchema),
+    mode: 'onBlur', // ✅ 用户离开字段时验证
+    reValidateMode: 'onChange', // ✅ 提交后实时验证
+    criteriaMode: 'all', // ✅ 显示所有错误
+    shouldFocusError: true,
     defaultValues: {
       idempotencyKey: generateIdempotencyKey(),
       containerNumber: '',
@@ -98,6 +179,82 @@ export function FactoryShipmentOrderForm({
     control: form.control,
     name: 'items',
   });
+
+  const focusField = useCallback(
+    (rawPath?: string | null) => {
+      const path = normalizeFieldPath(rawPath);
+      if (!path) {
+        return;
+      }
+      try {
+        form.setFocus(path as Path<CreateFactoryShipmentOrderData>);
+      } catch {
+        // noop - some nested virtual fields can't be focused programmatically
+      }
+      requestAnimationFrame(() => {
+        const element = document.querySelector(
+          `[name="${path}"]`
+        ) as HTMLElement | null;
+        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    },
+    [form]
+  );
+
+  const applyServerValidationIssues = useCallback(
+    (issues?: FactoryShipmentValidationIssue[]) => {
+      if (!issues?.length) {
+        return undefined;
+      }
+
+      let firstMessage: string | undefined;
+      let firstPath: string | undefined;
+
+      issues.forEach(issue => {
+        const normalizedPath = normalizeFieldPath(issue.path);
+
+        if (normalizedPath) {
+          form.setError(
+            normalizedPath as Path<CreateFactoryShipmentOrderData>,
+            {
+              type: 'server',
+              message: issue.message,
+            }
+          );
+
+          if (!firstPath) {
+            firstPath = normalizedPath;
+            firstMessage = issue.message;
+          }
+        } else if (!firstMessage) {
+          firstMessage = issue.message;
+        }
+      });
+
+      if (firstPath) {
+        focusField(firstPath);
+      }
+
+      return firstMessage;
+    },
+    [focusField, form]
+  );
+
+  const handleServerValidationError = useCallback(
+    (error: FactoryShipmentValidationError, fallbackTitle: string) => {
+      const firstMessage =
+        applyServerValidationIssues(error.details) ||
+        error.message ||
+        '数据验证失败，请检查后重试。';
+
+      toast({
+        title: fallbackTitle,
+        description: firstMessage,
+        variant: 'destructive',
+      });
+    },
+    [applyServerValidationIssues, toast]
+  );
 
   // 查询基础数据
   // 使用合理的客户列表限制（与销售订单保持一致）
@@ -165,14 +322,17 @@ export function FactoryShipmentOrderForm({
           productId: item.productId ?? undefined,
           supplierId: item.supplierId,
           productCode: item.productCode || '', // 产品编码（必填）
+          batchNumber: item.batchNumber || '',
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          unitCost: item.unitCost ?? undefined, // 进货价（可选）
           ownership: item.ownership || 'customer',
           displayName: item.displayName || '', // 产品名称（必填）
           specification: item.specification || '', // 规格（可选）
           unit: (item.unit === '片' || item.unit === '件'
             ? item.unit
             : '片') as '片' | '件',
+          piecesPerUnit: item.piecesPerUnit ?? undefined,
           weight: item.weight ?? undefined, // 重量（可选，保持 undefined）
           ownershipRemarks: item.ownershipRemarks || '', // 归属备注（可选）
           remarks: item.remarks || '', // 备注（可选）
@@ -210,10 +370,21 @@ export function FactoryShipmentOrderForm({
 
   // 提交表单
   const onSubmit = (data: CreateFactoryShipmentOrderData) => {
+    const intent = submitIntentRef.current;
+    const resolvedStatus = isEditing
+      ? data.status || FACTORY_SHIPMENT_STATUS.DRAFT
+      : intent === 'draft'
+        ? FACTORY_SHIPMENT_STATUS.DRAFT
+        : FACTORY_SHIPMENT_STATUS.CONFIRMED;
+    const payload = {
+      ...data,
+      status: resolvedStatus,
+    };
+
     if (isEditing) {
       // 确保更新时有 idempotencyKey
       const updateData = {
-        ...data,
+        ...payload,
         idempotencyKey: data.idempotencyKey || generateIdempotencyKey(),
       };
 
@@ -232,6 +403,10 @@ export function FactoryShipmentOrderForm({
             onSuccess?.(updatedOrder);
           },
           onError: error => {
+            if (error instanceof FactoryShipmentValidationError) {
+              handleServerValidationError(error, '更新失败');
+              return;
+            }
             toast({
               title: '更新失败',
               description:
@@ -244,14 +419,18 @@ export function FactoryShipmentOrderForm({
         }
       );
     } else {
-      createMutation.mutate(data, {
+      createMutation.mutate(payload, {
         onSuccess: createdOrder => {
           toast({
-            title: '创建成功',
-            description: `厂家发货订单 ${createdOrder.orderNumber} 已创建。`,
+            title: intent === 'draft' ? '草稿已保存' : '订单创建成功',
+            description:
+              intent === 'draft'
+                ? `厂家发货订单 ${createdOrder.orderNumber} 已保存为草稿，可随时继续编辑。`
+                : `厂家发货订单 ${createdOrder.orderNumber} 已创建并进入流程。`,
             variant: 'success',
           });
           onSuccess?.(createdOrder);
+          handleSubmitIntent('confirm');
           form.reset({
             idempotencyKey: generateIdempotencyKey(),
             containerNumber: '',
@@ -266,6 +445,10 @@ export function FactoryShipmentOrderForm({
           });
         },
         onError: error => {
+          if (error instanceof FactoryShipmentValidationError) {
+            handleServerValidationError(error, '创建失败');
+            return;
+          }
           toast({
             title: '创建失败',
             description:
@@ -277,6 +460,25 @@ export function FactoryShipmentOrderForm({
         },
       });
     }
+  };
+
+  const handleInvalidSubmit = (
+    errors: FieldErrors<CreateFactoryShipmentOrderData>
+  ) => {
+    const { path, message } = findFirstErrorPath(errors);
+    const toastMessage =
+      message ??
+      '请检查标红字段后再次提交。所有带 * 的字段均为必填项，手动产品需填写名称。';
+
+    if (path) {
+      focusField(path);
+    }
+
+    toast({
+      title: '表单存在未填写的必填项',
+      description: toastMessage,
+      variant: 'destructive',
+    });
   };
 
   // 处理客户创建成功
@@ -297,10 +499,17 @@ export function FactoryShipmentOrderForm({
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
+  const handleSubmitIntent = (intent: 'draft' | 'confirm') => {
+    submitIntentRef.current = intent;
+    setSubmitIntent(intent);
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}
+        className="space-y-8"
+      >
         {/* 基本信息 */}
         <BasicInfoSection
           form={form}
@@ -309,6 +518,7 @@ export function FactoryShipmentOrderForm({
           isLoadingCustomers={customersLoading}
           onCustomerCreated={handleCustomerCreated}
           onRefreshCustomers={handleRefreshCustomers}
+          initialCustomer={orderDetail?.customer}
         />
 
         {/* 产品明细 */}
@@ -325,7 +535,7 @@ export function FactoryShipmentOrderForm({
 
         {/* 费用项目 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
-          <CardContent className="p-6">
+          <CardContent className="p-8">
             <FactoryShipmentFeeItemsInput
               feeItems={form.watch('feeItems') || []}
               onChange={feeItems => form.setValue('feeItems', feeItems)}
@@ -336,7 +546,7 @@ export function FactoryShipmentOrderForm({
 
         {/* 操作按钮 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))] shadow-md">
-          <CardContent className="p-6">
+          <CardContent className="p-8">
             <div className="flex items-center justify-between gap-4">
               <Button
                 type="button"
@@ -349,16 +559,51 @@ export function FactoryShipmentOrderForm({
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 返回
               </Button>
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isLoading}
-                className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
-              >
-                <Save className="mr-2 h-4 w-4" />
-                {isLoading ? '保存中...' : isEditing ? '更新订单' : '创建订单'}
-              </Button>
+              {isEditing ? (
+                <Button
+                  type="submit"
+                  size="lg"
+                  disabled={isLoading}
+                  className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {isLoading ? '保存中...' : '更新订单'}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    size="lg"
+                    disabled={isLoading}
+                    onClick={() => handleSubmitIntent('draft')}
+                    className="min-w-[140px] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {isLoading && submitIntent === 'draft'
+                      ? '草稿保存中...'
+                      : '保存草稿'}
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={isLoading}
+                    onClick={() => handleSubmitIntent('confirm')}
+                    className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    {isLoading && submitIntent === 'confirm'
+                      ? '创建中...'
+                      : '创建订单'}
+                  </Button>
+                </div>
+              )}
             </div>
+            {!isEditing && (
+              <p className="text-muted-foreground mt-4 text-sm">
+                保存草稿：用于临时保存，稍后可继续编辑；创建订单：提交后进入正式发货流程。
+              </p>
+            )}
           </CardContent>
         </Card>
       </form>

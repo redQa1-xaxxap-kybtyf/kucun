@@ -44,18 +44,20 @@ export const factoryShipmentOrderItemSchema = z
       .transform(value =>
         value && value.trim().length > 0 ? value : undefined
       ),
-    supplierId: z
-      .string()
-      .trim()
-      .min(1, '请选择供应商')
-      .uuid('供应商ID格式不正确'),
+    supplierId: z.string().min(1, '请选择供应商').optional().or(z.literal('')),
     productCode: z
       .string()
-      .trim()
-      .min(1, '产品编码不能为空')
-      .max(50, '产品编码不能超过50个字符'),
+      .max(50, '产品编码不能超过50个字符')
+      .optional()
+      .or(z.literal('')),
+    batchNumber: z
+      .string()
+      .max(100, '批次号不能超过100个字符')
+      .optional()
+      .or(z.literal('')),
     quantity: z.number().positive('数量必须大于0'),
     unitPrice: z.number().min(0, '单价不能为负数'),
+    unitCost: z.number().min(0, '进货价不能为负数').optional(),
     ownership: z
       .nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP)
       .default(FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER),
@@ -87,13 +89,23 @@ export const factoryShipmentOrderItemSchema = z
       .or(z.literal('')),
 
     // 通用显示字段
-    displayName: z.string().max(100, '产品名称不能超过100个字符').default(''),
+    displayName: z
+      .string()
+      .max(100, '产品名称不能超过100个字符')
+      .optional()
+      .or(z.literal('')),
     specification: z
       .string()
       .max(200, '规格不能超过200个字符')
       .optional()
       .or(z.literal('')),
-    unit: z.enum(['片', '件']),
+    unit: z.enum(['片', '件']).optional().or(z.literal('片')),
+    piecesPerUnit: z
+      .number()
+      .int('每件片数必须为整数')
+      .min(1, '每件片数必须大于0')
+      .max(100000, '每件片数不能超过100000')
+      .optional(),
     weight: z.number().min(0, '重量不能为负数').optional(),
 
     remarks: z
@@ -105,7 +117,7 @@ export const factoryShipmentOrderItemSchema = z
   .refine(
     data => {
       // 如果是手动输入产品，必须填写产品名称
-      if (data.isManualProduct && !data.manualProductName) {
+      if (data.isManualProduct && !data.manualProductName?.trim()) {
         return false;
       }
       // 如果不是手动输入产品，必须有productId
@@ -120,6 +132,33 @@ export const factoryShipmentOrderItemSchema = z
     }
   )
   .superRefine((data, ctx) => {
+    // 验证供应商ID（必填）
+    if (!data.supplierId || data.supplierId.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['supplierId'],
+        message: '请选择供应商',
+      });
+    }
+
+    // 验证产品编码（必填）
+    if (!data.productCode || data.productCode.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['productCode'],
+        message: '产品编码不能为空',
+      });
+    }
+
+    // 验证产品名称（必填）
+    if (!data.displayName || data.displayName.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['displayName'],
+        message: '产品名称不能为空',
+      });
+    }
+
     if (
       data.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER &&
       data.selfInboundStatus
@@ -155,7 +194,7 @@ export const createFactoryShipmentOrderSchema = z
       .max(50, '集装箱号码不能超过50个字符')
       .optional()
       .or(z.literal('')),
-    customerId: z.string().uuid('客户ID格式不正确'),
+    customerId: z.string().min(1, '请选择客户'),
     status: factoryShipmentStatusSchema.optional(),
     totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
     receivableAmount: z.number().min(0, '应收金额不能为负数').optional(),
@@ -342,9 +381,9 @@ export const updateFactoryShipmentOrderStatusSchema = z
   )
   .refine(
     data => {
-      // 如果状态为已发货，船运公司必填
+      // 如果状态为运输中，船运公司必填
       if (
-        data.status === FACTORY_SHIPMENT_STATUS.SHIPPED &&
+        data.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT &&
         (!data.shippingCompany || data.shippingCompany.trim() === '')
       ) {
         return false;
@@ -352,7 +391,7 @@ export const updateFactoryShipmentOrderStatusSchema = z
       return true;
     },
     {
-      message: '确认发货时必须填写船运公司信息(用于自动查询运输状态)',
+      message: '标记为运输中时必须填写船运公司信息(用于自动查询货物状态)',
       path: ['shippingCompany'],
     }
   );

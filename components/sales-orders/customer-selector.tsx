@@ -41,7 +41,8 @@ interface CustomerSelectorProps {
   onCustomerCreated?: (customer: Customer) => void;
   onCustomerResolved?: (customer: Customer | undefined) => void;
   // 可选：初始客户列表（用于显示已选客户）
-  initialCustomer?: Customer;
+  initialCustomer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
+  onBlur?: () => void;
 }
 
 /**
@@ -72,6 +73,7 @@ export function CustomerSelector({
   onCustomerCreated,
   onCustomerResolved,
   initialCustomer,
+  onBlur,
 }: CustomerSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
@@ -80,6 +82,10 @@ export function CustomerSelector({
   const [selectedCustomer, setSelectedCustomer] = React.useState<
     Customer | undefined
   >(initialCustomer);
+
+  const notifyBlur = React.useCallback(() => {
+    onBlur?.();
+  }, [onBlur]);
 
   // 防抖搜索：用户停止输入 300ms 后才发起搜索
   React.useEffect(() => {
@@ -156,12 +162,14 @@ export function CustomerSelector({
     onCustomerResolved?.(customer);
     onValueChange?.(customer.id);
     setOpen(false);
+    notifyBlur();
   };
 
   // 处理新增客户
   const handleCreateCustomer = () => {
     setCreateDialogOpen(true);
     setOpen(false);
+    notifyBlur();
   };
 
   // 处理客户创建成功
@@ -178,6 +186,7 @@ export function CustomerSelector({
 
     // 关闭创建对话框
     setCreateDialogOpen(false);
+    notifyBlur();
   };
 
   // 当 value 变化时，更新 selectedCustomer
@@ -217,9 +226,16 @@ export function CustomerSelector({
     }
   }, [value, customers, onCustomerResolved, selectedCustomer]);
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      notifyBlur();
+    }
+  };
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
@@ -227,6 +243,7 @@ export function CustomerSelector({
             aria-expanded={open}
             className={cn('h-12 w-full justify-between', className)}
             disabled={disabled}
+            onBlur={notifyBlur}
           >
             {selectedCustomer ? (
               <div className="flex items-center gap-2 truncate">

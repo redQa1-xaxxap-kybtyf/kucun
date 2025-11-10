@@ -29,6 +29,7 @@ interface BasicInfoSectionProps {
   isLoadingCustomers?: boolean;
   onCustomerCreated?: (customer: Customer) => void;
   onRefreshCustomers?: () => void;
+  initialCustomer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
 }
 
 /**
@@ -48,6 +49,7 @@ export function BasicInfoSection({
   isLoadingCustomers: _isLoadingCustomers = false,
   onCustomerCreated,
   onRefreshCustomers: _onRefreshCustomers,
+  initialCustomer,
 }: BasicInfoSectionProps) {
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
@@ -61,9 +63,9 @@ export function BasicInfoSection({
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6 p-6">
+      <CardContent className="space-y-8 p-8">
         {/* 第一行：客户选择和集装箱号 */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* 客户选择 */}
           <FormField
             control={form.control}
@@ -79,6 +81,8 @@ export function BasicInfoSection({
                     onValueChange={field.onChange}
                     placeholder="搜索并选择客户"
                     onCustomerCreated={onCustomerCreated}
+                    initialCustomer={initialCustomer}
+                    onBlur={field.onBlur}
                   />
                 </FormControl>
                 <FormMessage />
@@ -110,7 +114,7 @@ export function BasicInfoSection({
 
         {/* 第二行：订单状态（编辑时） */}
         {showStatus && (
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 gap-6">
             <FormField
               control={form.control}
               name="status"

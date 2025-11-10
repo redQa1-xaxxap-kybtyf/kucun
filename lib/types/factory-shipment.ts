@@ -72,6 +72,7 @@ export interface FactoryShipmentOrderItem {
   productId?: string | null;
   supplierId: string;
   productCode: string; // 产品编码（必填）
+  batchNumber?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
@@ -80,32 +81,33 @@ export interface FactoryShipmentOrderItem {
   ownership: FactoryShipmentItemOwnership;
   customerDeliveryStatus?: FactoryShipmentItemDeliveryStatus;
   selfInboundStatus?: FactoryShipmentItemInboundStatus;
-  ownershipRemarks?: string;
+  ownershipRemarks?: string | null;
   deliveryConfirmedAt?: Date | string | null;
   inboundReceivedAt?: Date | string | null;
 
   // 手动输入产品信息（临时产品）
-  isManualProduct?: boolean;
-  manualProductName?: string;
-  manualSpecification?: string;
-  manualWeight?: number;
-  manualUnit?: string;
+  isManualProduct?: boolean | null;
+  manualProductName?: string | null;
+  manualSpecification?: string | null;
+  manualWeight?: number | null;
+  manualUnit?: string | null;
 
   // 通用显示字段
   displayName: string; // 产品名称（必填）
-  specification?: string;
+  specification?: string | null;
   unit: string;
-  weight?: number;
+  piecesPerUnit?: number | null;
+  weight?: number | null;
 
-  remarks?: string;
+  remarks?: string | null;
   createdAt: Date;
   updatedAt: Date;
 
   // 成本和利润字段
-  unitCost?: number; // 单位成本（采购价+分摊费用/数量）
-  allocatedExpense?: number; // 分摊费用
-  profitAmount?: number; // 利润金额（客户货）
-  profitMargin?: number; // 利润率（%）
+  unitCost?: number | null; // 单位成本（采购价+分摊费用/数量）
+  allocatedExpense?: number | null; // 分摊费用
+  profitAmount?: number | null; // 利润金额（客户货）
+  profitMargin?: number | null; // 利润率（%）
 
   // 关联数据
   product?: {
@@ -142,6 +144,9 @@ export interface FactoryShipmentOrder {
   paidAmount: number;
   remarks?: string;
   shippingCompany?: string;
+  lastShippingQueryAt?: Date | string | null;
+  shippingQueryStatus?: string | null;
+  shippingQueryError?: string | null;
   shipmentDate?: Date;
   estimatedArrival?: Date;
   arrivalDate?: Date;
@@ -189,8 +194,10 @@ export interface CreateFactoryShipmentOrderItemData {
   productId?: string;
   supplierId: string;
   productCode: string; // 产品编码（必填）
+  batchNumber?: string | null;
   quantity: number;
   unitPrice: number;
+  unitCost?: number; // 进货价（可选）
   ownership: FactoryShipmentItemOwnership;
   customerDeliveryStatus?: FactoryShipmentItemDeliveryStatus;
   selfInboundStatus?: FactoryShipmentItemInboundStatus;
@@ -205,9 +212,10 @@ export interface CreateFactoryShipmentOrderItemData {
 
   // 通用显示字段
   displayName: string; // 产品名称（必填）
-  specification?: string;
+  specification?: string | null;
   unit: string;
-  weight?: number;
+  piecesPerUnit?: number;
+  weight?: number | null;
 
   remarks?: string;
 }
