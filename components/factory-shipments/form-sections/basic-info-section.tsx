@@ -1,6 +1,7 @@
 'use client';
 
-import { Truck } from 'lucide-react';
+import { MapPin, Truck } from 'lucide-react';
+import { useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
@@ -51,6 +52,11 @@ export function BasicInfoSection({
   onRefreshCustomers: _onRefreshCustomers,
   initialCustomer,
 }: BasicInfoSectionProps) {
+  // 存储选中的客户信息，用于显示地址
+  const [selectedCustomer, setSelectedCustomer] = useState<
+    Customer | Pick<Customer, 'id' | 'name' | 'phone' | 'address'> | undefined
+  >(initialCustomer);
+
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))]">
@@ -82,9 +88,19 @@ export function BasicInfoSection({
                     placeholder="搜索并选择客户"
                     onCustomerCreated={onCustomerCreated}
                     initialCustomer={initialCustomer}
+                    onCustomerResolved={setSelectedCustomer}
                     onBlur={field.onBlur}
                   />
                 </FormControl>
+                {/* 显示客户地址 */}
+                {selectedCustomer?.address && (
+                  <div className="mt-2 flex items-start gap-2 rounded-md bg-[hsl(var(--color-bg-secondary))] p-3 text-sm">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[hsl(var(--color-primary))]" />
+                    <span className="text-[hsl(var(--color-text-secondary))]">
+                      {selectedCustomer.address}
+                    </span>
+                  </div>
+                )}
                 <FormMessage />
               </FormItem>
             )}
