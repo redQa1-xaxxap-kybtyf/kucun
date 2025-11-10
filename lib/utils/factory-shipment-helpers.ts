@@ -99,6 +99,70 @@ export const getFactoryShipmentStatusBadgeVariant = (
 };
 
 /**
+ * 获取运输查询状态徽章样式
+ * 根据查询状态返回不同的徽章颜色
+ */
+export const getShippingQueryStatusVariant = (
+  status: string
+):
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info' => {
+  const statusLower = status.toLowerCase();
+
+  // 成功状态 - 绿色
+  if (
+    statusLower.includes('成功') ||
+    statusLower.includes('已送达') ||
+    statusLower.includes('已签收') ||
+    statusLower.includes('delivered') ||
+    statusLower.includes('success')
+  ) {
+    return 'success';
+  }
+
+  // 失败/异常状态 - 红色
+  if (
+    statusLower.includes('失败') ||
+    statusLower.includes('错误') ||
+    statusLower.includes('异常') ||
+    statusLower.includes('failed') ||
+    statusLower.includes('error')
+  ) {
+    return 'destructive';
+  }
+
+  // 进行中状态 - 蓝色
+  if (
+    statusLower.includes('运输中') ||
+    statusLower.includes('在途') ||
+    statusLower.includes('派送中') ||
+    statusLower.includes('transit') ||
+    statusLower.includes('shipping') ||
+    statusLower.includes('delivering')
+  ) {
+    return 'info';
+  }
+
+  // 等待/待处理状态 - 黄色
+  if (
+    statusLower.includes('等待') ||
+    statusLower.includes('待') ||
+    statusLower.includes('pending') ||
+    statusLower.includes('waiting')
+  ) {
+    return 'warning';
+  }
+
+  // 默认 - 灰色
+  return 'secondary';
+};
+
+/**
  * 厂家发货产品归属标签映射
  */
 export const FACTORY_SHIPMENT_OWNERSHIP_LABELS: Record<

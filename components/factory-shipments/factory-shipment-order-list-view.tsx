@@ -50,6 +50,7 @@ import {
   formatDate,
   formatDateTime,
   getFactoryShipmentStatusBadgeVariant,
+  getShippingQueryStatusVariant,
 } from '@/lib/utils/factory-shipment-helpers';
 
 const MANUAL_QUERY_COOLDOWN_MS = 6 * 60 * 60 * 1000;
@@ -170,6 +171,9 @@ function FactoryShipmentOrderTable({
                 集装箱号码
               </TableHead>
               <TableHead className="min-w-[120px]">船运公司</TableHead>
+              <TableHead className="w-[130px] min-w-[130px]">
+                运输状态
+              </TableHead>
               <TableHead className="w-[140px] min-w-[140px]">状态</TableHead>
               <TableHead className="w-[110px] min-w-[110px] text-right">
                 订单金额
@@ -563,6 +567,23 @@ function FactoryShipmentOrderRow({
             )}
           </div>
         </TableCell>
+
+        {/* 运输状态列 */}
+        <TableCell className="w-[130px] px-4 py-3">
+          {order.shippingQueryStatus ? (
+            <Badge
+              variant={getShippingQueryStatusVariant(order.shippingQueryStatus)}
+              className="text-xs font-medium"
+            >
+              {order.shippingQueryStatus}
+            </Badge>
+          ) : (
+            <span className="text-[hsl(var(--color-text-tertiary))]">
+              未查询
+            </span>
+          )}
+        </TableCell>
+
         <TableCell className="w-[170px] px-4 py-3">
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
