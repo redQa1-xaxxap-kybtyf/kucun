@@ -9,6 +9,10 @@ import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
+  allocatePurchaseOrderExpensesByQuantity,
+  type PurchaseOrderExpenseAllocationResult,
+} from '@/lib/services/purchase-order-cost-service';
+import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
@@ -107,11 +111,10 @@ export async function updatePurchaseOrder(
     }
 
     const orderId = formData.get('orderId') as string;
-    const rawData = parseJsonPayload<UpdatePurchaseOrderFormData>(
-      formData,
-      'data'
-    );
-    const data = updatePurchaseOrderSchema.parse(rawData);
+    const rawData = parseJsonPayload<unknown>(formData, 'data');
+    const data = updatePurchaseOrderSchema.parse(
+      rawData
+    ) as UpdatePurchaseOrderFormData;
     const updatedItems = data.items ?? [];
     const totalAmount = calculateOrderTotal(updatedItems);
     const updateResult = await updatePurchaseOrderInternal({
@@ -141,6 +144,112 @@ export async function updatePurchaseOrder(
     return {
       success: false,
       error: error instanceof Error ? error.message : '更新采购订单失败',
+    };
+  }
+}
+
+/**
+ * 确认采购订单，计算并写入费用分摊结果
+ */
+export async function confirmPurchaseOrder(
+  orderId: string
+): Promise<ActionResult<{ id: string }>> {
+  const buildErrorResult = (message: string): ActionResult<{ id: string }> => ({
+    success: false,
+    error: message,
+  });
+
+  try {
+    const userId = await getAuthorizedUserId();
+    if (!userId) {
+      return unauthorizedActionResult('确认采购订单');
+    }
+
+    if (!orderId) {
+      return buildErrorResult('采购订单ID不能为空');
+    }
+
+    const result = await prisma.$transaction<ActionResult<{ id: string }>>(
+      async tx => {
+        const order = await tx.purchaseOrder.findUnique({
+          where: { id: orderId },
+          select: {
+            id: true,
+            status: true,
+            expenseAmount: true,
+            items: {
+              select: {
+                id: true,
+                quantity: true,
+                unitPrice: true,
+              },
+            },
+          },
+        });
+
+        if (!order) {
+          return buildErrorResult('采购订单不存在');
+        }
+
+        if (order.status !== PURCHASE_ORDER_STATUS.DRAFT) {
+          return buildErrorResult('仅草稿状态的订单可以确认');
+        }
+
+        if (!order.items.length) {
+          return buildErrorResult('采购订单没有明细项');
+        }
+
+        let allocations: PurchaseOrderExpenseAllocationResult[];
+        try {
+          allocations = allocatePurchaseOrderExpensesByQuantity(
+            order.items.map(item => ({
+              id: item.id,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+            })),
+            order.expenseAmount ?? 0
+          );
+        } catch (allocationError) {
+          const errorMessage =
+            allocationError instanceof Error
+              ? allocationError.message
+              : '采购费用分摊失败';
+          return buildErrorResult(errorMessage);
+        }
+
+        for (const allocation of allocations) {
+          await tx.purchaseOrderItem.update({
+            where: { id: allocation.id },
+            data: {
+              allocatedExpense: allocation.allocatedExpense,
+              unitCostWithExpense: allocation.unitCostWithExpense,
+              unitCost: allocation.unitCostWithExpense,
+            },
+          });
+        }
+
+        await tx.purchaseOrder.update({
+          where: { id: orderId },
+          data: { status: PURCHASE_ORDER_STATUS.ORDERED },
+        });
+
+        return { success: true, data: { id: orderId } };
+      }
+    );
+
+    if (result.success) {
+      revalidatePath('/purchase-orders');
+      revalidatePath(`/purchase-orders/${orderId}`);
+    }
+
+    return result;
+  } catch (error) {
+    logger.error('actions:purchase-orders', '确认采购订单失败', error, {
+      orderId,
+    });
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '确认采购订单失败',
     };
   }
 }

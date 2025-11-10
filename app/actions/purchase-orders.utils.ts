@@ -9,6 +9,7 @@ import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfi
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { resolveInboundUnitCost } from '@/lib/services/purchase-order-cost-service';
 import {
   ensurePurchaseOrderPayable,
   shouldCreatePayable,
@@ -348,6 +349,7 @@ export async function fetchOrderForStatusChange(orderId: string) {
           productId: true,
           quantity: true,
           unitPrice: true,
+          unitCostWithExpense: true,
           batchNumber: true,
         },
       },
@@ -453,12 +455,18 @@ async function createArrivalInboundRecords(
       continue;
     }
 
+    const inboundUnitCost = resolveInboundUnitCost({
+      unitCostWithExpense: item.unitCostWithExpense,
+      unitPrice: item.unitPrice ?? null,
+      fallback: item.unitPrice ?? 0,
+    });
+
     const inbound = await executeMinimalInboundTransaction(
       {
         productId: item.productId,
         variantId: undefined,
         quantity: remainingQuantity,
-        unitCost: item.unitPrice ?? 0,
+        unitCost: inboundUnitCost,
         reason: 'purchase',
         remarks: `采购订单${order.orderNumber}到货`,
         batchNumber: item.batchNumber ?? '',

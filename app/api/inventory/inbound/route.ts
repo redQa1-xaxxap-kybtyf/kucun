@@ -28,6 +28,7 @@ import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { resolveInboundUnitCost } from '@/lib/services/purchase-order-cost-service';
 import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
 import { withIdempotency } from '@/lib/utils/idempotency-redis'; // 🚀 使用 Redis 优化版本
 import { createInboundSchema } from '@/lib/validations/inbound';
@@ -71,6 +72,12 @@ const postInboundRecordHandler = withAuth(
         purchaseOrderItemId,
       } = validatedData;
 
+      let inboundUnitCost = resolveInboundUnitCost({
+        unitCostWithExpense: undefined,
+        unitPrice: undefined,
+        fallback: validatedData.unitCost,
+      });
+
       // 步骤2: 产品验证 (事务外执行,快速失败)
       const productInfo =
         await validateProductExistsOutsideTransaction(productId);
@@ -86,6 +93,8 @@ const postInboundRecordHandler = withAuth(
               select: {
                 id: true,
                 productId: true,
+                unitPrice: true,
+                unitCost: true,
               },
             },
           },
@@ -126,6 +135,12 @@ const postInboundRecordHandler = withAuth(
               { status: 400 }
             );
           }
+
+          inboundUnitCost = resolveInboundUnitCost({
+            unitCostWithExpense: targetItem.unitCost ?? undefined,
+            unitPrice: targetItem.unitPrice,
+            fallback: validatedData.unitCost,
+          });
         }
       }
 
@@ -141,13 +156,13 @@ const postInboundRecordHandler = withAuth(
         'inbound',
         productId,
         context.user.id,
-        { ...validatedData, batchNumber },
+        { ...validatedData, unitCost: inboundUnitCost, batchNumber },
         async () =>
           await executeMinimalInboundTransaction({
             productId: validatedData.productId,
             variantId: validatedData.variantId,
             quantity: validatedData.quantity,
-            unitCost: validatedData.unitCost, // 传递入库单位成本
+            unitCost: inboundUnitCost, // 传递入库单位成本
             reason: validatedData.reason,
             remarks: validatedData.remarks,
             batchNumber, // 使用预生成的批次号

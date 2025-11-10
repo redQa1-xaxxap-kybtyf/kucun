@@ -98,6 +98,7 @@ export interface PurchaseOrderItem {
   // 成本字段
   unitCost?: number; // 单位成本（采购价+分摊费用/数量）
   allocatedExpense?: number; // 分摊费用
+  unitCostWithExpense?: number | null; // 含运费单位成本
 
   // 关联数据
   product?: {

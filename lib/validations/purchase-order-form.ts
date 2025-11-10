@@ -7,7 +7,6 @@ import {
 import {
   updatePurchaseOrderSchema as baseUpdatePurchaseOrderSchema,
   updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema,
-  type UpdatePurchaseOrderData,
   type UpdatePurchaseOrderStatusData,
 } from '@/lib/validations/purchase-order';
 
@@ -91,7 +90,9 @@ export const createPurchaseOrderSchema = z.object({
   feeItems: z.array(purchaseOrderFeeItemSchema).optional().default([]),
 });
 
-export const updatePurchaseOrderSchema = baseUpdatePurchaseOrderSchema;
+export const updatePurchaseOrderSchema = baseUpdatePurchaseOrderSchema.extend({
+  feeItems: z.array(purchaseOrderFeeItemSchema).optional(),
+});
 
 export const updatePurchaseOrderStatusSchema =
   baseUpdatePurchaseOrderStatusSchema.extend({
@@ -103,8 +104,9 @@ export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema> & {
   piecesPerUnit?: number;
 };
 export type PurchaseOrderFormData = z.infer<typeof createPurchaseOrderSchema>;
-export type UpdatePurchaseOrderFormData = PurchaseOrderFormData &
-  UpdatePurchaseOrderData;
+export type UpdatePurchaseOrderFormData = z.infer<
+  typeof updatePurchaseOrderSchema
+>;
 export type UpdatePurchaseOrderStatusFormData =
   UpdatePurchaseOrderStatusData & {
     orderId: string;

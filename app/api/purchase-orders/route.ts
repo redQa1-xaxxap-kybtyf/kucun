@@ -120,6 +120,7 @@ const orderListSelect = {
       unitPrice: true,
       totalPrice: true,
       unitCost: true,
+      unitCostWithExpense: true,
       allocatedExpense: true,
       inboundStatus: true,
       inboundReceivedAt: true,

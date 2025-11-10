@@ -1281,8 +1281,9 @@ model PurchaseOrderItem {
   totalPrice Float @map("total_price")
 
   // 成本字段
-  unitCost         Float? @map("unit_cost")
-  allocatedExpense Float? @default(0) @map("allocated_expense")
+  unitCost             Float? @map("unit_cost")
+  allocatedExpense     Float? @default(0) @map("allocated_expense")
+  unitCostWithExpense  Float? @map("unit_cost_with_expense")
 
   // 入库状态
   inboundStatus     String?   @map("inbound_status")
