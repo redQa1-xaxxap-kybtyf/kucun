@@ -2,6 +2,7 @@
 
 import {
   AlertCircle,
+  Anchor,
   Edit,
   Eye,
   MoreHorizontal,
@@ -36,7 +37,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { useTriggerFactoryShipmentShippingQuery } from '@/lib/api/factory-shipments';
+import {
+  useTriggerFactoryShipmentShippingQuery,
+  useUpdateFactoryShipmentOrderStatus,
+} from '@/lib/api/factory-shipments';
 import {
   FACTORY_SHIPMENT_STATUS,
   FACTORY_SHIPMENT_STATUS_LABELS,
@@ -231,6 +235,7 @@ function FactoryShipmentOrderRow({
   const router = useRouter();
   const { toast } = useToast();
   const manualQueryMutation = useTriggerFactoryShipmentShippingQuery();
+  const confirmArrivalMutation = useUpdateFactoryShipmentOrderStatus();
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isShippingCompanyDialogOpen, setIsShippingCompanyDialogOpen] =
     React.useState(false);
@@ -391,6 +396,64 @@ function FactoryShipmentOrderRow({
   const handleConfirmShipmentSuccess = React.useCallback(() => {
     setIsConfirmShipmentDialogOpen(false);
   }, []);
+
+  // 确认到港按钮显示逻辑
+  // 1. 运输状态为"已到港"、"靠泊"或"锚泊"
+  // 2. 订单状态不是 arrived（已到港）
+  const canConfirmArrival =
+    order.latestShippingStatus &&
+    (order.latestShippingStatus.includes('已到港') ||
+      order.latestShippingStatus.includes('靠泊') ||
+      order.latestShippingStatus.includes('锚泊')) &&
+    order.status !== FACTORY_SHIPMENT_STATUS.ARRIVED &&
+    order.status !== FACTORY_SHIPMENT_STATUS.CANCELLED;
+
+  const handleConfirmArrival = React.useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+
+      if (!canConfirmArrival) {
+        return;
+      }
+
+      // 生成幂等性键
+      const idempotencyKey = crypto.randomUUID();
+
+      confirmArrivalMutation.mutate(
+        {
+          id: order.id,
+          data: {
+            idempotencyKey,
+            status: FACTORY_SHIPMENT_STATUS.ARRIVED,
+            arrivalDate: new Date().toISOString(),
+          },
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: '确认到港成功',
+              description: `订单 ${order.orderNumber} 已确认到港`,
+              variant: 'success',
+            });
+          },
+          onError: (error: Error) => {
+            toast({
+              title: '确认到港失败',
+              description: error.message || '请稍后重试或联系管理员',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
+    },
+    [
+      canConfirmArrival,
+      confirmArrivalMutation,
+      order.id,
+      order.orderNumber,
+      toast,
+    ]
+  );
 
   return (
     <>
@@ -627,6 +690,20 @@ function FactoryShipmentOrderRow({
                 }
               >
                 {manualQueryMutation.isPending ? '查询提交中...' : '手动查询'}
+              </Button>
+            )}
+            {canConfirmArrival && (
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                className="h-7 justify-start bg-[hsl(var(--color-success))] px-2 text-xs text-white shadow-sm hover:bg-[hsl(var(--color-success-hover))]"
+                disabled={confirmArrivalMutation.isPending}
+                onClick={handleConfirmArrival}
+                title="确认订单已到港"
+              >
+                <Anchor className="mr-1 h-3 w-3" />
+                {confirmArrivalMutation.isPending ? '确认中...' : '确认到港'}
               </Button>
             )}
           </div>
