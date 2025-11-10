@@ -236,6 +236,12 @@ function useFactoryShipmentOrders(filters: FactoryShipmentOrderListParams) {
         },
       };
     },
+    // ✅ 添加轮询机制，每2分钟自动刷新一次
+    // 这样可以及时显示自动查询（定时任务）更新的运输状态
+    // 2分钟的间隔既能及时更新，又不会造成过多的服务器请求
+    refetchInterval: 2 * 60 * 1000, // 2分钟
+    // 只在窗口可见时轮询，避免后台浪费资源
+    refetchIntervalInBackground: false,
   });
 }
 
