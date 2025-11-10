@@ -19,7 +19,12 @@ import {
 } from '@/lib/services/factory-shipment-profit-service';
 import { generateFactoryShipmentNumber } from '@/lib/services/simple-order-number-generator';
 import {
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
+  type FactoryShipmentItemDeliveryStatus,
+  type FactoryShipmentItemInboundStatus,
+  type FactoryShipmentItemOwnership,
+  type FactoryShipmentOrderItem,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
@@ -642,9 +647,27 @@ export async function recalculateProfitAndCost(
     );
 
     // 4. 分摊费用
-    const expenseAllocation = allocateExpenses(order.items, totalExpenses, {
-      method: 'by_value',
-    });
+    const normalizedItems: FactoryShipmentOrderItem[] = order.items.map(
+      item => ({
+        ...item,
+        ownership: (item.ownership ||
+          FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) as FactoryShipmentItemOwnership,
+        customerDeliveryStatus: (item.customerDeliveryStatus ?? undefined) as
+          | FactoryShipmentItemDeliveryStatus
+          | undefined,
+        selfInboundStatus: (item.selfInboundStatus ?? undefined) as
+          | FactoryShipmentItemInboundStatus
+          | undefined,
+        ownershipRemarks: item.ownershipRemarks ?? undefined,
+        isManualProduct: item.isManualProduct ?? undefined,
+      })
+    );
+
+    const expenseAllocation = allocateExpenses(
+      normalizedItems,
+      totalExpenses,
+      'by_value'
+    );
 
     const expenseMap = new Map(
       expenseAllocation.results.map(r => [r.itemId, r.allocatedAmount])
@@ -652,7 +675,7 @@ export async function recalculateProfitAndCost(
 
     // 5. 计算利润
     const profitSummary = calculateOrderProfit(
-      order.items,
+      normalizedItems,
       order.receivableAmount || 0,
       expenseMap
     );
@@ -660,7 +683,7 @@ export async function recalculateProfitAndCost(
     // 6. 提取更新数据
     const itemUpdates = extractItemUpdates(
       profitSummary,
-      order.items,
+      normalizedItems,
       expenseMap
     );
 

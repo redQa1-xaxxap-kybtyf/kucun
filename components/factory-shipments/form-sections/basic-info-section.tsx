@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import {
   FACTORY_SHIPMENT_STATUS,
   FACTORY_SHIPMENT_STATUS_LABELS,
@@ -31,6 +32,7 @@ interface BasicInfoSectionProps {
   onCustomerCreated?: (customer: Customer) => void;
   onRefreshCustomers?: () => void;
   initialCustomer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
+  getBlurHandler?: BlurHandlerFactory<CreateFactoryShipmentOrderData>;
 }
 
 /**
@@ -51,6 +53,7 @@ export function BasicInfoSection({
   onCustomerCreated,
   onRefreshCustomers: _onRefreshCustomers,
   initialCustomer,
+  getBlurHandler,
 }: BasicInfoSectionProps) {
   // 存储选中的客户信息，用于显示地址
   const [selectedCustomer, setSelectedCustomer] = useState<
@@ -89,7 +92,11 @@ export function BasicInfoSection({
                     onCustomerCreated={onCustomerCreated}
                     initialCustomer={initialCustomer}
                     onCustomerResolved={setSelectedCustomer}
-                    onBlur={field.onBlur}
+                    onBlur={
+                      getBlurHandler
+                        ? getBlurHandler('customerId', field.onBlur)
+                        : field.onBlur
+                    }
                   />
                 </FormControl>
                 {/* 显示客户地址 */}

@@ -4,6 +4,7 @@ import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import { ItemsTable } from '@/components/factory-shipments/form-sections/items-table';
 import { Card, CardContent } from '@/components/ui/card';
+import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
 import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
@@ -14,6 +15,7 @@ interface ItemListSectionProps {
   products: Product[];
   selectedCustomerId: string;
   customerPriceHistoryData?: PriceHistoryData;
+  getBlurHandler?: BlurHandlerFactory<CreateFactoryShipmentOrderData>;
 }
 
 /**
@@ -26,6 +28,7 @@ export function ItemListSection({
   products,
   selectedCustomerId,
   customerPriceHistoryData,
+  getBlurHandler,
 }: ItemListSectionProps) {
   const { fields, append, remove } = fieldArray;
 
@@ -35,12 +38,14 @@ export function ItemListSection({
       productId: undefined,
       supplierId: '',
       productCode: '', // 新增：产品编码（必填）
+      batchNumber: '',
       quantity: 1,
       unitPrice: 0,
       ownership: 'customer',
       displayName: '', // 改为可选
       specification: '',
       unit: '片',
+      piecesPerUnit: undefined,
       ownershipRemarks: '',
       remarks: '',
     });
@@ -53,7 +58,7 @@ export function ItemListSection({
 
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
-      <CardContent className="p-6">
+      <CardContent className="p-8">
         <ItemsTable
           form={form}
           products={products}
@@ -62,6 +67,7 @@ export function ItemListSection({
           fields={fields}
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
+          getBlurHandler={getBlurHandler}
         />
       </CardContent>
     </Card>

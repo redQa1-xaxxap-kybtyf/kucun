@@ -26,6 +26,7 @@ interface SupplierPriceSelectorProps {
   value: string;
   onChange: (value: string) => void;
   showLabel?: boolean; // 是否显示标签（在表格中使用时设为 false）
+  onBlur?: () => void;
 }
 
 /**
@@ -39,7 +40,7 @@ interface SupplierPriceSelectorProps {
  * 使用 React.memo 优化性能
  */
 const SupplierPriceSelectorComponent = React.memo<SupplierPriceSelectorProps>(
-  ({ form, index, value, onChange, showLabel = true }) => {
+  ({ form, index, value, onChange, showLabel = true, onBlur }) => {
     const { toast } = useToast();
     const queryClient = useQueryClient();
 
@@ -128,6 +129,7 @@ const SupplierPriceSelectorComponent = React.memo<SupplierPriceSelectorProps>(
                 queryKey: supplierQueryKeys.list(supplierListParams),
               });
             }}
+            onBlur={onBlur}
           />
         </FormControl>
         <FormMessage />

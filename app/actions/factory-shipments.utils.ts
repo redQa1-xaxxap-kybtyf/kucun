@@ -44,6 +44,7 @@ export async function resolveShipmentItems(
             specification: true,
             unit: true,
             weight: true,
+            piecesPerUnit: true,
           },
         })
       : [];
@@ -72,6 +73,7 @@ export async function resolveShipmentItems(
           : null,
       supplierId: item.supplierId,
       productCode: trimmedProductCode,
+      batchNumber: item.batchNumber?.trim() || undefined,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       totalPrice: item.totalPrice,
@@ -92,6 +94,7 @@ export async function resolveShipmentItems(
       displayName: trimmedDisplayName,
       specification: trimmedSpecification,
       unit: trimmedUnit,
+      // piecesPerUnit column is not present in some environments; skip persisting
       weight: itemWeight,
     };
   });

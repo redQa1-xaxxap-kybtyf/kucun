@@ -54,7 +54,8 @@ function createInitialFormState(
   for (const item of items) {
     initial[item.id] = {
       quantity: item.quantity,
-      piecesPerUnit: 1,
+      piecesPerUnit:
+        item.piecesPerUnit && item.piecesPerUnit > 0 ? item.piecesPerUnit : 1,
       batchNumber: undefined,
       location: undefined,
       remarks: undefined,

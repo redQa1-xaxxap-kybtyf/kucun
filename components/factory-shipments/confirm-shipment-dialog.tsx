@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ship } from 'lucide-react';
+import * as React from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -41,8 +42,9 @@ const confirmShipmentSchema = z.object({
     .max(50, '集装箱号码不能超过50个字符'),
   shippingCompany: z
     .string()
-    .min(1, '确认发货时必须填写船运公司信息(用于自动查询运输状态)')
-    .max(100, '船运公司名称不能超过100个字符'),
+    .max(100, '船运公司名称不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
   estimatedArrival: z.date().optional(),
   shipmentDate: z.date().default(() => new Date()),
 });
@@ -53,6 +55,7 @@ interface ConfirmShipmentDialogProps {
   orderId: string;
   orderNumber: string;
   containerNumber?: string | null;
+  shippingCompany?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
@@ -60,13 +63,21 @@ interface ConfirmShipmentDialogProps {
 
 type ConfirmShipmentDialogStateProps = Pick<
   ConfirmShipmentDialogProps,
-  'orderId' | 'orderNumber' | 'containerNumber' | 'onOpenChange' | 'onSuccess'
+  | 'orderId'
+  | 'orderNumber'
+  | 'containerNumber'
+  | 'shippingCompany'
+  | 'open'
+  | 'onOpenChange'
+  | 'onSuccess'
 >;
 
 function useConfirmShipmentDialogState({
   orderId,
   orderNumber,
   containerNumber,
+  shippingCompany,
+  open,
   onOpenChange,
   onSuccess,
 }: ConfirmShipmentDialogStateProps) {
@@ -76,11 +87,22 @@ function useConfirmShipmentDialogState({
     resolver: zodResolver(confirmShipmentSchema),
     defaultValues: {
       containerNumber: containerNumber || '',
-      shippingCompany: '',
+      shippingCompany: shippingCompany || '',
       estimatedArrival: undefined,
       shipmentDate: new Date(),
     },
   });
+
+  React.useEffect(() => {
+    if (open) {
+      form.reset({
+        containerNumber: containerNumber || '',
+        shippingCompany: shippingCompany || '',
+        estimatedArrival: undefined,
+        shipmentDate: new Date(),
+      });
+    }
+  }, [containerNumber, shippingCompany, open, form]);
 
   const confirmMutation = useUpdateFactoryShipmentOrderStatus();
 
@@ -296,7 +318,8 @@ function ConfirmShipmentDialogView({
             <Ship className="h-5 w-5" /> 确认发货
           </DialogTitle>
           <DialogDescription>
-            请填写集装箱号码和船运公司信息以确认订单 {orderNumber} 已发货
+            请填写集装箱号码完成确认。如已知船运公司，可一并填写，方便后续追踪（订单{' '}
+            {orderNumber}）。
           </DialogDescription>
         </DialogHeader>
 
@@ -335,6 +358,7 @@ export function ConfirmShipmentDialog({
   orderId,
   orderNumber,
   containerNumber,
+  shippingCompany,
   open,
   onOpenChange,
   onSuccess,
@@ -344,6 +368,8 @@ export function ConfirmShipmentDialog({
       orderId,
       orderNumber,
       containerNumber,
+      shippingCompany,
+      open,
       onOpenChange,
       onSuccess,
     });

@@ -27,7 +27,7 @@ export function FactoryShipmentOrderDetailWrapper({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <div className="space-y-6 p-6">
       <FactoryShipmentOrderDetail
         orderId={orderId}
         onEdit={handleEdit}

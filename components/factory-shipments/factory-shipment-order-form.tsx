@@ -4,12 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  useFieldArray,
-  useForm,
-  type FieldErrors,
-  type Path,
-} from 'react-hook-form';
+import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { AmountInfoSection } from '@/components/factory-shipments/form-sections/amount-info-section';
@@ -26,14 +21,18 @@ import {
   useCreateFactoryShipmentOrder,
   useFactoryShipmentOrder,
   useUpdateFactoryShipmentOrder,
-  type FactoryShipmentValidationIssue,
 } from '@/lib/api/factory-shipments';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import type { Customer } from '@/lib/types/customer';
 import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
+import {
+  prepareFactoryShipmentForSubmit,
+  transformFactoryShipmentFromAPI,
+} from '@/lib/utils/factory-shipment-transforms';
 import {
   createFactoryShipmentOrderSchema,
   type CreateFactoryShipmentOrderData,
@@ -73,73 +72,6 @@ interface FactoryShipmentOrderFormProps {
   onCancel?: () => void;
 }
 
-interface FirstErrorResult {
-  path?: string;
-  message?: string;
-}
-
-function findFirstErrorPath(
-  errors: FieldErrors<CreateFactoryShipmentOrderData>,
-  segments: Array<string | number> = []
-): FirstErrorResult {
-  for (const [key, value] of Object.entries(errors)) {
-    if (!value) {
-      continue;
-    }
-
-    if (key === 'root' && typeof value === 'object') {
-      const rootMessage = (value as { message?: string }).message;
-      if (rootMessage) {
-        return { path: segments.join('.'), message: rootMessage };
-      }
-      continue;
-    }
-
-    const currentPath = [...segments, key];
-
-    if (Array.isArray(value)) {
-      for (let index = 0; index < value.length; index += 1) {
-        const child = value[index];
-        if (!child) {
-          continue;
-        }
-        const result = findFirstErrorPath(child, [...currentPath, index]);
-        if (result.path || result.message) {
-          return result;
-        }
-      }
-      continue;
-    }
-
-    if (typeof value === 'object') {
-      const message = (value as { message?: string }).message;
-      if (message) {
-        return {
-          path: currentPath.join('.'),
-          message,
-        };
-      }
-
-      const nested = findFirstErrorPath(
-        value as FieldErrors<CreateFactoryShipmentOrderData>,
-        currentPath
-      );
-      if (nested.path || nested.message) {
-        return nested;
-      }
-    }
-  }
-
-  return {};
-}
-
-function normalizeFieldPath(path?: string | null): string | undefined {
-  if (!path || path === 'root') {
-    return undefined;
-  }
-  return path.replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '');
-}
-
 export function FactoryShipmentOrderForm({
   orderId,
   onSuccess,
@@ -174,76 +106,22 @@ export function FactoryShipmentOrderForm({
     },
   });
 
+  const { notifyBlur, showValidationToast, applyServerValidationErrors } =
+    useFormErrorHandling({
+      form,
+      toast,
+    });
+
   // 产品明细字段数组
   const fieldArray = useFieldArray({
     control: form.control,
     name: 'items',
   });
 
-  const focusField = useCallback(
-    (rawPath?: string | null) => {
-      const path = normalizeFieldPath(rawPath);
-      if (!path) {
-        return;
-      }
-      try {
-        form.setFocus(path as Path<CreateFactoryShipmentOrderData>);
-      } catch {
-        // noop - some nested virtual fields can't be focused programmatically
-      }
-      requestAnimationFrame(() => {
-        const element = document.querySelector(
-          `[name="${path}"]`
-        ) as HTMLElement | null;
-        element?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      });
-    },
-    [form]
-  );
-
-  const applyServerValidationIssues = useCallback(
-    (issues?: FactoryShipmentValidationIssue[]) => {
-      if (!issues?.length) {
-        return undefined;
-      }
-
-      let firstMessage: string | undefined;
-      let firstPath: string | undefined;
-
-      issues.forEach(issue => {
-        const normalizedPath = normalizeFieldPath(issue.path);
-
-        if (normalizedPath) {
-          form.setError(
-            normalizedPath as Path<CreateFactoryShipmentOrderData>,
-            {
-              type: 'server',
-              message: issue.message,
-            }
-          );
-
-          if (!firstPath) {
-            firstPath = normalizedPath;
-            firstMessage = issue.message;
-          }
-        } else if (!firstMessage) {
-          firstMessage = issue.message;
-        }
-      });
-
-      if (firstPath) {
-        focusField(firstPath);
-      }
-
-      return firstMessage;
-    },
-    [focusField, form]
-  );
-
   const handleServerValidationError = useCallback(
     (error: FactoryShipmentValidationError, fallbackTitle: string) => {
       const firstMessage =
-        applyServerValidationIssues(error.details) ||
+        applyServerValidationErrors(error.details) ||
         error.message ||
         '数据验证失败，请检查后重试。';
 
@@ -253,7 +131,7 @@ export function FactoryShipmentOrderForm({
         variant: 'destructive',
       });
     },
-    [applyServerValidationIssues, toast]
+    [applyServerValidationErrors, toast]
   );
 
   // 查询基础数据
@@ -309,38 +187,16 @@ export function FactoryShipmentOrderForm({
   // 填充编辑数据
   useEffect(() => {
     if (orderDetail && isEditing) {
+      const normalized = transformFactoryShipmentFromAPI(orderDetail);
       form.reset({
+        ...normalized,
+        items: normalized.items?.length
+          ? normalized.items
+          : [createEmptyItem()],
         idempotencyKey: generateIdempotencyKey(),
-        containerNumber: orderDetail.containerNumber || '',
-        customerId: orderDetail.customerId,
-        status: orderDetail.status,
-        totalAmount: orderDetail.totalAmount,
-        receivableAmount: orderDetail.receivableAmount,
-        depositAmount: orderDetail.depositAmount,
-        remarks: orderDetail.remarks || '',
-        items: orderDetail.items?.map(item => ({
-          productId: item.productId ?? undefined,
-          supplierId: item.supplierId,
-          productCode: item.productCode || '', // 产品编码（必填）
-          batchNumber: item.batchNumber || '',
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          unitCost: item.unitCost ?? undefined, // 进货价（可选）
-          ownership: item.ownership || 'customer',
-          displayName: item.displayName || '', // 产品名称（必填）
-          specification: item.specification || '', // 规格（可选）
-          unit: (item.unit === '片' || item.unit === '件'
-            ? item.unit
-            : '片') as '片' | '件',
-          piecesPerUnit: item.piecesPerUnit ?? undefined,
-          weight: item.weight ?? undefined, // 重量（可选，保持 undefined）
-          ownershipRemarks: item.ownershipRemarks || '', // 归属备注（可选）
-          remarks: item.remarks || '', // 备注（可选）
-        })) || [createEmptyItem()],
-        feeItems: [], // 编辑模式下费用项暂时为空（后续可从 ExpenseRecord 加载）
       });
     }
-  }, [orderDetail, isEditing, form]);
+  }, [form, isEditing, orderDetail]);
 
   // 监听产品明细变化，自动计算总金额
   useEffect(() => {
@@ -376,16 +232,16 @@ export function FactoryShipmentOrderForm({
       : intent === 'draft'
         ? FACTORY_SHIPMENT_STATUS.DRAFT
         : FACTORY_SHIPMENT_STATUS.CONFIRMED;
-    const payload = {
+    const payload = prepareFactoryShipmentForSubmit({
       ...data,
       status: resolvedStatus,
-    };
+    });
 
     if (isEditing) {
       // 确保更新时有 idempotencyKey
       const updateData = {
         ...payload,
-        idempotencyKey: data.idempotencyKey || generateIdempotencyKey(),
+        idempotencyKey: payload.idempotencyKey || generateIdempotencyKey(),
       };
 
       updateMutation.mutate(
@@ -465,19 +321,9 @@ export function FactoryShipmentOrderForm({
   const handleInvalidSubmit = (
     errors: FieldErrors<CreateFactoryShipmentOrderData>
   ) => {
-    const { path, message } = findFirstErrorPath(errors);
-    const toastMessage =
-      message ??
-      '请检查标红字段后再次提交。所有带 * 的字段均为必填项，手动产品需填写名称。';
-
-    if (path) {
-      focusField(path);
-    }
-
-    toast({
-      title: '表单存在未填写的必填项',
-      description: toastMessage,
-      variant: 'destructive',
+    showValidationToast(errors, {
+      description:
+        '请检查标红字段后再次提交。所有带 * 的字段均为必填项，手动产品需填写名称。',
     });
   };
 
@@ -519,6 +365,7 @@ export function FactoryShipmentOrderForm({
           onCustomerCreated={handleCustomerCreated}
           onRefreshCustomers={handleRefreshCustomers}
           initialCustomer={orderDetail?.customer}
+          getBlurHandler={notifyBlur}
         />
 
         {/* 产品明细 */}
@@ -528,6 +375,7 @@ export function FactoryShipmentOrderForm({
           products={products}
           selectedCustomerId={selectedCustomerId}
           customerPriceHistoryData={customerPriceHistoryData}
+          getBlurHandler={notifyBlur}
         />
 
         {/* 金额信息 */}

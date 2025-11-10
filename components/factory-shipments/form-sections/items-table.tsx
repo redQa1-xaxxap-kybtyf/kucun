@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { getLatestPrice } from '@/hooks/use-price-history';
+import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
 import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
@@ -43,6 +44,7 @@ interface ItemsTableProps {
   fields: Array<{ id: string }>;
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
+  getBlurHandler?: BlurHandlerFactory<CreateFactoryShipmentOrderData>;
 }
 
 /**
@@ -58,6 +60,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     fields,
     onAddItem,
     onRemoveItem,
+    getBlurHandler,
   }) => {
     const { toast } = useToast();
 
@@ -263,7 +266,14 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                             value={field.value}
                             onChange={field.onChange}
                             showLabel={false}
-                            onBlur={field.onBlur}
+                            onBlur={
+                              getBlurHandler
+                                ? getBlurHandler(
+                                    `items.${index}.supplierId`,
+                                    field.onBlur
+                                  )
+                                : field.onBlur
+                            }
                           />
                         )}
                       />
