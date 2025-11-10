@@ -37,7 +37,11 @@ export const validStatusTransitions: Record<string, string[]> = {
   ],
   // 已发货后,可以补充船公司信息并转为运输中
   // 也允许系统自动从已发货转为运输中
-  [FACTORY_SHIPMENT_STATUS.SHIPPED]: [FACTORY_SHIPMENT_STATUS.IN_TRANSIT],
+  // 也允许用户直接确认到港（跳过运输中状态）
+  [FACTORY_SHIPMENT_STATUS.SHIPPED]: [
+    FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
+    FACTORY_SHIPMENT_STATUS.ARRIVED,
+  ],
   // 运输中可以转为到港
   [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: [FACTORY_SHIPMENT_STATUS.ARRIVED],
   // 到港是终态
