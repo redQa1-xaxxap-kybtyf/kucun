@@ -335,6 +335,17 @@ function FactoryShipmentOrderRow({
   const hasShippingCompany = Boolean(order.shippingCompany?.trim());
   const isShipped = order.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
 
+  // 判断是否可以编辑物流信息（集装箱号和船运公司）
+  const canEditShippingInfo = !(
+    order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
+    order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+    order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
+  );
+
+  // 判断是否可以编辑船运公司（额外检查是否已查询）
+  const canEditShippingCompany =
+    canEditShippingInfo && !order.lastShippingQueryAt;
+
   // 手动查询按钮显示逻辑：
   // 1. 必须是已发货状态
   // 2. 必须有物流公司
@@ -509,9 +520,10 @@ function FactoryShipmentOrderRow({
         </TableCell>
         <TableCell
           className={`w-[140px] px-4 py-3 text-[hsl(var(--color-text-secondary))] ${
-            // 已发货和运输中的订单不允许编辑
+            // 已发货、运输中和已到港的订单不允许编辑
             order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-            order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+            order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+            order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
               ? 'cursor-not-allowed'
               : 'cursor-pointer'
           }`}
@@ -519,16 +531,18 @@ function FactoryShipmentOrderRow({
           title={
             order.containerNumber ||
             (order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-            order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+            order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+            order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
               ? '不可填写'
               : '点击填写')
           }
         >
           <span
             className={`transition-colors ${
-              // 已发货和运输中的订单显示为不可编辑状态
+              // 已发货、运输中和已到港的订单显示为不可编辑状态
               order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-              order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+              order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+              order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
                 ? 'text-[hsl(var(--color-text-tertiary))]'
                 : 'hover:text-[hsl(var(--color-primary))]'
             }`}
@@ -539,7 +553,8 @@ function FactoryShipmentOrderRow({
                   {order.containerNumber}
                 </span>
                 {order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-                order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ? (
+                order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+                order.status === FACTORY_SHIPMENT_STATUS.ARRIVED ? (
                   // 不可编辑状态：锁定图标
                   <Edit className="h-3 w-3 flex-shrink-0 opacity-30" />
                 ) : (
@@ -551,19 +566,22 @@ function FactoryShipmentOrderRow({
               <span
                 className={`flex items-center gap-1 ${
                   order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-                  order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+                  order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+                  order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
                     ? 'text-[hsl(var(--color-text-tertiary))]'
                     : 'text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-primary))]'
                 }`}
               >
                 {order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-                order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+                order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+                order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
                   ? '不可填写'
                   : '点击填写'}
                 <Edit
                   className={`h-3 w-3 ${
                     order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
-                    order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+                    order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ||
+                    order.status === FACTORY_SHIPMENT_STATUS.ARRIVED
                       ? 'opacity-30'
                       : 'opacity-60 hover:opacity-100'
                   }`}
@@ -574,23 +592,25 @@ function FactoryShipmentOrderRow({
         </TableCell>
         <TableCell
           className={`px-4 py-3 text-[hsl(var(--color-text-secondary))] ${
-            order.lastShippingQueryAt
-              ? 'cursor-not-allowed opacity-60'
-              : 'cursor-pointer'
+            canEditShippingCompany
+              ? 'cursor-pointer'
+              : 'cursor-not-allowed opacity-60'
           }`}
           onClick={handleShippingCompanyClick}
           title={
-            order.lastShippingQueryAt
-              ? '已查询，不可修改'
-              : order.shippingCompany || '点击输入'
+            !canEditShippingInfo
+              ? '已发货、运输中或已到港的订单不可修改'
+              : order.lastShippingQueryAt
+                ? '已查询，不可修改'
+                : order.shippingCompany || '点击输入'
           }
         >
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={
-                order.lastShippingQueryAt
-                  ? ''
-                  : 'transition-colors hover:text-[hsl(var(--color-primary))]'
+                canEditShippingCompany
+                  ? 'transition-colors hover:text-[hsl(var(--color-primary))]'
+                  : ''
               }
             >
               {order.shippingCompany ? (
@@ -598,22 +618,28 @@ function FactoryShipmentOrderRow({
                   <span className="block max-w-[150px] truncate">
                     {order.shippingCompany}
                   </span>
-                  {!order.lastShippingQueryAt && (
+                  {canEditShippingCompany ? (
                     <Edit className="h-3 w-3 flex-shrink-0 opacity-60 hover:opacity-100" />
+                  ) : (
+                    <Edit className="h-3 w-3 flex-shrink-0 opacity-30" />
                   )}
                 </span>
               ) : (
                 <span
                   className={`flex items-center gap-1 ${
-                    order.lastShippingQueryAt
-                      ? 'text-[hsl(var(--color-text-tertiary))]'
-                      : 'text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-primary))]'
+                    canEditShippingCompany
+                      ? 'text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-primary))]'
+                      : 'text-[hsl(var(--color-text-tertiary))]'
                   }`}
                 >
                   点击输入
-                  {!order.lastShippingQueryAt && (
-                    <Edit className="h-3 w-3 opacity-60 hover:opacity-100" />
-                  )}
+                  <Edit
+                    className={`h-3 w-3 ${
+                      canEditShippingCompany
+                        ? 'opacity-60 hover:opacity-100'
+                        : 'opacity-30'
+                    }`}
+                  />
                 </span>
               )}
             </span>
