@@ -2,6 +2,7 @@
 
 import { ChevronsUpDown, Search } from 'lucide-react';
 import React from 'react';
+import { ZodError } from 'zod';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,7 @@ import type { ProductWithInventory, SmartProductSearchProps } from './types';
 export function SmartProductSearch(props: SmartProductSearchProps) {
   const {
     open,
-    setOpen,
+    setOpen: setPopoverOpen,
     searchValue,
     handleSearchValueChange,
     showAddDialog,
@@ -51,14 +52,63 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
     isSearching = false,
     simple = false,
     temporaryProductRequirements,
+    onBlur,
   } = props;
 
   const displaySearchValue = searchValue.trim();
   const hasResults = Boolean(displaySearchValue && filteredProducts.length > 0);
 
+  const notifyBlur = React.useCallback(() => {
+    if (!onBlur) {
+      return;
+    }
+
+    const handleError = (error: unknown) => {
+      if (error instanceof ZodError) {
+        return;
+      }
+      console.error('smart-product-search:onBlur failed', error);
+    };
+
+    try {
+      const result = onBlur();
+      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+        (result as Promise<unknown>).catch(handleError);
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  }, [onBlur]);
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setPopoverOpen(nextOpen);
+      if (!nextOpen) {
+        notifyBlur();
+      }
+    },
+    [setPopoverOpen, notifyBlur]
+  );
+
+  const handleProductSelectWithBlur = React.useCallback(
+    (productId: string) => {
+      handleProductSelect(productId);
+      notifyBlur();
+    },
+    [handleProductSelect, notifyBlur]
+  );
+
+  const handleBatchSelectWithBlur = React.useCallback(
+    (productId: string, batchNumber: string) => {
+      handleBatchSelect(productId, batchNumber);
+      notifyBlur();
+    },
+    [handleBatchSelect, notifyBlur]
+  );
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -71,6 +121,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
               className
             )}
             disabled={disabled}
+            onBlur={notifyBlur}
           >
             <SmartProductSearchTriggerContent
               selectedProduct={selectedProduct}
@@ -96,8 +147,8 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
                   products={filteredProducts}
                   selectedValue={props.value}
                   searchQuery={displaySearchValue}
-                  onSelectProduct={handleProductSelect}
-                  onSelectBatch={handleBatchSelect}
+                  onSelectProduct={handleProductSelectWithBlur}
+                  onSelectBatch={handleBatchSelectWithBlur}
                 />
               ) : (
                 <CommandEmpty>

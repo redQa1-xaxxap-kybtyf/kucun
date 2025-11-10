@@ -173,7 +173,10 @@ export function ERPSalesOrderForm({
   // 表单状态
   const form = useForm<CreateSalesOrderData>({
     resolver: zodResolver(CreateSalesOrderSchema),
-    mode: 'onSubmit',
+    mode: 'onBlur', // ✅ 用户离开字段时验证
+    reValidateMode: 'onChange', // ✅ 提交后实时验证
+    criteriaMode: 'all', // ✅ 显示所有错误
+    shouldFocusError: true,
     defaultValues: {
       customerId: '',
       status: 'draft',
@@ -1012,6 +1015,7 @@ export function ERPSalesOrderForm({
                           onCustomerResolved={handleCustomerResolved}
                           initialCustomer={initialData?.customer}
                           className="h-9"
+                          onBlur={field.onBlur}
                         />
                       </FormControl>
                       <FormMessage className="text-xs" />
@@ -1182,6 +1186,7 @@ export function ERPSalesOrderForm({
                                 });
                               }}
                               className="h-9"
+                              onBlur={field.onBlur}
                             />
                           </FormControl>
                           <FormMessage className="text-xs" />

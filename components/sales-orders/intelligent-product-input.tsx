@@ -154,6 +154,9 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
 
         setFormValue(`items.${index}.productCode`, product.code || '');
 
+        // 自动填充产品名称
+        setFormValue(`items.${index}.displayName`, product.name || '');
+
         // 自动填充产品信息
         setFormValue(
           `items.${index}.specification`,
@@ -389,6 +392,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
                 requireName: requireManualName,
               }}
               simple={true}
+              onBlur={field.onBlur}
             />
           </FormControl>
           <FormMessage className="text-xs" />

@@ -135,16 +135,32 @@ function useSearchLifecycle({
     [selectedProduct?.code, selectedProduct?.name]
   );
 
+  // 使用 ref 跟踪是否已经为当前选中的产品填充过搜索值
+  const lastPrefilledProduct = useRef<string>('');
+
   // 打开时自动填充已选产品编码
   useEffect(() => {
     const wasOpen = previousOpen ?? false;
 
-    if (open && !wasOpen && selectedProductPrefill) {
-      setSearchValue(selectedProductPrefill);
+    if (open && !wasOpen) {
+      // 打开时填充已选产品（仅当产品变化时才填充）
+      if (
+        selectedProductPrefill &&
+        lastPrefilledProduct.current !== selectedProductPrefill
+      ) {
+        // 使用 requestAnimationFrame 确保在浏览器下一帧渲染时填充
+        // 这样可以避免在 Popover 打开动画期间触发重新渲染
+        const rafId = requestAnimationFrame(() => {
+          setSearchValue(selectedProductPrefill);
+          lastPrefilledProduct.current = selectedProductPrefill;
+        });
+        return () => cancelAnimationFrame(rafId);
+      }
       return;
     }
 
     if (!open && wasOpen && !showAddDialog) {
+      // 关闭时清空搜索
       clearSearch();
       onSearchChange?.('');
     }

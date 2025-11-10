@@ -1,5 +1,8 @@
 'use client';
 
+import React from 'react';
+import { ZodError } from 'zod';
+
 import { QuickAddSupplierDialog } from '@/components/suppliers/quick-add-supplier-dialog';
 import {
   Command,
@@ -23,7 +26,7 @@ import type { SupplierSelectorProps } from './types';
 export function SupplierSelector(props: SupplierSelectorProps) {
   const {
     open,
-    setOpen,
+    setOpen: setPopoverOpen,
     searchValue,
     handleSearchValueChange,
     filteredSuppliers,
@@ -40,14 +43,55 @@ export function SupplierSelector(props: SupplierSelectorProps) {
     disabled = false,
     className,
     isLoading = false,
+    onBlur,
   } = props;
 
   const trimmedSearchValue = searchValue.trim();
   const hasResults = filteredSuppliers.length > 0;
 
+  const notifyBlur = React.useCallback(() => {
+    if (!onBlur) {
+      return;
+    }
+
+    const handleError = (error: unknown) => {
+      if (error instanceof ZodError) {
+        return;
+      }
+      console.error('supplier-selector:onBlur failed', error);
+    };
+
+    try {
+      const result = onBlur();
+      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+        (result as Promise<unknown>).catch(handleError);
+      }
+    } catch (error) {
+      handleError(error);
+    }
+  }, [onBlur]);
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setPopoverOpen(nextOpen);
+      if (!nextOpen) {
+        notifyBlur();
+      }
+    },
+    [setPopoverOpen, notifyBlur]
+  );
+
+  const handleSelectWithBlur = React.useCallback(
+    (supplierId: string) => {
+      handleSelect(supplierId);
+      notifyBlur();
+    },
+    [handleSelect, notifyBlur]
+  );
+
   return (
     <>
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <SupplierSelectorTrigger
             selectedSupplier={selectedSupplier}
@@ -56,6 +100,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
             disabled={disabled || isLoading}
             className={className}
             open={open}
+            onBlur={notifyBlur}
           />
         </PopoverTrigger>
         <PopoverContent className="w-[400px] p-0" align="start">
@@ -71,7 +116,7 @@ export function SupplierSelector(props: SupplierSelectorProps) {
                 <SupplierSearchResults
                   suppliers={filteredSuppliers}
                   selectedValue={props.value}
-                  onSelect={handleSelect}
+                  onSelect={handleSelectWithBlur}
                 />
               ) : (
                 <CommandEmpty>

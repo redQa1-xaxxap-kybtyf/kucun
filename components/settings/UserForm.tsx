@@ -177,6 +177,10 @@ export const UserForm: React.FC<UserFormProps> = ({
     resolver: zodResolver(
       mode === 'create' ? CreateUserSchema : UpdateUserSchema
     ),
+    mode: 'onBlur', // ✅ 用户离开字段时验证
+    reValidateMode: 'onChange', // ✅ 提交后实时验证
+    criteriaMode: 'all', // ✅ 显示所有错误
+    shouldFocusError: true,
     defaultValues:
       mode === 'create'
         ? {

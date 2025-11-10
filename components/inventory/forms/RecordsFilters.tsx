@@ -9,6 +9,7 @@
 import { Filter, RotateCcw, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import {
@@ -173,6 +174,7 @@ function DateRangeFields({
 
 /**
  * 统一的记录筛选组件
+ * ✅ 样式优化：使用 Card 组件，与厂家发货页面保持一致
  */
 export function RecordsFilters({
   config,
@@ -193,50 +195,58 @@ export function RecordsFilters({
         ? 'md:grid-cols-3'
         : 'md:grid-cols-2';
 
+  // 检查是否有激活的筛选条件
+  const hasActiveFilters =
+    !!values.search || !!values.type || !!values.startDate || !!values.endDate;
+
   return (
-    <div
-      className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+    <Card
+      className="border border-[hsl(var(--color-border-primary))]"
       style={{ boxShadow: 'var(--shadow-light)' }}
     >
-      <div className="mb-3 flex items-center gap-2 text-[hsl(var(--color-text-secondary))]">
-        <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-        <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-          筛选条件
-        </span>
-      </div>
+      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
+        <div className="mb-3 flex items-center gap-2 text-[hsl(var(--color-text-secondary))]">
+          <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+          <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+            筛选条件
+          </span>
+        </div>
 
-      <div className={`grid grid-cols-1 gap-3 ${gridClass}`}>
-        <SearchField
-          config={config.search}
-          value={values.search}
-          onChange={v => onFilterChange('search', v)}
-        />
-        <TypeFilterField
-          config={config.typeFilter}
-          value={values.type}
-          onChange={v => onFilterChange('type', v)}
-        />
-        <DateRangeFields
-          config={config.dateRange}
-          startDate={values.startDate}
-          endDate={values.endDate}
-          onStartChange={v => onFilterChange('startDate', v)}
-          onEndChange={v => onFilterChange('endDate', v)}
-        />
-      </div>
+        <div className={`grid grid-cols-1 gap-3 ${gridClass}`}>
+          <SearchField
+            config={config.search}
+            value={values.search}
+            onChange={v => onFilterChange('search', v)}
+          />
+          <TypeFilterField
+            config={config.typeFilter}
+            value={values.type}
+            onChange={v => onFilterChange('type', v)}
+          />
+          <DateRangeFields
+            config={config.dateRange}
+            startDate={values.startDate}
+            endDate={values.endDate}
+            onStartChange={v => onFilterChange('startDate', v)}
+            onEndChange={v => onFilterChange('endDate', v)}
+          />
+        </div>
 
-      <div className="mt-3 flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onReset}
-          className="h-7 text-xs"
-        >
-          <RotateCcw className="mr-1 h-3 w-3" />
-          重置筛选
-        </Button>
-      </div>
-    </div>
+        {hasActiveFilters && (
+          <div className="mt-3 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onReset}
+              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+            >
+              <RotateCcw className="mr-1 h-3 w-3" />
+              重置筛选
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

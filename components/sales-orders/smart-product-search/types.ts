@@ -49,4 +49,5 @@ export interface SmartProductSearchProps {
   isSearching?: boolean;
   simple?: boolean;
   temporaryProductRequirements?: TemporaryProductRequirements;
+  onBlur?: () => void;
 }

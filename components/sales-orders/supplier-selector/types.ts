@@ -10,6 +10,7 @@ export interface SupplierSelectorProps {
   isLoading?: boolean;
   onSupplierCreated?: (supplier: Supplier) => void;
   onRefreshSuppliers?: () => void;
+  onBlur?: () => void;
 }
 
 export interface SupplierSelectorController {

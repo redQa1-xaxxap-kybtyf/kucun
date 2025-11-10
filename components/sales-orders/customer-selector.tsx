@@ -4,6 +4,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Plus, Search, User } from 'lucide-react';
 import * as React from 'react';
+import { ZodError } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -84,7 +85,26 @@ export function CustomerSelector({
   >(initialCustomer);
 
   const notifyBlur = React.useCallback(() => {
-    onBlur?.();
+    if (!onBlur) {
+      return;
+    }
+
+    const handleError = (error: unknown) => {
+      if (error instanceof ZodError) {
+        // 表单校验失败时，react-hook-form 会抛出 ZodError，这里吞掉避免打断交互
+        return;
+      }
+      console.error('customer-selector:onBlur failed', error);
+    };
+
+    try {
+      const result = onBlur();
+      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+        (result as Promise<unknown>).catch(handleError);
+      }
+    } catch (error) {
+      handleError(error);
+    }
   }, [onBlur]);
 
   // 防抖搜索：用户停止输入 300ms 后才发起搜索
