@@ -570,12 +570,14 @@ function FactoryShipmentOrderRow({
 
         {/* 运输状态列 */}
         <TableCell className="w-[130px] px-4 py-3">
-          {order.shippingQueryStatus ? (
+          {order.latestShippingStatus ? (
             <Badge
-              variant={getShippingQueryStatusVariant(order.shippingQueryStatus)}
+              variant={getShippingQueryStatusVariant(
+                order.latestShippingStatus
+              )}
               className="text-xs font-medium"
             >
-              {order.shippingQueryStatus}
+              {order.latestShippingStatus}
             </Badge>
           ) : (
             <span className="text-[hsl(var(--color-text-tertiary))]">

@@ -147,6 +147,7 @@ export interface FactoryShipmentOrder {
   lastShippingQueryAt?: Date | string | null;
   shippingQueryStatus?: string | null;
   shippingQueryError?: string | null;
+  latestShippingStatus?: string | null; // 最新的实际运输状态（从 ShippingQuery 表获取）
   shipmentDate?: Date;
   estimatedArrival?: Date;
   arrivalDate?: Date;

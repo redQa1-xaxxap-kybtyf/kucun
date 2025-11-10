@@ -159,11 +159,39 @@ const orderListSelect = {
   },
 } satisfies Prisma.FactoryShipmentOrderSelect;
 
-function enrichOrders(
+async function enrichOrders(
   orders: Array<
     Prisma.FactoryShipmentOrderGetPayload<{ select: typeof orderListSelect }>
   >
 ) {
+  // 批量获取所有订单的最新运输状态
+  const orderIds = orders.map(order => order.id);
+  const latestQueries = await prisma.shippingQuery.findMany({
+    where: {
+      factoryShipmentOrderId: { in: orderIds },
+      queryStatus: 'success',
+    },
+    orderBy: {
+      queriedAt: 'desc',
+    },
+    select: {
+      factoryShipmentOrderId: true,
+      status: true,
+      queriedAt: true,
+    },
+  });
+
+  // 为每个订单找到最新的查询状态
+  const statusMap = new Map<string, string>();
+  for (const query of latestQueries) {
+    if (
+      query.factoryShipmentOrderId &&
+      !statusMap.has(query.factoryShipmentOrderId)
+    ) {
+      statusMap.set(query.factoryShipmentOrderId, query.status || '');
+    }
+  }
+
   return orders.map(order => {
     const customerOwnedAmount = order.items
       .filter(item => item.ownership === 'customer')
@@ -173,6 +201,7 @@ function enrichOrders(
       .reduce((sum, item) => sum + item.totalPrice, 0);
     return {
       ...order,
+      latestShippingStatus: statusMap.get(order.id) || null, // 添加实际的运输状态
       fulfillmentSummary: {
         customerOwnedAmount,
         selfOwnedAmount,
@@ -504,7 +533,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       prisma.factoryShipmentOrder.count({ where }),
     ]);
 
-    const enrichedOrders = enrichOrders(orders);
+    const enrichedOrders = await enrichOrders(orders);
 
     return NextResponse.json({
       data: enrichedOrders,
