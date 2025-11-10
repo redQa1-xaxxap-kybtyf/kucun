@@ -59,6 +59,7 @@ export async function PATCH(
         orderNumber: true,
         shippingCompany: true,
         status: true,
+        lastShippingQueryAt: true,
       },
     });
 
@@ -66,6 +67,19 @@ export async function PATCH(
       return NextResponse.json(
         { success: false, message: '订单不存在或无权限访问' },
         { status: 404 }
+      );
+    }
+
+    // 业务规则：如果订单已经进行过物流查询，不允许修改船运公司
+    // 原因：物流查询是基于船运公司名称进行的，修改后会导致查询结果与实际物流信息不匹配
+    if (existingOrder.lastShippingQueryAt) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: '订单已进行物流查询，不允许修改船运公司',
+          details: '如需修改，请联系管理员重置查询状态，或创建新的发货订单',
+        },
+        { status: 400 }
       );
     }
 

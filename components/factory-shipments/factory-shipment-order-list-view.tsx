@@ -7,12 +7,14 @@ import {
   MoreHorizontal,
   Package,
   Trash2,
+  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
+import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
 import { ContainerNumberEditDialog } from '@/components/factory-shipments/container-number-edit-dialog';
 import { FactoryShipmentSearchToolbar } from '@/components/factory-shipments/factory-shipment-search-toolbar';
 import { ShippingCompanyEditDialog } from '@/components/factory-shipments/shipping-company-edit-dialog';
@@ -34,6 +36,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { useTriggerFactoryShipmentShippingQuery } from '@/lib/api/factory-shipments';
 import {
   FACTORY_SHIPMENT_STATUS,
   FACTORY_SHIPMENT_STATUS_LABELS,
@@ -48,6 +51,8 @@ import {
   formatDateTime,
   getFactoryShipmentStatusBadgeVariant,
 } from '@/lib/utils/factory-shipment-helpers';
+
+const MANUAL_QUERY_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 import { ErrorStateCard } from './factory-shipment-order-list.error';
 import type { FactoryShipmentOrderListViewProps } from './factory-shipment-order-list.types';
@@ -150,34 +155,58 @@ function FactoryShipmentOrderTable({
       className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
       style={{ boxShadow: 'var(--shadow-medium)' }}
     >
-      <Table>
-        <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
-          <TableRow>
-            <TableHead>订单编号</TableHead>
-            <TableHead>集装箱号码</TableHead>
-            <TableHead>客户</TableHead>
-            <TableHead>船运公司</TableHead>
-            <TableHead>状态</TableHead>
-            <TableHead className="text-right">订单金额</TableHead>
-            <TableHead className="text-right">应收金额</TableHead>
-            <TableHead>发货时间</TableHead>
-            <TableHead>预计到达</TableHead>
-            <TableHead>创建时间</TableHead>
-            <TableHead>操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map(order => (
-            <FactoryShipmentOrderRow
-              key={order.id}
-              order={order}
-              onOrderSelect={onOrderSelect}
-              onCancelRequest={onCancelRequest}
-              onDeleteRequest={onDeleteRequest}
-            />
-          ))}
-        </TableBody>
-      </Table>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+            <TableRow>
+              <TableHead className="w-[130px] min-w-[130px]">
+                订单编号
+              </TableHead>
+              <TableHead className="min-w-[120px]">客户</TableHead>
+              <TableHead className="hidden min-w-[220px] md:table-cell">
+                客户地址
+              </TableHead>
+              <TableHead className="w-[140px] min-w-[140px]">
+                集装箱号码
+              </TableHead>
+              <TableHead className="min-w-[120px]">船运公司</TableHead>
+              <TableHead className="w-[140px] min-w-[140px]">状态</TableHead>
+              <TableHead className="w-[110px] min-w-[110px] text-right">
+                订单金额
+              </TableHead>
+              <TableHead className="w-[110px] min-w-[110px] text-right">
+                应收金额
+              </TableHead>
+              <TableHead className="w-[110px] min-w-[110px] text-right">
+                应付金额
+              </TableHead>
+              <TableHead className="hidden w-[110px] min-w-[110px] lg:table-cell">
+                发货时间
+              </TableHead>
+              <TableHead className="hidden w-[110px] min-w-[110px] xl:table-cell">
+                预计到达
+              </TableHead>
+              <TableHead className="hidden w-[110px] min-w-[110px] md:table-cell">
+                创建时间
+              </TableHead>
+              <TableHead className="w-[80px] min-w-[80px] text-center">
+                操作
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {orders.map(order => (
+              <FactoryShipmentOrderRow
+                key={order.id}
+                order={order}
+                onOrderSelect={onOrderSelect}
+                onCancelRequest={onCancelRequest}
+                onDeleteRequest={onDeleteRequest}
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
@@ -197,8 +226,11 @@ function FactoryShipmentOrderRow({
 }: FactoryShipmentOrderRowProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const manualQueryMutation = useTriggerFactoryShipmentShippingQuery();
   const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
   const [isShippingCompanyDialogOpen, setIsShippingCompanyDialogOpen] =
+    React.useState(false);
+  const [isConfirmShipmentDialogOpen, setIsConfirmShipmentDialogOpen] =
     React.useState(false);
 
   const handleNavigate = React.useCallback(() => {
@@ -244,9 +276,21 @@ function FactoryShipmentOrderRow({
   const handleShippingCompanyClick = React.useCallback(
     (event: React.MouseEvent) => {
       event.stopPropagation();
+
+      // 业务规则：如果订单已经进行过物流查询，不允许修改船运公司
+      if (order.lastShippingQueryAt) {
+        toast({
+          title: '无法修改船运公司',
+          description:
+            '订单已进行物流查询，不允许修改船运公司。如需修改，请联系管理员。',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       setIsShippingCompanyDialogOpen(true);
     },
-    []
+    [order.lastShippingQueryAt, toast]
   );
 
   const handleShippingCompanyDialogClose = React.useCallback(() => {
@@ -255,6 +299,93 @@ function FactoryShipmentOrderRow({
 
   const handleShippingCompanyEditSuccess = React.useCallback(() => {
     setIsShippingCompanyDialogOpen(false);
+  }, []);
+
+  const lastQueryTimestamp = order.lastShippingQueryAt
+    ? new Date(order.lastShippingQueryAt).getTime()
+    : null;
+  const nowMs = Date.now();
+  const timeSinceLastQuery =
+    lastQueryTimestamp !== null ? nowMs - lastQueryTimestamp : null;
+  const remainingCooldownMs =
+    timeSinceLastQuery !== null
+      ? MANUAL_QUERY_COOLDOWN_MS - timeSinceLastQuery
+      : 0;
+  const isCoolingDown = remainingCooldownMs > 0;
+  const hasShippingCompany = Boolean(order.shippingCompany?.trim());
+  const isShipped = order.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
+
+  // 手动查询按钮显示逻辑：
+  // 1. 必须是已发货状态
+  // 2. 必须有物流公司
+  // 3. 没有预计到达时间（查询成功后会有）
+  // 4. 从未手动查询过（lastShippingQueryAt 为空）
+  // 一旦手动查询过一次，无论成功失败，按钮永久隐藏
+  const hasNeverBeenManuallyQueried = !order.lastShippingQueryAt;
+  const showManualQueryButton =
+    !order.estimatedArrival &&
+    hasShippingCompany &&
+    isShipped &&
+    hasNeverBeenManuallyQueried;
+  const canTriggerManualQuery =
+    showManualQueryButton && !isCoolingDown && !manualQueryMutation.isPending;
+
+  let manualQueryDisabledReason: string | undefined;
+  if (isCoolingDown) {
+    const remainingMinutes = Math.ceil(remainingCooldownMs / 60000);
+    manualQueryDisabledReason = `请 ${remainingMinutes} 分钟后再尝试`;
+  } else if (manualQueryMutation.isPending) {
+    manualQueryDisabledReason = '查询提交中...';
+  }
+
+  const handleManualQuery = React.useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      if (!canTriggerManualQuery) {
+        return;
+      }
+
+      manualQueryMutation.mutate(order.id, {
+        onSuccess: result => {
+          toast({
+            title: '运输查询已提交',
+            description: result?.message || '系统将尽快返回最新的预计到达时间',
+            variant: 'success',
+          });
+        },
+        onError: error => {
+          toast({
+            title: '运输查询提交失败',
+            description:
+              error instanceof Error ? error.message : '请稍后重试或联系管理员',
+            variant: 'destructive',
+          });
+        },
+      });
+    },
+    [
+      canTriggerManualQuery,
+      manualQueryMutation,
+      manualQueryMutation.isPending,
+      order.id,
+      toast,
+    ]
+  );
+
+  const handleConfirmShipmentClick = React.useCallback(
+    (event: React.MouseEvent) => {
+      event.stopPropagation();
+      setIsConfirmShipmentDialogOpen(true);
+    },
+    []
+  );
+
+  const handleConfirmShipmentDialogClose = React.useCallback(() => {
+    setIsConfirmShipmentDialogOpen(false);
+  }, []);
+
+  const handleConfirmShipmentSuccess = React.useCallback(() => {
+    setIsConfirmShipmentDialogOpen(false);
   }, []);
 
   return (
@@ -271,18 +402,35 @@ function FactoryShipmentOrderRow({
         role="button"
         tabIndex={0}
       >
-        <TableCell className="font-mono font-medium text-[hsl(var(--color-primary))]">
+        <TableCell className="w-[130px] px-4 py-3 font-mono text-sm font-medium text-[hsl(var(--color-primary))]">
           <Link
             href={`/factory-shipments/${order.id}`}
             prefetch={false}
             className="hover:underline"
             onClick={event => event.stopPropagation()}
+            title={order.orderNumber}
           >
-            {order.orderNumber}
+            <span className="block truncate">{order.orderNumber}</span>
           </Link>
         </TableCell>
         <TableCell
-          className={`text-[hsl(var(--color-text-secondary))] ${
+          className="px-4 py-3 font-medium text-[hsl(var(--color-text-primary))]"
+          title={order.customer?.name || '-'}
+        >
+          <span className="block max-w-[200px] truncate">
+            {order.customer?.name || '-'}
+          </span>
+        </TableCell>
+        <TableCell
+          className="hidden w-[240px] px-4 py-3 text-[hsl(var(--color-text-secondary))] md:table-cell"
+          title={order.customer?.address || '未填写'}
+        >
+          <span className="block max-w-[220px] truncate text-sm">
+            {order.customer?.address || '未填写'}
+          </span>
+        </TableCell>
+        <TableCell
+          className={`w-[140px] px-4 py-3 text-[hsl(var(--color-text-secondary))] ${
             // 已发货和运输中的订单不允许编辑
             order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
             order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
@@ -290,6 +438,13 @@ function FactoryShipmentOrderRow({
               : 'cursor-pointer'
           }`}
           onClick={handleContainerNumberClick}
+          title={
+            order.containerNumber ||
+            (order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
+            order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT
+              ? '不可填写'
+              : '点击填写')
+          }
         >
           <span
             className={`transition-colors ${
@@ -302,14 +457,16 @@ function FactoryShipmentOrderRow({
           >
             {order.containerNumber ? (
               <span className="flex items-center gap-1">
-                {order.containerNumber}
+                <span className="block max-w-[110px] truncate">
+                  {order.containerNumber}
+                </span>
                 {order.status === FACTORY_SHIPMENT_STATUS.SHIPPED ||
                 order.status === FACTORY_SHIPMENT_STATUS.IN_TRANSIT ? (
                   // 不可编辑状态：锁定图标
-                  <Edit className="h-3 w-3 opacity-30" />
+                  <Edit className="h-3 w-3 flex-shrink-0 opacity-30" />
                 ) : (
                   // 可编辑状态：可点击的编辑图标
-                  <Edit className="h-3 w-3 opacity-60 hover:opacity-100" />
+                  <Edit className="h-3 w-3 flex-shrink-0 opacity-60 hover:opacity-100" />
                 )}
               </span>
             ) : (
@@ -337,81 +494,166 @@ function FactoryShipmentOrderRow({
             )}
           </span>
         </TableCell>
-        <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
-          {order.customer?.name || '-'}
-        </TableCell>
         <TableCell
-          className="cursor-pointer text-[hsl(var(--color-text-secondary))]"
+          className={`px-4 py-3 text-[hsl(var(--color-text-secondary))] ${
+            order.lastShippingQueryAt
+              ? 'cursor-not-allowed opacity-60'
+              : 'cursor-pointer'
+          }`}
           onClick={handleShippingCompanyClick}
+          title={
+            order.lastShippingQueryAt
+              ? '已查询，不可修改'
+              : order.shippingCompany || '点击输入'
+          }
         >
-          <span className="transition-colors hover:text-[hsl(var(--color-primary))]">
-            {order.shippingCompany ? (
-              <span className="flex items-center gap-1">
-                {order.shippingCompany}
-                <Edit className="h-3 w-3 opacity-60 hover:opacity-100" />
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-primary))]">
-                点击输入
-                <Edit className="h-3 w-3 opacity-60 hover:opacity-100" />
-              </span>
-            )}
-          </span>
-        </TableCell>
-        <TableCell>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={getFactoryShipmentStatusBadgeVariant(order.status)}
-              className="text-xs font-medium"
-            >
-              {
-                FACTORY_SHIPMENT_STATUS_LABELS[
-                  order.status as FactoryShipmentStatus
-                ]
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={
+                order.lastShippingQueryAt
+                  ? ''
+                  : 'transition-colors hover:text-[hsl(var(--color-primary))]'
               }
-            </Badge>
+            >
+              {order.shippingCompany ? (
+                <span className="flex items-center gap-1">
+                  <span className="block max-w-[150px] truncate">
+                    {order.shippingCompany}
+                  </span>
+                  {!order.lastShippingQueryAt && (
+                    <Edit className="h-3 w-3 flex-shrink-0 opacity-60 hover:opacity-100" />
+                  )}
+                </span>
+              ) : (
+                <span
+                  className={`flex items-center gap-1 ${
+                    order.lastShippingQueryAt
+                      ? 'text-[hsl(var(--color-text-tertiary))]'
+                      : 'text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-primary))]'
+                  }`}
+                >
+                  点击输入
+                  {!order.lastShippingQueryAt && (
+                    <Edit className="h-3 w-3 opacity-60 hover:opacity-100" />
+                  )}
+                </span>
+              )}
+            </span>
             {/* 已发货但缺少船公司信息的角标提示 */}
             {order.status === 'shipped' &&
               order.containerNumber &&
-              !order.shippingCompany && (
+              !order.shippingCompany &&
+              !order.lastShippingQueryAt && (
                 <Badge
                   variant="outline"
                   className="border-yellow-500 text-xs text-yellow-700"
                 >
                   <AlertCircle className="mr-1 h-3 w-3" />
-                  待补充船公司
+                  待补充
                 </Badge>
               )}
+            {/* 已查询锁定提示 */}
+            {order.lastShippingQueryAt && (
+              <Badge
+                variant="outline"
+                className="border-gray-400 text-xs text-gray-600"
+              >
+                已锁定
+              </Badge>
+            )}
           </div>
         </TableCell>
-        <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
+        <TableCell className="w-[170px] px-4 py-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant={getFactoryShipmentStatusBadgeVariant(order.status)}
+                className="text-xs font-medium"
+              >
+                {
+                  FACTORY_SHIPMENT_STATUS_LABELS[
+                    order.status as FactoryShipmentStatus
+                  ]
+                }
+              </Badge>
+              {order.status === FACTORY_SHIPMENT_STATUS.CONFIRMED && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="default"
+                  className="h-6 bg-[hsl(var(--color-primary))] px-2 text-xs text-white shadow-sm hover:bg-[hsl(var(--color-primary-dark))]"
+                  onClick={handleConfirmShipmentClick}
+                >
+                  <Truck className="mr-1 h-3 w-3" />
+                  确认发货
+                </Button>
+              )}
+            </div>
+            {showManualQueryButton && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="h-7 justify-start px-2 text-xs"
+                disabled={!canTriggerManualQuery}
+                onClick={handleManualQuery}
+                title={
+                  !canTriggerManualQuery && manualQueryDisabledReason
+                    ? manualQueryDisabledReason
+                    : '提交手动查询'
+                }
+              >
+                {manualQueryMutation.isPending ? '查询提交中...' : '手动查询'}
+              </Button>
+            )}
+          </div>
+        </TableCell>
+        <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
           {formatAmount(order.totalAmount)}
         </TableCell>
-        <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
-          {formatAmount(order.receivableAmount)}
+        <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
+          <div className="flex flex-col items-end gap-1 leading-tight">
+            <span className="font-semibold text-[hsl(var(--color-primary))]">
+              {formatAmount(order.receivableAmount)}
+            </span>
+            {order.depositAmount > 0 && (
+              <span className="text-xs font-medium text-[hsl(var(--color-warning))]">
+                定金 {formatAmount(order.depositAmount)}
+              </span>
+            )}
+          </div>
         </TableCell>
-        <TableCell className="text-[hsl(var(--color-text-secondary))]">
+        <TableCell className="w-[110px] px-4 py-3 text-right text-[hsl(var(--color-text-primary))] tabular-nums">
+          {formatAmount(order.costAmount || 0)}
+        </TableCell>
+        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] lg:table-cell">
           {order.shipmentDate ? (
-            formatDateTime(order.shipmentDate)
+            <span className="whitespace-nowrap">
+              {formatDateTime(order.shipmentDate)}
+            </span>
           ) : (
             <span className="text-[hsl(var(--color-text-tertiary))]">
               未发货
             </span>
           )}
         </TableCell>
-        <TableCell className="text-[hsl(var(--color-text-secondary))]">
+        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] xl:table-cell">
           {order.estimatedArrival ? (
-            formatDateTime(order.estimatedArrival)
+            <span className="whitespace-nowrap">
+              {formatDateTime(order.estimatedArrival)}
+            </span>
           ) : (
             <span className="text-[hsl(var(--color-text-tertiary))]">
               未设置
             </span>
           )}
         </TableCell>
-        <TableCell className="text-[hsl(var(--color-text-secondary))]">
-          {formatDate(order.createdAt)}
+        <TableCell className="hidden w-[110px] px-4 py-3 text-[hsl(var(--color-text-secondary))] md:table-cell">
+          <span className="whitespace-nowrap">
+            {formatDate(order.createdAt)}
+          </span>
         </TableCell>
-        <TableCell>
+        <TableCell className="w-[80px] px-4 py-3 text-center">
           <OrderActionMenu
             order={order}
             onCancelRequest={onCancelRequest}
@@ -438,10 +680,22 @@ function FactoryShipmentOrderRow({
           id: order.id,
           orderNumber: order.orderNumber,
           shippingCompany: order.shippingCompany || null,
+          lastShippingQueryAt: order.lastShippingQueryAt,
         }}
         open={isShippingCompanyDialogOpen}
         onOpenChange={handleShippingCompanyDialogClose}
         onSuccess={handleShippingCompanyEditSuccess}
+      />
+
+      {/* 确认发货对话框 */}
+      <ConfirmShipmentDialog
+        orderId={order.id}
+        orderNumber={order.orderNumber}
+        containerNumber={order.containerNumber}
+        shippingCompany={order.shippingCompany}
+        open={isConfirmShipmentDialogOpen}
+        onOpenChange={handleConfirmShipmentDialogClose}
+        onSuccess={handleConfirmShipmentSuccess}
       />
     </>
   );

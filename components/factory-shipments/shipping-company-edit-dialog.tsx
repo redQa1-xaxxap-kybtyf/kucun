@@ -42,6 +42,7 @@ interface ShippingCompanyEditDialogProps {
     id: string;
     orderNumber: string;
     shippingCompany: string | null;
+    lastShippingQueryAt?: Date | string | null;
   };
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -119,9 +120,11 @@ function useShippingCompanyEditDialogState({
 function ShippingCompanyField({
   form,
   disabled,
+  isLocked,
 }: {
   form: ReturnType<typeof useForm<EditShippingCompanyData>>;
   disabled?: boolean;
+  isLocked?: boolean;
 }) {
   return (
     <FormField
@@ -136,11 +139,18 @@ function ShippingCompanyField({
             <Input
               {...field}
               placeholder="请输入船公司名称，例如：HE YUAN SHUN 98"
-              disabled={disabled}
+              disabled={disabled || isLocked}
             />
           </FormControl>
           <FormDescription>
-            输入负责运输的船公司名称，用于运输追踪和查询
+            {isLocked ? (
+              <span className="text-[hsl(var(--color-error))]">
+                ⚠️
+                订单已进行物流查询，不允许修改船运公司。如需修改，请联系管理员。
+              </span>
+            ) : (
+              '输入负责运输的船公司名称，用于运输追踪和查询'
+            )}
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -155,6 +165,7 @@ function ShippingCompanyEditDialogView({
   orderNumber,
   form,
   isPending,
+  isLocked,
   onCancel,
   onSubmit,
 }: {
@@ -163,6 +174,7 @@ function ShippingCompanyEditDialogView({
   orderNumber: string;
   form: ReturnType<typeof useForm<EditShippingCompanyData>>;
   isPending: boolean;
+  isLocked: boolean;
   onCancel: () => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
 }) {
@@ -180,7 +192,11 @@ function ShippingCompanyEditDialogView({
 
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
-            <ShippingCompanyField form={form} disabled={isPending} />
+            <ShippingCompanyField
+              form={form}
+              disabled={isPending}
+              isLocked={isLocked}
+            />
 
             <DialogFooter>
               <Button
@@ -191,7 +207,7 @@ function ShippingCompanyEditDialogView({
               >
                 取消
               </Button>
-              <Button type="submit" disabled={isPending}>
+              <Button type="submit" disabled={isPending || isLocked}>
                 {isPending ? '更新中...' : '保存'}
               </Button>
             </DialogFooter>
@@ -219,6 +235,9 @@ export function ShippingCompanyEditDialog({
       onSuccess,
     });
 
+  // 判断订单是否已查询（已锁定）
+  const isLocked = Boolean(order.lastShippingQueryAt);
+
   return (
     <ShippingCompanyEditDialogView
       open={open}
@@ -226,6 +245,7 @@ export function ShippingCompanyEditDialog({
       orderNumber={order.orderNumber}
       form={form}
       isPending={updateMutation.isPending}
+      isLocked={isLocked}
       onCancel={handleCancel}
       onSubmit={handleSubmit}
     />
