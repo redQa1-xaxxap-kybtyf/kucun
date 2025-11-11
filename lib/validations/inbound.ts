@@ -101,11 +101,26 @@ export const createInboundSchema = z
       .optional(),
 
     // 成本字段（入库时必填）
-    unitCost: z
-      .number({ message: '单位成本必须是数字' })
-      .min(0.01, { error: '单位成本必须大于0' })
-      .max(999999.99, { error: '单位成本不能超过999,999.99' })
-      .multipleOf(0.01, { error: '单位成本最多保留2位小数' }),
+    // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串，避免 NaN 错误
+    unitCost: z.preprocess(
+      val => {
+        // 处理 undefined、null、空字符串
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+
+        // 转换为数字
+        const num = typeof val === 'number' ? val : Number(val);
+
+        // 如果转换失败，返回 undefined（触发后续验证错误）
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '单位成本必须是数字' })
+        .min(0.01, { message: '单位成本必须大于0' })
+        .max(999999.99, { message: '单位成本不能超过999,999.99' })
+        .multipleOf(0.01, { message: '单位成本最多保留2位小数' })
+    ),
   })
   .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
     message: '传入采购订单明细时必须指定采购订单ID',
