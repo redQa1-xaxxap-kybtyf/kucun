@@ -108,7 +108,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       );
       form.setValue('quantity', finalQuantity);
     } else {
-      form.setValue('quantity', 0);
+      form.setValue('quantity', undefined); // ✅ 修改：设置为 undefined 而不是 0
     }
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
 

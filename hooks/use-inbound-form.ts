@@ -31,7 +31,7 @@ export function useInboundForm() {
       productId: '',
       inputQuantity: undefined,
       inputUnit: 'pieces' as InboundUnit,
-      quantity: 0,
+      quantity: undefined, // ✅ 修改：默认值改为 undefined
       unitCost: undefined,
       reason: 'purchase',
       remarks: '',
@@ -65,7 +65,8 @@ export function calculateFinalQuantity(
   inputQuantity: number | undefined,
   inputUnit: InboundUnit,
   piecesPerUnit: number | undefined
-): number {
+): number | undefined {
+  // ✅ 修改：返回类型改为 number | undefined
   try {
     if (
       !inputQuantity ||
@@ -73,7 +74,7 @@ export function calculateFinalQuantity(
       !piecesPerUnit ||
       piecesPerUnit <= 0
     ) {
-      return 0;
+      return undefined; // ✅ 修改：返回 undefined 而不是 0
     }
     // 确保 piecesPerUnit 是有效的正整数
     const validPiecesPerUnit =
@@ -84,7 +85,7 @@ export function calculateFinalQuantity(
       validPiecesPerUnit
     );
   } catch {
-    return inputQuantity ?? 0; // 发生错误时返回输入数量
+    return inputQuantity; // ✅ 修改：发生错误时返回输入数量（可能是 undefined）
   }
 }
 
@@ -100,7 +101,10 @@ export function useProductSelection(
       shouldTouch: false,
       shouldValidate: false,
     });
-    form.setValue('quantity', 0, { shouldDirty: false, shouldValidate: false });
+    form.setValue('quantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    }); // ✅ 修改：设置为 undefined
     const hasPiecesPerUnit =
       product.piecesPerUnit !== undefined && product.piecesPerUnit !== null;
     form.setValue(
@@ -143,7 +147,7 @@ export function useProductSelection(
       productId: '',
       inputQuantity: undefined,
       inputUnit: 'pieces' as InboundUnit,
-      quantity: 0,
+      quantity: undefined, // ✅ 修改：设置为 undefined
       unitCost: undefined,
       reason: 'purchase',
       remarks: '',
