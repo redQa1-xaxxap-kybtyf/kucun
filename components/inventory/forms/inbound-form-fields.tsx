@@ -47,21 +47,8 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
                 step="1"
                 placeholder="请输入数量"
                 className="h-9"
-                name={field.name}
-                ref={field.ref}
-                value={field.value && field.value > 0 ? field.value : ''}
-                onBlur={field.onBlur}
-                onChange={e => {
-                  const { value } = e.target;
-                  if (value === '') {
-                    field.onChange(undefined);
-                    return;
-                  }
-                  const parsed = Number.parseInt(value, 10);
-                  field.onChange(
-                    Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
-                  );
-                }}
+                {...field}
+                value={field.value ?? ''}
               />
             </FormControl>
             <FormMessage />
@@ -143,21 +130,8 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 step="1"
                 placeholder="请输入每件片数"
                 className="h-9"
-                name={field.name}
-                ref={field.ref}
-                value={field.value && field.value > 0 ? field.value : ''}
-                onBlur={field.onBlur}
-                onChange={e => {
-                  const { value } = e.target;
-                  if (value === '') {
-                    field.onChange(undefined);
-                    return;
-                  }
-                  const parsed = Number.parseInt(value, 10);
-                  field.onChange(
-                    Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
-                  );
-                }}
+                {...field}
+                value={field.value ?? ''}
               />
             </FormControl>
             <FormMessage />
@@ -181,21 +155,8 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 step="0.01"
                 placeholder="请输入重量"
                 className="h-9"
-                name={field.name}
-                ref={field.ref}
-                value={field.value && field.value > 0 ? field.value : ''}
-                onBlur={field.onBlur}
-                onChange={e => {
-                  const { value } = e.target;
-                  if (value === '') {
-                    field.onChange(undefined);
-                    return;
-                  }
-                  const parsed = Number.parseFloat(value);
-                  field.onChange(
-                    Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
-                  );
-                }}
+                {...field}
+                value={field.value ?? ''}
               />
             </FormControl>
             <FormMessage />
@@ -254,21 +215,8 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
               step="0.01"
               placeholder="请输入单位成本"
               className="h-9"
-              name={field.name}
-              ref={field.ref}
-              value={field.value && field.value > 0 ? field.value : ''}
-              onBlur={field.onBlur}
-              onChange={e => {
-                const { value } = e.target;
-                if (value === '') {
-                  field.onChange(undefined);
-                  return;
-                }
-                const parsed = Number.parseFloat(value);
-                field.onChange(
-                  Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
-                );
-              }}
+              {...field}
+              value={field.value ?? ''}
             />
           </FormControl>
           <FormMessage />
