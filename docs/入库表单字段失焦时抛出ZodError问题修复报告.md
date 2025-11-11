@@ -12,6 +12,7 @@
 ### 问题现象
 
 当用户在入库表单中：
+
 1. 聚焦到任意输入字段（如 `inputQuantity`、`unitCost`）
 2. 不输入任何内容
 3. 直接离开字段（失焦）
@@ -67,7 +68,7 @@ zod.mjs:7 Uncaught (in promise) ZodError: [
 
 ```json
 {
-  "@hookform/resolvers": "^3.10.0",
+  "@hookform/resolvers": "^5.2.2", // 升级前: ^3.10.0
   "react-hook-form": "^7.63.0",
   "zod": "^4.1.11"
 }
@@ -76,13 +77,16 @@ zod.mjs:7 Uncaught (in promise) ZodError: [
 ### 根本原因
 
 根据 GitHub Issue 调查：
+
 - **Issue #12816**: [ZodError (Zod v4) Thrown Instead of Captured by zodResolver](https://github.com/react-hook-form/react-hook-form/issues/12816)
 - **Issue #768**: [Zod 4 support](https://github.com/react-hook-form/resolvers/issues/768)
 
 **核心问题**：
+
 1. **Zod 4.x 改变了错误处理机制**
-2. **`@hookform/resolvers` 的 `zodResolver` 与 Zod 4 存在兼容性问题**
+2. **`@hookform/resolvers` v3.x 的 `zodResolver` 与 Zod 4 存在兼容性问题**
 3. **验证错误没有被正确捕获，而是抛出到控制台**
+4. **`standard-schema` resolver 仅在 `@hookform/resolvers` v4.0.0+ 中可用**
 
 ### 错误堆栈分析
 
@@ -91,6 +95,7 @@ at Object.onChange (index.esm.mjs:1787:42)
 ```
 
 错误发生在 React Hook Form 的内部 `onChange` 事件处理中，说明：
+
 - `mode: 'onBlur'` 配置触发了验证
 - `zodResolver` 返回的 Promise 被 reject
 - React Hook Form 没有正确处理这个 rejection
@@ -103,12 +108,25 @@ at Object.onChange (index.esm.mjs:1787:42)
 
 根据 GitHub Issue #768 的讨论，**官方推荐使用 `standardSchemaResolver` 替代 `zodResolver`**。
 
+**前提条件**：
+
+- **必须升级 `@hookform/resolvers` 到 v4.0.0 或更高版本**
+- `standard-schema` resolver 在 v3.x 中不存在
+
 **原因**：
+
 - Zod 4 支持 **Standard Schema** 规范
 - `standardSchemaResolver` 与 Zod 4 完全兼容
 - 不会抛出 ZodError 到控制台
 
 ### 修改步骤
+
+#### 0. 升级 @hookform/resolvers
+
+```bash
+npm install @hookform/resolvers@latest
+# 从 v3.10.0 升级到 v5.2.2
+```
 
 #### 1. 修改导入语句
 
@@ -149,6 +167,7 @@ const form = useForm<InboundFormData>({
 创建了自动化迁移脚本：`scripts/migrate-to-standard-schema-resolver.js`
 
 **执行结果**：
+
 ```bash
 $ node scripts/migrate-to-standard-schema-resolver.js
 
@@ -169,10 +188,12 @@ $ node scripts/migrate-to-standard-schema-resolver.js
 ### 修改的文件
 
 **核心文件**：
+
 - `hooks/use-inbound-form.ts` - 入库表单 Hook
 - `components/inventory/hooks/useInventoryOperationForm.ts` - 库存操作表单 Hook
 
 **其他表单文件**（共 41 个）：
+
 - `hooks/use-payable-form.ts`
 - `components/sales-orders/*.tsx`
 - `components/customers/*.tsx`
@@ -228,13 +249,13 @@ $ npm run lint -- --max-warnings=0
 
 ### standardSchemaResolver vs zodResolver
 
-| 特性 | zodResolver | standardSchemaResolver |
-|------|-------------|------------------------|
-| **Zod 3 兼容性** | ✅ 完全兼容 | ⚠️ 需要 Zod 3.23+ |
-| **Zod 4 兼容性** | ❌ 存在问题 | ✅ 完全兼容 |
-| **类型推断** | ✅ 自动推断 | ⚠️ 需要手动指定 |
-| **错误处理** | ❌ 抛出异常 | ✅ 正确捕获 |
-| **官方推荐** | ⚠️ Zod 3 | ✅ Zod 4 |
+| 特性             | zodResolver | standardSchemaResolver |
+| ---------------- | ----------- | ---------------------- |
+| **Zod 3 兼容性** | ✅ 完全兼容 | ⚠️ 需要 Zod 3.23+      |
+| **Zod 4 兼容性** | ❌ 存在问题 | ✅ 完全兼容            |
+| **类型推断**     | ✅ 自动推断 | ⚠️ 需要手动指定        |
+| **错误处理**     | ❌ 抛出异常 | ✅ 正确捕获            |
+| **官方推荐**     | ⚠️ Zod 3    | ✅ Zod 4               |
 
 ### 类型推断差异
 
@@ -253,6 +274,7 @@ const form = useForm<InboundFormData>({
 ```
 
 **影响**：
+
 - ✅ 项目中所有表单都已经手动指定了类型，无影响
 - ✅ 代码可读性更好（类型更明确）
 
@@ -261,14 +283,17 @@ const form = useForm<InboundFormData>({
 ## 🎯 KISS、DRY、SOLID 原则应用
 
 ### KISS (Keep It Simple)
+
 - ✅ 使用官方推荐的解决方案，而不是自定义 resolver
 - ✅ 最小化代码改动（只修改导入和函数调用）
 
 ### DRY (Don't Repeat Yourself)
+
 - ✅ 创建自动化迁移脚本，避免手动修改 41 个文件
 - ✅ 统一使用 `standardSchemaResolver`，避免混用两种 resolver
 
 ### SOLID
+
 - **单一职责 (SRP)**: 迁移脚本只负责迁移，不做其他事情
 - **开放/封闭 (OCP)**: 修改不影响现有验证逻辑
 - **依赖倒置 (DIP)**: 依赖 Standard Schema 抽象，而不是具体的 Zod 实现
@@ -278,10 +303,12 @@ const form = useForm<InboundFormData>({
 ## 📚 参考资源
 
 ### GitHub Issues
+
 - [react-hook-form/react-hook-form#12816](https://github.com/react-hook-form/react-hook-form/issues/12816) - ZodError (Zod v4) Thrown Instead of Captured
 - [react-hook-form/resolvers#768](https://github.com/react-hook-form/resolvers/issues/768) - Zod 4 support
 
 ### 官方文档
+
 - [React Hook Form - Resolvers](https://react-hook-form.com/docs/useform#resolver)
 - [Zod - Standard Schema](https://zod.dev/v4/standard-schema)
 - [@hookform/resolvers - Standard Schema](https://github.com/react-hook-form/resolvers#standard-schema)
@@ -291,22 +318,26 @@ const form = useForm<InboundFormData>({
 ## ✅ 总结
 
 ### 问题回顾
+
 - **问题**: 字段失焦时控制台抛出 ZodError 异常
 - **根源**: Zod 4 与 zodResolver 兼容性问题
 - **影响**: 41 个表单文件
 
 ### 解决方案
+
 - **方案**: 使用 `standardSchemaResolver` 替代 `zodResolver`
 - **工具**: 自动化迁移脚本
 - **结果**: 成功迁移 41 个文件，无新增错误
 
 ### 验证结果
+
 - ✅ 控制台不再抛出 ZodError
 - ✅ UI 正确显示验证错误
 - ✅ 表单功能正常
 - ✅ ESLint 检查通过
 
 ### 下一步
+
 - ✅ 提交代码到 Git
 - ✅ 更新项目文档
 - ✅ 通知团队成员
@@ -316,4 +347,3 @@ const form = useForm<InboundFormData>({
 **修复完成时间**: 2025-01-11  
 **修复人员**: AI Assistant  
 **审核状态**: ✅ 待审核
-
