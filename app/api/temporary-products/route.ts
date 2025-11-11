@@ -68,7 +68,9 @@ type TempProductWithRelations = Prisma.TemporaryProductGetPayload<{
   include: {
     supplier: { select: { id: true; name: true; supplierCode: true } };
     creator: { select: { id: true; name: true } };
-    _count: { select: { salesOrderItems: true; factoryShipmentItems: true } };
+    _count: {
+      select: { salesOrderItems: true; factoryShipmentOrderItems: true };
+    };
   };
 }>;
 
@@ -90,9 +92,9 @@ function formatTemporaryProduct(item: TempProductWithRelations) {
     updatedAt: item.updatedAt,
     creatorName: item.creator?.name || null,
     salesOrderCount: item._count.salesOrderItems,
-    factoryShipmentCount: item._count.factoryShipmentItems,
+    factoryShipmentCount: item._count.factoryShipmentOrderItems,
     totalUsageCount:
-      item._count.salesOrderItems + item._count.factoryShipmentItems,
+      item._count.salesOrderItems + item._count.factoryShipmentOrderItems,
   };
 }
 
@@ -139,7 +141,7 @@ export async function GET(request: Request) {
           _count: {
             select: {
               salesOrderItems: true,
-              factoryShipmentItems: true,
+              factoryShipmentOrderItems: true,
             },
           },
         },
