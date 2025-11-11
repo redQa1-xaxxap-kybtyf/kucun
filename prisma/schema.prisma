@@ -48,6 +48,7 @@ model Customer {
   factoryShipmentOrders FactoryShipmentOrder[]
   paymentRecords        PaymentRecord[]
   refundRecords         RefundRecord[]
+  productPrices         CustomerProductPrice[]
 
   @@index([phone])
   @@index([createdAt])
@@ -69,6 +70,7 @@ model Supplier {
   salesOrders               SalesOrder[]
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
   temporaryProducts         TemporaryProduct[]
+  productPrices             SupplierProductPrice[]
 
   @@index([name])
   @@index([phone])
@@ -153,6 +155,8 @@ model Product {
   returnOrderItems         ReturnOrderItem[]
   inventory                Inventory[]
   inboundRecords           InboundRecord[]
+  customerPrices           CustomerProductPrice[]
+  supplierPrices           SupplierProductPrice[]
 
   @@index([code])
   @@index([name])
@@ -310,6 +314,10 @@ model CustomerProductPrice {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
+  // 关系定义
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
   @@index([customerId, productId, priceType], map: "idx_customer_product_price_lookup")
   @@index([productId], map: "idx_customer_product_price_product")
   @@map("customer_product_prices")
@@ -323,6 +331,10 @@ model SupplierProductPrice {
   orderId    String?  @map("order_id") @db.Char(36)
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([supplierId, productId], map: "idx_supplier_product_price_lookup")
   @@index([productId], map: "idx_supplier_product_price_product")
