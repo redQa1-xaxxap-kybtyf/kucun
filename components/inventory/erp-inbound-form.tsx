@@ -19,7 +19,6 @@ import {
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
 import { type ProductOption } from '@/lib/types/inbound';
-import { logger } from '@/lib/utils/console-logger';
 
 interface ERPInboundFormProps {
   onSuccess?: () => void;
@@ -71,21 +70,22 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     }
   );
 
-  const handleToolbarSubmit = async () => {
+  const handleToolbarSubmit = () => {
     if (!form.getValues('productId')) {
       setShowProductPrompt(true);
       form.setFocus('productId');
     }
 
-    try {
-      await handleFormSubmit();
-    } catch (error) {
-      logger.error(
-        'inventory:erp-inbound-form',
-        '[ERPInboundForm] 表单提交失败',
-        error
-      );
-    }
+    // ✅ 调用 handleFormSubmit 并捕获未处理的 Promise rejection
+    // React Hook Form 的 handleSubmit 行为：
+    // - 验证失败：调用 onInvalid 回调，Promise resolve（不会 reject）
+    // - 验证成功但提交失败：Promise reject（需要捕获）
+    // submitInbound 内部已经处理了所有提交错误（显示 Toast 等）
+    // 这里只需要防止未捕获的 Promise rejection
+    handleFormSubmit().catch(() => {
+      // submitInbound 已经处理了错误，这里不需要额外操作
+      // 只是为了防止 "Uncaught (in promise)" 错误
+    });
   };
 
   const handleProductSelectWithPrompt = (product: ProductOption) => {
