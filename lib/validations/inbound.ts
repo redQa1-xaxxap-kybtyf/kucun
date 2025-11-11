@@ -33,21 +33,41 @@ export const createInboundSchema = z
     variantId: z.string().uuid('产品变体ID格式不正确').optional(),
 
     // 用户输入的数量（根据选择的单位）
-    inputQuantity: z
-      .number({ message: '数量必须是数字' })
-      .min(1, { error: '数量必须大于等于1' })
-      .max(999999, { error: '数量不能超过999999' })
-      .int({ error: '数量必须是整数' }),
+    // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串
+    inputQuantity: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '数量必须是数字' })
+        .min(1, { message: '数量必须大于等于1' })
+        .max(999999, { message: '数量不能超过999999' })
+        .int({ message: '数量必须是整数' })
+    ),
 
     // 用户选择的单位
     inputUnit: inboundUnitSchema.default('pieces'),
 
     // 最终存储的片数（由前端计算后传入）
-    quantity: z
-      .number({ message: '数量必须是数字' })
-      .min(1, { error: '数量必须大于等于1片' })
-      .max(999999, { error: '数量不能超过999999片' })
-      .int({ error: '数量必须是整数' }),
+    // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串
+    quantity: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '数量必须是数字' })
+        .min(1, { message: '数量必须大于等于1片' })
+        .max(999999, { message: '数量不能超过999999片' })
+        .int({ message: '数量必须是整数' })
+    ),
 
     reason: inboundReasonSchema.default('purchase'),
 
@@ -87,18 +107,37 @@ export const createInboundSchema = z
       ),
 
     // 产品参数字段（入库时确定）
-    piecesPerUnit: z
-      .number()
-      .int({ error: '每单位片数必须是整数' })
-      .min(1, { error: '每单位片数至少为1' })
-      .max(10000, { error: '每单位片数不能超过10000' })
-      .optional(),
+    // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串
+    piecesPerUnit: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '每单位片数必须是数字' })
+        .int({ message: '每单位片数必须是整数' })
+        .min(1, { message: '每单位片数至少为1' })
+        .max(10000, { message: '每单位片数不能超过10000' })
+        .optional()
+    ),
 
-    weight: z
-      .number()
-      .min(0.01, { error: '重量必须大于0' })
-      .max(10000, { error: '重量不能超过10000kg' })
-      .optional(),
+    weight: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '重量必须是数字' })
+        .min(0.01, { message: '重量必须大于0' })
+        .max(10000, { message: '重量不能超过10000kg' })
+        .optional()
+    ),
 
     // 成本字段（入库时必填）
     // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串，避免 NaN 错误
