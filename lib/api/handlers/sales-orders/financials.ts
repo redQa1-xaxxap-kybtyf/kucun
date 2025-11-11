@@ -1,8 +1,25 @@
 import type { Prisma } from '@prisma/client';
 
 import type { CreateInput } from './types';
+import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 
 const roundCurrency = (value: number) => Math.round((value ?? 0) * 100) / 100;
+
+export function calculateCustomerPaidFees(
+  feeItems: SalesOrderFeeItem[] = []
+): number {
+  return feeItems
+    .filter(fee => (fee.paidBy ?? 'customer') === 'customer')
+    .reduce((sum, fee) => sum + (fee.feeAmount ?? 0), 0);
+}
+
+export function calculateCompanyPaidFees(
+  feeItems: SalesOrderFeeItem[] = []
+): number {
+  return feeItems
+    .filter(fee => fee.paidBy === 'company')
+    .reduce((sum, fee) => sum + (fee.feeAmount ?? 0), 0);
+}
 
 const calculateItemTotals = (
   data: CreateInput,
@@ -45,9 +62,13 @@ export const calculateFinancials = (
     data,
     transferMode
   );
-  const additionalFees = roundCurrency(
-    data.feeItems?.reduce((sum, fee) => sum + fee.feeAmount, 0) ?? 0
+  const customerPaidFees = roundCurrency(
+    calculateCustomerPaidFees(data.feeItems || [])
   );
+  const companyPaidFees = roundCurrency(
+    calculateCompanyPaidFees(data.feeItems || [])
+  );
+  const additionalFees = customerPaidFees;
   const roundingAdjustment = roundCurrency(data.roundingAdjustment ?? 0);
   const totalAmount = roundCurrency(
     itemsAmount + additionalFees + roundingAdjustment
@@ -58,6 +79,7 @@ export const calculateFinancials = (
     costAmount,
     profitAmount,
     additionalFees,
+    expenseAmount: companyPaidFees,
     roundingAdjustment,
     totalAmount,
   };
@@ -118,5 +140,6 @@ export const buildFeeItemsInput = (data: CreateInput) =>
     feeType: fee.feeType,
     feeName: fee.feeName,
     feeAmount: fee.feeAmount,
+    paidBy: fee.paidBy ?? 'customer',
     remarks: fee.remarks || null,
   })) ?? [];

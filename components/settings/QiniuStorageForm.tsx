@@ -5,7 +5,7 @@
 
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Eye, EyeOff, Loader2, Save, TestTube } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -74,7 +74,7 @@ export const QiniuStorageForm = ({
   const [showSecretKey, setShowSecretKey] = React.useState(false);
 
   const form = useForm<QiniuStorageFormValues>({
-    resolver: zodResolver(QiniuStorageConfigFormSchema),
+    resolver: standardSchemaResolver(QiniuStorageConfigFormSchema),
     defaultValues: {
       accessKey: initialData?.accessKey?.trim() || '',
       secretKey: initialData?.secretKey?.trim() || '',

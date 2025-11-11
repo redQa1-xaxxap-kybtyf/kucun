@@ -1,7 +1,7 @@
 /* eslint-disable max-lines-per-function, max-lines, react-hooks/exhaustive-deps */
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,7 @@ import {
 } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
-import { FeeItemsInput } from '@/components/sales-orders/fee-items-input';
+import { FeeItemsFormField } from '@/components/sales-orders/fee-items';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,10 @@ import {
   type SalesOrderStatus,
   type TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
-import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
+import {
+  getDefaultFeePaidBy,
+  type SalesOrderFeeItem,
+} from '@/lib/types/sales-order-fee';
 import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
 import {
@@ -161,6 +164,7 @@ export function ERPSalesOrderForm({
         feeType: fee.feeType,
         feeName: fee.feeName,
         feeAmount: fee.feeAmount,
+        paidBy: fee.paidBy ?? getDefaultFeePaidBy(fee.feeType),
         remarks: fee.remarks ?? '',
       })),
       roundingAdjustment: payload.roundingAdjustment,
@@ -172,7 +176,7 @@ export function ERPSalesOrderForm({
 
   // 表单状态
   const form = useForm<CreateSalesOrderData>({
-    resolver: zodResolver(CreateSalesOrderSchema),
+    resolver: standardSchemaResolver(CreateSalesOrderSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -455,6 +459,21 @@ export function ERPSalesOrderForm({
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
+  const { customerPaidFees, companyPaidFees } = React.useMemo(() => {
+    return (feeItems || []).reduce(
+      (acc, fee) => {
+        const amount = coerceNumeric(fee.feeAmount);
+        if ((fee.paidBy ?? 'customer') === 'company') {
+          acc.companyPaidFees += amount;
+        } else {
+          acc.customerPaidFees += amount;
+        }
+        return acc;
+      },
+      { customerPaidFees: 0, companyPaidFees: 0 }
+    );
+  }, [feeItems]);
+
   const totalAmount = watchedItems.reduce((sum, item) => {
     // 计算片单价（如果当前显示单位是件，需要转换为片单价）
     const piecePriceForCalculation =
@@ -469,11 +488,8 @@ export function ERPSalesOrderForm({
     return sum + (item.quantity || 0) * piecePriceForCalculation;
   }, 0);
 
-  const additionalFees = feeItems.reduce(
-    (sum: number, fee) => sum + coerceNumeric(fee.feeAmount),
-    0
-  );
-  const orderTotalWithFees = totalAmount + additionalFees + roundingAdjustment;
+  const orderTotalWithFees =
+    totalAmount + customerPaidFees + roundingAdjustment;
 
   const totalLocalQuantity = watchedItems.reduce(
     (sum, item) => sum + coerceNumeric(item.localQuantity),
@@ -730,6 +746,7 @@ export function ERPSalesOrderForm({
             feeType: fee.feeType,
             feeName: fee.feeName,
             feeAmount: fee.feeAmount,
+            paidBy: fee.paidBy ?? getDefaultFeePaidBy(fee.feeType),
             remarks: fee.remarks ?? '',
           }))
         : [],
@@ -897,6 +914,35 @@ export function ERPSalesOrderForm({
     }
   };
 
+  const handleFormSubmit = React.useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      void (async () => {
+        const isCustomerValid = await form.trigger('customerId');
+        if (!isCustomerValid) {
+          try {
+            form.setFocus('customerId');
+          } catch (error) {
+            logger.debug(
+              'sales-orders',
+              'Failed to focus customer field on base submit',
+              error
+            );
+          }
+          toast({
+            variant: 'destructive',
+            title: '客户未选择',
+            description: '请选择客户后再保存订单。',
+          });
+          return;
+        }
+
+        await form.handleSubmit(onSubmit)();
+      })();
+    },
+    [form, onSubmit, toast]
+  );
+
   const submitWithStatus = React.useCallback(
     (status: SalesOrderStatus) => {
       const snapshot = form.getValues();
@@ -952,7 +998,7 @@ export function ERPSalesOrderForm({
   return (
     <div className="space-y-4">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleFormSubmit} className="space-y-4">
           {/* ERP标准布局：基本信息区域 */}
           <div className="bg-card rounded-lg border shadow-sm">
             <div className="border-b bg-gradient-to-r from-blue-50 to-slate-50 px-4 py-2.5">
@@ -1221,20 +1267,8 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-medium">费用项管理</h3>
             </div>
             <div className="space-y-3 p-3">
-              <div className="flex items-center justify-between rounded border bg-amber-50/60 px-3 py-2">
-                <span className="text-muted-foreground text-xs">费用合计</span>
-                <span className="text-sm font-semibold text-amber-600">
-                  ￥{formatCurrency(additionalFees)}
-                </span>
-              </div>
-              <FeeItemsInput
-                feeItems={feeItems}
-                onChange={next =>
-                  form.setValue('feeItems', next, {
-                    shouldDirty: true,
-                    shouldValidate: false,
-                  })
-                }
+              <FeeItemsFormField
+                control={form.control}
                 disabled={createMutation.isPending || updateMutation.isPending}
               />
             </div>
@@ -1261,7 +1295,7 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-medium">汇总信息</h3>
             </div>
             <div className="p-3">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6">
                 <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">
                     产品种类
@@ -1298,12 +1332,22 @@ export function ERPSalesOrderForm({
                 </div>
                 <div className="flex items-center justify-between rounded border bg-amber-50/60 px-3 py-2">
                   <span className="text-muted-foreground text-xs">
-                    额外费用
+                    客户承担费用
                   </span>
                   <span className="text-sm font-semibold text-amber-600">
-                    ￥{formatCurrency(additionalFees)}
+                    ￥{formatCurrency(customerPaidFees)}
                   </span>
                 </div>
+                {companyPaidFees > 0 && (
+                  <div className="flex items-center justify-between rounded border bg-slate-100 px-3 py-2">
+                    <span className="text-muted-foreground text-xs">
+                      公司承担费用（计入成本）
+                    </span>
+                    <span className="text-sm font-semibold text-slate-700">
+                      ￥{formatCurrency(companyPaidFees)}
+                    </span>
+                  </div>
+                )}
                 {Math.abs(roundingAdjustment) > 0.0001 && (
                   <div className="flex items-center justify-between rounded border bg-slate-50 px-3 py-2">
                     <span className="text-muted-foreground text-xs">

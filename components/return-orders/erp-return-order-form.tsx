@@ -1,7 +1,7 @@
 /* eslint-disable max-lines-per-function, max-lines */
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -77,7 +77,7 @@ export function ERPReturnOrderForm({
 
   // 表单设置
   const form = useForm<CreateReturnOrderFormData | UpdateReturnOrderFormData>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       mode === 'create' ? createReturnOrderSchema : updateReturnOrderSchema
     ),
     defaultValues:

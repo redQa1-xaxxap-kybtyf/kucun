@@ -26,6 +26,7 @@ export interface SalesOrderDetail {
   totalAmount: number;
   costAmount: number;
   profitAmount: number;
+  expenseAmount?: number;
   actualPaidAmount: number;
   paymentRounding: number;
   paidAmount: number;
@@ -79,6 +80,7 @@ export interface SalesOrderDetail {
     feeType: string;
     feeName: string;
     feeAmount: number;
+    paidBy: 'customer' | 'company';
     remarks?: string;
   }>;
   paymentRecords: PaymentRecord[];

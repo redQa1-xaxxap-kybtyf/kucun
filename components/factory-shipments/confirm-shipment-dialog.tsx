@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ship } from 'lucide-react';
 import * as React from 'react';
@@ -84,7 +84,7 @@ function useConfirmShipmentDialogState({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<ConfirmShipmentData>({
-    resolver: zodResolver(confirmShipmentSchema),
+    resolver: standardSchemaResolver(confirmShipmentSchema),
     defaultValues: {
       containerNumber: containerNumber || '',
       shippingCompany: shippingCompany || '',

@@ -1,14 +1,14 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
-import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { AmountInfoSection } from '@/components/factory-shipments/form-sections/amount-info-section';
 import { BasicInfoSection } from '@/components/factory-shipments/form-sections/basic-info-section';
+import { FeeItemsFormField } from '@/components/factory-shipments/fee-items';
 import { ItemListSection } from '@/components/factory-shipments/form-sections/item-list-section';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -87,7 +87,7 @@ export function FactoryShipmentOrderForm({
 
   // 表单配置
   const form = useForm<CreateFactoryShipmentOrderData>({
-    resolver: zodResolver(createFactoryShipmentOrderSchema),
+    resolver: standardSchemaResolver(createFactoryShipmentOrderSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -384,11 +384,7 @@ export function FactoryShipmentOrderForm({
         {/* 费用项目 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
           <CardContent className="p-8">
-            <FactoryShipmentFeeItemsInput
-              feeItems={form.watch('feeItems') || []}
-              onChange={feeItems => form.setValue('feeItems', feeItems)}
-              disabled={isLoading}
-            />
+            <FeeItemsFormField control={form.control} disabled={isLoading} />
           </CardContent>
         </Card>
 

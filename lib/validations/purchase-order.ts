@@ -140,12 +140,6 @@ export const createPurchaseOrderSchema = z.object({
     .max(50, '集装箱号码不能超过50个字符')
     .optional()
     .or(z.literal('')),
-  supplierId: z
-    .string()
-    .uuid('供应商ID格式不正确')
-    .optional()
-    .or(z.literal(''))
-    .describe('订单级别供应商ID(可选,支持多供应商采购)'),
   orderDate: z.date().optional().describe('订单日期'),
   status: purchaseOrderStatusSchema.optional(),
   totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
@@ -175,7 +169,6 @@ export const updatePurchaseOrderSchema = z.object({
     .optional()
     .or(z.literal('')),
   estimatedArrival: z.date().optional(),
-  supplierId: z.string().uuid('供应商ID格式不正确').optional(),
   status: purchaseOrderStatusSchema.optional(),
   totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
   expenseAmount: z.number().min(0, '费用金额不能为负数').optional(),

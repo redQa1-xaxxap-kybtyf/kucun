@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Package } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -61,7 +61,7 @@ function useContainerNumberEditDialogState({
 }: ContainerNumberEditDialogStateProps) {
   const { toast } = useToast();
   const form = useForm<EditContainerNumberData>({
-    resolver: zodResolver(editContainerNumberSchema),
+    resolver: standardSchemaResolver(editContainerNumberSchema),
     defaultValues: {
       containerNumber: order.containerNumber || '',
     },

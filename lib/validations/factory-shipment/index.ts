@@ -115,6 +115,7 @@ export const updateFactoryShipmentOrderSchema = z
       .array(factoryShipmentOrderItemSchema)
       .min(1, '至少需要添加一个产品')
       .optional(),
+    feeItems: z.array(factoryShipmentFeeItemSchema).optional().default([]),
   })
   .refine(
     data => {

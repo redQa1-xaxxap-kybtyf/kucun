@@ -124,7 +124,21 @@ const buildOrderBy = (params: SalesOrderQueryParams) => {
   return orderBy;
 };
 
-const mapListOrder = (order: SalesOrderListResult) => {
+const mapListOrder = (
+  order: SalesOrderListResult,
+  productsMap: Map<
+    string,
+    {
+      id: string;
+      name: string;
+      code: string;
+      unit: string;
+      specification: string | null;
+      piecesPerUnit: number;
+      weight: number | null;
+    }
+  >
+) => {
   const { payments, returnOrders, _count, items, ...base } = order;
   const orderBase = mapOrderBaseFields(base);
   const paidAmount = payments.reduce(
@@ -134,7 +148,9 @@ const mapListOrder = (order: SalesOrderListResult) => {
 
   return {
     ...orderBase,
-    items: items.map(mapSalesOrderItem),
+    items: items.map(item =>
+      mapSalesOrderItem(item, item.productId ? productsMap.get(item.productId) : undefined)
+    ),
     itemCount: _count.items,
     paidAmount,
     remainingAmount: Number(order.totalAmount) - paidAmount,
@@ -159,8 +175,28 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
     prisma.salesOrder.count({ where }),
   ]);
 
+  // 手动获取产品信息
+  const productIds = orders
+    .flatMap(order => order.items.map(item => item.productId))
+    .filter(Boolean) as string[];
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      unit: true,
+      specification: true,
+      piecesPerUnit: true,
+      weight: true,
+    },
+  });
+
+  const productsMap = new Map(products.map(p => [p.id, p]));
+
   return {
-    data: orders.map(mapListOrder),
+    data: orders.map(order => mapListOrder(order, productsMap)),
     pagination: {
       page,
       limit,

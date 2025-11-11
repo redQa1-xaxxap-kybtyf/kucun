@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -96,7 +96,7 @@ export function ExpenseForm({
   const isEditMode = mode === 'edit';
 
   const form = useForm<ExpenseFormData>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       createExpenseSchema.omit({ expenseDate: true }).extend({
         expenseDate: createExpenseSchema.shape.expenseDate.transform(
           val => val

@@ -211,6 +211,13 @@ export async function createIdempotencyRecord(
     // SET NX 失败,说明键已存在 (并发冲突)
     throw new Error('Idempotency key already exists');
   } catch (_error) {
+    // 并发冲突无需降级,交由上层处理
+    if (
+      _error instanceof Error &&
+      _error.message === 'Idempotency key already exists'
+    ) {
+      throw _error;
+    }
     // 降级到 MySQL 同步写入
     return createIdempotencyMysql(
       idempotencyKey,

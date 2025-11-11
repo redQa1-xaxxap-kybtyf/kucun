@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import {
   AlertCircle,
   ArrowLeft,
@@ -91,7 +91,7 @@ export function ReturnOrderForm({
 
   // 表单设置
   const form = useForm<CreateReturnOrderFormData | UpdateReturnOrderFormData>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       mode === 'create' ? createReturnOrderSchema : updateReturnOrderSchema
     ),
     mode: 'onBlur', // ✅ 用户离开字段时验证
@@ -427,7 +427,7 @@ export function ReturnOrderForm({
                                   <div className="text-muted-foreground text-sm">
                                     数量: {item.originalQuantity}{' '}
                                     {item.product.unit} | 可退:{' '}
-                                    {item.availableQuantity} | 单价:{' '}
+                                    {item.availableQuantity} | 退货单价:{' '}
                                     {formatReturnAmount(item.unitPrice)}
                                   </div>
                                 </div>
@@ -469,7 +469,7 @@ export function ReturnOrderForm({
                                   <TableHead>色号</TableHead>
                                   <TableHead>退货数量</TableHead>
                                   <TableHead>破损数量</TableHead>
-                                  <TableHead>单价</TableHead>
+                                  <TableHead>退货单价</TableHead>
                                   <TableHead>小计</TableHead>
                                   <TableHead>操作</TableHead>
                                 </TableRow>

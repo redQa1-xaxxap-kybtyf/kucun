@@ -1,6 +1,7 @@
 'use client';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { FEE_PAID_BY_LABELS } from '@/lib/types/sales-order-fee';
 import { formatCurrency } from '@/lib/utils';
 
 import type { SalesOrderDetail } from './types';
@@ -12,7 +13,16 @@ export function FeeItemsCard({
   order: SalesOrderDetail;
   productSubtotal: number;
 }) {
-  if (!order.feeItems || order.feeItems.length === 0) return null;
+  const feeItems = order.feeItems || [];
+  if (feeItems.length === 0) return null;
+
+  const customerPaidTotal = feeItems
+    .filter(fee => fee.paidBy === 'customer')
+    .reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
+  const companyPaidTotal = feeItems
+    .filter(fee => fee.paidBy === 'company')
+    .reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
+
   return (
     <Card
       className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
@@ -25,7 +35,7 @@ export function FeeItemsCard({
             额外费用明细
           </div>
           <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-            共 {order.feeItems.length} 项
+            共 {feeItems.length} 项
           </span>
         </CardTitle>
       </CardHeader>
@@ -38,11 +48,12 @@ export function FeeItemsCard({
                 <th className="px-4 py-3 text-left font-medium">费用类型</th>
                 <th className="px-4 py-3 text-left font-medium">费用名称</th>
                 <th className="px-4 py-3 text-right font-medium">费用金额</th>
+                <th className="px-4 py-3 text-center font-medium">承担方</th>
                 <th className="px-4 py-3 text-left font-medium">备注</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
-              {order.feeItems.map((fee, index) => (
+              {feeItems.map((fee, index) => (
                 <tr
                   key={fee.id}
                   className="transition-colors hover:bg-[hsl(var(--color-bg-secondary))]/50"
@@ -67,6 +78,17 @@ export function FeeItemsCard({
                       {formatCurrency(fee.feeAmount)}
                     </span>
                   </td>
+                  <td className="px-4 py-3.5 text-center">
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        fee.paidBy === 'company'
+                          ? 'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]'
+                          : 'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]'
+                      }`}
+                    >
+                      {FEE_PAID_BY_LABELS[fee.paidBy] ?? '客户承担'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3.5">
                     <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
                       {fee.remarks || '-'}
@@ -78,27 +100,41 @@ export function FeeItemsCard({
             <tfoot>
               <tr className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] font-semibold">
                 <td
-                  colSpan={3}
+                  colSpan={4}
                   className="px-4 py-3 text-right text-[hsl(var(--color-text-primary))]"
                 >
-                  <span className="text-sm">额外费用小计</span>
+                  <span className="text-sm">客户承担费用小计</span>
                 </td>
                 <td className="px-4 py-3 text-right">
                   <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
-                    {formatCurrency(order.additionalFees)}
+                    {formatCurrency(customerPaidTotal)}
+                  </span>
+                </td>
+                <td className="px-4 py-3"></td>
+              </tr>
+              <tr className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] font-semibold">
+                <td
+                  colSpan={4}
+                  className="px-4 py-3 text-right text-[hsl(var(--color-text-primary))]"
+                >
+                  <span className="text-sm">公司承担费用小计</span>
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <span className="text-sm font-bold text-[hsl(var(--color-text-secondary))]">
+                    {formatCurrency(companyPaidTotal)}
                   </span>
                 </td>
                 <td className="px-4 py-3"></td>
               </tr>
               <tr className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] font-bold">
                 <td
-                  colSpan={3}
+                  colSpan={4}
                   className="px-4 py-4 text-right text-[hsl(var(--color-text-primary))]"
                 >
                   <div className="flex items-center justify-end gap-2">
                     <span className="text-base">订单总金额</span>
                     <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-                      (产品 {formatCurrency(productSubtotal)} + 费用{' '}
+                      (产品 {formatCurrency(productSubtotal)} + 客户费用{' '}
                       {formatCurrency(order.additionalFees)})
                     </span>
                   </div>

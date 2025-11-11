@@ -54,18 +54,17 @@ export async function getDashboardData(
     }),
 
     // 低库存产品数量
-    prisma.product.count({
+    prisma.inventory.findMany({
       where: {
-        status: 'active',
-        inventory: {
-          some: {
-            quantity: {
-              lte: 10, // 使用默认的低库存阈值
-            },
-          },
+        quantity: {
+          lte: 10,
         },
       },
-    }),
+      select: {
+        productId: true,
+      },
+      distinct: ['productId'],
+    }).then(items => items.length),
 
     // 本月订单数
     prisma.salesOrder.count({
@@ -220,31 +219,46 @@ export async function getBusinessOverview(timeRange: TimeRange = '7d') {
  * 获取库存警告
  */
 export async function getInventoryAlerts() {
-  const lowStockProducts = await prisma.product.findMany({
+  // 获取低库存记录
+  const lowStockInventories = await prisma.inventory.findMany({
     where: {
-      status: 'active',
-      inventory: {
-        some: {
-          quantity: {
-            lte: inventoryConfig.lowStockThreshold,
-          },
-        },
+      quantity: {
+        lte: inventoryConfig.lowStockThreshold,
       },
     },
     include: {
-      inventory: {
+      product: {
         select: {
-          quantity: true,
+          id: true,
+          name: true,
+          status: true,
         },
       },
     },
     take: 10,
   });
 
-  return lowStockProducts.map(product => ({
-    id: product.id,
-    productName: product.name,
-    currentStock: product.inventory.reduce((sum, inv) => sum + inv.quantity, 0),
+  // 按产品聚合库存
+  const productStockMap = new Map<string, { name: string; quantity: number }>();
+
+  for (const inv of lowStockInventories) {
+    if (inv.product.status !== 'active') continue;
+
+    const existing = productStockMap.get(inv.product.id);
+    if (existing) {
+      existing.quantity += inv.quantity;
+    } else {
+      productStockMap.set(inv.product.id, {
+        name: inv.product.name,
+        quantity: inv.quantity,
+      });
+    }
+  }
+
+  return Array.from(productStockMap.entries()).map(([id, data]) => ({
+    id,
+    productName: data.name,
+    currentStock: data.quantity,
     minStock: inventoryConfig.lowStockThreshold,
     severity: 'warning' as const,
   }));
@@ -260,17 +274,17 @@ export async function getTodoItems() {
     },
   });
 
-  const lowStockCount = await prisma.product.count({
+  // 获取低库存产品数量（去重）
+  const lowStockInventories = await prisma.inventory.findMany({
     where: {
-      status: 'active',
-      inventory: {
-        some: {
-          quantity: {
-            lte: 10,
-          },
-        },
+      quantity: {
+        lte: 10,
       },
     },
+    select: {
+      productId: true,
+    },
+    distinct: ['productId'],
   });
 
   return [
@@ -284,7 +298,7 @@ export async function getTodoItems() {
     {
       id: 'low-stock',
       title: '低库存产品',
-      count: lowStockCount,
+      count: lowStockInventories.length,
       priority: 'medium' as const,
       href: '/products?lowStock=true',
     },

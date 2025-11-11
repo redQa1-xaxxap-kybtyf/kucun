@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Ship } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -62,7 +62,7 @@ function useShippingCompanyEditDialogState({
 }: ShippingCompanyEditDialogStateProps) {
   const { toast } = useToast();
   const form = useForm<EditShippingCompanyData>({
-    resolver: zodResolver(editShippingCompanySchema),
+    resolver: standardSchemaResolver(editShippingCompanySchema),
     defaultValues: {
       shippingCompany: order.shippingCompany || '',
     },

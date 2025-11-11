@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertCircle,
@@ -14,11 +14,11 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useForm, type Control, type FieldValues } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
-import { FeeItemsInput } from '@/components/sales-orders/fee-items-input';
+import { FeeItemsFormField } from '@/components/sales-orders/fee-items';
 import { OrderItemsEditor } from '@/components/sales-orders/order-items-editor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +62,7 @@ import {
   type SalesOrderCreateInput,
   type SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
+import { getDefaultFeePaidBy } from '@/lib/types/sales-order-fee';
 import { logger } from '@/lib/utils/console-logger';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
@@ -93,7 +94,7 @@ export function SalesOrderForm({
   const schema = isEdit ? UpdateSalesOrderSchema : CreateSalesOrderSchema;
 
   const form = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: standardSchemaResolver(schema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -112,7 +113,11 @@ export function SalesOrderForm({
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
               })) || [],
-            feeItems: initialData.feeItems || [],
+            feeItems:
+              initialData.feeItems?.map(fee => ({
+                ...fee,
+                paidBy: fee.paidBy ?? getDefaultFeePaidBy(fee.feeType),
+              })) || [],
           }
         : {
             customerId: '',
@@ -198,6 +203,31 @@ export function SalesOrderForm({
     }
   };
 
+  const handleFormSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      void (async () => {
+        const isCustomerValid = await form.trigger('customerId');
+        if (!isCustomerValid) {
+          try {
+            form.setFocus('customerId');
+          } catch (error) {
+            logger.debug(
+              'sales-orders:form',
+              'Failed to focus customer selector',
+              error
+            );
+          }
+          setSubmitError('请选择客户');
+          return;
+        }
+
+        await form.handleSubmit(onSubmit)();
+      })();
+    },
+    [form, onSubmit]
+  );
+
   // 取消操作
   const handleCancel = () => {
     if (onCancel) {
@@ -265,7 +295,7 @@ export function SalesOrderForm({
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleFormSubmit} className="space-y-6">
           {/* 基础信息 */}
           <Card>
             <CardHeader>
@@ -384,9 +414,8 @@ export function SalesOrderForm({
               <CardDescription>添加加工费、运费等额外费用项目</CardDescription>
             </CardHeader>
             <CardContent>
-              <FeeItemsInput
-                feeItems={form.watch('feeItems') || []}
-                onChange={feeItems => form.setValue('feeItems', feeItems)}
+              <FeeItemsFormField
+                control={form.control}
                 disabled={isLoading}
               />
             </CardContent>

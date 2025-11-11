@@ -197,10 +197,10 @@ export function UnitPriceCell({
         control={form.control}
         name={unitPricePath}
         rules={{
-          required: '单价不能为空',
+          required: '销售单价不能为空',
           validate: value => {
             const numeric = Number(value);
-            return numeric > 0 || '单价必须大于 0';
+            return numeric > 0 || '销售单价必须大于 0';
           },
         }}
         render={({ field }) => (
@@ -216,7 +216,7 @@ export function UnitPriceCell({
                     : field.value
                 }
                 className="h-8 text-xs"
-                placeholder="单价"
+                placeholder="销售单价"
                 onChange={event => {
                   const value = event.target.value;
                   // 允许输入数字、小数点、空字符串

@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { useEffect, useMemo } from 'react';
@@ -83,7 +83,7 @@ export function ReceivablePaymentDialog({
   );
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(createPaymentRecordSchema),
+    resolver: standardSchemaResolver(createPaymentRecordSchema),
     defaultValues,
   });
 

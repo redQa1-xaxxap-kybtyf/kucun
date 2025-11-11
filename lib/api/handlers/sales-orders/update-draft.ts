@@ -39,10 +39,10 @@ export async function updateSalesOrderDraft(
   );
 
   const additionalFees = round2(
-    (updateData.feeItems?.reduce(
-      (sum: number, f: any) => sum + f.feeAmount,
-      0
-    ) ?? 0) * 1
+    sumFeeByPayer(updateData.feeItems, 'customer')
+  );
+  const expenseAmount = round2(
+    sumFeeByPayer(updateData.feeItems, 'company')
   );
   const roundingAdjustment = round2(updateData.roundingAdjustment ?? 0);
   const totalAmount = round2(itemsAmount + additionalFees + roundingAdjustment);
@@ -105,6 +105,7 @@ export async function updateSalesOrderDraft(
         profitAmount: orderType === 'TRANSFER' ? profitAmount : null,
         itemsAmount,
         additionalFees,
+        expenseAmount,
         roundingAdjustment,
         totalAmount,
         remarks: updateData.remarks || null,
@@ -126,6 +127,7 @@ export async function updateSalesOrderDraft(
                 feeType: fee.feeType,
                 feeName: fee.feeName,
                 feeAmount: fee.feeAmount,
+                paidBy: fee.paidBy ?? 'customer',
                 remarks: fee.remarks ?? null,
               })),
             }
@@ -150,6 +152,19 @@ export async function updateSalesOrderDraft(
 
 function round2(v: number) {
   return Math.round(v * 100) / 100;
+}
+
+function sumFeeByPayer(
+  feeItems: Array<{ feeAmount?: number; paidBy?: string }> | undefined,
+  payer: 'customer' | 'company'
+): number {
+  if (!Array.isArray(feeItems)) {
+    return 0;
+  }
+
+  return feeItems
+    .filter(fee => (fee.paidBy ?? 'customer') === payer)
+    .reduce((sum, fee) => sum + (Number(fee.feeAmount) || 0), 0);
 }
 
 function computeItemsAndCost(
@@ -254,6 +269,7 @@ function selectUpdatedOrder() {
     supplierId: true,
     itemsAmount: true,
     additionalFees: true,
+    expenseAmount: true,
     roundingAdjustment: true,
     costAmount: true,
     profitAmount: true,
@@ -268,7 +284,6 @@ function selectUpdatedOrder() {
     },
     customer: { select: { id: true, name: true, phone: true, address: true } },
     user: { select: { id: true, name: true, email: true } },
-    supplier: { select: { id: true, name: true, phone: true } },
     items: {
       select: {
         id: true,
@@ -313,6 +328,7 @@ function selectUpdatedOrder() {
         feeType: true,
         feeName: true,
         feeAmount: true,
+        paidBy: true,
         remarks: true,
       },
     },

@@ -6,7 +6,7 @@
  * 严格遵循全局约定规范和ESLint规范遵循指南
  */
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -472,7 +472,7 @@ export default function CreatePaymentOutPage() {
 
   // 表单配置
   const form = useForm<CreatePaymentOutFormData>({
-    resolver: zodResolver(createPaymentOutSchema),
+    resolver: standardSchemaResolver(createPaymentOutSchema),
     defaultValues: {
       payableRecordId: payableId || '',
       supplierId: '',

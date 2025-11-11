@@ -103,7 +103,7 @@ function OrderItemsTable({
               <TableHead className="w-[120px]">色号</TableHead>
               <TableHead className="w-[120px]">生产日期</TableHead>
               <TableHead className="w-[100px]">数量</TableHead>
-              <TableHead className="w-[120px]">单价</TableHead>
+              <TableHead className="w-[120px]">销售单价</TableHead>
               <TableHead className="w-[120px]">小计</TableHead>
               <TableHead className="w-[80px]">操作</TableHead>
             </TableRow>

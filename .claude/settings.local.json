@@ -180,7 +180,11 @@
       "Bash(chmod:*)",
       "Bash(scripts/api-performance-test.sh:*)",
       "Bash(scripts/performance-test-final.sh:*)",
-      "Bash(scripts/simple-performance-test.sh:*)"
+      "Bash(scripts/simple-performance-test.sh:*)",
+      "Bash(do cp \"E:\\kucun\\components\\sales-orders\\fee-items$file\" \"E:\\kucun\\components\\factory-shipments\\fee-items$file\")",
+      "Bash(do cp \"$file\" \"../../factory-shipments/fee-items/$file\")",
+      "Bash(Stop-Process -Force)",
+      "Bash(nul)"
     ],
     "deny": [],
     "ask": []

@@ -172,7 +172,7 @@ function InboundItemCard({
             {item.displayName}
           </p>
           <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-            订单数量：{item.quantity} {item.unit} · 单价：¥
+            订单数量：{item.quantity} {item.unit} · 销售单价：¥
             {item.unitPrice.toLocaleString('zh-CN', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,

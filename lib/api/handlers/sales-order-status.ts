@@ -50,6 +50,94 @@ interface _SalesOrderItemWithInventoryFields {
   } | null;
 }
 
+const roundCurrency = (value: number) => Math.round(value * 100) / 100;
+
+const calculateCompanyExpenseFromFees = (
+  feeItems:
+    | Array<{ feeAmount?: unknown; paidBy?: string | null | undefined }>
+    | undefined
+): number => {
+  if (!feeItems || feeItems.length === 0) {
+    return 0;
+  }
+
+  const total = feeItems.reduce((sum, fee) => {
+    if ((fee.paidBy ?? 'customer') !== 'company') {
+      return sum;
+    }
+
+    const amount = fee.feeAmount !== undefined ? Number(fee.feeAmount) : 0;
+    if (!Number.isFinite(amount)) {
+      return sum;
+    }
+    return sum + amount;
+  }, 0);
+
+  return roundCurrency(total);
+};
+
+const getCompanyExpenseAmount = (params: {
+  expenseAmount?: unknown;
+  feeItems?:
+    | Array<{ feeAmount?: unknown; paidBy?: string | null | undefined }>
+    | undefined;
+}) => {
+  const fromFees = calculateCompanyExpenseFromFees(params.feeItems);
+  if (fromFees > 0 || (params.feeItems?.length ?? 0) > 0) {
+    return fromFees;
+  }
+  const stored =
+    params.expenseAmount !== undefined ? Number(params.expenseAmount) : 0;
+  return roundCurrency(Number.isFinite(stored) ? stored : 0);
+};
+
+const allocateExpensesBySalesValue = (
+  items: Array<{ id: string; subtotal?: number | null }>,
+  totalExpense: number
+) => {
+  const allocations = new Map<string, number>();
+  if (!items.length || totalExpense <= 0) {
+    return allocations;
+  }
+
+  const normalizedTotals = items.map(item => ({
+    id: item.id,
+    subtotal: Math.max(0, Number(item.subtotal ?? 0)),
+  }));
+
+  const totalValue = normalizedTotals.reduce(
+    (sum, item) => sum + item.subtotal,
+    0
+  );
+
+  if (totalValue === 0) {
+    const evenShare = roundCurrency(totalExpense / items.length);
+    let allocated = 0;
+    normalizedTotals.forEach((item, index) => {
+      const value =
+        index === normalizedTotals.length - 1
+          ? roundCurrency(totalExpense - allocated)
+          : evenShare;
+      allocations.set(item.id, value);
+      allocated += value;
+    });
+    return allocations;
+  }
+
+  let allocated = 0;
+  normalizedTotals.forEach((item, index) => {
+    const ratio = item.subtotal / totalValue;
+    const value =
+      index === normalizedTotals.length - 1
+        ? roundCurrency(totalExpense - allocated)
+        : roundCurrency(totalExpense * ratio);
+    allocations.set(item.id, value);
+    allocated += value;
+  });
+
+  return allocations;
+};
+
 /**
  * 订单状态更新结果
  */
@@ -88,6 +176,13 @@ async function executeOrderStatusUpdateWithInventory(
               unit: true,
             },
           },
+        },
+      },
+      feeItems: {
+        select: {
+          id: true,
+          feeAmount: true,
+          paidBy: true,
         },
       },
     },
@@ -155,6 +250,22 @@ async function executeOrderStatusUpdateWithInventory(
       transferReason,
     });
   }
+
+  const companyExpenseAmount = getCompanyExpenseAmount(existingOrder);
+  const allocationSources =
+    itemsWithInventory.length > 0
+      ? itemsWithInventory.map(entry => entry.item)
+      : existingOrder.items;
+  const expenseAllocations =
+    companyExpenseAmount > 0
+      ? allocateExpensesBySalesValue(
+          allocationSources.map(item => ({
+            id: item.id,
+            subtotal: item.subtotal ?? 0,
+          })),
+          companyExpenseAmount
+        )
+      : new Map<string, number>();
 
   return await withTransaction(async tx => {
     // 第一步：先检查所有产品的库存，收集库存不足的信息
@@ -304,6 +415,27 @@ async function executeOrderStatusUpdateWithInventory(
         { tx }
       );
 
+      const itemQuantity = item.quantity ?? 0;
+      const baseUnitCost =
+        item.unitCost !== undefined && item.unitCost !== null
+          ? Number(item.unitCost)
+          : inventory.unitCost !== undefined && inventory.unitCost !== null
+            ? Number(inventory.unitCost)
+            : undefined;
+      const baseTotalCost =
+        baseUnitCost !== undefined
+          ? roundCurrency(baseUnitCost * itemQuantity)
+          : undefined;
+      const allocatedExpense = expenseAllocations.get(item.id) ?? 0;
+      const totalCostWithExpense =
+        baseTotalCost !== undefined || allocatedExpense > 0
+          ? roundCurrency((baseTotalCost ?? 0) + allocatedExpense)
+          : undefined;
+      const unitCostWithExpense =
+        totalCostWithExpense !== undefined && itemQuantity > 0
+          ? roundCurrency(totalCostWithExpense / itemQuantity)
+          : baseUnitCost;
+
       // 创建出库记录（使用事务内生成的单号）
       await tx.outboundRecord.create({
         data: {
@@ -313,12 +445,8 @@ async function executeOrderStatusUpdateWithInventory(
           batchNumber: finalBatchNumber,
           inventoryId: inventory.id,
           quantity: item.quantity,
-          unitCost: item.unitCost || inventory.unitCost || undefined,
-          totalCost: item.unitCost
-            ? item.unitCost * item.quantity
-            : inventory.unitCost
-              ? inventory.unitCost * item.quantity
-              : undefined,
+          unitCost: unitCostWithExpense ?? undefined,
+          totalCost: totalCostWithExpense ?? undefined,
           reason: 'sales_outbound',
           notes: `销售订单发货：${existingOrder.orderNumber}`,
           customerId: existingOrder.customerId,
@@ -328,6 +456,29 @@ async function executeOrderStatusUpdateWithInventory(
       });
     }
 
+    const itemsAmountValue =
+      existingOrder.itemsAmount !== undefined &&
+      existingOrder.itemsAmount !== null
+        ? Number(existingOrder.itemsAmount)
+        : existingOrder.items.reduce(
+            (sum, item) => sum + Number(item.subtotal ?? 0),
+            0
+          );
+    const previousCostAmount =
+      existingOrder.costAmount !== undefined &&
+      existingOrder.costAmount !== null
+        ? Number(existingOrder.costAmount)
+        : 0;
+    const normalizedExpenseAmount = roundCurrency(companyExpenseAmount);
+    const updatedCostAmount =
+      companyExpenseAmount > 0
+        ? roundCurrency(previousCostAmount + companyExpenseAmount)
+        : previousCostAmount;
+    const updatedProfitAmount =
+      companyExpenseAmount > 0
+        ? roundCurrency(itemsAmountValue - updatedCostAmount)
+        : existingOrder.profitAmount ?? undefined;
+
     // 第三步：更新订单状态（确保库存扣减成功后再标记发货）
     const order = await tx.salesOrder.update({
       where: { id: orderId },
@@ -336,6 +487,11 @@ async function executeOrderStatusUpdateWithInventory(
         ...(remarks !== undefined && { remarks }),
         // 如果状态变更为已发货，记录发货时间
         ...(status === 'shipped' && { shippedAt: new Date() }),
+        ...(companyExpenseAmount > 0 && {
+          costAmount: updatedCostAmount,
+          profitAmount: updatedProfitAmount,
+        }),
+        expenseAmount: normalizedExpenseAmount,
       },
       select: {
         id: true,

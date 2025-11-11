@@ -171,7 +171,7 @@ function PurchaseOrderItemsTableView({
                 每件片数
               </TableHead>
               <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
-                单价 *
+                采购单价 *
               </TableHead>
               <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
                 总价

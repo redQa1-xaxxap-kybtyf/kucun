@@ -218,7 +218,7 @@ function SalesOrderSection({
                   <TableRow className="text-xs">
                     <TableHead className="h-8 px-2">产品</TableHead>
                     <TableHead className="h-8 px-2">可退数量</TableHead>
-                    <TableHead className="h-8 px-2">单价</TableHead>
+                    <TableHead className="h-8 px-2">退货单价</TableHead>
                     <TableHead className="h-8 px-2">退货数量</TableHead>
                     <TableHead className="h-8 px-2 text-center">操作</TableHead>
                   </TableRow>

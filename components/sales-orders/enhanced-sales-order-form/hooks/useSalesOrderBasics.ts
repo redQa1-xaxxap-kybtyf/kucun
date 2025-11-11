@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -39,7 +39,7 @@ export function useSalesOrderBasics(
   const { toast } = useToast();
 
   const form = useForm<CreateSalesOrderData>({
-    resolver: zodResolver(CreateSalesOrderSchema),
+    resolver: standardSchemaResolver(CreateSalesOrderSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误

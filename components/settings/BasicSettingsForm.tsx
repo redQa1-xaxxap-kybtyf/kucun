@@ -5,7 +5,7 @@
 
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, RefreshCw, Save } from 'lucide-react';
 import * as React from 'react';
@@ -169,7 +169,7 @@ export function BasicSettingsForm() {
 
   // 表单配置
   const form = useForm<BasicSettingsFormData>({
-    resolver: zodResolver(BasicSettingsFormSchema),
+    resolver: standardSchemaResolver(BasicSettingsFormSchema),
     defaultValues: settings || {
       // 提供默认值以避免受控/非受控组件警告，使用环境配置
       companyName: systemConfig.companyName,

@@ -56,6 +56,7 @@ export const salesOrderFeeItemSchema = z.object({
     .max(200, '备注不能超过200个字符')
     .optional()
     .or(z.literal('')),
+  paidBy: z.enum(['customer', 'company']).default('customer'),
 });
 
 /**

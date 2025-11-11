@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import * as React from 'react';
@@ -79,7 +79,7 @@ export function CustomerEditDialog({
 
   // 表单配置
   const form = useForm<EditFormData>({
-    resolver: zodResolver(editFormSchema),
+    resolver: standardSchemaResolver(editFormSchema),
     defaultValues: {
       name: '',
       phone: '',

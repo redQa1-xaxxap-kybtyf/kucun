@@ -86,7 +86,6 @@ export async function createPurchaseOrderInternal(
       data: {
         orderNumber,
         containerNumber: data.containerNumber?.trim() || null,
-        supplierId: data.supplierId,
         status,
         totalAmount,
         orderDate: data.orderDate ? new Date(data.orderDate) : undefined,
@@ -127,28 +126,40 @@ export async function createPurchaseOrderInternal(
       userId
     );
 
+    // 按供应商分组创建应付账款
     if (shouldAutoCreatePayable(status, totalAmount)) {
-      const payableNumber = await generatePayableNumber(tx);
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30);
+      const supplierAmounts = new Map<string, number>();
 
-      await tx.payableRecord.create({
-        data: {
-          payableNumber,
-          supplierId: data.supplierId,
-          userId,
-          sourceType: 'purchase_order',
-          sourceId: order.id,
-          sourceNumber: order.orderNumber,
-          payableAmount: totalAmount,
-          paidAmount: 0,
-          remainingAmount: totalAmount,
-          dueDate,
-          status: 'pending',
-          paymentTerms: '30天',
-          remarks: `系统自动生成：采购订单 ${order.orderNumber} 确认应付`,
-        },
-      });
+      // 统计每个供应商的采购金额
+      for (const item of data.items) {
+        const currentAmount = supplierAmounts.get(item.supplierId) || 0;
+        supplierAmounts.set(item.supplierId, currentAmount + item.totalPrice);
+      }
+
+      // 为每个供应商创建应付记录
+      for (const [supplierId, amount] of supplierAmounts.entries()) {
+        const payableNumber = await generatePayableNumber(tx);
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+
+        await tx.payableRecord.create({
+          data: {
+            payableNumber,
+            supplierId,
+            userId,
+            sourceType: 'purchase_order',
+            sourceId: order.id,
+            sourceNumber: order.orderNumber,
+            payableAmount: amount,
+            paidAmount: 0,
+            remainingAmount: amount,
+            dueDate,
+            status: 'pending',
+            paymentTerms: '30天',
+            remarks: `系统自动生成：采购订单 ${order.orderNumber} 确认应付`,
+          },
+        });
+      }
     }
 
     return order;
@@ -219,7 +230,6 @@ export async function updatePurchaseOrderInternal({
     await tx.purchaseOrder.update({
       where: { id: orderId },
       data: {
-        supplierId: data.supplierId ?? existingOrder.supplierId,
         containerNumber:
           data.containerNumber !== undefined
             ? data.containerNumber.trim() || null

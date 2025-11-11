@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import Link from 'next/link';
@@ -61,7 +61,7 @@ export default function SignInPage() {
 
   // 表单配置
   const form = useForm<UserLoginInput>({
-    resolver: zodResolver(userValidations.login),
+    resolver: standardSchemaResolver(userValidations.login),
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
     defaultValues: {

@@ -26,6 +26,7 @@ import {
   PURCHASE_ORDER_STATUS_LABELS,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
+import { formatPurchaseOrderSuppliers } from '@/lib/utils/purchase-order-suppliers';
 
 interface PurchaseOrderListProps {
   page?: number;
@@ -137,7 +138,9 @@ export function PurchaseOrderList({
                 <TableCell className="font-medium">
                   {order.orderNumber}
                 </TableCell>
-                <TableCell>{order.supplier?.name || '-'}</TableCell>
+                <TableCell>
+                  {formatPurchaseOrderSuppliers(order.items || [])}
+                </TableCell>
                 <TableCell>{order.containerNumber || '-'}</TableCell>
                 <TableCell>
                   <Badge variant={STATUS_VARIANTS[order.status]}>

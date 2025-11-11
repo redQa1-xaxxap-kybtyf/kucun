@@ -19,16 +19,26 @@ export async function fetchPurchaseOrderPageData(
 ) {
   const where = {
     ...(params?.status && { status: params.status }),
-    ...(params?.supplierId && { supplierId: params.supplierId }),
+    // 通过明细关联查询供应商
+    ...(params?.supplierId && {
+      items: {
+        some: {
+          supplierId: params.supplierId,
+        },
+      },
+    }),
   };
 
   const [orders, total] = await Promise.all([
     prisma.purchaseOrder.findMany({
       where,
       include: {
-        supplier: true,
         user: true,
-        items: true,
+        items: {
+          include: {
+            supplier: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       skip: pagination.skip,

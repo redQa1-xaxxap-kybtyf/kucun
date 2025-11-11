@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -358,7 +358,7 @@ export function ERPCustomerForm({
   const { toast } = useToast();
 
   const form = useForm<CreateCustomerData>({
-    resolver: zodResolver(CreateCustomerSchema),
+    resolver: standardSchemaResolver(CreateCustomerSchema),
     defaultValues: {
       ...customerCreateDefaults,
       name: initialData?.name || '',

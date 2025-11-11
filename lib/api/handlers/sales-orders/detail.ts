@@ -23,14 +23,6 @@ const detailInclude = {
       name: true,
     },
   },
-  supplier: {
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-      address: true,
-    },
-  },
   items: {
     select: salesOrderItemSelect,
   },
@@ -40,6 +32,7 @@ const detailInclude = {
       feeType: true,
       feeName: true,
       feeAmount: true,
+      paidBy: true,
       remarks: true,
     },
   },
@@ -77,18 +70,35 @@ const mapReturnOrder = (
   createdAt: order.createdAt.toISOString(),
 });
 
-const mapDetail = (order: SalesOrderDetailResult) => {
+const mapDetail = (
+  order: SalesOrderDetailResult,
+  productsMap: Map<
+    string,
+    {
+      id: string;
+      name: string;
+      code: string;
+      unit: string;
+      specification: string | null;
+      piecesPerUnit: number;
+      weight: number | null;
+    }
+  >
+) => {
   const { items, returnOrders, _count, ...base } = order;
   const orderBase = mapOrderBaseFields(base);
 
   return {
     ...orderBase,
-    items: items.map(mapSalesOrderItem),
+    items: items.map(item =>
+      mapSalesOrderItem(item, item.productId ? productsMap.get(item.productId) : undefined)
+    ),
     feeItems: order.feeItems.map(fee => ({
       id: fee.id,
       feeType: fee.feeType,
       feeName: fee.feeName,
       feeAmount: fee.feeAmount,
+      paidBy: (fee.paidBy as 'customer' | 'company') ?? 'customer',
       remarks: fee.remarks ?? undefined,
     })),
     hasReturnOrder: returnOrders.length > 0,
@@ -107,7 +117,38 @@ export async function getSalesOrderById(id: string) {
     return null;
   }
 
-  return mapDetail(order);
+  // 手动获取产品信息
+  const productIds = order.items
+    .map(item => item.productId)
+    .filter(Boolean) as string[];
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      unit: true,
+      specification: true,
+      piecesPerUnit: true,
+      weight: true,
+    },
+  });
+
+  const productsMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      code: string;
+      unit: string;
+      specification: string | null;
+      piecesPerUnit: number;
+      weight: number | null;
+    }
+  >(products.map(p => [p.id, p]));
+
+  return mapDetail(order, productsMap);
 }
 
 /**
@@ -138,6 +179,37 @@ export async function getSalesOrderDetailWithPayments(id: string) {
 
   if (!order) return null;
 
+  // 手动获取产品信息
+  const productIds = order.items
+    .map(item => item.productId)
+    .filter(Boolean) as string[];
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      unit: true,
+      specification: true,
+      piecesPerUnit: true,
+      weight: true,
+    },
+  });
+
+  const productsMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      code: string;
+      unit: string;
+      specification: string | null;
+      piecesPerUnit: number;
+      weight: number | null;
+    }
+  >(products.map(p => [p.id, p]));
+
   const confirmed = order.payments.filter(p => p.status === 'confirmed');
   const actualPaidAmount = confirmed.reduce(
     (sum, r) => sum + Number(r.actualPaymentAmount),
@@ -158,7 +230,7 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     Number(amounts.totalAmount) + Number(amounts.roundingAdjustment ?? 0);
   const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
 
-  const mapped = mapDetail(order as unknown as SalesOrderDetailResult);
+  const mapped = mapDetail(order as unknown as SalesOrderDetailResult, productsMap);
 
   return {
     ...mapped,

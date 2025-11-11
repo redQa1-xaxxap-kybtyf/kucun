@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Ship } from 'lucide-react';
 import { useEffect, useMemo } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
@@ -106,7 +106,7 @@ export function PurchaseOrderShippingDialog({
   );
 
   const form = useForm<PurchaseOrderShippingFormValues>({
-    resolver: zodResolver(schema),
+    resolver: standardSchemaResolver(schema),
     defaultValues: {
       containerNumber: defaultValues?.containerNumber ?? '',
       shippingCompany: defaultValues?.shippingCompany ?? '',

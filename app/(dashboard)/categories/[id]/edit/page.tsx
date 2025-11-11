@@ -5,7 +5,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FolderTree } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -200,7 +200,7 @@ function useCategoryData(categoryId: string, parentSearch: string) {
 
 function useCategoryForm(categoryData?: CategoryDetail) {
   const form = useForm<UpdateCategoryData>({
-    resolver: zodResolver(UpdateCategorySchema),
+    resolver: standardSchemaResolver(UpdateCategorySchema),
     defaultValues: {
       id: '',
       name: '',

@@ -36,14 +36,30 @@ export const factoryShipmentStatusSchema = z.enum([
 
 /**
  * 厂家发货订单费用项验证
+ * 支持 paidBy 字段区分客户/公司承担费用
  */
 export const factoryShipmentFeeItemSchema = z.object({
-  feeType: z.enum(['shipping', 'storage', 'customs', 'other']),
+  id: z.string().optional(),
+  feeType: z.enum([
+    'freight',
+    'processing',
+    'packaging',
+    'loading_unloading',
+    'storage',
+    'customs',
+    'other',
+  ]),
   feeName: z
     .string()
     .min(1, '费用名称不能为空')
     .max(100, '费用名称不能超过100个字符'),
-  feeAmount: z.number().min(0, '费用金额不能为负数'),
+  feeAmount: z
+    .number()
+    .nonnegative('费用金额不能为负数')
+    .finite('费用金额必须是有效数字')
+    .max(999999.99, '费用金额不能超过999,999.99')
+    .multipleOf(0.01, '费用金额最多保留2位小数'),
+  paidBy: z.enum(['customer', 'company']).default('customer'),
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')

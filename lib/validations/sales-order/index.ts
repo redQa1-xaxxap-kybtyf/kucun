@@ -55,6 +55,13 @@ const baseSalesOrderSchema = z
         .max(999999999.99, '成本金额不能超过999,999,999.99')
         .multipleOf(0.01, '成本金额最多保留2位小数')
     ),
+    expenseAmount: nullableNumber(
+      z
+        .number()
+        .min(0, '费用金额不能为负数')
+        .max(999999999.99, '费用金额不能超过999,999,999.99')
+        .multipleOf(0.01, '费用金额最多保留2位小数')
+    ),
 
     roundingAdjustment: nullableNumber(
       z

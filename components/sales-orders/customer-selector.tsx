@@ -263,7 +263,6 @@ export function CustomerSelector({
             aria-expanded={open}
             className={cn('h-12 w-full justify-between', className)}
             disabled={disabled}
-            onBlur={notifyBlur}
           >
             {selectedCustomer ? (
               <div className="flex items-center gap-2 truncate">

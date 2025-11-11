@@ -122,19 +122,8 @@ export async function getReturnOrdersServer(
             orderNumber: true,
           },
         },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                unit: true,
-              },
-            },
-          },
-        },
-        refunds: {
+        items: true,
+        refundRecords: {
           select: {
             id: true,
             refundAmount: true,
@@ -148,6 +137,23 @@ export async function getReturnOrdersServer(
     }),
     prisma.returnOrder.count({ where }),
   ]);
+
+  // 手动获取产品信息
+  const productIds = returnOrders
+    .flatMap(order => order.items.map(item => item.productId))
+    .filter(Boolean) as string[];
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      unit: true,
+    },
+  });
+
+  const productsMap = new Map(products.map(p => [p.id, p]));
 
   // 计算总页数
   const totalPages = Math.ceil(total / limit);
@@ -214,6 +220,8 @@ export async function getReturnOrdersServer(
           }
         ).condition;
 
+        const product = item.productId ? productsMap.get(item.productId) : null;
+
         return {
           id: item.id,
           returnOrderId: item.returnOrderId,
@@ -231,17 +239,17 @@ export async function getReturnOrdersServer(
           subtotal: Number(item.subtotal),
           reason: item.reason ?? undefined,
           condition: (conditionValue ?? 'good') as ReturnOrderItem['condition'],
-          product: item.product
+          product: product
             ? {
-                id: item.product.id,
-                name: item.product.name,
-                code: item.product.code,
-                unit: item.product.unit as Product['unit'],
+                id: product.id,
+                name: product.name,
+                code: product.code,
+                unit: product.unit as Product['unit'],
               }
             : undefined,
         };
       }),
-      refundRecords: order.refunds.map(record => ({
+      refunds: (order.refundRecords ?? []).map(record => ({
         id: record.id,
         refundAmount: Number(record.refundAmount),
         refundDate: record.refundDate.toISOString(),

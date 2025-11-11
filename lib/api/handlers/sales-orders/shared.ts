@@ -27,17 +27,9 @@ export const salesOrderItemSelect = {
   manualSpecification: true,
   manualWeight: true,
   manualUnit: true,
-  product: {
-    select: {
-      id: true,
-      name: true,
-      code: true,
-      unit: true,
-      specification: true,
-      piecesPerUnit: true,
-      weight: true,
-    },
-  },
+  productCode: true,
+  costSubtotal: true,
+  temporaryProductId: true,
 } as const;
 
 export type SalesOrderItemResult = Prisma.SalesOrderItemGetPayload<{
@@ -54,12 +46,6 @@ export const salesOrderRelations = {
     },
   },
   user: {
-    select: {
-      id: true,
-      name: true,
-    },
-  },
-  supplier: {
     select: {
       id: true,
       name: true,
@@ -89,25 +75,35 @@ const toISOString = (value: DateLike) => {
   return value;
 };
 
-export function mapSalesOrderItem(item: SalesOrderItemResult) {
+export function mapSalesOrderItem(
+  item: SalesOrderItemResult,
+  product?: {
+    id: string;
+    name: string;
+    code: string;
+    unit: string;
+    specification: string | null;
+    piecesPerUnit: number;
+    weight: number | null;
+  }
+) {
   return {
     ...item,
     batchNumber: item.batchNumber ?? undefined,
     productionDate: toISOString(item.productionDate),
     displayUnit: item.displayUnit || undefined,
     displayQuantity: item.displayQuantity ?? undefined,
-    piecesPerUnit:
-      item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined,
+    piecesPerUnit: item.piecesPerUnit ?? product?.piecesPerUnit ?? undefined,
     specification:
       item.specification ||
       (item.isManualProduct
         ? item.manualSpecification || undefined
-        : item.product?.specification || undefined),
+        : product?.specification || undefined),
     remarks: item.remarks ?? undefined,
     // localQuantity 和 transferQuantity 在数据库中有 @default(0)，所以始终是数字
     localQuantity: item.localQuantity,
     transferQuantity: item.transferQuantity,
-    product: item.product ? { ...item.product } : undefined,
+    product: product ? { ...product } : undefined,
   };
 }
 
@@ -130,6 +126,7 @@ export function mapOrderBaseFields<
     orderType: order.orderType as SalesOrderType,
     supplierId: order.supplierId ?? undefined,
     costAmount: order.costAmount ?? undefined,
+    expenseAmount: order.expenseAmount ?? undefined,
     profitAmount: order.profitAmount ?? undefined,
     remarks: order.remarks ?? undefined,
     shippedAt: toISOString(order.shippedAt),

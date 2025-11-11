@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Building2, Save } from 'lucide-react';
 import Link from 'next/link';
@@ -102,7 +102,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
 
   // 表单配置
   const form = useForm<SupplierUpdateFormData>({
-    resolver: zodResolver(UpdateSupplierSchema),
+    resolver: standardSchemaResolver(UpdateSupplierSchema),
     defaultValues: supplierUpdateDefaults,
   });
 

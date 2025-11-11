@@ -151,7 +151,7 @@ export function ReturnItemsSection({
                     <TableHead className="h-8 px-2">原始数量</TableHead>
                     <TableHead className="h-8 px-2">退货数量</TableHead>
                     <TableHead className="h-8 px-2">破损数量</TableHead>
-                    <TableHead className="h-8 px-2">单价</TableHead>
+                    <TableHead className="h-8 px-2">退货单价</TableHead>
                     <TableHead className="h-8 px-2">小计</TableHead>
                     <TableHead className="h-8 px-2 text-center">操作</TableHead>
                   </TableRow>

@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { CalendarIcon, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -12,7 +12,6 @@ import {
 } from '@/app/actions/purchase-orders';
 import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { PurchaseOrderItemsTable } from '@/components/purchase-orders/purchase-order-items-table';
-import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -89,7 +88,7 @@ export function PurchaseOrderForm({
   const _router = useRouter();
 
   const form = useForm<PurchaseOrderFormValues>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       mode === 'edit' ? updatePurchaseOrderSchema : createPurchaseOrderSchema
     ),
     mode: 'onBlur', // ✅ 用户离开字段时验证
@@ -100,7 +99,6 @@ export function PurchaseOrderForm({
       ? {
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: initialData.containerNumber || '',
-          supplierId: initialData.supplierId || '',
           orderDate: initialData.orderDate
             ? new Date(initialData.orderDate).toISOString()
             : undefined,
@@ -128,7 +126,6 @@ export function PurchaseOrderForm({
       : {
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: '',
-          supplierId: '', // 订单级别供应商(可选,支持多供应商采购)
           orderDate: new Date().toISOString(), // 默认为当前日期
           status: PURCHASE_ORDER_STATUS.DRAFT,
           remarks: '',
@@ -142,22 +139,6 @@ export function PurchaseOrderForm({
       form,
       toast,
     });
-
-  const supplierIdValue = form.watch('supplierId');
-
-  useEffect(() => {
-    if (!supplierIdValue) {
-      return;
-    }
-    const items = form.getValues('items') || [];
-    items.forEach((item, index) => {
-      if (!item?.supplierId) {
-        form.setValue(`items.${index}.supplierId`, supplierIdValue, {
-          shouldDirty: true,
-        });
-      }
-    });
-  }, [form, supplierIdValue]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -264,25 +245,6 @@ export function PurchaseOrderForm({
                         />
                       </PopoverContent>
                     </Popover>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="supplierId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">供应商 *</FormLabel>
-                    <FormControl>
-                      <SupplierSelector
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="请选择采购供应商"
-                        onBlur={notifyBlur('supplierId', field.onBlur)}
-                      />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

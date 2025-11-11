@@ -122,7 +122,6 @@ export interface PurchaseOrder {
   id: string;
   orderNumber: string;
   containerNumber?: string | null;
-  supplierId: string;
   userId: string;
   status: PurchaseOrderStatus;
   totalAmount: number;
@@ -139,19 +138,12 @@ export interface PurchaseOrder {
   executionSummary?: PurchaseOrderExecutionSummary;
 
   // 关联数据
-  supplier: {
-    id: string;
-    name: string;
-    phone?: string;
-    address?: string;
-  };
   user: {
     id: string;
     name: string;
     email: string;
   };
   items: PurchaseOrderItem[];
-  expenses?: ExpenseRecord[];
   expenses?: ExpenseRecord[];
 }
 
@@ -173,7 +165,6 @@ export interface ExpenseRecord {
 // 创建采购订单的输入数据
 export interface CreatePurchaseOrderData {
   containerNumber?: string;
-  supplierId: string;
   status?: PurchaseOrderStatus;
   totalAmount?: number;
   remarks?: string;
@@ -209,7 +200,6 @@ export interface CreatePurchaseOrderItemData {
 // 更新采购订单的输入数据
 export interface UpdatePurchaseOrderData {
   containerNumber?: string;
-  supplierId?: string;
   status?: PurchaseOrderStatus;
   totalAmount?: number;
   expenseAmount?: number;

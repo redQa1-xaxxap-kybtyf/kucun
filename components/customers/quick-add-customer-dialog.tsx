@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import React from 'react';
@@ -58,7 +58,7 @@ export function QuickAddCustomerDialog({
 
   // 表单配置
   const form = useForm<CreateCustomerData & { notes: string }>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       CreateCustomerSchema.extend({
         notes: z.string().optional(),
       })

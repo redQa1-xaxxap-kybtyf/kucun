@@ -80,7 +80,6 @@ export const purchaseOrderFeeItemSchema = z.object({
 });
 
 export const createPurchaseOrderSchema = z.object({
-  supplierId: z.string().min(1, '供应商 ID 不能为空'),
   containerNumber: z.string().optional(),
   status: purchaseOrderStatusEnum.default(PURCHASE_ORDER_STATUS.DRAFT),
   orderDate: z.string().optional(),
@@ -90,12 +89,13 @@ export const createPurchaseOrderSchema = z.object({
   feeItems: z.array(purchaseOrderFeeItemSchema).optional().default([]),
 });
 
-export const updatePurchaseOrderSchema = baseUpdatePurchaseOrderSchema.extend({
-  feeItems: z.array(purchaseOrderFeeItemSchema).optional(),
-});
+export const updatePurchaseOrderSchema =
+  baseUpdatePurchaseOrderSchema.safeExtend({
+    feeItems: z.array(purchaseOrderFeeItemSchema).optional(),
+  });
 
 export const updatePurchaseOrderStatusSchema =
-  baseUpdatePurchaseOrderStatusSchema.extend({
+  baseUpdatePurchaseOrderStatusSchema.safeExtend({
     orderId: z.string().min(1, '订单 ID 不能为空'),
   });
 

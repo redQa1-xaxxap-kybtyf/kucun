@@ -6,7 +6,7 @@
 
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { DollarSign } from 'lucide-react';
@@ -94,7 +94,7 @@ function usePaymentDialogState(
   onOpenChange: (open: boolean) => void
 ): UsePaymentDialogStateResult {
   const form = useForm<PaymentFormData>({
-    resolver: zodResolver(paymentSchema),
+    resolver: standardSchemaResolver(paymentSchema),
     defaultValues: {
       paymentType: 'order_payment',
       salesOrderId: '',

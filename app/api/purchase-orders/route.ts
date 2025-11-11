@@ -95,7 +95,6 @@ const orderListSelect = {
   orderNumber: true,
   containerNumber: true,
   shippingCompany: true,
-  supplierId: true,
   userId: true,
   status: true,
   totalAmount: true,
@@ -108,7 +107,6 @@ const orderListSelect = {
   remarks: true,
   createdAt: true,
   updatedAt: true,
-  supplier: { select: { id: true, name: true, phone: true, address: true } },
   user: { select: { id: true, name: true, email: true } },
   items: {
     select: {

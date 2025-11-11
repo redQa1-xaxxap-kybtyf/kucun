@@ -18,6 +18,7 @@ import {
   type SalesOrderFeeItem,
   FEE_TYPE_LABELS,
   FEE_TYPE_OPTIONS,
+  getDefaultFeePaidBy,
 } from '@/lib/types/sales-order-fee';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -49,6 +50,7 @@ export const FeeItemsInput = React.memo<FeeItemsInputProps>(
           feeAmount: Number.isFinite(item.feeAmount)
             ? item.feeAmount
             : Number(item.feeAmount) || 0,
+          paidBy: item.paidBy ?? getDefaultFeePaidBy(item.feeType),
         };
       });
 
@@ -73,6 +75,7 @@ export const FeeItemsInput = React.memo<FeeItemsInputProps>(
         feeType: 'other',
         feeName: FEE_TYPE_LABELS.other,
         feeAmount: 0,
+        paidBy: getDefaultFeePaidBy('other'),
         remarks: '',
       };
       const updated = [...localItems, newItem];
@@ -98,6 +101,7 @@ export const FeeItemsInput = React.memo<FeeItemsInputProps>(
               ...item,
               feeType: newFeeType,
               feeName: FEE_TYPE_LABELS[newFeeType],
+              paidBy: getDefaultFeePaidBy(newFeeType),
             };
           }
           return {
@@ -223,7 +227,6 @@ export const FeeItemsInput = React.memo<FeeItemsInputProps>(
                     disabled={disabled}
                   />
                 </div>
-
                 {/* 删除按钮 */}
                 <div className="col-span-1 flex items-end">
                   <Button

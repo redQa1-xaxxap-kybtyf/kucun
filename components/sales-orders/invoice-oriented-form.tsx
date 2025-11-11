@@ -2,7 +2,7 @@
 
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Package, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -111,7 +111,7 @@ export function SalesOrderForm({
 
   // 表单配置
   const form = useForm<CreateSalesOrderData>({
-    resolver: zodResolver(CreateSalesOrderSchema),
+    resolver: standardSchemaResolver(CreateSalesOrderSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -426,7 +426,7 @@ export function SalesOrderForm({
                         数量
                       </TableHead>
                       <TableHead className="h-8 border-r text-xs font-medium">
-                        单价
+                        销售单价
                       </TableHead>
                       <TableHead className="h-8 border-r text-xs font-medium">
                         金额

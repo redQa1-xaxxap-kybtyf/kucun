@@ -107,13 +107,6 @@ export async function getSalesOrdersList(params: SalesOrderQueryFormData) {
             name: true,
           },
         },
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
         returnOrders: {
           where: {
             status: {
@@ -184,13 +177,6 @@ export async function getSalesOrderById(id: string) {
         select: {
           id: true,
           name: true,
-        },
-      },
-      supplier: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
         },
       },
       items: {

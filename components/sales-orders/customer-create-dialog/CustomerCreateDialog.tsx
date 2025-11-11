@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus, User } from 'lucide-react';
 import * as React from 'react';
@@ -187,7 +187,7 @@ function useCustomerCreateDialogController({
   const queryClient = useQueryClient();
 
   const form = useForm<CreateCustomerData>({
-    resolver: zodResolver(CreateCustomerSchema),
+    resolver: standardSchemaResolver(CreateCustomerSchema),
     defaultValues: DEFAULT_VALUES,
   });
 

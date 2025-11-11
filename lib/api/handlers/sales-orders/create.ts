@@ -50,6 +50,7 @@ const createSelect = {
   transferMode: true,
   itemsAmount: true,
   additionalFees: true,
+  expenseAmount: true,
   roundingAdjustment: true,
   costAmount: true,
   profitAmount: true,
@@ -61,9 +62,18 @@ const createSelect = {
   updatedAt: true,
   customer: salesOrderRelations.customer,
   user: salesOrderRelations.user,
-  supplier: salesOrderRelations.supplier,
   items: {
     select: salesOrderItemSelect,
+  },
+  feeItems: {
+    select: {
+      id: true,
+      feeType: true,
+      feeName: true,
+      feeAmount: true,
+      paidBy: true,
+      remarks: true,
+    },
   },
   _count: salesOrderRelations._count,
 } as const;
@@ -72,15 +82,43 @@ type CreatedOrderResult = Prisma.SalesOrderGetPayload<{
   select: typeof createSelect;
 }>;
 
-const mapCreatedOrder = (order: CreatedOrderResult) => {
-  const { items, _count, ...base } = order;
+const mapFeeItem = (
+  fee: CreatedOrderResult['feeItems'][number]
+) => ({
+  id: fee.id,
+  feeType: fee.feeType,
+  feeName: fee.feeName,
+  feeAmount: fee.feeAmount,
+  paidBy: (fee.paidBy as 'customer' | 'company') ?? 'customer',
+  remarks: fee.remarks ?? undefined,
+});
+
+const mapCreatedOrder = (
+  order: CreatedOrderResult,
+  productsMap: Map<
+    string,
+    {
+      id: string;
+      name: string;
+      code: string;
+      unit: string;
+      specification: string | null;
+      piecesPerUnit: number;
+      weight: number | null;
+    }
+  >
+) => {
+  const { items, feeItems, _count, ...base } = order;
   const mappedBase = mapOrderBaseFields(base);
 
   return {
     ...mappedBase,
     hasReturnOrder: false,
     returnOrders: [],
-    items: items.map(mapSalesOrderItem),
+    items: items.map(item =>
+      mapSalesOrderItem(item, item.productId ? productsMap.get(item.productId) : undefined)
+    ),
+    feeItems: feeItems.map(mapFeeItem),
     itemCount: _count.items,
   };
 };
@@ -135,6 +173,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
         profitAmount: financials.profitAmount,
         itemsAmount: financials.itemsAmount,
         additionalFees: financials.additionalFees,
+        expenseAmount: financials.expenseAmount,
         roundingAdjustment: financials.roundingAdjustment,
         totalAmount: financials.totalAmount,
         remarks: validatedData.remarks,
@@ -246,5 +285,36 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
     }
   }
 
-  return mapCreatedOrder(order);
+  // 手动获取产品信息
+  const productIds = order.items
+    .map(item => item.productId)
+    .filter(Boolean) as string[];
+
+  const products = await prisma.product.findMany({
+    where: { id: { in: productIds } },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      unit: true,
+      specification: true,
+      piecesPerUnit: true,
+      weight: true,
+    },
+  });
+
+  const productsMap = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      code: string;
+      unit: string;
+      specification: string | null;
+      piecesPerUnit: number;
+      weight: number | null;
+    }
+  >(products.map(p => [p.id, p]));
+
+  return mapCreatedOrder(order, productsMap);
 }

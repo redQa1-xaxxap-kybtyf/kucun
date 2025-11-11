@@ -190,7 +190,7 @@ export function PurchaseOrderDetail({
         onBack={onBack}
         onRequestDelete={openDeleteDialog}
       />
-      <SupplierInfoCard supplier={order.supplier} />
+      <SupplierInfoCard items={order.items} />
       <ProductDetailsCard items={order.items} totalAmount={order.totalAmount} />
       <ExpenseRecordsCard expenses={order.expenses ?? []} />
       <CostSummaryCard

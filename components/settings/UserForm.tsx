@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { Loader2, Save, X } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
@@ -174,7 +174,7 @@ export const UserForm: React.FC<UserFormProps> = ({
 }) => {
   // 表单配置
   const form = useForm<CreateUserFormData | UpdateUserFormData>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       mode === 'create' ? CreateUserSchema : UpdateUserSchema
     ),
     mode: 'onBlur', // ✅ 用户离开字段时验证

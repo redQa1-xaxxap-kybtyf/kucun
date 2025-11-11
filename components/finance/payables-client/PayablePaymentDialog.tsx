@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CreditCard } from 'lucide-react';
@@ -85,7 +85,7 @@ function usePaymentDialogState(
   onOpenChange: (open: boolean) => void
 ) {
   const form = useForm<PaymentFormData>({
-    resolver: zodResolver(paymentFormSchema),
+    resolver: standardSchemaResolver(paymentFormSchema),
     defaultValues: {
       payableRecordId: '',
       supplierId: '',

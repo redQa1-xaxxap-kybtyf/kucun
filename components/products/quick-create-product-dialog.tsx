@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
@@ -84,7 +84,7 @@ export function QuickCreateProductDialog({
   const queryClient = useQueryClient();
 
   const form = useForm<QuickCreateProductFormData>({
-    resolver: zodResolver(quickCreateProductSchema),
+    resolver: standardSchemaResolver(quickCreateProductSchema),
     defaultValues: {
       code: defaultCode || '',
       name: '',

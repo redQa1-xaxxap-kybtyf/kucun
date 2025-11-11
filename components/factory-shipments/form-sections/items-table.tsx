@@ -467,7 +467,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                     parseFloat(e.target.value) || 0
                                   )
                                 }
-                                placeholder="单价"
+                                placeholder="销售单价"
                                 className="h-8 text-right text-xs"
                               />
                             </FormControl>

@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Ship } from 'lucide-react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
@@ -71,7 +71,7 @@ function useSupplementShippingInfoDialogState({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const form = useForm<SupplementShippingInfoData>({
-    resolver: zodResolver(supplementShippingInfoSchema),
+    resolver: standardSchemaResolver(supplementShippingInfoSchema),
     defaultValues: {
       shippingCompany: '',
       estimatedArrival: undefined,

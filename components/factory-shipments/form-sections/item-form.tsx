@@ -332,14 +332,14 @@ export const ItemForm = React.memo<ItemFormProps>(
                 )}
               />
 
-              {/* 单价 */}
+              {/* 销售单价 */}
               <FormField
                 control={form.control}
                 name={`items.${index}.unitPrice`}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                      单价（￥）{' '}
+                      销售单价（￥）{' '}
                       <span className="text-[hsl(var(--color-error))]">*</span>
                     </FormLabel>
                     <FormControl>
@@ -347,7 +347,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                         type="number"
                         step="0.01"
                         min="0"
-                        placeholder="请输入单价"
+                        placeholder="请输入销售单价"
                         className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                         {...field}
                         onChange={e =>

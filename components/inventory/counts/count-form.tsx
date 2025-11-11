@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
@@ -85,7 +85,7 @@ export function CountForm({
 
   // 表单配置
   const form = useForm<CountFormData>({
-    resolver: zodResolver(
+    resolver: standardSchemaResolver(
       createInventoryCountSchema.omit({ planDate: true }).extend({
         planDate: createInventoryCountSchema.shape.planDate.transform(
           val => val

@@ -69,6 +69,7 @@ export interface SalesOrder {
   transferMode: TransferFulfillmentMode;
   supplierId?: string;
   costAmount?: number;
+  expenseAmount?: number;
   profitAmount?: number;
   itemsAmount?: number; // 产品总额
   additionalFees?: number; // 额外费用总额

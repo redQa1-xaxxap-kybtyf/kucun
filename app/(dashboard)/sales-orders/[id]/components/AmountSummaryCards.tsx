@@ -24,9 +24,12 @@ export function AmountSummaryCards({
   transferSalesAmount,
   pureTransferProfit,
 }: Props) {
+  const customerFees = Number(order.additionalFees ?? 0);
+  const companyFees = Number(order.expenseAmount ?? 0);
+
   return (
     <div
-      className={`grid gap-4 md:grid-cols-2 ${order.roundingAdjustment !== 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+      className={`grid gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6`}
     >
       <Card
         className="border border-[hsl(var(--color-border-primary))]"
@@ -108,6 +111,44 @@ export function AmountSummaryCards({
           </div>
         </CardContent>
       </Card>
+
+      {customerFees > 0 && (
+        <Card
+          className="border border-amber-200 bg-amber-50/60"
+          style={{ boxShadow: 'var(--shadow-light)' }}
+        >
+          <CardContent className="p-4">
+            <div className="text-xs font-medium text-amber-800">
+              客户承担费用
+            </div>
+            <div className="mt-2 text-2xl font-bold text-amber-600">
+              {formatCurrency(customerFees)}
+            </div>
+            <div className="mt-1 text-[10px] text-amber-700">
+              计入订单金额 / 收入
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {companyFees > 0 && (
+        <Card
+          className="border border-slate-200 bg-slate-50"
+          style={{ boxShadow: 'var(--shadow-light)' }}
+        >
+          <CardContent className="p-4">
+            <div className="text-xs font-medium text-slate-700">
+              公司承担费用
+            </div>
+            <div className="mt-2 text-2xl font-bold text-slate-800">
+              {formatCurrency(companyFees)}
+            </div>
+            <div className="mt-1 text-[10px] text-slate-600">
+              计入成本参与利润
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {order.orderType === 'TRANSFER' && (
         <Card

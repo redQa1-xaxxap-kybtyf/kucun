@@ -422,14 +422,14 @@ function OrderItemRow({
               />
             </div>
 
-            {/* 单价 */}
+            {/* 销售单价 */}
             <div className="lg:col-span-3">
               <FormField
                 control={control}
                 name={`${name}.unitPrice`}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>单价 (元)</FormLabel>
+                    <FormLabel>销售单价 (元)</FormLabel>
                     <FormControl>
                       <Input
                         type="text"

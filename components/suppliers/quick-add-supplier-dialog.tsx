@@ -1,7 +1,7 @@
 'use client';
 /* eslint-disable max-lines-per-function */
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import React from 'react';
@@ -51,7 +51,7 @@ export function QuickAddSupplierDialog({
   const queryClient = useQueryClient();
 
   const form = useForm<SupplierCreateFormData>({
-    resolver: zodResolver(CreateSupplierSchema),
+    resolver: standardSchemaResolver(CreateSupplierSchema),
     defaultValues: supplierCreateDefaults,
   });
 

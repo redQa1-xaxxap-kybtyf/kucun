@@ -19,16 +19,7 @@ const RETURN_ALLOWED_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
 ];
 
 const SALES_ORDER_WITH_ITEMS_INCLUDE = {
-  items: {
-    include: {
-      product: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-  },
+  items: true,
   customer: true,
 } satisfies Prisma.SalesOrderInclude;
 
@@ -148,31 +139,21 @@ export const GET = withAuth(
               id: true,
               name: true,
               phone: true,
+              address: true,
             },
           },
           salesOrder: {
             select: {
               id: true,
               orderNumber: true,
-              totalAmount: true,
-              status: true,
             },
           },
-          user: {
+          items: true,
+          refunds: {
             select: {
               id: true,
-              name: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
-                },
-              },
+              refundAmount: true,
+              refundDate: true,
             },
           },
         },
@@ -185,10 +166,36 @@ export const GET = withAuth(
       prisma.returnOrder.count({ where }),
     ]);
 
+    // 手动获取产品信息
+    const productIds = returnOrders.flatMap(order =>
+      order.items.map(item => item.productId)
+    ).filter(Boolean) as string[];
+
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        unit: true,
+      },
+    });
+
+    const productsMap = new Map(products.map(p => [p.id, p]));
+
+    // 合并产品信息到退货订单
+    const enrichedReturnOrders = returnOrders.map(order => ({
+      ...order,
+      items: order.items.map(item => ({
+        ...item,
+        product: item.productId ? productsMap.get(item.productId) || null : null,
+      })),
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        returnOrders,
+        returnOrders: enrichedReturnOrders,
         pagination: {
           page,
           limit,
@@ -485,39 +492,62 @@ export const POST = withAuth(
               id: true,
               name: true,
               phone: true,
+              address: true,
             },
           },
           salesOrder: {
             select: {
               id: true,
               orderNumber: true,
-              totalAmount: true,
-              status: true,
             },
           },
-          user: {
+          items: true,
+          refunds: {
             select: {
               id: true,
-              name: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
-                },
-              },
+              refundAmount: true,
+              refundDate: true,
             },
           },
         },
       });
 
+      if (!fullReturnOrder) {
+        return NextResponse.json(
+          { success: false, error: '退货订单创建失败' },
+          { status: 500 }
+        );
+      }
+
+      // 手动获取产品信息
+      const productIds = fullReturnOrder.items
+        .map(item => item.productId)
+        .filter(Boolean) as string[];
+
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          unit: true,
+        },
+      });
+
+      const productsMap = new Map(products.map(p => [p.id, p]));
+
+      // 合并产品信息到退货订单
+      const enrichedReturnOrder = {
+        ...fullReturnOrder,
+        items: fullReturnOrder.items.map(item => ({
+          ...item,
+          product: item.productId ? productsMap.get(item.productId) || null : null,
+        })),
+      };
+
       return NextResponse.json({
         success: true,
-        data: fullReturnOrder,
+        data: enrichedReturnOrder,
         message: '退货订单创建成功',
       });
     } catch (error: unknown) {

@@ -5,7 +5,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FolderTree, Save, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -80,7 +80,7 @@ function useCreateCategoryController(): CreateCategoryController {
   const deferredSearchTerm = React.useDeferredValue(parentSearchTerm);
 
   const form = useForm<CreateCategoryData>({
-    resolver: zodResolver(CreateCategorySchema),
+    resolver: standardSchemaResolver(CreateCategorySchema),
     defaultValues: {
       name: '',
       parentId: undefined,

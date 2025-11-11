@@ -133,33 +133,79 @@ export function OrderSummaryCard({
 }
 
 interface SupplierInfoCardProps {
-  supplier: PurchaseOrderDetailData['supplier'] | null;
+  items: PurchaseOrderDetailData['items'];
 }
 
-export function SupplierInfoCard({ supplier }: SupplierInfoCardProps) {
+export function SupplierInfoCard({ items }: SupplierInfoCardProps) {
+  // 按供应商分组统计
+  const supplierMap = new Map<
+    string,
+    { name: string; phone?: string; address?: string; amount: number; itemCount: number }
+  >();
+
+  for (const item of items) {
+    if (item.supplierId && item.supplier) {
+      const existing = supplierMap.get(item.supplierId);
+      if (existing) {
+        existing.amount += item.totalPrice;
+        existing.itemCount += 1;
+      } else {
+        supplierMap.set(item.supplierId, {
+          name: item.supplier.name,
+          phone: item.supplier.phone,
+          address: item.supplier.address,
+          amount: item.totalPrice,
+          itemCount: 1,
+        });
+      }
+    }
+  }
+
+  const suppliers = Array.from(supplierMap.values()).sort(
+    (a, b) => b.amount - a.amount
+  );
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
           <User className="h-5 w-5" />
-          <CardTitle>供应商信息</CardTitle>
+          <CardTitle>供应商信息 ({suppliers.length}个)</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        {supplier ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <p className="text-muted-foreground text-sm">供应商名称</p>
-              <p className="font-medium">{supplier.name}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">联系电话</p>
-              <p>{supplier.phone || '-'}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">地址</p>
-              <p>{supplier.address || '-'}</p>
-            </div>
+        {suppliers.length > 0 ? (
+          <div className="space-y-4">
+            {suppliers.map((supplier, index) => (
+              <div
+                key={index}
+                className={`grid gap-4 md:grid-cols-2 ${
+                  index > 0 ? 'border-t pt-4' : ''
+                }`}
+              >
+                <div>
+                  <p className="text-muted-foreground text-sm">供应商名称</p>
+                  <p className="font-medium">{supplier.name}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">联系电话</p>
+                  <p>{supplier.phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">地址</p>
+                  <p>{supplier.address || '-'}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground text-sm">采购金额</p>
+                  <p className="font-medium">
+                    ¥{supplier.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                    <span className="text-muted-foreground text-sm ml-2">
+                      ({supplier.itemCount}个产品)
+                    </span>
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <p className="text-muted-foreground">供应商信息不可用</p>
@@ -197,7 +243,7 @@ export function ProductDetailsCard({
                     <TableHead>产品编码</TableHead>
                     <TableHead>供应商</TableHead>
                     <TableHead className="text-right">数量</TableHead>
-                    <TableHead className="text-right">单价</TableHead>
+                    <TableHead className="text-right">采购单价</TableHead>
                     <TableHead className="text-right">总价</TableHead>
                     <TableHead>备注</TableHead>
                   </TableRow>

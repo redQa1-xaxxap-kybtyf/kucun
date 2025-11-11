@@ -13,6 +13,7 @@ import type {
 } from '@/lib/types/sales-order';
 import {
   FEE_TYPE_LABELS,
+  getDefaultFeePaidBy,
   type SalesOrderFeeItem,
 } from '@/lib/types/sales-order-fee';
 
@@ -200,6 +201,7 @@ function sanitizeFeeItems(feeItems?: SalesOrderFeeItem[]): SalesOrderFeeItem[] {
             ? trimmedName
             : FEE_TYPE_LABELS[item.feeType ?? 'other'],
         feeAmount: feeAmount < 0 ? 0 : Number(feeAmount.toFixed(2)),
+        paidBy: item.paidBy ?? getDefaultFeePaidBy(item.feeType),
         remarks: item.remarks?.trim() || undefined,
       };
     })

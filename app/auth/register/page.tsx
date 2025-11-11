@@ -1,6 +1,6 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
+import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { ArrowLeft, Loader2, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -51,7 +51,7 @@ function useRegisterController(): UseRegisterControllerReturn {
   const [successMessage, setSuccessMessage] = useState('');
 
   const form = useForm<RegisterFormInput>({
-    resolver: zodResolver(registerFormSchema),
+    resolver: standardSchemaResolver(registerFormSchema),
     defaultValues: {
       email: '',
       username: '',

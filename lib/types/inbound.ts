@@ -47,6 +47,7 @@ export interface InboundRecord {
   recordNumber: string;
   productId: string;
   variantId?: string; // 产品变体ID
+  supplierId?: string; // 供应商ID
   quantity: number;
   reason: InboundReason;
   remarks?: string;
@@ -79,6 +80,10 @@ export interface InboundRecord {
     import('./product').ProductVariant,
     'id' | 'colorCode' | 'colorName' | 'sku'
   >;
+  supplier?: Pick<
+    import('./supplier').Supplier,
+    'id' | 'name' | 'phone' | 'address'
+  >;
   user?: Pick<User, 'id' | 'name' | 'email'>;
   batchSpecification?: Pick<
     import('./batch-specification').BatchSpecification,
@@ -95,6 +100,7 @@ export interface CreateInboundRequest {
   idempotencyKey: string;
   productId: string;
   variantId?: string; // 产品变体ID
+  supplierId?: string; // 供应商ID
   inputQuantity: number;
   inputUnit: InboundUnit;
   quantity: number;
@@ -176,6 +182,7 @@ export type InboundUnit = 'pieces' | 'units';
 export interface InboundFormData {
   productId: string;
   variantId?: string; // 产品变体ID
+  supplierId?: string; // 供应商ID
   inputQuantity?: number; // 用户输入的数量
   inputUnit: InboundUnit; // 用户选择的单位
   quantity?: number; // 最终存储的片数

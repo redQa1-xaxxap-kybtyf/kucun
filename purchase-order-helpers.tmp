@@ -1,0 +1,562 @@
+type PrismaTransaction = Prisma.TransactionClient;
+
+interface UpdatePurchaseOrderInternalOptions {
+  orderId: string;
+  data: UpdatePurchaseOrderFormData;
+  items: PurchaseOrderItemInput[];
+  totalAmount: number;
+  userId: string;
+}
+
+interface NormalizedStatusPayload {
+  orderId: string;
+  status: PurchaseOrderStatus;
+  containerNumber?: string | null;
+  shippingCompany?: string | null;
+  estimatedArrival?: Date;
+  shipmentDate?: Date;
+}
+
+async function getAuthorizedUserId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  return session?.user?.id ?? null;
+}
+
+function unauthorizedActionResult<T>(action: string): ActionResult<T> {
+  logger.warn('actions:purchase-orders', `${action}失败：未授权`);
+  return { success: false, error: '未授权操作' };
+}
+
+function calculateOrderTotal(items: PurchaseOrderItemInput[]): number {
+  return items.reduce((sum, item) => sum + item.totalPrice, 0);
+}
+
+async function createPurchaseOrderInternal(
+  data: PurchaseOrderFormData,
+  userId: string,
+  totalAmount: number
+) {
+  return prisma.$transaction(async tx => {
+    const orderNumber = await generatePurchaseOrderNumber();
+    const status: PurchaseOrderStatus =
+      (data.status as PurchaseOrderStatus | undefined) ??
+      PURCHASE_ORDER_STATUS.DRAFT;
+    const order = await tx.purchaseOrder.create({
+      data: {
+        orderNumber,
+        containerNumber: data.containerNumber?.trim() || null,
+        supplierId: data.supplierId,
+        status,
+        totalAmount,
+        orderDate: data.orderDate ? new Date(data.orderDate) : undefined,
+        shipmentDate: data.shipmentDate
+          ? new Date(data.shipmentDate)
+          : undefined,
+        remarks: data.remarks?.trim() || undefined,
+        userId,
+        items: {
+          create: data.items.map(item => ({
+            productId: item.productId?.trim() || null,
+            supplierId: item.supplierId,
+            productCode: item.productCode,
+            batchNumber: item.batchNumber?.trim() || null,
+            displayName: item.displayName,
+            specification: item.specification?.trim() || null,
+            unit: item.unit || 'piece',
+            weight: item.weight,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            isManualProduct: item.isManualProduct || false,
+            manualProductName: item.manualProductName?.trim() || null,
+            manualSpecification: item.manualSpecification?.trim() || null,
+            manualWeight: item.manualWeight,
+            manualUnit: item.manualUnit?.trim() || null,
+            remarks: item.remarks?.trim() || null,
+          })),
+        },
+      },
+    });
+
+    await createExpenseRecords(
+      tx,
+      data.feeItems ?? [],
+      order.id,
+      order.orderNumber,
+      userId
+    );
+
+    if (shouldAutoCreatePayable(status, totalAmount)) {
+      const payableNumber = await generatePayableNumber(tx);
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+
+      await tx.payableRecord.create({
+        data: {
+          payableNumber,
+          supplierId: data.supplierId,
+          userId,
+          sourceType: 'purchase_order',
+          sourceId: order.id,
+          sourceNumber: order.orderNumber,
+          payableAmount: totalAmount,
+          paidAmount: 0,
+          remainingAmount: totalAmount,
+          dueDate,
+          status: 'pending',
+          paymentTerms: '30天',
+          remarks: `系统自动生成：采购订单 ${order.orderNumber} 确认应付`,
+        },
+      });
+    }
+
+    return order;
+  });
+}
+
+async function createExpenseRecords(
+  tx: PrismaTransaction,
+  feeItems: NonNullable<PurchaseOrderFormData['feeItems']>,
+  orderId: string,
+  orderNumber: string,
+  userId: string
+): Promise<void> {
+  if (!feeItems || feeItems.length === 0) {
+    return;
+  }
+
+  const expenseRecords = feeItems.map(feeItem => ({
+    expenseNumber: `EXP-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`,
+    expenseType: feeItem.feeType,
+    expenseName: feeItem.feeName,
+    expenseAmount: feeItem.feeAmount,
+    expenseDate: new Date(),
+    relatedType: 'purchase_order',
+    relatedId: orderId,
+    relatedNumber: orderNumber,
+    remarks: feeItem.remarks || undefined,
+    userId,
+  }));
+
+  await tx.expenseRecord.createMany({ data: expenseRecords });
+}
+
+function shouldAutoCreatePayable(
+  status: PurchaseOrderStatus,
+  totalAmount: number
+): boolean {
+  return status === PURCHASE_ORDER_STATUS.ORDERED && totalAmount > 0;
+}
+
+async function updatePurchaseOrderInternal({
+  orderId,
+  data,
+  items,
+  totalAmount,
+  userId,
+}: UpdatePurchaseOrderInternalOptions): Promise<ActionResult<null>> {
+  const existingOrder = await prisma.purchaseOrder.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
+
+  if (!existingOrder) {
+    return { success: false, error: '采购订单不存在' };
+  }
+
+  if (existingOrder.status !== PURCHASE_ORDER_STATUS.DRAFT) {
+    return { success: false, error: '只能编辑草稿状态的订单' };
+  }
+
+  await prisma.$transaction(async tx => {
+    await tx.purchaseOrderItem.deleteMany({
+      where: { purchaseOrderId: orderId },
+    });
+
+    await tx.purchaseOrder.update({
+      where: { id: orderId },
+      data: {
+        supplierId: data.supplierId ?? existingOrder.supplierId,
+        containerNumber:
+          data.containerNumber !== undefined
+            ? data.containerNumber.trim() || null
+            : existingOrder.containerNumber,
+        remarks: data.remarks?.trim() ?? existingOrder.remarks ?? null,
+        totalAmount,
+        items: {
+          create: items.map(item => ({
+            productId: item.productId || null,
+            supplierId: item.supplierId,
+            productCode: item.productCode.trim(),
+            batchNumber: item.batchNumber?.trim() || null,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            unitCost: item.unitPrice,
+            manualProductName: item.isManualProduct
+              ? item.displayName.trim()
+              : null,
+            manualUnit: item.isManualProduct ? item.unit : null,
+            displayName: item.displayName.trim(),
+            specification: item.specification?.trim() || null,
+            unit: item.unit,
+            weight: item.weight || null,
+            remarks: item.remarks?.trim() || null,
+          })),
+        },
+      },
+    });
+
+    await replaceExpenseRecords(
+      tx,
+      orderId,
+      data.feeItems ?? [],
+      existingOrder.orderNumber,
+      userId
+    );
+  });
+
+  return { success: true, data: null };
+}
+
+async function replaceExpenseRecords(
+  tx: PrismaTransaction,
+  orderId: string,
+  feeItems: NonNullable<PurchaseOrderFormData['feeItems']>,
+  orderNumber: string,
+  userId: string
+): Promise<void> {
+  if (!feeItems || feeItems.length === 0) {
+    return;
+  }
+
+  await tx.expenseRecord.deleteMany({
+    where: {
+      relatedType: 'purchase_order',
+      relatedId: orderId,
+    },
+  });
+
+  for (const feeItem of feeItems) {
+    const expenseNumber = `EXP-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)}`;
+    await tx.expenseRecord.create({
+      data: {
+        expenseNumber,
+        expenseType: feeItem.feeType,
+        expenseName: feeItem.feeName.trim(),
+        expenseAmount: feeItem.feeAmount,
+        expenseDate: new Date(),
+        remarks: feeItem.remarks?.trim() || undefined,
+        relatedType: 'purchase_order',
+        relatedId: orderId,
+        relatedNumber: orderNumber,
+        userId,
+      },
+    });
+  }
+}
+
+function normalizeStatusPayload(
+  data: UpdatePurchaseOrderStatusFormData
+): NormalizedStatusPayload {
+  return {
+    orderId: data.orderId,
+    status: data.status,
+    containerNumber: normalizeOptionalString(data.containerNumber) ?? undefined,
+    shippingCompany:
+      normalizeOptionalString(data.shippingCompany) ?? undefined,
+    estimatedArrival: normalizeOptionalDate(data.estimatedArrival),
+    shipmentDate: normalizeOptionalDate(data.shipmentDate),
+  };
+}
+
+function normalizeOptionalString(
+  value?: string | null
+): string | null | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeOptionalDate(value?: string | null): Date | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed ? new Date(trimmed) : undefined;
+}
+
+async function fetchOrderForStatusChange(orderId: string) {
+  return prisma.purchaseOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      orderNumber: true,
+      supplierId: true,
+      userId: true,
+      totalAmount: true,
+      containerNumber: true,
+      shippingCompany: true,
+      items: {
+        select: {
+          id: true,
+          productId: true,
+          quantity: true,
+          unitPrice: true,
+          batchNumber: true,
+        },
+      },
+    },
+  });
+}
+
+async function applyStatusUpdateTransaction(
+  order: NonNullable<Awaited<ReturnType<typeof fetchOrderForStatusChange>>>,
+  payload: NormalizedStatusPayload,
+  userId: string
+) {
+  const now = new Date();
+  return prisma.$transaction(async tx => {
+    const updateData: Record<string, unknown> = {
+      status: payload.status,
+    };
+
+    if (payload.containerNumber !== undefined) {
+      updateData.containerNumber = payload.containerNumber;
+    }
+
+    if (payload.shippingCompany !== undefined) {
+      updateData.shippingCompany = payload.shippingCompany;
+    }
+
+    if (payload.estimatedArrival) {
+      updateData.estimatedArrival = payload.estimatedArrival;
+    }
+
+    if (payload.status === PURCHASE_ORDER_STATUS.SHIPPED) {
+      updateData.shipmentDate = payload.shipmentDate ?? now;
+    } else if (payload.status === PURCHASE_ORDER_STATUS.ARRIVED) {
+      updateData.arrivalDate = payload.estimatedArrival ?? now;
+    }
+
+    await tx.purchaseOrder.update({
+      where: { id: payload.orderId },
+      data: updateData,
+    });
+
+    let inboundResults: MinimalInboundTransactionResult[] = [];
+
+    if (payload.status === PURCHASE_ORDER_STATUS.ARRIVED) {
+      inboundResults = await createArrivalInboundRecords(tx, order, userId);
+      await refreshPurchaseOrderFulfillment(tx, order.id);
+    }
+
+    if (shouldCreatePayable(payload.status)) {
+      await ensurePurchaseOrderPayable(tx, {
+        id: order.id,
+        supplierId: order.supplierId,
+        userId: order.userId,
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+      });
+    }
+
+    return { inboundResults };
+  });
+}
+
+async function createArrivalInboundRecords(
+  tx: PrismaTransaction,
+  order: NonNullable<Awaited<ReturnType<typeof fetchOrderForStatusChange>>>,
+  userId: string
+): Promise<MinimalInboundTransactionResult[]> {
+  const itemIds = order.items.map(item => item.id);
+  if (itemIds.length === 0) {
+    return [];
+  }
+
+  const inboundTotals = await tx.inboundRecord.groupBy({
+    by: ['purchaseOrderItemId'],
+    where: {
+      purchaseOrderId: order.id,
+      purchaseOrderItemId: { in: itemIds, not: null },
+    },
+    _sum: { quantity: true },
+  });
+
+  const receivedMap = new Map<string, number>();
+  for (const record of inboundTotals) {
+    if (record.purchaseOrderItemId) {
+      receivedMap.set(
+        record.purchaseOrderItemId,
+        record._sum.quantity ?? 0
+      );
+    }
+  }
+
+  const createdInboundRecords: MinimalInboundTransactionResult[] = [];
+
+  for (const item of order.items) {
+    if (!item.productId) {
+      continue;
+    }
+
+    const alreadyReceived = receivedMap.get(item.id) ?? 0;
+    const remainingQuantity = Math.max(
+      0,
+      (item.quantity ?? 0) - alreadyReceived
+    );
+
+    if (remainingQuantity <= 0) {
+      continue;
+    }
+
+    const inbound = await executeMinimalInboundTransaction(
+      {
+        productId: item.productId,
+        variantId: undefined,
+        quantity: remainingQuantity,
+        unitCost: item.unitPrice ?? 0,
+        reason: 'purchase',
+        remarks: `采购订单${order.orderNumber}到货`,
+        batchNumber: item.batchNumber ?? '',
+        userId,
+        purchaseOrderId: order.id,
+        purchaseOrderItemId: item.id,
+      },
+      { tx }
+    );
+
+    createdInboundRecords.push(inbound);
+  }
+
+  return createdInboundRecords;
+}
+
+function resolvePagination(params?: { page?: number; limit?: number }) {
+  const page = params?.page && params.page > 0 ? params.page : 1;
+  const limit = params?.limit && params.limit > 0 ? params.limit : 20;
+  return { page, limit, skip: (page - 1) * limit };
+}
+
+async function fetchPurchaseOrderPageData(
+  params:
+    | {
+        status?: PurchaseOrderStatus;
+        supplierId?: string;
+      }
+    | undefined,
+  pagination: { skip: number; limit: number }
+) {
+  const where = {
+    ...(params?.status && { status: params.status }),
+    ...(params?.supplierId && { supplierId: params.supplierId }),
+  };
+
+  const [orders, total] = await Promise.all([
+    prisma.purchaseOrder.findMany({
+      where,
+      include: {
+        supplier: true,
+        user: true,
+        items: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      skip: pagination.skip,
+      take: pagination.limit,
+    }),
+    prisma.purchaseOrder.count({ where }),
+  ]);
+
+  return { orders, total };
+}
+
+async function enhancePurchaseOrders(
+  orders: Awaited<ReturnType<typeof fetchPurchaseOrderPageData>>['orders']
+) {
+  const { byOrder, byItem } = await loadInboundMapsForOrders(orders);
+
+  return orders.map(order => {
+    const { summary, items } = calculatePurchaseOrderExecution(
+      order,
+      byOrder,
+      byItem
+    );
+
+    const mappedItems = order.items.map((item, index) => ({
+      ...item,
+      receivedQuantity: items[index]?.receivedQuantity ?? 0,
+      executionRate: items[index]?.executionRate ?? 0,
+    }));
+
+    return {
+      ...order,
+      items: mappedItems,
+      executionSummary: summary,
+    };
+  });
+}
+
+async function loadInboundMapsForOrders(
+  orders: Awaited<ReturnType<typeof fetchPurchaseOrderPageData>>['orders']
+) {
+  const orderIds = orders.map(order => order.id);
+  const itemIds = orders.flatMap(order => order.items.map(item => item.id));
+  const byOrder = new Map<string, number>();
+  const byItem = new Map<string, number>();
+
+  if (orderIds.length > 0) {
+    const orderInbound = await prisma.inboundRecord.groupBy({
+      by: ['purchaseOrderId'],
+      where: {
+        purchaseOrderId: { in: orderIds, not: null },
+      },
+      _sum: { quantity: true },
+    });
+
+    for (const row of orderInbound) {
+      if (row.purchaseOrderId) {
+        byOrder.set(row.purchaseOrderId, row._sum.quantity ?? 0);
+      }
+    }
+  }
+
+  if (itemIds.length > 0) {
+    const itemInbound = await prisma.inboundRecord.groupBy({
+      by: ['purchaseOrderItemId'],
+      where: {
+        purchaseOrderItemId: { in: itemIds, not: null },
+      },
+      _sum: { quantity: true },
+    });
+
+    for (const row of itemInbound) {
+      if (row.purchaseOrderItemId) {
+        byItem.set(row.purchaseOrderItemId, row._sum.quantity ?? 0);
+      }
+    }
+  }
+
+  return { byOrder, byItem };
+}
+
+function filterOrdersByFulfillment(
+  orders: Array<
+    Awaited<ReturnType<typeof enhancePurchaseOrders>>[number]
+  >,
+  fulfillment?: 'none' | 'partial' | 'complete'
+) {
+  if (!fulfillment) {
+    return orders;
+  }
+
+  return orders.filter(
+    order => order.executionSummary.fulfillmentStatus === fulfillment
+  );
+}
