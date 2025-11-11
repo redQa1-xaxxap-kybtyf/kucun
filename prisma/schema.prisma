@@ -31,6 +31,7 @@ model User {
   paymentOutRecords     PaymentOutRecord[]
   systemLogs            SystemLog[]
   expenseRecords        ExpenseRecord[]
+  createdTemporaryProducts TemporaryProduct[]
 
   @@index([email])
   @@index([username])
@@ -108,8 +109,10 @@ model TemporaryProduct {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  supplier                 Supplier                  @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  salesOrderItems          SalesOrderItem[]
+  // 关系定义
+  supplier                  Supplier                   @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  creator                   User?                      @relation(fields: [createdBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  salesOrderItems           SalesOrderItem[]
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
 
   @@unique([supplierId, code], map: "uk_temporary_products_supplier_code")
