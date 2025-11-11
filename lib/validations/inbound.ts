@@ -44,8 +44,8 @@ export const createInboundSchema = z
       },
       z
         .number({
-          required_error: '请填写入库数量',
-          invalid_type_error: '数量必须是数字',
+          error: issue =>
+            issue.input === undefined ? '请填写入库数量' : '数量必须是数字',
         })
         .min(1, { message: '数量必须大于等于1' })
         .max(999999, { message: '数量不能超过999999' })
@@ -67,8 +67,8 @@ export const createInboundSchema = z
       },
       z
         .number({
-          required_error: '最终片数不能为空',
-          invalid_type_error: '数量必须是数字',
+          error: issue =>
+            issue.input === undefined ? '最终片数不能为空' : '数量必须是数字',
         })
         .min(1, { message: '数量必须大于等于1片' })
         .max(999999, { message: '数量不能超过999999片' })
@@ -162,8 +162,8 @@ export const createInboundSchema = z
       },
       z
         .number({
-          required_error: '请填写单位成本',
-          invalid_type_error: '单位成本必须是数字',
+          error: issue =>
+            issue.input === undefined ? '请填写单位成本' : '单位成本必须是数字',
         })
         .min(0.01, { message: '单位成本必须大于0' })
         .max(999999.99, { message: '单位成本不能超过999,999.99' })
