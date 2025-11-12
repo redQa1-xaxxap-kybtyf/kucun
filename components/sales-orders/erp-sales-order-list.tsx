@@ -9,7 +9,6 @@ import {
   Clock,
   Edit,
   Eye,
-  Filter,
   MoreHorizontal,
   Package,
   Trash2,
@@ -19,7 +18,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,8 +31,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -568,109 +565,79 @@ export function ERPSalesOrderList({
   return (
     <div className="space-y-6">
       {/* 搜索筛选卡片 */}
-      <Card className="overflow-hidden">
-        <CardContent className="pt-6">
-          {/* 搜索栏和日期筛选的组合布局 */}
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-4">
-            {/* 搜索栏区域 */}
-            <div className="flex-1">
-              <UnifiedSearchBar
-                // 搜索配置
-                searchValue={searchValue ?? initialParams?.search ?? ''}
-                onSearchChange={handleSearch}
-                searchPlaceholder="搜索订单号、客户名称、产品编码..."
-                debounceDelay={0}
-                compact={true}
-                isSearching={isSearching || isRefetching}
-                resultCount={data?.data?.length}
-                totalCount={data?.pagination?.total}
-                // 切换按钮配置 - 参考库存总览的设计
-                toggleButtons={[
-                  {
-                    key: 'transferOrders',
-                    label: '调货订单',
-                    icon: <Truck className="mr-1 h-3 w-3" />,
-                    active: initialParams?.orderType === 'TRANSFER',
-                    onClick: handleToggleTransferOrders,
-                  },
-                  {
-                    key: 'hasReturns',
-                    label: '有退货',
-                    icon: <Package className="mr-1 h-3 w-3" />,
-                    active: !!initialParams?.hasReturns,
-                    onClick: handleToggleHasReturns,
-                  },
-                ]}
-                // 筛选器配置 - 增强版
-                filters={[
-                  {
-                    key: 'status',
-                    label: '订单状态',
-                    includeAllOption: true,
-                    options: [
-                      { label: '草稿', value: 'draft' },
-                      { label: '已确认', value: 'confirmed' },
-                      { label: '已发货', value: 'shipped' },
-                      { label: '已完成', value: 'completed' },
-                      { label: '已取消', value: 'cancelled' },
-                    ],
-                    width: 'w-[120px]',
-                  },
-                  {
-                    key: 'sortBy',
-                    label: '排序方式',
-                    includeAllOption: false,
-                    options: [
-                      { label: '创建时间', value: 'createdAt' },
-                      { label: '订单金额', value: 'totalAmount' },
-                      { label: '发货时间', value: 'shippedAt' },
-                      { label: '更新时间', value: 'updatedAt' },
-                      { label: '订单号', value: 'orderNumber' },
-                    ],
-                    width: 'w-[120px]',
-                  },
-                ]}
-                filterValues={{
-                  status: statusFilterValue,
-                  sortBy: initialParams?.sortBy || 'createdAt',
-                }}
-                onFilterChange={handleFilterChange}
-              />
-            </div>
-
-            {/* 日期范围筛选器 */}
-            <div className="lg:w-[280px]">
-              <DateRangePicker
-                value={{
-                  startDate: initialParams?.startDate,
-                  endDate: initialParams?.endDate,
-                }}
-                label=""
-                placeholder="选择订单日期"
-                onChange={({ startDate, endDate }) => {
-                  const dateRangeJson = JSON.stringify({ startDate, endDate });
-                  externalOnFilter?.('dateRange', dateRangeJson);
-                }}
-                showPresets={true}
-                showClearButton={true}
-              />
-            </div>
-
-            {/* 清空筛选按钮 - 参考库存总览设计 */}
-            {hasActiveFilters && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearFilters}
-                className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-              >
-                <Filter className="h-3.5 w-3.5" />
-                清空筛选
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <SearchFilterCard
+        searchValue={searchValue ?? initialParams?.search ?? ''}
+        onSearchChange={handleSearch}
+        searchPlaceholder="搜索订单号、客户名称、产品编码..."
+        isSearching={isSearching || isRefetching}
+        // 筛选器配置
+        filters={[
+          {
+            key: 'status',
+            label: '订单状态',
+            options: [
+              { label: '草稿', value: 'draft' },
+              { label: '已确认', value: 'confirmed' },
+              { label: '已发货', value: 'shipped' },
+              { label: '已完成', value: 'completed' },
+              { label: '已取消', value: 'cancelled' },
+            ],
+            width: 'w-[120px]',
+          },
+          {
+            key: 'sortBy',
+            label: '排序方式',
+            options: [
+              { label: '创建时间', value: 'createdAt' },
+              { label: '订单金额', value: 'totalAmount' },
+              { label: '发货时间', value: 'shippedAt' },
+              { label: '更新时间', value: 'updatedAt' },
+              { label: '订单号', value: 'orderNumber' },
+            ],
+            width: 'w-[120px]',
+          },
+        ]}
+        filterValues={{
+          status: statusFilterValue || 'all',
+          sortBy: initialParams?.sortBy || 'createdAt',
+        }}
+        onFilterChange={handleFilterChange}
+        // 日期范围筛选
+        dateRangeFilter={{
+          key: 'dateRange',
+          label: '订单日期',
+          value: {
+            startDate: initialParams?.startDate,
+            endDate: initialParams?.endDate,
+          },
+          onChange: ({ startDate, endDate }) => {
+            const dateRangeJson = JSON.stringify({ startDate, endDate });
+            externalOnFilter?.('dateRange', dateRangeJson);
+          },
+          placeholder: '选择订单日期',
+        }}
+        // Toggle 按钮
+        toggleButtons={[
+          {
+            key: 'transferOrders',
+            label: '调货订单',
+            icon: <Truck className="mr-1 h-3 w-3" />,
+            active: initialParams?.orderType === 'TRANSFER',
+            onClick: handleToggleTransferOrders,
+          },
+          {
+            key: 'hasReturns',
+            label: '有退货',
+            icon: <Package className="mr-1 h-3 w-3" />,
+            active: !!initialParams?.hasReturns,
+            onClick: handleToggleHasReturns,
+          },
+        ]}
+        // 清空筛选
+        onClearFilters={handleClearFilters}
+        hasActiveFilters={hasActiveFilters}
+        variant="elevated"
+      />
 
       {/* 数据表格 */}
       <div
