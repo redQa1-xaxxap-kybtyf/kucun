@@ -90,6 +90,7 @@ export interface PurchaseOrderItem {
   unit: string;
   weight?: number;
   piecesPerUnit?: number | null;
+  batchNumber?: string | null; // 批次号
 
   remarks?: string;
   createdAt: Date;
@@ -108,6 +109,7 @@ export interface PurchaseOrderItem {
     specification?: string;
     unit: string;
     weight?: number;
+    piecesPerUnit?: number; // 每单位片数
   };
   supplier: {
     id: string;

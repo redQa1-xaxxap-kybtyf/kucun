@@ -178,24 +178,9 @@ export interface ProductOption {
 // 入库单位类型
 export type InboundUnit = 'pieces' | 'units';
 
-// 入库表单数据
-export interface InboundFormData {
-  productId: string;
-  variantId?: string; // 产品变体ID
-  supplierId?: string; // 供应商ID
-  inputQuantity?: number; // 用户输入的数量
-  inputUnit: InboundUnit; // 用户选择的单位
-  quantity?: number; // 最终存储的片数
-  unitCost?: number; // 单位成本（必填，但表单初始化时可为undefined）
-  reason: InboundReason;
-  remarks?: string;
-
-  // 批次管理字段
-  batchNumber?: string; // 批次号
-  piecesPerUnit?: number; // 每单位片数（入库时确定）
-  weight?: number; // 产品重量（入库时确定）
-  location?: string; // 存储位置
-}
+// ✅ 入库表单数据 - 从 Zod Schema 导出,确保类型一致性
+// 遵循类型安全原则: 使用 Zod 推断类型而非手动定义
+export type { InboundFormData } from '@/lib/validations/inbound';
 
 // 入库操作结果
 export interface InboundOperationResult {

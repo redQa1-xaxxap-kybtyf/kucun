@@ -18,6 +18,7 @@ type QueryKeyPrefix =
   | 'customers'
   | 'suppliers'
   | 'sales-orders'
+  | 'purchase-orders' // ✅ 添加采购订单
   | 'return-orders'
   | 'inventory'
   | 'finance'
@@ -46,6 +47,7 @@ type QueryKeyPrefix =
   | 'factory-shipment-order'
   | 'outbound-records'
   | 'temporary-products'
+  | 'batches'
   | 'settings';
 
 /**
