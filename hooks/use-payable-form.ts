@@ -52,7 +52,7 @@ function usePayableFormInstance(
   isEdit: boolean,
   payableData?: PayableRecordDetail
 ) {
-  const defaultValues =
+  const defaultValues: CreateFormData | UpdateFormData =
     isEdit && payableData
       ? {
           payableAmount: payableData.payableAmount,
@@ -70,13 +70,16 @@ function usePayableFormInstance(
           remarks: '',
         };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const schema: any = isEdit
+    ? updatePayableRecordSchema
+    : createPayableRecordSchema;
+
   return useForm<CreateFormData | UpdateFormData>({
-    resolver: standardSchemaResolver(
-      isEdit ? updatePayableRecordSchema : createPayableRecordSchema
-    ),
-    mode: 'onBlur', // ✅ 用户离开字段时验证
-    reValidateMode: 'onChange', // ✅ 提交后实时验证
-    criteriaMode: 'all', // ✅ 显示所有错误
+    resolver: standardSchemaResolver(schema) as any,
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+    criteriaMode: 'all',
     shouldFocusError: true,
     defaultValues,
   });
