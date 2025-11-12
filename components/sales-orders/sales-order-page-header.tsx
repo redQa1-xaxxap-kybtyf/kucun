@@ -20,9 +20,13 @@ export function SalesOrderPageHeader() {
       title="销售订单"
       description="管理销售订单和发货信息"
       icon={<ShoppingCart className="h-6 w-6 text-white" />}
-      iconBgColor="hsl(var(--color-primary))"
+      iconBgColor="hsl(var(--color-blue))"
       actions={
-        <Button size="lg" onClick={() => router.push('/sales-orders/create')}>
+        <Button
+          size="lg"
+          onClick={() => router.push('/sales-orders/create')}
+          className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+        >
           <Plus className="mr-2 h-4 w-4" />
           新建订单
         </Button>

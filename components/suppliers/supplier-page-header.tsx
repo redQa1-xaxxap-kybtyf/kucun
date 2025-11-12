@@ -20,6 +20,7 @@ export function SupplierPageHeader() {
       title="供应商管理"
       description="管理供应商信息，跟踪采购和合作情况"
       icon={<Building2 className="h-6 w-6 text-white" />}
+      iconBgColor="hsl(var(--color-orange))"
       actions={
         <Button
           size="lg"

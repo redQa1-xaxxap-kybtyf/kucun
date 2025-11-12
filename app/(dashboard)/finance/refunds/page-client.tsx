@@ -6,9 +6,9 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { PageHeader } from '@/components/common/page-header';
 import { RefundsClient } from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useRefundsQuery } from '@/hooks/use-refunds-query';
 import type {
@@ -296,49 +296,37 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <TrendingDown className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    应退货款管理
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    管理退货订单产生的应退账款，跟踪退款处理状态
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/finance/refunds/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/return-orders/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    新建退货订单
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader
+          title="应退货款管理"
+          description="管理退货订单产生的应退账款，跟踪退款处理状态"
+          icon={<TrendingDown className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-warning))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/finance/refunds/export">
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/return-orders/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建退货订单
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         {/* 客户端交互组件 */}
         <RefundsClient
