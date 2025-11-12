@@ -18,20 +18,24 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  salesOrders           SalesOrder[]
-  returnOrders          ReturnOrder[]
-  factoryShipmentOrders FactoryShipmentOrder[]
-  paymentRecords        PaymentRecord[]
-  refundRecords         RefundRecord[]
-  inboundRecords        InboundRecord[]
-  operatedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentOperator")
-  approvedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentApprover")
-  purchaseOrders        PurchaseOrder[]
-  payableRecords        PayableRecord[]
-  paymentOutRecords     PaymentOutRecord[]
-  systemLogs            SystemLog[]
-  expenseRecords        ExpenseRecord[]
+  salesOrders              SalesOrder[]
+  returnOrders             ReturnOrder[]
+  factoryShipmentOrders    FactoryShipmentOrder[]
+  paymentRecords           PaymentRecord[]
+  refundRecords            RefundRecord[]
+  inboundRecords           InboundRecord[]
+  operatedAdjustments      InventoryAdjustment[]  @relation("InventoryAdjustmentOperator")
+  approvedAdjustments      InventoryAdjustment[]  @relation("InventoryAdjustmentApprover")
+  purchaseOrders           PurchaseOrder[]
+  payableRecords           PayableRecord[]
+  paymentOutRecords        PaymentOutRecord[]
+  systemLogs               SystemLog[]
+  expenseRecords           ExpenseRecord[]
   createdTemporaryProducts TemporaryProduct[]
+  createdInventoryCounts   InventoryCount[]       @relation("InventoryCountCreator")
+  operatedInventoryCounts  InventoryCount[]       @relation("InventoryCountOperator")
+  approvedInventoryCounts  InventoryCount[]       @relation("InventoryCountApprover")
+  countedInventoryItems    InventoryCountItem[]   @relation("InventoryCountItemCounter")
 
   @@index([email])
   @@index([username])
@@ -205,10 +209,11 @@ model ProductVariant {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // 关系定义
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  salesOrderItems SalesOrderItem[]
-  inboundRecords  InboundRecord[]
+  product              Product                @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  salesOrderItems      SalesOrderItem[]
+  inboundRecords       InboundRecord[]
   inventoryAdjustments InventoryAdjustment[]
+  inventoryCountItems  InventoryCountItem[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -1109,7 +1114,11 @@ model InventoryCount {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   // 关系定义
-  category Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  category          Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  creator           User                @relation("InventoryCountCreator", fields: [creatorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  operator          User?               @relation("InventoryCountOperator", fields: [operatorId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  approver          User?               @relation("InventoryCountApprover", fields: [approverId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  items             InventoryCountItem[]
 
   @@index([status], map: "idx_inventory_counts_status")
   @@index([countType], map: "idx_inventory_counts_type")
@@ -1143,7 +1152,10 @@ model InventoryCountItem {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   // 关系定义
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  count   InventoryCount  @relation(fields: [countId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  counter User?           @relation("InventoryCountItemCounter", fields: [countedBy], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([countId], map: "idx_inventory_count_items_count")
   @@index([productId], map: "idx_inventory_count_items_product")
