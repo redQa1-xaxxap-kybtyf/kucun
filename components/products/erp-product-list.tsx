@@ -3,16 +3,21 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { ContentLoading } from '@/components/common/loading';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { ProductDeleteDialog } from '@/components/products/product-delete-dialogs';
-import { ProductSearchFilters } from '@/components/products/product-search-filters';
 import { ProductTable } from '@/components/products/product-table';
 import { Pagination } from '@/components/ui/pagination';
 import { useProductDelete } from '@/hooks/use-product-delete';
 import { useProductListState } from '@/hooks/use-product-list-state';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
 import { type PaginatedResponse } from '@/lib/types/api';
-import type { Product, ProductQueryParams } from '@/lib/types/product';
+import type {
+  Product,
+  ProductQueryParams,
+  ProductStatus,
+} from '@/lib/types/product';
 
 interface ERPProductListProps {
   onProductSelect?: (product: Product) => void;
@@ -99,14 +104,49 @@ export function ERPProductList({
   return (
     <div className="space-y-4">
       {/* 搜索和筛选 */}
-      <ProductSearchFilters
+      <SearchFilterCard
         searchValue={initialParams?.search || ''}
-        categoryId={initialParams?.categoryId}
-        status={initialParams?.status}
-        categories={categories}
         onSearchChange={handleSearch}
-        onFilterChange={handleFilter}
+        searchPlaceholder="搜索产品编码、名称或规格..."
+        filters={[
+          {
+            key: 'categoryId',
+            label: '产品分类',
+            options: categories.map(cat => ({
+              label: cat.name,
+              value: cat.id,
+            })),
+            width: 'w-36',
+          },
+          {
+            key: 'status',
+            label: '状态',
+            options: PRODUCT_STATUS_OPTIONS.map(option => ({
+              label: option.label,
+              value: option.value,
+            })),
+            width: 'w-32',
+          },
+        ]}
+        filterValues={{
+          categoryId: initialParams?.categoryId || 'all',
+          status: initialParams?.status || 'all',
+        }}
+        onFilterChange={(key, value) => {
+          if (key === 'status') {
+            handleFilter({
+              categoryId: initialParams?.categoryId,
+              status: value as ProductStatus | undefined,
+            });
+          } else if (key === 'categoryId') {
+            handleFilter({
+              categoryId: value,
+              status: initialParams?.status,
+            });
+          }
+        }}
         onClearFilters={handleClearFilters}
+        variant="elevated"
       />
 
       {/* 产品列表 */}

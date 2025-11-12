@@ -7,8 +7,8 @@ import * as React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { CustomerDeleteDialog } from '@/components/customers/customer-delete-dialog';
-import { CustomerSearchFilters } from '@/components/customers/customer-search-filters';
 import { ERPCustomerList } from '@/components/customers/erp-customer-list';
 import { Button } from '@/components/ui/button';
 import { useCustomersQuery } from '@/hooks/use-customers-query';
@@ -198,12 +198,38 @@ export function CustomersPageClient({
 
       {/* 搜索和筛选 - 固定在顶部 */}
       <div className="mb-6 flex-shrink-0">
-        <CustomerSearchFilters
+        <SearchFilterCard
           searchValue={search}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
           onSearchChange={handleSearch}
-          onSortChange={handleSortChange}
+          searchPlaceholder="搜索客户名称、电话或地址..."
+          filters={[
+            {
+              key: 'sortBy',
+              label: '排序字段',
+              options: CUSTOMER_SORT_OPTIONS,
+              width: 'w-36',
+            },
+            {
+              key: 'sortOrder',
+              label: '排序方式',
+              options: [
+                { label: '升序', value: 'asc' },
+                { label: '降序', value: 'desc' },
+              ],
+              width: 'w-28',
+            },
+          ]}
+          filterValues={{
+            sortBy,
+            sortOrder,
+          }}
+          onFilterChange={(key, value) => {
+            if (key === 'sortBy' && value) {
+              handleSortChange(value, sortOrder);
+            } else if (key === 'sortOrder' && value) {
+              handleSortChange(sortBy, value as 'asc' | 'desc');
+            }
+          }}
         />
       </div>
 

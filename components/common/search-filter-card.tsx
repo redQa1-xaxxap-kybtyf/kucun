@@ -1,0 +1,227 @@
+'use client';
+
+/**
+ * 搜索筛选卡片组件
+ * 统一的搜索筛选容器,包装 UnifiedSearchBar
+ * 提供统一的样式和布局
+ *
+ * 功能特性:
+ * - 统一的 Card 容器样式
+ * - 支持日期范围筛选
+ * - 支持清空筛选功能
+ * - 响应式布局
+ *
+ * 遵循原则: KISS, DRY, SOLID
+ */
+
+import { X } from 'lucide-react';
+import * as React from 'react';
+
+import {
+  UnifiedSearchBar,
+  type ActionButton,
+  type FilterConfig,
+  type ToggleButton,
+} from '@/components/common/unified-search-bar';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
+import { cn } from '@/lib/utils';
+
+// ============================================================================
+// 类型定义
+// ============================================================================
+
+/**
+ * 日期范围筛选器配置
+ */
+export interface DateRangeFilterConfig {
+  key: string;
+  label?: string;
+  value?: DateRangeValue;
+  onChange: (value: DateRangeValue) => void;
+  placeholder?: string;
+  showPresets?: boolean;
+  className?: string;
+}
+
+/**
+ * 搜索筛选卡片属性
+ */
+export interface SearchFilterCardProps {
+  // 搜索相关
+  searchValue?: string;
+  onSearchChange: (value: string) => void;
+  searchPlaceholder?: string;
+  isSearching?: boolean;
+
+  // 筛选器
+  filters?: FilterConfig[];
+  filterValues?: Record<string, string | undefined>;
+  onFilterChange?: (key: string, value: string | undefined) => void;
+
+  // 日期范围筛选器
+  dateRangeFilter?: DateRangeFilterConfig;
+
+  // 切换按钮
+  toggleButtons?: ToggleButton[];
+
+  // 操作按钮
+  actionButtons?: ActionButton[];
+
+  // 清空筛选
+  onClearFilters?: () => void;
+  showClearButton?: boolean;
+  hasActiveFilters?: boolean;
+
+  // 样式
+  className?: string;
+  compact?: boolean;
+
+  // Card 样式变体
+  variant?: 'default' | 'bordered' | 'elevated';
+}
+
+// ============================================================================
+// 样式常量
+// ============================================================================
+
+const CARD_VARIANTS = {
+  default: 'border border-[hsl(var(--color-border-secondary))]',
+  bordered: 'border border-[hsl(var(--color-border-primary))]',
+  elevated:
+    'border border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]',
+} as const;
+
+// ============================================================================
+// 组件实现
+// ============================================================================
+
+/**
+ * 搜索筛选卡片组件
+ */
+export const SearchFilterCard = React.memo<SearchFilterCardProps>(
+  ({
+    searchValue = '',
+    onSearchChange,
+    searchPlaceholder = '搜索...',
+    isSearching = false,
+    filters = [],
+    filterValues = {},
+    onFilterChange,
+    dateRangeFilter,
+    toggleButtons = [],
+    actionButtons = [],
+    onClearFilters,
+    showClearButton = true,
+    hasActiveFilters = false,
+    className,
+    compact = false,
+    variant = 'default',
+  }) => {
+    // 计算是否有活跃的筛选条件
+    const hasFilters = React.useMemo(() => {
+      if (hasActiveFilters !== undefined) {
+        return hasActiveFilters;
+      }
+
+      // 检查搜索值
+      if (searchValue && searchValue.trim()) {
+        return true;
+      }
+
+      // 检查筛选器值
+      const hasFilterValues = Object.values(filterValues).some(
+        value => value !== undefined && value !== 'all'
+      );
+      if (hasFilterValues) {
+        return true;
+      }
+
+      // 检查日期范围
+      if (
+        dateRangeFilter?.value?.startDate ||
+        dateRangeFilter?.value?.endDate
+      ) {
+        return true;
+      }
+
+      return false;
+    }, [hasActiveFilters, searchValue, filterValues, dateRangeFilter?.value]);
+
+    // 清空筛选处理
+    const handleClearFilters = React.useCallback(() => {
+      if (onClearFilters) {
+        onClearFilters();
+      }
+    }, [onClearFilters]);
+
+    return (
+      <Card className={cn(CARD_VARIANTS[variant], className)}>
+        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
+          <div className="flex flex-col gap-3">
+            {/* 主搜索栏 */}
+            <div className="flex flex-wrap items-center gap-2">
+              <UnifiedSearchBar
+                searchValue={searchValue}
+                onSearchChange={onSearchChange}
+                searchPlaceholder={searchPlaceholder}
+                isSearching={isSearching}
+                filters={filters}
+                filterValues={filterValues}
+                onFilterChange={onFilterChange}
+                toggleButtons={toggleButtons}
+                actionButtons={actionButtons}
+                compact={compact}
+                debounceDelay={0} // 防抖由父组件处理
+              />
+
+              {/* 日期范围筛选器 */}
+              {dateRangeFilter && (
+                <DateRangePicker
+                  value={dateRangeFilter.value}
+                  onChange={dateRangeFilter.onChange}
+                  label={dateRangeFilter.label}
+                  placeholder={dateRangeFilter.placeholder || '选择日期范围'}
+                  showPresets={dateRangeFilter.showPresets ?? true}
+                  className={cn('min-w-[200px]', dateRangeFilter.className)}
+                />
+              )}
+
+              {/* 清空筛选按钮 */}
+              {showClearButton && hasFilters && onClearFilters && (
+                <Button
+                  variant="ghost"
+                  size={compact ? 'sm' : 'default'}
+                  onClick={handleClearFilters}
+                  className={cn(
+                    'gap-1 text-[hsl(var(--color-text-secondary))] hover:text-[hsl(var(--color-text-primary))]',
+                    compact ? 'h-8 text-xs' : 'h-10'
+                  )}
+                >
+                  <X className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
+                  清空筛选
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+);
+
+SearchFilterCard.displayName = 'SearchFilterCard';
+
+// ============================================================================
+// 导出类型
+// ============================================================================
+
+export type {
+  ActionButton,
+  FilterConfig,
+  ToggleButton,
+} from '@/components/common/unified-search-bar';

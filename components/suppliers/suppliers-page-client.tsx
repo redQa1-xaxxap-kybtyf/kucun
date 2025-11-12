@@ -20,8 +20,8 @@ import {
 } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierPageHeader } from '@/components/suppliers/supplier-page-header';
-import { SupplierSearchFilters } from '@/components/suppliers/supplier-search-filters';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -261,11 +261,30 @@ export function SuppliersPageClient({
         <SupplierPageHeader />
 
         {/* 搜索和筛选 */}
-        <SupplierSearchFilters
+        <SearchFilterCard
           searchValue={searchInput}
-          statusFilter={status}
           onSearchChange={handleSearch}
-          onStatusChange={handleStatusChange}
+          searchPlaceholder="搜索供应商名称或联系电话..."
+          filters={[
+            {
+              key: 'status',
+              label: '状态',
+              options: [
+                { label: '启用', value: 'active' },
+                { label: '禁用', value: 'inactive' },
+                { label: '暂停', value: 'suspended' },
+              ],
+              width: 'w-32',
+            },
+          ]}
+          filterValues={{
+            status,
+          }}
+          onFilterChange={(key, value) => {
+            if (key === 'status') {
+              handleStatusChange(value as Supplier['status'] | undefined);
+            }
+          }}
         />
 
         {isError && (
