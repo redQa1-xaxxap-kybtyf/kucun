@@ -33,7 +33,8 @@ async function getAppLogger(): Promise<AppLogger> {
   if (typeof window === 'undefined') {
     try {
       const loggerModule = await import('@/lib/logger');
-      cachedLogger = loggerModule.logger;
+      // 使用类型断言将logger转换为AppLogger接口
+      cachedLogger = loggerModule.logger as unknown as AppLogger;
       return cachedLogger;
     } catch (error) {
       const consoleLogger =

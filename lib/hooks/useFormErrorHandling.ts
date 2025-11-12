@@ -1,15 +1,27 @@
 'use client';
 
-import { useCallback, type ReactNode } from 'react';
-import type { FieldErrors, Path, UseFormReturn } from 'react-hook-form';
+import { useCallback } from 'react';
+import type {
+  FieldErrors,
+  FieldValues,
+  Path,
+  UseFormReturn,
+} from 'react-hook-form';
 import { ZodError } from 'zod';
 
-import type { ToastProps } from '@/components/ui/toast';
+import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 import { logger } from '@/lib/utils/console-logger';
+
+// Toast参数类型,与use-toast.ts中的Toast类型保持一致
+type ToastParams = ToastProps & {
+  title?: string;
+  description?: string;
+  action?: ToastActionElement;
+};
 
 type BlurHandler = (...args: unknown[]) => unknown;
 
-export type BlurHandlerFactory<FormValues> = (
+export type BlurHandlerFactory<FormValues extends FieldValues> = (
   name?: Path<FormValues>,
   handler?: BlurHandler
 ) => (...args: unknown[]) => void;
@@ -19,17 +31,17 @@ export interface ValidationIssue {
   message: string;
 }
 
-interface UseFormErrorHandlingOptions<FormValues> {
+interface UseFormErrorHandlingOptions<FormValues extends FieldValues> {
   form: UseFormReturn<FormValues>;
-  toast?: (props: ToastProps) => void;
+  toast?: (props: ToastParams) => void;
   scrollBehavior?: ScrollBehavior;
-  defaultToastTitle?: ReactNode;
-  defaultToastDescription?: ReactNode;
+  defaultToastTitle?: string;
+  defaultToastDescription?: string;
 }
 
 interface ToastOptionOverrides {
-  title?: ReactNode;
-  description?: ReactNode;
+  title?: string;
+  description?: string;
   variant?: ToastProps['variant'];
 }
 
@@ -60,7 +72,7 @@ function handleBlurError(error: unknown) {
   logger.error('useFormErrorHandling', 'notifyBlur failed', error);
 }
 
-export function useFormErrorHandling<FormValues>(
+export function useFormErrorHandling<FormValues extends FieldValues>(
   options: UseFormErrorHandlingOptions<FormValues>
 ) {
   const {

@@ -5,15 +5,12 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { useCreateInboundRecord } from '@/lib/api/inbound';
-import {
-  type InboundFormData,
-  type InboundUnit,
-  type ProductOption,
-} from '@/lib/types/inbound';
+import { type InboundUnit, type ProductOption } from '@/lib/types/inbound';
 import { calculateTotalPieces } from '@/lib/utils/piece-calculation';
-import { createInboundSchema } from '@/lib/validations/inbound';
-
-const inboundFormSchema = createInboundSchema.omit({ idempotencyKey: true });
+import {
+  inboundFormSchema,
+  type InboundFormData,
+} from '@/lib/validations/inbound';
 
 export function useInboundForm() {
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
@@ -90,8 +87,9 @@ export function calculateFinalQuantity(
 }
 
 // 处理产品选择的逻辑
+// ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver
 export function useProductSelection(
-  form: ReturnType<typeof useForm<InboundFormData>>,
+  form: ReturnType<typeof useForm<InboundFormData, any, any>>,
   setSelectedProduct: (product: ProductOption | null) => void
 ) {
   const handleProductSelect = (product: ProductOption) => {

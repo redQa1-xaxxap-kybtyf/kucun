@@ -123,7 +123,7 @@ export async function getReturnOrdersServer(
           },
         },
         items: true,
-        refundRecords: {
+        refunds: {
           select: {
             id: true,
             refundAmount: true,
@@ -249,7 +249,7 @@ export async function getReturnOrdersServer(
             : undefined,
         };
       }),
-      refunds: (order.refundRecords ?? []).map(record => ({
+      refunds: (order.refunds ?? []).map(record => ({
         id: record.id,
         refundAmount: Number(record.refundAmount),
         refundDate: record.refundDate.toISOString(),

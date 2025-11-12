@@ -91,7 +91,10 @@ const mapDetail = (
   return {
     ...orderBase,
     items: items.map(item =>
-      mapSalesOrderItem(item, item.productId ? productsMap.get(item.productId) : undefined)
+      mapSalesOrderItem(
+        item,
+        item.productId ? productsMap.get(item.productId) : undefined
+      )
     ),
     feeItems: order.feeItems.map(fee => ({
       id: fee.id,
@@ -230,7 +233,10 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     Number(amounts.totalAmount) + Number(amounts.roundingAdjustment ?? 0);
   const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
 
-  const mapped = mapDetail(order as unknown as SalesOrderDetailResult, productsMap);
+  const mapped = mapDetail(
+    order as unknown as SalesOrderDetailResult,
+    productsMap
+  );
 
   return {
     ...mapped,

@@ -54,17 +54,19 @@ export async function getDashboardData(
     }),
 
     // 低库存产品数量
-    prisma.inventory.findMany({
-      where: {
-        quantity: {
-          lte: 10,
+    prisma.inventory
+      .findMany({
+        where: {
+          quantity: {
+            lte: 10,
+          },
         },
-      },
-      select: {
-        productId: true,
-      },
-      distinct: ['productId'],
-    }).then(items => items.length),
+        select: {
+          productId: true,
+        },
+        distinct: ['productId'],
+      })
+      .then(items => items.length),
 
     // 本月订单数
     prisma.salesOrder.count({

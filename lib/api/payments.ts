@@ -535,9 +535,11 @@ export const paymentUtils = {
   formatPaymentMethod: (method: PaymentMethod): string => {
     const methodMap: Record<PaymentMethod, string> = {
       cash: '现金',
-      bank_transfer: '银行转账',
-      check: '支票',
-      other: '其他',
+      wechat_transfer: '微信转账',
+      abc_qr: '农行码',
+      icbc_qr: '工行码',
+      ccb_qr: '建行码',
+      cib_qr: '兴业码',
     };
     return methodMap[method] || method;
   },
@@ -580,9 +582,11 @@ export const paymentUtils = {
   getPaymentMethodIcon: (method: PaymentMethod): string => {
     const iconMap: Record<PaymentMethod, string> = {
       cash: '💵',
-      bank_transfer: '🏦',
-      check: '📝',
-      other: '💳',
+      wechat_transfer: '💬',
+      abc_qr: '🏦',
+      icbc_qr: '🏦',
+      ccb_qr: '🏦',
+      cib_qr: '🏦',
     };
     return iconMap[method] || '💳';
   },

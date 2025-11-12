@@ -16,7 +16,7 @@ type InventoryRecord = {
 export async function buildInventoryItems(
   tx: Prisma.TransactionClient,
   items?: InventoryItemInput
-): Promise<Prisma.InventoryCountItemCreateManyInput[]> {
+): Promise<Omit<Prisma.InventoryCountItemCreateManyInput, 'countId'>[]> {
   if (!items?.length) {
     return [];
   }
@@ -25,8 +25,8 @@ export async function buildInventoryItems(
     where: {
       OR: items.map(item => ({
         productId: item.productId,
-        variantId: item.variantId || null,
-        batchNumber: item.batchNumber || null,
+        variantId: item.variantId ?? null,
+        batchNumber: item.batchNumber ?? null,
       })),
     },
     select: {
@@ -48,7 +48,11 @@ export async function buildInventoryItems(
 
   return items.map(item => {
     const inventory = inventoryMap.get(
-      buildInventoryKey(item.productId, item.variantId, item.batchNumber)
+      buildInventoryKey(
+        item.productId,
+        item.variantId ?? null,
+        item.batchNumber ?? null
+      )
     );
 
     const systemQuantity = inventory?.quantity ?? 0;
@@ -57,8 +61,8 @@ export async function buildInventoryItems(
 
     return {
       productId: item.productId,
-      variantId: item.variantId || null,
-      batchNumber: item.batchNumber || null,
+      variantId: item.variantId ?? null,
+      batchNumber: item.batchNumber ?? null,
       systemQuantity,
       actualQuantity,
       difference: 0,
@@ -66,10 +70,10 @@ export async function buildInventoryItems(
       unitCost,
       totalCost: null,
       location: item.location ?? inventory?.location ?? null,
-      remarks: item.remarks || null,
+      remarks: item.remarks ?? null,
       countedBy: null,
       countedAt: null,
-    } satisfies Prisma.InventoryCountItemCreateManyInput;
+    } satisfies Omit<Prisma.InventoryCountItemCreateManyInput, 'countId'>;
   });
 }
 

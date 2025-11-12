@@ -38,12 +38,8 @@ export async function updateSalesOrderDraft(
     transferMode
   );
 
-  const additionalFees = round2(
-    sumFeeByPayer(updateData.feeItems, 'customer')
-  );
-  const expenseAmount = round2(
-    sumFeeByPayer(updateData.feeItems, 'company')
-  );
+  const additionalFees = round2(sumFeeByPayer(updateData.feeItems, 'customer'));
+  const expenseAmount = round2(sumFeeByPayer(updateData.feeItems, 'company'));
   const roundingAdjustment = round2(updateData.roundingAdjustment ?? 0);
   const totalAmount = round2(itemsAmount + additionalFees + roundingAdjustment);
   const profitAmount =

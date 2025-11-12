@@ -113,6 +113,7 @@ export function mapOrderBaseFields<
     orderType: Prisma.SalesOrderCreateInput['orderType'];
     supplierId: string | null;
     costAmount: Prisma.Decimal | number | null;
+    expenseAmount: Prisma.Decimal | number | null;
     profitAmount: Prisma.Decimal | number | null;
     remarks: string | null;
     shippedAt: Date | null;

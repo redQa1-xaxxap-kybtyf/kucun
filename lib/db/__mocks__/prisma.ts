@@ -95,7 +95,7 @@ export const prismaMock = {
   },
 
   // Prisma 事务和连接方法
-  $transaction: jest.fn((callback: unknown) => {
+  $transaction: jest.fn((callback: unknown): unknown => {
     if (typeof callback === 'function') {
       return callback(prismaMock);
     }
@@ -105,7 +105,7 @@ export const prismaMock = {
   $disconnect: jest.fn(),
   $executeRaw: jest.fn(),
   $queryRaw: jest.fn(),
-};
+} as const;
 
 // 导出类型
 export type PrismaMock = typeof prismaMock;

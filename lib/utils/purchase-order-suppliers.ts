@@ -14,10 +14,7 @@ export function formatPurchaseOrderSuppliers(
   }
 
   // 按供应商ID分组,统计金额
-  const supplierMap = new Map<
-    string,
-    { name: string; amount: number }
-  >();
+  const supplierMap = new Map<string, { name: string; amount: number }>();
 
   for (const item of items) {
     if (!item.supplierId || !item.supplier) {
@@ -68,10 +65,7 @@ export function getPrimarySupplier(
     return null;
   }
 
-  const supplierMap = new Map<
-    string,
-    { name: string; amount: number }
-  >();
+  const supplierMap = new Map<string, { name: string; amount: number }>();
 
   for (const item of items) {
     if (!item.supplierId || !item.supplier) {

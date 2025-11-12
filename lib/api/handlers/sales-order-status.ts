@@ -477,7 +477,7 @@ async function executeOrderStatusUpdateWithInventory(
     const updatedProfitAmount =
       companyExpenseAmount > 0
         ? roundCurrency(itemsAmountValue - updatedCostAmount)
-        : existingOrder.profitAmount ?? undefined;
+        : (existingOrder.profitAmount ?? undefined);
 
     // 第三步：更新订单状态（确保库存扣减成功后再标记发货）
     const order = await tx.salesOrder.update({

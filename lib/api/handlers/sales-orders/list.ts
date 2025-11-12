@@ -149,7 +149,10 @@ const mapListOrder = (
   return {
     ...orderBase,
     items: items.map(item =>
-      mapSalesOrderItem(item, item.productId ? productsMap.get(item.productId) : undefined)
+      mapSalesOrderItem(
+        item,
+        item.productId ? productsMap.get(item.productId) : undefined
+      )
     ),
     itemCount: _count.items,
     paidAmount,

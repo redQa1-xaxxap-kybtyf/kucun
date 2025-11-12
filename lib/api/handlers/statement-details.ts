@@ -19,7 +19,7 @@ type CustomerOrderWithRelations = SalesOrder & {
     paymentMethod: string;
     status: string;
   }>;
-  refunds: Array<{
+  refundRecords: Array<{
     id: string;
     refundNumber: string;
     refundAmount: number;
@@ -76,7 +76,7 @@ type SupplierWithOrders = Supplier & {
 export async function fetchCustomerWithOrders(
   id: string
 ): Promise<CustomerWithOrders | null> {
-  return await prisma.customer.findUnique({
+  return (await prisma.customer.findUnique({
     where: { id },
     include: {
       salesOrders: {
@@ -102,7 +102,7 @@ export async function fetchCustomerWithOrders(
               paymentDate: 'desc',
             },
           },
-          refunds: {
+          refundRecords: {
             where: {
               status: 'completed',
             },
@@ -124,7 +124,7 @@ export async function fetchCustomerWithOrders(
         },
       },
     },
-  });
+  })) as CustomerWithOrders | null;
 }
 
 /**
@@ -207,7 +207,7 @@ export function calculateCustomerFinancials(customer: CustomerWithOrders) {
   }, 0);
 
   const refundAmount = customer.salesOrders.reduce((sum, order) => {
-    const orderRefundAmount = order.refunds.reduce(
+    const orderRefundAmount = order.refundRecords.reduce(
       (refundSum, refund) => refundSum + refund.refundAmount,
       0
     );
@@ -295,7 +295,7 @@ export function buildCustomerTransactions(customer: CustomerWithOrders) {
       });
     });
 
-    order.refunds.forEach(refund => {
+    order.refundRecords.forEach(refund => {
       runningBalance -= refund.refundAmount;
       transactions.push({
         id: refund.id,

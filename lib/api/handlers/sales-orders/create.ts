@@ -82,9 +82,7 @@ type CreatedOrderResult = Prisma.SalesOrderGetPayload<{
   select: typeof createSelect;
 }>;
 
-const mapFeeItem = (
-  fee: CreatedOrderResult['feeItems'][number]
-) => ({
+const mapFeeItem = (fee: CreatedOrderResult['feeItems'][number]) => ({
   id: fee.id,
   feeType: fee.feeType,
   feeName: fee.feeName,
@@ -116,7 +114,10 @@ const mapCreatedOrder = (
     hasReturnOrder: false,
     returnOrders: [],
     items: items.map(item =>
-      mapSalesOrderItem(item, item.productId ? productsMap.get(item.productId) : undefined)
+      mapSalesOrderItem(
+        item,
+        item.productId ? productsMap.get(item.productId) : undefined
+      )
     ),
     feeItems: feeItems.map(mapFeeItem),
     itemCount: _count.items,

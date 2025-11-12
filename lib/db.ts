@@ -60,8 +60,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 const MIN_SLOW_QUERY_THRESHOLD_MS = 50;
-const defaultSlowQueryThresholdMs =
-  env.NODE_ENV === 'production' ? 1000 : 500;
+const defaultSlowQueryThresholdMs = env.NODE_ENV === 'production' ? 1000 : 500;
 const slowQueryThresholdMs = Math.max(
   MIN_SLOW_QUERY_THRESHOLD_MS,
   env.PRISMA_SLOW_QUERY_THRESHOLD_MS ?? defaultSlowQueryThresholdMs

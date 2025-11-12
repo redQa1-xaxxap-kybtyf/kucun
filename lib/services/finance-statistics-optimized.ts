@@ -3,6 +3,8 @@
  * 解决N+1查询问题，提升性能
  */
 
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 
 type SalesOrderWithRelations = {
@@ -10,8 +12,42 @@ type SalesOrderWithRelations = {
   totalAmount: number;
   createdAt: Date;
   payments: { paymentAmount: number }[];
-  refunds: { refundAmount: number }[];
+  refundRecords: { refundAmount: number }[];
 };
+
+// 定义Customer查询返回的类型(包含salesOrders关系)
+type CustomerWithSalesOrders = Prisma.CustomerGetPayload<{
+  include: {
+    salesOrders: {
+      select: {
+        id: true;
+        totalAmount: true;
+        createdAt: true;
+        payments: {
+          select: { paymentAmount: true };
+        };
+        refundRecords: {
+          select: { refundAmount: true };
+        };
+      };
+    };
+  };
+}>;
+
+// 定义SalesOrder查询返回的类型(包含payments和refundRecords关系)
+type SalesOrderWithPaymentsAndRefunds = Prisma.SalesOrderGetPayload<{
+  select: {
+    customerId: true;
+    totalAmount: true;
+    createdAt: true;
+    payments: {
+      select: { paymentAmount: true };
+    };
+    refundRecords: {
+      select: { refundAmount: true };
+    };
+  };
+}>;
 
 /**
  * 客户对账单汇总信息
@@ -54,7 +90,7 @@ export async function generateCustomerStatementsOptimized(
   customerIds?: string[]
 ): Promise<CustomerStatementSummary[]> {
   // 一次性查询所有客户及其相关数据
-  const customers = await prisma.customer.findMany({
+  const customers = (await prisma.customer.findMany({
     where: customerIds ? { id: { in: customerIds } } : {},
     include: {
       salesOrders: {
@@ -69,14 +105,14 @@ export async function generateCustomerStatementsOptimized(
             where: { status: 'confirmed' },
             select: { paymentAmount: true },
           },
-          refunds: {
+          refundRecords: {
             where: { status: 'completed' },
             select: { refundAmount: true },
           },
         },
       },
     },
-  });
+  })) as CustomerWithSalesOrders[];
 
   // 批量计算逾期金额（一次查询所有客户）
   const overdueMap = await batchCalculateOverdue(
@@ -103,7 +139,7 @@ export async function generateCustomerStatementsOptimized(
     }, 0);
 
     const refundAmount = orders.reduce<number>((sum, order) => {
-      const orderRefund = order.refunds.reduce<number>(
+      const orderRefund = order.refundRecords.reduce<number>(
         (refundSum, refund) => refundSum + refund.refundAmount,
         0
       );
@@ -171,7 +207,7 @@ async function batchCalculateOverdue(
 
   if (entityType === 'customer') {
     // 批量查询所有客户的逾期订单
-    const overdueOrders = await prisma.salesOrder.findMany({
+    const overdueOrders = (await prisma.salesOrder.findMany({
       where: {
         customerId: { in: entityIds },
         status: { in: ['confirmed', 'shipped', 'completed'] },
@@ -184,21 +220,21 @@ async function batchCalculateOverdue(
           where: { status: 'confirmed' },
           select: { paymentAmount: true },
         },
-        refunds: {
+        refundRecords: {
           where: { status: 'completed' },
           select: { refundAmount: true },
         },
       },
-    });
+    })) as SalesOrderWithPaymentsAndRefunds[];
 
     // 按客户分组计算逾期金额
     for (const order of overdueOrders) {
       const paidAmount = order.payments.reduce(
-        (sum, p) => sum + p.paymentAmount,
+        (sum: number, p: { paymentAmount: number }) => sum + p.paymentAmount,
         0
       );
-      const refundAmount = order.refunds.reduce(
-        (sum, r) => sum + r.refundAmount,
+      const refundAmount = order.refundRecords.reduce(
+        (sum: number, r: { refundAmount: number }) => sum + r.refundAmount,
         0
       );
       const overdue = Math.max(
@@ -381,12 +417,12 @@ export async function getFinancialOverviewOptimized(): Promise<{
           where: { status: 'confirmed' },
           select: { paymentAmount: true },
         },
-        refunds: {
+        refundRecords: {
           where: { status: 'completed' },
           select: { refundAmount: true },
         },
       },
-    }),
+    }) as Promise<SalesOrderWithPaymentsAndRefunds[]>,
 
     // 应付账款
     prisma.payableRecord.findMany({
@@ -412,11 +448,11 @@ export async function getFinancialOverviewOptimized(): Promise<{
   for (const order of receivablesData) {
     const totalAmount = order.totalAmount;
     const paidAmount = order.payments.reduce(
-      (sum, p) => sum + p.paymentAmount,
+      (sum: number, p: { paymentAmount: number }) => sum + p.paymentAmount,
       0
     );
-    const refundAmount = order.refunds.reduce(
-      (sum, r) => sum + r.refundAmount,
+    const refundAmount = order.refundRecords.reduce(
+      (sum: number, r: { refundAmount: number }) => sum + r.refundAmount,
       0
     );
 
