@@ -167,9 +167,9 @@ export const GET = withAuth(
     ]);
 
     // 手动获取产品信息
-    const productIds = returnOrders.flatMap(order =>
-      order.items.map(item => item.productId)
-    ).filter(Boolean) as string[];
+    const productIds = returnOrders
+      .flatMap(order => order.items.map(item => item.productId))
+      .filter(Boolean) as string[];
 
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
@@ -188,7 +188,9 @@ export const GET = withAuth(
       ...order,
       items: order.items.map(item => ({
         ...item,
-        product: item.productId ? productsMap.get(item.productId) || null : null,
+        product: item.productId
+          ? productsMap.get(item.productId) || null
+          : null,
       })),
     }));
 
@@ -541,7 +543,9 @@ export const POST = withAuth(
         ...fullReturnOrder,
         items: fullReturnOrder.items.map(item => ({
           ...item,
-          product: item.productId ? productsMap.get(item.productId) || null : null,
+          product: item.productId
+            ? productsMap.get(item.productId) || null
+            : null,
         })),
       };
 

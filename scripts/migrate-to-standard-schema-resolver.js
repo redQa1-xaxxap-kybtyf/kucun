@@ -2,10 +2,10 @@
 
 /**
  * 批量迁移 zodResolver 到 standardSchemaResolver
- * 
+ *
  * 背景: Zod 4.x 与 @hookform/resolvers 的 zodResolver 存在兼容性问题
  * 解决方案: 使用 standardSchemaResolver 替代 zodResolver
- * 
+ *
  * 参考: https://github.com/react-hook-form/resolvers/issues/768
  */
 
@@ -64,7 +64,8 @@ function migrateFile(filePath) {
 
   // 1. 替换导入语句
   const oldImport = "import { zodResolver } from '@hookform/resolvers/zod';";
-  const newImport = "import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';";
+  const newImport =
+    "import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';";
 
   if (content.includes(oldImport)) {
     content = content.replace(oldImport, newImport);
@@ -74,7 +75,10 @@ function migrateFile(filePath) {
   // 2. 替换 zodResolver 调用
   const zodResolverPattern = /resolver:\s*zodResolver\(/g;
   if (zodResolverPattern.test(content)) {
-    content = content.replace(zodResolverPattern, 'resolver: standardSchemaResolver(');
+    content = content.replace(
+      zodResolverPattern,
+      'resolver: standardSchemaResolver('
+    );
     modified = true;
   }
 
@@ -126,9 +130,14 @@ function main() {
     log('   2. Zod 4 支持 Standard Schema', 'reset');
     log('   3. 修复了 onBlur 验证时抛出 ZodError 的问题', 'reset');
     log('\n📚 参考文档:', 'cyan');
-    log('   - https://github.com/react-hook-form/resolvers/issues/768', 'reset');
-    log('   - https://github.com/react-hook-form/react-hook-form/issues/12816', 'reset');
-
+    log(
+      '   - https://github.com/react-hook-form/resolvers/issues/768',
+      'reset'
+    );
+    log(
+      '   - https://github.com/react-hook-form/react-hook-form/issues/12816',
+      'reset'
+    );
   } catch (error) {
     log(`\n❌ 错误: ${error.message}`, 'red');
     console.error(error);
@@ -138,4 +147,3 @@ function main() {
 
 // 运行
 main();
-

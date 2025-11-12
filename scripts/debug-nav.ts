@@ -1,9 +1,15 @@
 import {
-  navigationItems,
   bottomNavigationItems,
+  navigationItems,
 } from '../components/common/sidebar-navigation-config';
 
-function flatten(items) {
+interface NavigationItem {
+  id: string;
+  title: string;
+  children?: NavigationItem[];
+}
+
+function flatten(items: NavigationItem[]): { id: string; title: string }[] {
   const arr: { id: string; title: string }[] = [];
   const stack = [...items];
   while (stack.length) {

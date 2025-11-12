@@ -12,7 +12,6 @@
  * @date 2025-11-05
  */
 
-import { PrismaClient } from '@prisma/client';
 import { prisma } from '../lib/db';
 
 // 测试配置
@@ -29,7 +28,12 @@ const testResults = {
   passed: 0,
   failed: 0,
   skipped: 0,
-  errors: [],
+  errors: [] as Array<{
+    category: string;
+    name: string;
+    error: string;
+    details: any;
+  }>,
   details: {
     integrity: { total: 0, passed: 0, failed: 0 },
     consistency: { total: 0, passed: 0, failed: 0 },
@@ -37,6 +41,14 @@ const testResults = {
     sync: { total: 0, passed: 0, failed: 0 },
     recovery: { total: 0, passed: 0, failed: 0 },
   },
+  allTests: [] as Array<{
+    category: string;
+    name: string;
+    passed: boolean;
+    error?: string;
+    details?: any;
+    timestamp: string;
+  }>,
 };
 
 // 测试数据存储
@@ -71,17 +83,17 @@ function logTest(
     }
   }
 
-  testResults.details.push({
+  testResults.allTests.push({
     category,
     name,
     passed,
-    error,
+    error: error ?? undefined,
     details,
     timestamp: new Date().toISOString(),
-  } as any);
+  });
 }
 
-function logSkipped(category: string, name: string, reason: string) {
+function _logSkipped(category: string, name: string, reason: string) {
   testResults.total++;
   testResults.skipped++;
   testResults.details[category as keyof typeof testResults.details].total++;
@@ -92,7 +104,7 @@ async function sleep(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function retry(
+async function _retry(
   fn: () => Promise<any>,
   maxRetries: number = TEST_CONFIG.maxRetries
 ) {
@@ -121,7 +133,7 @@ async function apiRequest(endpoint: string, options: RequestInit = {}) {
   let data;
   try {
     data = await response.json();
-  } catch (e) {
+  } catch (_e) {
     data = null;
   }
 
@@ -202,7 +214,7 @@ async function testDataIntegrity() {
       });
 
       const categoryMap = new Map(categories.map(c => [c.id, c]));
-      let inconsistencies: any[] = [];
+      const inconsistencies: any[] = [];
 
       for (const category of categories) {
         if (category.parentId) {
@@ -293,7 +305,7 @@ async function testDataIntegrity() {
 
       // 检查空值
       const nullNames = await prisma.category.count({
-        where: { name: null },
+        where: { name: null as any },
       });
 
       if (nullNames > 0) {
@@ -305,7 +317,7 @@ async function testDataIntegrity() {
 
       // 检查空编码
       const nullCodes = await prisma.category.count({
-        where: { code: null },
+        where: { code: null as any },
       });
 
       if (nullCodes > 0) {
@@ -989,7 +1001,7 @@ async function runComprehensiveTests() {
         throw new Error('API服务不可用');
       }
       console.log('✅ API服务正常');
-    } catch (error) {
+    } catch (_error) {
       console.log('❌ API服务不可用，请确保应用程序正在运行');
       console.log(`   URL: ${TEST_CONFIG.baseUrl}/api/categories`);
       return;
@@ -1043,11 +1055,11 @@ if (require.main === module) {
 }
 
 export {
+  generateTestReport,
   runComprehensiveTests,
-  testDataIntegrity,
-  testDataConsistency,
   testBoundaryConditions,
+  testDataConsistency,
+  testDataIntegrity,
   testDataSync,
   testErrorRecovery,
-  generateTestReport,
 };

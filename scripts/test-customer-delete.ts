@@ -18,9 +18,9 @@ async function testCustomerDelete() {
       include: {
         salesOrders: true,
         outboundRecords: true,
-        payments: true,
+        paymentRecords: true,
         returnOrders: true,
-        refunds: true,
+        refundRecords: true,
         factoryShipmentOrders: true,
         childCustomers: true,
         productPrices: true,
@@ -33,9 +33,9 @@ async function testCustomerDelete() {
       console.log(`\n客户: ${customer.name} (ID: ${customer.id})`);
       console.log(`  - 销售订单: ${customer.salesOrders.length}`);
       console.log(`  - 出库记录: ${customer.outboundRecords.length}`);
-      console.log(`  - 付款记录: ${customer.payments.length}`);
+      console.log(`  - 付款记录: ${customer.paymentRecords.length}`);
       console.log(`  - 退货订单: ${customer.returnOrders.length}`);
-      console.log(`  - 退款记录: ${customer.refunds.length}`);
+      console.log(`  - 退款记录: ${customer.refundRecords.length}`);
       console.log(`  - 厂家发货订单: ${customer.factoryShipmentOrders.length}`);
       console.log(`  - 子客户: ${customer.childCustomers.length}`);
       console.log(`  - 产品价格记录: ${customer.productPrices.length}`);
@@ -43,9 +43,9 @@ async function testCustomerDelete() {
       const hasRelations =
         customer.salesOrders.length > 0 ||
         customer.outboundRecords.length > 0 ||
-        customer.payments.length > 0 ||
+        customer.paymentRecords.length > 0 ||
         customer.returnOrders.length > 0 ||
-        customer.refunds.length > 0 ||
+        customer.refundRecords.length > 0 ||
         customer.factoryShipmentOrders.length > 0 ||
         customer.childCustomers.length > 0 ||
         customer.productPrices.length > 0;
@@ -125,7 +125,7 @@ async function testCustomerDelete() {
 
     console.log(`\n✅ 可安全删除的客户数（估算）: ${deletableCustomers}`);
 
-    console.log('\n' + '='.repeat(80));
+    console.log(`\n${'='.repeat(80)}`);
     console.log('✅ 测试完成！');
   } catch (error) {
     console.error('\n❌ 测试失败:', error);

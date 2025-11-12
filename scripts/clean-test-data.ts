@@ -179,7 +179,9 @@ async function cleanTestData() {
     });
 
     if (adminUser) {
-      console.log(`  - 保留管理员用户: ${adminUser.username} (${adminUser.email})`);
+      console.log(
+        `  - 保留管理员用户: ${adminUser.username} (${adminUser.email})`
+      );
 
       const deletedUsers = await prisma.user.deleteMany({
         where: {
@@ -223,8 +225,7 @@ cleanTestData()
     console.log('\n🎉 脚本执行成功！');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n💥 脚本执行失败:', error);
     process.exit(1);
   });
-

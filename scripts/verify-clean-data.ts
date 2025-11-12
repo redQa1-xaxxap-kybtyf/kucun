@@ -175,8 +175,7 @@ verifyCleanData()
     console.log('\n🎉 验证脚本执行成功！');
     process.exit(0);
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('\n💥 验证脚本执行失败:', error);
     process.exit(1);
   });
-

@@ -3,6 +3,11 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
+import type {
+  ExpenseRecord as PrismaExpenseRecord,
+  Prisma,
+} from '@prisma/client';
+
 import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
@@ -14,8 +19,11 @@ import {
 } from '@/lib/services/purchase-order-cost-service';
 import {
   PURCHASE_ORDER_STATUS,
+  type PurchaseOrder,
+  type PurchaseOrderItem,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
+import type { ExpenseRecord as ExpenseRecordType } from '@/lib/types/expense';
 import type { ValidationIssue } from '@/lib/types/validation';
 import {
   createPurchaseOrderSchema,
@@ -44,7 +52,6 @@ import {
   unauthorizedActionResult,
   updatePurchaseOrderInternal,
 } from './purchase-orders.utils';
-
 const mapZodIssues = (issues: z.ZodIssue[]): ValidationIssue[] =>
   issues.map(issue => ({
     path: issue.path.length > 0 ? issue.path.join('.') : undefined,
@@ -386,20 +393,54 @@ export async function deletePurchaseOrder(
 /**
  * 获取采购订单详情
  */
-export async function getPurchaseOrderById(orderId: string) {
+type PurchaseOrderDetailModel = Prisma.PurchaseOrderGetPayload<{
+  include: typeof PURCHASE_ORDER_DETAIL_INCLUDE;
+}>;
+
+const PURCHASE_ORDER_DETAIL_INCLUDE = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
+  items: {
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          specification: true,
+          unit: true,
+          weight: true,
+        },
+      },
+      supplier: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          address: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.PurchaseOrderInclude;
+
+type PurchaseOrderDetailResponse = {
+  data: PurchaseOrder | null;
+  error: string | null;
+};
+
+export async function getPurchaseOrderById(
+  orderId: string
+): Promise<PurchaseOrderDetailResponse> {
   try {
     const order = await prisma.purchaseOrder.findUnique({
       where: { id: orderId },
-      include: {
-        supplier: true,
-        user: true,
-        items: {
-          include: {
-            product: true,
-            supplier: true,
-          },
-        },
-      },
+      include: PURCHASE_ORDER_DETAIL_INCLUDE,
     });
 
     if (!order) {
@@ -454,19 +495,41 @@ export async function getPurchaseOrderById(orderId: string) {
       inboundByItem
     );
 
-    const mappedItems = order.items.map((item, index) => ({
-      ...item,
-      receivedQuantity: items[index]?.receivedQuantity ?? 0,
-      executionRate: items[index]?.executionRate ?? 0,
-    }));
+    const mappedItems = order.items.map((item, index) =>
+      mapPurchaseOrderItem(
+        item,
+        items[index]?.receivedQuantity ?? 0,
+        items[index]?.executionRate ?? 0
+      )
+    );
+
+    const normalizedExpenses = expenses.map(mapExpenseRecord);
+
+    const normalizedOrder: PurchaseOrder = {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      containerNumber: order.containerNumber,
+      userId: order.userId,
+      status: order.status as PurchaseOrderStatus,
+      totalAmount: Number(order.totalAmount),
+      expenseAmount: order.expenseAmount ?? undefined,
+      costAmount: order.costAmount ?? undefined,
+      remarks: order.remarks ?? undefined,
+      shippingCompany: order.shippingCompany ?? undefined,
+      orderDate: order.orderDate ?? undefined,
+      shipmentDate: order.shipmentDate ?? undefined,
+      estimatedArrival: order.estimatedArrival ?? undefined,
+      arrivalDate: order.arrivalDate ?? undefined,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      executionSummary: summary,
+      user: order.user,
+      items: mappedItems,
+      expenses: normalizedExpenses,
+    };
 
     return {
-      data: {
-        ...order,
-        items: mappedItems,
-        executionSummary: summary,
-        expenses,
-      },
+      data: normalizedOrder,
       error: null,
     };
   } catch (error) {
@@ -476,6 +539,80 @@ export async function getPurchaseOrderById(orderId: string) {
       error: error instanceof Error ? error.message : '获取订单详情失败',
     };
   }
+}
+
+function mapPurchaseOrderItem(
+  item: PurchaseOrderDetailModel['items'][number],
+  receivedQuantity: number,
+  executionRate: number
+): PurchaseOrderItem {
+  return {
+    id: item.id,
+    purchaseOrderId: item.purchaseOrderId,
+    productId: item.productId ?? undefined,
+    supplierId: item.supplierId,
+    productCode: item.productCode,
+    quantity: Number(item.quantity),
+    unitPrice: Number(item.unitPrice),
+    totalPrice: Number(item.totalPrice),
+    inboundStatus: item.inboundStatus
+      ? (item.inboundStatus as PurchaseOrderItem['inboundStatus'])
+      : undefined,
+    inboundReceivedAt: item.inboundReceivedAt ?? undefined,
+    isManualProduct: item.isManualProduct ?? undefined,
+    manualProductName: item.manualProductName ?? undefined,
+    manualSpecification: item.manualSpecification ?? undefined,
+    manualWeight: item.manualWeight ?? undefined,
+    manualUnit: item.manualUnit ?? undefined,
+    receivedQuantity,
+    executionRate,
+    displayName: item.displayName,
+    specification: item.specification ?? undefined,
+    unit: item.unit,
+    weight: item.weight ?? undefined,
+    piecesPerUnit: item.piecesPerUnit ?? undefined,
+    remarks: item.remarks ?? undefined,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+    unitCost: item.unitCost ?? undefined,
+    allocatedExpense: item.allocatedExpense ?? undefined,
+    unitCostWithExpense: item.unitCostWithExpense ?? undefined,
+    product: item.product
+      ? {
+          id: item.product.id,
+          code: item.product.code,
+          name: item.product.name,
+          specification: item.product.specification ?? undefined,
+          unit: item.product.unit,
+          weight: item.product.weight ?? undefined,
+        }
+      : undefined,
+    supplier: {
+      id: item.supplier.id,
+      name: item.supplier.name,
+      phone: item.supplier.phone ?? undefined,
+      address: item.supplier.address ?? undefined,
+    },
+  };
+}
+
+function mapExpenseRecord(expense: PrismaExpenseRecord): ExpenseRecordType {
+  return {
+    id: expense.id,
+    expenseNumber: expense.expenseNumber,
+    expenseType: expense.expenseType as ExpenseRecordType['expenseType'],
+    expenseName: expense.expenseName,
+    expenseAmount: Number(expense.expenseAmount),
+    expenseDate: expense.expenseDate.toISOString(),
+    relatedType: expense.relatedType as ExpenseRecordType['relatedType'],
+    relatedId: expense.relatedId ?? undefined,
+    relatedNumber: expense.relatedNumber ?? undefined,
+    remarks: expense.remarks ?? undefined,
+    attachments: expense.attachments ?? undefined,
+    userId: expense.userId,
+    createdAt: expense.createdAt.toISOString(),
+    updatedAt: expense.updatedAt.toISOString(),
+  };
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
  * 应收货款诊断脚本
  * 用于验证销售订单数据和应收货款查询逻辑
- * 
+ *
  * 运行方式:
  * npx tsx scripts/debug-receivables.ts
  */
@@ -16,7 +16,7 @@ async function main() {
   // 1. 查询最近创建的销售订单
   console.log('📊 最近创建的 10 个销售订单:');
   console.log('='.repeat(80));
-  
+
   const recentOrders = await prisma.salesOrder.findMany({
     take: 10,
     orderBy: { createdAt: 'desc' },
@@ -37,7 +37,9 @@ async function main() {
   recentOrders.forEach((order, index) => {
     console.log(`\n${index + 1}. 订单编号: ${order.orderNumber}`);
     console.log(`   订单 ID: ${order.id}`);
-    console.log(`   状态: ${order.status} ${order.status === 'confirmed' ? '✅' : order.status === 'draft' ? '⚠️' : '✅'}`);
+    console.log(
+      `   状态: ${order.status} ${order.status === 'confirmed' ? '✅' : order.status === 'draft' ? '⚠️' : '✅'}`
+    );
     console.log(`   客户: ${order.customer.name}`);
     console.log(`   金额: ¥${order.totalAmount.toFixed(2)}`);
     console.log(`   创建时间: ${order.createdAt.toISOString()}`);
@@ -46,7 +48,7 @@ async function main() {
   // 2. 统计各状态的订单数量
   console.log('\n\n📈 订单状态统计:');
   console.log('='.repeat(80));
-  
+
   const statusCounts = await prisma.salesOrder.groupBy({
     by: ['status'],
     _count: {
@@ -56,13 +58,17 @@ async function main() {
 
   statusCounts.forEach(({ status, _count }) => {
     const isReceivable = ['confirmed', 'shipped', 'completed'].includes(status);
-    console.log(`${status.padEnd(15)} : ${_count.id.toString().padStart(5)} 个订单 ${isReceivable ? '✅ (应收货款)' : '⚠️  (不在应收货款)'}`);
+    console.log(
+      `${status.padEnd(15)} : ${_count.id.toString().padStart(5)} 个订单 ${isReceivable ? '✅ (应收货款)' : '⚠️  (不在应收货款)'}`
+    );
   });
 
   // 3. 查询符合应收货款条件的订单
-  console.log('\n\n💰 符合应收货款条件的订单 (status IN [confirmed, shipped, completed]):');
+  console.log(
+    '\n\n💰 符合应收货款条件的订单 (status IN [confirmed, shipped, completed]):'
+  );
   console.log('='.repeat(80));
-  
+
   const receivableOrders = await prisma.salesOrder.findMany({
     where: {
       status: { in: ['confirmed', 'shipped', 'completed'] },
@@ -87,8 +93,13 @@ async function main() {
 
   receivableOrders.forEach((order, index) => {
     const unpaidAmount = order.totalAmount - order.paidAmount;
-    const paymentStatus = unpaidAmount <= 0 ? '已付清' : unpaidAmount < order.totalAmount ? '部分支付' : '未支付';
-    
+    const paymentStatus =
+      unpaidAmount <= 0
+        ? '已付清'
+        : unpaidAmount < order.totalAmount
+          ? '部分支付'
+          : '未支付';
+
     console.log(`${index + 1}. ${order.orderNumber}`);
     console.log(`   客户: ${order.customer.name}`);
     console.log(`   状态: ${order.status}`);
@@ -102,7 +113,7 @@ async function main() {
   // 4. 检查最近 1 小时内创建的订单
   console.log('\n⏰ 最近 1 小时内创建的订单:');
   console.log('='.repeat(80));
-  
+
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
   const recentCreated = await prisma.salesOrder.findMany({
     where: {
@@ -129,9 +140,13 @@ async function main() {
   } else {
     console.log(`\n✅ 找到 ${recentCreated.length} 个订单:\n`);
     recentCreated.forEach((order, index) => {
-      const isReceivable = ['confirmed', 'shipped', 'completed'].includes(order.status);
+      const isReceivable = ['confirmed', 'shipped', 'completed'].includes(
+        order.status
+      );
       console.log(`${index + 1}. ${order.orderNumber}`);
-      console.log(`   状态: ${order.status} ${isReceivable ? '✅ (应收货款)' : '⚠️  (不在应收货款)'}`);
+      console.log(
+        `   状态: ${order.status} ${isReceivable ? '✅ (应收货款)' : '⚠️  (不在应收货款)'}`
+      );
       console.log(`   客户: ${order.customer.name}`);
       console.log(`   金额: ¥${order.totalAmount.toFixed(2)}`);
       console.log(`   创建: ${order.createdAt.toISOString()}`);
@@ -142,7 +157,7 @@ async function main() {
   // 5. 检查是否有 draft 状态的订单
   console.log('\n📝 草稿状态的订单 (不会出现在应收货款):');
   console.log('='.repeat(80));
-  
+
   const draftOrders = await prisma.salesOrder.findMany({
     where: {
       status: 'draft',
@@ -185,4 +200,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

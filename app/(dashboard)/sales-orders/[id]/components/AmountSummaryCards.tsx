@@ -28,9 +28,7 @@ export function AmountSummaryCards({
   const companyFees = Number(order.expenseAmount ?? 0);
 
   return (
-    <div
-      className={`grid gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6`}
-    >
+    <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6`}>
       <Card
         className="border border-[hsl(var(--color-border-primary))]"
         style={{ boxShadow: 'var(--shadow-light)' }}

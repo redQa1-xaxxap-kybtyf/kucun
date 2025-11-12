@@ -82,17 +82,20 @@ export async function createPurchaseOrderInternal(
     const status: PurchaseOrderStatus =
       (data.status as PurchaseOrderStatus | undefined) ??
       PURCHASE_ORDER_STATUS.DRAFT;
+    const primarySupplierId = data.items[0]?.supplierId;
+    if (!primarySupplierId) {
+      throw new Error('采购订单必须选择供应商');
+    }
     const order = await tx.purchaseOrder.create({
       data: {
         orderNumber,
         containerNumber: data.containerNumber?.trim() || null,
         status,
         totalAmount,
-        orderDate: data.orderDate ? new Date(data.orderDate) : undefined,
-        shipmentDate: data.shipmentDate
-          ? new Date(data.shipmentDate)
-          : undefined,
-        remarks: data.remarks?.trim() || undefined,
+        orderDate: data.orderDate ? new Date(data.orderDate) : null,
+        shipmentDate: data.shipmentDate ? new Date(data.shipmentDate) : null,
+        remarks: data.remarks?.trim() ?? null,
+        supplierId: primarySupplierId,
         userId,
         items: {
           create: data.items.map(item => ({

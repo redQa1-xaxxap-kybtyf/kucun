@@ -4,8 +4,9 @@
  * 警告：此操作不可逆！请确保已备份重要数据！
  */
 
-import { PrismaClient } from '@prisma/client';
 import * as readline from 'readline';
+
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -110,9 +111,9 @@ async function clearData() {
       include: {
         salesOrders: true,
         outboundRecords: true,
-        payments: true,
+        paymentRecords: true,
         returnOrders: true,
-        refunds: true,
+        refundRecords: true,
       },
     });
 
@@ -120,9 +121,9 @@ async function clearData() {
       c =>
         c.salesOrders.length > 0 ||
         c.outboundRecords.length > 0 ||
-        c.payments.length > 0 ||
+        c.paymentRecords.length > 0 ||
         c.returnOrders.length > 0 ||
-        c.refunds.length > 0
+        c.refundRecords.length > 0
     );
 
     if (customersWithData.length > 0) {
@@ -137,14 +138,14 @@ async function clearData() {
         if (c.outboundRecords.length > 0) {
           console.log(`      · 出库记录: ${c.outboundRecords.length}`);
         }
-        if (c.payments.length > 0) {
-          console.log(`      · 付款记录: ${c.payments.length}`);
+        if (c.paymentRecords.length > 0) {
+          console.log(`      · 付款记录: ${c.paymentRecords.length}`);
         }
         if (c.returnOrders.length > 0) {
           console.log(`      · 退货订单: ${c.returnOrders.length}`);
         }
-        if (c.refunds.length > 0) {
-          console.log(`      · 退款记录: ${c.refunds.length}`);
+        if (c.refundRecords.length > 0) {
+          console.log(`      · 退款记录: ${c.refundRecords.length}`);
         }
       });
       console.log('');
@@ -156,9 +157,9 @@ async function clearData() {
         AND: [
           { salesOrders: { none: {} } },
           { outboundRecords: { none: {} } },
-          { payments: { none: {} } },
+          { paymentRecords: { none: {} } },
           { returnOrders: { none: {} } },
-          { refunds: { none: {} } },
+          { refundRecords: { none: {} } },
         ],
       },
     });

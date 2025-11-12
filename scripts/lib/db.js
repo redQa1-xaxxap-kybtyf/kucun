@@ -114,8 +114,7 @@ const defaultSlowQueryThresholdMs =
   env_1.env.NODE_ENV === 'production' ? 1000 : 500;
 const slowQueryThresholdMs = Math.max(
   MIN_SLOW_QUERY_THRESHOLD_MS,
-  (env_1.env.PRISMA_SLOW_QUERY_THRESHOLD_MS ??
-    defaultSlowQueryThresholdMs)
+  env_1.env.PRISMA_SLOW_QUERY_THRESHOLD_MS ?? defaultSlowQueryThresholdMs
 );
 // 防止在客户端环境中初始化 Prisma
 function createPrismaClient() {

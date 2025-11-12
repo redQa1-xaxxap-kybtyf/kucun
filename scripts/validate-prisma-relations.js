@@ -99,10 +99,16 @@ function parseModels(schemaContent) {
       const relationMatch = trimmedLine.match(
         /^(\w+)\s+(\w+)(\?)?(\[\])?\s+@relation/
       );
+      let matchedRelationDefinition = false;
       if (relationMatch) {
         const relationNameMatch = trimmedLine.match(/@relation\("([^"]+)"/);
         const fieldsMatch = trimmedLine.match(/fields:\s*\[([^\]]+)\]/);
         const referencesMatch = trimmedLine.match(/references:\s*\[([^\]]+)\]/);
+        const isArrayRelation = !!relationMatch[4];
+        const hasFields = !!fieldsMatch;
+        const hasReferences = !!referencesMatch;
+        const isReverseRelation =
+          isArrayRelation && (!hasFields || !hasReferences);
 
         currentModel.relations.push({
           fieldName: relationMatch[1],
@@ -118,12 +124,16 @@ function parseModels(schemaContent) {
             : [],
           lineNumber,
           line: trimmedLine,
+          isReverse: isReverseRelation,
         });
+
+        matchedRelationDefinition = true;
       }
 
       // 反向关系字段（数组类型，不包含 @relation 或只有命名关系）
       // 注意：不要重复添加已经在上面 relationMatch 中匹配的关系
       if (
+        !matchedRelationDefinition &&
         !trimmedLine.includes('fields:') &&
         !trimmedLine.includes('references:')
       ) {
