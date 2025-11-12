@@ -143,9 +143,10 @@ export function QuickCreateProductDialog({
           name: form.getValues('name'),
           specification: form.getValues('specification'),
           unit: form.getValues('unit'),
+          piecesPerUnit: 1, // 默认值
           status: 'active',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         } as Product);
 
         // 关闭对话框

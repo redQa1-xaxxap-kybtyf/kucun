@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import type { BatchMatchResult } from '@/lib/types/batch';
+import type { BatchMatchResult, ExistingBatch } from '@/lib/types/batch';
 
 interface BatchSelectorProps {
   /** 当前批次号 */
@@ -188,7 +188,7 @@ export function BatchSelector({
                   ) : hasMatch ? (
                     <>
                       <CommandGroup heading="现有批次">
-                        {batches.map(batch => (
+                        {batches.map((batch: ExistingBatch) => (
                           <CommandItem
                             key={batch.batchNumber}
                             value={batch.batchNumber}

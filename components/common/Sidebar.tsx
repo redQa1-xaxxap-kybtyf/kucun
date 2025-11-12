@@ -14,7 +14,7 @@ import {
   bottomNavigationItems,
   navigationItems,
 } from './sidebar-navigation-config';
-import { SidebarNavItem } from './SidebarNavItem';
+import { buildNavItemKey, SidebarNavItem } from './SidebarNavItem';
 import { useSidebarKeyboard } from './useSidebarKeyboard';
 
 interface SidebarProps {
@@ -113,6 +113,7 @@ function SidebarComponent({
                 navItemsRef.current[index] = el;
               }}
               tabIndex={focusedIndex === index ? 0 : -1}
+              nodeKey={buildNavItemKey(undefined, item, index)}
             />
           ))}
         </nav>
@@ -137,6 +138,7 @@ function SidebarComponent({
                       navItemsRef.current[globalIndex] = el;
                     }}
                     tabIndex={focusedIndex === globalIndex ? 0 : -1}
+                    nodeKey={buildNavItemKey(undefined, item, globalIndex)}
                   />
                 );
               })}

@@ -34,7 +34,7 @@ interface SupplierSelectorProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
-  onBlur?: () => void;
+  onBlur?: () => void | Promise<void>; // ✅ 支持同步和异步onBlur
 }
 
 /**
@@ -74,8 +74,13 @@ export function SupplierSelector({
     };
 
     try {
+      // ✅ 调用onBlur,可能返回void或Promise<void>
       const result = onBlur();
-      if (result && typeof (result as Promise<unknown>).catch === 'function') {
+      // ✅ 检查是否为Promise,如果是则添加错误处理
+      if (
+        result !== undefined &&
+        typeof (result as Promise<unknown>).catch === 'function'
+      ) {
         (result as Promise<unknown>).catch(handleError);
       }
     } catch (error) {

@@ -150,9 +150,7 @@ function SidebarNavigation({
             isCollapsed={isCollapsed}
             isPathActive={isPathActive}
             focusedIndex={focusedIndex}
-            getNavItemRef={index =>
-              getNavItemRef(topItems.length + index)
-            }
+            getNavItemRef={index => getNavItemRef(topItems.length + index)}
             startIndex={topItems.length}
             currentPath={pathname}
           />
@@ -261,7 +259,5 @@ function useDuplicateNavKeyWarnings(navItems: NavigationItem[]) {
 }
 
 function findDuplicates(values: string[]) {
-  return values.filter(
-    (value, index) => values.indexOf(value) !== index
-  );
+  return values.filter((value, index) => values.indexOf(value) !== index);
 }
