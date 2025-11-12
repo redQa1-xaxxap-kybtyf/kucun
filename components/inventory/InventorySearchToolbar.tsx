@@ -7,16 +7,11 @@
 
 'use client';
 
-import { AlertTriangle, Filter, Package } from 'lucide-react';
+import { AlertTriangle, Package } from 'lucide-react';
 import * as React from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface InventorySearchToolbarProps {
@@ -161,90 +156,69 @@ function InventoryToolbarView({
   hasActiveFilters,
 }: InventoryToolbarViewProps) {
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
-      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <UnifiedSearchBar
-            searchValue={searchValue ?? (queryParams.search || '')}
-            onSearchChange={onSearch}
-            searchPlaceholder="搜索产品名称、编码..."
-            debounceDelay={0}
-            compact={true}
-            isSearching={isSearching}
-            toggleButtons={[
-              {
-                key: 'lowStock',
-                label: '库存偏低',
-                icon: <AlertTriangle className="mr-1 h-3 w-3" />,
-                active: !!queryParams.lowStock,
-                onClick: handleToggleLowStock,
-              },
-              {
-                key: 'hasStock',
-                label: '有库存',
-                icon: <Package className="mr-1 h-3 w-3" />,
-                active: !!queryParams.hasStock,
-                onClick: handleToggleHasStock,
-              },
-            ]}
-            filters={[
-              {
-                key: 'categoryId',
-                label: '分类',
-                options: categoryOptions.map(cat => ({
-                  label: cat.name,
-                  value: cat.id,
-                })),
-                width: 'w-[140px]',
-              },
-              {
-                key: 'sortBy',
-                label: '排序',
-                options: [
-                  { label: '更新时间', value: 'updatedAt' },
-                  { label: '库存数量', value: 'quantity' },
-                ],
-                width: 'w-[140px]',
-              },
-            ]}
-            filterValues={{
-              categoryId: queryParams.categoryId,
-              sortBy: queryParams.sortBy,
-            }}
-            onFilterChange={handleFilterChange}
-          />
-
-          {/* 根据需求，不在搜索框旁展示任何提示信息 */}
-
-          <DateRangePicker
-            value={{
-              startDate: queryParams.startDate,
-              endDate: queryParams.endDate,
-            }}
-            onChange={handleDateRangeChange}
-            label=""
-            placeholder="选择更新时间范围"
-            showPresets
-            showClearButton
-            className="w-full min-w-[220px] sm:w-auto"
-          />
-
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearFilters}
-              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              清空筛选
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <SearchFilterCard
+      searchValue={searchValue ?? (queryParams.search || '')}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索产品名称、编码..."
+      isSearching={isSearching}
+      // 筛选器配置
+      filters={[
+        {
+          key: 'categoryId',
+          label: '分类',
+          options: categoryOptions.map(cat => ({
+            label: cat.name,
+            value: cat.id,
+          })),
+          width: 'w-[140px]',
+        },
+        {
+          key: 'sortBy',
+          label: '排序',
+          options: [
+            { label: '更新时间', value: 'updatedAt' },
+            { label: '库存数量', value: 'quantity' },
+          ],
+          width: 'w-[140px]',
+        },
+      ]}
+      filterValues={{
+        categoryId: queryParams.categoryId || 'all',
+        sortBy: queryParams.sortBy || 'updatedAt',
+      }}
+      onFilterChange={handleFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '更新时间',
+        value: {
+          startDate: queryParams.startDate,
+          endDate: queryParams.endDate,
+        },
+        onChange: handleDateRangeChange,
+        placeholder: '选择更新时间范围',
+      }}
+      // Toggle 按钮
+      toggleButtons={[
+        {
+          key: 'lowStock',
+          label: '库存偏低',
+          icon: <AlertTriangle className="mr-1 h-3 w-3" />,
+          active: !!queryParams.lowStock,
+          onClick: handleToggleLowStock,
+        },
+        {
+          key: 'hasStock',
+          label: '有库存',
+          icon: <Package className="mr-1 h-3 w-3" />,
+          active: !!queryParams.hasStock,
+          onClick: handleToggleHasStock,
+        },
+      ]}
+      // 清空筛选
+      onClearFilters={handleClearFilters}
+      hasActiveFilters={hasActiveFilters}
+      variant="elevated"
+    />
   );
 }
