@@ -6,14 +6,9 @@
 import { z } from 'zod';
 
 /**
- * 辅助函数：处理可空的数字类型
+ * ✅ 辅助函数：处理可空的数字类型 - 移除transform避免类型推断问题
  */
-export const nullableNumber = (schema: z.ZodNumber) =>
-  z
-    .union([schema, z.null(), z.undefined()])
-    .transform(value =>
-      value === null || value === undefined ? undefined : value
-    );
+export const nullableNumber = (schema: z.ZodNumber) => schema.optional();
 
 /**
  * 销售订单状态枚举
@@ -37,7 +32,7 @@ export const salesOrderTypeSchema = z.enum(['NORMAL', 'TRANSFER']);
 export const transferFulfillmentModeSchema = z.enum(['SUPPLIER_ONLY', 'MIXED']);
 
 /**
- * 销售订单费用项验证规则
+ * ✅ 销售订单费用项验证规则 - 移除.default()
  */
 export const salesOrderFeeItemSchema = z.object({
   id: z.string().optional(),
@@ -56,7 +51,7 @@ export const salesOrderFeeItemSchema = z.object({
     .max(200, '备注不能超过200个字符')
     .optional()
     .or(z.literal('')),
-  paidBy: z.enum(['customer', 'company']).default('customer'),
+  paidBy: z.enum(['customer', 'company']), // ✅ 改为必需字段,与SalesOrderFeeItem接口保持一致
 });
 
 /**
@@ -102,7 +97,7 @@ export const salesOrderItemSchema = z.object({
     .or(z.literal('')),
 
   // 用户界面显示的单位（片或件）
-  displayUnit: z.enum(['片', '件']).default('片'),
+  displayUnit: z.enum(['片', '件']).optional(), // 移除.default('片')
 
   // 用户界面输入的数量（根据displayUnit）
   displayQuantity: z

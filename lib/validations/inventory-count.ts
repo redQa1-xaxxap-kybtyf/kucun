@@ -200,6 +200,46 @@ export const updateInventoryCountSchema = z.object({
     .describe('附件（可选，JSON字符串）'),
 });
 
+// ✅ 表单专用 Schema - 不含 transform,用于 React Hook Form
+// 遵循 DRY 和 SRP 原则: 基于 createInventoryCountSchema,但移除 transform 避免类型推断问题
+export const inventoryCountFormSchema = z.object({
+  countName: z
+    .string({ message: '盘点名称不能为空' })
+    .trim()
+    .min(1, '盘点名称不能为空')
+    .max(200, '盘点名称不能超过200个字符')
+    .describe('盘点名称'),
+
+  countType: countTypeSchema.describe('盘点类型'),
+
+  planDate: z
+    .string({ message: '计划盘点日期不能为空' })
+    .refine(val => !isNaN(Date.parse(val)), '计划盘点日期格式不正确')
+    .describe('计划盘点日期'), // ✅ 移除 .transform()
+
+  location: z
+    .string()
+    .max(100, '盘点位置不能超过100个字符')
+    .optional()
+    .describe('盘点位置（可选）'), // ✅ 移除 .transform()
+
+  categoryId: z
+    .string()
+    .uuid('盘点分类ID格式不正确')
+    .optional()
+    .describe('盘点分类ID（可选）'),
+
+  remarks: z
+    .string()
+    .max(1000, '备注不能超过1000个字符')
+    .optional()
+    .refine(
+      val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+      '备注包含不安全的内容'
+    )
+    .describe('备注（可选）'), // ✅ 移除 .transform()
+});
+
 // 提交盘点数据验证规则
 export const submitCountDataSchema = z.object({
   items: z
@@ -306,3 +346,5 @@ export type InventoryCountItemInput = z.infer<typeof inventoryCountItemSchema>;
 export type SubmitCountDataInput = z.infer<typeof submitCountDataSchema>;
 export type InventoryCountQuery = z.infer<typeof inventoryCountQuerySchema>;
 export type CountIdData = z.infer<typeof countIdSchema>;
+// ✅ 表单数据类型 - 用于 React Hook Form
+export type InventoryCountFormData = z.infer<typeof inventoryCountFormSchema>;

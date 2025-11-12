@@ -318,6 +318,184 @@ export const productSearchSchema = z.object({
   limit: z.number().min(1).max(50).default(20),
 });
 
+// ✅ 表单专用 Schema - 不含 transform 和 default,用于 React Hook Form
+// 遵循 DRY 和 SRP 原则: 基于 createInboundSchema,但移除 transform/default 避免类型推断问题
+export const inboundFormSchema = z
+  .object({
+    productId: z.string().min(1, '请选择产品'),
+
+    variantId: z.string().uuid('产品变体ID格式不正确').optional(),
+
+    // 用户输入的数量（根据选择的单位）- ✅ 可选字段
+    inputQuantity: z
+      .preprocess(
+        val => {
+          if (val === undefined || val === null || val === '') {
+            return undefined;
+          }
+          const num = typeof val === 'number' ? val : Number(val);
+          return Number.isNaN(num) ? undefined : num;
+        },
+        z
+          .number({
+            error: issue =>
+              issue.input === undefined ? '请填写入库数量' : '数量必须是数字',
+          })
+          .min(1, { message: '数量必须大于等于1' })
+          .max(999999, { message: '数量不能超过999999' })
+          .int({ message: '数量必须是整数' })
+      )
+      .optional(),
+
+    // 用户选择的单位 - ✅ 移除 .default()
+    inputUnit: inboundUnitSchema,
+
+    // 最终存储的片数（由前端计算后传入）- ✅ 可选字段
+    quantity: z
+      .preprocess(
+        val => {
+          if (val === undefined || val === null || val === '') {
+            return undefined;
+          }
+          const num = typeof val === 'number' ? val : Number(val);
+          return Number.isNaN(num) ? undefined : num;
+        },
+        z
+          .number({
+            error: issue =>
+              issue.input === undefined ? '最终片数不能为空' : '数量必须是数字',
+          })
+          .min(1, { message: '数量必须大于等于1片' })
+          .max(999999, { message: '数量不能超过999999片' })
+          .int({ message: '数量必须是整数' })
+      )
+      .optional(),
+
+    reason: inboundReasonSchema, // ✅ 移除 .default()
+
+    remarks: z
+      .string()
+      .max(500, '备注不能超过500个字符')
+      .optional()
+      .refine(
+        val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+        '备注包含不安全的内容'
+      ), // ✅ 移除 .transform()
+
+    // 批次管理字段
+    batchNumber: z.string().max(50, '批次号不能超过50个字符').optional(), // ✅ 移除 .transform()
+
+    purchaseOrderId: z
+      .string()
+      .uuid('采购订单ID格式不正确')
+      .optional()
+      .or(z.literal('')),
+
+    purchaseOrderItemId: z
+      .string()
+      .uuid('采购订单明细ID格式不正确')
+      .optional()
+      .or(z.literal('')),
+
+    supplierId: z.string().uuid('供应商ID格式不正确').optional(),
+
+    productionDate: z
+      .string()
+      .refine(val => !val || !isNaN(Date.parse(val)), '生产日期格式不正确')
+      .optional(),
+
+    colorCode: z.string().max(50, '色号不能超过50个字符').optional(),
+
+    location: z.string().max(100, '存储位置不能超过100个字符').optional(),
+
+    // 批次规格参数
+    piecesPerUnit: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({
+          error: issue =>
+            issue.input === undefined
+              ? '每单位片数不能为空'
+              : '每单位片数必须是数字',
+        })
+        .min(1, { message: '每单位片数必须大于等于1' })
+        .max(999999, { message: '每单位片数不能超过999999' })
+        .int({ message: '每单位片数必须是整数' })
+        .optional()
+    ),
+
+    weight: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({
+          error: issue =>
+            issue.input === undefined ? '重量不能为空' : '重量必须是数字',
+        })
+        .min(0.01, { message: '重量必须大于0' })
+        .max(999999.99, { message: '重量不能超过999,999.99' })
+        .multipleOf(0.01, { message: '重量最多保留2位小数' })
+        .optional()
+    ),
+
+    thickness: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({
+          error: issue =>
+            issue.input === undefined ? '厚度不能为空' : '厚度必须是数字',
+        })
+        .min(0.01, { message: '厚度必须大于0' })
+        .max(999.99, { message: '厚度不能超过999.99' })
+        .multipleOf(0.01, { message: '厚度最多保留2位小数' })
+        .optional()
+    ),
+
+    // 成本字段（入库时必填,但表单初始化时可为undefined）- ✅ 可选字段
+    unitCost: z
+      .preprocess(
+        val => {
+          if (val === undefined || val === null || val === '') {
+            return undefined;
+          }
+          const num = typeof val === 'number' ? val : Number(val);
+          return Number.isNaN(num) ? undefined : num;
+        },
+        z
+          .number({
+            error: issue =>
+              issue.input === undefined
+                ? '请填写单位成本'
+                : '单位成本必须是数字',
+          })
+          .min(0.01, { message: '单位成本必须大于0' })
+          .max(999999.99, { message: '单位成本不能超过999,999.99' })
+          .multipleOf(0.01, { message: '单位成本最多保留2位小数' })
+      )
+      .optional(),
+  })
+  .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
+    message: '传入采购订单明细时必须指定采购订单ID',
+    path: ['purchaseOrderId'],
+  });
+
 // 类型导出
 export type CreateInboundData = z.infer<typeof createInboundSchema>;
 export type UpdateInboundData = z.infer<typeof updateInboundSchema>;
@@ -325,6 +503,8 @@ export type InboundQueryData = z.infer<typeof inboundQuerySchema>;
 export type BatchInboundData = z.infer<typeof batchInboundSchema>;
 export type InboundIdData = z.infer<typeof inboundIdSchema>;
 export type ProductSearchData = z.infer<typeof productSearchSchema>;
+// ✅ 表单数据类型 - 用于 React Hook Form
+export type InboundFormData = z.infer<typeof inboundFormSchema>;
 
 // 验证辅助函数
 export const validateInboundReason = (

@@ -11,24 +11,24 @@ import { z } from 'zod';
  */
 export const salesOrderFeeItemSchema = z.object({
   id: z.string().optional(),
-  feeType: z.enum(['freight', 'processing', 'packaging', 'loading_unloading', 'other'], {
-    required_error: '请选择费用类型',
-    invalid_type_error: '费用类型无效',
-  }),
+  feeType: z.enum(
+    ['freight', 'processing', 'packaging', 'loading_unloading', 'other'],
+    {
+      message: '请选择费用类型',
+    }
+  ),
   feeName: z
     .string()
     .min(1, '费用名称不能为空')
     .max(100, '费用名称不能超过100个字符'),
   feeAmount: z
     .number({
-      required_error: '请输入费用金额',
-      invalid_type_error: '费用金额必须是数字',
+      message: '请输入费用金额',
     })
     .nonnegative('费用金额不能为负数')
     .finite('费用金额必须是有限数字'),
   paidBy: z.enum(['customer', 'company'], {
-    required_error: '请选择费用承担方',
-    invalid_type_error: '费用承担方无效',
+    message: '请选择费用承担方',
   }),
   remarks: z.string().max(500, '备注不能超过500个字符').optional(),
 });
@@ -65,4 +65,6 @@ export const validateFeeTotalAmount = (
  * 导出类型定义
  */
 export type SalesOrderFeeItemFormData = z.infer<typeof salesOrderFeeItemSchema>;
-export type SalesOrderFeeItemsFormData = z.infer<typeof salesOrderFeeItemsSchema>;
+export type SalesOrderFeeItemsFormData = z.infer<
+  typeof salesOrderFeeItemsSchema
+>;

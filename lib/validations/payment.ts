@@ -24,10 +24,10 @@ export const paymentTypeSchema = z.enum(['order_payment', 'prepayment'], {
   message: '请选择有效的收款类型',
 });
 
-// 收款记录创建验证规则
+// ✅ 收款记录创建验证规则 - 移除.default()避免类型推断问题
 export const createPaymentRecordSchema = z
   .object({
-    paymentType: paymentTypeSchema.default('order_payment'),
+    paymentType: paymentTypeSchema, // 移除.default('order_payment')
 
     salesOrderId: z.string({ message: '销售订单ID必须是字符串' }).optional(),
     factoryShipmentOrderId: z
@@ -352,6 +352,108 @@ export const batchPaymentOperationSchema = z.object({
   }),
   notes: z.string().optional().or(z.literal('')),
 });
+
+/**
+ * ✅ 收款记录表单验证规则 - 统一的表单Schema,避免联合类型
+ * 用于 React Hook Form,包含创建和编辑两种模式
+ * - 创建模式: 所有必填字段都需要填写
+ * - 编辑模式: 大部分字段可选,只更新提供的字段
+ */
+export const paymentRecordFormSchema = z
+  .object({
+    paymentType: paymentTypeSchema.optional(), // 编辑模式可选
+
+    salesOrderId: z.string({ message: '销售订单ID必须是字符串' }).optional(),
+    factoryShipmentOrderId: z
+      .string({ message: '厂家发货订单ID必须是字符串' })
+      .optional(),
+
+    customerId: z
+      .string({ message: '客户ID必须是字符串' })
+      .min(1, { error: '请选择客户' })
+      .optional(), // 编辑模式可选
+
+    paymentMethod: paymentMethodSchema.optional(), // 编辑模式可选
+
+    paymentAmount: z
+      .number({ message: '收款金额必须是数字' })
+      .positive({ error: '收款金额必须大于0' })
+      .max(999999999, { error: '收款金额不能超过999,999,999' })
+      .optional(), // 编辑模式可选
+
+    actualPaymentAmount: z
+      .number({ message: '实际收款金额必须是数字' })
+      .min(0, { error: '实际收款金额不能为负' })
+      .max(999999999, { error: '实际收款金额不能超过999,999,999' })
+      .optional(), // 编辑模式可选
+
+    roundingAmount: z
+      .number({ message: '抹零金额必须是数字' })
+      .min(-9999999, { error: '抹零金额不能低于-9,999,999' })
+      .max(9999999, { error: '抹零金额不能超过9,999,999' })
+      .optional(), // 编辑模式可选
+
+    paymentDate: z
+      .string({ message: '收款日期必须是字符串' })
+      .min(1, { error: '请选择收款日期' })
+      .refine(
+        date => {
+          const parsedDate = new Date(date);
+          return !isNaN(parsedDate.getTime());
+        },
+        { error: '请输入有效的日期格式' }
+      )
+      .optional(), // 编辑模式可选
+
+    remarks: z.string().optional().or(z.literal('')),
+
+    receiptNumber: z.string().optional().or(z.literal('')),
+
+    bankInfo: z.string().optional().or(z.literal('')),
+  })
+  .refine(
+    data => {
+      // 订单收款时必须提供订单ID（仅在创建模式下验证）
+      if (
+        data.paymentType === 'order_payment' &&
+        !data.salesOrderId &&
+        !data.factoryShipmentOrderId
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '订单收款时必须关联销售订单或厂家发货单',
+      path: ['salesOrderId'],
+    }
+  )
+  .refine(
+    data => {
+      // 验证收款金额计算（如果提供了相关字段）
+      if (
+        typeof data.paymentAmount === 'number' &&
+        typeof data.actualPaymentAmount === 'number' &&
+        typeof data.roundingAmount === 'number'
+      ) {
+        const expected = Number(
+          (data.actualPaymentAmount + data.roundingAmount).toFixed(2)
+        );
+        const recorded = Number(data.paymentAmount.toFixed(2));
+        if (Math.abs(expected - recorded) >= 0.01) {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message: '收款金额应等于实际收款金额与抹零金额之和',
+      path: ['paymentAmount'],
+    }
+  );
+
+// 导出表单数据类型
+export type PaymentRecordFormData = z.infer<typeof paymentRecordFormSchema>;
 
 // 收款统计查询验证规则
 export const paymentStatisticsQuerySchema = z

@@ -67,16 +67,11 @@ export const returnOrderItemSchema = z
     }
   );
 
-// 退货订单创建验证规则
+// ✅ 退货订单创建验证规则 - 移除.default()和.transform()
 export const createReturnOrderSchema = z
   .object({
-    returnMode: z
-      .enum(['single_order', 'multi_order'] as const)
-      .default('single_order'),
-    salesOrderId: z
-      .string()
-      .optional()
-      .transform(val => (val === '' ? undefined : val)), // 空字符串转为 undefined
+    returnMode: z.enum(['single_order', 'multi_order'] as const).optional(), // 移除.default('single_order')
+    salesOrderId: z.string().optional(), // 移除.transform()
     customerId: z.string().min(1, '客户ID不能为空'),
     type: z.enum(
       [
@@ -151,6 +146,66 @@ export const updateReturnOrderSchema = z.object({
   remarks: z.string().optional(),
   items: z.array(returnOrderItemSchema).optional(),
 });
+
+// ✅ 表单专用 Schema - 统一的表单数据结构,避免联合类型问题
+// 遵循 DRY 和 SRP 原则: 基于 createReturnOrderSchema,但包含 id 字段用于编辑模式
+export const returnOrderFormSchema = z
+  .object({
+    id: z.string().optional(), // 编辑模式时存在
+    returnMode: z.enum(['single_order', 'multi_order'] as const).optional(),
+    salesOrderId: z.string().optional(),
+    customerId: z.string().min(1, '客户ID不能为空'),
+    type: z.enum(
+      [
+        'quality_issue',
+        'wrong_product',
+        'customer_change',
+        'damage_in_transit',
+        'remaining_return',
+        'other',
+      ] as const,
+      {
+        error: '请选择退货类型',
+      }
+    ),
+    processType: z.enum(['refund', 'exchange'] as const, {
+      error: '请选择处理方式',
+    }),
+    reason: z.string().max(500, '退货原因不能超过500字符').optional(),
+    remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
+    items: z
+      .array(returnOrderItemSchema)
+      .min(1, '至少需要一个退货明细')
+      .max(
+        returnRefundConfig.returnOrderItemsLimit,
+        `退货明细不能超过${returnRefundConfig.returnOrderItemsLimit}项`
+      ),
+  })
+  .refine(
+    data => {
+      // 单订单模式：salesOrderId 必填
+      if (data.returnMode === 'single_order') {
+        return !!data.salesOrderId;
+      }
+      return true;
+    },
+    {
+      message: '单订单退货模式下，销售订单ID不能为空',
+      path: ['salesOrderId'],
+    }
+  )
+  .refine(
+    data => {
+      // 检查明细项目的唯一性（同一个销售订单明细项不能重复退货）
+      const itemIds = data.items.map(item => item.salesOrderItemId);
+      const uniqueItemIds = new Set(itemIds);
+      return itemIds.length === uniqueItemIds.size;
+    },
+    {
+      message: '不能对同一个销售明细项重复申请退货',
+      path: ['items'],
+    }
+  );
 
 // 退货状态更新验证规则
 export const updateReturnStatusSchema = z.object({
@@ -329,6 +384,8 @@ export type ReturnOrderApprovalFormData = z.infer<
   typeof returnOrderApprovalSchema
 >;
 export type BatchReturnOrderFormData = z.infer<typeof batchReturnOrderSchema>;
+// ✅ 表单数据类型 - 用于 React Hook Form,避免联合类型问题
+export type ReturnOrderFormData = z.infer<typeof returnOrderFormSchema>;
 
 // 表单默认值
 export const returnOrderItemDefaults: Partial<ReturnOrderItemFormData> = {

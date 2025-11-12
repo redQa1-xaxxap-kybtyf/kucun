@@ -156,32 +156,32 @@ const extendedInfoValidations = {
     .optional(),
 };
 
-// 客户创建表单验证
+// ✅ 客户创建表单验证 - parentCustomerId可选
 export const customerCreateSchema = z.object({
   name: baseValidations.name,
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z
-    .string()
-    .uuid('上级客户ID格式不正确')
-    .optional()
-    .or(z.literal(''))
-    .transform(value => (value === '' ? undefined : value)),
+  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
-// 客户更新表单验证
+// ✅ 快速添加客户表单验证 - 包含 notes 字段
+export const customerQuickAddSchema = z.object({
+  name: baseValidations.name,
+  phone: baseValidations.phone,
+  address: baseValidations.address,
+  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  extendedInfo: z.object(extendedInfoValidations).optional(),
+  notes: z.string().optional(),
+});
+
+// ✅ 客户更新表单验证 - parentCustomerId可选
 export const customerUpdateSchema = z.object({
   id: z.string().min(1, '客户ID不能为空'),
   name: baseValidations.name.optional(),
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z
-    .string()
-    .uuid('上级客户ID格式不正确')
-    .optional()
-    .or(z.literal(''))
-    .transform(value => (value === '' ? undefined : value)),
+  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
@@ -200,6 +200,7 @@ export const customerSearchSchema = z.object({
 
 // 表单数据类型推导
 export type CustomerCreateFormData = z.infer<typeof customerCreateSchema>;
+export type CustomerQuickAddFormData = z.infer<typeof customerQuickAddSchema>;
 export type CustomerUpdateFormData = z.infer<typeof customerUpdateSchema>;
 export type CustomerSearchFormData = z.infer<typeof customerSearchSchema>;
 

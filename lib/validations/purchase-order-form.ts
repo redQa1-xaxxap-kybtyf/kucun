@@ -5,7 +5,6 @@ import {
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 import {
-  updatePurchaseOrderSchema as baseUpdatePurchaseOrderSchema,
   updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema,
   type UpdatePurchaseOrderStatusData,
 } from '@/lib/validations/purchase-order';
@@ -72,27 +71,42 @@ export const purchaseOrderItemSchema = z
     }
   });
 
+// ✅ 采购订单费用项Schema - 与厂家发货费用类型一致
 export const purchaseOrderFeeItemSchema = z.object({
-  feeType: z.enum(['shipping', 'storage', 'customs', 'other']),
+  feeType: z.enum([
+    'freight', // 运费 (与厂家发货一致)
+    'processing', // 加工费
+    'packaging', // 包装费
+    'loading_unloading', // 装卸费
+    'storage', // 仓储费
+    'customs', // 报关费
+    'other', // 其他费用
+  ]),
   feeName: z.string().min(1, '费用名称不能为空'),
   feeAmount: z.number().nonnegative('费用金额不能为负'),
   remarks: z.string().optional(),
 });
 
-export const createPurchaseOrderSchema = z.object({
-  containerNumber: z.string().optional(),
-  status: purchaseOrderStatusEnum.default(PURCHASE_ORDER_STATUS.DRAFT),
-  orderDate: z.string().optional(),
-  shipmentDate: z.string().optional(),
+// ✅ 统一的表单Schema - 包含idempotencyKey字段
+// 注意: 不使用.default(),让表单组件处理默认值,避免类型推断问题
+const baseFormSchema = z.object({
+  idempotencyKey: z.string().optional(), // 创建时可选,编辑时必填
+  containerNumber: z.string().optional().or(z.literal('')),
+  status: purchaseOrderStatusEnum, // 移除.default(),在表单中设置默认值
+  orderDate: z.string().optional().or(z.literal('')),
+  shipmentDate: z.string().optional().or(z.literal('')),
   items: z.array(purchaseOrderItemSchema).min(1, '至少需要一个产品项'),
-  remarks: z.string().optional(),
-  feeItems: z.array(purchaseOrderFeeItemSchema).optional().default([]),
+  remarks: z.string().optional().or(z.literal('')),
+  feeItems: z.array(purchaseOrderFeeItemSchema).optional(), // 移除.default()
 });
 
-export const updatePurchaseOrderSchema =
-  baseUpdatePurchaseOrderSchema.safeExtend({
-    feeItems: z.array(purchaseOrderFeeItemSchema).optional(),
-  });
+// 创建采购订单Schema
+export const createPurchaseOrderSchema = baseFormSchema;
+
+// 更新采购订单Schema - idempotencyKey必填
+export const updatePurchaseOrderSchema = baseFormSchema.extend({
+  idempotencyKey: z.string().min(1, '幂等性键不能为空'),
+});
 
 export const updatePurchaseOrderStatusSchema =
   baseUpdatePurchaseOrderStatusSchema.safeExtend({
@@ -103,7 +117,9 @@ export type PurchaseOrderItemInput = z.infer<typeof purchaseOrderItemSchema> & {
   batchNumber?: string | null;
   piecesPerUnit?: number;
 };
-export type PurchaseOrderFormData = z.infer<typeof createPurchaseOrderSchema>;
+
+// ✅ 统一的表单类型 - 从baseFormSchema推断
+export type PurchaseOrderFormData = z.infer<typeof baseFormSchema>;
 export type UpdatePurchaseOrderFormData = z.infer<
   typeof updatePurchaseOrderSchema
 >;

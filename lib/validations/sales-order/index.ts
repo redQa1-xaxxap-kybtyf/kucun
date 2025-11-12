@@ -22,7 +22,7 @@ import {
 } from './validators';
 
 /**
- * 基础销售订单验证规则
+ * ✅ 基础销售订单验证规则 - 移除.default()避免类型推断问题
  */
 const baseSalesOrderSchema = z
   .object({
@@ -34,13 +34,11 @@ const baseSalesOrderSchema = z
 
     customerId: z.string().min(1, '客户ID不能为空'),
 
-    status: salesOrderStatusSchema.default('draft'),
+    status: salesOrderStatusSchema, // 移除.default('draft')
 
-    orderType: salesOrderTypeSchema.default('NORMAL'),
+    orderType: salesOrderTypeSchema, // 移除.default('NORMAL')
 
-    transferMode: transferFulfillmentModeSchema
-      .optional()
-      .default('SUPPLIER_ONLY'),
+    transferMode: transferFulfillmentModeSchema.optional(), // 移除.default('SUPPLIER_ONLY')
 
     supplierId: z
       .string()
@@ -95,14 +93,14 @@ const baseSalesOrderSchema = z
       .min(0, '订单明细不能为负')
       .max(100, '订单明细不能超过100条'),
 
-    feeItems: z.array(salesOrderFeeItemSchema).optional().default([]),
+    feeItems: z.array(salesOrderFeeItemSchema).optional(), // 移除.default([])
 
     itemsAmount: z.number().min(0, '产品金额不能为负数').optional(),
     additionalFees: z.number().min(0, '额外费用不能为负数').optional(),
     totalAmount: z.number().min(0, '总金额不能为负数').optional(),
 
     // 预收款相关字段
-    usePrepayment: z.boolean().optional().default(false),
+    usePrepayment: z.boolean().optional(), // 移除.default(false)
     prepaymentAmount: nullableNumber(
       z
         .number()
@@ -199,6 +197,62 @@ export const salesOrderUpdateSchema = baseSalesOrderSchema
       path: ['items'],
     }
   );
+
+/**
+ * ✅ 销售订单表单验证规则 - 统一的表单Schema,避免联合类型
+ * 用于 React Hook Form,包含创建和编辑两种模式
+ */
+export const salesOrderFormSchema = baseSalesOrderSchema
+  .extend({
+    id: z.string().optional(), // 编辑模式需要id,创建模式不需要
+  })
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      return data.items && data.items.length > 0;
+    },
+    {
+      message: '至少需要一个订单项',
+      path: ['items'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      return validateItemCombinations(data.items);
+    },
+    {
+      message: '订单明细中存在重复的产品规格组合',
+      path: ['items'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      if (data.orderType === 'TRANSFER') {
+        return data.supplierId && data.supplierId.trim() !== '';
+      }
+      return true;
+    },
+    {
+      message: '调货销售必须选择供应商',
+      path: ['supplierId'],
+    }
+  )
+  .superRefine((data, ctx) => {
+    validateManualProductFields(
+      data.items,
+      ctx,
+      data.status ?? 'draft',
+      data.orderType
+    );
+  });
 
 /**
  * 销售订单查询参数验证规则
@@ -308,6 +362,7 @@ export {
 // 导出类型
 export type SalesOrderCreateFormData = z.infer<typeof salesOrderCreateSchema>;
 export type SalesOrderUpdateFormData = z.infer<typeof salesOrderUpdateSchema>;
+export type SalesOrderFormData = z.infer<typeof salesOrderFormSchema>;
 export type SalesOrderQueryFormData = z.infer<typeof salesOrderQuerySchema>;
 export type BatchDeleteSalesOrdersFormData = z.infer<
   typeof batchDeleteSalesOrdersSchema

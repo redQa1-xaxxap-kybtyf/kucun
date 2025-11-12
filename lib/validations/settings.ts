@@ -178,21 +178,22 @@ const QiniuDomainSchema = z
   )
   .transform(value => value.replace(/\/+$/, '')); // 自动去除末尾斜杠
 
-const QiniuAccessKeyFormSchema = z
-  .union([QiniuAccessKeySchema, z.literal('')])
-  .transform(value => value.trim());
-
-const QiniuSecretKeyFormSchema = z
-  .union([QiniuSecretKeySchema, z.literal('')])
-  .transform(value => value.trim());
-
-const QiniuBucketFormSchema = z
-  .union([QiniuBucketSchema, z.literal('')])
-  .transform(value => value.trim());
-
-const QiniuDomainFormSchema = z
-  .union([QiniuDomainSchema, z.literal('')])
-  .transform(value => value.trim());
+// ✅ 移除未使用的 FormSchema - 已在 QiniuStorageConfigFormSchema 中直接定义
+// const QiniuAccessKeyFormSchema = z
+//   .union([QiniuAccessKeySchema, z.literal('')])
+//   .transform(value => value.trim());
+//
+// const QiniuSecretKeyFormSchema = z
+//   .union([QiniuSecretKeySchema, z.literal('')])
+//   .transform(value => value.trim());
+//
+// const QiniuBucketFormSchema = z
+//   .union([QiniuBucketSchema, z.literal('')])
+//   .transform(value => value.trim());
+//
+// const QiniuDomainFormSchema = z
+//   .union([QiniuDomainSchema, z.literal('')])
+//   .transform(value => value.trim());
 
 // 七牛云存储设置验证规则
 export const StorageSettingsSchema = z.object({
@@ -278,8 +279,58 @@ export const SettingsQuerySchema = z.object({
   keys: z.array(z.string()).optional(),
 });
 
-// 基本设置表单验证（用于前端表单）
-export const BasicSettingsFormSchema = BasicSettingsSchema.partial();
+// 基本设置表单验证（用于前端表单）- 移除.default()避免类型推断问题
+export const BasicSettingsFormSchema = z.object({
+  // 公司信息
+  companyName: z
+    .string()
+    .min(1, '公司名称不能为空')
+    .max(100, '公司名称不能超过100个字符')
+    .optional(),
+  companyAddress: z.string().max(200, '公司地址不能超过200个字符').optional(),
+  companyPhone: z
+    .string()
+    .regex(/^[\d\s\-\+\(\)]+$/, '电话号码格式不正确')
+    .optional()
+    .or(z.literal('')),
+  companyEmail: z.string().email('邮箱格式不正确').optional().or(z.literal('')),
+  companyWebsite: z
+    .string()
+    .url('网站地址格式不正确')
+    .optional()
+    .or(z.literal('')),
+
+  // 系统配置
+  systemName: z
+    .string()
+    .min(1, '系统名称不能为空')
+    .max(50, '系统名称不能超过50个字符')
+    .optional(),
+  systemVersion: z.string().max(20, '系统版本不能超过20个字符').optional(),
+  systemDescription: z
+    .string()
+    .max(500, '系统描述不能超过500个字符')
+    .optional(),
+
+  // 业务配置 - 移除.default()
+  defaultLanguage: z.string().length(2, '语言代码必须为2位').optional(),
+
+  // 库存配置 - 移除.default()
+  lowStockThreshold: z.coerce
+    .number()
+    .int('库存阈值必须为整数')
+    .min(1, '库存阈值必须大于0')
+    .max(9999, '库存阈值不能超过9999')
+    .optional(),
+  enableStockAlerts: z.boolean().optional(),
+
+  // 订单配置 - 移除.default()
+  orderNumberPrefix: z
+    .string()
+    .max(10, '订单号前缀不能超过10个字符')
+    .optional(),
+  enableOrderApproval: z.boolean().optional(),
+});
 
 // 用户设置表单验证（用于前端表单）
 export const UserSettingsFormSchema = UserSettingsSchema.partial();
@@ -356,6 +407,35 @@ export const ResetPasswordSchema = z.object({
     .max(50, '密码不能超过50个字符'),
 });
 
+/**
+ * ✅ 用户表单验证规则 - 统一的表单Schema,避免联合类型
+ * 用于 React Hook Form,包含创建和编辑两种模式
+ * - 创建模式: userId 为空,password 必填
+ * - 编辑模式: userId 必填,password 可选(不修改密码时为空)
+ */
+export const UserFormSchema = z.object({
+  userId: z.string().optional(), // 编辑模式需要,创建模式不需要
+  username: z
+    .string()
+    .min(3, '用户名至少需要3个字符')
+    .max(20, '用户名不能超过20个字符')
+    .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
+  email: z.string().email('邮箱格式不正确'),
+  name: z.string().min(1, '姓名不能为空').max(50, '姓名不能超过50个字符'),
+  password: z
+    .string()
+    .min(6, '密码至少需要6个字符')
+    .max(50, '密码不能超过50个字符')
+    .optional()
+    .or(z.literal('')), // 编辑模式可选,创建模式必填(在提交时验证)
+  role: z.enum(['admin', 'sales'], {
+    error: '角色必须是管理员或销售员',
+  }),
+});
+
+// 导出表单数据类型
+export type UserFormData = z.infer<typeof UserFormSchema>;
+
 // 七牛云存储配置验证规则
 export const QiniuStorageConfigSchema = z.object({
   accessKey: QiniuAccessKeySchema,
@@ -390,18 +470,27 @@ export const QiniuStorageConfigSchema = z.object({
     ),
 });
 
+// ✅ 表单专用 Schema - 不含 transform,用于 React Hook Form
 export const QiniuStorageConfigFormSchema = z.object({
-  accessKey: QiniuAccessKeyFormSchema,
-  secretKey: QiniuSecretKeyFormSchema,
-  bucket: QiniuBucketFormSchema,
-  domain: QiniuDomainFormSchema,
-  region: z.string().max(20, '存储区域不能超过20个字符').optional().nullable(),
-  pathFormat: z
+  accessKey: z
     .string()
-    .max(200, '存储目录格式不能超过200个字符')
-    .optional()
-    .nullable()
-    .transform(value => value?.trim() ?? ''),
+    .min(1, 'Access Key不能为空')
+    .max(100, 'Access Key不能超过100个字符'),
+  secretKey: z
+    .string()
+    .min(1, 'Secret Key不能为空')
+    .max(100, 'Secret Key不能超过100个字符'),
+  bucket: z
+    .string()
+    .min(1, '存储空间名称不能为空')
+    .max(50, '存储空间名称不能超过50个字符'),
+  domain: z
+    .string()
+    .min(1, '访问域名不能为空')
+    .max(200, '访问域名不能超过200个字符'),
+  // ✅ 可选字段 - 只使用 optional(),不使用 nullable()
+  region: z.string().max(20, '存储区域不能超过20个字符').optional(),
+  pathFormat: z.string().max(200, '存储目录格式不能超过200个字符').optional(),
 });
 
 export const QiniuStorageTestSchema = z.object({

@@ -5,6 +5,8 @@
 
 import { z } from 'zod';
 
+import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
+
 import {
   factoryShipmentFeeItemSchema,
   factoryShipmentOrderItemSchema,
@@ -159,6 +161,142 @@ export const updateFactoryShipmentOrderSchema = z
     );
   });
 
+/**
+ * ✅ 厂家发货订单表单验证 - 表单专用Schema,移除.default()和.transform()
+ * 用于 React Hook Form,避免类型推断问题
+ */
+
+// 表单专用的订单明细项Schema - 移除.transform()和.default()
+const factoryShipmentOrderItemFormSchema = z.object({
+  productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
+  supplierId: z.string().min(1, '请选择供应商').optional().or(z.literal('')),
+  productCode: z
+    .string()
+    .max(50, '产品编码不能超过50个字符')
+    .optional()
+    .or(z.literal('')),
+  batchNumber: z
+    .string()
+    .max(100, '批次号不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+  quantity: z.number().positive('数量必须大于0'),
+  unitPrice: z.number().min(0, '单价不能为负数'),
+  unitCost: z.number().min(0, '进货价不能为负数').optional(),
+  ownership: z.nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP), // 移除.default()
+  customerDeliveryStatus: z.enum(['pending', 'delivered']).optional(),
+  selfInboundStatus: z.enum(['pending', 'received']).optional(),
+  ownershipRemarks: z
+    .string()
+    .max(200, '归属备注不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
+  displayName: z
+    .string()
+    .max(200, '产品名称不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
+  specification: z
+    .string()
+    .max(200, '规格不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
+  unit: z.enum(['片', '件']).optional(),
+  piecesPerUnit: z.number().positive('每件片数必须大于0').optional(),
+  weight: z.number().positive('重量必须大于0').optional(),
+  remarks: z
+    .string()
+    .max(500, '备注不能超过500个字符')
+    .optional()
+    .or(z.literal('')),
+});
+
+// 表单专用的费用项Schema - 移除.default()
+const factoryShipmentFeeItemFormSchema = z.object({
+  id: z.string().optional(),
+  feeType: z.enum([
+    'freight',
+    'processing',
+    'packaging',
+    'loading_unloading',
+    'storage',
+    'customs',
+    'other',
+  ]),
+  feeName: z
+    .string()
+    .min(1, '费用名称不能为空')
+    .max(100, '费用名称不能超过100个字符'),
+  feeAmount: z
+    .number()
+    .nonnegative('费用金额不能为负数')
+    .finite('费用金额必须是有效数字')
+    .max(999999.99, '费用金额不能超过999,999.99')
+    .multipleOf(0.01, '费用金额最多保留2位小数'),
+  paidBy: z.enum(['customer', 'company']), // 移除.default()
+  remarks: z
+    .string()
+    .max(500, '备注不能超过500个字符')
+    .optional()
+    .or(z.literal('')),
+});
+
+export const factoryShipmentOrderFormSchema = z
+  .object({
+    idempotencyKey: z
+      .string()
+      .uuid('幂等性键格式不正确')
+      .optional()
+      .describe('幂等性键,防止重复操作'),
+    containerNumber: z
+      .string()
+      .max(50, '集装箱号码不能超过50个字符')
+      .optional()
+      .or(z.literal('')),
+    customerId: z.string().min(1, '请选择客户'),
+    status: factoryShipmentStatusSchema.optional(),
+    totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
+    receivableAmount: z.number().min(0, '应收金额不能为负数').optional(),
+    depositAmount: z.number().min(0, '定金金额不能为负数').optional(),
+    remarks: z
+      .string()
+      .max(1000, '备注不能超过1000个字符')
+      .optional()
+      .or(z.literal('')),
+    items: z
+      .array(factoryShipmentOrderItemFormSchema)
+      .min(1, '至少需要添加一个产品'),
+    feeItems: z.array(factoryShipmentFeeItemFormSchema).optional(), // 移除.default()
+  })
+  .refine(
+    data => {
+      // 定金不能超过应收金额
+      if (
+        data.depositAmount &&
+        data.receivableAmount &&
+        data.depositAmount > data.receivableAmount
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '定金金额不能超过应收金额',
+      path: ['depositAmount'],
+    }
+  )
+  .superRefine((data, ctx) => {
+    // 验证订单明细的所有业务规则
+    validateFactoryShipmentItems(data.items, data.status, ctx);
+
+    // 验证状态相关的必填字段
+    validateStatusFieldRequirements(
+      data.status,
+      { containerNumber: data.containerNumber },
+      ctx
+    );
+  });
+
 // 重新导出基础schema和类型
 export * from './schemas';
 
@@ -178,10 +316,15 @@ export type CreateFactoryShipmentOrderData = z.infer<
 export type UpdateFactoryShipmentOrderData = z.infer<
   typeof updateFactoryShipmentOrderSchema
 >;
+export type FactoryShipmentOrderFormData = z.infer<
+  typeof factoryShipmentOrderFormSchema
+>;
 
 // 兼容性导出（用于现有代码）
-export { factoryShipmentOrderListParamsSchema };
-export { updateFactoryShipmentOrderStatusSchema };
+export {
+  factoryShipmentOrderListParamsSchema,
+  updateFactoryShipmentOrderStatusSchema,
+};
 export type FactoryShipmentOrderListParams = z.infer<
   typeof factoryShipmentOrderListParamsSchema
 >;

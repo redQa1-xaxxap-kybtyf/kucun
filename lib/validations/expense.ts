@@ -43,8 +43,7 @@ export const createExpenseSchema = z.object({
   expenseDate: z
     .string({ message: '费用日期不能为空' })
     .refine(val => !isNaN(Date.parse(val)), '费用日期格式不正确')
-    .transform(val => new Date(val).toISOString())
-    .describe('费用日期'),
+    .describe('费用日期'), // ✅ 移除.transform()
 
   // 关联业务（可选）
   relatedType: expenseRelatedTypeSchema
@@ -113,6 +112,62 @@ export const createExpenseSchema = z.object({
       }
     }, '附件格式不正确，必须是有效的JSON字符串')
     .describe('附件（可选，JSON字符串）'),
+});
+
+// ✅ 表单专用 Schema - 不含 transform,用于 React Hook Form
+// 遵循 DRY 原则: 基于 createExpenseSchema,但移除 transform 避免类型推断问题
+export const expenseFormSchema = z.object({
+  expenseType: expenseTypeSchema.describe('费用类型'),
+
+  expenseName: z
+    .string({ message: '费用名称不能为空' })
+    .trim()
+    .min(1, '费用名称不能为空')
+    .max(100, '费用名称不能超过100个字符')
+    .describe('费用名称'),
+
+  expenseAmount: z
+    .number({ message: '费用金额必须是数字' })
+    .min(0.01, { message: '费用金额必须大于0' })
+    .max(99999999.99, { message: '费用金额不能超过99,999,999.99' })
+    .multipleOf(0.01, { message: '费用金额最多保留2位小数' })
+    .describe('费用金额'),
+
+  expenseDate: z
+    .string({ message: '费用日期不能为空' })
+    .refine(val => !isNaN(Date.parse(val)), '费用日期格式不正确')
+    .describe('费用日期'),
+
+  // 关联业务（可选）
+  relatedType: expenseRelatedTypeSchema
+    .nullable()
+    .optional()
+    .describe('关联业务类型（可选）'),
+
+  relatedId: z
+    .string()
+    .uuid('关联业务ID格式不正确')
+    .nullable()
+    .optional()
+    .describe('关联业务ID（可选）'),
+
+  // ✅ 移除 transform,直接使用 string
+  relatedNumber: z
+    .string()
+    .max(100, '关联业务单号不能超过100个字符')
+    .optional()
+    .describe('关联业务单号（可选）'),
+
+  // ✅ 移除 transform,直接使用 string
+  remarks: z
+    .string()
+    .max(1000, '备注不能超过1000个字符')
+    .optional()
+    .refine(
+      val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+      '备注包含不安全的内容'
+    )
+    .describe('备注（可选）'),
 });
 
 // 更新费用记录验证规则（所有字段可选）
@@ -289,6 +344,8 @@ export type ExpenseStatisticsFilterInput = z.infer<
   typeof expenseStatisticsFilterSchema
 >;
 export type ExpenseIdData = z.infer<typeof expenseIdSchema>;
+// ✅ 表单数据类型 - 用于 React Hook Form
+export type ExpenseFormData = z.infer<typeof expenseFormSchema>;
 
 // 验证辅助函数
 export const validateExpenseType = (type: string): type is ExpenseType =>
