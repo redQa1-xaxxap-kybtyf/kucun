@@ -69,7 +69,7 @@ export function CustomerForm({
     : CustomerCreateFormData;
 
   const form = useForm<FormData>({
-    resolver: standardSchemaResolver(schema) as never,
+    resolver: standardSchemaResolver(schema as any) as any,
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误

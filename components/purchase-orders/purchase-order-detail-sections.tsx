@@ -140,7 +140,13 @@ export function SupplierInfoCard({ items }: SupplierInfoCardProps) {
   // 按供应商分组统计
   const supplierMap = new Map<
     string,
-    { name: string; phone?: string; address?: string; amount: number; itemCount: number }
+    {
+      name: string;
+      phone?: string;
+      address?: string;
+      amount: number;
+      itemCount: number;
+    }
   >();
 
   for (const item of items) {
@@ -198,8 +204,11 @@ export function SupplierInfoCard({ items }: SupplierInfoCardProps) {
                 <div>
                   <p className="text-muted-foreground text-sm">采购金额</p>
                   <p className="font-medium">
-                    ¥{supplier.amount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
-                    <span className="text-muted-foreground text-sm ml-2">
+                    ¥
+                    {supplier.amount.toLocaleString('zh-CN', {
+                      minimumFractionDigits: 2,
+                    })}
+                    <span className="text-muted-foreground ml-2 text-sm">
                       ({supplier.itemCount}个产品)
                     </span>
                   </p>

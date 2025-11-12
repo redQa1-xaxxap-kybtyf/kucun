@@ -5,7 +5,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import {
   AddressSelector,
@@ -36,8 +35,9 @@ import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import type { AddressData } from '@/lib/types/address';
 import type { Customer } from '@/lib/types/customer';
 import {
-  customerCreateSchema as CreateCustomerSchema,
+  customerQuickAddSchema,
   type CustomerCreateFormData as CreateCustomerData,
+  type CustomerQuickAddFormData,
 } from '@/lib/validations/customer';
 
 interface QuickAddCustomerDialogProps {
@@ -56,13 +56,9 @@ export function QuickAddCustomerDialog({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // 表单配置
-  const form = useForm<CreateCustomerData & { notes: string }>({
-    resolver: standardSchemaResolver(
-      CreateCustomerSchema.extend({
-        notes: z.string().optional(),
-      })
-    ),
+  // ✅ 表单配置 - 使用专用的快速添加Schema
+  const form = useForm<CustomerQuickAddFormData>({
+    resolver: standardSchemaResolver(customerQuickAddSchema),
     defaultValues: {
       name: '',
       phone: '',
@@ -106,7 +102,7 @@ export function QuickAddCustomerDialog({
   });
 
   // 提交表单
-  const onSubmit = (data: CreateCustomerData & { notes: string }) => {
+  const onSubmit = (data: CustomerQuickAddFormData) => {
     const { notes, ...customerData } = data;
 
     // 确保地址是字符串类型
@@ -160,7 +156,12 @@ export function QuickAddCustomerDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit((data: any) =>
+              onSubmit(data as CustomerQuickAddFormData)
+            )}
+            className="space-y-4"
+          >
             {/* 客户名称 */}
             <FormField
               control={form.control}

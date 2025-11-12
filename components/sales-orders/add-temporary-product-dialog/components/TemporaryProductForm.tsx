@@ -1,4 +1,3 @@
-import React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ import { UNIT_OPTIONS } from '../types';
 import type { TemporaryProductData } from '../validation';
 
 interface TemporaryProductFormProps {
-  form: UseFormReturn<TemporaryProductData>;
+  form: UseFormReturn<TemporaryProductData, any, any>;
   onSubmit: (data: TemporaryProductData) => void;
   onCancel: () => void;
   requirements?: TemporaryProductRequirements;

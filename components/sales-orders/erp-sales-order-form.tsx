@@ -143,10 +143,12 @@ export function ERPSalesOrderForm({
   );
 
   const [resolvedCustomer, setResolvedCustomer] =
-    React.useState<Customer | null>(() => initialData?.customer ?? null);
+    React.useState<Customer | null>(
+      () => (initialData?.customer as Customer) ?? null
+    ); // ✅ 类型断言
   React.useEffect(() => {
     if (mode === 'edit' && initialData?.customer) {
-      setResolvedCustomer(initialData.customer);
+      setResolvedCustomer(initialData.customer as Customer); // ✅ 类型断言
     }
   }, [mode, initialData?.customer]);
 

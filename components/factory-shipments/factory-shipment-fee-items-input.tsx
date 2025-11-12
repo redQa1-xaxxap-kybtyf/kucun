@@ -84,9 +84,10 @@ export const FactoryShipmentFeeItemsInput =
 
       const handleAddFeeItem = () => {
         const newItem: FactoryShipmentFeeItem = {
-          feeType: 'shipping', // 默认为运费（最常用）
-          feeName: FACTORY_SHIPMENT_FEE_TYPE_LABELS.shipping,
+          feeType: 'freight', // 默认为运费（最常用）
+          feeName: FACTORY_SHIPMENT_FEE_TYPE_LABELS.freight,
           feeAmount: 0,
+          paidBy: 'customer', // 默认客户承担
           remarks: '',
         };
         const updated = [...localItems, newItem];

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
 
-
 import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/lib/utils';
 
@@ -12,7 +11,9 @@ interface OrderSummaryCardProps {
 
 export function OrderSummaryCard({ orderInfo }: OrderSummaryCardProps) {
   const roundingAdjustmentLabel =
-    orderInfo.roundingAdjustment > 0 ? 'text-[hsl(var(--color-success))]' : 'text-[hsl(var(--color-error))]';
+    orderInfo.roundingAdjustment > 0
+      ? 'text-[hsl(var(--color-success))]'
+      : 'text-[hsl(var(--color-error))]';
   const roundingAdjustmentValue = `${orderInfo.roundingAdjustment > 0 ? '+' : ''}${formatCurrency(orderInfo.roundingAdjustment)}`;
 
   return (
@@ -36,7 +37,9 @@ export function OrderSummaryCard({ orderInfo }: OrderSummaryCardProps) {
         <Separator />
         <SummaryItem
           label="实际应收"
-          value={formatCurrency(orderInfo.totalAmount + orderInfo.roundingAdjustment)}
+          value={formatCurrency(
+            orderInfo.totalAmount + orderInfo.roundingAdjustment
+          )}
           valueClassName="text-base font-bold text-[hsl(var(--color-primary))]"
         />
         <SummaryItem
@@ -63,11 +66,17 @@ interface SummaryItemProps {
 function SummaryItem({ label, value, valueClassName }: SummaryItemProps) {
   return (
     <div className="flex justify-between">
-      <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">{label}</span>
-      <span className={valueClassName ?? 'text-sm font-semibold text-[hsl(var(--color-text-primary))]'}>
+      <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
+        {label}
+      </span>
+      <span
+        className={
+          valueClassName ??
+          'text-sm font-semibold text-[hsl(var(--color-text-primary))]'
+        }
+      >
         {value}
       </span>
     </div>
   );
 }
-

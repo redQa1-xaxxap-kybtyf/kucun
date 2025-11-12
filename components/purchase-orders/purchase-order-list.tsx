@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Edit, Eye } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +23,7 @@ import {
 import {
   PURCHASE_ORDER_STATUS,
   PURCHASE_ORDER_STATUS_LABELS,
+  type PurchaseOrder,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 import { formatPurchaseOrderSuppliers } from '@/lib/utils/purchase-order-suppliers';
@@ -86,7 +86,12 @@ export function PurchaseOrderList({
     sortOrder,
   };
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<{
+    data: PurchaseOrder[];
+    total: number;
+    page: number;
+    limit: number;
+  }>({
     queryKey: purchaseOrderQueryKeys.list(queryParams),
     queryFn: () => getPurchaseOrders(queryParams),
   });
@@ -105,8 +110,8 @@ export function PurchaseOrderList({
     );
   }
 
-  const orders = data?.data || [];
-  const total = data?.total || 0;
+  const orders = (data as { data: PurchaseOrder[]; total: number })?.data || [];
+  const total = (data as { data: PurchaseOrder[]; total: number })?.total || 0;
 
   if (orders.length === 0) {
     return (
@@ -133,7 +138,7 @@ export function PurchaseOrderList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {orders.map(order => (
+            {orders.map((order: PurchaseOrder) => (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">
                   {order.orderNumber}
@@ -143,8 +148,16 @@ export function PurchaseOrderList({
                 </TableCell>
                 <TableCell>{order.containerNumber || '-'}</TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANTS[order.status]}>
-                    {PURCHASE_ORDER_STATUS_LABELS[order.status]}
+                  <Badge
+                    variant={
+                      STATUS_VARIANTS[order.status as PurchaseOrderStatus]
+                    }
+                  >
+                    {
+                      PURCHASE_ORDER_STATUS_LABELS[
+                        order.status as PurchaseOrderStatus
+                      ]
+                    }
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

@@ -22,17 +22,17 @@ import {
   FACTORY_SHIPMENT_STATUS_LABELS,
 } from '@/lib/types/factory-shipment';
 import type { Customer } from '@/lib/types/models';
-import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
+import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
 interface BasicInfoSectionProps {
-  form: UseFormReturn<CreateFactoryShipmentOrderData>;
+  form: UseFormReturn<FactoryShipmentOrderFormData, any, any>;
   customers: Customer[];
   showStatus?: boolean;
   isLoadingCustomers?: boolean;
   onCustomerCreated?: (customer: Customer) => void;
   onRefreshCustomers?: () => void;
   initialCustomer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
-  getBlurHandler?: BlurHandlerFactory<CreateFactoryShipmentOrderData>;
+  getBlurHandler?: BlurHandlerFactory<FactoryShipmentOrderFormData>;
 }
 
 /**

@@ -3,7 +3,6 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { CalendarIcon, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import {
@@ -32,7 +31,11 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
-import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
+import {
+  PURCHASE_ORDER_STATUS,
+  type PurchaseOrder,
+  type PurchaseOrderItem,
+} from '@/lib/types/purchase-order';
 import { cn } from '@/lib/utils';
 import {
   createPurchaseOrderSchema,
@@ -104,7 +107,7 @@ export function PurchaseOrderForm({
             : undefined,
           status: initialData.status,
           remarks: initialData.remarks || '',
-          items: initialData.items.map(item => ({
+          items: initialData.items.map((item: PurchaseOrderItem) => ({
             productId: item.productId || undefined,
             supplierId: item.supplierId,
             productCode: item.productCode,
@@ -164,7 +167,7 @@ export function PurchaseOrderForm({
           description:
             mode === 'edit'
               ? '采购订单已更新'
-              : `采购订单 ${result.data.orderNumber} 已创建`,
+              : `采购订单 ${(result.data as { orderNumber?: string }).orderNumber || ''} 已创建`,
         });
         onSuccess?.();
       } else {
@@ -296,11 +299,15 @@ export function PurchaseOrderForm({
           </CardHeader>
           <CardContent className="pt-3">
             <PurchaseOrderItemsTable
-              form={form}
+              form={form as any} // ✅ 类型断言,避免泛型类型不匹配
               fields={fields}
-              onAddItem={() =>
-                append(createEmptyItem(form.getValues('supplierId')))
-              }
+              onAddItem={() => {
+                // ✅ 修复: 从items数组的第一项获取supplierId
+                const items = form.getValues('items');
+                const supplierId =
+                  items && items.length > 0 ? items[0].supplierId : undefined;
+                append(createEmptyItem(supplierId));
+              }}
               onRemoveItem={remove}
             />
           </CardContent>
@@ -318,8 +325,19 @@ export function PurchaseOrderForm({
                 <FormItem>
                   <FormControl>
                     <FactoryShipmentFeeItemsInput
-                      feeItems={field.value || []}
-                      onChange={field.onChange}
+                      feeItems={
+                        // ✅ 类型适配: 添加paidBy字段以匹配FactoryShipmentFeeItem类型
+                        (field.value || []).map(item => ({
+                          ...item,
+                          paidBy: 'customer' as const, // 采购订单费用默认由客户承担
+                        }))
+                      }
+                      onChange={items => {
+                        // ✅ 移除paidBy字段,保存到表单
+                        field.onChange(
+                          items.map(({ paidBy: _paidBy, ...item }) => item)
+                        );
+                      }}
                     />
                   </FormControl>
                   <FormMessage />

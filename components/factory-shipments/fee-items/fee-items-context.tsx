@@ -12,13 +12,13 @@ import type { UseFieldArrayReturn } from 'react-hook-form';
 
 interface FeeItemsContextValue {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  fields: UseFieldArrayReturn<any, 'feeItems'>['fields'];
+  fields: UseFieldArrayReturn<any, 'feeItems', 'key'>['fields'];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  append: UseFieldArrayReturn<any, 'feeItems'>['append'];
+  append: UseFieldArrayReturn<any, 'feeItems', 'key'>['append'];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  remove: UseFieldArrayReturn<any, 'feeItems'>['remove'];
+  remove: UseFieldArrayReturn<any, 'feeItems', 'key'>['remove'];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  update: UseFieldArrayReturn<any, 'feeItems'>['update'];
+  update: UseFieldArrayReturn<any, 'feeItems', 'key'>['update'];
   isDisabled: boolean;
 }
 

@@ -12,10 +12,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
+import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
 interface AmountInfoSectionProps {
-  form: UseFormReturn<CreateFactoryShipmentOrderData>;
+  form: UseFormReturn<FactoryShipmentOrderFormData, any, any>;
 }
 
 /**

@@ -96,10 +96,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                 disabled={isDisabled}
               >
                 <FormControl>
-                  <SelectTrigger
-                    id={field.name}
-                    aria-label="选择费用类型"
-                  >
+                  <SelectTrigger id={field.name} aria-label="选择费用类型">
                     <SelectValue placeholder="选择类型" />
                   </SelectTrigger>
                 </FormControl>
@@ -185,10 +182,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                 disabled={isDisabled}
               >
                 <FormControl>
-                  <SelectTrigger
-                    id={field.name}
-                    aria-label="选择费用承担方"
-                  >
+                  <SelectTrigger id={field.name} aria-label="选择费用承担方">
                     <SelectValue placeholder="选择承担方" />
                   </SelectTrigger>
                 </FormControl>

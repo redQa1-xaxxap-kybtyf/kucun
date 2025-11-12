@@ -14,8 +14,9 @@ import {
 import { type InboundFormData, type ProductOption } from '@/lib/types/inbound';
 import { cn } from '@/lib/utils';
 
+// ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver
 interface InboundProductSectionProps {
-  form: UseFormReturn<InboundFormData>;
+  form: UseFormReturn<InboundFormData, any, any>;
   selectedProduct: ProductOption | null;
   onProductSelect: (product: ProductOption) => void;
   showProductPrompt?: boolean;

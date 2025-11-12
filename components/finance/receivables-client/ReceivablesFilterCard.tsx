@@ -64,17 +64,17 @@ export function ReceivablesFilterCard({
           onDateRangeChange={onDateRangeChange}
         />
 
-      <div className="mt-6">
-        <ReceivablesTableList
-          isLoading={isLoading}
-          error={error}
-          receivables={receivables}
-          pagination={pagination}
-          onPageChange={onPageChange}
-          onOpenPaymentDialog={onOpenPaymentDialog}
-          onViewOrder={handleViewOrder}
-        />
-      </div>
+        <div className="mt-6">
+          <ReceivablesTableList
+            isLoading={isLoading}
+            error={error}
+            receivables={receivables}
+            pagination={pagination}
+            onPageChange={onPageChange}
+            onOpenPaymentDialog={onOpenPaymentDialog}
+            onViewOrder={handleViewOrder}
+          />
+        </div>
       </CardContent>
     </Card>
   );

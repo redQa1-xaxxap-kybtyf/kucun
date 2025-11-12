@@ -49,5 +49,5 @@ export interface SmartProductSearchProps {
   isSearching?: boolean;
   simple?: boolean;
   temporaryProductRequirements?: TemporaryProductRequirements;
-  onBlur?: () => void;
+  onBlur?: () => void | Promise<void>; // ✅ 支持同步和异步onBlur
 }

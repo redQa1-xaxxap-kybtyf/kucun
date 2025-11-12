@@ -11,8 +11,8 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
 import {
   ReturnItemsSection,
-  type ReturnOrderSelectableItem,
   type ReturnOrderProductInfo,
+  type ReturnOrderSelectableItem,
 } from '@/components/return-orders/erp-return-order-form/ReturnItemsSection';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,17 +40,15 @@ import {
 } from '@/lib/api/return-orders';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
-  type ReturnOrder,
+  RETURN_ORDER_MODE_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
-  RETURN_ORDER_MODE_LABELS,
+  type ReturnOrder,
 } from '@/lib/types/return-order';
 import {
-  type CreateReturnOrderFormData,
-  type UpdateReturnOrderFormData,
   createReturnOrderDefaults,
-  createReturnOrderSchema,
-  updateReturnOrderSchema,
+  returnOrderFormSchema,
+  type ReturnOrderFormData,
 } from '@/lib/validations/return-order';
 
 interface ERPReturnOrderFormProps {
@@ -75,15 +73,14 @@ export function ERPReturnOrderForm({
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
-  // 表单设置
-  const form = useForm<CreateReturnOrderFormData | UpdateReturnOrderFormData>({
-    resolver: standardSchemaResolver(
-      mode === 'create' ? createReturnOrderSchema : updateReturnOrderSchema
-    ),
+  // ✅ 表单设置 - 使用统一的 returnOrderFormSchema,避免联合类型问题
+  const form = useForm<ReturnOrderFormData>({
+    resolver: standardSchemaResolver(returnOrderFormSchema),
     defaultValues:
       mode === 'create'
         ? createReturnOrderDefaults
         : {
+            id: initialData?.id,
             returnMode: initialData?.returnMode || 'single_order',
             salesOrderId: initialData?.salesOrderId || '',
             customerId: initialData?.customerId || '',
@@ -101,6 +98,7 @@ export function ERPReturnOrderForm({
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal,
                 reason: item.reason,
+                condition: item.condition || 'good',
               })) || [],
           },
   });
@@ -303,19 +301,27 @@ export function ERPReturnOrderForm({
     [append, setProductInfoMap]
   );
 
-  // 表单提交
-  const onSubmit = (
-    data: CreateReturnOrderFormData | UpdateReturnOrderFormData
-  ) => {
+  // ✅ 表单提交 - 使用统一的 ReturnOrderFormData 类型
+  const onSubmit = (data: ReturnOrderFormData) => {
     if (mode === 'edit' && initialData) {
       const updateData = {
         id: initialData.id,
-        data: data as UpdateReturnOrderFormData,
+        data: {
+          id: initialData.id, // ✅ 使用 initialData.id 而非 data.id,确保类型正确
+          returnMode: data.returnMode,
+          salesOrderId: data.salesOrderId,
+          customerId: data.customerId,
+          type: data.type,
+          processType: data.processType,
+          reason: data.reason,
+          remarks: data.remarks,
+          items: data.items,
+        },
       };
       updateMutation.mutate(updateData);
     } else {
-      const createData: CreateReturnOrderFormData =
-        data as CreateReturnOrderFormData;
+      // 创建模式:移除 id 字段
+      const { id: _id, ...createData } = data;
       createMutation.mutate(createData);
     }
   };

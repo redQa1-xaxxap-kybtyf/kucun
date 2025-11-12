@@ -35,14 +35,14 @@ import {
 } from '@/lib/api/factory-shipments';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 
-// 补充船公司信息表单验证规则
+// ✅ 补充船公司信息表单验证规则 - 移除.default(),在defaultValues中设置
 const supplementShippingInfoSchema = z.object({
   shippingCompany: z
     .string()
     .min(1, '船公司名称不能为空')
     .max(100, '船公司名称不能超过100个字符'),
   estimatedArrival: z.date().optional(),
-  autoStartTracking: z.boolean().default(true),
+  autoStartTracking: z.boolean(), // ✅ 移除.default(true),在defaultValues中设置
 });
 
 type SupplementShippingInfoData = z.infer<typeof supplementShippingInfoSchema>;
@@ -150,7 +150,7 @@ function ShippingCompanyField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<SupplementShippingInfoData>;
+  form: UseFormReturn<SupplementShippingInfoData, any, any>; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -181,7 +181,7 @@ function EstimatedArrivalField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<SupplementShippingInfoData>;
+  form: UseFormReturn<SupplementShippingInfoData, any, any>; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -211,7 +211,7 @@ function AutoStartTrackingField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<SupplementShippingInfoData>;
+  form: UseFormReturn<SupplementShippingInfoData, any, any>; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -255,7 +255,7 @@ function SupplementShippingInfoDialogView({
   onOpenChange: (open: boolean) => void;
   orderNumber: string;
   containerNumber: string;
-  form: UseFormReturn<SupplementShippingInfoData>;
+  form: UseFormReturn<SupplementShippingInfoData, any, any>; // ✅ 适配standardSchemaResolver
   isPending: boolean;
   onCancel: () => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;

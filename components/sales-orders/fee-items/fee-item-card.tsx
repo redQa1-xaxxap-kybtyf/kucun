@@ -32,10 +32,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  FEE_TYPE_OPTIONS,
   FEE_PAID_BY_OPTIONS,
   FEE_TYPE_LABELS,
+  FEE_TYPE_OPTIONS,
   getDefaultFeePaidBy,
+  type FeeType,
 } from '@/lib/types/sales-order-fee';
 
 import { useFeeItemsContext } from './fee-items-context';
@@ -63,7 +64,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
   const { remove, isDisabled } = useFeeItemsContext();
 
   // 监听费用类型变化,自动更新承担方
-  const feeType = watch(`feeItems.${index}.feeType`);
+  const feeType = watch(`feeItems.${index}.feeType`) as FeeType | undefined;
 
   React.useEffect(() => {
     if (feeType) {
@@ -93,10 +94,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                 disabled={isDisabled}
               >
                 <FormControl>
-                  <SelectTrigger
-                    id={field.name}
-                    aria-label="选择费用类型"
-                  >
+                  <SelectTrigger id={field.name} aria-label="选择费用类型">
                     <SelectValue placeholder="选择类型" />
                   </SelectTrigger>
                 </FormControl>
@@ -126,7 +124,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                 <Input
                   {...field}
                   id={field.name}
-                  placeholder={`如: ${FEE_TYPE_LABELS[watch(`feeItems.${index}.feeType`) || 'other']}`}
+                  placeholder={`如: ${FEE_TYPE_LABELS[(feeType as FeeType) || 'other']}`}
                   disabled={isDisabled}
                   aria-label="输入费用名称"
                 />
@@ -182,10 +180,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
                 disabled={isDisabled}
               >
                 <FormControl>
-                  <SelectTrigger
-                    id={field.name}
-                    aria-label="选择费用承担方"
-                  >
+                  <SelectTrigger id={field.name} aria-label="选择费用承担方">
                     <SelectValue placeholder="选择承担方" />
                   </SelectTrigger>
                 </FormControl>

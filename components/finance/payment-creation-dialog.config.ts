@@ -10,8 +10,12 @@ export const PAYMENT_METHODS = [
   { value: 'cib_qr', label: '兴业银行收款码' },
 ] as const;
 
+/**
+ * ✅ 收款记录表单验证规则 - 移除.default()避免类型推断问题
+ * 用于 React Hook Form,默认值在 defaultValues 中设置
+ */
 export const paymentSchema = z.object({
-  paymentType: z.literal('order_payment').default('order_payment'),
+  paymentType: z.literal('order_payment'), // 移除.default(),在defaultValues中设置
   salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
   customerId: z.string().min(1, { message: '客户ID不能为空' }),
   // ✅ 与后端 lib/validations/payment.ts 保持一致
@@ -23,7 +27,7 @@ export const paymentSchema = z.object({
   ),
   paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
   actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
-  roundingAmount: z.number().default(0),
+  roundingAmount: z.number(), // 移除.default(0),在defaultValues中设置
   paymentDate: z.string().min(1, { message: '请选择收款日期' }),
   bankInfo: z.string().optional().or(z.literal('')),
   remarks: z.string().optional().or(z.literal('')),

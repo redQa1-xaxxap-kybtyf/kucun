@@ -2,6 +2,8 @@ export interface CustomerExtendedInfo {
   contactPerson?: string;
   email?: string;
   fax?: string;
+  phone2?: string; // 备用电话1
+  phone3?: string; // 备用电话2
   website?: string;
   businessLicense?: string;
   taxNumber?: string;

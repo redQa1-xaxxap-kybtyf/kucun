@@ -1,6 +1,5 @@
 import { AlertCircle, Calendar } from 'lucide-react';
 
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ReceivablesResult } from '@/lib/services/receivables-service';
 import { formatCurrency } from '@/lib/utils';
@@ -11,7 +10,9 @@ type ReceivablesSummaryCardsProps = {
   summary?: ReceivablesResult['summary'];
 };
 
-export function ReceivablesSummaryCards({ summary }: ReceivablesSummaryCardsProps) {
+export function ReceivablesSummaryCards({
+  summary,
+}: ReceivablesSummaryCardsProps) {
   const totalReceivable = summary?.totalReceivable ?? 0;
   const receivableCount = summary?.receivableCount ?? 0;
   const collectionRate = summary?.collectionRate ?? 0;
@@ -28,7 +29,9 @@ export function ReceivablesSummaryCards({ summary }: ReceivablesSummaryCardsProp
           <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
             {formatCurrency(totalReceivable)}
           </div>
-          <p className="text-muted-foreground text-xs">{receivableCount} 个应收订单</p>
+          <p className="text-muted-foreground text-xs">
+            {receivableCount} 个应收订单
+          </p>
         </CardContent>
       </Card>
 
@@ -49,4 +52,3 @@ export function ReceivablesSummaryCards({ summary }: ReceivablesSummaryCardsProp
     </div>
   );
 }
-

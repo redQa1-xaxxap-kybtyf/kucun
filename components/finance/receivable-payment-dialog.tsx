@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { useCreatePaymentRecord, useConfirmPayment } from '@/lib/api/payments';
+import { useConfirmPayment, useCreatePaymentRecord } from '@/lib/api/payments';
 import { queryKeys } from '@/lib/queryKeys';
 import type { ReceivableItem } from '@/lib/services/receivables-service';
 import {
@@ -162,10 +162,7 @@ export function ReceivablePaymentDialog({
       roundingAmount: Number(values.roundingAmount ?? 0),
       remarks: values.remarks?.trim() || undefined,
       receiptNumber: values.receiptNumber?.trim() || undefined,
-      bankInfo:
-        values.paymentMethod === 'bank_transfer'
-          ? values.bankInfo?.trim() || ''
-          : values.bankInfo?.trim() || undefined,
+      bankInfo: values.bankInfo?.trim() || undefined, // ✅ 移除无效的bank_transfer检查
     };
 
     try {
@@ -389,7 +386,8 @@ export function ReceivablePaymentDialog({
                   )}
                 />
 
-                {paymentMethod === 'bank_transfer' && (
+                {/* ✅ 移除无效的bank_transfer检查 - paymentMethodSchema中没有此值 */}
+                {false && (
                   <FormField
                     control={form.control}
                     name="bankInfo"

@@ -24,8 +24,9 @@ import {
   INBOUND_UNIT_OPTIONS,
 } from '@/lib/types/inbound';
 
+// ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver
 interface InboundFormFieldsProps {
-  form: UseFormReturn<InboundFormData>;
+  form: UseFormReturn<InboundFormData, any, any>;
 }
 
 export function InboundQuantityFields({ form }: InboundFormFieldsProps) {

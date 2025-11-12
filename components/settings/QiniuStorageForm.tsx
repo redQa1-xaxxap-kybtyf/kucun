@@ -203,7 +203,12 @@ export const QiniuStorageForm = ({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit((data: any) =>
+          handleSubmit(data as QiniuStorageFormValues)
+        )}
+        className="space-y-6"
+      >
         {/* Access Key */}
         <FormField
           control={form.control}

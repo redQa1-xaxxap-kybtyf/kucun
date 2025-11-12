@@ -19,7 +19,6 @@ import { useForm } from 'react-hook-form';
 
 import { ContentLoading } from '@/components/common/loading';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
@@ -55,27 +54,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { paymentUtils } from '@/lib/api/payments';
 import {
   DEFAULT_PAYMENT_METHODS,
-  DEFAULT_PAYMENT_STATUSES,
   type PaymentMethod,
   type PaymentRecordDetail,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 import {
-  createPaymentRecordSchema,
   PAYMENT_FORM_FIELDS,
-  updatePaymentRecordSchema,
-  type CreatePaymentRecordInput,
-  type UpdatePaymentRecordInput,
+  paymentRecordFormSchema,
+  type PaymentRecordFormData,
 } from '@/lib/validations/payment';
 
 export interface PaymentFormProps {
   initialData?: PaymentRecordDetail;
   salesOrderId?: string;
   customerId?: string;
-  onSubmit: (
-    data: CreatePaymentRecordInput | UpdatePaymentRecordInput
-  ) => Promise<void>;
+  onSubmit: (data: PaymentRecordFormData) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
   className?: string;
@@ -98,13 +92,15 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
     const isEditing = !!initialData;
     const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-    // 表单配置
-    const form = useForm<CreatePaymentRecordInput | UpdatePaymentRecordInput>({
-      resolver: standardSchemaResolver(
-        isEditing ? updatePaymentRecordSchema : createPaymentRecordSchema
-      ),
+    // ✅ 表单配置 - 使用统一的表单Schema,避免联合类型
+    const form = useForm<PaymentRecordFormData>({
+      resolver: standardSchemaResolver(paymentRecordFormSchema),
       defaultValues: isEditing
         ? {
+            paymentType: undefined, // 编辑模式不需要
+            salesOrderId: undefined, // 编辑模式不需要
+            factoryShipmentOrderId: undefined,
+            customerId: undefined, // 编辑模式不需要
             paymentMethod: initialData.paymentMethod,
             paymentAmount: initialData.paymentAmount,
             actualPaymentAmount:
@@ -121,13 +117,14 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
               typeof initialData.paymentDate === 'string'
                 ? initialData.paymentDate.split('T')[0]
                 : initialData.paymentDate.toISOString().split('T')[0],
-            status: initialData.status,
             remarks: initialData.remarks || '',
             receiptNumber: initialData.receiptNumber || '',
             bankInfo: initialData.bankInfo || '',
           }
         : {
+            paymentType: 'order_payment', // 创建模式默认为订单收款
             salesOrderId: salesOrderId || '',
+            factoryShipmentOrderId: '',
             customerId: customerId || '',
             paymentMethod: 'cash' as PaymentMethod,
             paymentAmount: 0,
@@ -164,9 +161,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
     }, [form, watchedActualAmount, watchedPaymentAmount]);
 
     // 处理表单提交
-    const handleSubmit = async (
-      data: CreatePaymentRecordInput | UpdatePaymentRecordInput
-    ) => {
+    const handleSubmit = async (data: PaymentRecordFormData) => {
       try {
         setIsSubmitting(true);
         await onSubmit(data);
@@ -202,7 +197,9 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
         <CardContent>
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleSubmit)}
+              onSubmit={form.handleSubmit((data: any) =>
+                handleSubmit(data as PaymentRecordFormData)
+              )}
               className="space-y-6"
             >
               {/* 基础信息 */}
@@ -522,8 +519,8 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                   )}
                 />
 
-                {/* 状态（仅编辑时显示） */}
-                {isEditing && (
+                {/* 状态（仅编辑时显示） - 已移除,状态由后端管理 */}
+                {/* {isEditing && (
                   <FormField
                     control={form.control}
                     name="status"
@@ -563,7 +560,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       </FormItem>
                     )}
                   />
-                )}
+                )} */}
               </div>
 
               {/* 银行信息（可选） */}

@@ -6,6 +6,7 @@ import { formatCurrency } from '@/lib/utils';
 import {
   getReturnOrderStatusBadgeVariant,
   getSalesOrderStatusBadgeVariant,
+  type BadgeVariant, // ✅ 导入BadgeVariant类型
 } from '@/lib/utils/badge-helpers';
 
 import type { CustomerReturnOrder, CustomerSalesOrder } from './types';
@@ -141,14 +142,7 @@ function OrderCard({
   amount: number;
   amountPrefix?: string;
   amountClass?: string;
-  statusVariant:
-    | 'default'
-    | 'secondary'
-    | 'destructive'
-    | 'outline'
-    | 'success'
-    | 'warning'
-    | 'info';
+  statusVariant: BadgeVariant; // ✅ 使用BadgeVariant类型,支持所有variant包括purple
   formatDateTime: (value: string) => string;
   onClick: () => void;
 }) {

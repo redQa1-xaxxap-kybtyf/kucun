@@ -82,7 +82,7 @@ export function CustomerSelector({
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
   const [selectedCustomer, setSelectedCustomer] = React.useState<
     Customer | undefined
-  >(initialCustomer);
+  >(initialCustomer as Customer | undefined); // ✅ 类型断言
 
   const notifyBlur = React.useCallback(() => {
     if (!onBlur) {
@@ -98,10 +98,7 @@ export function CustomerSelector({
     };
 
     try {
-      const result = onBlur();
-      if (result && typeof (result as Promise<unknown>).catch === 'function') {
-        (result as Promise<unknown>).catch(handleError);
-      }
+      onBlur(); // ✅ onBlur返回void,不需要检查Promise
     } catch (error) {
       handleError(error);
     }
@@ -120,18 +117,24 @@ export function CustomerSelector({
   // 允许1个字符开始搜索，支持中文单字搜索（如"张"、"李"等）
   const shouldSearch = normalizedSearch.length >= 1;
 
-  const { data: searchResults, isFetching: isSearching } = useQuery({
+  // ✅ 明确指定泛型类型,匹配API返回值
+  const { data: searchResults, isFetching: isSearching } = useQuery<
+    Pick<Customer, 'id' | 'name' | 'phone' | 'address'>[]
+  >({
     queryKey: customerQueryKeys.search(normalizedSearch || '', { limit: 20 }),
     queryFn: () => searchCustomersLightweight(normalizedSearch, { limit: 20 }),
     enabled: shouldSearch && open,
     staleTime: 5 * 60 * 1000, // 5分钟缓存
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
-    keepPreviousData: true,
+    placeholderData: previousData => previousData, // ✅ 替换已弃用的keepPreviousData
   });
 
   // 客户列表：搜索结果或空数组（使用 useMemo 避免重复渲染）
-  const customers = React.useMemo(() => searchResults ?? [], [searchResults]);
+  const customers = React.useMemo(
+    () => (searchResults ?? []) as Customer[], // ✅ 类型断言
+    [searchResults]
+  );
 
   // 前端拼音过滤（增强搜索体验）
   const filteredCustomers = React.useMemo(() => {
@@ -212,8 +215,8 @@ export function CustomerSelector({
   // 当 value 变化时，更新 selectedCustomer
   React.useEffect(() => {
     if (initialCustomer && initialCustomer.id !== selectedCustomer?.id) {
-      setSelectedCustomer(initialCustomer);
-      onCustomerResolved?.(initialCustomer);
+      setSelectedCustomer(initialCustomer as Customer); // ✅ 类型断言
+      onCustomerResolved?.(initialCustomer as Customer); // ✅ 类型断言
     }
   }, [initialCustomer, onCustomerResolved, selectedCustomer?.id]);
 

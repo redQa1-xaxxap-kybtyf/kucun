@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -38,24 +37,17 @@ import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { COUNT_TYPE_OPTIONS } from '@/lib/types/inventory-count';
 import { cn } from '@/lib/utils';
-import { createInventoryCountSchema } from '@/lib/validations/inventory-count';
+import {
+  inventoryCountFormSchema,
+  type InventoryCountFormData,
+} from '@/lib/validations/inventory-count';
 
 const NO_CATEGORY_VALUE = 'none';
-
-// 表单数据类型
-type CountFormData = {
-  countName: string;
-  countType: 'full' | 'partial' | 'cycle';
-  planDate: string;
-  location?: string;
-  categoryId?: string;
-  remarks?: string;
-};
 
 interface CountFormProps {
   mode: 'create' | 'edit';
   countId?: string;
-  initialData?: CountFormData;
+  initialData?: InventoryCountFormData;
   onSuccess?: (countId: string) => void;
   onCancel?: () => void;
 }
@@ -83,15 +75,9 @@ export function CountForm({
     },
   });
 
-  // 表单配置
-  const form = useForm<CountFormData>({
-    resolver: standardSchemaResolver(
-      createInventoryCountSchema.omit({ planDate: true }).extend({
-        planDate: createInventoryCountSchema.shape.planDate.transform(
-          val => val
-        ),
-      }) as z.ZodType<CountFormData>
-    ),
+  // ✅ 表单配置 - 使用统一的 InventoryCountFormData 类型
+  const form = useForm<InventoryCountFormData>({
+    resolver: standardSchemaResolver(inventoryCountFormSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -108,7 +94,7 @@ export function CountForm({
 
   // 创建盘点计划
   const createMutation = useMutation({
-    mutationFn: async (data: CountFormData) => {
+    mutationFn: async (data: InventoryCountFormData) => {
       const response = await fetch('/api/inventory/counts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -147,7 +133,7 @@ export function CountForm({
 
   // 更新盘点计划
   const updateMutation = useMutation({
-    mutationFn: async (data: CountFormData) => {
+    mutationFn: async (data: InventoryCountFormData) => {
       const response = await fetch(`/api/inventory/counts/${countId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -191,7 +177,7 @@ export function CountForm({
   });
 
   // 提交表单
-  const onSubmit = async (data: CountFormData) => {
+  const onSubmit = async (data: InventoryCountFormData) => {
     setIsSubmitting(true);
     try {
       if (mode === 'create') {

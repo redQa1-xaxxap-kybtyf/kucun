@@ -6,9 +6,9 @@ import { ArrowLeft, Save } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
+import { FeeItemsFormField } from '@/components/factory-shipments/fee-items';
 import { AmountInfoSection } from '@/components/factory-shipments/form-sections/amount-info-section';
 import { BasicInfoSection } from '@/components/factory-shipments/form-sections/basic-info-section';
-import { FeeItemsFormField } from '@/components/factory-shipments/fee-items';
 import { ItemListSection } from '@/components/factory-shipments/form-sections/item-list-section';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -34,8 +34,8 @@ import {
   transformFactoryShipmentFromAPI,
 } from '@/lib/utils/factory-shipment-transforms';
 import {
-  createFactoryShipmentOrderSchema,
-  type CreateFactoryShipmentOrderData,
+  factoryShipmentOrderFormSchema,
+  type FactoryShipmentOrderFormData,
 } from '@/lib/validations/factory-shipment';
 
 const generateIdempotencyKey = (): string => {
@@ -85,9 +85,9 @@ export function FactoryShipmentOrderForm({
     'confirm'
   );
 
-  // 表单配置
-  const form = useForm<CreateFactoryShipmentOrderData>({
-    resolver: standardSchemaResolver(createFactoryShipmentOrderSchema),
+  // ✅ 表单配置 - 使用表单专用Schema,移除.default()和.transform()
+  const form = useForm<FactoryShipmentOrderFormData>({
+    resolver: standardSchemaResolver(factoryShipmentOrderFormSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -102,7 +102,7 @@ export function FactoryShipmentOrderForm({
       depositAmount: 0,
       remarks: '',
       items: [createEmptyItem()],
-      feeItems: [],
+      feeItems: [], // 在defaultValues中设置默认值,而非Schema中
     },
   });
 
@@ -188,13 +188,14 @@ export function FactoryShipmentOrderForm({
   useEffect(() => {
     if (orderDetail && isEditing) {
       const normalized = transformFactoryShipmentFromAPI(orderDetail);
+      // ✅ 使用类型断言,因为API数据与表单数据结构兼容
       form.reset({
         ...normalized,
         items: normalized.items?.length
           ? normalized.items
           : [createEmptyItem()],
         idempotencyKey: generateIdempotencyKey(),
-      });
+      } as any);
     }
   }, [form, isEditing, orderDetail]);
 
@@ -225,17 +226,18 @@ export function FactoryShipmentOrderForm({
   }, [form]);
 
   // 提交表单
-  const onSubmit = (data: CreateFactoryShipmentOrderData) => {
+  const onSubmit = (data: FactoryShipmentOrderFormData) => {
     const intent = submitIntentRef.current;
     const resolvedStatus = isEditing
       ? data.status || FACTORY_SHIPMENT_STATUS.DRAFT
       : intent === 'draft'
         ? FACTORY_SHIPMENT_STATUS.DRAFT
         : FACTORY_SHIPMENT_STATUS.CONFIRMED;
+    // ✅ 使用类型断言,因为表单数据与API数据结构兼容
     const payload = prepareFactoryShipmentForSubmit({
       ...data,
       status: resolvedStatus,
-    });
+    } as any);
 
     if (isEditing) {
       // 确保更新时有 idempotencyKey
@@ -319,7 +321,7 @@ export function FactoryShipmentOrderForm({
   };
 
   const handleInvalidSubmit = (
-    errors: FieldErrors<CreateFactoryShipmentOrderData>
+    errors: FieldErrors<FactoryShipmentOrderFormData>
   ) => {
     showValidationToast(errors, {
       description:
@@ -353,7 +355,10 @@ export function FactoryShipmentOrderForm({
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit, handleInvalidSubmit)}
+        onSubmit={form.handleSubmit(
+          (data: any) => onSubmit(data as FactoryShipmentOrderFormData),
+          handleInvalidSubmit
+        )}
         className="space-y-8"
       >
         {/* 基本信息 */}

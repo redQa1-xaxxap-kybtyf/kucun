@@ -65,8 +65,8 @@ import {
 import { getDefaultFeePaidBy } from '@/lib/types/sales-order-fee';
 import { logger } from '@/lib/utils/console-logger';
 import {
-  salesOrderCreateSchema as CreateSalesOrderSchema,
-  salesOrderUpdateSchema as UpdateSalesOrderSchema,
+  salesOrderFormSchema,
+  type SalesOrderFormData,
 } from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
@@ -75,9 +75,6 @@ interface SalesOrderFormProps {
   onSuccess?: (salesOrder: SalesOrder) => void;
   onCancel?: () => void;
 }
-
-// 表单数据类型（简化版，用于表单组件）
-type FormData = SalesOrderCreateInput & { id?: string };
 
 export function SalesOrderForm({
   mode,
@@ -89,12 +86,11 @@ export function SalesOrderForm({
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // 表单配置
+  // ✅ 表单配置 - 使用统一的表单Schema,避免联合类型
   const isEdit = mode === 'edit';
-  const schema = isEdit ? UpdateSalesOrderSchema : CreateSalesOrderSchema;
 
-  const form = useForm<FormData>({
-    resolver: standardSchemaResolver(schema),
+  const form = useForm<SalesOrderFormData>({
+    resolver: standardSchemaResolver(salesOrderFormSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -182,7 +178,7 @@ export function SalesOrderForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: SalesOrderFormData) => {
     setSubmitError('');
 
     try {
@@ -222,7 +218,10 @@ export function SalesOrderForm({
           return;
         }
 
-        await form.handleSubmit(onSubmit)();
+        // ✅ 使用类型断言以兼容 standardSchemaResolver
+        await form.handleSubmit((data: any) =>
+          onSubmit(data as SalesOrderFormData)
+        )();
       })();
     },
     [form, onSubmit]
@@ -414,10 +413,7 @@ export function SalesOrderForm({
               <CardDescription>添加加工费、运费等额外费用项目</CardDescription>
             </CardHeader>
             <CardContent>
-              <FeeItemsFormField
-                control={form.control}
-                disabled={isLoading}
-              />
+              <FeeItemsFormField control={form.control} disabled={isLoading} />
             </CardContent>
           </Card>
 

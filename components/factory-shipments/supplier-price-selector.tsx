@@ -18,12 +18,11 @@ import {
 } from '@/hooks/use-price-history';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import type { Supplier } from '@/lib/types/supplier';
-import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 interface SupplierPriceSelectorProps {
-  form: UseFormReturn<CreateFactoryShipmentOrderData>;
+  form: UseFormReturn<any, any, any>;
   index: number;
-  value: string;
+  value: string | undefined;
   onChange: (value: string) => void;
   showLabel?: boolean; // 是否显示标签（在表格中使用时设为 false）
   onBlur?: () => void;

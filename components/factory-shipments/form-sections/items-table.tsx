@@ -34,17 +34,17 @@ import { getLatestPrice } from '@/hooks/use-price-history';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
-import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
+import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
 interface ItemsTableProps {
-  form: UseFormReturn<CreateFactoryShipmentOrderData>;
+  form: UseFormReturn<FactoryShipmentOrderFormData, any, any>;
   products: Product[];
   selectedCustomerId: string;
   customerPriceHistoryData?: PriceHistoryData;
-  fields: Array<{ id: string }>;
+  fields: any[];
   onAddItem: () => void;
   onRemoveItem: (index: number) => void;
-  getBlurHandler?: BlurHandlerFactory<CreateFactoryShipmentOrderData>;
+  getBlurHandler?: BlurHandlerFactory<FactoryShipmentOrderFormData>;
 }
 
 /**

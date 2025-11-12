@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { CalendarIcon, Loader2 } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -42,26 +41,10 @@ import {
   type ExpenseRecord,
 } from '@/lib/types/expense';
 import { cn } from '@/lib/utils';
-import { createExpenseSchema } from '@/lib/validations/expense';
-
-// 表单数据类型（不包含 transform）
-type ExpenseFormData = {
-  expenseType:
-    | 'shipping'
-    | 'storage'
-    | 'labor'
-    | 'travel'
-    | 'living'
-    | 'loading_unloading'
-    | 'other';
-  expenseName: string;
-  expenseAmount: number;
-  expenseDate: string;
-  relatedType?: 'inbound' | 'outbound' | 'sales_order';
-  relatedId?: string;
-  relatedNumber?: string;
-  remarks?: string;
-};
+import {
+  expenseFormSchema,
+  type ExpenseFormData,
+} from '@/lib/validations/expense';
 
 type ExpenseRequestPayload = {
   expenseType: ExpenseFormData['expenseType'];
@@ -95,14 +78,9 @@ export function ExpenseForm({
   const NO_RELATED_TYPE_VALUE = 'none';
   const isEditMode = mode === 'edit';
 
+  // ✅ 使用不含 transform 的 expenseFormSchema,避免类型推断问题
   const form = useForm<ExpenseFormData>({
-    resolver: standardSchemaResolver(
-      createExpenseSchema.omit({ expenseDate: true }).extend({
-        expenseDate: createExpenseSchema.shape.expenseDate.transform(
-          val => val
-        ),
-      }) as z.ZodType<ExpenseFormData>
-    ),
+    resolver: standardSchemaResolver(expenseFormSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误

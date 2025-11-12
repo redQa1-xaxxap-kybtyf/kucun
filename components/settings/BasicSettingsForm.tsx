@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, RefreshCw, Save } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,8 +40,8 @@ import { BasicSettingsFormSchema } from '@/lib/validations/settings';
 
 import { SettingsSection } from './SettingsLayout';
 
-// 表单数据类型
-type BasicSettingsFormData = Partial<BasicSettings>;
+// 表单数据类型 - 直接从Schema推断
+type BasicSettingsFormData = z.infer<typeof BasicSettingsFormSchema>;
 
 // 验证错误详情类型
 interface ValidationDetail {
@@ -169,7 +170,7 @@ export function BasicSettingsForm() {
 
   // 表单配置
   const form = useForm<BasicSettingsFormData>({
-    resolver: standardSchemaResolver(BasicSettingsFormSchema),
+    resolver: standardSchemaResolver(BasicSettingsFormSchema) as any,
     defaultValues: settings || {
       // 提供默认值以避免受控/非受控组件警告，使用环境配置
       companyName: systemConfig.companyName,

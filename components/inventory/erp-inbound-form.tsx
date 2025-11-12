@@ -18,7 +18,7 @@ import {
   useProductSelection,
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
-import { type ProductOption } from '@/lib/types/inbound';
+import type { InboundFormData, ProductOption } from '@/lib/types/inbound';
 
 interface ERPInboundFormProps {
   onSuccess?: () => void;
@@ -55,10 +55,11 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     onSuccess,
   });
 
+  // ✅ 修复: 使用类型断言以兼容 standardSchemaResolver
   const handleFormSubmit = form.handleSubmit(
-    async data => {
+    async (data: any) => {
       setShowProductPrompt(false);
-      await submitInbound(data);
+      await submitInbound(data as InboundFormData);
     },
     errors => {
       if (errors.productId) {

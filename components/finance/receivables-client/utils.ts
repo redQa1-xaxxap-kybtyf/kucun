@@ -1,6 +1,5 @@
 import { formatCurrency } from '@/lib/utils';
 
-
 const CHANGE_TOLERANCE = 0.05;
 const FINANCE_EPSILON = 0.000001;
 
@@ -32,4 +31,3 @@ export function formatCollectionRateChange(change: number): string {
   const value = Math.abs(change).toFixed(1);
   return change > 0 ? `较上月提升 ${value}%` : `较上月下降 ${value}%`;
 }
-

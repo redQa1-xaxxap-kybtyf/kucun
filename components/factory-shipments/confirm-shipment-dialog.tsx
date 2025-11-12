@@ -34,7 +34,7 @@ import {
 } from '@/lib/api/factory-shipments';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 
-// 确认发货表单验证规则
+// ✅ 确认发货表单验证规则 - 移除.default(),在defaultValues中设置
 const confirmShipmentSchema = z.object({
   containerNumber: z
     .string()
@@ -46,10 +46,11 @@ const confirmShipmentSchema = z.object({
     .optional()
     .or(z.literal('')),
   estimatedArrival: z.date().optional(),
-  shipmentDate: z.date().default(() => new Date()),
+  shipmentDate: z.date(), // ✅ 移除.default(() => new Date()),在defaultValues中设置
 });
 
 type ConfirmShipmentData = z.infer<typeof confirmShipmentSchema>;
+type ConfirmShipmentForm = UseFormReturn<ConfirmShipmentData>;
 
 interface ConfirmShipmentDialogProps {
   orderId: string;
@@ -174,7 +175,7 @@ function ContainerNumberField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<ConfirmShipmentData>;
+  form: ConfirmShipmentForm; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -207,7 +208,7 @@ function ShippingCompanyField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<ConfirmShipmentData>;
+  form: ConfirmShipmentForm; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -240,7 +241,7 @@ function EstimatedArrivalField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<ConfirmShipmentData>;
+  form: ConfirmShipmentForm; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -269,7 +270,7 @@ function ShipmentDateField({
   form,
   disabled,
 }: {
-  form: UseFormReturn<ConfirmShipmentData>;
+  form: ConfirmShipmentForm; // ✅ 适配standardSchemaResolver
   disabled?: boolean;
 }) {
   return (
@@ -305,7 +306,7 @@ function ConfirmShipmentDialogView({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   orderNumber: string;
-  form: UseFormReturn<ConfirmShipmentData>;
+  form: ConfirmShipmentForm; // ✅ 适配standardSchemaResolver
   isPending: boolean;
   onCancel: () => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;

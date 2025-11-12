@@ -7,15 +7,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
-import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
+import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
 interface ItemListSectionProps {
-  form: UseFormReturn<CreateFactoryShipmentOrderData>;
-  fieldArray: UseFieldArrayReturn<CreateFactoryShipmentOrderData, 'items'>;
+  form: UseFormReturn<FactoryShipmentOrderFormData, any, any>;
+  fieldArray: UseFieldArrayReturn<FactoryShipmentOrderFormData, 'items', any>;
   products: Product[];
   selectedCustomerId: string;
   customerPriceHistoryData?: PriceHistoryData;
-  getBlurHandler?: BlurHandlerFactory<CreateFactoryShipmentOrderData>;
+  getBlurHandler?: BlurHandlerFactory<FactoryShipmentOrderFormData>;
 }
 
 /**

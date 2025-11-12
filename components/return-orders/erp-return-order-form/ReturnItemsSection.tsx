@@ -1,6 +1,5 @@
 /* eslint-disable max-lines-per-function */
 import { Package, Plus, Trash2 } from 'lucide-react';
-import React from 'react';
 import type {
   FieldArrayWithId,
   UseFieldArrayRemove,
@@ -20,12 +19,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { ReturnOrderItem } from '@/lib/types/return-order';
-import type {
-  CreateReturnOrderFormData,
-  UpdateReturnOrderFormData,
-} from '@/lib/validations/return-order';
+import type { ReturnOrderFormData } from '@/lib/validations/return-order';
 
-type SupportedForm = CreateReturnOrderFormData | UpdateReturnOrderFormData;
+// ✅ 使用统一的 ReturnOrderFormData 类型,避免联合类型问题
+type SupportedForm = ReturnOrderFormData;
 
 type ProductInfo = {
   name: string;
@@ -304,6 +301,6 @@ export function ReturnItemsSection({
 }
 
 export type {
-  SelectableItem as ReturnOrderSelectableItem,
   ProductInfo as ReturnOrderProductInfo,
+  SelectableItem as ReturnOrderSelectableItem,
 };
