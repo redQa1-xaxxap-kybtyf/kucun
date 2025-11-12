@@ -203,7 +203,7 @@ export const salesOrderUpdateSchema = baseSalesOrderSchema
  * 用于 React Hook Form,包含创建和编辑两种模式
  */
 export const salesOrderFormSchema = baseSalesOrderSchema
-  .extend({
+  .safeExtend({
     id: z.string().optional(), // 编辑模式需要id,创建模式不需要
   })
   .refine(
