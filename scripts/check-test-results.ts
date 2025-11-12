@@ -61,14 +61,6 @@ async function main() {
         in: testOrders.map(o => o.id),
       },
     },
-    include: {
-      site: {
-        select: {
-          name: true,
-          url: true,
-        },
-      },
-    },
     orderBy: {
       queriedAt: 'desc',
     },
@@ -82,7 +74,7 @@ async function main() {
   } else {
     queryRecords.forEach((record, index) => {
       console.log(`${index + 1}. 查询记录 ${record.id}`);
-      console.log(`   - 站点: ${record.site.name} (${record.site.url})`);
+      console.log(`   - 站点ID: ${record.siteId}`);
       console.log(`   - 跟踪号: ${record.trackingNumber}`);
       console.log(`   - 查询时间: ${record.queriedAt.toISOString()}`);
       console.log(`   - 查询状态: ${record.queryStatus}`);

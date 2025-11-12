@@ -43,12 +43,9 @@ export const GET = withErrorHandling(
     // 查询总数
     const total = await prisma.shippingQuery.count({ where });
 
-    // 查询数据（包含物流轨迹历史）
+    // 查询数据
     const queries = await prisma.shippingQuery.findMany({
       where,
-      include: {
-        site: true,
-      },
       orderBy: { queriedAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
@@ -151,9 +148,6 @@ export const POST = withErrorHandling(
             lastUpdateTime: parsedLastUpdateTime,
             queryStatus: 'success',
           },
-          include: {
-            site: true,
-          },
         });
 
         return createdQuery;
@@ -169,9 +163,6 @@ export const POST = withErrorHandling(
           inputKeyword: keyword,
           queryStatus: 'failed',
           errorMessage: error instanceof Error ? error.message : '查询失败',
-        },
-        include: {
-          site: true,
         },
       });
 

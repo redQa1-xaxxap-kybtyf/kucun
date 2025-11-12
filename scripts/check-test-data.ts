@@ -12,13 +12,15 @@ async function checkTestData() {
       select: {
         id: true,
         name: true,
-        code: true,
+        supplierCode: true,
       },
     });
     console.log(`✅ 供应商数量: ${suppliers.length}`);
     if (suppliers.length > 0) {
       console.log('   示例供应商:');
-      suppliers.forEach(s => console.log(`   - ${s.name} (${s.code})`));
+      suppliers.forEach(s =>
+        console.log(`   - ${s.name} (${s.supplierCode || 'N/A'})`)
+      );
     }
     console.log();
 
@@ -47,13 +49,15 @@ async function checkTestData() {
       select: {
         id: true,
         name: true,
-        code: true,
+        phone: true,
       },
     });
     console.log(`✅ 客户数量: ${customers.length}`);
     if (customers.length > 0) {
       console.log('   示例客户:');
-      customers.forEach(c => console.log(`   - ${c.name} (${c.code})`));
+      customers.forEach(c =>
+        console.log(`   - ${c.name} (${c.phone || 'N/A'})`)
+      );
     }
     console.log();
 
