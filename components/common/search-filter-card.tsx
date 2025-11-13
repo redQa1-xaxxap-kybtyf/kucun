@@ -56,6 +56,7 @@ export interface SearchFilterCardProps {
   searchValue?: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
+  searchLabel?: string; // 搜索框标题标签
   isSearching?: boolean;
 
   // 筛选器
@@ -108,6 +109,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     searchValue = '',
     onSearchChange,
     searchPlaceholder = '搜索...',
+    searchLabel = '搜索', // 默认标题为"搜索"
     isSearching = false,
     filters = [],
     filterValues = {},
@@ -172,20 +174,28 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
 
           <div className="flex flex-col gap-3">
             {/* 主搜索栏 */}
-            <div className="flex flex-wrap items-center gap-2">
-              <UnifiedSearchBar
-                searchValue={searchValue}
-                onSearchChange={onSearchChange}
-                searchPlaceholder={searchPlaceholder}
-                isSearching={isSearching}
-                filters={filters}
-                filterValues={filterValues}
-                onFilterChange={onFilterChange}
-                toggleButtons={toggleButtons}
-                actionButtons={actionButtons}
-                compact={compact}
-                debounceDelay={0} // 防抖由父组件处理
-              />
+            <div className="flex flex-wrap items-end gap-2">
+              {/* 搜索框 - 添加标题包装 */}
+              <div className="flex flex-col gap-1.5">
+                {searchLabel && (
+                  <label className="text-muted-foreground text-xs font-medium">
+                    {searchLabel}
+                  </label>
+                )}
+                <UnifiedSearchBar
+                  searchValue={searchValue}
+                  onSearchChange={onSearchChange}
+                  searchPlaceholder={searchPlaceholder}
+                  isSearching={isSearching}
+                  filters={filters}
+                  filterValues={filterValues}
+                  onFilterChange={onFilterChange}
+                  toggleButtons={toggleButtons}
+                  actionButtons={actionButtons}
+                  compact={compact}
+                  debounceDelay={0} // 防抖由父组件处理
+                />
+              </div>
 
               {/* 日期范围筛选器 */}
               {dateRangeFilter && (
