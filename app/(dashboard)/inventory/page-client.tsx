@@ -369,7 +369,7 @@ function InventoryContent(props: {
           title="库存管理"
           description="实时监控库存水平和库存变动"
           icon={<Package className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-blue))"
+          iconBgColor="hsl(var(--color-primary))"
           actions={
             <Button
               size="lg"
