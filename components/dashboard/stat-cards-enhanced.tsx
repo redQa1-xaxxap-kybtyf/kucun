@@ -35,43 +35,50 @@ const ICON_MAP = {
   'rotate-ccw': RotateCcw,
 } as const;
 
-// 优化的颜色映射 - 更鲜明的视觉效果
+// 优化的颜色映射 - 使用CSS变量统一颜色
+// ✅ 使用项目定义的CSS变量替代硬编码颜色
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-gradient-to-br from-blue-50 to-blue-100/50',
-    icon: 'text-blue-600',
-    border: 'border-blue-200 hover:border-blue-400',
-    glow: 'bg-blue-400/20',
+    bg: 'bg-gradient-to-br from-[hsl(var(--color-info-light))] to-[hsl(var(--color-info-light))]/50',
+    icon: 'text-[hsl(var(--color-info))]',
+    border:
+      'border-[hsl(var(--color-info-light))] hover:border-[hsl(var(--color-info))]',
+    glow: 'bg-[hsl(var(--color-info))]/20',
   },
   green: {
-    bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100/50',
-    icon: 'text-emerald-600',
-    border: 'border-emerald-200 hover:border-emerald-400',
-    glow: 'bg-emerald-400/20',
+    bg: 'bg-gradient-to-br from-[hsl(var(--color-success-light))] to-[hsl(var(--color-success-light))]/50',
+    icon: 'text-[hsl(var(--color-success))]',
+    border:
+      'border-[hsl(var(--color-success-light))] hover:border-[hsl(var(--color-success))]',
+    glow: 'bg-[hsl(var(--color-success))]/20',
   },
   yellow: {
-    bg: 'bg-gradient-to-br from-amber-50 to-amber-100/50',
-    icon: 'text-amber-600',
-    border: 'border-amber-200 hover:border-amber-400',
-    glow: 'bg-amber-400/20',
+    bg: 'bg-gradient-to-br from-[hsl(var(--color-warning-light))] to-[hsl(var(--color-warning-light))]/50',
+    icon: 'text-[hsl(var(--color-warning))]',
+    border:
+      'border-[hsl(var(--color-warning-light))] hover:border-[hsl(var(--color-warning))]',
+    glow: 'bg-[hsl(var(--color-warning))]/20',
   },
   red: {
-    bg: 'bg-gradient-to-br from-rose-50 to-rose-100/50',
-    icon: 'text-rose-600',
-    border: 'border-rose-200 hover:border-rose-400',
-    glow: 'bg-rose-400/20',
+    bg: 'bg-gradient-to-br from-[hsl(var(--color-error-light))] to-[hsl(var(--color-error-light))]/50',
+    icon: 'text-[hsl(var(--color-error))]',
+    border:
+      'border-[hsl(var(--color-error-light))] hover:border-[hsl(var(--color-error))]',
+    glow: 'bg-[hsl(var(--color-error))]/20',
   },
   purple: {
-    bg: 'bg-gradient-to-br from-purple-50 to-purple-100/50',
-    icon: 'text-purple-600',
-    border: 'border-purple-200 hover:border-purple-400',
-    glow: 'bg-purple-400/20',
+    bg: 'bg-gradient-to-br from-[hsl(var(--color-purple-light))] to-[hsl(var(--color-purple-light))]/50',
+    icon: 'text-[hsl(var(--color-purple))]',
+    border:
+      'border-[hsl(var(--color-purple-light))] hover:border-[hsl(var(--color-purple))]',
+    glow: 'bg-[hsl(var(--color-purple))]/20',
   },
   gray: {
-    bg: 'bg-gradient-to-br from-gray-50 to-gray-100/50',
-    icon: 'text-gray-600',
-    border: 'border-gray-200 hover:border-gray-400',
-    glow: 'bg-gray-400/20',
+    bg: 'bg-gradient-to-br from-[hsl(var(--color-bg-tertiary))] to-[hsl(var(--color-bg-tertiary))]/50',
+    icon: 'text-[hsl(var(--color-text-secondary))]',
+    border:
+      'border-[hsl(var(--color-border-secondary))] hover:border-[hsl(var(--color-border))]',
+    glow: 'bg-[hsl(var(--color-text-secondary))]/20',
   },
 } as const;
 
