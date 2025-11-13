@@ -323,7 +323,7 @@ export function AnnualReportClient() {
                       yAxisId="left"
                       type="monotone"
                       dataKey="profit"
-                      stroke="#00C49F"
+                      stroke={CHART_COLORS.profit}
                       name="利润"
                       strokeWidth={2}
                     />
@@ -331,7 +331,7 @@ export function AnnualReportClient() {
                       yAxisId="right"
                       type="monotone"
                       dataKey="profitMargin"
-                      stroke="#FF8042"
+                      stroke={CHART_COLORS.expenses}
                       name="利润率"
                       strokeWidth={2}
                       strokeDasharray="5 5"
