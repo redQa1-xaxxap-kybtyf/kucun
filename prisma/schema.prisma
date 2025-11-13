@@ -258,6 +258,7 @@ model SalesOrder {
   payments        PaymentRecord[]
   outboundRecords OutboundRecord[]
   refundRecords   RefundRecord[]
+  purchaseOrders  PurchaseOrder[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
@@ -1194,10 +1195,12 @@ model PurchaseOrder {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
   supplierId          String    @map("supplier_id") @db.Char(36)
+  salesOrderId        String?   @map("sales_order_id") @db.Char(36)
 
   // 关系定义
   user           User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   supplier       Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  salesOrder     SalesOrder?         @relation(fields: [salesOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   items          PurchaseOrderItem[]
   inboundRecords InboundRecord[]
 
@@ -1207,6 +1210,7 @@ model PurchaseOrder {
   @@index([status], map: "idx_purchase_orders_status")
   @@index([containerNumber], map: "idx_purchase_orders_container")
   @@index([shippingCompany], map: "idx_purchase_orders_shipping_company")
+  @@index([salesOrderId], map: "idx_purchase_orders_sales_order")
   @@map("purchase_orders")
 }
 
