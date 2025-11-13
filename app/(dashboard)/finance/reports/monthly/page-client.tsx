@@ -346,10 +346,10 @@ export function MonthlyReportClient() {
                     key={index}
                     className={`rounded-lg border p-3 ${
                       alert.type === 'danger'
-                        ? 'border-red-200 bg-red-50'
+                        ? 'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]'
                         : alert.type === 'warning'
-                          ? 'border-yellow-200 bg-yellow-50'
-                          : 'border-blue-200 bg-blue-50'
+                          ? 'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]'
+                          : 'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]'
                     }`}
                   >
                     <div className="font-medium">{alert.title}</div>
@@ -407,21 +407,21 @@ function StatCard({
         {comparison && (
           <div className="mt-2 flex items-center gap-1 text-xs">
             {comparison.trend === 'up' && (
-              <ArrowUpIcon className="h-3 w-3 text-green-600" />
+              <ArrowUpIcon className="h-3 w-3 text-[hsl(var(--color-success))]" />
             )}
             {comparison.trend === 'down' && (
-              <ArrowDownIcon className="h-3 w-3 text-red-600" />
+              <ArrowDownIcon className="h-3 w-3 text-[hsl(var(--color-error))]" />
             )}
             {comparison.trend === 'stable' && (
-              <MinusIcon className="h-3 w-3 text-gray-600" />
+              <MinusIcon className="h-3 w-3 text-[hsl(var(--color-text-secondary))]" />
             )}
             <span
               className={
                 comparison.trend === 'up'
-                  ? 'text-green-600'
+                  ? 'text-[hsl(var(--color-success))]'
                   : comparison.trend === 'down'
-                    ? 'text-red-600'
-                    : 'text-gray-600'
+                    ? 'text-[hsl(var(--color-error))]'
+                    : 'text-[hsl(var(--color-text-secondary))]'
               }
             >
               {comparison.changeRate > 0 ? '+' : ''}
