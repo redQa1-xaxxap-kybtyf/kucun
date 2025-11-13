@@ -1,7 +1,6 @@
 'use client';
 
 import { AlertCircle, AlertTriangle, TrendingUp } from 'lucide-react';
-import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,10 +16,12 @@ const ALERT_ICONS = {
   overstock: TrendingUp,
 } as const;
 
+// ✅ 使用CSS变量统一颜色
+// 遵循项目颜色规范，使用语义化的颜色变量
 const ALERT_COLORS = {
-  low_stock: 'text-yellow-600',
-  out_of_stock: 'text-red-600',
-  overstock: 'text-blue-600',
+  low_stock: 'text-[hsl(var(--color-warning))]', // 库存不足 - 橙色
+  out_of_stock: 'text-[hsl(var(--color-error))]', // 缺货 - 红色
+  overstock: 'text-[hsl(var(--color-info))]', // 库存过多 - 蓝色
 } as const;
 
 const ALERT_LABELS = {
@@ -43,7 +44,8 @@ export function InventoryAlertStats({
         const Icon =
           ALERT_ICONS[type as keyof typeof ALERT_ICONS] || AlertCircle;
         const colorClass =
-          ALERT_COLORS[type as keyof typeof ALERT_COLORS] || 'text-gray-600';
+          ALERT_COLORS[type as keyof typeof ALERT_COLORS] ||
+          'text-[hsl(var(--color-text-secondary))]';
         const label =
           ALERT_LABELS[type as keyof typeof ALERT_LABELS] || '未知类型';
 
