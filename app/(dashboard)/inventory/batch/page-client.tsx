@@ -181,6 +181,8 @@ export function BatchSpecificationPageClient({
       search: undefined,
       productId: undefined,
       batchNumber: undefined,
+      startDate: undefined,
+      endDate: undefined,
     });
   };
 

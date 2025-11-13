@@ -27,8 +27,8 @@ export function BatchRecordsFilters({
   const filterValues: FilterValues = {
     search: filters.search,
     type: undefined, // 批次管理不需要类型筛选
-    startDate: undefined, // 批次管理暂不支持日期范围筛选
-    endDate: undefined,
+    startDate: filters.startDate,
+    endDate: filters.endDate,
   };
 
   // 处理筛选变更
@@ -40,6 +40,16 @@ export function BatchRecordsFilters({
     if (key === 'search') {
       onFiltersChange({
         search: value,
+        page: 1, // 重置到第一页
+      });
+    } else if (key === 'startDate') {
+      onFiltersChange({
+        startDate: value,
+        page: 1, // 重置到第一页
+      });
+    } else if (key === 'endDate') {
+      onFiltersChange({
+        endDate: value,
         page: 1, // 重置到第一页
       });
     }

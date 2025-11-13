@@ -361,8 +361,8 @@ export const BATCH_FILTER_CONFIG: FilterConfig = {
     options: [],
   },
   dateRange: {
-    enabled: false,
-    startLabel: '',
-    endLabel: '',
+    enabled: true,
+    startLabel: '开始日期',
+    endLabel: '结束日期',
   },
 };

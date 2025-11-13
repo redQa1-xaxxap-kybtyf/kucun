@@ -63,6 +63,10 @@ export interface BatchSpecificationQueryParams {
   productId?: string;
   /** 批次号 */
   batchNumber?: string;
+  /** 开始日期 */
+  startDate?: string;
+  /** 结束日期 */
+  endDate?: string;
   /** 排序字段 */
   sortBy?: 'createdAt' | 'batchNumber' | 'piecesPerUnit' | 'weight';
   /** 排序方向 */

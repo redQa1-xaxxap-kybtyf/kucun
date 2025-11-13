@@ -29,6 +29,8 @@ function parseQueryParams(url: string) {
     search: searchParams.get('search') || undefined,
     productId: searchParams.get('productId') || undefined,
     batchNumber: searchParams.get('batchNumber') || undefined,
+    startDate: searchParams.get('startDate') || undefined,
+    endDate: searchParams.get('endDate') || undefined,
     sortBy: searchParams.get('sortBy') || 'createdAt',
     sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
   };

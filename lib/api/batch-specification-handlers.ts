@@ -123,6 +123,8 @@ function buildBatchSpecificationWhereClause(queryData: {
   search?: string;
   productId?: string;
   batchNumber?: string;
+  startDate?: string;
+  endDate?: string;
 }): Prisma.BatchSpecificationWhereInput {
   const where: Prisma.BatchSpecificationWhereInput = {};
 
@@ -148,6 +150,20 @@ function buildBatchSpecificationWhereClause(queryData: {
   // 批次号筛选
   if (queryData.batchNumber) {
     where.batchNumber = { contains: queryData.batchNumber };
+  }
+
+  // 日期范围筛选
+  if (queryData.startDate || queryData.endDate) {
+    where.createdAt = {};
+    if (queryData.startDate) {
+      where.createdAt.gte = new Date(queryData.startDate);
+    }
+    if (queryData.endDate) {
+      // 结束日期包含当天，所以加1天
+      const endDate = new Date(queryData.endDate);
+      endDate.setDate(endDate.getDate() + 1);
+      where.createdAt.lt = endDate;
+    }
   }
 
   return where;

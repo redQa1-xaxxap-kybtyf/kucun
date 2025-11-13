@@ -77,6 +77,16 @@ export const batchSpecificationQuerySchema = z.object({
 
   batchNumber: z.string().max(50, '批次号不能超过50个字符').optional(),
 
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '开始日期格式不正确，应为YYYY-MM-DD')
+    .optional(),
+
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '结束日期格式不正确，应为YYYY-MM-DD')
+    .optional(),
+
   sortBy: z
     .enum(['createdAt', 'batchNumber', 'piecesPerUnit', 'weight'], {
       message: '请选择有效的排序字段',
