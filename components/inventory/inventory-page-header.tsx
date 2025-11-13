@@ -28,18 +28,29 @@ export function InventoryPageHeader({
   onAdjust,
 }: InventoryPageHeaderProps) {
   return (
-    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+    <Card
+      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+      style={{ boxShadow: 'var(--shadow-medium)' }}
+    >
+      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-              <Package className="h-6 w-6 text-white" />
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl text-white"
+              style={{
+                backgroundColor: 'hsl(var(--color-primary))',
+                boxShadow: 'var(--shadow-light)',
+              }}
+            >
+              <Package className="h-6 w-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                 库存管理
               </h1>
-              <p className="text-sm text-gray-600">查看和调整产品库存</p>
+              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                查看和调整产品库存
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
