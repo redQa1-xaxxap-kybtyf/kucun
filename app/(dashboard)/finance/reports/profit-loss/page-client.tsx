@@ -258,10 +258,10 @@ export function ProfitLossClient() {
             <div
               className={`rounded-lg p-6 text-center ${
                 analysis.status === 'profit'
-                  ? 'bg-green-50 text-green-700'
+                  ? 'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]'
                   : analysis.status === 'loss'
-                    ? 'bg-red-50 text-red-700'
-                    : 'bg-gray-50 text-gray-700'
+                    ? 'bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]'
+                    : 'bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]'
               }`}
             >
               <div className="text-4xl font-bold">
@@ -500,10 +500,10 @@ export function ProfitLossClient() {
                     key={index}
                     className={`rounded-lg border p-3 ${
                       alert.type === 'danger'
-                        ? 'border-red-200 bg-red-50'
+                        ? 'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]'
                         : alert.type === 'warning'
-                          ? 'border-yellow-200 bg-yellow-50'
-                          : 'border-blue-200 bg-blue-50'
+                          ? 'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]'
+                          : 'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]'
                     }`}
                   >
                     <div className="font-medium">{alert.title}</div>
