@@ -60,7 +60,7 @@ export function SidebarClient({
   return (
     <div
       className={cn(
-        'bg-background flex h-full flex-col border-r transition-all duration-300',
+        'bg-background fixed top-16 left-0 z-40 flex h-[calc(100vh-4rem)] flex-col border-r transition-all duration-300',
         state.isCollapsed ? 'w-16' : 'w-64',
         className
       )}

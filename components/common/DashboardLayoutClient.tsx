@@ -263,7 +263,12 @@ export function DashboardLayoutClient({
 
           {/* 主内容区域 - 允许滚动 */}
           <main
-            className={cn('flex flex-1 flex-col overflow-y-auto')}
+            className={cn(
+              'flex flex-1 flex-col overflow-y-auto transition-all duration-300',
+              !isMobile &&
+                sidebarSettings.isOpen &&
+                (sidebarSettings.isCollapsed ? 'ml-16' : 'ml-64')
+            )}
             onTouchStart={isMobile ? onTouchStart : undefined}
             onTouchMove={isMobile ? onTouchMove : undefined}
             onTouchEnd={isMobile ? onTouchEnd : undefined}
