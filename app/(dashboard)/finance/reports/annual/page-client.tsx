@@ -34,13 +34,25 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { AnnualReport } from '@/lib/types/report';
 import { formatCurrency } from '@/lib/utils/format';
 
-const COLORS = [
-  '#0088FE',
-  '#00C49F',
-  '#FFBB28',
-  '#FF8042',
-  '#8884D8',
-  '#82CA9D',
+// ✅ 使用CSS变量统一图表颜色
+// 遵循项目颜色规范，使用语义化的颜色变量
+const CHART_COLORS = {
+  revenue: 'hsl(var(--color-info))', // 收入 - 蓝色
+  expenses: 'hsl(var(--color-error))', // 支出 - 红色
+  profit: 'hsl(var(--color-success))', // 利润 - 绿色
+  cost: 'hsl(var(--color-warning))', // 成本 - 橙色
+  primary: 'hsl(var(--color-primary))', // 主要 - 主题色
+  secondary: 'hsl(var(--color-purple))', // 次要 - 紫色
+};
+
+// 饼图颜色数组（用于费用分布等多类别数据）
+const PIE_COLORS = [
+  'hsl(var(--color-info))',
+  'hsl(var(--color-success))',
+  'hsl(var(--color-warning))',
+  'hsl(var(--color-error))',
+  'hsl(var(--color-purple))',
+  'hsl(var(--color-primary))',
 ];
 
 export function AnnualReportClient() {
@@ -199,20 +211,23 @@ export function AnnualReportClient() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#0088FE"
+                  stroke={CHART_COLORS.revenue}
                   name="收入"
+                  strokeWidth={2}
                 />
                 <Line
                   type="monotone"
                   dataKey="expenses"
-                  stroke="#FF8042"
+                  stroke={CHART_COLORS.expenses}
                   name="支出"
+                  strokeWidth={2}
                 />
                 <Line
                   type="monotone"
                   dataKey="profit"
-                  stroke="#00C49F"
+                  stroke={CHART_COLORS.profit}
                   name="利润"
+                  strokeWidth={2}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -232,9 +247,17 @@ export function AnnualReportClient() {
                 <YAxis />
                 <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend />
-                <Bar dataKey="revenue" fill="#0088FE" name="收入" />
-                <Bar dataKey="expenses" fill="#FF8042" name="支出" />
-                <Bar dataKey="profit" fill="#00C49F" name="利润" />
+                <Bar
+                  dataKey="revenue"
+                  fill={CHART_COLORS.revenue}
+                  name="收入"
+                />
+                <Bar
+                  dataKey="expenses"
+                  fill={CHART_COLORS.expenses}
+                  name="支出"
+                />
+                <Bar dataKey="profit" fill={CHART_COLORS.profit} name="利润" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -342,7 +365,7 @@ export function AnnualReportClient() {
                     {report.expenseDistribution.map((_entry, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
                       />
                     ))}
                   </Pie>
@@ -365,7 +388,9 @@ export function AnnualReportClient() {
                   <div key={item.type} className="flex items-center gap-3">
                     <div
                       className="h-4 w-4 rounded"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                      style={{
+                        backgroundColor: PIE_COLORS[index % PIE_COLORS.length],
+                      }}
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
