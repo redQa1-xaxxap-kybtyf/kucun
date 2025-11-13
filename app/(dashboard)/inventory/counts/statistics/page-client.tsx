@@ -1,11 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Search, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { CountStatisticsCards } from '@/components/inventory/counts/count-statistics-cards';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -133,17 +134,20 @@ export function CountStatisticsPageClient({
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/inventory/counts">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">盘点统计</h1>
-          <p className="text-muted-foreground">查看库存盘点统计数据和分析</p>
-        </div>
-      </div>
+      <PageHeader
+        title="盘点统计"
+        description="查看库存盘点统计数据和分析"
+        icon={<BarChart3 className="h-6 w-6 text-white" />}
+        iconBgColor="hsl(var(--color-info))"
+        actions={
+          <Button variant="outline" size="lg" asChild className="h-11 gap-2">
+            <Link href="/inventory/counts">
+              <ArrowLeft className="h-4 w-4" />
+              返回列表
+            </Link>
+          </Button>
+        }
+      />
 
       {/* 筛选条件 */}
       <Card>
