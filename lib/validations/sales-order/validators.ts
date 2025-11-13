@@ -144,6 +144,29 @@ export function validateRequiredFields(
       });
     }
 
+    // 客户直发订单的成本验证
+    if (orderType === 'TRANSFER' && transferMode === 'SUPPLIER_ONLY') {
+      if (typeof item.unitCost !== 'number' || Number.isNaN(item.unitCost)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '客户直发订单的明细必须填写单位成本',
+          path: ['items', index, 'unitCost'],
+        });
+      }
+
+      if (
+        typeof item.unitCost === 'number' &&
+        !Number.isNaN(item.unitCost) &&
+        item.unitCost <= 0
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '客户直发订单的单位成本必须大于0',
+          path: ['items', index, 'unitCost'],
+        });
+      }
+    }
+
     // 调货销售的数量验证
     if (orderType === 'TRANSFER') {
       const mode =
@@ -154,6 +177,27 @@ export function validateRequiredFields(
       validateTransferQuantities(item, mode, ctx, index);
     }
   });
+}
+
+/**
+ * 验证客户直发订单的供应商信息
+ * 客户直发订单必须有供应商ID
+ */
+export function validateCustomerDirectShipment(
+  orderType: 'NORMAL' | 'TRANSFER',
+  transferMode: 'SUPPLIER_ONLY' | 'MIXED' | undefined,
+  supplierId: string | undefined,
+  ctx: z.RefinementCtx
+): void {
+  if (orderType === 'TRANSFER' && transferMode === 'SUPPLIER_ONLY') {
+    if (!supplierId || supplierId.trim() === '') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '客户直发订单必须选择供应商',
+        path: ['supplierId'],
+      });
+    }
+  }
 }
 
 /**

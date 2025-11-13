@@ -16,6 +16,7 @@ import {
   transferFulfillmentModeSchema,
 } from './schemas';
 import {
+  validateCustomerDirectShipment,
   validateItemCombinations,
   validateManualProductFields,
   validateRequiredFields,
@@ -123,6 +124,16 @@ const baseSalesOrderSchema = z
       data.transferMode,
       ctx
     );
+
+    // 验证客户直发订单的供应商信息
+    if (status !== 'draft') {
+      validateCustomerDirectShipment(
+        data.orderType,
+        data.transferMode,
+        data.supplierId,
+        ctx
+      );
+    }
   });
 
 /**
