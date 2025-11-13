@@ -44,6 +44,7 @@ import { paymentUtils } from '@/lib/api/payments';
 import {
   DEFAULT_PAYMENT_METHODS,
   DEFAULT_PAYMENT_STATUSES,
+  PAYMENT_STATUS_VARIANTS,
   type PaymentRecordDetail,
   type PaymentRecordQuery,
 } from '@/lib/types/payment';
@@ -162,13 +163,7 @@ const statusColumn: ColumnDef<PaymentRecordDetail> = {
   title: '状态',
   width: '80px',
   render: (_value, payment) => (
-    <Badge
-      variant="outline"
-      className={cn(
-        `text-${paymentUtils.getPaymentStatusColor(payment.status)}-600`,
-        `border-${paymentUtils.getPaymentStatusColor(payment.status)}-200`
-      )}
-    >
+    <Badge variant={PAYMENT_STATUS_VARIANTS[payment.status]}>
       {paymentUtils.formatPaymentStatus(payment.status)}
     </Badge>
   ),
@@ -306,13 +301,7 @@ const renderPaymentMobileCard = (
               {formatPaymentDateTime(payment.paymentDate, payment.createdAt)}
             </div>
           </div>
-          <Badge
-            variant="outline"
-            className={cn(
-              `text-${paymentUtils.getPaymentStatusColor(payment.status)}-600`,
-              `border-${paymentUtils.getPaymentStatusColor(payment.status)}-200`
-            )}
-          >
+          <Badge variant={PAYMENT_STATUS_VARIANTS[payment.status]}>
             {paymentUtils.formatPaymentStatus(payment.status)}
           </Badge>
         </div>
