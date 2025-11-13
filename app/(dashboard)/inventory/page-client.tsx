@@ -62,23 +62,6 @@ export function InventoryPageClient({
   );
 }
 
-function buildCurrentQueryParams(
-  params: InventoryQueryParams
-): InventoryQueryParams {
-  return {
-    search: params.search,
-    categoryId: params.categoryId,
-    lowStock: params.lowStock,
-    hasStock: params.hasStock,
-    sortBy: params.sortBy,
-    sortOrder: params.sortOrder,
-    startDate: params.startDate,
-    endDate: params.endDate,
-    page: params.page,
-    limit: params.limit,
-  };
-}
-
 function useInventoryController(initialParams: InventoryQueryParams) {
   const { params, updateParams } = useUrlSearchParams(inventoryParamsSchema, {
     basePath: '/inventory',
@@ -161,9 +144,32 @@ function useInventoryController(initialParams: InventoryQueryParams) {
     []
   );
 
+  // ✅ 优化 useMemo 依赖：使用原始值而非对象引用
   const currentQueryParams: InventoryQueryParams = React.useMemo(
-    () => buildCurrentQueryParams(params),
-    [params]
+    () => ({
+      search: params.search,
+      categoryId: params.categoryId,
+      lowStock: params.lowStock,
+      hasStock: params.hasStock,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+      startDate: params.startDate,
+      endDate: params.endDate,
+      page: params.page,
+      limit: params.limit,
+    }),
+    [
+      params.search,
+      params.categoryId,
+      params.lowStock,
+      params.hasStock,
+      params.sortBy,
+      params.sortOrder,
+      params.startDate,
+      params.endDate,
+      params.page,
+      params.limit,
+    ]
   );
 
   return {
