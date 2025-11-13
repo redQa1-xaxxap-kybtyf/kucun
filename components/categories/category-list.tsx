@@ -376,7 +376,7 @@ function CategoryActionCell({
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               onClick={() => onDeleteCategory(category.id, category.name)}
-              className="text-red-600 focus:bg-red-50 focus:text-red-700"
+              className="text-[hsl(var(--color-error))] focus:bg-[hsl(var(--color-error-light))] focus:text-[hsl(var(--color-error))]"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               删除

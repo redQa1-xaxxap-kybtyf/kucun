@@ -362,7 +362,7 @@ export function SuppliersPageClient({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(supplier)}
-                            className="text-[hsl(var(--color-error))]"
+                            className="text-[hsl(var(--color-error))] focus:bg-[hsl(var(--color-error-light))] focus:text-[hsl(var(--color-error))]"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             删除
