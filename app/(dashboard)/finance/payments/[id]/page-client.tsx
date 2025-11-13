@@ -63,23 +63,27 @@ interface PaymentDetailClientProps {
 
 /**
  * 状态显示组件
+ * ✅ 使用CSS变量统一颜色
  */
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     pending: {
       label: '待确认',
       icon: Clock,
-      className: 'border-yellow-300 bg-yellow-100 text-yellow-700',
+      className:
+        'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
     },
     confirmed: {
       label: '已确认',
       icon: CheckCircle,
-      className: 'border-green-300 bg-green-100 text-green-700',
+      className:
+        'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
     },
     cancelled: {
       label: '已取消',
       icon: Clock,
-      className: 'border-gray-300 bg-gray-100 text-gray-700',
+      className:
+        'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]',
     },
   };
 
