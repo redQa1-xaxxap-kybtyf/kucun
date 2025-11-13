@@ -1,11 +1,12 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { ClipboardCheck, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { CountFilters } from '@/components/inventory/counts/count-filters';
 import { CountList } from '@/components/inventory/counts/count-list';
 import { Button } from '@/components/ui/button';
@@ -118,22 +119,26 @@ export function CountsPageClient({ initialParams }: CountsPageClientProps) {
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">库存盘点</h1>
-          <p className="text-muted-foreground">
-            管理库存盘点计划，跟踪盘点进度
-          </p>
-        </div>
-        {hasManagePermission && (
-          <Button asChild>
-            <Link href="/inventory/counts/new">
-              <Plus className="mr-2 h-4 w-4" />
-              新建盘点计划
-            </Link>
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="库存盘点"
+        description="管理库存盘点计划，跟踪盘点进度"
+        icon={<ClipboardCheck className="h-6 w-6 text-white" />}
+        iconBgColor="hsl(var(--color-info))"
+        actions={
+          hasManagePermission ? (
+            <Button
+              size="lg"
+              asChild
+              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+            >
+              <Link href="/inventory/counts/new">
+                <Plus className="mr-2 h-4 w-4" />
+                新建盘点计划
+              </Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* 筛选条件 */}
       <Card>
