@@ -12,6 +12,7 @@ import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { INVENTORY_FILTER_CONFIG } from '@/lib/configs/filter-configs';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface InventorySearchToolbarProps {
@@ -159,7 +160,7 @@ function InventoryToolbarView({
     <SearchFilterCard
       searchValue={searchValue ?? (queryParams.search || '')}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索产品名称、编码..."
+      searchPlaceholder={INVENTORY_FILTER_CONFIG.searchPlaceholder}
       isSearching={isSearching}
       // 筛选器配置
       filters={[
@@ -175,10 +176,7 @@ function InventoryToolbarView({
         {
           key: 'sortBy',
           label: '排序',
-          options: [
-            { label: '更新时间', value: 'updatedAt' },
-            { label: '库存数量', value: 'quantity' },
-          ],
+          options: INVENTORY_FILTER_CONFIG.filters[1].options,
           width: 'w-[140px]',
         },
       ]}
@@ -190,13 +188,13 @@ function InventoryToolbarView({
       // 日期范围筛选
       dateRangeFilter={{
         key: 'dateRange',
-        label: '更新时间',
+        label: INVENTORY_FILTER_CONFIG.dateRangeLabel,
         value: {
           startDate: queryParams.startDate,
           endDate: queryParams.endDate,
         },
         onChange: handleDateRangeChange,
-        placeholder: '选择更新时间范围',
+        placeholder: INVENTORY_FILTER_CONFIG.dateRangePlaceholder,
       }}
       // Toggle 按钮
       toggleButtons={[
