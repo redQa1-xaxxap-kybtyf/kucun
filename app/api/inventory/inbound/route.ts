@@ -24,6 +24,7 @@ import {
 import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfillment';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
+import { requirePermission } from '@/lib/auth/permissions';
 import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
@@ -71,6 +72,11 @@ const postInboundRecordHandler = withAuth(
         purchaseOrderId,
         purchaseOrderItemId,
       } = validatedData;
+
+      // 步骤1.1: 权限验证 - 期初库存录入需要特殊权限
+      if (validatedData.reason === 'opening_balance') {
+        requirePermission(context.user, 'inventory:opening_balance');
+      }
 
       let inboundUnitCost = resolveInboundUnitCost({
         unitCostWithExpense: undefined,

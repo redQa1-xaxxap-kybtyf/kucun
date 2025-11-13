@@ -1,5 +1,7 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
+import { useMemo } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
 
 import {
@@ -18,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { can } from '@/lib/auth/permissions';
 import {
   type InboundFormData,
   INBOUND_REASON_OPTIONS,
@@ -169,6 +172,19 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
 }
 
 export function InboundReasonField({ form }: InboundFormFieldsProps) {
+  const { data: session } = useSession();
+  const user = session?.user;
+
+  // 根据用户权限过滤入库原因选项
+  const availableReasons = useMemo(() => {
+    // 如果用户没有期初库存权限，过滤掉 opening_balance
+    if (!user || !can(user, 'inventory:opening_balance')) {
+      return INBOUND_REASON_OPTIONS.filter(r => r.value !== 'opening_balance');
+    }
+
+    return INBOUND_REASON_OPTIONS;
+  }, [user]);
+
   return (
     <FormField
       control={form.control}
@@ -185,7 +201,7 @@ export function InboundReasonField({ form }: InboundFormFieldsProps) {
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              {INBOUND_REASON_OPTIONS.map(option => (
+              {availableReasons.map(option => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

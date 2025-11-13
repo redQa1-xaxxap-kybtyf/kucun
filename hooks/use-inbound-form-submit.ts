@@ -27,6 +27,19 @@ export function useInboundFormSubmit({
 
   return useFormSubmit<InboundFormData>({
     onSubmit: async data => {
+      // 期初库存录入二次确认
+      if (data.reason === 'opening_balance') {
+        const confirmed = window.confirm(
+          '您正在录入期初库存数据，请确认数据准确无误。\n\n' +
+            '期初库存将影响后续所有财务核算，建议录入完成后进行核对。\n\n' +
+            '确定要继续吗？'
+        );
+
+        if (!confirmed) {
+          throw new Error('已取消期初库存录入');
+        }
+      }
+
       const idempotencyKey = generateIdempotencyKey();
 
       if (!data.inputQuantity || data.inputQuantity <= 0) {
