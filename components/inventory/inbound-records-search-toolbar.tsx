@@ -2,24 +2,19 @@
 
 /**
  * 入库记录搜索工具栏
- * 对齐厂家发货页面的优秀方案，复用统一搜索栏并支持快捷筛选、日期范围与清空筛选
+ * 使用统一的 SearchFilterCard 组件
  *
  * ✅ 设计原则：
- * - KISS: 使用 UnifiedSearchBar 组件，避免重复造轮子
- * - DRY: 复用厂家发货页面的成功模式
+ * - KISS: 使用 SearchFilterCard 组件，避免重复造轮子
+ * - DRY: 复用统一的搜索筛选组件
  * - 一致性: 与项目整体风格保持统一
  */
 
-import { Filter, Package, RefreshCw } from 'lucide-react';
+import { Package, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 
 interface InboundRecordsSearchToolbarProps {
   /** 搜索关键词（受控） */
@@ -167,78 +162,58 @@ function InboundToolbarView({
   hasActiveFilters,
 }: InboundToolbarViewProps) {
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
-      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <UnifiedSearchBar
-            searchValue={searchValue}
-            onSearchChange={onSearch}
-            searchPlaceholder="搜索产品名称、编码、批次号..."
-            debounceDelay={0}
-            compact
-            isSearching={isSearching}
-            toggleButtons={[
-              {
-                key: 'purchase',
-                label: '采购入库',
-                icon: <Package className="h-3.5 w-3.5" />,
-                active: reasonFilter === 'purchase',
-                onClick: toggleReason('purchase'),
-              },
-              {
-                key: 'return',
-                label: '退货入库',
-                icon: <RefreshCw className="h-3.5 w-3.5" />,
-                active: reasonFilter === 'return',
-                onClick: toggleReason('return'),
-              },
-            ]}
-            filters={[
-              {
-                key: 'reason',
-                label: '入库原因',
-                includeAllOption: true,
-                options: Object.entries(INBOUND_REASON_LABELS).map(
-                  ([value, label]) => ({
-                    label,
-                    value,
-                  })
-                ),
-                width: 'w-full sm:w-40',
-              },
-            ]}
-            filterValues={{
-              reason: reasonFilter === 'all' ? 'all' : reasonFilter,
-            }}
-            onFilterChange={handleFilterChange}
-          />
-
-          <DateRangePicker
-            value={dateRange}
-            onChange={handleDateRangeChange}
-            label=""
-            placeholder="选择入库日期"
-            showPresets
-            showClearButton
-            className="w-full min-w-[220px] sm:w-auto"
-          />
-
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearFilters}
-              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              清空筛选
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <SearchFilterCard
+      searchValue={searchValue}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索产品名称、编码、批次号..."
+      isSearching={isSearching}
+      // Toggle 按钮
+      toggleButtons={[
+        {
+          key: 'purchase',
+          label: '采购入库',
+          icon: <Package className="h-3.5 w-3.5" />,
+          active: reasonFilter === 'purchase',
+          onClick: toggleReason('purchase'),
+        },
+        {
+          key: 'return',
+          label: '退货入库',
+          icon: <RefreshCw className="h-3.5 w-3.5" />,
+          active: reasonFilter === 'return',
+          onClick: toggleReason('return'),
+        },
+      ]}
+      // 筛选器配置
+      filters={[
+        {
+          key: 'reason',
+          label: '入库原因',
+          options: Object.entries(INBOUND_REASON_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
+      ]}
+      filterValues={{
+        reason: reasonFilter === 'all' ? 'all' : reasonFilter,
+      }}
+      onFilterChange={handleFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '入库日期',
+        value: dateRange,
+        onChange: handleDateRangeChange,
+        placeholder: '选择入库日期',
+      }}
+      // 清空筛选
+      onClearFilters={handleClearFilters}
+      hasActiveFilters={hasActiveFilters}
+      variant="elevated"
+    />
   );
 }
