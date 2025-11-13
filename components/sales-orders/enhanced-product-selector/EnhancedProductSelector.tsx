@@ -71,18 +71,21 @@ const UNIT_MAPPING: Record<string, string> = {
   ml: '毫升',
 };
 
+// ✅ 使用CSS变量统一颜色
 const INVENTORY_TEXT_CLASS: Record<InventoryStatus['status'], string> = {
   unknown: '',
-  'out-of-stock': 'text-red-600',
-  'low-stock': 'text-orange-600',
-  'in-stock': 'text-green-600',
+  'out-of-stock': 'text-[hsl(var(--color-error))]',
+  'low-stock': 'text-[hsl(var(--color-warning))]',
+  'in-stock': 'text-[hsl(var(--color-success))]',
 };
 
 const INVENTORY_BADGE_CLASS: Partial<
   Record<InventoryStatus['status'], string>
 > = {
-  'out-of-stock': 'border-red-200 bg-red-100 text-red-800',
-  'low-stock': 'border-orange-200 bg-orange-100 text-orange-800',
+  'out-of-stock':
+    'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]',
+  'low-stock':
+    'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
 };
 
 export function EnhancedProductSelector({
