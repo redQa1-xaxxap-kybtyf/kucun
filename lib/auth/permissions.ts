@@ -42,6 +42,7 @@ export type Permission =
   | 'inventory:inbound' // 入库操作
   | 'inventory:outbound' // 出库操作
   | 'inventory:transfer' // 库存调拨
+  | 'inventory:opening_balance' // 期初库存录入
   // 销售订单权限
   | 'sales:view' // 查看销售订单
   | 'sales:manage' // 管理销售订单
@@ -127,6 +128,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'inventory:inbound',
     'inventory:outbound',
     'inventory:transfer',
+    'inventory:opening_balance',
     // 订单
     'orders:view',
     'orders:create',
