@@ -2,19 +2,14 @@
 
 /**
  * 退货订单搜索工具栏
- * 对齐库存模块的优秀方案：统一的搜索栏、快捷筛选、日期范围与清空功能
+ * 使用统一的 SearchFilterCard 组件
  */
 
-import { Clock, Filter, Package } from 'lucide-react';
+import { Clock, Package } from 'lucide-react';
 import * as React from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
@@ -189,105 +184,82 @@ function ReturnOrderToolbarView({
   hasActiveFilters,
 }: ReturnOrderToolbarViewProps) {
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
-      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <UnifiedSearchBar
-            searchValue={searchValue}
-            onSearchChange={onSearch}
-            searchPlaceholder="搜索退货单号或客户名称..."
-            debounceDelay={0}
-            compact
-            isSearching={isSearching}
-            toggleButtons={[
-              {
-                key: 'submitted',
-                label: '待审核',
-                icon: <Clock className="h-3.5 w-3.5" />,
-                active: statusFilter === 'submitted',
-                onClick: toggleStatus('submitted'),
-              },
-              {
-                key: 'processing',
-                label: '处理中',
-                icon: <Package className="h-3.5 w-3.5" />,
-                active: statusFilter === 'processing',
-                onClick: toggleStatus('processing'),
-              },
-            ]}
-            filters={[
-              {
-                key: 'status',
-                label: '状态',
-                includeAllOption: true,
-                options: Object.entries(RETURN_ORDER_STATUS_LABELS).map(
-                  ([value, label]) => ({
-                    label,
-                    value,
-                  })
-                ),
-                width: 'w-full sm:w-40',
-              },
-              {
-                key: 'type',
-                label: '退货类型',
-                includeAllOption: true,
-                options: Object.entries(RETURN_ORDER_TYPE_LABELS).map(
-                  ([value, label]) => ({
-                    label,
-                    value,
-                  })
-                ),
-                width: 'w-full sm:w-40',
-              },
-              {
-                key: 'processType',
-                label: '处理方式',
-                includeAllOption: true,
-                options: Object.entries(RETURN_PROCESS_TYPE_LABELS).map(
-                  ([value, label]) => ({
-                    label,
-                    value,
-                  })
-                ),
-                width: 'w-full sm:w-40',
-              },
-            ]}
-            filterValues={{
-              status: statusFilter === 'all' ? 'all' : statusFilter,
-              type: typeFilter === 'all' ? 'all' : typeFilter,
-              processType:
-                processTypeFilter === 'all' ? 'all' : processTypeFilter,
-            }}
-            onFilterChange={handleFilterChange}
-          />
-
-          <DateRangePicker
-            value={dateRange}
-            onChange={handleDateRangeChange}
-            label=""
-            placeholder="选择退货日期范围"
-            showPresets
-            showClearButton
-            className="w-full min-w-[220px] sm:w-auto"
-          />
-
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearFilters}
-              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              清空筛选
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <SearchFilterCard
+      searchValue={searchValue}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索退货单号或客户名称..."
+      isSearching={isSearching}
+      // Toggle 按钮
+      toggleButtons={[
+        {
+          key: 'submitted',
+          label: '待审核',
+          icon: <Clock className="h-3.5 w-3.5" />,
+          active: statusFilter === 'submitted',
+          onClick: toggleStatus('submitted'),
+        },
+        {
+          key: 'processing',
+          label: '处理中',
+          icon: <Package className="h-3.5 w-3.5" />,
+          active: statusFilter === 'processing',
+          onClick: toggleStatus('processing'),
+        },
+      ]}
+      // 筛选器配置
+      filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: Object.entries(RETURN_ORDER_STATUS_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
+        {
+          key: 'type',
+          label: '退货类型',
+          options: Object.entries(RETURN_ORDER_TYPE_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
+        {
+          key: 'processType',
+          label: '处理方式',
+          options: Object.entries(RETURN_PROCESS_TYPE_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
+      ]}
+      filterValues={{
+        status: statusFilter === 'all' ? 'all' : statusFilter,
+        type: typeFilter === 'all' ? 'all' : typeFilter,
+        processType: processTypeFilter === 'all' ? 'all' : processTypeFilter,
+      }}
+      onFilterChange={handleFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '退货日期',
+        value: dateRange,
+        onChange: handleDateRangeChange,
+        placeholder: '选择退货日期范围',
+      }}
+      // 清空筛选
+      onClearFilters={handleClearFilters}
+      hasActiveFilters={hasActiveFilters}
+      variant="elevated"
+    />
   );
 }

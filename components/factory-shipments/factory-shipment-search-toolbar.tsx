@@ -2,19 +2,14 @@
 
 /**
  * 厂家发货搜索工具栏
- * 对齐库存模块的优秀方案，复用统一搜索栏并支持快捷筛选、日期范围与清空筛选
+ * 使用统一的 SearchFilterCard 组件
  */
 
-import { Clock, Filter, Truck } from 'lucide-react';
+import { Clock, Truck } from 'lucide-react';
 import * as React from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentStatus,
@@ -155,78 +150,58 @@ function FactoryShipmentToolbarView({
   hasActiveFilters,
 }: FactoryShipmentToolbarViewProps) {
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
-      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <UnifiedSearchBar
-            searchValue={searchValue}
-            onSearchChange={onSearch}
-            searchPlaceholder="搜索集装箱号码或订单编号..."
-            debounceDelay={0}
-            compact
-            isSearching={isSearching}
-            toggleButtons={[
-              {
-                key: 'pending_shipment',
-                label: '待发货',
-                icon: <Clock className="h-3.5 w-3.5" />,
-                active: statusFilter === 'pending_shipment',
-                onClick: toggleStatus('pending_shipment'),
-              },
-              {
-                key: 'in_transit',
-                label: '运输中',
-                icon: <Truck className="h-3.5 w-3.5" />,
-                active: statusFilter === 'in_transit',
-                onClick: toggleStatus('in_transit'),
-              },
-            ]}
-            filters={[
-              {
-                key: 'status',
-                label: '状态',
-                includeAllOption: true,
-                options: Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
-                  ([value, label]) => ({
-                    label,
-                    value,
-                  })
-                ),
-                width: 'w-full sm:w-40',
-              },
-            ]}
-            filterValues={{
-              status: statusFilter === 'all' ? 'all' : statusFilter,
-            }}
-            onFilterChange={handleFilterChange}
-          />
-
-          <DateRangePicker
-            value={dateRange}
-            onChange={handleDateRangeChange}
-            label=""
-            placeholder="选择发货日期"
-            showPresets
-            showClearButton
-            className="w-full min-w-[220px] sm:w-auto"
-          />
-
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearFilters}
-              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-            >
-              <Filter className="h-3.5 w-3.5" />
-              清空筛选
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <SearchFilterCard
+      searchValue={searchValue}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索集装箱号码或订单编号..."
+      isSearching={isSearching}
+      // Toggle 按钮
+      toggleButtons={[
+        {
+          key: 'pending_shipment',
+          label: '待发货',
+          icon: <Clock className="h-3.5 w-3.5" />,
+          active: statusFilter === 'pending_shipment',
+          onClick: toggleStatus('pending_shipment'),
+        },
+        {
+          key: 'in_transit',
+          label: '运输中',
+          icon: <Truck className="h-3.5 w-3.5" />,
+          active: statusFilter === 'in_transit',
+          onClick: toggleStatus('in_transit'),
+        },
+      ]}
+      // 筛选器配置
+      filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
+      ]}
+      filterValues={{
+        status: statusFilter === 'all' ? 'all' : statusFilter,
+      }}
+      onFilterChange={handleFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '发货日期',
+        value: dateRange,
+        onChange: handleDateRangeChange,
+        placeholder: '选择发货日期',
+      }}
+      // 清空筛选
+      onClearFilters={handleClearFilters}
+      hasActiveFilters={hasActiveFilters}
+      variant="elevated"
+    />
   );
 }
