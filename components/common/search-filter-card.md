@@ -8,7 +8,7 @@
 
 **迁移完成日期**: 2025-01-13
 
-已成功迁移以下页面:
+### 已迁移的列表页面 (7个)
 
 1. ✅ 客户管理页面 (`app/(dashboard)/customers/page-client.tsx`)
 2. ✅ 供应商管理页面 (`components/suppliers/suppliers-page-client.tsx`)
@@ -17,6 +17,17 @@
 5. ✅ 库存管理页面 (`components/inventory/InventorySearchToolbar.tsx`)
 6. ✅ 应收款页面 (`components/finance/receivables-client/ReceivablesFilterCard.tsx`)
 7. ✅ 应退款页面 (`components/finance/refunds-client.tsx`)
+
+### 已迁移的工具栏组件 (6个)
+
+8. ✅ 采购订单搜索工具栏 (`components/purchase-orders/purchase-order-search-toolbar.tsx`)
+9. ✅ 入库记录搜索工具栏 (`components/inventory/inbound-records-search-toolbar.tsx`)
+10. ✅ 退货订单搜索工具栏 (`components/return-orders/return-order-search-toolbar.tsx`)
+11. ✅ 厂家发货搜索工具栏 (`components/factory-shipments/factory-shipment-search-toolbar.tsx`)
+12. ✅ 分类搜索筛选 (`components/categories/category-search-filters.tsx`)
+13. ✅ 应付款筛选栏 (`components/finance/payables-client/PayablesFilterBar.tsx`)
+
+**总计**: 13个页面/组件已完成100%迁移
 
 **已删除的旧组件**:
 
