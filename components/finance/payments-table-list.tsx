@@ -278,31 +278,37 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
 }
 
 /**
- * 收款方式徽章组件
+ * 收款方式徽章组件 - 使用CSS变量统一颜色
+ * ✅ 使用项目定义的CSS变量替代硬编码颜色
  */
 function PaymentMethodBadge({ method }: { method: string }) {
   const methodConfig: Record<string, { label: string; className: string }> = {
     cash: {
       label: '现金',
-      className: 'border-green-300 bg-green-50 text-green-700',
+      className:
+        'border-[hsl(var(--color-success-light))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
     },
     bank_transfer: {
       label: '银行转账',
-      className: 'border-blue-300 bg-blue-50 text-blue-700',
+      className:
+        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
     },
     alipay: {
       label: '支付宝',
-      className: 'border-cyan-300 bg-cyan-50 text-cyan-700',
+      className:
+        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
     },
     wechat: {
       label: '微信支付',
-      className: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+      className:
+        'border-[hsl(var(--color-success-light))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
     },
   };
 
   const config = methodConfig[method] || {
     label: method,
-    className: 'border-gray-300 bg-gray-50 text-gray-700',
+    className:
+      'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]',
   };
 
   return (
