@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Download, Package, Plus } from 'lucide-react';
+import { Download, PackageX, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -14,11 +14,11 @@ import { getReturnOrders } from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
+  ReturnOrder,
   ReturnOrderQueryParams,
   ReturnOrderStatus,
   ReturnOrderType,
   ReturnProcessType,
-  ReturnOrder,
 } from '@/lib/types/return-order';
 
 interface ReturnOrdersPageClientProps {
@@ -190,8 +190,8 @@ export function ReturnOrdersPageClient({
         <PageHeader
           title="退货订单管理"
           description="管理客户退货订单，跟踪退货处理状态和退款情况"
-          icon={<Package className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-orange))"
+          icon={<PackageX className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-error))"
           actions={
             <>
               <Button
