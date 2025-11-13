@@ -1,10 +1,12 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { Package, Plus } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import { Suspense } from 'react';
 
+import { ErrorBoundaryFallback } from '@/components/common/error-boundary-fallback';
 import { PageHeader } from '@/components/common/page-header';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
@@ -337,6 +339,7 @@ function InventoryContent(props: {
   isSearching: boolean; // ✅ 新增：搜索中状态
   error: unknown;
 }) {
+  const queryClient = useQueryClient();
   const {
     categoryOptions,
     listData,
@@ -376,18 +379,15 @@ function InventoryContent(props: {
         />
         <Suspense fallback={<InventoryListSkeleton />}>
           {error ? (
-            <div className="rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-6 text-center shadow-sm">
-              <p className="text-[hsl(var(--color-error))]">
-                加载失败: {error instanceof Error ? error.message : '未知错误'}
-              </p>
-              <Button
-                variant="destructive"
-                className="mt-4"
-                onClick={() => window.location.reload()}
-              >
-                重新加载
-              </Button>
-            </div>
+            <ErrorBoundaryFallback
+              error={error}
+              onRetry={() => {
+                queryClient.refetchQueries({
+                  queryKey: ['inventory', 'list'],
+                });
+              }}
+              onClearFilters={onClearFilters}
+            />
           ) : (
             <ERPInventoryList
               data={listData}
