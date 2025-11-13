@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 import { userValidations, type UserLoginInput } from '@/lib/validations/base';
 
@@ -467,13 +468,13 @@ export default function SignInPage() {
 
                 <Button
                   type="submit"
-                  className={`w-full transition-all duration-300 ${
-                    isSuccess
-                      ? 'border-green-600 bg-green-600 hover:bg-green-700'
-                      : isRedirecting
-                        ? 'border-blue-600 bg-blue-600 hover:bg-blue-700'
-                        : ''
-                  }`}
+                  className={cn(
+                    'w-full transition-all duration-300',
+                    isSuccess &&
+                      'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success))] hover:bg-[hsl(var(--color-success-hover))]',
+                    isRedirecting &&
+                      'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info))] hover:bg-[hsl(var(--color-info-hover))]'
+                  )}
                   disabled={isLoading || isSuccess || isRedirecting}
                 >
                   {isRedirecting ? (
