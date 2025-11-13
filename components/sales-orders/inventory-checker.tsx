@@ -368,14 +368,22 @@ export function InventoryStatus({
 
   if (isLowStock) {
     return (
-      <Badge variant="secondary" className={cn('text-orange-600', className)}>
+      <Badge
+        variant="secondary"
+        className={cn('text-[hsl(var(--color-warning))]', className)}
+      >
         库存预警
       </Badge>
     );
   }
 
   return (
-    <Badge className={cn('bg-green-100 text-green-800', className)}>
+    <Badge
+      className={cn(
+        'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+        className
+      )}
+    >
       库存充足
     </Badge>
   );
