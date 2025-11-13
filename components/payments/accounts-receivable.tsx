@@ -128,12 +128,29 @@ const AccountsReceivableComponent = React.forwardRef<
     };
 
     // 获取付款状态配置
+    // ✅ 使用Badge变体替代硬编码颜色
     const getPaymentStatusConfig = (status: string) => {
       const configs = {
-        unpaid: { label: '未付款', color: 'red', icon: XCircle },
-        partial: { label: '部分付款', color: 'yellow', icon: Clock },
-        pending: { label: '待确认', color: 'yellow', icon: Clock },
-        paid: { label: '已付款', color: 'green', icon: CheckCircle },
+        unpaid: {
+          label: '未付款',
+          variant: 'destructive' as const,
+          icon: XCircle,
+        },
+        partial: {
+          label: '部分付款',
+          variant: 'warning' as const,
+          icon: Clock,
+        },
+        pending: {
+          label: '待确认',
+          variant: 'warning' as const,
+          icon: Clock,
+        },
+        paid: {
+          label: '已付款',
+          variant: 'success' as const,
+          icon: CheckCircle,
+        },
       };
       return configs[status as keyof typeof configs] || configs.unpaid;
     };
@@ -221,13 +238,7 @@ const AccountsReceivableComponent = React.forwardRef<
           const config = getPaymentStatusConfig(receivable.paymentStatus);
           const IconComponent = config.icon;
           return (
-            <Badge
-              variant="outline"
-              className={cn(
-                `text-${config.color}-600`,
-                `border-${config.color}-200`
-              )}
-            >
+            <Badge variant={config.variant}>
               <IconComponent className="mr-1 h-3 w-3" />
               {config.label}
             </Badge>
@@ -300,13 +311,7 @@ const AccountsReceivableComponent = React.forwardRef<
                   {receivable.customerName}
                 </div>
               </div>
-              <Badge
-                variant="outline"
-                className={cn(
-                  `text-${config.color}-600`,
-                  `border-${config.color}-200`
-                )}
-              >
+              <Badge variant={config.variant}>
                 <IconComponent className="mr-1 h-3 w-3" />
                 {config.label}
               </Badge>
