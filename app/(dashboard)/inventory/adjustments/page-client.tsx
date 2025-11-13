@@ -77,7 +77,7 @@ export function AdjustmentRecordsPageClient({
             title="调整记录"
             description="查看和管理库存调整记录，跟踪库存变动历史"
             icon={<FileText className="h-6 w-6 text-white" />}
-            iconBgColor="hsl(var(--color-orange))"
+            iconBgColor="hsl(var(--color-warning))"
             actions={
               <>
                 <Button
@@ -121,7 +121,7 @@ export function AdjustmentRecordsPageClient({
           title="调整记录"
           description="查看和管理库存调整记录，跟踪库存变动历史"
           icon={<FileText className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-orange))"
+          iconBgColor="hsl(var(--color-warning))"
           actions={
             <>
               <Button
