@@ -14,7 +14,7 @@
  * 遵循原则: KISS, DRY, SOLID
  */
 
-import { X } from 'lucide-react';
+import { Filter, RotateCcw } from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -162,6 +162,14 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     return (
       <Card className={cn(CARD_VARIANTS[variant], className)}>
         <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
+          {/* 筛选条件标题 */}
+          <div className="mb-3 flex items-center gap-2">
+            <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+            <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+              筛选条件
+            </span>
+          </div>
+
           <div className="flex flex-col gap-3">
             {/* 主搜索栏 */}
             <div className="flex flex-wrap items-center gap-2">
@@ -190,23 +198,22 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                   className={cn('min-w-[200px]', dateRangeFilter.className)}
                 />
               )}
-
-              {/* 清空筛选按钮 */}
-              {showClearButton && hasFilters && onClearFilters && (
-                <Button
-                  variant="ghost"
-                  size={compact ? 'sm' : 'default'}
-                  onClick={handleClearFilters}
-                  className={cn(
-                    'gap-1 text-[hsl(var(--color-text-secondary))] hover:text-[hsl(var(--color-text-primary))]',
-                    compact ? 'h-8 text-xs' : 'h-10'
-                  )}
-                >
-                  <X className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-                  清空筛选
-                </Button>
-              )}
             </div>
+
+            {/* 重置筛选按钮 - 移至底部右侧 */}
+            {showClearButton && hasFilters && onClearFilters && (
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3" />
+                  重置筛选
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
