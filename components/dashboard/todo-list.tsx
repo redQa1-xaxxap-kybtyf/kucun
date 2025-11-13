@@ -61,27 +61,31 @@ const TODO_TYPE_CONFIG = {
   },
 } as const;
 
-// 优先级配置
+// 优先级配置 - 使用CSS变量统一颜色
+// ✅ 使用项目定义的CSS变量替代硬编码颜色
 const PRIORITY_CONFIG = {
   urgent: {
     label: '紧急',
-    color: 'bg-red-100 text-red-800',
-    dot: 'bg-red-500',
+    color: 'bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]',
+    dot: 'bg-[hsl(var(--color-error))]',
   },
   high: {
     label: '高',
-    color: 'bg-orange-100 text-orange-800',
-    dot: 'bg-orange-500',
+    color:
+      'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
+    dot: 'bg-[hsl(var(--color-warning))]',
   },
   medium: {
     label: '中',
-    color: 'bg-yellow-100 text-yellow-800',
-    dot: 'bg-yellow-500',
+    color:
+      'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
+    dot: 'bg-[hsl(var(--color-warning))]',
   },
   low: {
     label: '低',
-    color: 'bg-green-100 text-green-800',
-    dot: 'bg-green-500',
+    color:
+      'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+    dot: 'bg-[hsl(var(--color-success))]',
   },
 } as const;
 
