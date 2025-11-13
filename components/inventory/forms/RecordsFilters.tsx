@@ -326,3 +326,25 @@ export const ADJUSTMENT_FILTER_CONFIG: FilterConfig = {
     endLabel: '结束日期',
   },
 };
+
+// 盘点记录筛选配置
+export const COUNT_FILTER_CONFIG: FilterConfig = {
+  search: {
+    enabled: true,
+    placeholder: '搜索盘点单号、位置、产品名称...',
+  },
+  typeFilter: {
+    enabled: true,
+    label: '盘点类型',
+    options: [
+      { value: 'full', label: '全盘' },
+      { value: 'partial', label: '抽盘' },
+      { value: 'cycle', label: '循环盘点' },
+    ],
+  },
+  dateRange: {
+    enabled: true,
+    startLabel: '开始日期',
+    endLabel: '结束日期',
+  },
+};

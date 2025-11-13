@@ -7,7 +7,6 @@ import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { CountFilters } from '@/components/inventory/counts/count-filters';
 import { CountList } from '@/components/inventory/counts/count-list';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +16,8 @@ import type {
   CountType,
   InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
+
+import { CountRecordsFilters } from './components/CountRecordsFilters';
 
 interface CountsPageClientProps {
   initialParams: {
@@ -116,6 +117,19 @@ export function CountsPageClient({ initialParams }: CountsPageClientProps) {
     [filters, updateURL]
   );
 
+  // 重置筛选条件
+  const handleResetFilters = React.useCallback(() => {
+    const resetFilters: InventoryCountQueryParams = {
+      page: 1,
+      pageSize: initialParams.pageSize,
+      sortBy: 'planDate',
+      sortOrder: 'desc',
+    };
+
+    setFilters(resetFilters);
+    updateURL(resetFilters);
+  }, [initialParams.pageSize, updateURL]);
+
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
@@ -141,14 +155,11 @@ export function CountsPageClient({ initialParams }: CountsPageClientProps) {
       />
 
       {/* 筛选条件 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>筛选条件</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CountFilters filters={filters} onFilterChange={handleFilterChange} />
-        </CardContent>
-      </Card>
+      <CountRecordsFilters
+        filters={filters}
+        onFiltersChange={handleFilterChange}
+        onReset={handleResetFilters}
+      />
 
       {/* 盘点计划列表 */}
       <Card>
