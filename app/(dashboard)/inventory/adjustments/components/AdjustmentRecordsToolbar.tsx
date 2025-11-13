@@ -60,7 +60,7 @@ export function AdjustmentRecordsToolbar({
               style={{ boxShadow: 'var(--shadow-light)' }}
             >
               <Edit className="h-4 w-4" />
-              新增调整
+              新建调整
             </Button>
           )}
         </div>

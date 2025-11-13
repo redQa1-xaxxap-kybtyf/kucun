@@ -17,11 +17,11 @@ interface InboundRecordsToolbarProps {
  *
  * 功能：
  * - 显示页面标题和描述
- * - 提供"返回"和"新增入库"操作按钮
- * - 根据用户权限控制"新增入库"按钮的显示
+ * - 提供"返回"和"新建入库"操作按钮
+ * - 根据用户权限控制"新建入库"按钮的显示
  *
  * 权限控制：
- * - 需要 `inventory:inbound` 权限才能显示"新增入库"按钮
+ * - 需要 `inventory:inbound` 权限才能显示"新建入库"按钮
  * - 无权限时按钮不显示（而非禁用），提供更好的用户体验
  */
 export function InboundRecordsToolbar({
@@ -63,7 +63,7 @@ export function InboundRecordsToolbar({
             <ArrowLeft className="h-4 w-4" />
             返回
           </Button>
-          {/* 只有拥有入库权限的用户才能看到"新增入库"按钮 */}
+          {/* 只有拥有入库权限的用户才能看到"新建入库"按钮 */}
           {hasInboundPermission && (
             <Button
               size="lg"
@@ -72,7 +72,7 @@ export function InboundRecordsToolbar({
               style={{ boxShadow: 'var(--shadow-light)' }}
             >
               <Plus className="h-4 w-4" />
-              新增入库
+              新建入库
             </Button>
           )}
         </>
