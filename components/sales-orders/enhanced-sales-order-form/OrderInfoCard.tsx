@@ -79,16 +79,16 @@ export function OrderInfoCard({
                           <div
                             className={`h-2 w-2 rounded-full ${
                               status === 'draft'
-                                ? 'bg-yellow-500'
+                                ? 'bg-[hsl(var(--color-warning))]'
                                 : status === 'confirmed'
-                                  ? 'bg-green-500'
+                                  ? 'bg-[hsl(var(--color-success))]'
                                   : status === 'shipped'
-                                    ? 'bg-blue-500'
+                                    ? 'bg-[hsl(var(--color-info))]'
                                     : status === 'completed'
-                                      ? 'bg-green-600'
+                                      ? 'bg-[hsl(var(--color-success))]'
                                       : status === 'cancelled'
-                                        ? 'bg-red-500'
-                                        : 'bg-gray-500'
+                                        ? 'bg-[hsl(var(--color-error))]'
+                                        : 'bg-[hsl(var(--color-border-secondary))]'
                             }`}
                           ></div>
                           {label}
