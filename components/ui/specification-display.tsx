@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-// 规格展示变体定义
+// 规格展示变体定义 - 使用CSS变量统一颜色
+// ✅ 使用项目定义的CSS变量替代硬编码颜色
 const specificationDisplayVariants = cva(
   'inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
   {
@@ -17,10 +18,13 @@ const specificationDisplayVariants = cva(
         default: 'bg-primary/10 text-primary border border-primary/20',
         secondary: 'bg-secondary text-secondary-foreground',
         outline: 'border border-border text-foreground hover:bg-accent',
-        size: 'bg-blue-50 text-blue-700 border border-blue-200',
-        thickness: 'bg-green-50 text-green-700 border border-green-200',
-        surface: 'bg-purple-50 text-purple-700 border border-purple-200',
-        grade: 'bg-orange-50 text-orange-700 border border-orange-200',
+        size: 'bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))] border border-[hsl(var(--color-info-light))]',
+        thickness:
+          'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))] border border-[hsl(var(--color-success-light))]',
+        surface:
+          'bg-[hsl(var(--color-purple-light))] text-[hsl(var(--color-purple))] border border-[hsl(var(--color-purple-light))]',
+        grade:
+          'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))] border border-[hsl(var(--color-warning-light))]',
       },
       size: {
         sm: 'text-xs px-1.5 py-0.5',
