@@ -44,7 +44,7 @@ export default function InventoryAdjustPage() {
           title="库存调整"
           description="查看当前库存状态并进行调整操作"
           icon={<PackagePlus className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-green))"
+          iconBgColor="hsl(var(--color-success))"
           actions={
             <>
               <Button
