@@ -105,11 +105,9 @@ export async function createPurchaseOrderForTransfer(
       remarks: [
         '客户直发订单自动生成',
         `关联销售订单: ${salesOrder.orderNumber}`,
-        `销售订单ID: ${salesOrder.id}`,
         `客户: ${customerName}`,
       ].join('\n'),
-      // TODO: 数据库迁移完成后启用此字段
-      // salesOrderId: salesOrder.id,
+      salesOrderId: salesOrder.id,
       items: {
         create: items,
       },
