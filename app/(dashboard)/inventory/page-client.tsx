@@ -88,7 +88,7 @@ function useInventoryController(initialParams: InventoryQueryParams) {
   // ✅ 本地搜索输入状态,用于即时UI反馈
   const [searchInput, setSearchInput] = React.useState(params.search || '');
   const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-  const [isSearching, setIsSearching] = React.useState(false);
+  const [isPending, startTransition] = React.useTransition();
 
   // ✅ 同步URL参数到本地输入框(浏览器前进/后退、清空筛选等)
   React.useEffect(() => {
@@ -105,10 +105,10 @@ function useInventoryController(initialParams: InventoryQueryParams) {
     handlePrevPageHover,
   } = useInventoryData(params, !!params.search); // ✅ 搜索模式：当有搜索词时启用
 
-  // ✅ 优化搜索状态管理:单一职责原则，减少重渲染
+  // ✅ 优化搜索状态管理:使用useTransition的isPending状态
   const shouldShowSearchingIndicator = React.useMemo(
-    () => isSearching && (isLoading || isFetching),
-    [isSearching, isLoading, isFetching]
+    () => isPending || isFetching,
+    [isPending, isFetching]
   );
   const { handleFilter, handleClearFilters, handlePageChange } =
     useInventoryFilters(updateParams, params.page);
@@ -131,21 +131,22 @@ function useInventoryController(initialParams: InventoryQueryParams) {
 
       // 3. 处理清空搜索
       if (trimmed === '') {
-        setIsSearching(false);
-        // 清空时立即更新URL和触发查询
-        updateParams({ search: undefined, page: 1 });
+        // 使用 startTransition 包裹状态更新，避免阻塞UI
+        startTransition(() => {
+          updateParams({ search: undefined, page: 1 });
+        });
         return;
       }
 
-      // 4. 设置搜索状态
-      setIsSearching(true);
-
-      // 5. 使用固定延迟更新URL和触发查询
+      // 4. 使用固定延迟更新URL和触发查询
       searchTimerRef.current = setTimeout(() => {
-        updateParams({ search: trimmed, page: 1 });
+        // 使用 startTransition 包裹状态更新，避免阻塞UI
+        startTransition(() => {
+          updateParams({ search: trimmed, page: 1 });
+        });
       }, SEARCH_DEBOUNCE_DELAY);
     },
-    [updateParams]
+    [updateParams, startTransition]
   );
 
   // 清理定时器
