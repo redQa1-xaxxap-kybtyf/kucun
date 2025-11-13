@@ -16,8 +16,8 @@ export function ProductFormActions({
   isLoading,
   onCancel,
 }: ProductFormActionsProps) {
-  const submitText = mode === 'create' ? '创建产品' : '更新产品';
-  const loadingText = mode === 'create' ? '创建中...' : '更新中...';
+  const submitText = mode === 'create' ? '新建产品' : '保存修改';
+  const loadingText = mode === 'create' ? '保存中...' : '保存中...';
 
   return (
     <div className="flex items-center justify-between pt-6">

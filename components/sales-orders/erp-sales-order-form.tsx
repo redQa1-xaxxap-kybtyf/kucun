@@ -461,20 +461,22 @@ export function ERPSalesOrderForm({
     return Number.isFinite(parsed) ? parsed : 0;
   };
 
-  const { customerPaidFees, companyPaidFees } = React.useMemo(() => {
-    return (feeItems || []).reduce(
-      (acc, fee) => {
-        const amount = coerceNumeric(fee.feeAmount);
-        if ((fee.paidBy ?? 'customer') === 'company') {
-          acc.companyPaidFees += amount;
-        } else {
-          acc.customerPaidFees += amount;
-        }
-        return acc;
-      },
-      { customerPaidFees: 0, companyPaidFees: 0 }
-    );
-  }, [feeItems]);
+  const { customerPaidFees, companyPaidFees } = React.useMemo(
+    () =>
+      (feeItems || []).reduce(
+        (acc, fee) => {
+          const amount = coerceNumeric(fee.feeAmount);
+          if ((fee.paidBy ?? 'customer') === 'company') {
+            acc.companyPaidFees += amount;
+          } else {
+            acc.customerPaidFees += amount;
+          }
+          return acc;
+        },
+        { customerPaidFees: 0, companyPaidFees: 0 }
+      ),
+    [feeItems]
+  );
 
   const totalAmount = watchedItems.reduce((sum, item) => {
     // 计算片单价（如果当前显示单位是件，需要转换为片单价）
@@ -1470,7 +1472,7 @@ export function ERPSalesOrderForm({
                   ) : (
                     <Save className="mr-1 h-3 w-3" />
                   )}
-                  {mode === 'edit' ? '更新草稿' : '保存草稿'}
+                  {mode === 'edit' ? '保存草稿' : '保存草稿'}
                 </Button>
                 <Button
                   type="button"

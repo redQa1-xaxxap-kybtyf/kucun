@@ -330,12 +330,12 @@ function FormActions({
         {isLoading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            {mode === 'create' ? '创建中...' : '保存中...'}
+            {mode === 'create' ? '保存中...' : '保存中...'}
           </>
         ) : (
           <>
             <Save className="h-4 w-4" />
-            {mode === 'create' ? '创建客户' : '保存修改'}
+            {mode === 'create' ? '新建客户' : '保存修改'}
           </>
         )}
       </Button>

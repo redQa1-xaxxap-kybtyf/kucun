@@ -327,7 +327,7 @@ function FormActions({ onCancel, isSubmitting }: FormActionsProps) {
         className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90"
       >
         <Save className="mr-2 h-4 w-4" />
-        {isSubmitting ? '创建中...' : '创建收款记录'}
+        {isSubmitting ? '保存中...' : '新建收款记录'}
       </Button>
     </DialogFooter>
   );

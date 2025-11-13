@@ -450,7 +450,7 @@ export function SalesOrderForm({
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
-              {isEdit ? '保存修改' : '创建订单'}
+              {isEdit ? '保存修改' : '新建订单'}
             </Button>
           </div>
         </form>

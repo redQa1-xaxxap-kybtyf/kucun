@@ -196,12 +196,12 @@ export function QuickAddSupplierDialog({
                 {createMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    创建中...
+                    保存中...
                   </>
                 ) : (
                   <>
                     <Plus className="mr-2 h-4 w-4" />
-                    创建供应商
+                    新建供应商
                   </>
                 )}
               </Button>

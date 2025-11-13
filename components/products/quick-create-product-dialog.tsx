@@ -300,7 +300,7 @@ export function QuickCreateProductDialog({
                 {createMutation.isPending && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 )}
-                创建并选择
+                新建并选择
               </Button>
             </DialogFooter>
           </form>
