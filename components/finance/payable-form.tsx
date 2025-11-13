@@ -396,7 +396,7 @@ export function PayableForm({
                   className="min-w-[120px]"
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  {isLoading ? '提交中...' : isEdit ? '保存修改' : '创建应付款'}
+                  {isLoading ? '保存中...' : isEdit ? '保存修改' : '新建应付款'}
                 </Button>
               </div>
             </CardContent>

@@ -44,7 +44,7 @@ export function SupplierSearchEmptyState({
             className="h-8"
           >
             <Plus className="mr-2 h-3 w-3" />
-            新增供应商
+            新建供应商
           </Button>
         )}
       </div>

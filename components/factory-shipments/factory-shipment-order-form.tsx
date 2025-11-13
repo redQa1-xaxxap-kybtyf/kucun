@@ -416,7 +416,7 @@ export function FactoryShipmentOrderForm({
                   className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
                 >
                   <Save className="mr-2 h-4 w-4" />
-                  {isLoading ? '保存中...' : '更新订单'}
+                  {isLoading ? '保存中...' : '保存修改'}
                 </Button>
               ) : (
                 <div className="flex items-center gap-3">
@@ -442,15 +442,15 @@ export function FactoryShipmentOrderForm({
                   >
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'confirm'
-                      ? '创建中...'
-                      : '创建订单'}
+                      ? '保存中...'
+                      : '新建订单'}
                   </Button>
                 </div>
               )}
             </div>
             {!isEditing && (
               <p className="text-muted-foreground mt-4 text-sm">
-                保存草稿：用于临时保存，稍后可继续编辑；创建订单：提交后进入正式发货流程。
+                保存草稿：用于临时保存，稍后可继续编辑；新建订单：提交后进入正式发货流程。
               </p>
             )}
           </CardContent>

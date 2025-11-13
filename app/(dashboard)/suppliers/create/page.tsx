@@ -228,12 +228,12 @@ export default function CreateSupplierPage() {
                 {isLoading ? (
                   <>
                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                    创建中...
+                    保存中...
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4" />
-                    创建供应商
+                    新建供应商
                   </>
                 )}
               </Button>
