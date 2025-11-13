@@ -22,6 +22,7 @@ import { reserveInventory, shouldReserveInventory } from './inventory';
 import { maybeCreatePayable } from './payable';
 import { applyPrepaymentToOrder } from './prepayment';
 import { recordCustomerPriceHistory } from './price-history';
+import { createPurchaseOrderForTransfer } from './purchase-order';
 import {
   mapOrderBaseFields,
   mapSalesOrderItem,
@@ -197,6 +198,30 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       id: salesOrder.id,
       orderNumber: salesOrder.orderNumber,
     });
+
+    // 客户直发订单自动创建采购订单
+    if (
+      validatedData.orderType === 'TRANSFER' &&
+      transferMode === 'SUPPLIER_ONLY' &&
+      validatedData.status === 'confirmed' &&
+      validatedData.supplierId &&
+      financials.costAmount > 0
+    ) {
+      try {
+        await createPurchaseOrderForTransfer(
+          tx,
+          validatedData,
+          salesOrder,
+          userId
+        );
+      } catch (error) {
+        logger.error('sales-orders', '创建采购订单失败', error, {
+          salesOrderId: salesOrder.id,
+          salesOrderNumber: salesOrder.orderNumber,
+        });
+        // 不抛出错误，避免影响销售订单创建
+      }
+    }
 
     if (
       salesOrder.status === 'confirmed' &&
