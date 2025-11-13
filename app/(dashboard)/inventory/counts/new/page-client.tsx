@@ -1,10 +1,10 @@
 'use client';
 
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ClipboardCheck } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { CountForm } from '@/components/inventory/counts/count-form';
 import { Button } from '@/components/ui/button';
 
@@ -24,17 +24,20 @@ export function NewCountPageClient() {
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/inventory/counts">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">创建盘点计划</h1>
-          <p className="text-muted-foreground">填写盘点计划信息</p>
-        </div>
-      </div>
+      <PageHeader
+        title="创建盘点计划"
+        description="填写盘点计划信息"
+        icon={<ClipboardCheck className="h-6 w-6 text-white" />}
+        iconBgColor="hsl(var(--color-info))"
+        actions={
+          <Button variant="outline" size="lg" asChild className="h-11 gap-2">
+            <Link href="/inventory/counts">
+              <ArrowLeft className="h-4 w-4" />
+              返回列表
+            </Link>
+          </Button>
+        }
+      />
 
       {/* 盘点计划表单 */}
       <CountForm
