@@ -20,7 +20,7 @@ export function SalesOrderPageHeader() {
       title="销售订单"
       description="管理销售订单和发货信息"
       icon={<ShoppingCart className="h-6 w-6 text-white" />}
-      iconBgColor="hsl(var(--color-blue))"
+      iconBgColor="hsl(var(--color-info))"
       actions={
         <Button
           size="lg"
