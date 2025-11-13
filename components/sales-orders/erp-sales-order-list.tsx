@@ -708,26 +708,15 @@ export function ERPSalesOrderList({
                       </span>
                       {order.orderType === 'TRANSFER' && (
                         <div className="flex flex-wrap gap-1">
-                          <Badge
-                            variant="outline"
-                            className="border-sky-200 bg-sky-50 text-sky-700"
-                          >
-                            调货销售
-                          </Badge>
-                          <Badge
-                            variant="secondary"
-                            className="border-amber-200 bg-amber-50 text-amber-700"
-                          >
+                          <Badge variant="info">调货销售</Badge>
+                          <Badge variant="warning">
                             {TRANSFER_MODE_LABELS[order.transferMode] ??
                               order.transferMode}
                           </Badge>
                         </div>
                       )}
                       {order.hasReturnOrder && (
-                        <Badge
-                          variant="outline"
-                          className="w-fit border-rose-200 bg-rose-50 text-rose-700"
-                        >
+                        <Badge variant="destructive" className="w-fit">
                           已发生退货
                         </Badge>
                       )}
