@@ -12,7 +12,8 @@ export type InboundReason =
   | 'surplus' // 盘盈入库
   | 'other' // 其他
   | 'sales_cancel' // 销售取消回库
-  | 'return_inbound'; // 退货单自动入库
+  | 'return_inbound' // 退货单自动入库
+  | 'opening_balance'; // 期初库存
 
 // 入库原因标签映射
 export const INBOUND_REASON_LABELS: Record<InboundReason, string> = {
@@ -23,6 +24,7 @@ export const INBOUND_REASON_LABELS: Record<InboundReason, string> = {
   other: '其他',
   sales_cancel: '销售订单取消入库',
   return_inbound: '退货订单入库',
+  opening_balance: '期初库存',
 };
 
 // 入库原因选项

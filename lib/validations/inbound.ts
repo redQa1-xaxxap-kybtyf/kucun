@@ -14,6 +14,7 @@ export const inboundReasonSchema = z.enum([
   'other',
   'sales_cancel',
   'return_inbound',
+  'opening_balance',
 ] as const);
 
 // 入库单位类型
