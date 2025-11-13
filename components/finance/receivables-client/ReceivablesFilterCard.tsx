@@ -3,12 +3,9 @@
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type {
   ReceivableItem,
   ReceivablesResult,
@@ -98,46 +95,41 @@ function ReceivablesFilterBar({
   onDateRangeChange,
 }: ReceivablesFilterBarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <div className="min-w-[280px] flex-1">
-        <UnifiedSearchBar
-          searchValue={searchValue}
-          onSearchChange={onSearch}
-          searchPlaceholder="搜索订单号或客户名称..."
-          debounceDelay={0}
-          showClearButton
-          isSearching={isSearching}
-          filters={[
-            {
-              key: 'paymentStatus',
-              label: '状态',
-              includeAllOption: true,
-              options: [
-                { label: '未收款', value: 'unpaid' },
-                { label: '部分收款', value: 'partial' },
-                { label: '待确认', value: 'pending' },
-                { label: '已收款', value: 'paid' },
-              ],
-              width: 'w-[140px]',
-            },
-          ]}
-          filterValues={{
-            paymentStatus: queryParams.paymentStatus || 'all',
-          }}
-          onFilterChange={onFilterChange}
-        />
-      </div>
-      <DateRangePicker
-        value={{
+    <SearchFilterCard
+      searchValue={searchValue}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索订单号或客户名称..."
+      isSearching={isSearching}
+      // 筛选器配置
+      filters={[
+        {
+          key: 'paymentStatus',
+          label: '状态',
+          options: [
+            { label: '未收款', value: 'unpaid' },
+            { label: '部分收款', value: 'partial' },
+            { label: '待确认', value: 'pending' },
+            { label: '已收款', value: 'paid' },
+          ],
+          width: 'w-[140px]',
+        },
+      ]}
+      filterValues={{
+        paymentStatus: queryParams.paymentStatus || 'all',
+      }}
+      onFilterChange={onFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '订单日期',
+        value: {
           startDate: queryParams.startDate,
           endDate: queryParams.endDate,
-        }}
-        onChange={onDateRangeChange}
-        label=""
-        placeholder="选择订单日期范围"
-        showPresets
-        className="min-w-[220px]"
-      />
-    </div>
+        },
+        onChange: onDateRangeChange,
+        placeholder: '选择订单日期范围',
+      }}
+      variant="default"
+    />
   );
 }

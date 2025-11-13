@@ -1,33 +1,17 @@
 'use client';
 
-import {
-  Calendar,
-  CheckCircle,
-  Filter,
-  Search,
-  TrendingDown,
-} from 'lucide-react';
+import { Calendar, CheckCircle, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { RefundProcessDialog } from '@/components/finance/refund-process-dialog';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type {
   RefundListData,
   RefundListQueryParams,
@@ -219,56 +203,51 @@ export function RefundsClient({
       </div>
 
       {/* 搜索和筛选 */}
+      <SearchFilterCard
+        searchValue={searchValue}
+        onSearchChange={value => {
+          setSearchValue(value);
+          onSearch?.(value);
+        }}
+        searchPlaceholder="搜索退款单号、退货单号..."
+        // 筛选器配置
+        filters={[
+          {
+            key: 'status',
+            label: '状态',
+            options: [
+              { label: '待处理', value: 'pending' },
+              { label: '处理中', value: 'processing' },
+              { label: '已完成', value: 'completed' },
+              { label: '已拒绝', value: 'rejected' },
+            ],
+            width: 'w-[140px]',
+          },
+        ]}
+        filterValues={{
+          status: initialParams.status || 'all',
+        }}
+        onFilterChange={(key, value) => {
+          if (key === 'status') {
+            onFilter?.(key, value === 'all' ? undefined : value);
+          }
+        }}
+        // 日期范围筛选
+        dateRangeFilter={{
+          key: 'dateRange',
+          label: '退款日期',
+          value: {
+            startDate: initialParams.startDate,
+            endDate: initialParams.endDate,
+          },
+          onChange: range => onDateRangeChange?.(range),
+          placeholder: '选择退款日期范围',
+        }}
+        variant="elevated"
+      />
+
       <Card className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)]">
         <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="relative max-w-sm flex-1">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  placeholder="搜索退款单号、退货单号..."
-                  value={searchValue}
-                  onChange={e => {
-                    const value = e.target.value;
-                    setSearchValue(value);
-                    onSearch?.(value);
-                  }}
-                  className="pl-9"
-                />
-              </div>
-              <Select
-                value={initialParams.status ?? 'all'}
-                onValueChange={value =>
-                  onFilter?.('status', value === 'all' ? undefined : value)
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="pending">待处理</SelectItem>
-                  <SelectItem value="processing">处理中</SelectItem>
-                  <SelectItem value="completed">已完成</SelectItem>
-                  <SelectItem value="rejected">已拒绝</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <DateRangePicker
-              value={{
-                startDate: initialParams.startDate,
-                endDate: initialParams.endDate,
-              }}
-              onChange={range => onDateRangeChange?.(range)}
-              label=""
-              placeholder="选择退款日期范围"
-              showPresets
-              showClearButton
-              className="min-w-[220px]"
-            />
-          </div>
-
           {/* 退款申请列表 */}
           {errorMessage && (
             <div className="border-destructive/30 bg-destructive/10 text-destructive mt-4 rounded-md border px-3 py-2 text-sm">
