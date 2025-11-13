@@ -2,12 +2,10 @@
 
 /**
  * 分类搜索和筛选组件
- * 严格遵循全栈项目统一约定规范
- * ✅ 已迁移到使用 UnifiedSearchBar
+ * 使用统一的 SearchFilterCard 组件
  */
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { Card, CardContent } from '@/components/ui/card';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { CategoryQueryParams } from '@/lib/api/categories';
 
 interface CategorySearchFiltersProps {
@@ -32,32 +30,27 @@ export function CategorySearchFilters({
   };
 
   return (
-    <Card className="shadow-md shadow-gray-200/50">
-      <CardContent className="pt-6">
-        <UnifiedSearchBar
-          // 搜索配置
-          searchValue={queryParams.search || ''}
-          onSearchChange={onSearch}
-          searchPlaceholder="搜索分类名称..."
-          debounceDelay={400}
-          // 筛选器配置
-          filters={[
-            {
-              key: 'status',
-              label: '状态',
-              options: [
-                { label: '启用', value: 'active' },
-                { label: '禁用', value: 'inactive' },
-              ],
-              width: 'w-32',
-            },
-          ]}
-          filterValues={{
-            status: queryParams.status,
-          }}
-          onFilterChange={handleFilterChange}
-        />
-      </CardContent>
-    </Card>
+    <SearchFilterCard
+      searchValue={queryParams.search || ''}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索分类名称..."
+      // 筛选器配置
+      filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: [
+            { label: '启用', value: 'active' },
+            { label: '禁用', value: 'inactive' },
+          ],
+          width: 'w-32',
+        },
+      ]}
+      filterValues={{
+        status: queryParams.status || 'all',
+      }}
+      onFilterChange={handleFilterChange}
+      variant="elevated"
+    />
   );
 }
