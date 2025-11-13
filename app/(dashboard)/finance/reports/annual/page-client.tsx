@@ -450,18 +450,18 @@ function SummaryCard({
         {comparison && (
           <div className="mt-2 flex items-center gap-1 text-xs">
             {comparison.trend === 'up' && (
-              <ArrowUpIcon className="h-3 w-3 text-green-600" />
+              <ArrowUpIcon className="h-3 w-3 text-[hsl(var(--color-success))]" />
             )}
             {comparison.trend === 'down' && (
-              <ArrowDownIcon className="h-3 w-3 text-red-600" />
+              <ArrowDownIcon className="h-3 w-3 text-[hsl(var(--color-error))]" />
             )}
             <span
               className={
                 comparison.trend === 'up'
-                  ? 'text-green-600'
+                  ? 'text-[hsl(var(--color-success))]'
                   : comparison.trend === 'down'
-                    ? 'text-red-600'
-                    : 'text-gray-600'
+                    ? 'text-[hsl(var(--color-error))]'
+                    : 'text-[hsl(var(--color-text-secondary))]'
               }
             >
               {comparison.changeRate > 0 ? '+' : ''}
