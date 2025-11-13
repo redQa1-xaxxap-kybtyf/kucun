@@ -51,64 +51,74 @@ const ICON_MAP = {
   'alert-triangle': AlertTriangle,
 } as const;
 
-// 颜色配置
+// 颜色配置 - 使用CSS变量统一颜色
+// ✅ 使用项目定义的CSS变量替代硬编码颜色
 const COLOR_CONFIG = {
   blue: {
-    bg: 'bg-blue-50 hover:bg-blue-100',
-    text: 'text-blue-600',
-    icon: 'text-blue-500',
-    border: 'border-blue-200 hover:border-blue-300',
+    bg: 'bg-[hsl(var(--color-info-light))] hover:bg-[hsl(var(--color-info-light))]/80',
+    text: 'text-[hsl(var(--color-info))]',
+    icon: 'text-[hsl(var(--color-info))]',
+    border:
+      'border-[hsl(var(--color-info-light))] hover:border-[hsl(var(--color-info))]',
   },
   green: {
-    bg: 'bg-green-50 hover:bg-green-100',
-    text: 'text-green-600',
-    icon: 'text-green-500',
-    border: 'border-green-200 hover:border-green-300',
+    bg: 'bg-[hsl(var(--color-success-light))] hover:bg-[hsl(var(--color-success-light))]/80',
+    text: 'text-[hsl(var(--color-success))]',
+    icon: 'text-[hsl(var(--color-success))]',
+    border:
+      'border-[hsl(var(--color-success-light))] hover:border-[hsl(var(--color-success))]',
   },
   yellow: {
-    bg: 'bg-yellow-50 hover:bg-yellow-100',
-    text: 'text-yellow-600',
-    icon: 'text-yellow-500',
-    border: 'border-yellow-200 hover:border-yellow-300',
+    bg: 'bg-[hsl(var(--color-warning-light))] hover:bg-[hsl(var(--color-warning-light))]/80',
+    text: 'text-[hsl(var(--color-warning))]',
+    icon: 'text-[hsl(var(--color-warning))]',
+    border:
+      'border-[hsl(var(--color-warning-light))] hover:border-[hsl(var(--color-warning))]',
   },
   red: {
-    bg: 'bg-red-50 hover:bg-red-100',
-    text: 'text-red-600',
-    icon: 'text-red-500',
-    border: 'border-red-200 hover:border-red-300',
+    bg: 'bg-[hsl(var(--color-error-light))] hover:bg-[hsl(var(--color-error-light))]/80',
+    text: 'text-[hsl(var(--color-error))]',
+    icon: 'text-[hsl(var(--color-error))]',
+    border:
+      'border-[hsl(var(--color-error-light))] hover:border-[hsl(var(--color-error))]',
   },
   purple: {
-    bg: 'bg-purple-50 hover:bg-purple-100',
-    text: 'text-purple-600',
-    icon: 'text-purple-500',
-    border: 'border-purple-200 hover:border-purple-300',
+    bg: 'bg-[hsl(var(--color-purple-light))] hover:bg-[hsl(var(--color-purple-light))]/80',
+    text: 'text-[hsl(var(--color-purple))]',
+    icon: 'text-[hsl(var(--color-purple))]',
+    border:
+      'border-[hsl(var(--color-purple-light))] hover:border-[hsl(var(--color-purple))]',
   },
   gray: {
-    bg: 'bg-gray-50 hover:bg-gray-100',
-    text: 'text-gray-600',
-    icon: 'text-gray-500',
-    border: 'border-gray-200 hover:border-gray-300',
+    bg: 'bg-[hsl(var(--color-bg-tertiary))] hover:bg-[hsl(var(--color-bg-tertiary))]/80',
+    text: 'text-[hsl(var(--color-text-secondary))]',
+    icon: 'text-[hsl(var(--color-text-secondary))]',
+    border:
+      'border-[hsl(var(--color-border-secondary))] hover:border-[hsl(var(--color-border))]',
   },
   orange: {
-    bg: 'bg-orange-50 hover:bg-orange-100',
-    text: 'text-orange-600',
-    icon: 'text-orange-500',
-    border: 'border-orange-200 hover:border-orange-300',
+    bg: 'bg-[hsl(var(--color-warning-light))] hover:bg-[hsl(var(--color-warning-light))]/80',
+    text: 'text-[hsl(var(--color-warning))]',
+    icon: 'text-[hsl(var(--color-warning))]',
+    border:
+      'border-[hsl(var(--color-warning-light))] hover:border-[hsl(var(--color-warning))]',
   },
   indigo: {
-    bg: 'bg-indigo-50 hover:bg-indigo-100',
-    text: 'text-indigo-600',
-    icon: 'text-indigo-500',
-    border: 'border-indigo-200 hover:border-indigo-300',
+    bg: 'bg-[hsl(var(--color-info-light))] hover:bg-[hsl(var(--color-info-light))]/80',
+    text: 'text-[hsl(var(--color-info))]',
+    icon: 'text-[hsl(var(--color-info))]',
+    border:
+      'border-[hsl(var(--color-info-light))] hover:border-[hsl(var(--color-info))]',
   },
 } as const;
 
 // 默认颜色配置（防御性编程）
 const DEFAULT_COLOR_CONFIG = {
-  bg: 'bg-gray-50 hover:bg-gray-100',
-  text: 'text-gray-600',
-  icon: 'text-gray-500',
-  border: 'border-gray-200 hover:border-gray-300',
+  bg: 'bg-[hsl(var(--color-bg-tertiary))] hover:bg-[hsl(var(--color-bg-tertiary))]/80',
+  text: 'text-[hsl(var(--color-text-secondary))]',
+  icon: 'text-[hsl(var(--color-text-secondary))]',
+  border:
+    'border-[hsl(var(--color-border-secondary))] hover:border-[hsl(var(--color-border))]',
 };
 
 // 类型安全的颜色配置获取函数
