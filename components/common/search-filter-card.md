@@ -4,6 +4,27 @@
 
 `SearchFilterCard` 是一个统一的搜索筛选容器组件,用于替换项目中所有的自定义搜索筛选组件(如 `CustomerSearchFilters`、`SupplierSearchFilters` 等)。
 
+## ✅ 迁移完成状态
+
+**迁移完成日期**: 2025-01-13
+
+已成功迁移以下页面:
+
+1. ✅ 客户管理页面 (`app/(dashboard)/customers/page-client.tsx`)
+2. ✅ 供应商管理页面 (`components/suppliers/suppliers-page-client.tsx`)
+3. ✅ 产品管理页面 (`components/products/erp-product-list.tsx`)
+4. ✅ 销售订单页面 (`components/sales-orders/erp-sales-order-list.tsx`)
+5. ✅ 库存管理页面 (`components/inventory/InventorySearchToolbar.tsx`)
+6. ✅ 应收款页面 (`components/finance/receivables-client/ReceivablesFilterCard.tsx`)
+7. ✅ 应退款页面 (`components/finance/refunds-client.tsx`)
+
+**已删除的旧组件**:
+
+- ❌ `components/customers/customer-search-filters.tsx`
+- ❌ `components/suppliers/supplier-search-filters.tsx`
+- ❌ `components/products/product-search-filters.tsx`
+- ❌ `components/sales-orders/sales-order-search-filters.tsx`
+
 ## 设计原则
 
 - **KISS (Keep It Simple, Stupid)**: 简化组件层级,直接在页面中使用,无需额外的包装组件

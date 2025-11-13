@@ -3,19 +3,22 @@
 ## 📋 执行摘要
 
 成功从 Git stash 中恢复了被意外删除的功能模块，包括：
+
 - ✅ 财务报表功能
-- ✅ 费用管理功能  
+- ✅ 费用管理功能
 - ✅ 库存盘点功能
 - ✅ 采购订单功能
 
 ## 🔍 问题诊断
 
 ### 1. 发现问题
+
 通过 Git 历史分析发现，大量功能代码被暂存在 `stash@{0}` 中，而不是被删除。
 
 ### 2. 受影响的功能模块
 
 #### 财务报表 (Finance Reports)
+
 - `app/(dashboard)/finance/reports/annual/` - 年度报表
 - `app/(dashboard)/finance/reports/monthly/` - 月度报表
 - `app/(dashboard)/finance/reports/profit-loss/` - 损益表
@@ -23,18 +26,21 @@
 - 服务层: `lib/services/annual-report-service.ts`, `monthly-report-service.ts`, `profit-loss-service.ts`
 
 #### 费用管理 (Expense Management)
+
 - `app/(dashboard)/finance/expenses/` - 费用列表、创建、编辑、详情
 - 相关 API: `app/api/finance/expenses/`
 - 服务层: `lib/services/expense-service.ts`
 - 组件: `components/finance/expenses/`
 
 #### 库存盘点 (Inventory Count)
+
 - `app/(dashboard)/inventory/counts/` - 盘点列表、创建、执行、统计
 - 相关 API: `app/api/inventory/counts/`
 - 服务层: `lib/services/inventory-count-service.ts`, `lib/services/inventory-count/`
 - 组件: `components/inventory/counts/`
 
 #### 采购订单 (Purchase Orders)
+
 - `app/(dashboard)/purchase-orders/` - 采购订单管理
 - 相关 API: `app/api/purchase-orders/`
 - Actions: `app/actions/purchase-orders.ts`
@@ -43,6 +49,7 @@
 ## ✅ 恢复操作
 
 ### 执行的命令
+
 ```bash
 # 1. 查看 stash 列表
 git stash list
@@ -55,6 +62,7 @@ git stash apply stash@{0}
 ```
 
 ### 恢复结果
+
 - **新增文件**: 112 个
 - **修改文件**: 大量现有文件被更新
 - **状态**: 所有文件已成功恢复到工作区
@@ -64,29 +72,34 @@ git stash apply stash@{0}
 ### 已恢复的文件统计
 
 #### 页面文件 (Pages)
+
 - 财务报表: 6 个页面文件
 - 费用管理: 7 个页面文件
 - 库存盘点: 10 个页面文件
 - 采购订单: 5 个页面文件
 
 #### API 路由 (API Routes)
+
 - 财务报表: 3 个 API 路由
 - 费用管理: 3 个 API 路由
 - 库存盘点: 7 个 API 路由
 - 采购订单: 3 个 API 路由
 
 #### 组件 (Components)
+
 - 费用管理: 5 个组件
 - 库存盘点: 5 个组件
 - 采购订单: 9 个组件
 
 #### 服务层 (Services)
+
 - 财务报表: 4 个服务文件
 - 费用管理: 2 个服务文件
 - 库存盘点: 9 个服务文件
 - 采购订单: 4 个服务文件
 
 #### 类型定义 (Types)
+
 - `lib/types/expense.ts`
 - `lib/types/inventory-count.ts`
 - `lib/types/purchase-order.ts`
@@ -95,6 +108,7 @@ git stash apply stash@{0}
 - `lib/types/factory-shipment-fee.ts`
 
 #### 验证层 (Validations)
+
 - `lib/validations/expense.ts`
 - `lib/validations/inventory-count.ts`
 - `lib/validations/purchase-order.ts`
@@ -107,20 +121,24 @@ git stash apply stash@{0}
 运行 `npm run type-check` 发现以下问题：
 
 #### 1. 采购订单相关错误 (约 30 个错误)
+
 - **原因**: Prisma Client 需要重新生成
 - **影响**: 采购订单功能的类型检查失败
 - **解决方案**: 需要重新生成 Prisma Client
 
 #### 2. 类型不匹配错误
+
 - `app/(dashboard)/purchase-orders/[id]/edit/page.tsx` - PurchaseOrderStatus 类型不匹配
 - `app/actions/factory-shipments.ts` - FactoryShipmentItemOwnership 类型不匹配
 - `app/actions/suppliers.ts` - 供应商状态类型不匹配
 
 #### 3. API 路由参数类型错误
+
 - `app/api/purchase-orders/[id]/route.ts` - params 类型不匹配
 - `app/api/purchase-orders/[id]/status/route.ts` - params 类型不匹配
 
 #### 4. 其他错误
+
 - `app/api/batches/match/route.ts` - ZodError 类型问题
 - `app/api/finance/receivables/route.ts` - ReceivablesResult 类型问题
 
@@ -129,10 +147,12 @@ git stash apply stash@{0}
 ### 高优先级 (P0)
 
 1. **重新生成 Prisma Client**
+
    ```bash
    # 需要先停止所有使用数据库的进程
    npx prisma generate
    ```
+
    - **状态**: ❌ 失败 (文件被锁定)
    - **解决方案**: 需要关闭所有使用数据库的进程后重试
 
@@ -147,6 +167,7 @@ git stash apply stash@{0}
 ### 中优先级 (P1)
 
 1. **运行 ESLint 检查**
+
    ```bash
    npm run lint
    ```
@@ -174,6 +195,7 @@ git stash apply stash@{0}
    - 检查是否有数据库客户端连接
 
 2. **重新生成 Prisma Client**
+
    ```bash
    npx prisma generate
    ```
@@ -190,12 +212,14 @@ git stash apply stash@{0}
    - 确保所有类型定义一致
 
 2. **运行 ESLint 检查并修复**
+
    ```bash
    npm run lint
    npm run lint:fix
    ```
 
 3. **运行格式化**
+
    ```bash
    npm run format
    ```
@@ -243,6 +267,7 @@ git stash apply stash@{0}
 ## 📞 支持信息
 
 如遇到问题，请参考：
+
 - ESLint 规范: `.augment/rules/ESLint规范遵循指南.md`
 - Git 提交规范: `.augment/rules/GIT提交规范.md`
 - 项目规则: `.augment/rules/项目硬规则.md`
@@ -252,4 +277,3 @@ git stash apply stash@{0}
 **生成时间**: 2025-11-06
 **执行人**: Augment Agent
 **状态**: 🟡 部分完成 - 需要修复 TypeScript 错误
-

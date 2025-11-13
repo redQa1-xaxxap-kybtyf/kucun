@@ -1,0 +1,15 @@
+components/batches/batch-selector.tsx(191,38): error TS7006: Parameter 'batch' implicitly has an 'any' type.
+components/purchase-orders/purchase-order-form.tsx(107,40): error TS7006: Parameter 'item' implicitly has an 'any' type.
+components/purchase-orders/purchase-order-list.tsx(136,25): error TS7006: Parameter 'order' implicitly has an 'any' type.
+components/purchase-orders/purchase-order-list.tsx(146,35): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Record<PurchaseOrderStatus, "default" | "secondary" | "destructive" | "outline">'.
+components/purchase-orders/purchase-order-list.tsx(147,22): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Record<PurchaseOrderStatus, string>'.
+components/sales-orders/fee-items/fee-item-card.tsx(129,38): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type 'Record<SalesOrderFeeType, string>'.
+lib/services/finance-statistics-optimized.ts(197,10): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(197,15): error TS7006: Parameter 'p' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(201,10): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(201,15): error TS7006: Parameter 'r' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(415,8): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(415,13): error TS7006: Parameter 'p' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(419,8): error TS7006: Parameter 'sum' implicitly has an 'any' type.
+lib/services/finance-statistics-optimized.ts(419,13): error TS7006: Parameter 'r' implicitly has an 'any' type.
+scripts/debug-nav.ts(6,18): error TS7006: Parameter 'items' implicitly has an 'any' type.

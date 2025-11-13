@@ -16,14 +16,15 @@
 ### 错误详情
 
 ```
-Runtime PrismaClientValidationError 
+Runtime PrismaClientValidationError
 Invalid `prisma.inboundRecord.findMany()` invocation:
 
-Unknown field `user` for select statement on model `InboundRecord`. 
+Unknown field `user` for select statement on model `InboundRecord`.
 Available options are marked with ?.
 ```
 
 **错误位置**：
+
 - **文件**: `lib/api/inbound-handlers.ts` (line 281)
 - **函数**: `getInboundRecords`
 - **调用链**: `InboundRecordsPage` → `getInboundRecordsServer` → `getInboundRecords`
@@ -39,7 +40,8 @@ Available options are marked with ?.
 #### 问题代码（修复前）
 
 <augment_code_snippet path="prisma/schema.prisma" mode="EXCERPT">
-````prisma
+
+```prisma
 model InboundRecord {
   id                   String   @id @default(uuid()) @db.Char(36)
   recordNumber         String   @unique @map("record_number")
@@ -54,7 +56,8 @@ model InboundRecord {
 
   @@map("inbound_records")
 }
-````
+```
+
 </augment_code_snippet>
 
 ### 2. API 代码尝试使用不存在的关系
@@ -62,7 +65,8 @@ model InboundRecord {
 **API 代码**（`lib/api/selectors/inventory-selectors.ts`）：
 
 <augment_code_snippet path="lib/api/selectors/inventory-selectors.ts" mode="EXCERPT">
-````typescript
+
+```typescript
 export const INBOUND_RECORD_SELECT = {
   id: true,
   recordNumber: true,
@@ -75,14 +79,16 @@ export const INBOUND_RECORD_SELECT = {
       // ...
     },
   },
-  user: {  // ❌ 错误：user 关系不存在！
+  user: {
+    // ❌ 错误：user 关系不存在！
     select: {
       id: true,
       name: true,
       email: true,
     },
   },
-  variant: {  // ❌ 错误：variant 关系不存在！
+  variant: {
+    // ❌ 错误：variant 关系不存在！
     select: {
       id: true,
       colorCode: true,
@@ -90,7 +96,8 @@ export const INBOUND_RECORD_SELECT = {
       sku: true,
     },
   },
-  batchSpecification: {  // ❌ 错误：batchSpecification 关系不存在！
+  batchSpecification: {
+    // ❌ 错误：batchSpecification 关系不存在！
     select: {
       id: true,
       batchNumber: true,
@@ -99,12 +106,14 @@ export const INBOUND_RECORD_SELECT = {
     },
   },
 } as const satisfies Prisma.InboundRecordSelect;
-````
+```
+
 </augment_code_snippet>
 
 ### 3. 错误原因
 
 当 Prisma 尝试执行 `select: INBOUND_RECORD_SELECT` 时，由于 Schema 中没有定义 `user`、`variant`、`batchSpecification` 关系，导致：
+
 - **Prisma 无法生成正确的 SQL 查询**
 - **运行时抛出 PrismaClientValidationError**
 - **入库记录列表页面无法加载**
@@ -118,7 +127,8 @@ export const INBOUND_RECORD_SELECT = {
 #### 1. 在 `InboundRecord` 模型中添加关系定义
 
 <augment_code_snippet path="prisma/schema.prisma" mode="EXCERPT">
-````prisma
+
+```prisma
 model InboundRecord {
   id                   String   @id @default(uuid()) @db.Char(36)
   recordNumber         String   @unique @map("record_number")
@@ -156,13 +166,15 @@ model InboundRecord {
   @@index([purchaseOrderItemId], map: "idx_inbound_records_purchase_order_item")
   @@map("inbound_records")
 }
-````
+```
+
 </augment_code_snippet>
 
 #### 2. 在 `User` 模型中添加反向关系
 
 <augment_code_snippet path="prisma/schema.prisma" mode="EXCERPT">
-````prisma
+
+```prisma
 model User {
   id           String   @id @default(uuid()) @db.Char(36)
   email        String   @unique
@@ -186,13 +198,15 @@ model User {
   @@index([role])
   @@map("users")
 }
-````
+```
+
 </augment_code_snippet>
 
 #### 3. 在 `ProductVariant` 模型中添加反向关系
 
 <augment_code_snippet path="prisma/schema.prisma" mode="EXCERPT">
-````prisma
+
+```prisma
 model ProductVariant {
   id         String   @id @default(uuid()) @db.Char(36)
   productId  String   @map("product_id") @db.Char(36)
@@ -215,13 +229,15 @@ model ProductVariant {
   @@index([sku])
   @@map("product_variants")
 }
-````
+```
+
 </augment_code_snippet>
 
 #### 4. 在 `BatchSpecification` 模型中添加反向关系
 
 <augment_code_snippet path="prisma/schema.prisma" mode="EXCERPT">
-````prisma
+
+```prisma
 model BatchSpecification {
   id            String   @id @default(uuid()) @db.Char(36)
   productId     String   @map("product_id") @db.Char(36)
@@ -241,7 +257,8 @@ model BatchSpecification {
   @@index([piecesPerUnit], map: "idx_batch_spec_pieces")
   @@map("batch_specifications")
 }
-````
+```
+
 </augment_code_snippet>
 
 #### 5. 同步数据库并生成 Prisma Client
@@ -277,6 +294,7 @@ $ npm run dev
 ### 3. API 测试结果
 
 **测试场景**：
+
 - ✅ 访问入库记录列表页面（`/inventory/inbound`）
 - ✅ 查询入库记录详情
 - ✅ 返回正确的用户信息（name, email）
@@ -284,6 +302,7 @@ $ npm run dev
 - ✅ 返回正确的批次规格信息（batchNumber, piecesPerUnit, weight, thickness）
 
 **预期行为**：
+
 - ✅ 页面正常加载
 - ✅ 不再抛出 PrismaClientValidationError
 - ✅ 返回完整的关联数据
@@ -295,9 +314,9 @@ $ npm run dev
 
 ### 修改的文件
 
-| 文件 | 修改内容 | 行数变化 |
-|------|----------|----------|
-| `prisma/schema.prisma` | 添加入库记录模型的关系定义 | +7 行 |
+| 文件                   | 修改内容                   | 行数变化 |
+| ---------------------- | -------------------------- | -------- |
+| `prisma/schema.prisma` | 添加入库记录模型的关系定义 | +7 行    |
 
 ### 涉及的模型
 
@@ -311,15 +330,18 @@ $ npm run dev
 ## 🎯 KISS、DRY、SOLID 原则应用
 
 ### KISS (Keep It Simple)
+
 - ✅ 使用 Prisma 标准的关系定义语法
 - ✅ 遵循 Prisma 官方最佳实践
 - ✅ 不引入额外的复杂性
 
 ### DRY (Don't Repeat Yourself)
+
 - ✅ 统一使用 Prisma 关系定义，避免手动 JOIN 查询
 - ✅ 与之前修复的价格历史 API 保持一致的模式
 
 ### SOLID
+
 - **单一职责 (SRP)**: 每个模型只负责自己的数据和关系
 - **开放/封闭 (OCP)**: 添加关系不影响现有功能
 - **依赖倒置 (DIP)**: API 依赖 Prisma 抽象，而不是直接操作数据库
@@ -329,16 +351,19 @@ $ npm run dev
 ## 📚 参考资源
 
 ### Prisma 文档
+
 - [Prisma Relations](https://www.prisma.io/docs/concepts/components/prisma-schema/relations)
 - [One-to-Many Relations](https://www.prisma.io/docs/concepts/components/prisma-schema/relations/one-to-many-relations)
 - [Relation Queries](https://www.prisma.io/docs/concepts/components/prisma-client/relation-queries)
 
 ### 项目规范
+
 - **数据定义**: Prisma 为数据库结构，Zod 为接口契约
 - **返回体统一**: `{ data, error }`
 - **错误处理**: 使用项目的 console-logger
 
 ### 相关修复
+
 - `docs/价格历史API-500错误修复报告.md` - 类似的关系定义缺失问题
 
 ---
@@ -346,23 +371,27 @@ $ npm run dev
 ## ✅ 总结
 
 ### 问题回顾
+
 - **问题**: 入库记录查询抛出 PrismaClientValidationError
 - **根源**: Prisma Schema 缺少 `user`、`variant`、`batchSpecification` 关系定义
 - **影响**: 入库记录列表页面无法加载
 
 ### 解决方案
+
 - **步骤1**: 在 `InboundRecord` 中添加 `user`、`variant`、`batchSpecification` 关系
 - **步骤2**: 在 `User`、`ProductVariant`、`BatchSpecification` 中添加反向关系
 - **步骤3**: 同步数据库并生成 Prisma Client
 - **结果**: 入库记录查询正常工作，页面正常加载
 
 ### 验证结果
+
 - ✅ 数据库同步成功
 - ✅ 开发服务器启动正常
 - ✅ 入库记录列表页面可以正常访问
 - ✅ 返回完整的关联数据（用户、产品变体、批次规格）
 
 ### 经验总结
+
 - **模式识别**: 这是第二次遇到 Prisma 关系定义缺失的问题（第一次是价格历史 API）
 - **预防措施**: 在创建新模型时，应该立即定义所有必要的关系
 - **最佳实践**: 使用 Prisma 的关系定义，而不是手动编写 JOIN 查询
@@ -372,4 +401,3 @@ $ npm run dev
 **修复完成时间**: 2025-01-11  
 **修复人员**: AI Assistant  
 **审核状态**: ✅ 待审核
-

@@ -14,12 +14,12 @@
 
 这是第四次遇到类似的 Prisma 关系定义缺失问题：
 
-| 序号 | 问题 | 影响模块 | 修复时间 | 文档 |
-|------|------|----------|----------|------|
-| 1 | 价格历史 API 500 错误 | `CustomerProductPrice`、`SupplierProductPrice` | 2025-01-XX | `docs/价格历史API-500错误修复报告.md` |
-| 2 | 入库记录查询 Prisma 验证错误 | `InboundRecord` | 2025-01-XX | `docs/入库记录查询Prisma验证错误修复报告.md` |
-| 3 | 库存调整记录查询 Prisma 验证错误 | `InventoryAdjustment` | 2025-01-XX | `docs/库存调整记录查询Prisma验证错误修复报告.md` |
-| 4 | **批量修复所有检测到的问题** | **25 个模型** | **2025-01-XX** | **本文档** |
+| 序号 | 问题                             | 影响模块                                       | 修复时间       | 文档                                             |
+| ---- | -------------------------------- | ---------------------------------------------- | -------------- | ------------------------------------------------ |
+| 1    | 价格历史 API 500 错误            | `CustomerProductPrice`、`SupplierProductPrice` | 2025-01-XX     | `docs/价格历史API-500错误修复报告.md`            |
+| 2    | 入库记录查询 Prisma 验证错误     | `InboundRecord`                                | 2025-01-XX     | `docs/入库记录查询Prisma验证错误修复报告.md`     |
+| 3    | 库存调整记录查询 Prisma 验证错误 | `InventoryAdjustment`                          | 2025-01-XX     | `docs/库存调整记录查询Prisma验证错误修复报告.md` |
+| 4    | **批量修复所有检测到的问题**     | **25 个模型**                                  | **2025-01-XX** | **本文档**                                       |
 
 ### 根本原因
 
@@ -102,6 +102,7 @@
 #### 1. 库存相关模型
 
 **OutboundRecord 模型** (Lines 451-485):
+
 ```prisma
 model OutboundRecord {
   // ... 现有字段 ...
@@ -119,6 +120,7 @@ model OutboundRecord {
 ```
 
 **InventoryOperation 模型** (Lines 488-510):
+
 ```prisma
 model InventoryOperation {
   // ... 现有字段 ...
@@ -130,6 +132,7 @@ model InventoryOperation {
 ```
 
 **Inventory 模型** - 添加反向关系:
+
 ```prisma
 model Inventory {
   // ... 现有字段 ...
@@ -141,6 +144,7 @@ model Inventory {
 #### 2. 采购和入库相关模型
 
 **PurchaseOrder 模型** (Lines 1096-1150):
+
 ```prisma
 model PurchaseOrder {
   // ... 现有字段 ...
@@ -156,6 +160,7 @@ model PurchaseOrder {
 ```
 
 **PurchaseOrderItem 模型** (Lines 1152-1195):
+
 ```prisma
 model PurchaseOrderItem {
   // ... 现有字段 ...
@@ -172,6 +177,7 @@ model PurchaseOrderItem {
 ```
 
 **InboundRecord 模型** (Lines 410-448):
+
 ```prisma
 model InboundRecord {
   // ... 现有字段 ...
@@ -189,6 +195,7 @@ model InboundRecord {
 #### 3. 财务相关模型
 
 **PayableRecord 模型** (Lines 916-948):
+
 ```prisma
 model PayableRecord {
   // ... 现有字段 ...
@@ -203,6 +210,7 @@ model PayableRecord {
 ```
 
 **PaymentOutRecord 模型** (Lines 950-978):
+
 ```prisma
 model PaymentOutRecord {
   // ... 现有字段 ...
@@ -218,6 +226,7 @@ model PaymentOutRecord {
 ```
 
 **ExpenseRecord 模型** (Lines 1049-1073):
+
 ```prisma
 model ExpenseRecord {
   // ... 现有字段 ...
@@ -265,6 +274,7 @@ model ExpenseRecord {
 ### 警告说明
 
 剩余的 4 个警告是脚本的误报（命名关系重复检测问题）：
+
 - `InventoryAdjustmentOperator` - 实际正确
 - `InventoryAdjustmentApprover` - 实际正确
 - `CustomerHierarchy` - 实际正确
@@ -276,11 +286,11 @@ model ExpenseRecord {
 
 ## 📊 修复统计
 
-| 类别 | 修复数量 |
-|------|----------|
-| 前向关系定义 | 25 个 |
-| 反向关系定义 | 20+ 个 |
-| 涉及模型 | 20+ 个 |
+| 类别         | 修复数量  |
+| ------------ | --------- |
+| 前向关系定义 | 25 个     |
+| 反向关系定义 | 20+ 个    |
+| 涉及模型     | 20+ 个    |
 | 代码行数变化 | +89 / -15 |
 
 ---
@@ -341,4 +351,3 @@ model ExpenseRecord {
 **修复完成！** 🎉
 
 所有 25 个 Prisma Schema 关系定义缺失问题已成功修复。从现在开始，每次运行 `npm run lint` 都会自动检查 Schema 的完整性，有效防止类似问题再次发生。
-

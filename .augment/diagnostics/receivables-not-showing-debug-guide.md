@@ -7,9 +7,11 @@
 ## ✅ 已添加的调试代码
 
 ### 1. 订单创建成功回调日志
+
 **文件**: `components/sales-orders/enhanced-sales-order-form/hooks/useSalesOrderSubmission.ts`
 
 **日志内容**:
+
 - 订单编号 (Order Number)
 - 订单 ID (Order ID)
 - 订单状态 (Order Status) - **关键字段**
@@ -17,18 +19,22 @@
 - 缓存失效确认
 
 ### 2. 应收货款 API 查询日志
+
 **文件**: `app/api/finance/receivables/route.ts`
 
 **日志内容**:
+
 - 查询参数 (Query Params)
 - 缓存键 (Cache Key)
 - 是否从数据库查询
 - 查询结果统计（总数、记录数、第一条记录）
 
 ### 3. 查询条件构建日志
+
 **文件**: `lib/services/receivables-helpers.ts`
 
 **日志内容**:
+
 - WHERE 条件详细信息
 - 状态筛选: `status IN ['confirmed', 'shipped', 'completed']`
 - 搜索条件、客户筛选、日期范围
@@ -47,13 +53,14 @@
    - **点击"提交订单"按钮**（不是"保存草稿"）
 
 3. **查看控制台日志**:
+
    ```
    🎯 [DEBUG] Sales Order Created
      Order Number: SO-20250106-XXXX
      Order ID: clxxxxxxxxxxxxx
      Order Status: confirmed  ← 确认这里是 'confirmed'
      Full Order Data: {...}
-   
+
    🔄 [DEBUG] Invalidating receivables cache...
    ✅ [DEBUG] Receivables cache invalidated
    ```
@@ -70,19 +77,20 @@
    - 或直接访问 `/finance/receivables`
 
 2. **查看 Console 日志**:
+
    ```
    🔍 [DEBUG] Receivables Query
      Query Params: {page: 1, limit: 20, ...}
      User ID: clxxxxxxxxxxxxx
      Cache Key: finance:receivables:list:v2:clxxxxxxxxxxxxx:...
-   
+
    🔎 [DEBUG] Receivables WHERE Conditions:
      {
        "status": {
          "in": ["confirmed", "shipped", "completed"]
        }
      }
-   
+
    📊 [DEBUG] Fetching from database...
    📊 [DEBUG] Query Results:
      total: 5
@@ -92,7 +100,7 @@
        status: "confirmed",
        createdAt: "2025-01-06T..."
      }
-   
+
    ✅ [DEBUG] Final Result:
      total: 5
      count: 5
@@ -114,6 +122,7 @@
    - 点击查看详情
 
 3. **检查响应数据**:
+
    ```json
    {
      "success": true,
@@ -151,6 +160,7 @@
 ### 第五步：数据库验证
 
 1. **打开 Prisma Studio**:
+
    ```bash
    npm run db:studio
    ```
@@ -170,6 +180,7 @@
 ### 问题 1: 订单状态不是 'confirmed'
 
 **症状**:
+
 ```
 Order Status: draft  ← 错误!应该是 'confirmed'
 ```
@@ -183,6 +194,7 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 ### 问题 2: 缓存失效未被调用
 
 **症状**:
+
 ```
 🎯 [DEBUG] Sales Order Created
   ...
@@ -198,6 +210,7 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 ### 问题 3: 查询条件过滤了新订单
 
 **症状**:
+
 ```
 🔎 [DEBUG] Receivables WHERE Conditions:
   {
@@ -218,13 +231,15 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 ### 问题 4: Redis 缓存未失效
 
 **症状**:
+
 - Console 显示缓存失效成功
 - 但 API 仍返回旧数据
 - Network 面板显示响应很快（< 50ms）
 
 **原因**: Redis 缓存未正确删除
 
-**解决方案**: 
+**解决方案**:
+
 1. 检查 Redis 连接状态
 2. 手动清除 Redis 缓存:
    ```bash
@@ -236,6 +251,7 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 ### 问题 5: 前端缓存键不匹配
 
 **症状**:
+
 ```
 🔄 [DEBUG] Invalidating receivables cache...
 # 但查询仍使用旧缓存
@@ -291,7 +307,7 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 
 根据诊断结果，选择对应的修复方案:
 
-1. **如果订单状态是 'draft'**: 
+1. **如果订单状态是 'draft'**:
    - 检查订单创建表单的提交逻辑
    - 确认"提交订单"按钮设置的状态
 
@@ -317,20 +333,25 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 
 **订单创建日志**:
 ```
+
 [粘贴 Console 中的 "Sales Order Created" 日志]
+
 ```
 
 **应收货款查询日志**:
 ```
+
 [粘贴 Console 中的 "Receivables Query" 日志]
-```
+
+````
 
 **Network 响应数据**:
 ```json
 [粘贴 /api/finance/receivables 的响应 JSON]
-```
+````
 
 **问题描述**:
+
 - [ ] 订单状态是 'confirmed'
 - [ ] 缓存失效被调用
 - [ ] 查询条件正确
@@ -339,9 +360,11 @@ Order Status: draft  ← 错误!应该是 'confirmed'
 
 **其他观察**:
 [描述任何异常现象]
+
 ```
 
 ---
 
 **注意**: 这些调试日志仅用于诊断，修复问题后应该移除。
 
+```
