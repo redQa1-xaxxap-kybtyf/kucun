@@ -115,7 +115,7 @@ function ProductLabel({
       <div className="flex items-center gap-2">
         <Badge
           variant="outline"
-          className="border-blue-200 bg-blue-50 font-mono text-xs font-semibold text-blue-700"
+          className="border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] font-mono text-xs font-semibold text-[hsl(var(--color-info))]"
         >
           {product.code}
         </Badge>
