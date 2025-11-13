@@ -1,12 +1,10 @@
 'use client';
 
-import { PackageSearch, Plus, RefreshCcw, RotateCcw } from 'lucide-react';
+import { PackageSearch, Plus, RefreshCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { ProductSelector } from '@/components/inventory/product-selector';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,14 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useBatchSpecifications,
@@ -45,8 +35,8 @@ import type {
   BatchSpecificationQueryParams,
   CreateBatchSpecificationRequest,
 } from '@/lib/types/batch-specification';
-import type { ProductOption } from '@/lib/types/inbound';
 
+import { BatchRecordsFilters } from './components/BatchRecordsFilters';
 import { BatchSpecificationForm } from './components/BatchSpecificationForm';
 import { BatchSpecificationsTable } from './components/BatchSpecificationsTable';
 
@@ -107,10 +97,7 @@ export function BatchSpecificationPageClient({
   const { toast } = useToast();
 
   const [queryParams, setQueryParams] = useState<ResolvedParams>(initialParams);
-  const [searchValue, setSearchValue] = useState(initialParams.search ?? '');
-  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
-    null
-  );
+  const [_searchValue, _setSearchValue] = useState(initialParams.search ?? '');
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editingSpec, setEditingSpec] = useState<BatchSpecification | null>(
@@ -171,14 +158,6 @@ export function BatchSpecificationPageClient({
     router.replace(targetUrl, { scroll: false });
   }, [currentQueryString, router]);
 
-  const debouncedSearch = useDebouncedCallback((value: string) => {
-    const trimmed = value.trim();
-    updateParams({
-      page: DEFAULT_PAGE,
-      search: trimmed ? trimmed : undefined,
-    });
-  }, 300);
-
   const { data, isLoading, isFetching, error } =
     useBatchSpecifications(queryParams);
 
@@ -195,29 +174,23 @@ export function BatchSpecificationPageClient({
   const updateMutation = useUpdateBatchSpecification();
   const deleteMutation = useDeleteBatchSpecification();
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = event.target;
-    setSearchValue(value);
-    debouncedSearch(value);
-  };
-
-  const handleSelectProduct = (productId: string, product?: ProductOption) => {
-    setSelectedProduct(product ?? null);
-    updateParams({
-      page: DEFAULT_PAGE,
-      productId: productId || undefined,
-    });
-  };
-
-  const handleClearFilters = () => {
-    setSearchValue('');
-    setSelectedProduct(null);
+  const handleResetFilters = () => {
+    _setSearchValue('');
     updateParams({
       page: DEFAULT_PAGE,
       search: undefined,
       productId: undefined,
       batchNumber: undefined,
     });
+  };
+
+  const handleFiltersChange = (
+    filters: Partial<BatchSpecificationQueryParams>
+  ) => {
+    if (filters.search !== undefined) {
+      _setSearchValue(filters.search || '');
+    }
+    updateParams(filters);
   };
 
   const handleCreate = () => {
@@ -308,20 +281,6 @@ export function BatchSpecificationPageClient({
     updateParams({ page });
   };
 
-  const handleSortByChange = (value: string) => {
-    updateParams({
-      sortBy: value as ResolvedParams['sortBy'],
-      page: DEFAULT_PAGE,
-    });
-  };
-
-  const handleSortOrderChange = (value: string) => {
-    updateParams({
-      sortOrder: value as 'asc' | 'desc',
-      page: DEFAULT_PAGE,
-    });
-  };
-
   const handleRefresh = () => {
     router.refresh();
   };
@@ -375,91 +334,11 @@ export function BatchSpecificationPageClient({
           }
         />
 
-        <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-[var(--shadow-light)]">
-          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-end">
-              <div className="flex-1">
-                <label className="mb-2 block text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-                  搜索批次
-                </label>
-                <Input
-                  placeholder="输入批次号、产品名称或编码"
-                  value={searchValue}
-                  onChange={handleSearchChange}
-                  className="h-10"
-                />
-              </div>
-
-              <div className="flex-1">
-                <label className="mb-2 block text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-                  筛选产品
-                </label>
-                <ProductSelector
-                  value={selectedProduct?.value ?? queryParams.productId ?? ''}
-                  onChange={(value, product) =>
-                    handleSelectProduct(value ?? '', product ?? undefined)
-                  }
-                  placeholder="选择产品进行筛选"
-                  className="h-10 justify-between"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 md:flex-row md:items-end">
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-                  排序字段
-                </label>
-                <Select
-                  value={queryParams.sortBy}
-                  onValueChange={handleSortByChange}
-                >
-                  <SelectTrigger className="h-10 w-[150px] justify-between">
-                    <SelectValue placeholder="选择排序" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="createdAt">创建时间</SelectItem>
-                    <SelectItem value="batchNumber">批次号</SelectItem>
-                    <SelectItem value="piecesPerUnit">每件片数</SelectItem>
-                    <SelectItem value="weight">重量</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-                  排序方向
-                </label>
-                <Select
-                  value={queryParams.sortOrder}
-                  onValueChange={handleSortOrderChange}
-                >
-                  <SelectTrigger className="h-10 w-[120px] justify-between">
-                    <SelectValue placeholder="排序" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="desc">降序</SelectItem>
-                    <SelectItem value="asc">升序</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-xs"
-              onClick={handleClearFilters}
-            >
-              <RotateCcw className="h-4 w-4" />
-              重置筛选
-            </Button>
-            <div className="text-muted-foreground text-xs">
-              共 {pagination.total} 条记录，每页显示 {queryParams.limit} 条
-            </div>
-          </div>
-        </div>
+        <BatchRecordsFilters
+          filters={queryParams}
+          onFiltersChange={handleFiltersChange}
+          onReset={handleResetFilters}
+        />
 
         <BatchSpecificationsTable
           data={specifications}

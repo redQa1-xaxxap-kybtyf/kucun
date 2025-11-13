@@ -348,3 +348,21 @@ export const COUNT_FILTER_CONFIG: FilterConfig = {
     endLabel: '结束日期',
   },
 };
+
+// 批次管理筛选配置
+export const BATCH_FILTER_CONFIG: FilterConfig = {
+  search: {
+    enabled: true,
+    placeholder: '搜索批次号、产品名称、产品编码...',
+  },
+  typeFilter: {
+    enabled: false,
+    label: '',
+    options: [],
+  },
+  dateRange: {
+    enabled: false,
+    startLabel: '',
+    endLabel: '',
+  },
+};
