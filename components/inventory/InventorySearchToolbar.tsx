@@ -176,7 +176,7 @@ function InventoryToolbarView({
         {
           key: 'sortBy',
           label: '排序',
-          options: INVENTORY_FILTER_CONFIG.filters[1].options,
+          options: INVENTORY_FILTER_CONFIG.filters[1].options || [],
           width: 'w-[140px]',
         },
       ]}
