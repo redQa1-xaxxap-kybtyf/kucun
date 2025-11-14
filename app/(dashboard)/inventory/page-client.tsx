@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import { inventoryParamsSchema } from '@/lib/schemas/inventory-params';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
@@ -389,7 +390,7 @@ function InventoryContent(props: {
               error={error}
               onRetry={() => {
                 queryClient.refetchQueries({
-                  queryKey: ['inventory', 'list'],
+                  queryKey: queryKeys.inventory.lists(),
                 });
               }}
               onClearFilters={onClearFilters}

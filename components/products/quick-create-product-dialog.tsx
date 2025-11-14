@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PRODUCT_UNIT_OPTIONS } from '@/lib/config/product';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Product } from '@/lib/types/product';
 
 // 快速创建产品的简化验证规则
@@ -126,7 +127,7 @@ export function QuickCreateProductDialog({
 
         // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
         await queryClient.refetchQueries({
-          queryKey: ['products'],
+          queryKey: queryKeys.products.all,
           type: 'active',
         });
 

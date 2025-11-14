@@ -491,6 +491,15 @@ export const settingsKeys = {
 
   // 存储配置
   storage: () => [...settingsKeys.all, 'storage'] as const,
+
+  // 物流站点
+  shippingSites: (status?: string) =>
+    status
+      ? ([...settingsKeys.all, 'shipping-sites', status] as const)
+      : ([...settingsKeys.all, 'shipping-sites'] as const),
+
+  // 物流查询历史
+  shippingQueries: () => [...settingsKeys.all, 'shipping-queries'] as const,
 } as const;
 
 /**

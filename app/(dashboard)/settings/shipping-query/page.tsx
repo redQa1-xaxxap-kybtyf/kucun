@@ -37,6 +37,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   ShippingQueriesResponse,
   ShippingQuery,
@@ -57,7 +58,7 @@ export default function ShippingQueryPage() {
 
   // 获取站点列表
   const { data: sitesData } = useQuery<ShippingSitesResponse>({
-    queryKey: ['settings', 'shipping-sites', 'active'],
+    queryKey: queryKeys.settings.shippingSites('active'),
     queryFn: async () => {
       const response = await fetch('/api/shipping/sites?status=active');
       if (!response.ok) {
@@ -75,7 +76,7 @@ export default function ShippingQueryPage() {
   // 获取查询历史
   const { data: queriesData, isLoading: isLoadingHistory } =
     useQuery<ShippingQueriesResponse>({
-      queryKey: ['settings', 'shipping-queries'],
+      queryKey: queryKeys.settings.shippingQueries(),
       queryFn: async () => {
         const response = await fetch('/api/shipping/query?limit=50');
         if (!response.ok) {
@@ -122,7 +123,7 @@ export default function ShippingQueryPage() {
         });
       }
       queryClient.invalidateQueries({
-        queryKey: ['settings', 'shipping-queries'],
+        queryKey: queryKeys.settings.shippingQueries(),
       });
     },
     onError: (error: Error) => {

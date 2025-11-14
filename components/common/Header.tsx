@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
+import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
@@ -90,21 +91,23 @@ function HeaderComponent({
     const pathname = window.location.pathname;
 
     if (pathname.startsWith('/inventory')) {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
     } else if (pathname.startsWith('/products')) {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
     } else if (pathname.startsWith('/sales-orders')) {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.all });
     } else if (pathname.startsWith('/factory-shipments')) {
-      queryClient.invalidateQueries({ queryKey: ['factory-shipments'] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.factoryShipments.all,
+      });
     } else if (pathname.startsWith('/finance')) {
-      queryClient.invalidateQueries({ queryKey: ['finance'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.finance.all });
     } else if (pathname.startsWith('/customers')) {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.all });
     } else if (pathname.startsWith('/suppliers')) {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.all });
     } else if (pathname.startsWith('/categories')) {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
     } else {
       // 其他页面失效所有查询
       queryClient.invalidateQueries();
