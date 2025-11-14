@@ -125,7 +125,22 @@ export function PurchaseOrderForm({
             remarks: item.remarks || '',
             isManualProduct: !item.productId,
           })),
-          feeItems: [],
+          // ✅ 修复：正确映射 expenses 到 feeItems
+          feeItems: initialData.expenses
+            ? initialData.expenses.map(expense => ({
+                feeType: expense.expenseType as
+                  | 'freight'
+                  | 'processing'
+                  | 'packaging'
+                  | 'loading_unloading'
+                  | 'storage'
+                  | 'customs'
+                  | 'other',
+                feeName: expense.expenseName,
+                feeAmount: Number(expense.expenseAmount),
+                remarks: expense.remarks || '',
+              }))
+            : [],
         }
       : {
           idempotencyKey: generateIdempotencyKey(),

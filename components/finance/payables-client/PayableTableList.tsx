@@ -1,5 +1,6 @@
 'use client';
 
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
@@ -405,9 +406,47 @@ export function PayableTableList({
   onPayNow,
 }: Props) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [payablePendingDelete, setPayablePendingDelete] =
     React.useState<PayableRecordDetail | null>(null);
+
+  // ✅ 使用 TanStack Query mutation 实现删除功能
+  const deleteMutation = useMutation({
+    mutationFn: async (payableId: string) => {
+      const response = await fetch(`/api/finance/payables/${payableId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '删除应付款记录失败');
+      }
+
+      return response.json();
+    },
+    onSuccess: (_data, _variables, _context) => {
+      // ✅ 删除成功后刷新列表
+      queryClient.invalidateQueries({ queryKey: ['payables', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['payables', 'statistics'] });
+
+      toast({
+        title: '删除成功',
+        description: `应付款记录 ${payablePendingDelete?.payableNumber} 已删除`,
+        variant: 'success',
+      });
+
+      setDeleteConfirmOpen(false);
+      setPayablePendingDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '删除失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   const handleDeleteDialogOpenChange = React.useCallback((open: boolean) => {
     setDeleteConfirmOpen(open);
@@ -421,15 +460,9 @@ export function PayableTableList({
       return;
     }
 
-    toast({
-      title: '删除成功',
-      description: `应付款记录 ${payablePendingDelete.payableNumber} 已删除`,
-      variant: 'success',
-    });
-
-    setDeleteConfirmOpen(false);
-    setPayablePendingDelete(null);
-  }, [payablePendingDelete, toast]);
+    // ✅ 调用真正的删除 API
+    deleteMutation.mutate(payablePendingDelete.id);
+  }, [payablePendingDelete, deleteMutation]);
 
   const handleDeletePayableClick = React.useCallback(
     (payable: PayableRecordDetail, event: React.MouseEvent) => {
