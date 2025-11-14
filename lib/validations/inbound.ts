@@ -89,11 +89,12 @@ export const createInboundSchema = z
       ),
 
     // 批次管理字段
+    // ✅ 修复：批次号设为必填，符合瓷砖行业要求
     batchNumber: z
-      .string()
+      .string({ message: '批次号/色号为必填项' })
+      .min(1, '批次号/色号不能为空')
       .max(50, '批次号不能超过50个字符')
-      .optional()
-      .transform(val => val?.trim() || undefined), // 空字符串转为 undefined
+      .transform(val => val?.trim()), // 去除首尾空格
 
     purchaseOrderId: z
       .string()
@@ -384,7 +385,11 @@ export const inboundFormSchema = z
       ), // ✅ 移除 .transform()
 
     // 批次管理字段
-    batchNumber: z.string().max(50, '批次号不能超过50个字符').optional(), // ✅ 移除 .transform()
+    // ✅ 修复：批次号设为必填
+    batchNumber: z
+      .string({ message: '批次号/色号为必填项' })
+      .min(1, '批次号/色号不能为空')
+      .max(50, '批次号不能超过50个字符'),
 
     purchaseOrderId: z
       .string()

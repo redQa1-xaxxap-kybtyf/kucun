@@ -336,18 +336,51 @@ async function executeOutboundTransaction(
   } = data;
 
   return await prisma.$transaction(async tx => {
-    // 1. 查找可用库存
+    // ✅ 修复：批次号必填校验
+    if (!batchNumber || batchNumber.trim().length === 0) {
+      throw new Error('批次号/色号为必填项');
+    }
+
+    // ✅ 修复：如果有客户ID，校验同一客户的批次一致性
+    if (customerId) {
+      const existingOutbounds = await tx.outboundRecord.findMany({
+        where: {
+          customerId,
+          productId,
+        },
+        select: {
+          batchNumber: true,
+        },
+        distinct: ['batchNumber'],
+      });
+
+      if (existingOutbounds.length > 0) {
+        const existingBatches = existingOutbounds
+          .map(r => r.batchNumber)
+          .filter(Boolean);
+        if (
+          existingBatches.length > 0 &&
+          !existingBatches.includes(batchNumber)
+        ) {
+          throw new Error(
+            `同一客户的同一产品必须使用相同批次。已有批次：${existingBatches.join(', ')}`
+          );
+        }
+      }
+    }
+
+    // 1. 查找可用库存（必须指定批次）
     const whereCondition: {
       productId: string;
       variantId?: string;
-      batchNumber?: string;
-    } = { productId };
+      batchNumber: string; // ✅ 修复：批次号必填
+    } = {
+      productId,
+      batchNumber, // ✅ 修复：必须指定批次
+    };
 
     if (variantId) {
       whereCondition.variantId = variantId;
-    }
-    if (batchNumber) {
-      whereCondition.batchNumber = batchNumber;
     }
 
     const availableInventory = await tx.inventory.findFirst({
@@ -356,7 +389,7 @@ async function executeOutboundTransaction(
     });
 
     if (!availableInventory) {
-      throw new Error('未找到匹配的库存记录');
+      throw new Error(`未找到批次 ${batchNumber} 的库存记录`);
     }
 
     // 记录出库前的数量（用于事件发布）

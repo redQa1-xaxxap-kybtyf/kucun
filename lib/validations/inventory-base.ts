@@ -44,11 +44,11 @@ export const baseValidations = {
     .optional()
     .or(z.literal('')),
 
+  // ✅ 修复：批次号设为必填，符合瓷砖行业要求
   batchNumber: z
-    .string()
-    .max(50, '批次号不能超过50个字符')
-    .optional()
-    .or(z.literal('')),
+    .string({ message: '批次号/色号为必填项' })
+    .min(1, '批次号/色号不能为空')
+    .max(50, '批次号不能超过50个字符'),
 };
 
 /**

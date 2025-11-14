@@ -250,22 +250,25 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
 export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      {/* 批次号 */}
+      {/* 批次号 - ✅ 修复：设为必填 */}
       <FormField
         control={form.control}
         name="batchNumber"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium text-gray-600">
-              批次号
+            <FormLabel className="text-sm font-semibold text-gray-900">
+              批次号/色号 *
             </FormLabel>
             <FormControl>
               <Input
-                placeholder="请输入批次号（可选）"
+                placeholder="请输入批次号或色号"
                 className="h-9"
                 {...field}
               />
             </FormControl>
+            <FormDescription className="text-xs text-gray-500">
+              瓷砖行业要求：同一项目必须使用相同批次/色号
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
