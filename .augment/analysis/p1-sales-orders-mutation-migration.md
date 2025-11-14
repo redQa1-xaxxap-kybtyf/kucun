@@ -297,9 +297,58 @@ npm run type-check
 
 ---
 
+## 📊 第二阶段进度: 更新页面组件
+
+### 已完成的组件迁移
+
+#### 1. ✅ useSalesOrderSubmission Hook (Git: `d3b3d236`)
+
+**文件**: `components/sales-orders/enhanced-sales-order-form/hooks/useSalesOrderSubmission.ts`
+
+**修改内容**:
+
+- 将 `useMutation` 改为 `useCreateSalesOrder`
+- 移除 `queryClient` 和手动缓存刷新代码
+- 减少代码约 10 行
+
+**影响范围**:
+
+- 使用组件: `EnhancedSalesOrderForm`
+- 使用页面: 销售订单创建页面（使用增强表单的页面）
+
+---
+
+#### 2. ✅ ERPSalesOrderForm 组件 (Git: `f066905b`)
+
+**文件**: `components/sales-orders/erp-sales-order-form.tsx`
+
+**修改内容**:
+
+- 创建订单: 将 `useMutation` 改为 `useCreateSalesOrder`
+- 更新订单: 将 `useMutation` 改为 `useUpdateSalesOrder`
+- 移除所有手动缓存刷新逻辑
+- 移除不再需要的导入
+- 减少代码约 30 行
+
+**影响范围**:
+
+- 使用页面:
+  - 销售订单创建页面 (`app/(dashboard)/sales-orders/create/page.tsx`)
+  - 销售订单编辑页面 (`app/(dashboard)/sales-orders/[id]/edit/page.tsx`)
+
+---
+
+### 第二阶段总结
+
+**已完成**: 2 个组件
+**减少代码**: 约 40 行
+**实际工作量**: 约 1 小时
+
+---
+
 ## 🚀 下一步工作
 
-### 第二阶段: 更新页面组件（预估 1-2 天）
+### 继续第二阶段: 迁移剩余组件（预估 2-3 小时）
 
 **需要更新的页面组件**:
 
@@ -423,6 +472,9 @@ const handleCreate = (data: SalesOrderCreateInput) => {
 
 **报告生成时间**: 2025-01-14
 **报告作者**: Augment Agent
-**Git 提交**: `c957629d`
-**迁移阶段**: 第一阶段完成（Mutation Hooks 创建）
-**下一步**: 更新页面组件使用新的 Mutation Hooks
+**Git 提交**:
+
+- 第一阶段: `c957629d` (Mutation Hooks 创建), `b377ec83` (文档)
+- 第二阶段: `d3b3d236` (useSalesOrderSubmission), `f066905b` (ERPSalesOrderForm)
+  **迁移阶段**: 第二阶段进行中（页面组件迁移）
+  **下一步**: 继续迁移其他使用销售订单 API 的组件
