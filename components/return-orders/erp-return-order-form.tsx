@@ -5,7 +5,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
@@ -72,6 +72,9 @@ export function ERPReturnOrderForm({
   const { toast } = useToast();
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+
+  // ✅ 修复：使用 ref 标记是否为首次加载，避免编辑模式下清空原始明细
+  const isInitialMount = useRef(true);
 
   // ✅ 表单设置 - 使用统一的 returnOrderFormSchema,避免联合类型问题
   const form = useForm<ReturnOrderFormData>({
@@ -148,13 +151,19 @@ export function ERPReturnOrderForm({
     'single_order';
   const watchedSalesOrderId = form.watch('salesOrderId');
   useEffect(() => {
+    // ✅ 修复：编辑模式首次加载时，跳过清空逻辑，保留原始明细
+    if (isInitialMount.current && mode === 'edit' && initialData) {
+      isInitialMount.current = false;
+      return;
+    }
+
     if (watchedSalesOrderId && watchedSalesOrderId !== selectedSalesOrderId) {
       setSelectedSalesOrderId(watchedSalesOrderId);
-      // 清空现有明细
+      // 清空现有明细（仅在用户主动切换订单时）
       replace([]);
       setProductInfoMap({});
     }
-  }, [watchedSalesOrderId, selectedSalesOrderId, replace]);
+  }, [watchedSalesOrderId, selectedSalesOrderId, replace, mode, initialData]);
 
   // 获取可退货明细
   const { data: returnableItemsData, isLoading: isLoadingItems } =
@@ -169,6 +178,11 @@ export function ERPReturnOrderForm({
 
   // 当可退货明细加载完成后，自动填充到表单
   useEffect(() => {
+    // ✅ 修复：编辑模式首次加载时，跳过自动填充逻辑，保留原始明细
+    if (mode === 'edit' && initialData && isInitialMount.current) {
+      return;
+    }
+
     if (
       returnableItemsData?.data?.returnableItems &&
       returnableItemsData.data.returnableItems.length > 0
@@ -206,7 +220,7 @@ export function ERPReturnOrderForm({
       replace([]);
       setProductInfoMap({});
     }
-  }, [returnableItemsData, replace]);
+  }, [returnableItemsData, replace, mode, initialData]);
 
   // Mutations
   const createMutation = useCreateReturnOrder({
