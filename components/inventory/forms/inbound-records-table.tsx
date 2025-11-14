@@ -5,6 +5,7 @@ import { Package, User } from 'lucide-react';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -45,7 +46,14 @@ interface InboundRecordWithProduct
 
 interface InboundRecordsTableProps {
   records: InboundRecordWithProduct[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   isLoading: boolean;
+  onPageChange?: (page: number) => void;
 }
 
 // 格式化操作类型
@@ -137,7 +145,9 @@ const getActualWeight = (record: InboundRecordWithProduct) => {
  */
 export function InboundRecordsTable({
   records,
+  pagination,
   isLoading,
+  onPageChange,
 }: InboundRecordsTableProps) {
   if (isLoading) {
     return <ContentLoading text="加载入库记录..." />;
@@ -152,6 +162,19 @@ export function InboundRecordsTable({
       <div className="overflow-x-auto">
         <RecordsTable records={records} />
       </div>
+
+      {/* 分页器 */}
+      {pagination && onPageChange && (
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+            disabled={isLoading}
+          />
+        </div>
+      )}
     </div>
   );
 }

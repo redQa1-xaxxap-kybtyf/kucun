@@ -26,9 +26,11 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
   const {
     queryParams,
     inboundRecords,
+    pagination,
     isLoading,
     error,
     handleFilter,
+    handlePageChange,
     handleResetFilters,
   } = useInboundRecordsState(initialParams);
 
@@ -111,7 +113,12 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
       />
 
       {/* 入库记录表格 */}
-      <InboundRecordsTable records={inboundRecords} isLoading={isLoading} />
+      <InboundRecordsTable
+        records={inboundRecords}
+        pagination={pagination}
+        isLoading={isLoading}
+        onPageChange={handlePageChange}
+      />
     </div>
   );
 }

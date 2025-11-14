@@ -10,6 +10,7 @@ import { Eye, Package, User } from 'lucide-react';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -26,14 +27,23 @@ import { formatDateTimeCN } from '@/lib/utils/datetime';
 
 interface AdjustmentRecordsTableProps {
   adjustments: InventoryAdjustment[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   isLoading: boolean;
   onViewDetail?: (adjustment: InventoryAdjustment) => void;
+  onPageChange?: (page: number) => void;
 }
 
 export function AdjustmentRecordsTable({
   adjustments,
+  pagination,
   isLoading,
   onViewDetail,
+  onPageChange,
 }: AdjustmentRecordsTableProps) {
   // 格式化日期
   const formatDate = (dateString: string | Date) => {
@@ -233,6 +243,19 @@ export function AdjustmentRecordsTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* 分页器 */}
+      {pagination && onPageChange && (
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+            disabled={isLoading}
+          />
+        </div>
+      )}
     </div>
   );
 }

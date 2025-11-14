@@ -61,6 +61,7 @@ export function useInboundRecordsState(
 
   const { data, isLoading, error } = useInboundRecords(queryParams);
   const inboundRecords = data?.data || [];
+  const pagination = data?.pagination;
 
   const handleFilter = (
     key: keyof InboundQueryParams,
@@ -75,6 +76,13 @@ export function useInboundRecordsState(
     }));
   };
 
+  const handlePageChange = React.useCallback((page: number) => {
+    setQueryParams(prev => ({
+      ...prev,
+      page,
+    }));
+  }, []);
+
   const handleResetFilters = () => {
     setQueryParams({ ...DEFAULT_QUERY_PARAMS });
   };
@@ -82,9 +90,11 @@ export function useInboundRecordsState(
   return {
     queryParams,
     inboundRecords,
+    pagination,
     isLoading,
     error,
     handleFilter,
+    handlePageChange,
     handleResetFilters,
   };
 }

@@ -40,6 +40,7 @@ export function AdjustmentRecordsPageClient({
 
   const {
     adjustments,
+    pagination,
     isLoading,
     error,
     queryParams,
@@ -47,6 +48,7 @@ export function AdjustmentRecordsPageClient({
     showDetailDialog,
     updateQueryParams,
     resetFilters,
+    handlePageChange,
     viewDetail,
     closeDetailDialog,
     refetch,
@@ -155,8 +157,10 @@ export function AdjustmentRecordsPageClient({
         {/* 调整记录表格 */}
         <AdjustmentRecordsTable
           adjustments={adjustments}
+          pagination={pagination}
           isLoading={isLoading}
           onViewDetail={viewDetail}
+          onPageChange={handlePageChange}
         />
 
         {/* 调整对话框 */}
