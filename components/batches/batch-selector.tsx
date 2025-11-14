@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import type { BatchMatchResult, ExistingBatch } from '@/lib/types/batch';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface BatchSelectorProps {
   /** 当前批次号 */
@@ -213,11 +214,7 @@ export function BatchSelector({
                                       成本: ¥{batch.unitCost.toFixed(2)}
                                     </span>
                                   )}
-                                  <span>
-                                    {new Date(
-                                      batch.updatedAt
-                                    ).toLocaleDateString()}
-                                  </span>
+                                  <span>{formatDate(batch.updatedAt)}</span>
                                 </div>
                               </div>
                             </div>

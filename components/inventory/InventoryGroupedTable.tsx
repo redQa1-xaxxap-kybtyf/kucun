@@ -24,6 +24,7 @@ import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatDate } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -204,9 +205,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                   item.quantity,
                   item.reservedQuantity || 0
                 );
-                const formattedDate = new Date(
-                  item.updatedAt
-                ).toLocaleDateString('zh-CN');
+                const formattedDate = formatDate(item.updatedAt);
                 const reservedDisplay = (() => {
                   const reserved = item.reservedQuantity ?? 0;
                   if (reserved <= 0) {
