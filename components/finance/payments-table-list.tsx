@@ -143,12 +143,14 @@ export function PaymentsTableList({
       </div>
 
       {pagination && onPageChange && (
-        <Pagination
-          pagination={pagination}
-          onPageChange={onPageChange}
-          showTotal
-          containerClassName="mt-6"
-        />
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+          />
+        </div>
       )}
     </div>
   );

@@ -126,13 +126,15 @@ export function ReceivablesTableList({
       </div>
 
       {pagination && (
-        <Pagination
-          pagination={pagination}
-          onPageChange={onPageChange}
-          showTotal
-          disabled={isLoading}
-          containerClassName="mt-6"
-        />
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+            disabled={isLoading}
+          />
+        </div>
       )}
     </div>
   );

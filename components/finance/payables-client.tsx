@@ -1,15 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
 
-import { PaginationBar } from '@/components/finance/payables-client/PaginationBar';
 import { PayableList } from '@/components/finance/payables-client/PayableList';
 import { PayablesFilterBar } from '@/components/finance/payables-client/PayablesFilterBar';
 import { PayablesSummary } from '@/components/finance/payables-client/PayablesSummary';
 import { usePayablesController } from '@/components/finance/payables-client/usePayablesController';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { Pagination } from '@/components/ui/pagination';
 import type { PayableRecordQuery } from '@/lib/types/payable';
 
 interface PayablesClientProps {
@@ -79,13 +78,17 @@ export function PayablesClient({
             />
           </div>
 
-          <PaginationBar
-            page={query.page || 1}
-            totalPages={pagination?.totalPages || 1}
-            total={pagination?.total || 0}
-            isLoading={payablesLoading}
-            onPageChange={handlePageChange}
-          />
+          {pagination && (
+            <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+              <Pagination
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                showRange
+                showTotal
+                disabled={payablesLoading}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

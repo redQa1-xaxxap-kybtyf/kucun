@@ -474,20 +474,13 @@ export function PaymentsOutClient({
           </div>
 
           {/* 分页 */}
-          {pagination.totalPages > 1 && (
-            <div className="mt-6">
+          {pagination && (
+            <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
               <Pagination
-                pagination={{
-                  page: pagination.page,
-                  limit: pagination.limit,
-                  total: pagination.total,
-                  totalPages: pagination.totalPages,
-                }}
-                onPageChange={page => {
-                  if (onPageChange) {
-                    onPageChange(page);
-                  }
-                }}
+                pagination={pagination}
+                onPageChange={onPageChange}
+                showRange
+                showTotal
               />
             </div>
           )}
