@@ -197,10 +197,10 @@ export function ERPReturnOrderForm({
       returnableItemsData?.data?.returnableItems &&
       returnableItemsData.data.returnableItems.length > 0
     ) {
-      // 构建产品信息映射
+      // ✅ 修复：使用 salesOrderItemId 作为键，避免同一产品的不同订单被覆盖
       const newProductInfoMap: Record<string, ReturnOrderProductInfo> = {};
       returnableItemsData.data.returnableItems.forEach(item => {
-        newProductInfoMap[item.productId] = {
+        newProductInfoMap[item.salesOrderItemId] = {
           name: item.product.name,
           code: item.product.code,
           unit: item.product.unit,
@@ -314,9 +314,10 @@ export function ERPReturnOrderForm({
         reason: item.reason || '',
         condition: item.condition,
       });
+      // ✅ 修复：使用 salesOrderItemId 作为键
       setProductInfoMap(prev => ({
         ...prev,
-        [item.productId]: {
+        [item.salesOrderItemId]: {
           ...item.productInfo,
           salesOrderNumber: item.salesOrderNumber,
         },

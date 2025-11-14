@@ -161,20 +161,21 @@ export function ReturnItemsSection({
                           <div className="flex items-center gap-1">
                             <Package className="text-muted-foreground h-3 w-3" />
                             <span className="font-medium">
-                              {productInfoMap[field.productId]?.name ||
+                              {/* ✅ 修复：使用 salesOrderItemId 查找产品信息 */}
+                              {productInfoMap[field.salesOrderItemId]?.name ||
                                 `产品 ${index + 1}`}
                             </span>
                           </div>
-                          {productInfoMap[field.productId] && (
+                          {productInfoMap[field.salesOrderItemId] && (
                             <div className="text-muted-foreground flex gap-2 text-xs">
                               <span>
-                                {productInfoMap[field.productId]?.code}
+                                {productInfoMap[field.salesOrderItemId]?.code}
                               </span>
-                              {productInfoMap[field.productId]
+                              {productInfoMap[field.salesOrderItemId]
                                 ?.specification && (
                                 <span>
                                   {
-                                    productInfoMap[field.productId]
+                                    productInfoMap[field.salesOrderItemId]
                                       ?.specification
                                   }
                                 </span>
@@ -189,7 +190,8 @@ export function ReturnItemsSection({
                       {isMultiOrder && (
                         <TableCell className="h-8 px-2">
                           <span className="text-muted-foreground font-mono text-xs">
-                            {productInfoMap[field.productId]
+                            {/* ✅ 修复：使用 salesOrderItemId 查找来源订单号 */}
+                            {productInfoMap[field.salesOrderItemId]
                               ?.salesOrderNumber || '-'}
                           </span>
                         </TableCell>
