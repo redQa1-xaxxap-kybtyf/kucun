@@ -338,11 +338,49 @@ npm run type-check
 
 ---
 
+---
+
+#### 3. ✅ ERPSalesOrderList 组件 (Git: `fe747909`)
+
+**文件**: `components/sales-orders/erp-sales-order-list.tsx`
+
+**修改内容**:
+
+- 更新订单状态: 将 `useMutation` 改为 `useUpdateSalesOrderStatus`
+- 删除订单: 将 `useMutation` 改为 `useDeleteSalesOrder`
+- 移除所有手动缓存刷新逻辑
+- 修复参数格式: `{ orderId, newStatus }` → `{ id, status }`
+- 减少代码约 40 行
+
+**影响范围**:
+
+- 使用页面: 销售订单列表页面 (`app/(dashboard)/sales-orders/page-client.tsx`)
+
+---
+
+#### 4. ✅ 销售订单详情页 (Git: `e03b3a78`)
+
+**文件**: `app/(dashboard)/sales-orders/[id]/page.tsx`
+
+**修改内容**:
+
+- 更新订单状态: 将 `useMutation` 改为 `useUpdateSalesOrderStatus`
+- 移除所有手动缓存刷新逻辑（refetchQueries）
+- 移除 `window.location.reload()`，改为导航到列表页
+- 修复参数格式: `'shipped'` → `{ id, status: 'shipped' }`
+- 减少代码约 80 行
+
+**影响范围**:
+
+- 使用页面: 销售订单详情页面
+
+---
+
 ### 第二阶段总结
 
-**已完成**: 2 个组件
-**减少代码**: 约 40 行
-**实际工作量**: 约 1 小时
+**已完成**: 4 个组件
+**减少代码**: 约 160 行
+**实际工作量**: 约 2 小时
 
 ---
 
@@ -475,6 +513,7 @@ const handleCreate = (data: SalesOrderCreateInput) => {
 **Git 提交**:
 
 - 第一阶段: `c957629d` (Mutation Hooks 创建), `b377ec83` (文档)
-- 第二阶段: `d3b3d236` (useSalesOrderSubmission), `f066905b` (ERPSalesOrderForm)
-  **迁移阶段**: 第二阶段进行中（页面组件迁移）
-  **下一步**: 继续迁移其他使用销售订单 API 的组件
+- 第二阶段: `d3b3d236` (useSalesOrderSubmission), `f066905b` (ERPSalesOrderForm), `c6c94101` (文档更新), `fe747909` (ERPSalesOrderList), `e03b3a78` (详情页)
+
+**迁移阶段**: 第二阶段基本完成（核心页面组件已迁移）
+**下一步**: 搜索并迁移其他使用销售订单 API 的组件（如果有）
