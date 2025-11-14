@@ -37,6 +37,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useProcessRefund } from '@/lib/api/finance';
 import { useRefundDetail } from '@/lib/api/refunds';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 type RefundFormState = {
   processedAmount: string;
@@ -325,7 +326,7 @@ export function RefundProcessForm({
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">申请日期</span>
                 <span className="font-medium">
-                  {new Date(refund.refundDate).toLocaleDateString('zh-CN')}
+                  {formatDate(refund.refundDate)}
                 </span>
               </div>
               <div className="flex items-center justify-between">

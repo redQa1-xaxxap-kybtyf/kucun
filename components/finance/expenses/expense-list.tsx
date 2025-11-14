@@ -34,6 +34,7 @@ import {
   type ExpenseQueryParams,
   type ExpenseRecord,
 } from '@/lib/types/expense';
+import { formatDate } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseListProps {
@@ -128,9 +129,6 @@ export function ExpenseList({
     },
     [filters.sortBy, filters.sortOrder, onSortChange]
   );
-
-  // 格式化日期
-  const formatDate = (dateString: string) => dateString.split('T')[0];
 
   // 获取费用类型标签颜色
   const getExpenseTypeBadgeVariant = (type: string) => {

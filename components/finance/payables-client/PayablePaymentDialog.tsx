@@ -42,6 +42,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { payablesApi } from '@/lib/api/payables';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PayableRecordDetail } from '@/lib/types/payable';
+import { formatDate as formatDateUtil } from '@/lib/utils/datetime';
 
 const paymentFormSchema = z.object({
   payableRecordId: z.string().min(1, '应付款ID不能为空'),
@@ -201,7 +202,7 @@ function PayableInfoCard({ payableInfo }: { payableInfo: PayableInfo }) {
       {payableInfo.dueDate && (
         <div className="mt-3 border-t pt-3">
           <p className="text-muted-foreground text-xs">
-            到期日: {formatDateTime(payableInfo.dueDate, 'yyyy-MM-dd')}
+            到期日: {formatDateUtil(payableInfo.dueDate)}
           </p>
         </div>
       )}
@@ -471,28 +472,4 @@ function formatCurrency(amount: number): string {
     style: 'currency',
     currency: 'CNY',
   }).format(amount);
-}
-
-// 辅助函数：格式化日期时间
-function formatDateTime(
-  date: Date | string,
-  formatStr: string = 'yyyy-MM-dd HH:mm'
-): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (Number.isNaN(d.getTime())) {
-    return '';
-  }
-
-  if (formatStr === 'yyyy-MM-dd') {
-    return d.toLocaleDateString('zh-CN');
-  }
-
-  return d.toLocaleString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  });
 }

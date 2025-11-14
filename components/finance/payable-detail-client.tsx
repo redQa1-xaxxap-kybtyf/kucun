@@ -16,7 +16,7 @@ import {
   PAYMENT_OUT_METHOD_LABELS,
   type PayableRecordDetail,
 } from '@/lib/types/payable';
-import { formatPaymentDateTime } from '@/lib/utils/datetime';
+import { formatDateTime, formatPaymentDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface PayableDetailClientProps {
@@ -155,7 +155,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                     创建时间
                   </div>
                   <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                    {new Date(payable.createdAt).toLocaleString()}
+                    {formatDateTime(payable.createdAt)}
                   </div>
                 </div>
 
@@ -164,7 +164,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                     更新时间
                   </div>
                   <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                    {new Date(payable.updatedAt).toLocaleString()}
+                    {formatDateTime(payable.updatedAt)}
                   </div>
                 </div>
               </div>

@@ -20,6 +20,7 @@ import type {
   RefundType,
 } from '@/lib/types/refund';
 import { formatCurrency } from '@/lib/utils';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 interface RefundsClientProps {
   data: RefundListData;
@@ -109,28 +110,6 @@ export function RefundsClient({
       other: '其他',
     };
     return methodConfig[method] || '其他';
-  };
-
-  const formatDate = (value?: string | null) => {
-    if (!value) {
-      return '-';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-    return date.toLocaleDateString('zh-CN');
-  };
-
-  const formatDateTime = (value?: string | null) => {
-    if (!value) {
-      return '-';
-    }
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-    return `${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   return (
