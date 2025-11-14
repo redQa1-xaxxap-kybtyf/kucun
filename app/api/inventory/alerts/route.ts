@@ -107,18 +107,42 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
           },
         });
 
-        // 第二步：在内存中过滤低库存产品（因为 Prisma 不支持 HAVING 计算字段）
+        // 第二步：批量获取产品信息（包含产品级阈值）
+        const productIds = inventoryByProduct.map(item => item.productId);
+        const products = await prisma.product.findMany({
+          where: {
+            id: { in: productIds },
+          },
+          select: {
+            id: true,
+            minStock: true, // ✅ 修复：读取产品级阈值
+          },
+        });
+
+        // 创建产品阈值映射
+        const productThresholdMap = new Map(
+          products.map(p => [
+            p.id,
+            p.minStock ?? inventoryConfig.lowStockThreshold,
+          ])
+        );
+
+        // 第三步：在内存中过滤低库存产品（使用产品级阈值）
+        // ✅ 修复：使用产品级阈值替代全局常量
         const lowStockProductIds = inventoryByProduct
           .filter(item => {
             const totalStock = item._sum.quantity || 0;
             const reservedStock = item._sum.reservedQuantity || 0;
             const availableStock = totalStock - reservedStock;
-            return availableStock <= inventoryConfig.lowStockThreshold;
+            const threshold =
+              productThresholdMap.get(item.productId) ||
+              inventoryConfig.lowStockThreshold;
+            return availableStock <= threshold;
           })
           .slice(0, limit)
           .map(item => item.productId);
 
-        // 第三步：批量获取低库存产品的详细信息
+        // 第四步：批量获取低库存产品的详细信息
         const lowStockProducts = await prisma.product.findMany({
           where: {
             id: { in: lowStockProductIds },
@@ -142,7 +166,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
           },
         });
 
-        // 第四步：计算每个产品的库存统计
+        // 第五步：计算每个产品的库存统计
         const lowStockProductsWithStats = lowStockProducts.map(product => {
           const { totalStock, reservedStock } = product.inventory.reduce(
             (acc, inv) => ({

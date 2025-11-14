@@ -111,15 +111,21 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   }
 
   // 库存状态筛选
+  // ✅ 修复：使用产品级阈值（p.min_stock）替代全局常量
+  // 如果产品未设置 min_stock，使用全局默认值
+  const productMinStock = Prisma.raw(
+    `COALESCE(p.min_stock, ${inventoryConfig.lowStockThreshold})`
+  );
+
   if (params.lowStock && params.hasStock) {
-    // 同时筛选低库存和有库存：0 < 可用数量 <= 低库存阈值
+    // 同时筛选低库存和有库存：0 < 可用数量 <= 产品阈值
     conditions.push(
-      Prisma.sql`${AVAILABLE_QUANTITY_SQL} > 0 AND ${AVAILABLE_QUANTITY_SQL} <= ${inventoryConfig.lowStockThreshold}`
+      Prisma.sql`${AVAILABLE_QUANTITY_SQL} > 0 AND ${AVAILABLE_QUANTITY_SQL} <= ${productMinStock}`
     );
   } else if (params.lowStock) {
-    // 仅筛选低库存：可用数量 <= 低库存阈值
+    // 仅筛选低库存：可用数量 <= 产品阈值
     conditions.push(
-      Prisma.sql`${AVAILABLE_QUANTITY_SQL} <= ${inventoryConfig.lowStockThreshold}`
+      Prisma.sql`${AVAILABLE_QUANTITY_SQL} <= ${productMinStock}`
     );
   } else if (params.hasStock) {
     // 仅筛选有库存：可用数量 > 0
