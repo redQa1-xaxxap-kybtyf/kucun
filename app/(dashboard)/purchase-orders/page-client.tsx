@@ -125,6 +125,51 @@ export function PurchaseOrdersPageClient({
     });
   }, [router, startTransition]);
 
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      startTransition(() => {
+        const params = new URLSearchParams();
+        const trimmedSearch = searchValue.trim();
+
+        if (trimmedSearch) {
+          params.set('search', trimmedSearch);
+        }
+        if (statusFilter !== 'all') {
+          params.set('status', statusFilter);
+        }
+        if (supplierFilter) {
+          params.set('supplierId', supplierFilter);
+        }
+        if (sortBy && sortBy !== 'createdAt') {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder && sortOrder !== 'desc') {
+          params.set('sortOrder', sortOrder);
+        }
+        if (page > 1) {
+          params.set('page', page.toString());
+        }
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
+        }
+
+        const queryString = params.toString();
+        router.push(
+          queryString ? `/purchase-orders?${queryString}` : '/purchase-orders'
+        );
+      });
+    },
+    [
+      router,
+      searchValue,
+      statusFilter,
+      supplierFilter,
+      sortBy,
+      sortOrder,
+      initialParams.limit,
+    ]
+  );
+
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="mb-6 flex-shrink-0">
@@ -168,6 +213,7 @@ export function PurchaseOrdersPageClient({
           supplierId={supplierFilter}
           sortBy={sortBy}
           sortOrder={sortOrder}
+          onPageChange={handlePageChange}
         />
       </div>
     </div>

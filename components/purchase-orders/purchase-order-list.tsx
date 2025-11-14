@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -39,6 +40,7 @@ interface PurchaseOrderListProps {
   endDate?: Date;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  onPageChange?: (page: number) => void;
 }
 
 const formatCurrency = (amount: number | null | undefined): string => {
@@ -69,6 +71,7 @@ export function PurchaseOrderList({
   endDate,
   sortBy = 'createdAt',
   sortOrder = 'desc',
+  onPageChange,
 }: PurchaseOrderListProps) {
   const queryParams: PurchaseOrderListParams = {
     page,
@@ -108,6 +111,7 @@ export function PurchaseOrderList({
 
   const orders = (data as { data: PurchaseOrder[]; total: number })?.data || [];
   const total = (data as { data: PurchaseOrder[]; total: number })?.total || 0;
+  const totalPages = Math.ceil(total / limit);
 
   if (orders.length === 0) {
     return (
@@ -185,11 +189,21 @@ export function PurchaseOrderList({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          共 {total} 条记录，第 {page} 页
-        </p>
-      </div>
+      {onPageChange && total > 0 && (
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={{
+              page,
+              limit,
+              total,
+              totalPages,
+            }}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+          />
+        </div>
+      )}
     </div>
   );
 }
