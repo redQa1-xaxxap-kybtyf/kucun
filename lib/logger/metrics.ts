@@ -36,8 +36,87 @@ export interface MetricDefinition {
 
 const metrics = new Map<string, MetricDefinition>();
 
+// ==================== 配置常量 ====================
+
+/**
+ * 指标配置
+ * - MAX_LABEL_CARDINALITY: 每个指标最多保留的唯一标签组合数
+ * - METRIC_TTL_MS: 指标过期时间（毫秒）
+ */
+const METRIC_CONFIG = {
+  MAX_LABEL_CARDINALITY: 1000, // 限制每个指标最多 1000 个唯一标签组合
+  METRIC_TTL_MS: 3600000, // 1 小时过期
+} as const;
+
+// ==================== 路径规范化 ====================
+
+/**
+ * 规范化 API 路径，将动态参数替换为占位符
+ *
+ * 示例:
+ * - /api/sales-orders/123 -> /api/sales-orders/:id
+ * - /api/customers/abc-def-ghi -> /api/customers/:id
+ * - /api/products/p123/variants/v456 -> /api/products/:id/variants/:id
+ *
+ * @param path 原始路径
+ * @returns 规范化后的路径
+ */
+export function normalizePath(path: string): string {
+  return (
+    path
+      // UUID 格式: 8-4-4-4-12
+      .replace(
+        /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+        '/:id'
+      )
+      // MongoDB ObjectId 格式: 24 个十六进制字符
+      .replace(/\/[0-9a-f]{24}/gi, '/:id')
+      // 数字 ID
+      .replace(/\/\d+/g, '/:id')
+      // 短 ID (3+ 个字母数字字符)
+      .replace(/\/[a-z0-9]{3,}/gi, '/:id')
+  );
+}
+
+/**
+ * 清理过期的指标值
+ *
+ * @param metric 指标定义
+ */
+function cleanupExpiredMetrics(metric: MetricDefinition): void {
+  const now = Date.now();
+  const ttl = METRIC_CONFIG.METRIC_TTL_MS;
+
+  metric.values = metric.values.filter(v => {
+    const age = now - (v.timestamp || 0);
+    return age < ttl;
+  });
+}
+
+/**
+ * 限制指标的标签基数
+ *
+ * 当标签组合数超过限制时，移除最旧的条目
+ *
+ * @param metric 指标定义
+ */
+function limitLabelCardinality(metric: MetricDefinition): void {
+  const maxCardinality = METRIC_CONFIG.MAX_LABEL_CARDINALITY;
+
+  if (metric.values.length > maxCardinality) {
+    // 按时间戳排序，保留最新的条目
+    metric.values.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    metric.values = metric.values.slice(0, maxCardinality);
+  }
+}
+
 /**
  * 注册或更新指标
+ *
+ * 包含以下优化：
+ * 1. TTL 清理：自动清理超过 1 小时的指标
+ * 2. 基数限制：限制每个指标最多 1000 个唯一标签组合
+ * 3. 内存保护：防止高基数标签导致内存泄漏
  */
 export function registerMetric(
   name: string,
@@ -58,6 +137,9 @@ export function registerMetric(
     };
     metrics.set(metricKey, metric);
   }
+
+  // 清理过期指标
+  cleanupExpiredMetrics(metric);
 
   // 对于 counter 类型，累加值
   if (type === 'counter') {
@@ -82,6 +164,9 @@ export function registerMetric(
       metric.values.push({ value, labels, timestamp: Date.now() });
     }
   }
+
+  // 限制标签基数
+  limitLabelCardinality(metric);
 }
 
 /**
@@ -123,17 +208,20 @@ export function recordHistogram(
 
 /**
  * API 请求计数器
+ *
+ * 使用路径规范化防止高基数内存泄漏
  */
 export function recordApiRequest(
   method: string,
   path: string,
   statusCode: number
 ): void {
+  const normalizedPath = normalizePath(path);
   incrementCounter(
     'http_requests_total',
     {
       method,
-      path,
+      path: normalizedPath,
       status: String(statusCode),
     },
     'Total HTTP requests'
@@ -142,18 +230,21 @@ export function recordApiRequest(
 
 /**
  * API 响应时间
+ *
+ * 使用路径规范化防止高基数内存泄漏
  */
 export function recordApiDuration(
   method: string,
   path: string,
   duration: number
 ): void {
+  const normalizedPath = normalizePath(path);
   recordHistogram(
     'http_request_duration_ms',
     duration,
     {
       method,
-      path,
+      path: normalizedPath,
     },
     'HTTP request duration in milliseconds'
   );
@@ -161,17 +252,20 @@ export function recordApiDuration(
 
 /**
  * API 错误计数
+ *
+ * 使用路径规范化防止高基数内存泄漏
  */
 export function recordApiError(
   method: string,
   path: string,
   errorType: string
 ): void {
+  const normalizedPath = normalizePath(path);
   incrementCounter(
     'http_errors_total',
     {
       method,
-      path,
+      path: normalizedPath,
       error_type: errorType,
     },
     'Total HTTP errors'
