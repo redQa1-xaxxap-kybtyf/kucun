@@ -5,11 +5,11 @@ import * as React from 'react';
 
 import { useToast } from '@/components/ui/use-toast';
 import {
-  factoryShipmentQueryKeys,
   getFactoryShipmentOrders,
   useCancelFactoryShipmentOrder,
   useDeleteFactoryShipmentOrder,
 } from '@/lib/api/factory-shipments';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   FactoryShipmentOrder,
   FactoryShipmentStatus,
@@ -222,7 +222,7 @@ function useFactoryShipmentFilters({
 
 function useFactoryShipmentOrders(filters: FactoryShipmentOrderListParams) {
   return useQuery<FactoryShipmentOrdersQueryResult>({
-    queryKey: factoryShipmentQueryKeys.list(filters),
+    queryKey: queryKeys.factoryShipments.list(filters),
     queryFn: async () => {
       const response = await getFactoryShipmentOrders(filters);
       return {

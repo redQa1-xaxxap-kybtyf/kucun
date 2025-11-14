@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface UpdateFactoryShipmentItemInboundStatusData {
   itemIds: string[];
@@ -44,10 +44,10 @@ export function useUpdateFactoryShipmentItemInboundStatus() {
     onSuccess: (_, { orderId }) => {
       // 刷新订单详情和列表数据
       queryClient.invalidateQueries({
-        queryKey: factoryShipmentQueryKeys.detail(orderId),
+        queryKey: queryKeys.factoryShipments.detail(orderId),
       });
       queryClient.invalidateQueries({
-        queryKey: factoryShipmentQueryKeys.lists(),
+        queryKey: queryKeys.factoryShipments.lists(),
       });
     },
   });

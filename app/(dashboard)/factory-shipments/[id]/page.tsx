@@ -5,8 +5,8 @@ import {
 } from '@tanstack/react-query';
 
 import { FactoryShipmentOrderDetailWrapper } from '@/components/factory-shipments/factory-shipment-order-detail-wrapper';
-import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrderServer } from '@/lib/api/factory-shipments-server';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -36,7 +36,7 @@ export default async function FactoryShipmentDetailPage({ params }: PageProps) {
 
   // 预取订单详情数据
   await queryClient.prefetchQuery({
-    queryKey: factoryShipmentQueryKeys.detail(id),
+    queryKey: queryKeys.factoryShipments.detail(id),
     queryFn: () => getFactoryShipmentOrderServer(id),
   });
 

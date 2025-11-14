@@ -4,9 +4,9 @@ import {
   dehydrate,
 } from '@tanstack/react-query';
 
-import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
 import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 
 import { FactoryShipmentsPageClient } from './page-client';
@@ -64,7 +64,7 @@ export default async function FactoryShipmentsPage({
 
   // ✅ 使用 setQueryData 预填充缓存（而非 prefetchQuery）
   // 注意: API 返回 { data, total, page, limit },不是 { data, pagination }
-  queryClient.setQueryData(factoryShipmentQueryKeys.list(queryParams), {
+  queryClient.setQueryData(queryKeys.factoryShipments.list(queryParams), {
     data: initialData.data,
     total: initialData.total,
     page: initialData.page,

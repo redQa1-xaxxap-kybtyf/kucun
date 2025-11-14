@@ -17,8 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
 import { useCreateInboundRecord } from '@/lib/api/inbound';
+import { queryKeys } from '@/lib/queryKeys';
 import { useUpdateFactoryShipmentItemInboundStatus } from '@/lib/services/factory-shipment-item-service';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
@@ -504,10 +504,10 @@ export function ConfirmInboundDialog({
 
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: factoryShipmentQueryKeys.detail(orderId),
+          queryKey: queryKeys.factoryShipments.detail(orderId),
         }),
         queryClient.invalidateQueries({
-          queryKey: factoryShipmentQueryKeys.lists(),
+          queryKey: queryKeys.factoryShipments.lists(),
         }),
       ]);
 

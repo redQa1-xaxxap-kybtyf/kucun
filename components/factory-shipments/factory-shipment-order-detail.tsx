@@ -34,10 +34,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  factoryShipmentQueryKeys,
-  getFactoryShipmentOrder,
-} from '@/lib/api/factory-shipments';
+import { getFactoryShipmentOrder } from '@/lib/api/factory-shipments';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS_LABELS,
@@ -79,10 +77,10 @@ export function FactoryShipmentOrderDetail({
 
   const handleOrderRefresh = () => {
     queryClient.invalidateQueries({
-      queryKey: factoryShipmentQueryKeys.detail(orderId),
+      queryKey: queryKeys.factoryShipments.detail(orderId),
     });
     queryClient.invalidateQueries({
-      queryKey: factoryShipmentQueryKeys.lists(),
+      queryKey: queryKeys.factoryShipments.lists(),
     });
   };
 
@@ -92,7 +90,7 @@ export function FactoryShipmentOrderDetail({
     isLoading,
     error,
   } = useQuery<FactoryShipmentOrder>({
-    queryKey: factoryShipmentQueryKeys.detail(orderId),
+    queryKey: queryKeys.factoryShipments.detail(orderId),
     queryFn: () => getFactoryShipmentOrder(orderId),
     enabled: !!orderId,
   });

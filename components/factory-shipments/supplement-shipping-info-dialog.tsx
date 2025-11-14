@@ -29,10 +29,8 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  factoryShipmentQueryKeys,
-  useUpdateFactoryShipmentOrderStatus,
-} from '@/lib/api/factory-shipments';
+import { useUpdateFactoryShipmentOrderStatus } from '@/lib/api/factory-shipments';
+import { queryKeys } from '@/lib/queryKeys';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 
 // ✅ 补充船公司信息表单验证规则 - 移除.default(),在defaultValues中设置
@@ -93,10 +91,10 @@ function useSupplementShippingInfoDialogState({
         : `订单 ${orderNumber} 的船公司信息已保存`,
     });
     queryClient.invalidateQueries({
-      queryKey: factoryShipmentQueryKeys.detail(orderId),
+      queryKey: queryKeys.factoryShipments.detail(orderId),
     });
     queryClient.invalidateQueries({
-      queryKey: factoryShipmentQueryKeys.lists(),
+      queryKey: queryKeys.factoryShipments.lists(),
     });
     form.reset();
     handleClose();
