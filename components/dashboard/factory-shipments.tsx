@@ -16,6 +16,7 @@ import {
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 import { formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface FactoryShipmentsProps {
   orders: DashboardFactoryShipmentSummary[];
@@ -57,10 +58,7 @@ const formatTime = (dateString: string) => {
     return `${days}天前`;
   }
 
-  return date.toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDate(dateString);
 };
 
 function SectionHeader() {

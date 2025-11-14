@@ -19,6 +19,7 @@ import {
 } from '@/lib/config/sales-order';
 import type { DashboardSalesOrderSummary } from '@/lib/types/dashboard';
 import { formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface RecentOrdersProps {
   orders: DashboardSalesOrderSummary[];
@@ -59,10 +60,7 @@ const formatTime = (dateString: string) => {
     return `${days}天前`;
   }
 
-  return date.toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-  });
+  return formatDate(dateString);
 };
 
 export function RecentOrders({ orders, loading }: RecentOrdersProps) {

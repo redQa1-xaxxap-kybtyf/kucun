@@ -31,6 +31,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { dashboardUtils, useCompleteTodoItem } from '@/lib/api/dashboard';
 import type { TodoItem } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 // 待办事项类型配置
 const TODO_TYPE_CONFIG = {
@@ -255,7 +256,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
                     <span
                       className={cn(isDueSoon ? 'text-yellow-600' : undefined)}
                     >
-                      {new Date(todo.dueDate).toLocaleDateString('zh-CN')}
+                      {formatDate(todo.dueDate)}
                     </span>
                   </div>
                 )}

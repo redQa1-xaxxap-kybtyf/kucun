@@ -10,7 +10,6 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
@@ -34,17 +33,6 @@ const getDaysOld = (dateString: string) => {
 
 // 判断是否紧急
 const isUrgent = (dateString: string) => getDaysOld(dateString) > 3;
-
-// 格式化日期
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('zh-CN', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
 
 export function PendingOrders({ orders, loading }: PendingOrdersProps) {
   if (loading) {
@@ -207,7 +195,7 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                   <div className={timeTextClass}>
                     <Clock className="h-3.5 w-3.5" />
                     <span>
-                      {formatDate(order.createdAt)}
+                      {formatDateTime(order.createdAt)}
                       {daysOld > 0 && ` (${daysOld}天前)`}
                     </span>
                   </div>
