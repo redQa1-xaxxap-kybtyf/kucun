@@ -1,13 +1,14 @@
 /* eslint-disable max-lines-per-function */
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/components/ui/use-toast';
+import { useUpdateSalesOrderStatus } from '@/lib/api/sales-orders';
 import { queryKeys } from '@/lib/queryKeys';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
@@ -55,7 +56,6 @@ export default function SalesOrderDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const {
@@ -68,92 +68,20 @@ export default function SalesOrderDetailPage() {
     enabled: !!id,
   });
 
-  // 更新订单状态
-  const updateStatusMutation = useMutation({
-    mutationFn: async (newStatus: string) => {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
-
-      try {
-        const response = await fetch(`/api/sales-orders/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: newStatus,
-            idempotencyKey: crypto.randomUUID(),
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          let errorMessage = '更新订单状态失败';
-          try {
-            const errorData = await response.json();
-            errorMessage = errorData.error || errorMessage;
-          } catch {
-            // JSON解析失败，使用默认错误消息
-          }
-          throw new Error(errorMessage);
-        }
-
-        const result = await response.json();
-        if (!result.success) {
-          throw new Error(result.error || '更新订单状态失败');
-        }
-
-        return result;
-      } catch (error) {
-        clearTimeout(timeoutId);
-        if (error instanceof Error && error.name === 'AbortError') {
-          throw new Error('操作超时，请重试');
-        }
-        throw error;
-      }
-    },
+  // ✅ 使用新的 useUpdateSalesOrderStatus Hook，自动处理缓存刷新
+  const updateStatusMutation = useUpdateSalesOrderStatus({
     onSuccess: () => {
-      // ✅ 关键修复：使用 refetchQueries 强制立即重新获取数据
-      // invalidateQueries 只是标记为过期，不会立即刷新（受 staleTime 影响）
-      // refetchQueries 会强制立即重新获取，无论 staleTime 如何设置
-      queryClient.refetchQueries({
-        queryKey: queryKeys.salesOrders.detail(id),
-        type: 'active',
-      });
-      queryClient.refetchQueries({
-        queryKey: queryKeys.salesOrders.lists(),
-        type: 'active',
-      });
-
-      // ✅ 刷新库存相关缓存
-      // 因为确认发货会扣减库存，需要立即刷新库存数据
-      queryClient.refetchQueries({
-        queryKey: queryKeys.inventory.all,
-        type: 'active',
-      });
-
-      // ✅ 刷新库存预警缓存
-      // 因为库存扣减可能触发新的库存预警
-      queryClient.refetchQueries({
-        queryKey: queryKeys.inventory.alerts(),
-        type: 'active',
-      });
-
-      // ✅ 刷新应收款缓存
-      // 因为订单状态变更会影响应收款数据
-      queryClient.refetchQueries({
-        queryKey: queryKeys.finance.receivables(),
-        type: 'active',
-      });
-
       toast({
         title: '操作成功',
         description: '订单状态已更新',
         variant: 'success',
       });
       setIsUpdatingStatus(false);
+
+      // ✅ 缓存自动刷新，无需手动调用 refetchQueries
+      // useUpdateSalesOrderStatus Hook 已经处理了所有缓存刷新逻辑：
+      // - 立即刷新: 销售订单详情、列表、统计
+      // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、库存预警）
     },
     onError: (error: Error) => {
       toast({
@@ -181,7 +109,7 @@ export default function SalesOrderDetailPage() {
     }
 
     setIsUpdatingStatus(true);
-    updateStatusMutation.mutate('shipped');
+    updateStatusMutation.mutate({ id, status: 'shipped' });
   };
 
   if (isLoading) {
@@ -193,7 +121,7 @@ export default function SalesOrderDetailPage() {
       <ErrorMessage
         title="加载失败"
         message={getErrorMessage(error)}
-        onRetry={() => window.location.reload()}
+        onRetry={() => router.push('/sales-orders')}
       />
     );
   }
