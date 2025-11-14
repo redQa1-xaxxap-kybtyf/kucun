@@ -196,6 +196,10 @@ export function buildStatementWhere(params: {
       where.partnerRole = { in: SUPPLIER_ROLES };
       break;
     case 'partner':
+      // ✅ 修复问题3：添加 partner 分支的过滤逻辑
+      // 只显示同时作为客户和供应商的往来伙伴
+      where.partnerRole = 'both';
+      break;
     case 'all':
     case undefined:
       break;
