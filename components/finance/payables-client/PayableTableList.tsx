@@ -249,7 +249,7 @@ const PayableDueDateCell = ({ payable }: { payable: PayableRecordDetail }) => {
 
 const PayableCreatedAtCell = ({ createdAt }: { createdAt: Date | string }) => (
   <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-    {formatDateTime(createdAt, 'yyyy-MM-dd HH:mm')}
+    {formatDateTime(createdAt)}
   </TableCell>
 );
 

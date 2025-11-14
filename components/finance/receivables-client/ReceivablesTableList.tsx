@@ -32,7 +32,7 @@ import type {
   ReceivablesResult,
 } from '@/lib/services/receivables-service';
 import { formatCurrency } from '@/lib/utils';
-import { formatDateTime } from '@/lib/utils/datetime';
+import { DATE_FORMATS, formatDateTime } from '@/lib/utils/datetime';
 
 import { formatCurrencyWithSign, isMeaningfulAmount } from './utils';
 
@@ -233,9 +233,9 @@ function ReceivableTableRow({
       <TableCell>
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="text-muted-foreground h-3.5 w-3.5" />
-          <span>{formatDateTime(receivable.orderDate, 'yyyy-MM-dd')}</span>
+          <span>{formatDateTime(receivable.orderDate, DATE_FORMATS.DATE)}</span>
           <span className="text-muted-foreground">
-            {formatDateTime(receivable.orderDate, 'HH:mm')}
+            {formatDateTime(receivable.orderDate, DATE_FORMATS.TIME)}
           </span>
         </div>
       </TableCell>
@@ -245,10 +245,10 @@ function ReceivableTableRow({
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-3.5 w-3.5 text-green-600" />
             <span>
-              {formatDateTime(receivable.lastPaymentDate, 'yyyy-MM-dd')}
+              {formatDateTime(receivable.lastPaymentDate, DATE_FORMATS.DATE)}
             </span>
             <span className="text-green-600">
-              {formatDateTime(receivable.lastPaymentDate, 'HH:mm')}
+              {formatDateTime(receivable.lastPaymentDate, DATE_FORMATS.TIME)}
             </span>
           </div>
         ) : (

@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
-import { formatPaymentDateTime } from '@/lib/utils/datetime';
+import { formatDateTime, formatPaymentDateTime } from '@/lib/utils/datetime';
 
 interface PaymentRecord {
   id: string;
@@ -523,26 +523,14 @@ export function PaymentDetailClient({
                   <div className="rounded-lg bg-white p-2.5 shadow-sm">
                     <p className="mb-0.5 text-xs text-gray-500">创建时间</p>
                     <p className="font-mono text-sm font-medium text-gray-700">
-                      {new Date(payment.createdAt).toLocaleString('zh-CN', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                      {formatDateTime(payment.createdAt)}
                     </p>
                   </div>
                   {payment.status === 'confirmed' && (
                     <div className="rounded-lg bg-green-50 p-2.5 shadow-sm">
                       <p className="mb-0.5 text-xs text-gray-500">确认时间</p>
                       <p className="font-mono text-sm font-semibold text-green-600">
-                        {new Date(payment.updatedAt).toLocaleString('zh-CN', {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {formatDateTime(payment.updatedAt)}
                       </p>
                     </div>
                   )}

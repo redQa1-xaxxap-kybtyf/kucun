@@ -15,13 +15,16 @@ export const DATE_FORMATS = {
 
   // 显示格式
   DATE: 'yyyy-MM-dd',
-  DATETIME: 'yyyy-MM-dd HH:mm',
-  DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss',
-  TIME: 'HH:mm',
+  DATETIME: 'yyyy-MM-dd HH:mm:ss', // 默认格式包含秒
+  DATETIME_SHORT: 'yyyy-MM-dd HH:mm', // 短格式（特殊场景使用）
+  DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss', // 完整格式（与 DATETIME 相同）
+  TIME: 'HH:mm:ss', // 默认时间格式包含秒
+  TIME_SHORT: 'HH:mm', // 短时间格式（特殊场景使用）
 
   // 中文显示格式
   DATE_CN: 'yyyy年MM月dd日',
-  DATETIME_CN: 'yyyy年MM月dd日 HH:mm',
+  DATETIME_CN: 'yyyy年MM月dd日 HH:mm:ss', // 中文格式包含秒
+  DATETIME_SHORT_CN: 'yyyy年MM月dd日 HH:mm', // 中文短格式（特殊场景使用）
   DATETIME_FULL_CN: 'yyyy年MM月dd日 HH:mm:ss',
 } as const;
 

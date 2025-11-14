@@ -30,6 +30,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { prisma } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 interface RefundDetailPageProps {
   params: Promise<{
@@ -338,26 +339,20 @@ export default async function RefundDetailPage({
                     <span className="text-[hsl(var(--color-text-tertiary))]">
                       创建时间
                     </span>
-                    <span>
-                      {new Date(refund.createdAt).toLocaleString('zh-CN')}
-                    </span>
+                    <span>{formatDateTime(refund.createdAt)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-[hsl(var(--color-text-tertiary))]">
                       更新时间
                     </span>
-                    <span>
-                      {new Date(refund.updatedAt).toLocaleString('zh-CN')}
-                    </span>
+                    <span>{formatDateTime(refund.updatedAt)}</span>
                   </div>
                   {refund.processedDate && (
                     <div className="flex justify-between">
                       <span className="text-[hsl(var(--color-text-tertiary))]">
                         处理时间
                       </span>
-                      <span>
-                        {new Date(refund.processedDate).toLocaleString('zh-CN')}
-                      </span>
+                      <span>{formatDateTime(refund.processedDate)}</span>
                     </div>
                   )}
                 </div>
@@ -380,7 +375,7 @@ export default async function RefundDetailPage({
                     <div>
                       <p className="font-medium">退款申请已创建</p>
                       <p className="text-[hsl(var(--color-text-tertiary))]">
-                        {new Date(refund.createdAt).toLocaleString('zh-CN')}
+                        {formatDateTime(refund.createdAt)}
                       </p>
                     </div>
                   </div>
@@ -391,9 +386,7 @@ export default async function RefundDetailPage({
                       <div>
                         <p className="font-medium">退款处理完成</p>
                         <p className="text-[hsl(var(--color-text-tertiary))]">
-                          {new Date(refund.processedDate).toLocaleString(
-                            'zh-CN'
-                          )}
+                          {formatDateTime(refund.processedDate)}
                         </p>
                       </div>
                     </div>
