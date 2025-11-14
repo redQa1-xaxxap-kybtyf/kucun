@@ -418,6 +418,21 @@ export const POST = withAuth(
               );
             }
 
+            // ✅ 修复：校验前端传来的单价是否与数据库中的真实单价一致
+            const dbUnitPrice = salesOrderItem.unitPrice;
+            if (Math.abs(returnItem.unitPrice - dbUnitPrice) > 0.01) {
+              const productName =
+                (
+                  salesOrderItem as {
+                    product?: { name?: string | null };
+                  }
+                ).product?.name || '未知产品';
+              throw new Error(
+                `产品 ${productName} 退货单价与销售订单单价不一致。` +
+                  `销售单价: ${dbUnitPrice}, 退货单价: ${returnItem.unitPrice}`
+              );
+            }
+
             const alreadyReturnedQuantity: number =
               returnsMap.get(returnItem.salesOrderItemId) || 0;
             const remainingQuantity: number =
