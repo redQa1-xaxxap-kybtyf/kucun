@@ -71,7 +71,10 @@ export function ERPReturnOrderForm({
   const router = useRouter();
   const { toast } = useToast();
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
+  // ✅ 修复：初始化时同步 initialData.customerId，确保编辑模式下客户下拉框显示已选客户
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
+    initialData?.customerId || ''
+  );
 
   // ✅ 修复：使用 ref 标记是否为首次加载，避免编辑模式下清空原始明细
   const isInitialMount = useRef(true);
@@ -142,6 +145,13 @@ export function ERPReturnOrderForm({
   const salesOrders = Array.isArray(salesOrdersData?.data)
     ? salesOrdersData.data
     : [];
+
+  // ✅ 修复：监听 initialData.customerId 变化，同步到 selectedCustomerId
+  useEffect(() => {
+    if (initialData?.customerId) {
+      setSelectedCustomerId(initialData.customerId);
+    }
+  }, [initialData?.customerId]);
 
   // 监听销售订单变化
 
