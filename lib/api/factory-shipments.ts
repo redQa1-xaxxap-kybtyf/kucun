@@ -5,6 +5,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import type {
   CreateFactoryShipmentOrderData,
@@ -80,16 +81,6 @@ async function throwFactoryShipmentError(
 
   throw new Error(message);
 }
-
-// Query Keys
-export const factoryShipmentQueryKeys = {
-  all: ['factory-shipments'] as const,
-  lists: () => [...factoryShipmentQueryKeys.all, 'list'] as const,
-  list: (params: FactoryShipmentOrderListParams) =>
-    [...factoryShipmentQueryKeys.lists(), params] as const,
-  details: () => [...factoryShipmentQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...factoryShipmentQueryKeys.details(), id] as const,
-};
 
 // API 调用函数
 
@@ -286,7 +277,7 @@ export function useFactoryShipmentOrders(
   params: FactoryShipmentOrderListParams
 ) {
   return useQuery({
-    queryKey: factoryShipmentQueryKeys.list(params),
+    queryKey: queryKeys.factoryShipments.list(params),
     queryFn: () => getFactoryShipmentOrders(params),
     staleTime: 5 * 60 * 1000, // 5分钟
   });
@@ -297,7 +288,7 @@ export function useFactoryShipmentOrders(
  */
 export function useFactoryShipmentOrder(id: string) {
   return useQuery({
-    queryKey: factoryShipmentQueryKeys.detail(id),
+    queryKey: queryKeys.factoryShipments.detail(id),
     queryFn: () => getFactoryShipmentOrder(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5分钟
@@ -343,7 +334,7 @@ export function useUpdateFactoryShipmentOrder() {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新发货单后立即看到变化
       // 刷新详情页
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.detail(id),
+        queryKey: queryKeys.factoryShipments.detail(id),
         type: 'active',
       });
       // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
@@ -352,6 +343,16 @@ export function useUpdateFactoryShipmentOrder() {
           query.queryKey[0] === 'factory-shipments' &&
           query.queryKey[1] === 'list',
         type: 'active',
+      });
+
+      // ✅ 刷新库存缓存（厂家发货会影响库存）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
       });
     },
   });
@@ -375,7 +376,7 @@ export function useUpdateFactoryShipmentOrderStatus() {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
       // 刷新详情页
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.detail(id),
+        queryKey: queryKeys.factoryShipments.detail(id),
         type: 'active',
       });
       // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
@@ -384,6 +385,16 @@ export function useUpdateFactoryShipmentOrderStatus() {
           query.queryKey[0] === 'factory-shipments' &&
           query.queryKey[1] === 'list',
         type: 'active',
+      });
+
+      // ✅ 刷新库存缓存（厂家发货会影响库存）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
       });
     },
   });
@@ -428,7 +439,7 @@ export function useUpdateFactoryShipmentOrderContainerNumber() {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新集装箱号后立即看到变化
       // 刷新详情页
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.detail(id),
+        queryKey: queryKeys.factoryShipments.detail(id),
         type: 'active',
       });
       // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
@@ -512,7 +523,7 @@ export function useUpdateFactoryShipmentOrderShippingCompany() {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新船公司名称后立即看到变化
       // 刷新详情页
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.detail(id),
+        queryKey: queryKeys.factoryShipments.detail(id),
         type: 'active',
       });
       // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
@@ -557,7 +568,7 @@ export function useCancelFactoryShipmentOrder() {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户取消订单后立即看到变化
       // 刷新详情页
       queryClient.refetchQueries({
-        queryKey: factoryShipmentQueryKeys.detail(id),
+        queryKey: queryKeys.factoryShipments.detail(id),
         type: 'active',
       });
       // 刷新所有列表查询（使用 predicate 匹配所有列表查询）
