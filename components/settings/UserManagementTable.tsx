@@ -1,7 +1,5 @@
 'use client';
 
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -37,17 +35,6 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
   onResetPassword,
   isLoading = false,
 }) => {
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'yyyy-MM-dd HH:mm', {
-        locale: zhCN,
-      });
-    } catch {
-      return dateString;
-    }
-  };
-
   // 获取角色显示文本
   const getRoleText = (role: string) =>
     role === 'admin' ? '管理员' : '销售员';
@@ -111,10 +98,10 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                 </Badge>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {formatDate(user.createdAt)}
+                {formatDateTime(user.createdAt)}
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {formatDate(user.updatedAt)}
+                {formatDateTime(user.updatedAt)}
               </TableCell>
               <TableCell>
                 <UserActions

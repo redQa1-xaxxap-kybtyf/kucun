@@ -24,7 +24,6 @@ import type {
   SystemLogType,
 } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
-import { formatDateTime } from '@/lib/utils/datetime';
 
 interface SystemLogsTableProps {
   /** 日志列表 */
@@ -84,9 +83,6 @@ export const SystemLogsTable = ({
   onPageChange,
   onViewDetail,
 }: SystemLogsTableProps) => {
-  const formatDate = (dateString: string) =>
-    formatDateTime(dateString, 'yyyy-MM-dd HH:mm:ss') || dateString;
-
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) {
       return text;
@@ -140,7 +136,7 @@ export const SystemLogsTable = ({
             {logs.map(log => (
               <TableRow key={log.id}>
                 <TableCell className="font-mono text-sm">
-                  {formatDate(log.createdAt)}
+                  {formatDateTime(log.createdAt)}
                 </TableCell>
                 <TableCell>
                   <Badge variant={LOG_TYPE_CONFIG[log.type].variant}>

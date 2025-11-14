@@ -40,7 +40,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Category } from '@/lib/api/categories';
-import { formatDateTimeCN } from '@/lib/utils/datetime';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 interface CategoryListProps {
   categories: Category[];
@@ -145,8 +145,6 @@ export function CategoryList({
     [router]
   );
 
-  const formatDate = (dateString: string) => formatDateTimeCN(dateString);
-
   if (categories.length === 0) {
     return (
       <Card className="shadow-lg shadow-gray-200/50">
@@ -185,7 +183,6 @@ export function CategoryList({
               onToggleStatus={onToggleStatus}
               onDeleteCategory={onDeleteCategory}
               onEditCategory={handleEdit}
-              formatDate={formatDate}
             />
           ))}
         </TableBody>
@@ -200,7 +197,6 @@ interface CategoryRowProps {
   onToggleStatus: (category: Category) => void;
   onDeleteCategory: (categoryId: string, categoryName: string) => void;
   onEditCategory: (categoryId: string) => void;
-  formatDate: (dateString: string) => string;
 }
 
 function CategoryRow({
@@ -209,7 +205,6 @@ function CategoryRow({
   onToggleStatus,
   onDeleteCategory,
   onEditCategory,
-  formatDate,
 }: CategoryRowProps) {
   // 计算缩进距离: 每级20px
   const indentPx = category.level * 20;
@@ -243,12 +238,12 @@ function CategoryRow({
 
       {/* 创建时间 */}
       <TableCell className="text-sm text-gray-500">
-        {formatDate(category.createdAt)}
+        {formatDateTime(category.createdAt)}
       </TableCell>
 
       {/* 更新时间 */}
       <TableCell className="text-sm text-gray-500">
-        {formatDate(category.updatedAt)}
+        {formatDateTime(category.updatedAt)}
       </TableCell>
 
       {/* 操作按钮 */}
