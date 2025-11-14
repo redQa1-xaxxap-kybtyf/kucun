@@ -135,6 +135,41 @@ const putPaymentHandler = withAuth(
       }
 
       const updatedPayment = await prisma.$transaction(async tx => {
+        // ✅ 修复：如果更新了付款金额，需要先校验
+        if (updateData.paymentAmount !== undefined) {
+          // 如果关联应付款记录，校验金额范围
+          if (existingPayment.payableRecordId) {
+            const payableRecord = await tx.payableRecord.findUnique({
+              where: { id: existingPayment.payableRecordId },
+              select: {
+                id: true,
+                payableAmount: true,
+                paidAmount: true,
+              },
+            });
+
+            if (payableRecord) {
+              // 计算新的已付金额
+              const newPaidAmount =
+                payableRecord.paidAmount -
+                existingPayment.paymentAmount +
+                updateData.paymentAmount;
+
+              // ✅ 校验：付款金额不能为负数
+              if (newPaidAmount < 0) {
+                throw new Error('付款金额不能为负数');
+              }
+
+              // ✅ 校验：付款金额不能超过应付金额
+              if (newPaidAmount > payableRecord.payableAmount) {
+                throw new Error(
+                  `付款金额不能超过应付金额 ${payableRecord.payableAmount}`
+                );
+              }
+            }
+          }
+        }
+
         // 更新付款记录
         const payment = await tx.paymentOutRecord.update({
           where: { id },
