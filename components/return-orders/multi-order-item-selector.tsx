@@ -24,6 +24,7 @@ import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type { ReturnableItem } from '@/lib/services/sales-order-service';
 import type { ReturnOrderItem } from '@/lib/types/return-order';
 import type { SalesOrder } from '@/lib/types/sales-order';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface MultiOrderItemSelectorProps {
   customerId: string;
@@ -186,12 +187,7 @@ function SalesOrderSection({
                 {order.orderNumber}
               </span>
               <span className="text-muted-foreground">
-                订单日期:{' '}
-                {new Date(order.createdAt).toLocaleDateString('zh-CN', {
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                })}
+                订单日期: {formatDate(order.createdAt)}
               </span>
               <span className="text-muted-foreground">
                 总金额: ￥{order.totalAmount.toFixed(2)}

@@ -23,6 +23,7 @@ import {
   type SalesOrderStatus,
 } from '@/lib/config/sales-order';
 import { cn, formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface Customer {
   id: string;
@@ -145,19 +146,6 @@ export function CustomerSalesOrderSelector({
   const handleBackToCustomers = () => {
     setInternalCustomerId('');
     setSearchValue('');
-  };
-
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
   };
 
   // 格式化金额
