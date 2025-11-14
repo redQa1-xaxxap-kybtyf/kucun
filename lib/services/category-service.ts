@@ -14,8 +14,8 @@ import { CacheTags } from '@/lib/cache/tags';
 import { prisma } from '@/lib/db';
 import type {
   Category,
-  CategoryQueryParams,
   CategoryListResult,
+  CategoryQueryParams,
   CreateCategoryParams,
   UpdateCategoryParams,
 } from '@/lib/types/category-unified';
@@ -198,6 +198,9 @@ export async function getCategories(
   // 计算偏移量
   const skip = (page - 1) * limit;
 
+  // 性能监控: 记录查询开始时间
+  const startTime = Date.now();
+
   // 执行查询 - 优化: 使用 select 替代 include,只选择需要的字段
   const [categories, total] = await Promise.all([
     prisma.category.findMany({
@@ -235,6 +238,24 @@ export async function getCategories(
     }),
     prisma.category.count({ where }),
   ]);
+
+  // 性能监控: 计算查询耗时
+  const duration = Date.now() - startTime;
+
+  // 性能监控: 慢查询警告
+  if (duration > 1000) {
+    console.warn(`Slow query: getCategories took ${duration}ms`, {
+      page,
+      limit,
+      search: filterParams.search || undefined,
+      parentId: filterParams.parentId || undefined,
+      status: filterParams.status || undefined,
+      sortBy,
+      sortOrder,
+      total,
+      duration,
+    });
+  }
 
   // 转换数据格式 - 使用统一的转换函数
   const transformedCategories = toCategoryList(categories);

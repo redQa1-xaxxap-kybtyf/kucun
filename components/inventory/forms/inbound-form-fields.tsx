@@ -6,6 +6,7 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -223,19 +224,22 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel className="text-sm font-semibold text-gray-900">
-            单位成本（元） *
+            单位成本（元/片） *
           </FormLabel>
           <FormControl>
             <Input
               type="number"
               min="0.01"
               step="0.01"
-              placeholder="请输入单位成本"
+              placeholder="请输入每片成本"
               className="h-9"
               {...field}
               value={field.value ?? ''}
             />
           </FormControl>
+          <FormDescription className="text-xs text-gray-500">
+            请填写每片的成本。例如：每件100元，每件10片，则填写10元
+          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
