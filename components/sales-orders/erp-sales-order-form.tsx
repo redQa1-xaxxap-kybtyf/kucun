@@ -2,7 +2,7 @@
 'use client';
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
@@ -35,17 +35,7 @@ import {
   type PriceType,
 } from '@/hooks/use-price-history';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
-import {
-  createSalesOrder,
-  salesOrderQueryKeys,
-  updateSalesOrder,
-} from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
-import {
-  invalidateCustomerDirectShipmentCaches,
-  invalidateSalesOrderCaches,
-} from '@/lib/cache/invalidation-helpers';
-import { queryKeys } from '@/lib/queryKeys';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import {
@@ -310,32 +300,19 @@ export function ERPSalesOrderForm({
     priceType,
   });
 
-  // 创建订单
-  const createMutation = useMutation({
-    mutationFn: createSalesOrder,
-    onSuccess: (data, variables) => {
+  // ✅ 使用新的 useCreateSalesOrder Hook，自动处理缓存刷新
+  const createMutation = useCreateSalesOrder({
+    onSuccess: data => {
       toast({
         title: '订单创建成功',
         description: `订单号：${data.orderNumber}`,
         variant: 'success',
       });
 
-      // ✅ 使用统一的缓存刷新工具函数
-      if (
-        variables.orderType === 'TRANSFER' &&
-        variables.transferMode === 'SUPPLIER_ONLY'
-      ) {
-        // 客户直发订单：刷新销售订单、采购订单、应收款、应付款、仪表盘
-        invalidateCustomerDirectShipmentCaches(queryClient);
-      } else {
-        // 普通订单：刷新销售订单、应收款、仪表盘
-        invalidateSalesOrderCaches(queryClient);
-      }
-
-      // ✅ 同时失效财务概览
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.overview(),
-      });
+      // ✅ 缓存自动刷新，无需手动调用 invalidateQueries
+      // useCreateSalesOrder Hook 已经处理了所有缓存刷新逻辑：
+      // - 立即刷新: 销售订单列表、统计
+      // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、应付款、财务概览）
 
       onSuccess?.(data);
     },
@@ -348,9 +325,8 @@ export function ERPSalesOrderForm({
     },
   });
 
-  // 更新订单
-  const updateMutation = useMutation({
-    mutationFn: updateSalesOrder,
+  // ✅ 使用新的 useUpdateSalesOrder Hook，自动处理缓存刷新
+  const updateMutation = useUpdateSalesOrder({
     onSuccess: response => {
       const order = response.data;
       toast({
@@ -359,20 +335,10 @@ export function ERPSalesOrderForm({
         variant: 'success',
       });
 
-      // ✅ 使用统一的缓存刷新工具函数
-      invalidateSalesOrderCaches(queryClient);
-
-      // ✅ 刷新订单详情缓存
-      if (orderId) {
-        queryClient.invalidateQueries({
-          queryKey: salesOrderQueryKeys.detail(orderId),
-        });
-      }
-
-      // ✅ 同时失效财务概览
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.overview(),
-      });
+      // ✅ 缓存自动刷新，无需手动调用 invalidateQueries
+      // useUpdateSalesOrder Hook 已经处理了所有缓存刷新逻辑：
+      // - 立即刷新: 销售订单详情、列表、统计
+      // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、财务概览）
 
       if (order) {
         onSuccess?.(order);
