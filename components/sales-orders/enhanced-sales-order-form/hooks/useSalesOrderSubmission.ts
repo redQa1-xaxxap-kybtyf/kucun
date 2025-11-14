@@ -1,12 +1,10 @@
 'use client';
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { type UseFormReturn } from 'react-hook-form';
 
-import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import { queryKeys } from '@/lib/queryKeys';
+import { useCreateSalesOrder } from '@/lib/api/sales-orders';
 import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
 import type { SalesOrderCreateFormData as CreateSalesOrderData } from '@/lib/validations/sales-order';
 
@@ -27,10 +25,9 @@ export function useSalesOrderSubmission(
   }) => void
 ): SalesOrderSubmissionResult {
   const router = useRouter();
-  const queryClient = useQueryClient();
 
-  const createMutation = useMutation({
-    mutationFn: createSalesOrder,
+  // ✅ 使用新的 useCreateSalesOrder Hook，自动处理缓存刷新
+  const createMutation = useCreateSalesOrder({
     onSuccess: data => {
       // 🔍 调试日志：订单创建成功
       console.group('🎯 [DEBUG] Sales Order Created');
@@ -45,16 +42,10 @@ export function useSalesOrderSubmission(
         description: `销售订单 “${data.orderNumber}” 创建成功！`,
       });
 
-      // ✅ 失效销售订单缓存
-      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
-
-      // ✅ 关键修复：同时失效应收款缓存
-      // 因为新订单会影响应收款列表数据
-      console.log('🔄 [DEBUG] Invalidating receivables cache...');
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivables(),
-      });
-      console.log('✅ [DEBUG] Receivables cache invalidated');
+      // ✅ 缓存自动刷新，无需手动调用 invalidateQueries
+      // useCreateSalesOrder Hook 已经处理了所有缓存刷新逻辑：
+      // - 立即刷新: 销售订单列表、统计
+      // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款）
 
       if (onSuccess) {
         onSuccess(data);
