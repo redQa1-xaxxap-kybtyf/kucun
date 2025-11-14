@@ -140,14 +140,34 @@ export function useCreateInboundRecord() {
       return result.data;
     },
     onSuccess: () => {
-      // 刷新入库记录列表
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.inbounds(),
+      // ✅ 刷新入库记录列表（立即刷新）
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'inventory' &&
+          query.queryKey[1] === 'inbounds' &&
+          query.queryKey[2] === 'list',
+        type: 'active',
       });
-      // 刷新库存数据
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+
+      // ✅ 刷新库存缓存（入库会影响库存）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+
+      // ✅ 刷新采购订单缓存（入库可能关联采购订单）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+
       // ✅ 刷新产品搜索缓存，确保入库后搜索显示最新库存
-      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
     },
   });
 }
@@ -191,14 +211,32 @@ export function useUpdateInboundRecord() {
       return result.data;
     },
     onSuccess: (data, variables) => {
-      // 更新缓存中的记录详情
+      // ✅ 更新缓存中的记录详情
       queryClient.setQueryData(queryKeys.inventory.inbound(variables.id), data);
-      // 刷新入库记录列表
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.inbounds(),
+
+      // ✅ 刷新入库记录列表（立即刷新）
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'inventory' &&
+          query.queryKey[1] === 'inbounds' &&
+          query.queryKey[2] === 'list',
+        type: 'active',
       });
-      // 刷新库存数据
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+
+      // ✅ 刷新库存缓存（更新数量会影响库存）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+
+      // ✅ 刷新采购订单缓存（入库可能关联采购订单）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
@@ -230,14 +268,27 @@ export function useDeleteInboundRecord() {
       }
     },
     onSuccess: (_, id) => {
-      // 移除缓存中的记录详情
+      // ✅ 移除缓存中的记录详情
       queryClient.removeQueries({ queryKey: queryKeys.inventory.inbound(id) });
-      // 刷新入库记录列表
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.inbounds(),
+
+      // ✅ 刷新入库记录列表（立即刷新）
+      queryClient.refetchQueries({
+        predicate: query =>
+          query.queryKey[0] === 'inventory' &&
+          query.queryKey[1] === 'inbounds' &&
+          query.queryKey[2] === 'list',
+        type: 'active',
       });
-      // 刷新库存数据
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+
+      // ✅ 刷新库存缓存（删除入库会影响库存）
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
   });
 }
