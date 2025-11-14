@@ -21,6 +21,7 @@ import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/queryKeys';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { logger } from '@/lib/utils/console-logger';
+import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 async function fetchCustomerDetail(id: string): Promise<CustomerDetail> {
@@ -39,20 +40,6 @@ async function fetchCustomerDetail(id: string): Promise<CustomerDetail> {
 
   return result.data;
 }
-
-const formatDateTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date
-    .toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-    .replace(/\//g, '-');
-};
 
 function parseExtendedInfo(raw?: string): CustomerExtendedInfo {
   if (!raw) {

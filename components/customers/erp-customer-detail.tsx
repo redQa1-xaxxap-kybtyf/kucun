@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 import { CUSTOMER_FIELD_LABELS, type Customer } from '@/lib/types/customer';
+import { formatDate } from '@/lib/utils/datetime';
 import { parseExtendedInfo } from '@/lib/validations/customer';
 
 interface ERPCustomerDetailProps {
@@ -68,10 +69,6 @@ export function ERPCustomerDetail({
       }
     }
   };
-
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN');
 
   const formatExtendedInfoValue = (value: unknown): string => {
     if (value === null || value === undefined) {
