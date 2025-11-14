@@ -417,6 +417,17 @@ export function useCreateReturnOrder(
         queryKey: returnOrderQueryKeys.stats(),
         type: 'active',
       });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
     },
     ...options,
   });
@@ -449,6 +460,14 @@ export function useUpdateReturnOrder(
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.stats(),
         type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
       });
     },
     ...options,
@@ -484,6 +503,23 @@ export function useUpdateReturnOrderStatus(
         queryKey: returnOrderQueryKeys.stats(),
         type: 'active',
       });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
     },
     ...options,
   });
@@ -517,6 +553,20 @@ export function useApproveReturnOrder(
         queryKey: returnOrderQueryKeys.stats(),
         type: 'active',
       });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
     },
     ...options,
   });
@@ -545,6 +595,17 @@ export function useDeleteReturnOrder(
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.stats(),
         type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
       });
     },
     ...options,
