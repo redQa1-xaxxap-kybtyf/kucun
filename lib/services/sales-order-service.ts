@@ -101,12 +101,13 @@ export async function getReturnableItems(
   }
 
   // 查询已退货数量
+  // ✅ 修复：排除已取消和已拒绝的退货订单，避免永久占用可退库存
   const existingReturns = await prisma.returnOrderItem.findMany({
     where: {
       returnOrder: {
         salesOrderId: orderId,
         status: {
-          not: 'cancelled', // 排除已取消的退货订单
+          notIn: ['cancelled', 'rejected'], // 排除已取消和已拒绝的退货订单
         },
       },
     },
