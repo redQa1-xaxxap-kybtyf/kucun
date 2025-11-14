@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
+import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 
 import { OrderSummaryCard } from './order-summary-card';
@@ -234,19 +235,10 @@ export function PaymentCreationDialog({
       // ✅ 关闭对话框
       handleDialogOpenChange(false);
 
-      // ✅ 异步失效缓存（不阻塞UI）
-      Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.finance.receivables(),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.payments.all,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.finance.overview(),
-        }),
-      ]).catch(_error => {
-        // 缓存失效失败不影响用户体验，静默处理
+      // ✅ 使用统一的缓存刷新工具函数
+      invalidateFinanceCaches(queryClient);
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.overview(),
       });
     },
     onError: (error: Error) => {

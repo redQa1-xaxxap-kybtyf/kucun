@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   EXPENSE_RELATED_TYPE_OPTIONS,
@@ -134,6 +135,9 @@ export function ExpenseForm({
         queryKey: queryKeys.finance.expense(expenseId),
       });
     }
+
+    // ✅ 刷新财务概览和仪表盘（费用会影响财务数据）
+    invalidateFinanceCaches(queryClient);
   }, [expenseId, queryClient]);
 
   const buildPayload = React.useCallback(

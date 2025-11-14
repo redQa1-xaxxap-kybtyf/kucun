@@ -33,7 +33,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useConfirmPayment, useCreatePaymentRecord } from '@/lib/api/payments';
-import { queryKeys } from '@/lib/queryKeys';
+import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import type { ReceivableItem } from '@/lib/services/receivables-service';
 import {
   DEFAULT_PAYMENT_METHODS,
@@ -108,7 +108,7 @@ export function ReceivablePaymentDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receivable, form.reset]);
 
-  const paymentMethod = form.watch('paymentMethod');
+  const _paymentMethod = form.watch('paymentMethod');
   const paymentAmountValue = form.watch('paymentAmount');
   const actualPaymentAmountValue = form.watch('actualPaymentAmount');
 
@@ -168,12 +168,10 @@ export function ReceivablePaymentDialog({
     try {
       const paymentRecord = await createPaymentMutation.mutateAsync(payload);
       await confirmPaymentMutation.mutateAsync({ id: paymentRecord.id });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivables(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.stats(),
-      });
+
+      // ✅ 使用统一的缓存刷新工具函数
+      invalidateFinanceCaches(queryClient);
+
       toast({
         title: '收款记录已创建',
         description: `成功收款 ${formatCurrency(payload.actualPaymentAmount)}`,
