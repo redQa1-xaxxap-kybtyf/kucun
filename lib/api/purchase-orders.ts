@@ -3,20 +3,14 @@
  * 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
  */
 
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   PurchaseOrder,
   PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 
-// Query Keys
-export const purchaseOrderQueryKeys = {
-  all: ['purchase-orders'] as const,
-  lists: () => [...purchaseOrderQueryKeys.all, 'list'] as const,
-  list: (params: PurchaseOrderListParams) =>
-    [...purchaseOrderQueryKeys.lists(), params] as const,
-  details: () => [...purchaseOrderQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...purchaseOrderQueryKeys.details(), id] as const,
-};
+// 导出 Query Keys（从 queryKeys 中获取）
+export const purchaseOrderQueryKeys = queryKeys.purchaseOrders;
 
 // 列表查询参数
 export interface PurchaseOrderListParams {

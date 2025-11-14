@@ -511,6 +511,36 @@ export const notificationKeys = {
   unreadCount: () => [...notificationKeys.all, 'unread-count'] as const,
 } as const;
 
+/**
+ * 采购订单相关的 Query Keys
+ */
+export const purchaseOrderKeys = {
+  all: ['purchase-orders'] as const,
+
+  lists: () => [...purchaseOrderKeys.all, 'list'] as const,
+  list: (
+    filters?: BaseFilters & {
+      status?: string;
+      supplierId?: string;
+      salesOrderId?: string;
+      containerNumber?: string;
+      orderNumber?: string;
+      startDate?: Date | string;
+      endDate?: Date | string;
+    }
+  ) => [...purchaseOrderKeys.lists(), filters] as const,
+
+  details: () => [...purchaseOrderKeys.all, 'detail'] as const,
+  detail: (id: string) => [...purchaseOrderKeys.details(), id] as const,
+
+  // 订单统计
+  stats: () => [...purchaseOrderKeys.all, 'stats'] as const,
+
+  // 按销售订单筛选采购订单
+  bySalesOrder: (salesOrderId: string) =>
+    [...purchaseOrderKeys.all, 'sales-order', salesOrderId] as const,
+} as const;
+
 // ============================================================================
 // 导出所有 Query Keys
 // ============================================================================
@@ -543,6 +573,7 @@ export const queryKeys = {
   customers: customerKeys,
   suppliers: supplierKeys,
   salesOrders: salesOrderKeys,
+  purchaseOrders: purchaseOrderKeys,
   returnOrders: returnOrderKeys,
   inventory: inventoryKeys,
   finance: financeKeys,
