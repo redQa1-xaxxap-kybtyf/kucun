@@ -333,9 +333,10 @@ function buildQueryFilters({
     limit: pageSize,
   };
 
+  // ✅ 修复：使用 search 参数而不是同时传递 containerNumber 和 orderNumber
+  // 这样 API 路由会使用 OR 逻辑进行搜索
   if (trimmedSearch) {
-    filters.containerNumber = trimmedSearch;
-    filters.orderNumber = trimmedSearch;
+    filters.search = trimmedSearch;
   }
 
   if (statusFilter !== 'all') {

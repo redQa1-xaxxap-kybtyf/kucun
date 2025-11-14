@@ -208,10 +208,15 @@ export function RefundProcessForm({
       return;
     }
 
-    if (!formData.closeRemaining && processedAmountValue === 0) {
+    // ✅ 修复：只在批准操作时要求金额大于0，拒绝操作允许金额为0
+    if (
+      formData.status === 'completed' &&
+      !formData.closeRemaining &&
+      processedAmountValue === 0
+    ) {
       toast({
         title: '输入错误',
-        description: '处理金额必须大于0，或勾选“抹平剩余金额”。',
+        description: '批准退款时处理金额必须大于0，或勾选“抹平剩余金额”。',
         variant: 'destructive',
       });
       return;

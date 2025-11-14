@@ -174,20 +174,35 @@ export function ERPSalesOrderList({
   // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
   // ✅ 单一数据源原则：状态统一在父组件管理
 
-  // ✅ 默认查询参数（确保类型正确）
-  const queryParams: SalesOrderQueryParams = {
-    page: initialParams?.page || 1,
-    limit: initialParams?.limit || 20,
-    search: initialParams?.search,
-    status: normalizedStatus,
-    customerId: initialParams?.customerId,
-    sortBy: initialParams?.sortBy || 'createdAt',
-    sortOrder: initialParams?.sortOrder || 'desc',
-    startDate: initialParams?.startDate,
-    endDate: initialParams?.endDate,
-    orderType: initialParams?.orderType,
-    hasReturns: initialParams?.hasReturns,
-  };
+  // ✅ 使用 useMemo 包裹 queryParams，确保引用稳定，避免无限请求风暴
+  const queryParams: SalesOrderQueryParams = React.useMemo(
+    () => ({
+      page: initialParams?.page || 1,
+      limit: initialParams?.limit || 20,
+      search: initialParams?.search,
+      status: normalizedStatus,
+      customerId: initialParams?.customerId,
+      sortBy: initialParams?.sortBy || 'createdAt',
+      sortOrder: initialParams?.sortOrder || 'desc',
+      startDate: initialParams?.startDate,
+      endDate: initialParams?.endDate,
+      orderType: initialParams?.orderType,
+      hasReturns: initialParams?.hasReturns,
+    }),
+    [
+      initialParams?.page,
+      initialParams?.limit,
+      initialParams?.search,
+      normalizedStatus,
+      initialParams?.customerId,
+      initialParams?.sortBy,
+      initialParams?.sortOrder,
+      initialParams?.startDate,
+      initialParams?.endDate,
+      initialParams?.orderType,
+      initialParams?.hasReturns,
+    ]
+  );
 
   // ✅ 获取销售订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
   const { data, isLoading, error, isRefetching } = useQuery({

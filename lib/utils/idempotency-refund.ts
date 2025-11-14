@@ -169,35 +169,43 @@ export async function processRefundWithLock(
     const shouldCloseRemaining =
       options?.closeRemaining === true && status === 'completed';
 
-    // 计算新的处理金额
-    const newProcessedAmount = refund.processedAmount + processAmount;
-    const newRemainingAmount = refund.refundAmount - newProcessedAmount;
-
-    // 验证金额（除非抹平剩余金额）
-    if (!shouldCloseRemaining && newProcessedAmount > refund.refundAmount) {
-      throw new Error(
-        `处理金额超出剩余金额。剩余: ￥${refund.remainingAmount.toFixed(2)}, 尝试处理: ￥${processAmount.toFixed(2)}`
-      );
-    }
-
-    // 确定最终状态
+    // ✅ 修复：拒绝操作时不累加处理金额，保持原有金额不变
+    let processedAmountToPersist: number;
+    let remainingAmountToPersist: number;
     let finalStatus: string;
-    if (status === 'rejected') {
-      finalStatus = 'rejected';
-    } else if (shouldCloseRemaining) {
-      finalStatus = 'completed';
-    } else if (newRemainingAmount <= 0) {
-      finalStatus = 'completed';
-    } else {
-      finalStatus = 'processing';
-    }
 
-    const processedAmountToPersist = shouldCloseRemaining
-      ? refund.refundAmount
-      : newProcessedAmount;
-    const remainingAmountToPersist = shouldCloseRemaining
-      ? 0
-      : Math.max(0, newRemainingAmount);
+    if (status === 'rejected') {
+      // ✅ 拒绝操作：不修改金额，只更新状态
+      processedAmountToPersist = refund.processedAmount;
+      remainingAmountToPersist = refund.remainingAmount;
+      finalStatus = 'rejected';
+    } else {
+      // 批准操作：计算新的处理金额
+      const newProcessedAmount = refund.processedAmount + processAmount;
+      const newRemainingAmount = refund.refundAmount - newProcessedAmount;
+
+      // 验证金额（除非抹平剩余金额）
+      if (!shouldCloseRemaining && newProcessedAmount > refund.refundAmount) {
+        throw new Error(
+          `处理金额超出剩余金额。剩余: ￥${refund.remainingAmount.toFixed(2)}, 尝试处理: ￥${processAmount.toFixed(2)}`
+        );
+      }
+
+      // 确定最终状态
+      if (shouldCloseRemaining) {
+        finalStatus = 'completed';
+        processedAmountToPersist = refund.refundAmount;
+        remainingAmountToPersist = 0;
+      } else if (newRemainingAmount <= 0) {
+        finalStatus = 'completed';
+        processedAmountToPersist = newProcessedAmount;
+        remainingAmountToPersist = 0;
+      } else {
+        finalStatus = 'processing';
+        processedAmountToPersist = newProcessedAmount;
+        remainingAmountToPersist = Math.max(0, newRemainingAmount);
+      }
+    }
 
     // 使用乐观锁更新（检查processedAmount未变化）
     const updated = await tx.refundRecord.updateMany({
