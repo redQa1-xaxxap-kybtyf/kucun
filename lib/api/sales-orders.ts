@@ -3,6 +3,13 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import {
+  useMutation,
+  useQueryClient,
+  type UseMutationOptions,
+} from '@tanstack/react-query';
+
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   ApiResponse,
   ErrorResponse,
@@ -410,4 +417,333 @@ export async function getSalesOrderPrintData(id: string): Promise<
   }
 
   return response.json();
+}
+
+// ============================================================================
+// TanStack Query Mutation Hooks
+// ============================================================================
+
+/**
+ * 创建销售订单 Mutation Hook
+ */
+export function useCreateSalesOrder(
+  options?: UseMutationOptions<SalesOrder, Error, SalesOrderCreateInput>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createSalesOrder,
+    onSuccess: () => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 更新销售订单 Mutation Hook
+ */
+export function useUpdateSalesOrder(
+  options?: UseMutationOptions<
+    ApiResponse<SalesOrder>,
+    Error,
+    SalesOrderUpdateInput
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateSalesOrder,
+    onSuccess: (_, { id }) => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.detail(id),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 删除销售订单 Mutation Hook
+ */
+export function useDeleteSalesOrder(
+  options?: UseMutationOptions<ApiResponse<{ id: string }>, Error, string>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteSalesOrder,
+    onSuccess: (_, id) => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // 移除详情缓存
+      queryClient.removeQueries({
+        queryKey: salesOrderQueryKeys.detail(id),
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 更新销售订单状态 Mutation Hook
+ */
+export function useUpdateSalesOrderStatus(
+  options?: UseMutationOptions<
+    ApiResponse<SalesOrder>,
+    Error,
+    { id: string; status: SalesOrderStatus; remarks?: string }
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, status, remarks }) =>
+      updateSalesOrderStatus(id, status, remarks),
+    onSuccess: (_, { id }) => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.detail(id),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 复制销售订单 Mutation Hook
+ */
+export function useCopySalesOrder(
+  options?: UseMutationOptions<ApiResponse<SalesOrder>, Error, string>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: copySalesOrder,
+    onSuccess: () => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 批量更新销售订单状态 Mutation Hook
+ */
+export function useBatchUpdateSalesOrderStatus(
+  options?: UseMutationOptions<
+    ApiResponse<{ updated: number; failed: string[] }>,
+    Error,
+    { ids: string[]; status: SalesOrderStatus; remarks?: string }
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ ids, status, remarks }) =>
+      batchUpdateSalesOrderStatus(ids, status, remarks),
+    onSuccess: () => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * 批量删除销售订单 Mutation Hook
+ */
+export function useBatchDeleteSalesOrders(
+  options?: UseMutationOptions<
+    ApiResponse<{ deleted: number; failed: string[] }>,
+    Error,
+    string[]
+  >
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: batchDeleteSalesOrders,
+    onSuccess: () => {
+      // ✅ 立即刷新当前模块缓存
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.lists(),
+        type: 'active',
+      });
+      queryClient.refetchQueries({
+        queryKey: salesOrderQueryKeys.statistics(),
+        type: 'active',
+      });
+
+      // ✅ 延迟刷新跨模块缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.customers.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.all,
+      });
+    },
+    ...options,
+  });
 }
