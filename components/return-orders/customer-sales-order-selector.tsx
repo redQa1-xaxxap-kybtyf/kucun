@@ -79,6 +79,13 @@ export function CustomerSalesOrderSelector({
     selectedCustomerId || ''
   );
 
+  // ✅ 修复：监听 selectedCustomerId 变化，同步更新 internalCustomerId
+  React.useEffect(() => {
+    if (selectedCustomerId) {
+      setInternalCustomerId(selectedCustomerId);
+    }
+  }, [selectedCustomerId]);
+
   // 当前选中的客户
   const selectedCustomer = customers.find(
     customer => customer.id === internalCustomerId
