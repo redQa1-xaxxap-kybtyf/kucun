@@ -2,7 +2,7 @@
 
 /* eslint-disable max-lines, max-lines-per-function */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   Ban,
@@ -47,9 +47,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import { invalidateCustomerDirectShipmentCaches } from '@/lib/cache/invalidation-helpers';
-import { queryKeys } from '@/lib/queryKeys';
+import {
+  getSalesOrders,
+  salesOrderQueryKeys,
+  useDeleteSalesOrder,
+  useUpdateSalesOrderStatus,
+} from '@/lib/api/sales-orders';
 import {
   SALES_ORDER_STATUS_LABELS,
   TRANSFER_MODE_LABELS,
@@ -92,7 +95,6 @@ export function ERPSalesOrderList({
   onClearFilters: externalOnClearFilters,
 }: ERPSalesOrderListProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { toast } = useToast();
   const [showEditWarning, setShowEditWarning] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState<SalesOrder | null>(
@@ -231,51 +233,20 @@ export function ERPSalesOrderList({
     [externalOnPageChange]
   );
 
-  // 订单状态更新 mutation
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({
-      orderId,
-      newStatus,
-    }: {
-      orderId: string;
-      newStatus: string;
-    }) => {
-      const response = await fetch(`/api/sales-orders/${orderId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          status: newStatus,
-          idempotencyKey: crypto.randomUUID(),
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '更新订单状态失败');
-      }
-      return response.json();
-    },
+  // ✅ 使用新的 useUpdateSalesOrderStatus Hook，自动处理缓存刷新
+  const updateStatusMutation = useUpdateSalesOrderStatus({
     onSuccess: () => {
-      // ✅ 关键修复：使用 refetchQueries 强制立即重新获取数据
-      // invalidateQueries 只是标记为过期，不会立即刷新（受 staleTime 影响）
-      // refetchQueries 会强制立即重新获取，无论 staleTime 如何设置
-      queryClient.refetchQueries({
-        queryKey: salesOrderQueryKeys.lists(),
-        type: 'active',
-      });
-
-      // ✅ 同时刷新应收款缓存
-      // 因为订单状态变更会影响应收款数据
-      queryClient.refetchQueries({
-        queryKey: queryKeys.finance.receivables(),
-        type: 'active',
-      });
-
       toast({
         title: '操作成功',
         description: '订单状态已更新',
         variant: 'success',
       });
       setUpdatingOrderId(null);
+
+      // ✅ 缓存自动刷新，无需手动调用 refetchQueries
+      // useUpdateSalesOrderStatus Hook 已经处理了所有缓存刷新逻辑：
+      // - 立即刷新: 销售订单详情、列表、统计
+      // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款）
     },
     onError: (error: Error) => {
       toast({
@@ -300,7 +271,7 @@ export function ERPSalesOrderList({
         return;
       }
       setUpdatingOrderId(order.id);
-      updateStatusMutation.mutate({ orderId: order.id, newStatus: 'shipped' });
+      updateStatusMutation.mutate({ id: order.id, status: 'shipped' });
     },
     [toast, updateStatusMutation]
   );
@@ -333,7 +304,7 @@ export function ERPSalesOrderList({
     }
     const orderId = orderPendingCancel.id;
     setUpdatingOrderId(orderId);
-    updateStatusMutation.mutate({ orderId, newStatus: 'cancelled' });
+    updateStatusMutation.mutate({ id: orderId, status: 'cancelled' });
     setCancelConfirmOpen(false);
     setOrderPendingCancel(null);
   }, [orderPendingCancel, updateStatusMutation]);
@@ -345,29 +316,9 @@ export function ERPSalesOrderList({
     }
   }, []);
 
-  const deleteOrderMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      const response = await fetch(`/api/sales-orders/${orderId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '删除订单失败');
-      }
-      return response.json();
-    },
+  // ✅ 使用新的 useDeleteSalesOrder Hook，自动处理缓存刷新
+  const deleteOrderMutation = useDeleteSalesOrder({
     onSuccess: () => {
-      // ✅ 刷新销售订单缓存
-      queryClient.refetchQueries({
-        queryKey: salesOrderQueryKeys.lists(),
-        type: 'active',
-      });
-
-      // ✅ 使用统一的缓存刷新工具函数
-      // 删除销售订单可能影响关联的采购订单、应收款、应付款
-      invalidateCustomerDirectShipmentCaches(queryClient);
-
       toast({
         title: '删除成功',
         description: '销售订单已删除',
@@ -375,6 +326,12 @@ export function ERPSalesOrderList({
       });
       setDeletingOrderId(null);
       setOrderPendingDelete(null);
+
+      // ✅ 缓存自动刷新，无需手动调用 refetchQueries
+      // useDeleteSalesOrder Hook 已经处理了所有缓存刷新逻辑：
+      // - 立即刷新: 销售订单列表、统计
+      // - 移除缓存: 销售订单详情
+      // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、应付款）
     },
     onError: (error: Error) => {
       toast({
