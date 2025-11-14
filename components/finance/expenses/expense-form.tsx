@@ -47,6 +47,8 @@ import {
   type ExpenseFormData,
 } from '@/lib/validations/expense';
 
+import { RelatedRecordSelector } from './related-record-selector';
+
 type ExpenseRequestPayload = {
   expenseType: ExpenseFormData['expenseType'];
   expenseName: string;
@@ -411,24 +413,26 @@ export function ExpenseForm({
                 )}
               />
 
-              {/* 关联业务编号 */}
+              {/* 关联单据选择器 */}
               {watchedRelatedType && (
                 <FormField
                   control={form.control}
-                  name="relatedNumber"
+                  name="relatedId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>关联业务编号</FormLabel>
+                      <FormLabel>关联单据 *</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="请输入关联业务单号"
-                          {...field}
-                          maxLength={100}
+                        <RelatedRecordSelector
+                          relatedType={watchedRelatedType}
+                          value={field.value}
+                          onChange={field.onChange}
+                          onRecordSelect={record => {
+                            // 自动填充关联业务编号
+                            form.setValue('relatedNumber', record.number);
+                          }}
                         />
                       </FormControl>
-                      <FormDescription>
-                        输入对应的业务单号（可选）
-                      </FormDescription>
+                      <FormDescription>选择要关联的业务单据</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
