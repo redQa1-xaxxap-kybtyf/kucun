@@ -6,8 +6,8 @@ import {
 } from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
-import { paymentQueryKeys } from '@/lib/api/payments';
 import { prisma } from '@/lib/db';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   PaymentMethod,
   PaymentRecordQuery,
@@ -479,7 +479,7 @@ export default async function PaymentsPage({
     },
   });
 
-  queryClient.setQueryData(paymentQueryKeys.list(queryParams), {
+  queryClient.setQueryData(queryKeys.payments.list(queryParams), {
     records: initialData.payments,
     total: initialData.pagination.total,
     page: initialData.pagination.page,

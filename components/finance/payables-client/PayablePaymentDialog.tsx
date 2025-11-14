@@ -39,7 +39,8 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { payableQueryKeys, payablesApi } from '@/lib/api/payables';
+import { payablesApi } from '@/lib/api/payables';
+import { queryKeys } from '@/lib/queryKeys';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 
 const paymentFormSchema = z.object({
@@ -145,7 +146,7 @@ function usePaymentMutation(onSuccess: () => void) {
       });
 
       // 刷新应付款列表数据
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.payables.lists() });
 
       onSuccess();
     },

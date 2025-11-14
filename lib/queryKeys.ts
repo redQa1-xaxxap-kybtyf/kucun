@@ -430,9 +430,13 @@ export const paymentKeys = {
   // 应收账款
   accountsReceivable: () =>
     [...paymentKeys.all, 'accounts-receivable'] as const,
+  accountsReceivableList: (filters?: BaseFilters) =>
+    [...paymentKeys.accountsReceivable(), filters] as const,
 
   // 统计数据
   statistics: () => [...paymentKeys.all, 'statistics'] as const,
+  statisticsData: (filters?: Record<string, unknown>) =>
+    [...paymentKeys.statistics(), filters] as const,
 
   // 销售订单的收款记录
   salesOrderPayments: (salesOrderId: string) =>
@@ -472,6 +476,10 @@ export const paymentOutKeys = {
 
   details: () => [...paymentOutKeys.all, 'detail'] as const,
   detail: (id: string) => [...paymentOutKeys.details(), id] as const,
+
+  // 根据应付款ID查询付款记录
+  byPayable: (payableId: string) =>
+    [...paymentOutKeys.all, 'by-payable', payableId] as const,
 } as const;
 
 /**

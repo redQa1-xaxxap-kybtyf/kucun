@@ -6,7 +6,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { ContentLoading } from '@/components/common/loading';
 import { PayableDetailClient } from '@/components/finance/payable-detail-client';
 import { ErrorMessage } from '@/components/ui/error-message';
-import { payableQueryKeys, payablesApi } from '@/lib/api/payables';
+import { payablesApi } from '@/lib/api/payables';
+import { queryKeys } from '@/lib/queryKeys';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 /**
@@ -24,7 +25,7 @@ export default function PayableDetailPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: payableQueryKeys.detail(id),
+    queryKey: queryKeys.payables.detail(id),
     queryFn: () => payablesApi.getPayableRecord(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,

@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreatePayableRecordData,
   CreatePaymentOutRecordData,
@@ -20,28 +21,6 @@ import type {
 // API基础URL
 const PAYABLES_API_BASE = '/api/finance/payables';
 const PAYMENTS_OUT_API_BASE = '/api/finance/payments-out';
-
-// 查询键工厂
-export const payableQueryKeys = {
-  all: ['payables'] as const,
-  lists: () => [...payableQueryKeys.all, 'list'] as const,
-  list: (query: PayableRecordQuery) =>
-    [...payableQueryKeys.lists(), query] as const,
-  details: () => [...payableQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...payableQueryKeys.details(), id] as const,
-  statistics: () => [...payableQueryKeys.all, 'statistics'] as const,
-};
-
-export const paymentOutQueryKeys = {
-  all: ['payments-out'] as const,
-  lists: () => [...paymentOutQueryKeys.all, 'list'] as const,
-  list: (query: PaymentOutRecordQuery) =>
-    [...paymentOutQueryKeys.lists(), query] as const,
-  details: () => [...paymentOutQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...paymentOutQueryKeys.details(), id] as const,
-  byPayable: (payableId: string) =>
-    [...paymentOutQueryKeys.all, 'by-payable', payableId] as const,
-};
 
 // API调用函数
 export const payablesApi = {
@@ -284,7 +263,7 @@ export const usePayableRecords = (
   }
 ) =>
   useQuery({
-    queryKey: payableQueryKeys.list(query),
+    queryKey: queryKeys.payables.list(query),
     queryFn: () => payablesApi.getPayableRecords(query),
     staleTime: 5 * 60 * 1000, // 5分钟
     initialData: options?.initialData,
@@ -292,7 +271,7 @@ export const usePayableRecords = (
 
 export const usePayableRecord = (id: string) =>
   useQuery({
-    queryKey: payableQueryKeys.detail(id),
+    queryKey: queryKeys.payables.detail(id),
     queryFn: () => payablesApi.getPayableRecord(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -300,21 +279,21 @@ export const usePayableRecord = (id: string) =>
 
 export const usePayableStatistics = () =>
   useQuery({
-    queryKey: payableQueryKeys.statistics(),
+    queryKey: queryKeys.payables.statistics(),
     queryFn: () => payablesApi.getPayableStatistics(),
     staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 export const usePaymentOutRecords = (query: PaymentOutRecordQuery) =>
   useQuery({
-    queryKey: paymentOutQueryKeys.list(query),
+    queryKey: queryKeys.paymentsOut.list(query),
     queryFn: () => payablesApi.getPaymentOutRecords(query),
     staleTime: 5 * 60 * 1000,
   });
 
 export const usePaymentOutRecord = (id: string) =>
   useQuery({
-    queryKey: paymentOutQueryKeys.detail(id),
+    queryKey: queryKeys.paymentsOut.detail(id),
     queryFn: () => payablesApi.getPaymentOutRecord(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -328,11 +307,11 @@ export const useCreatePayableRecord = () => {
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建应付款后立即看到新记录
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.statistics(),
+        queryKey: queryKeys.payables.statistics(),
         type: 'active',
       });
     },
@@ -347,15 +326,15 @@ export const useUpdatePayableRecord = () => {
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新应付款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.detail(id),
+        queryKey: queryKeys.payables.detail(id),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.statistics(),
+        queryKey: queryKeys.payables.statistics(),
         type: 'active',
       });
     },
@@ -369,11 +348,11 @@ export const useDeletePayableRecord = () => {
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除应付款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.statistics(),
+        queryKey: queryKeys.payables.statistics(),
         type: 'active',
       });
     },
@@ -387,15 +366,15 @@ export const useCreatePaymentOutRecord = () => {
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建付款后立即看到新记录
       queryClient.refetchQueries({
-        queryKey: paymentOutQueryKeys.lists(),
+        queryKey: queryKeys.paymentsOut.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.statistics(),
+        queryKey: queryKeys.payables.statistics(),
         type: 'active',
       });
     },
@@ -415,19 +394,19 @@ export const useUpdatePaymentOutRecord = () => {
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新付款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: paymentOutQueryKeys.lists(),
+        queryKey: queryKeys.paymentsOut.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentOutQueryKeys.detail(id),
+        queryKey: queryKeys.paymentsOut.detail(id),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.statistics(),
+        queryKey: queryKeys.payables.statistics(),
         type: 'active',
       });
     },
@@ -441,15 +420,15 @@ export const useDeletePaymentOutRecord = () => {
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除付款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: paymentOutQueryKeys.lists(),
+        queryKey: queryKeys.paymentsOut.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: payableQueryKeys.statistics(),
+        queryKey: queryKeys.payables.statistics(),
         type: 'active',
       });
     },

@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   AccountsReceivableQuery,
   AccountsReceivableResponse,
@@ -22,27 +23,6 @@ import { formatTimeAgo } from '@/lib/utils/datetime';
 
 // API基础URL
 const API_BASE = '/api/payments';
-
-// 查询键工厂
-export const paymentQueryKeys = {
-  all: ['payments'] as const,
-  lists: () => [...paymentQueryKeys.all, 'list'] as const,
-  list: (query: PaymentRecordQuery) =>
-    [...paymentQueryKeys.lists(), query] as const,
-  details: () => [...paymentQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...paymentQueryKeys.details(), id] as const,
-  accountsReceivable: () =>
-    [...paymentQueryKeys.all, 'accounts-receivable'] as const,
-  accountsReceivableList: (query: AccountsReceivableQuery) =>
-    [...paymentQueryKeys.accountsReceivable(), query] as const,
-  statistics: () => [...paymentQueryKeys.all, 'statistics'] as const,
-  statisticsData: (query: Record<string, unknown>) =>
-    [...paymentQueryKeys.statistics(), query] as const,
-  salesOrderPayments: (salesOrderId: string) =>
-    [...paymentQueryKeys.all, 'sales-order', salesOrderId] as const,
-  customerPayments: (customerId: string) =>
-    [...paymentQueryKeys.all, 'customer', customerId] as const,
-};
 
 interface PaymentStatisticsQuery {
   startDate?: string;
@@ -354,14 +334,14 @@ export const paymentsApi = {
 // React Query Hooks
 export const usePaymentRecords = (query: PaymentRecordQuery) =>
   useQuery({
-    queryKey: paymentQueryKeys.list(query),
+    queryKey: queryKeys.payments.list(query),
     queryFn: () => paymentsApi.getPaymentRecords(query),
     staleTime: 5 * 60 * 1000, // 5分钟
   });
 
 export const usePaymentRecord = (id: string) =>
   useQuery({
-    queryKey: paymentQueryKeys.detail(id),
+    queryKey: queryKeys.payments.detail(id),
     queryFn: () => paymentsApi.getPaymentRecord(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
@@ -369,21 +349,21 @@ export const usePaymentRecord = (id: string) =>
 
 export const useAccountsReceivable = (query: AccountsReceivableQuery) =>
   useQuery({
-    queryKey: paymentQueryKeys.accountsReceivableList(query),
+    queryKey: queryKeys.payments.accountsReceivableList(query),
     queryFn: () => paymentsApi.getAccountsReceivable(query),
     staleTime: 5 * 60 * 1000,
   });
 
 export const usePaymentStatistics = (query: Record<string, unknown> = {}) =>
   useQuery({
-    queryKey: paymentQueryKeys.statisticsData(query),
+    queryKey: queryKeys.payments.statisticsData(query),
     queryFn: () => paymentsApi.getPaymentStatistics(query),
     staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 export const useSalesOrderPayments = (salesOrderId: string) =>
   useQuery({
-    queryKey: paymentQueryKeys.salesOrderPayments(salesOrderId),
+    queryKey: queryKeys.payments.salesOrderPayments(salesOrderId),
     queryFn: () => paymentsApi.getSalesOrderPayments(salesOrderId),
     enabled: !!salesOrderId,
     staleTime: 5 * 60 * 1000,
@@ -391,7 +371,7 @@ export const useSalesOrderPayments = (salesOrderId: string) =>
 
 export const useCustomerPayments = (customerId: string) =>
   useQuery({
-    queryKey: paymentQueryKeys.customerPayments(customerId),
+    queryKey: queryKeys.payments.customerPayments(customerId),
     queryFn: () => paymentsApi.getCustomerPayments(customerId),
     enabled: !!customerId,
     staleTime: 5 * 60 * 1000,
@@ -406,15 +386,15 @@ export const useCreatePaymentRecord = () => {
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建收款后立即看到新记录
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.lists(),
+        queryKey: queryKeys.payments.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+        queryKey: queryKeys.payments.accountsReceivable(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.statistics(),
+        queryKey: queryKeys.payments.statistics(),
         type: 'active',
       });
     },
@@ -430,19 +410,19 @@ export const useUpdatePaymentRecord = () => {
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新收款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.detail(id),
+        queryKey: queryKeys.payments.detail(id),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.lists(),
+        queryKey: queryKeys.payments.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+        queryKey: queryKeys.payments.accountsReceivable(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.statistics(),
+        queryKey: queryKeys.payments.statistics(),
         type: 'active',
       });
     },
@@ -457,15 +437,15 @@ export const useDeletePaymentRecord = () => {
     onSuccess: () => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除收款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.lists(),
+        queryKey: queryKeys.payments.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+        queryKey: queryKeys.payments.accountsReceivable(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.statistics(),
+        queryKey: queryKeys.payments.statistics(),
         type: 'active',
       });
     },
@@ -481,19 +461,19 @@ export const useConfirmPayment = () => {
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户确认收款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.detail(id),
+        queryKey: queryKeys.payments.detail(id),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.lists(),
+        queryKey: queryKeys.payments.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+        queryKey: queryKeys.payments.accountsReceivable(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.statistics(),
+        queryKey: queryKeys.payments.statistics(),
         type: 'active',
       });
     },
@@ -509,19 +489,19 @@ export const useCancelPayment = () => {
     onSuccess: (_, { id }) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户取消收款后立即看到变化
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.detail(id),
+        queryKey: queryKeys.payments.detail(id),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.lists(),
+        queryKey: queryKeys.payments.lists(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.accountsReceivable(),
+        queryKey: queryKeys.payments.accountsReceivable(),
         type: 'active',
       });
       queryClient.refetchQueries({
-        queryKey: paymentQueryKeys.statistics(),
+        queryKey: queryKeys.payments.statistics(),
         type: 'active',
       });
     },

@@ -7,7 +7,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
-import { payableQueryKeys, payablesApi } from '@/lib/api/payables';
+import { payablesApi } from '@/lib/api/payables';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreatePayableRecordData,
   PayableRecordDetail,
@@ -39,7 +40,7 @@ function usePayableDetail(
   const isEdit = mode === 'edit';
 
   const { data } = useQuery({
-    queryKey: payableQueryKeys.detail(payableId || ''),
+    queryKey: queryKeys.payables.detail(payableId || ''),
     queryFn: () => payablesApi.getPayableRecord(payableId || ''),
     enabled: isEdit && !!payableId && !initialData,
     staleTime: 5 * 60 * 1000,
@@ -108,7 +109,7 @@ function usePayableMutations({
 
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建应付款后立即看到新记录
       await queryClient.refetchQueries({
-        queryKey: payableQueryKeys.lists(),
+        queryKey: queryKeys.payables.lists(),
         type: 'active',
       });
 
@@ -136,11 +137,11 @@ function usePayableMutations({
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新应付款后立即看到变化
       await Promise.all([
         queryClient.refetchQueries({
-          queryKey: payableQueryKeys.lists(),
+          queryKey: queryKeys.payables.lists(),
           type: 'active',
         }),
         queryClient.refetchQueries({
-          queryKey: payableQueryKeys.detail(data.id),
+          queryKey: queryKeys.payables.detail(data.id),
           type: 'active',
         }),
       ]);

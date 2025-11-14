@@ -5,8 +5,8 @@ import {
 } from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
-import { payableQueryKeys } from '@/lib/api/payables';
 import { prisma } from '@/lib/db';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   PAYABLE_SORT_OPTIONS,
   type PayableSourceType,
@@ -271,7 +271,7 @@ export default async function PayablesPage({
     },
   });
 
-  queryClient.setQueryData(payableQueryKeys.list(queryParams), {
+  queryClient.setQueryData(queryKeys.payables.list(queryParams), {
     data: initialData.payables,
     pagination: initialData.pagination,
   });

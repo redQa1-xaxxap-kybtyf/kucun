@@ -4,14 +4,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { RefundRecordDetail } from '@/lib/types/refund';
-
-// Query Keys
-export const refundQueryKeys = {
-  all: ['refunds'] as const,
-  details: () => [...refundQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...refundQueryKeys.details(), id] as const,
-};
 
 /**
  * 获取退款详情
@@ -33,7 +27,7 @@ export async function getRefundDetail(id: string): Promise<RefundRecordDetail> {
  */
 export function useRefundDetail(id: string) {
   return useQuery({
-    queryKey: refundQueryKeys.detail(id),
+    queryKey: queryKeys.finance.refund(id),
     queryFn: () => getRefundDetail(id),
     enabled: !!id,
   });
