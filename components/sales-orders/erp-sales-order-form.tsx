@@ -309,7 +309,7 @@ export function ERPSalesOrderForm({
   // 创建订单
   const createMutation = useMutation({
     mutationFn: createSalesOrder,
-    onSuccess: data => {
+    onSuccess: (data, variables) => {
       toast({
         title: '订单创建成功',
         description: `订单号：${data.orderNumber}`,
@@ -333,6 +333,22 @@ export function ERPSalesOrderForm({
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboard.all,
       });
+
+      // ✅ 新增：客户直发订单会自动创建采购订单，需要刷新采购订单缓存
+      if (
+        variables.orderType === 'TRANSFER' &&
+        variables.transferMode === 'SUPPLIER_ONLY'
+      ) {
+        // 刷新采购订单缓存
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.purchaseOrders.all,
+        });
+
+        // 刷新应付款缓存（客户直发订单会自动创建应付款）
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.finance.payables(),
+        });
+      }
 
       onSuccess?.(data);
     },
