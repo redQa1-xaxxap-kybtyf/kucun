@@ -180,12 +180,17 @@ function useFactoryShipmentFilters({
   );
 
   const handleClearFilters = React.useCallback(() => {
+    // ✅ 修复：完整清空所有筛选条件
     setStatusFilter('all');
     setDateRange({});
+    setSearchTerm(''); // ✅ 新增：清空搜索词
     setCurrentPage(1);
+
+    // ✅ 通知父组件状态变化
     onFilter?.('status', undefined);
     onDateRangeChange?.({});
-  }, [onFilter, onDateRangeChange]);
+    onSearch?.(''); // ✅ 新增：通知父组件搜索词已清空
+  }, [onFilter, onDateRangeChange, onSearch]);
 
   const handlePageChange = React.useCallback(
     (page: number) => {

@@ -54,7 +54,15 @@ export async function getCustomerStatements(
     customerWhere.name = { contains: customerName };
   }
 
-  // 查询所有符合条件的客户
+  // ✅ 性能优化：先在 SQL 层进行分页，只查询当前页需要的客户
+  // 这样可以避免全表扫描和 O(N) 的数据库查询
+
+  // 1. 先获取符合条件的客户总数（用于分页计算）
+  const totalCustomers = await prisma.customer.count({
+    where: customerWhere,
+  });
+
+  // 2. 使用 SQL 层分页查询客户（只查询当前页需要的数据）
   const customers = await prisma.customer.findMany({
     where: customerWhere,
     select: {
@@ -62,41 +70,159 @@ export async function getCustomerStatements(
       name: true,
       phone: true,
     },
+    // ✅ SQL 层排序（如果按客户名称排序）
+    ...(sortBy === 'customerName' && {
+      orderBy: { name: sortOrder },
+    }),
+    // ✅ SQL 层分页
+    skip,
+    take: pageSize,
   });
 
-  // 为每个客户计算对账单数据
-  const statementsWithBalance = await Promise.all(
-    customers.map(async customer => {
-      const summary = await calculateCustomerStatementSummary(
-        customer.id,
-        startDate,
-        endDate
-      );
+  // 3. 批量查询所有客户的聚合数据（一次性查询，避免 N 次查询）
+  const customerIds = customers.map(c => c.id);
 
-      const lastTransaction = await getLastTransactionDate(
-        customer.id,
-        startDate,
-        endDate
-      );
+  const dateFilter: Prisma.DateTimeFilter = {};
+  if (startDate) {
+    dateFilter.gte = new Date(startDate);
+  }
+  if (endDate) {
+    dateFilter.lte = new Date(endDate);
+  }
+  const hasDateFilter = Object.keys(dateFilter).length > 0;
 
-      const transactionCount = await getTransactionCount(
-        customer.id,
-        startDate,
-        endDate
-      );
+  // ✅ 批量聚合查询：销售订单
+  const salesAggregates = await prisma.salesOrder.groupBy({
+    by: ['customerId'],
+    where: {
+      customerId: { in: customerIds },
+      status: { in: ['confirmed', 'shipped', 'completed'] },
+      ...(hasDateFilter && { createdAt: dateFilter }),
+    },
+    _sum: { totalAmount: true },
+    _max: { createdAt: true },
+    _count: { id: true },
+  });
 
-      return {
-        customerId: customer.id,
-        customerName: customer.name,
-        customerPhone: customer.phone || undefined,
-        lastTransactionDate: lastTransaction,
-        summary,
-        transactionCount,
-      };
-    })
-  );
+  // ✅ 批量聚合查询：退货订单
+  const returnAggregates = await prisma.returnOrder.groupBy({
+    by: ['customerId'],
+    where: {
+      customerId: { in: customerIds },
+      status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+      ...(hasDateFilter && { createdAt: dateFilter }),
+    },
+    _sum: { refundAmount: true },
+    _max: { createdAt: true },
+    _count: { id: true },
+  });
 
-  // 根据余额类型筛选
+  // ✅ 批量聚合查询：收款记录
+  const paymentAggregates = await prisma.paymentRecord.groupBy({
+    by: ['customerId'],
+    where: {
+      customerId: { in: customerIds },
+      status: { in: ['pending', 'confirmed', 'applied'] },
+      ...(hasDateFilter && { paymentDate: dateFilter }),
+    },
+    _sum: { paymentAmount: true, appliedAmount: true },
+    _max: { paymentDate: true },
+    _count: { id: true },
+  });
+
+  // ✅ 批量聚合查询：退款记录
+  const refundAggregates = await prisma.refundRecord.groupBy({
+    by: ['customerId'],
+    where: {
+      customerId: { in: customerIds },
+      status: { in: ['pending', 'processing', 'completed'] },
+      ...(hasDateFilter && { refundDate: dateFilter }),
+    },
+    _sum: { processedAmount: true },
+    _max: { refundDate: true },
+    _count: { id: true },
+  });
+
+  // 4. 构建客户对账单数据（使用聚合结果，避免逐个查询）
+  const statementsWithBalance = customers.map(customer => {
+    // 从聚合结果中获取数据
+    const salesData = salesAggregates.find(s => s.customerId === customer.id);
+    const returnData = returnAggregates.find(r => r.customerId === customer.id);
+    const paymentData = paymentAggregates.find(
+      p => p.customerId === customer.id
+    );
+    const refundData = refundAggregates.find(r => r.customerId === customer.id);
+
+    // 计算汇总数据
+    const salesAmount = Number(salesData?._sum.totalAmount ?? 0);
+    const salesReturnAmount = Number(returnData?._sum.refundAmount ?? 0);
+    const paymentReceived = Number(paymentData?._sum.paymentAmount ?? 0);
+    const prepaymentReceived = Number(paymentData?._sum.appliedAmount ?? 0);
+    const refundPaid = Number(refundData?._sum.processedAmount ?? 0);
+
+    // 应收账款 = 销售金额 - 销售退货 - 收款 - 预收款 + 退款
+    const receivableBalance =
+      salesAmount -
+      salesReturnAmount -
+      paymentReceived -
+      prepaymentReceived +
+      refundPaid;
+
+    // 应付账款（暂时为 0，后续实现客户作为供应商的场景）
+    const payableBalance = 0;
+
+    // 净余额 = 应收 - 应付
+    const netBalance = receivableBalance - payableBalance;
+
+    // 获取最后交易日期
+    const lastTransactionDate = [
+      salesData?._max.createdAt,
+      returnData?._max.createdAt,
+      paymentData?._max.paymentDate,
+      refundData?._max.refundDate,
+    ]
+      .filter((date): date is Date => date instanceof Date)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
+    // 计算交易笔数
+    const transactionCount =
+      (salesData?._count.id ?? 0) +
+      (returnData?._count.id ?? 0) +
+      (paymentData?._count.id ?? 0) +
+      (refundData?._count.id ?? 0);
+
+    return {
+      customerId: customer.id,
+      customerName: customer.name,
+      customerPhone: customer.phone || undefined,
+      lastTransactionDate: lastTransactionDate?.toISOString(),
+      summary: {
+        receivables: {
+          salesAmount,
+          salesReturnAmount,
+          paymentReceived,
+          prepaymentReceived,
+          refundPaid,
+          receivableBalance,
+        },
+        payables: {
+          purchaseAmount: 0,
+          purchaseReturnAmount: 0,
+          paymentPaid: 0,
+          prepaymentPaid: 0,
+          refundReceived: 0,
+          payableBalance,
+        },
+        netBalance,
+      },
+      transactionCount,
+    };
+  });
+
+  // ✅ 注意：由于已在 SQL 层分页，这里不需要再次分页
+  // 但如果需要按余额等计算字段排序或筛选，需要在内存中处理
+
+  // 根据余额类型筛选（如果需要）
   let filteredStatements = statementsWithBalance;
 
   if (balanceType === 'receivable') {
@@ -109,7 +235,7 @@ export async function getCustomerStatements(
     );
   }
 
-  // 根据余额范围筛选
+  // 根据余额范围筛选（如果需要）
   if (minBalance !== undefined) {
     filteredStatements = filteredStatements.filter(
       s => Math.abs(s.summary.netBalance) >= minBalance
@@ -122,47 +248,43 @@ export async function getCustomerStatements(
     );
   }
 
-  // 排序
-  filteredStatements.sort((a, b) => {
-    let compareValue = 0;
+  // 排序（如果不是按客户名称排序，需要在内存中排序）
+  if (sortBy !== 'customerName') {
+    filteredStatements.sort((a, b) => {
+      let compareValue = 0;
 
-    switch (sortBy) {
-      case 'customerName':
-        compareValue = a.customerName.localeCompare(b.customerName);
-        break;
-      case 'netBalance':
-        compareValue = a.summary.netBalance - b.summary.netBalance;
-        break;
-      case 'receivableBalance':
-        compareValue =
-          a.summary.receivables.receivableBalance -
-          b.summary.receivables.receivableBalance;
-        break;
-      case 'payableBalance':
-        compareValue =
-          a.summary.payables.payableBalance - b.summary.payables.payableBalance;
-        break;
-      case 'lastTransactionDate':
-        compareValue =
-          new Date(a.lastTransactionDate || 0).getTime() -
-          new Date(b.lastTransactionDate || 0).getTime();
-        break;
-    }
+      switch (sortBy) {
+        case 'netBalance':
+          compareValue = a.summary.netBalance - b.summary.netBalance;
+          break;
+        case 'receivableBalance':
+          compareValue =
+            a.summary.receivables.receivableBalance -
+            b.summary.receivables.receivableBalance;
+          break;
+        case 'payableBalance':
+          compareValue =
+            a.summary.payables.payableBalance -
+            b.summary.payables.payableBalance;
+          break;
+        case 'lastTransactionDate':
+          compareValue =
+            new Date(a.lastTransactionDate || 0).getTime() -
+            new Date(b.lastTransactionDate || 0).getTime();
+          break;
+      }
 
-    return sortOrder === 'asc' ? compareValue : -compareValue;
-  });
-
-  // 分页
-  const total = filteredStatements.length;
-  const paginatedStatements = filteredStatements.slice(skip, skip + pageSize);
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+  }
 
   return {
-    statements: paginatedStatements,
+    statements: filteredStatements,
     pagination: {
       page,
       pageSize,
-      total,
-      totalPages: Math.ceil(total / pageSize),
+      total: totalCustomers, // ✅ 使用客户总数而非筛选后的数量
+      totalPages: Math.ceil(totalCustomers / pageSize),
     },
   };
 }
