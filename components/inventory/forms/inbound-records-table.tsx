@@ -1,7 +1,5 @@
 'use client';
 
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { Package, User } from 'lucide-react';
 
 import { EmptyState } from '@/components/common/empty-state';
@@ -16,6 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { InboundRecord as BaseInboundRecord } from '@/lib/types/inbound';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 // 入库原因标签映射
 const INBOUND_REASON_LABELS = {
@@ -48,10 +47,6 @@ interface InboundRecordsTableProps {
   records: InboundRecordWithProduct[];
   isLoading: boolean;
 }
-
-// 格式化日期
-const formatDate = (dateString: string) =>
-  format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
 // 格式化操作类型
 const getOperationTypeLabel = (reason: string) =>
@@ -153,97 +148,110 @@ export function InboundRecordsTable({
       className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
       style={{ boxShadow: 'var(--shadow-medium)' }}
     >
-      <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-          <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-            入库记录 ({records.length} 条)
-          </span>
-        </div>
-      </div>
-
+      <TableHeading count={records.length} />
       <div className="overflow-x-auto">
-        <Table>
-          <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
-            <TableRow>
-              <TableHead>产品编码</TableHead>
-              <TableHead>产品名称</TableHead>
-              <TableHead>规格</TableHead>
-              <TableHead>每件片数</TableHead>
-              <TableHead>重量</TableHead>
-              <TableHead>入库数量</TableHead>
-              <TableHead>操作类型</TableHead>
-              <TableHead>批次号</TableHead>
-              <TableHead>操作时间</TableHead>
-              <TableHead>备注</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {records.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={10} className="p-8">
-                  <EmptyState
-                    title="暂无入库记录"
-                    icon={<Package className="text-muted-foreground h-6 w-6" />}
-                    compact
-                  />
-                </TableCell>
-              </TableRow>
-            ) : (
-              records.map(record => (
-                <TableRow
-                  key={record.id}
-                  className="h-12 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                >
-                  <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
-                    {record.product?.code || record.productId}
-                  </TableCell>
-                  <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
-                    {record.product?.name || '未知产品'}
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {formatSpecification(record.product?.specification) || '-'}
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {getActualPiecesPerUnit(record) || '-'}
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {getActualWeight(record)}
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
-                    <span className="font-medium">
-                      {formatQuantity(
-                        record.quantity,
-                        getActualPiecesPerUnit(record)
-                      )}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
-                    <Badge
-                      variant={getOperationTypeVariant(record.reason)}
-                      className="text-xs font-medium"
-                    >
-                      {getOperationTypeLabel(record.reason)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {record.batchNumber || '-'}
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
-                      <User className="h-3 w-3" />
-                      {formatDate(record.createdAt)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {record.remarks || '-'}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <RecordsTable records={records} />
       </div>
     </div>
+  );
+}
+
+function TableHeading({ count }: { count: number }) {
+  return (
+    <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
+      <div className="flex items-center gap-2">
+        <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+        <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+          入库记录 ({count} 条)
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
+  return (
+    <Table>
+      <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+        <TableRow>
+          <TableHead>产品编码</TableHead>
+          <TableHead>产品名称</TableHead>
+          <TableHead>规格</TableHead>
+          <TableHead>每件片数</TableHead>
+          <TableHead>重量</TableHead>
+          <TableHead>入库数量</TableHead>
+          <TableHead>操作类型</TableHead>
+          <TableHead>批次号</TableHead>
+          <TableHead>操作时间</TableHead>
+          <TableHead>备注</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {records.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={10} className="p-8">
+              <EmptyState
+                title="暂无入库记录"
+                icon={<Package className="text-muted-foreground h-6 w-6" />}
+                compact
+              />
+            </TableCell>
+          </TableRow>
+        ) : (
+          records.map(record => (
+            <InboundRecordRow key={record.id} record={record} />
+          ))
+        )}
+      </TableBody>
+    </Table>
+  );
+}
+
+function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
+  const piecesPerUnit = getActualPiecesPerUnit(record);
+
+  return (
+    <TableRow className="h-12 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]">
+      <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
+        {record.product?.code || record.productId}
+      </TableCell>
+      <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
+        {record.product?.name || '未知产品'}
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {formatSpecification(record.product?.specification) || '-'}
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {piecesPerUnit || '-'}
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {getActualWeight(record)}
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+        <span className="font-medium">
+          {formatQuantity(record.quantity, piecesPerUnit)}
+        </span>
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+        <Badge
+          variant={getOperationTypeVariant(record.reason)}
+          className="text-xs font-medium"
+        >
+          {getOperationTypeLabel(record.reason)}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {record.batchNumber || '-'}
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
+          <User className="h-3 w-3" />
+          {formatDateTime(record.createdAt)}
+        </div>
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {record.remarks || '-'}
+      </TableCell>
+    </TableRow>
   );
 }
