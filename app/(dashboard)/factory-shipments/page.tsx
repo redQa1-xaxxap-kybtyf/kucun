@@ -48,7 +48,7 @@ export default async function FactoryShipmentsPage({
   const queryParams = {
     page,
     limit,
-    containerNumber: search, // 将 search 映射到 containerNumber
+    search, // ✅ 保留原始 search 参数，用于 OR 逻辑搜索
     status,
     sortBy,
     sortOrder,

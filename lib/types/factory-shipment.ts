@@ -245,6 +245,7 @@ export interface FactoryShipmentOrderListParams {
   pageSize?: number;
   status?: FactoryShipmentStatus;
   customerId?: string;
+  search?: string; // 通用搜索字段，同时匹配 containerNumber 和 orderNumber
   containerNumber?: string;
   orderNumber?: string;
   sortBy?: string;
@@ -257,6 +258,7 @@ export interface FactoryShipmentOrderListParams {
 export interface FactoryShipmentQueryParams {
   page?: number;
   limit?: number;
+  search?: string; // 通用搜索字段，同时匹配 containerNumber 和 orderNumber
   containerNumber?: string;
   status?: FactoryShipmentStatus;
   sortBy?: string;
