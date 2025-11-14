@@ -1,12 +1,11 @@
 'use server';
 
 import type {
-  ExpenseRecord as PrismaExpenseRecord,
   Prisma,
+  ExpenseRecord as PrismaExpenseRecord,
 } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-
 
 import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import { revalidateProducts } from '@/lib/cache';
@@ -41,7 +40,6 @@ import {
   resolvePagination,
 } from './purchase-orders.pagination';
 import {
-  type ActionResult,
   applyStatusUpdateTransaction,
   calculateOrderTotal,
   createPurchaseOrderInternal,
@@ -51,6 +49,7 @@ import {
   parseJsonPayload,
   unauthorizedActionResult,
   updatePurchaseOrderInternal,
+  type ActionResult,
 } from './purchase-orders.utils';
 const mapZodIssues = (issues: z.ZodIssue[]): ValidationIssue[] =>
   issues.map(issue => ({
@@ -206,6 +205,27 @@ export async function confirmPurchaseOrder(
           return buildErrorResult('采购订单没有明细项');
         }
 
+        // ✅ 修复：如果 expenseAmount 为 null，从费用记录即时求和
+        let actualExpenseAmount = order.expenseAmount;
+        if (actualExpenseAmount === null || actualExpenseAmount === undefined) {
+          const expenseSum = await tx.expenseRecord.aggregate({
+            where: {
+              relatedType: 'purchase_order',
+              relatedId: orderId,
+            },
+            _sum: {
+              expenseAmount: true,
+            },
+          });
+          actualExpenseAmount = expenseSum._sum.expenseAmount ?? 0;
+
+          // 同步更新订单的 expenseAmount
+          await tx.purchaseOrder.update({
+            where: { id: orderId },
+            data: { expenseAmount: actualExpenseAmount },
+          });
+        }
+
         let allocations: PurchaseOrderExpenseAllocationResult[];
         try {
           allocations = allocatePurchaseOrderExpensesByQuantity(
@@ -214,7 +234,7 @@ export async function confirmPurchaseOrder(
               quantity: item.quantity,
               unitPrice: item.unitPrice,
             })),
-            order.expenseAmount ?? 0
+            actualExpenseAmount
           );
         } catch (allocationError) {
           const errorMessage =

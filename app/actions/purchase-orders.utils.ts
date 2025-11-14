@@ -230,6 +230,16 @@ export async function updatePurchaseOrderInternal({
       where: { purchaseOrderId: orderId },
     });
 
+    // ✅ 修复：先处理费用记录，获取费用总额
+    const expenseAmount = await replaceExpenseRecords(
+      tx,
+      orderId,
+      data.feeItems ?? [],
+      existingOrder.orderNumber,
+      userId
+    );
+
+    // ✅ 修复：更新订单时同步更新 expenseAmount
     await tx.purchaseOrder.update({
       where: { id: orderId },
       data: {
@@ -239,6 +249,7 @@ export async function updatePurchaseOrderInternal({
             : existingOrder.containerNumber,
         remarks: data.remarks?.trim() ?? existingOrder.remarks ?? null,
         totalAmount,
+        expenseAmount, // ✅ 新增：同步更新费用总额
         items: {
           create: items.map(item => ({
             productId: item.productId || null,
@@ -262,14 +273,6 @@ export async function updatePurchaseOrderInternal({
         },
       },
     });
-
-    await replaceExpenseRecords(
-      tx,
-      orderId,
-      data.feeItems ?? [],
-      existingOrder.orderNumber,
-      userId
-    );
   });
 
   return { success: true, data: null };
@@ -281,11 +284,8 @@ async function replaceExpenseRecords(
   feeItems: NonNullable<PurchaseOrderFormData['feeItems']>,
   orderNumber: string,
   userId: string
-): Promise<void> {
-  if (!feeItems || feeItems.length === 0) {
-    return;
-  }
-
+): Promise<number> {
+  // ✅ 修复：无条件删除旧费用记录，即使 feeItems 为空
   await tx.expenseRecord.deleteMany({
     where: {
       relatedType: 'purchase_order',
@@ -293,6 +293,12 @@ async function replaceExpenseRecords(
     },
   });
 
+  // 如果没有新费用，返回 0
+  if (!feeItems || feeItems.length === 0) {
+    return 0;
+  }
+
+  // 创建新费用记录
   for (const feeItem of feeItems) {
     const expenseNumber = `EXP-${Date.now()}-${Math.random()
       .toString(36)
@@ -312,6 +318,9 @@ async function replaceExpenseRecords(
       },
     });
   }
+
+  // ✅ 修复：返回费用总额
+  return feeItems.reduce((sum, item) => sum + item.feeAmount, 0);
 }
 
 export function normalizeStatusPayload(
