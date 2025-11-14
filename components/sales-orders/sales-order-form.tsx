@@ -53,6 +53,7 @@ import {
   salesOrderQueryKeys,
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -132,7 +133,9 @@ export function SalesOrderForm({
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
 
       // ✅ 关键修复：同时失效应收款缓存
-      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.receivables(),
+      });
 
       if (onSuccess) {
         onSuccess(response);

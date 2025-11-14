@@ -41,6 +41,7 @@ import { useToast } from '@/components/ui/use-toast';
 // API and Types
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import { queryKeys } from '@/lib/queryKeys';
 import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
 import {
@@ -160,7 +161,7 @@ export function SalesOrderForm({
 
       // ✅ 关键修复：同时失效应收款缓存并强制重新获取
       queryClient.invalidateQueries({
-        queryKey: ['finance', 'receivables'],
+        queryKey: queryKeys.finance.receivables(),
         refetchType: 'active',
       });
 

@@ -56,6 +56,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   ExtractField,
   ShippingSite,
@@ -142,7 +143,7 @@ export default function ShippingSitesPage() {
 
   // 获取站点列表
   const { data: sitesData, isLoading } = useQuery<ShippingSitesResponse>({
-    queryKey: ['settings', 'shipping-sites'],
+    queryKey: queryKeys.settings.shippingSites(),
     queryFn: async () => {
       const response = await fetch('/api/shipping/sites');
       if (!response.ok) {
@@ -209,7 +210,7 @@ export default function ShippingSitesPage() {
       setDialogOpen(false);
       resetForm();
       queryClient.invalidateQueries({
-        queryKey: ['settings', 'shipping-sites'],
+        queryKey: queryKeys.settings.shippingSites(),
       });
     },
     onError: (error: Error) => {
@@ -239,7 +240,7 @@ export default function ShippingSitesPage() {
         variant: 'success',
       });
       queryClient.invalidateQueries({
-        queryKey: ['settings', 'shipping-sites'],
+        queryKey: queryKeys.settings.shippingSites(),
       });
     },
     onError: (error: Error) => {

@@ -265,7 +265,7 @@ export function ERPSalesOrderList({
       // ✅ 同时刷新应收款缓存
       // 因为订单状态变更会影响应收款数据
       queryClient.refetchQueries({
-        queryKey: ['finance', 'receivables'],
+        queryKey: queryKeys.finance.receivables(),
         type: 'active',
       });
 
