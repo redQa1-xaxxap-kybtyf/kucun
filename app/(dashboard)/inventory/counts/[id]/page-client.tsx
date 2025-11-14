@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle, Pencil, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -31,6 +30,7 @@ import {
   type CountStatus,
   type InventoryCountDetail,
 } from '@/lib/types/inventory-count';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 interface CountDetailPageClientProps {
   countId: string;
@@ -346,17 +346,11 @@ function CountInfoSection({ count }: { count: InventoryCountDetail }) {
               {COUNT_STATUS_LABELS[count.status]}
             </Badge>
           </div>
-          <InfoItem
-            label="计划日期"
-            value={format(new Date(count.planDate), 'yyyy-MM-dd')}
-          />
+          <InfoItem label="计划日期" value={formatDate(count.planDate)} />
           <InfoItem label="盘点位置" value={count.location || '-'} />
           <InfoItem label="盘点分类" value={count.category?.name || '-'} />
           <InfoItem label="创建人" value={count.creator?.name || '-'} />
-          <InfoItem
-            label="创建时间"
-            value={format(new Date(count.createdAt), 'yyyy-MM-dd HH:mm')}
-          />
+          <InfoItem label="创建时间" value={formatDateTime(count.createdAt)} />
         </div>
         {count.remarks && (
           <div className="mt-4">

@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { Eye, Pencil, Play, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
@@ -36,6 +35,7 @@ import {
   type CountStatus,
   type InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface CountListProps {
   filters: InventoryCountQueryParams;
@@ -227,9 +227,7 @@ export function CountList({ filters }: CountListProps) {
                       {COUNT_STATUS_LABELS[count.status]}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    {format(new Date(count.planDate), 'yyyy-MM-dd')}
-                  </TableCell>
+                  <TableCell>{formatDate(count.planDate)}</TableCell>
                   <TableCell>
                     {count.totalItems > 0
                       ? `${count.completedItems}/${count.totalItems}`
