@@ -525,6 +525,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
         : paginationConfig.defaultPageSize,
       status: searchParams.get('status') || undefined,
       customerId: searchParams.get('customerId') || undefined,
+      search: searchParams.get('search') || undefined, // ✅ 新增：提取 search 参数
       containerNumber: searchParams.get('containerNumber') || undefined,
       orderNumber: searchParams.get('orderNumber') || undefined,
       startDate: searchParams.get('startDate')
@@ -543,6 +544,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       limit = paginationConfig.defaultPageSize,
       status,
       customerId,
+      search,
       containerNumber,
       orderNumber,
       startDate,
@@ -557,12 +559,24 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     if (customerId) {
       where.customerId = customerId;
     }
-    if (containerNumber) {
-      where.containerNumber = { contains: containerNumber };
+
+    // ✅ 搜索逻辑：与服务端函数保持一致
+    // 如果提供了 search 参数，使用 OR 逻辑同时匹配 containerNumber 和 orderNumber
+    if (search) {
+      where.OR = [
+        { containerNumber: { contains: search, mode: 'insensitive' } },
+        { orderNumber: { contains: search, mode: 'insensitive' } },
+      ];
+    } else {
+      // 如果没有 search 参数，保留独立的 containerNumber 和 orderNumber 筛选
+      if (containerNumber) {
+        where.containerNumber = { contains: containerNumber };
+      }
+      if (orderNumber) {
+        where.orderNumber = { contains: orderNumber };
+      }
     }
-    if (orderNumber) {
-      where.orderNumber = { contains: orderNumber };
-    }
+
     if (startDate || endDate) {
       where.createdAt = {};
       if (startDate) {

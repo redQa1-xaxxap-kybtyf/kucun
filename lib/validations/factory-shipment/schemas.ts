@@ -165,6 +165,7 @@ export const factoryShipmentOrderListParamsSchema = z
       .optional(),
     status: factoryShipmentStatusSchema.optional(),
     customerId: z.string().uuid('客户ID格式不正确').optional(),
+    search: z.string().max(50, '搜索关键字不能超过50个字符').optional(), // ✅ 新增：通用搜索字段
     containerNumber: z
       .string()
       .max(50, '集装箱号码不能超过50个字符')
