@@ -36,6 +36,7 @@ import {
   type PurchaseOrderItem,
 } from '@/lib/types/purchase-order';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 import {
   createPurchaseOrderSchema,
   updatePurchaseOrderSchema,
@@ -283,7 +284,7 @@ export function PurchaseOrderForm({
                             )}
                           >
                             {field.value ? (
-                              new Date(field.value).toLocaleDateString('zh-CN')
+                              formatDate(field.value)
                             ) : (
                               <span>选择日期</span>
                             )}

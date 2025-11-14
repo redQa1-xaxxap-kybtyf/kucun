@@ -18,6 +18,7 @@ import {
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 import { cn, formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface Customer {
   id: string;
@@ -150,7 +151,7 @@ export function OrderStatusBar({
           <div className="space-y-1">
             <div className="text-muted-foreground text-xs">创建时间</div>
             <div className="font-medium">
-              {new Date().toLocaleDateString('zh-CN')}
+              {formatDate(new Date().toISOString())}
             </div>
           </div>
         </div>

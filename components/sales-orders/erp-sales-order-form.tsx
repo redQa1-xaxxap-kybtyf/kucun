@@ -51,6 +51,7 @@ import {
 } from '@/lib/types/sales-order-fee';
 import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
+import { formatDate } from '@/lib/utils/datetime';
 import {
   transformFormDataToCreateInput,
   transformFormDataToUpdateInput,
@@ -998,11 +999,7 @@ export function ERPSalesOrderForm({
                     创建日期
                   </Label>
                   <div className="rounded-md border bg-gray-50 px-3 py-1.5 text-sm text-gray-700">
-                    {creationDisplayDate.toLocaleDateString('zh-CN', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}
+                    {formatDate(creationDisplayDate.toISOString())}
                   </div>
                 </div>
               </div>

@@ -22,6 +22,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { deleteProduct, productQueryKeys } from '@/lib/api/products';
 import { PRODUCT_STATUS_LABELS, type Product } from '@/lib/types/product';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 interface ERPProductDetailProps {
   product: Product;
@@ -276,7 +277,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
                   创建时间
                 </div>
                 <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  {new Date(product.createdAt).toLocaleString('zh-CN')}
+                  {formatDateTime(product.createdAt)}
                 </div>
               </div>
               <div>
@@ -284,7 +285,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
                   更新时间
                 </div>
                 <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  {new Date(product.updatedAt).toLocaleString('zh-CN')}
+                  {formatDateTime(product.updatedAt)}
                 </div>
               </div>
             </div>

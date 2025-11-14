@@ -60,6 +60,7 @@ import {
   type SalesOrderQueryParams,
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 const NON_CANCELABLE_STATUSES: SalesOrderStatus[] = [
   'shipped',
@@ -502,19 +503,6 @@ export function ERPSalesOrderList({
         已收款
       </Badge>
     );
-  };
-
-  // 格式化日期时间（显示日期和时分）
-  const formatDateTime = (date: string) => {
-    const d = new Date(date);
-    return d.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
   };
 
   if (error) {

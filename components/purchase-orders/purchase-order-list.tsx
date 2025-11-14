@@ -26,6 +26,7 @@ import {
   type PurchaseOrder,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
+import { formatDateTime } from '@/lib/utils/datetime';
 import { formatPurchaseOrderSuppliers } from '@/lib/utils/purchase-order-suppliers';
 
 interface PurchaseOrderListProps {
@@ -43,11 +44,6 @@ interface PurchaseOrderListProps {
 const formatCurrency = (amount: number | null | undefined): string => {
   if (amount === null || amount === undefined) return '-';
   return `¥${amount.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
-
-const formatDateTime = (date: Date | string | null | undefined): string => {
-  if (!date) return '-';
-  return new Date(date).toLocaleString('zh-CN');
 };
 
 const STATUS_VARIANTS: Record<

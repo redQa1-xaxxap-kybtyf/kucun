@@ -58,6 +58,7 @@ import {
 import { SEARCH_CONFIG } from '@/lib/config/search';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDate } from '@/lib/utils/datetime';
 import { formatSupplierStatus } from '@/lib/utils/supplier-display';
 
 interface SuppliersPageClientProps {
@@ -344,7 +345,7 @@ export function SuppliersPageClient({
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(supplier.createdAt).toLocaleDateString('zh-CN')}
+                      {formatDate(supplier.createdAt)}
                     </TableCell>
                     <TableCell onClick={e => e.stopPropagation()}>
                       <DropdownMenu>
