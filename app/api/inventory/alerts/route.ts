@@ -82,14 +82,46 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
     const alerts = await getOrSetJSON(
       cacheKey,
       async () => {
-        // 获取低库存产品
-        // 修复：使用两步查询，基于总库存而非单个库存记录判断
-        // 第一步：查询所有活跃产品及其库存记录
-        const allActiveProducts = await prisma.product.findMany({
+        // ✅ 优化：使用 groupBy 在 SQL 层计算库存总量
+        // 修复前：加载所有产品及其库存记录到内存，然后在 JS 中计算
+        // 修复后：在 SQL 层使用 groupBy 计算，只返回低库存产品 ID
+
+        // 第一步：使用 groupBy 在 SQL 层计算每个产品的总库存
+        const inventoryByProduct = await prisma.inventory.groupBy({
+          by: ['productId'],
           where: {
-            status: 'active',
-            ...(productId && { id: productId }),
-            ...(categoryId && { categoryId }),
+            product: {
+              status: 'active',
+              ...(productId && { id: productId }),
+              ...(categoryId && { categoryId }),
+            },
+          },
+          _sum: {
+            quantity: true,
+            reservedQuantity: true,
+          },
+          orderBy: {
+            _sum: {
+              quantity: 'asc', // 按库存量升序排序
+            },
+          },
+        });
+
+        // 第二步：在内存中过滤低库存产品（因为 Prisma 不支持 HAVING 计算字段）
+        const lowStockProductIds = inventoryByProduct
+          .filter(item => {
+            const totalStock = item._sum.quantity || 0;
+            const reservedStock = item._sum.reservedQuantity || 0;
+            const availableStock = totalStock - reservedStock;
+            return availableStock <= inventoryConfig.lowStockThreshold;
+          })
+          .slice(0, limit)
+          .map(item => item.productId);
+
+        // 第三步：批量获取低库存产品的详细信息
+        const lowStockProducts = await prisma.product.findMany({
+          where: {
+            id: { in: lowStockProductIds },
           },
           include: {
             inventory: {
@@ -108,36 +140,26 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
               },
             },
           },
-          orderBy: {
-            updatedAt: 'desc',
-          },
         });
 
-        // 第二步：在内存中计算总库存并过滤低于阈值的产品
-        const lowStockProducts = allActiveProducts
-          .map(product => {
-            // 计算总库存和预留库存
-            const { totalStock, reservedStock } = product.inventory.reduce(
-              (acc, inv) => ({
-                totalStock: acc.totalStock + inv.quantity,
-                reservedStock: acc.reservedStock + inv.reservedQuantity,
-              }),
-              { totalStock: 0, reservedStock: 0 }
-            );
-            const availableStock = totalStock - reservedStock;
+        // 第四步：计算每个产品的库存统计
+        const lowStockProductsWithStats = lowStockProducts.map(product => {
+          const { totalStock, reservedStock } = product.inventory.reduce(
+            (acc, inv) => ({
+              totalStock: acc.totalStock + inv.quantity,
+              reservedStock: acc.reservedStock + inv.reservedQuantity,
+            }),
+            { totalStock: 0, reservedStock: 0 }
+          );
+          const availableStock = totalStock - reservedStock;
 
-            return {
-              ...product,
-              _totalStock: totalStock,
-              _reservedStock: reservedStock,
-              _availableStock: availableStock,
-            };
-          })
-          .filter(
-            product =>
-              product._availableStock <= inventoryConfig.lowStockThreshold
-          )
-          .slice(0, limit);
+          return {
+            ...product,
+            _totalStock: totalStock,
+            _reservedStock: reservedStock,
+            _availableStock: availableStock,
+          };
+        });
 
         // 获取零库存产品
         const zeroStockProducts = await prisma.product.findMany({
@@ -205,7 +227,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
         const alertList = [];
 
         // 处理低库存警告
-        for (const product of lowStockProducts) {
+        for (const product of lowStockProductsWithStats) {
           // 使用已计算的库存数据（避免重复计算）
           const totalStock = product._totalStock;
           const reservedStock = product._reservedStock;
