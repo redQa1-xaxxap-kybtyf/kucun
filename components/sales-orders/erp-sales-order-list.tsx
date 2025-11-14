@@ -48,6 +48,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import { invalidateCustomerDirectShipmentCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -363,25 +364,9 @@ export function ERPSalesOrderList({
         type: 'active',
       });
 
-      // ✅ 刷新采购订单缓存（关联的采购订单 salesOrderId 会被设置为 null）
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.purchaseOrders.all,
-      });
-
-      // ✅ 刷新应收款缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivables(),
-      });
-
-      // ✅ 刷新应付款缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.payables(),
-      });
-
-      // ✅ 刷新仪表盘缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
-      });
+      // ✅ 使用统一的缓存刷新工具函数
+      // 删除销售订单可能影响关联的采购订单、应收款、应付款
+      invalidateCustomerDirectShipmentCaches(queryClient);
 
       toast({
         title: '删除成功',

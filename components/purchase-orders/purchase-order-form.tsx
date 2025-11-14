@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { invalidatePurchaseOrderCaches } from '@/lib/cache/invalidation-helpers';
 import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -172,20 +173,8 @@ export function PurchaseOrderForm({
         description: '采购订单已创建',
       });
 
-      // ✅ 刷新采购订单缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.purchaseOrders.all,
-      });
-
-      // ✅ 刷新应付款缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.payables(),
-      });
-
-      // ✅ 刷新仪表盘缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
-      });
+      // ✅ 使用统一的缓存刷新工具函数
+      invalidatePurchaseOrderCaches(queryClient);
 
       onSuccess?.();
     },
@@ -226,10 +215,8 @@ export function PurchaseOrderForm({
         description: '采购订单已更新',
       });
 
-      // ✅ 刷新采购订单缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.purchaseOrders.all,
-      });
+      // ✅ 使用统一的缓存刷新工具函数
+      invalidatePurchaseOrderCaches(queryClient);
 
       // ✅ 刷新详情缓存
       if (orderId) {
@@ -237,16 +224,6 @@ export function PurchaseOrderForm({
           queryKey: queryKeys.purchaseOrders.detail(orderId),
         });
       }
-
-      // ✅ 刷新应付款缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.payables(),
-      });
-
-      // ✅ 刷新仪表盘缓存
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
-      });
 
       onSuccess?.();
     },

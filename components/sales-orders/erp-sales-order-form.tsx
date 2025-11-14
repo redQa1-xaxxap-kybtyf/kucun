@@ -41,6 +41,10 @@ import {
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
+import {
+  invalidateCustomerDirectShipmentCaches,
+  invalidateSalesOrderCaches,
+} from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
@@ -316,39 +320,22 @@ export function ERPSalesOrderForm({
         variant: 'success',
       });
 
-      // ✅ 失效销售订单缓存
-      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
-
-      // ✅ 修复：失效应收货款缓存 - 使用正确的 queryKey
-      // 失效所有应收货款相关查询（包括列表和详情）
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivables(),
-        refetchType: 'active',
-      });
-
-      // ✅ 同时失效财务概览和仪表盘统计
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.overview(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
-      });
-
-      // ✅ 新增：客户直发订单会自动创建采购订单，需要刷新采购订单缓存
+      // ✅ 使用统一的缓存刷新工具函数
       if (
         variables.orderType === 'TRANSFER' &&
         variables.transferMode === 'SUPPLIER_ONLY'
       ) {
-        // 刷新采购订单缓存
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.purchaseOrders.all,
-        });
-
-        // 刷新应付款缓存（客户直发订单会自动创建应付款）
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.finance.payables(),
-        });
+        // 客户直发订单：刷新销售订单、采购订单、应收款、应付款、仪表盘
+        invalidateCustomerDirectShipmentCaches(queryClient);
+      } else {
+        // 普通订单：刷新销售订单、应收款、仪表盘
+        invalidateSalesOrderCaches(queryClient);
       }
+
+      // ✅ 同时失效财务概览
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.overview(),
+      });
 
       onSuccess?.(data);
     },
@@ -372,26 +359,19 @@ export function ERPSalesOrderForm({
         variant: 'success',
       });
 
-      // ✅ 失效销售订单缓存
-      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
+      // ✅ 使用统一的缓存刷新工具函数
+      invalidateSalesOrderCaches(queryClient);
+
+      // ✅ 刷新订单详情缓存
       if (orderId) {
         queryClient.invalidateQueries({
           queryKey: salesOrderQueryKeys.detail(orderId),
         });
       }
 
-      // ✅ 修复：失效应收货款缓存 - 订单金额/状态变更会影响应收款
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivables(),
-        refetchType: 'active',
-      });
-
-      // ✅ 同时失效财务概览和仪表盘统计
+      // ✅ 同时失效财务概览
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.overview(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard.all,
       });
 
       if (order) {
