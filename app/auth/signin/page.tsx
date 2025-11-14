@@ -3,9 +3,9 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
+import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSession, signIn } from 'next-auth/react';
 import React, {
   useCallback,
   useEffect,
@@ -509,14 +509,6 @@ export default function SignInPage() {
                   立即注册
                 </Link>
               </p>
-              {/* 只在开发环境显示测试账户 */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-4 border-t border-gray-200 pt-4">
-                  <p>默认测试账户：</p>
-                  <p>管理员：admin / admin123456</p>
-                  <p>销售员：sales / sales123456</p>
-                </div>
-              )}
               <p className="mt-4 text-xs text-gray-500">
                 点击验证码图片可刷新验证码
               </p>
