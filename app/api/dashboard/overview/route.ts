@@ -64,10 +64,14 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
             break;
         }
 
+        // ✅ 优化：使用聚合查询替代全表扫描
+        // 修复前：2 次 findMany 加载所有订单和行项目
+        // 修复后：2 次 aggregate 查询，只返回标量结果
+
         // 并行查询所有数据，优化性能
         const [
-          currentSalesOrders,
-          previousSalesOrders,
+          currentSalesStats,
+          previousSalesStats,
           inventoryStats,
           productCount,
           lowStockProducts,
@@ -82,29 +86,31 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
           monthlyReturns,
           pendingReturns,
         ] = await Promise.all([
-          // 当前期间销售数据
-          prisma.salesOrder.findMany({
+          // 当前期间销售数据 - 使用聚合查询
+          prisma.salesOrder.aggregate({
             where: {
               createdAt: {
                 gte: startDate,
                 lte: now,
               },
             },
-            include: {
-              items: true,
+            _sum: {
+              totalAmount: true,
             },
+            _count: true,
           }),
-          // 上一期间销售数据
-          prisma.salesOrder.findMany({
+          // 上一期间销售数据 - 使用聚合查询
+          prisma.salesOrder.aggregate({
             where: {
               createdAt: {
                 gte: previousStartDate,
                 lt: startDate,
               },
             },
-            include: {
-              items: true,
+            _sum: {
+              totalAmount: true,
             },
+            _count: true,
           }),
           // 库存统计
           prisma.inventory.aggregate({
@@ -193,22 +199,18 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
           }),
         ]);
 
-        // 计算销售指标
-        const currentRevenue = currentSalesOrders.reduce(
-          (sum, order) => sum + (order.totalAmount || 0),
-          0
-        );
-        const previousRevenue = previousSalesOrders.reduce(
-          (sum, order) => sum + (order.totalAmount || 0),
-          0
+        // ✅ 优化：从聚合结果计算销售指标
+        const currentRevenue = Number(currentSalesStats._sum.totalAmount || 0);
+        const previousRevenue = Number(
+          previousSalesStats._sum.totalAmount || 0
         );
         const revenueGrowth =
           previousRevenue > 0
             ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
             : 0;
 
-        const currentOrders = currentSalesOrders.length;
-        const previousOrders = previousSalesOrders.length;
+        const currentOrders = currentSalesStats._count;
+        const previousOrders = previousSalesStats._count;
         const ordersGrowth =
           previousOrders > 0
             ? ((currentOrders - previousOrders) / previousOrders) * 100
