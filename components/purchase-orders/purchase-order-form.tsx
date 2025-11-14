@@ -1,14 +1,11 @@
 'use client';
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { CalendarIcon, Save } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { CalendarIcon, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
-import {
-  createPurchaseOrder,
-  updatePurchaseOrder,
-} from '@/app/actions/purchase-orders';
 import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { PurchaseOrderItemsTable } from '@/components/purchase-orders/purchase-order-items-table';
 import { Button } from '@/components/ui/button';
@@ -31,6 +28,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrder,
@@ -89,6 +87,7 @@ export function PurchaseOrderForm({
 }: PurchaseOrderFormProps) {
   const { toast } = useToast();
   const _router = useRouter();
+  const queryClient = useQueryClient();
 
   const form = useForm<PurchaseOrderFormValues>({
     resolver: standardSchemaResolver(
@@ -137,57 +136,137 @@ export function PurchaseOrderForm({
         },
   });
 
-  const { notifyBlur, showValidationToast, applyServerValidationErrors } =
-    useFormErrorHandling({
+  const { notifyBlur: _notifyBlur, showValidationToast } = useFormErrorHandling(
+    {
       form,
       toast,
-    });
+    }
+  );
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'items',
   });
 
-  const handleSubmit = async (data: PurchaseOrderFormValues) => {
-    try {
-      const formData = new FormData();
-      if (mode === 'edit' && orderId) {
-        formData.append('orderId', orderId);
-      }
-      formData.append('data', JSON.stringify(data));
+  // 创建采购订单
+  const createMutation = useMutation({
+    mutationFn: async (data: PurchaseOrderFormData) => {
+      const response = await fetch('/api/purchase-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-      const result =
-        mode === 'edit'
-          ? await updatePurchaseOrder(formData)
-          : await createPurchaseOrder(formData);
-
-      if (result.success) {
-        toast({
-          title: mode === 'edit' ? '更新成功' : '创建成功',
-          description:
-            mode === 'edit'
-              ? '采购订单已更新'
-              : `采购订单 ${(result.data as { orderNumber?: string }).orderNumber || ''} 已创建`,
-        });
-        onSuccess?.();
-      } else {
-        const validationMessage = applyServerValidationErrors(
-          result.validationErrors ?? null
-        );
-        toast({
-          title: mode === 'edit' ? '更新失败' : '创建失败',
-          description: validationMessage ?? result.error,
-          variant: 'destructive',
-        });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '创建采购订单失败');
       }
-    } catch (error) {
+
+      return response.json();
+    },
+    onSuccess: () => {
       toast({
-        title: mode === 'edit' ? '更新失败' : '创建失败',
-        description: error instanceof Error ? error.message : '未知错误',
+        title: '创建成功',
+        description: '采购订单已创建',
+      });
+
+      // ✅ 刷新采购订单缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+
+      // ✅ 刷新应付款缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.payables(),
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+
+      onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '创建失败',
+        description: error.message,
         variant: 'destructive',
       });
+    },
+  });
+
+  // 更新采购订单
+  const updateMutation = useMutation({
+    mutationFn: async (data: PurchaseOrderFormData) => {
+      if (!orderId) {
+        throw new Error('订单ID不能为空');
+      }
+
+      const response = await fetch(`/api/purchase-orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || '更新采购订单失败');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: '更新成功',
+        description: '采购订单已更新',
+      });
+
+      // ✅ 刷新采购订单缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.purchaseOrders.all,
+      });
+
+      // ✅ 刷新详情缓存
+      if (orderId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.purchaseOrders.detail(orderId),
+        });
+      }
+
+      // ✅ 刷新应付款缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.payables(),
+      });
+
+      // ✅ 刷新仪表盘缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.dashboard.all,
+      });
+
+      onSuccess?.();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '更新失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleSubmit = (data: PurchaseOrderFormValues) => {
+    if (mode === 'edit') {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
     }
   };
+
   const handleInvalidSubmit = (
     errors: FieldErrors<PurchaseOrderFormValues>
   ) => {
@@ -195,6 +274,8 @@ export function PurchaseOrderForm({
       description: '请检查标红字段后再次提交。所有带 * 的字段均为必填项。',
     });
   };
+
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
   return (
     <Form {...form}>
@@ -351,9 +432,18 @@ export function PurchaseOrderForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             取消
           </Button>
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" />
-            保存草稿
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {mode === 'edit' ? '更新中...' : '创建中...'}
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 h-4 w-4" />
+                保存草稿
+              </>
+            )}
           </Button>
         </div>
       </form>
