@@ -72,11 +72,16 @@ export async function updateInventoryWithNotification(
     }
 
     // 2. 使用原子操作更新库存
+    // ✅ 修复：预留和释放操作不应该修改实体库存 quantity
     const updatedInventory = await prisma.inventory.update({
       where: { id: inventory.id },
       data: {
         // 使用原子递增/递减操作,避免并发竞态
-        quantity: { increment: quantity },
+        // ✅ 修复：预留和释放操作不修改 quantity
+        ...(type !== 'reserve' &&
+          type !== 'release' && {
+            quantity: { increment: quantity },
+          }),
         // 根据类型更新预留数量
         ...(type === 'reserve' && {
           reservedQuantity: { increment: quantity },
@@ -267,6 +272,7 @@ export async function batchUpdateInventory(
 /**
  * 预留库存（用于订单创建）
  * 使用事务确保原子性
+ * ✅ 修复：预留只增加 reservedQuantity，不修改 quantity
  */
 export async function reserveInventory(
   productId: string,
@@ -274,10 +280,11 @@ export async function reserveInventory(
   quantity: number,
   orderId: string
 ): Promise<boolean> {
+  // ✅ 修复：传递正值，只增加 reservedQuantity
   return updateInventoryWithNotification(
     productId,
     variantId,
-    -quantity,
+    quantity, // ✅ 修复：传递正值而非负值
     'reserve',
     {
       reason: '订单预留',
@@ -289,6 +296,7 @@ export async function reserveInventory(
 /**
  * 释放库存（用于订单取消）
  * 使用事务确保原子性
+ * ✅ 修复：释放只减少 reservedQuantity，不修改 quantity
  */
 export async function releaseInventory(
   productId: string,
@@ -296,10 +304,11 @@ export async function releaseInventory(
   quantity: number,
   orderId: string
 ): Promise<boolean> {
+  // ✅ 修复：传递正值，只减少 reservedQuantity
   return updateInventoryWithNotification(
     productId,
     variantId,
-    quantity,
+    quantity, // ✅ 保持正值，通过 type='release' 来减少 reservedQuantity
     'release',
     {
       reason: '订单取消',
