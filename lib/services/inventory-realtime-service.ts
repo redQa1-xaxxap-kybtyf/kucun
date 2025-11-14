@@ -422,6 +422,12 @@ export async function getRealtimeInventory(
         productId,
         variantId: variantId || null,
       },
+      select: {
+        id: true,
+        quantity: true,
+        reservedQuantity: true, // ✅ 修复：读取预留量
+        updatedAt: true,
+      },
     });
 
     if (!inventory) {
@@ -431,10 +437,11 @@ export async function getRealtimeInventory(
     // 3. 写入缓存
     await redis.setJson(cacheKey, inventory, 3600);
 
+    // ✅ 修复：正确计算可用库存
     return {
       quantity: inventory.quantity,
-      reserved: 0, // 数据库中没有预留字段，默认为0
-      available: inventory.quantity,
+      reserved: inventory.reservedQuantity, // ✅ 修复：使用实际预留量
+      available: inventory.quantity - inventory.reservedQuantity, // ✅ 修复：正确计算可用库存
       updatedAt: inventory.updatedAt.toISOString(),
     };
   } catch (error) {
