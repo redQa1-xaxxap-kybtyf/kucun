@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { env } from './env';
 
@@ -58,7 +58,6 @@ const adminOnlyPaths = [
 // 公开路径（不需要认证）
 const publicPaths = [
   '/auth/signin',
-  '/auth/signup',
   '/auth/error',
   '/api/auth',
   '/api/captcha',

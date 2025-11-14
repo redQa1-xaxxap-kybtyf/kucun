@@ -62,14 +62,14 @@ export const config = {
        * - /api/auth/* (Next-Auth.js 认证路由)
        * - /api/captcha (验证码 API)
        * - /api/address/* (地址数据 API - 省市区)
-       * - /auth/signin, /auth/signup, /auth/error (认证页面)
+       * - /auth/signin, /auth/error (认证页面)
        * - /_next/static (静态文件)
        * - /_next/image (图片优化)
        * - /favicon.ico, /robots.txt, /sitemap.xml (公共文件)
        * - /public/* (公共静态资源)
        */
       source:
-        '/((?!api/auth|api/captcha|api/address|auth/signin|auth/signup|auth/error|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|public).*)',
+        '/((?!api/auth|api/captcha|api/address|auth/signin|auth/error|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|public).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },

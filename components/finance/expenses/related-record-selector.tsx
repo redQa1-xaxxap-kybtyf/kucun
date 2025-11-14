@@ -21,10 +21,11 @@ import {
 import { queryKeys } from '@/lib/queryKeys';
 import type { ExpenseRelatedType } from '@/lib/types/expense';
 import type { InboundRecord } from '@/lib/types/inbound';
-import type { OutboundRecord } from '@/lib/types/outbound';
 import type { PurchaseOrder } from '@/lib/types/purchase-order';
 import type { SalesOrder } from '@/lib/types/sales-order';
 import { cn } from '@/lib/utils';
+
+import type { OutboundRecord } from '@/lib/types/outbound';
 
 interface RelatedRecordSelectorProps {
   relatedType: ExpenseRelatedType;
@@ -66,9 +67,7 @@ export function RelatedRecordSelector({
     return transformRecords(relatedType, data);
   }, [data, relatedType]);
 
-  const selectedRecord = React.useMemo(() => {
-    return records.find(r => r.id === value);
-  }, [records, value]);
+  const selectedRecord = React.useMemo(() => records.find(r => r.id === value), [records, value]);
 
   const handleSelect = React.useCallback(
     (recordId: string) => {

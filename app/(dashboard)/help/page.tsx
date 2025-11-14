@@ -6,14 +6,14 @@
 
 import {
   BookOpen,
-  HelpCircle,
-  MessageCircle,
-  Phone,
-  Mail,
-  FileText,
-  Video,
   Download,
   ExternalLink,
+  FileText,
+  HelpCircle,
+  Mail,
+  MessageCircle,
+  Phone,
+  Video,
 } from 'lucide-react';
 import type { Metadata } from 'next';
 
@@ -44,7 +44,7 @@ const helpCategories = [
     icon: BookOpen,
     items: [
       { title: '系统概览', description: '了解库存管理工具的核心功能' },
-      { title: '用户注册与登录', description: '如何创建账户并登录系统' },
+      { title: '用户登录', description: '如何登录系统' },
       { title: '界面导航', description: '熟悉系统界面和导航结构' },
       { title: '基本设置', description: '配置个人资料和系统偏好' },
     ],

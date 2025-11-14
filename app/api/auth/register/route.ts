@@ -1,63 +1,24 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { createUser } from '@/lib/auth';
 import { logger } from '@/lib/logger';
-import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
-import { userRegisterSchema } from '@/lib/validations/user';
 
-async function handleRegister(request: NextRequest) {
-  try {
-    const body = await request.json();
+/**
+ * 用户注册接口已禁用
+ *
+ * 本系统不允许用户自主注册。
+ * 新用户只能由管理员通过以下方式创建：
+ * 1. 使用数据库脚本：npx tsx scripts/create-correct-admin.ts
+ * 2. 通过管理员后台的用户管理功能（如果已实现）
+ */
+export async function POST() {
+  logger.warn('auth-register', '尝试访问已禁用的注册接口');
 
-    // 验证输入数据
-    const validationResult = userRegisterSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '输入数据格式不正确',
-          details: validationResult.error.issues,
-        },
-        { status: 400 }
-      );
-    }
-
-    const { email, username, name, password } = validationResult.data;
-
-    // 创建用户
-    const user = await createUser({
-      email,
-      username,
-      name,
-      password,
-      role: 'sales', // 默认注册为销售员
-    });
-
-    // 返回成功响应（不包含敏感信息）
-    return NextResponse.json({
-      success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        name: user.name,
-        role: user.role,
-        status: user.status,
-        createdAt: user.createdAt,
-      },
-      message: '用户注册成功',
-    });
-  } catch (error) {
-    logger.error('auth-register', '用户注册失败', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '注册失败',
-      },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    {
+      success: false,
+      error: '用户注册功能已禁用',
+      message: '本系统不允许用户自主注册，请联系管理员创建账户',
+    },
+    { status: 403 }
+  );
 }
-
-export const POST = withRateLimit(RateLimitType.AUTH)(handleRegister);

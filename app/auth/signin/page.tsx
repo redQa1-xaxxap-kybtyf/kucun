@@ -4,7 +4,6 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { getSession, signIn } from 'next-auth/react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import React, {
   useCallback,
@@ -500,16 +499,7 @@ export default function SignInPage() {
             </Form>
 
             <div className="mt-6 text-center text-sm text-gray-600">
-              <p>
-                没有账户？{' '}
-                <Link
-                  href="/auth/register"
-                  className="text-primary hover:text-primary/80 font-medium"
-                >
-                  立即注册
-                </Link>
-              </p>
-              <p className="mt-4 text-xs text-gray-500">
+              <p className="text-xs text-gray-500">
                 点击验证码图片可刷新验证码
               </p>
             </div>
