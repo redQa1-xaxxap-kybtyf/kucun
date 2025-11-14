@@ -376,6 +376,7 @@ async function executeOutboundTransaction(
     }
 
     // 2. 使用乐观锁更新库存 - 确保并发安全
+    // ✅ 修复：出库时同时扣减 quantity 和 reservedQuantity
     const updatedCount = await tx.inventory.updateMany({
       where: {
         id: availableInventory.id,
@@ -383,13 +384,10 @@ async function executeOutboundTransaction(
       },
       data: {
         quantity: { decrement: quantity },
-        reservedQuantity: Math.max(
-          0,
-          Math.min(
-            availableInventory.reservedQuantity,
-            availableInventory.quantity - quantity
-          )
-        ),
+        // ✅ 修复：同时扣减预留量，最多扣减到 0
+        reservedQuantity: {
+          decrement: Math.min(availableInventory.reservedQuantity, quantity),
+        },
         updatedAt: new Date(),
       },
     });
