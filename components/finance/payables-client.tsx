@@ -56,7 +56,8 @@ export function PayablesClient({
 
   return (
     <div className="space-y-6">
-      <PayablesSummary statistics={initialStatistics} />
+      {/* ✅ 传递当前筛选条件给统计组件，实现动态更新 */}
+      <PayablesSummary filters={query} initialStatistics={initialStatistics} />
 
       <Card className="border border-[hsl(var(--color-border-secondary))]">
         <CardContent className="pt-6">
