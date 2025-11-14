@@ -163,6 +163,122 @@ export const PUT = withAuth(
 
       // 如果有明细项更新
       if (data.items) {
+        // ✅ 修复：增加业务校验，确保数据合法性
+        // 1. 查询所有销售订单明细，校验客户一致性和订单状态
+        const salesOrderItemIds = data.items.map(item => item.salesOrderItemId);
+        const salesOrderItems = await tx.salesOrderItem.findMany({
+          where: { id: { in: salesOrderItemIds } },
+          include: {
+            salesOrder: {
+              select: {
+                id: true,
+                customerId: true,
+                status: true,
+              },
+            },
+            product: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        });
+
+        // 构建 Map 快速查找
+        const salesOrderItemsMap = new Map(
+          salesOrderItems.map(item => [item.id, item])
+        );
+
+        // 2. 校验所有明细属于同一个客户
+        const customerIds = new Set(
+          salesOrderItems.map(item => item.salesOrder.customerId)
+        );
+        if (customerIds.size > 1) {
+          throw new Error('退货明细必须属于同一个客户');
+        }
+
+        // 3. 校验销售订单状态是否允许退货
+        const RETURN_ALLOWED_STATUSES = ['completed', 'shipped'];
+        for (const item of salesOrderItems) {
+          if (!RETURN_ALLOWED_STATUSES.includes(item.salesOrder.status)) {
+            throw new Error(
+              `销售订单状态为 ${item.salesOrder.status}，不允许退货`
+            );
+          }
+        }
+
+        // 4. 查询已退货数量（排除当前退货单）
+        const existingReturnsMap = await tx.returnOrderItem.groupBy({
+          by: ['salesOrderItemId'],
+          where: {
+            salesOrderItemId: { in: salesOrderItemIds },
+            returnOrder: {
+              id: { not: id }, // 排除当前退货单
+              status: {
+                notIn: ['cancelled', 'rejected'],
+              },
+            },
+          },
+          _sum: {
+            returnQuantity: true,
+          },
+        });
+
+        const returnsMap = new Map(
+          existingReturnsMap.map(r => [
+            r.salesOrderItemId,
+            r._sum.returnQuantity || 0,
+          ])
+        );
+
+        // 5. 验证每个退货明细
+        for (const returnItem of data.items) {
+          const salesOrderItem = salesOrderItemsMap.get(
+            returnItem.salesOrderItemId
+          );
+
+          if (!salesOrderItem) {
+            throw new Error(
+              `销售订单明细不存在: ${returnItem.salesOrderItemId}`
+            );
+          }
+
+          // 校验单价
+          const dbUnitPrice = salesOrderItem.unitPrice;
+          if (Math.abs(returnItem.unitPrice - dbUnitPrice) > 0.01) {
+            const productName = salesOrderItem.product?.name || '未知产品';
+            throw new Error(
+              `产品 ${productName} 退货单价与销售订单单价不一致。` +
+                `销售单价: ${dbUnitPrice}, 退货单价: ${returnItem.unitPrice}`
+            );
+          }
+
+          // 校验可退数量
+          const alreadyReturnedQuantity =
+            returnsMap.get(returnItem.salesOrderItemId) || 0;
+          const remainingQuantity =
+            salesOrderItem.quantity - alreadyReturnedQuantity;
+
+          if (returnItem.returnQuantity > remainingQuantity) {
+            const productName = salesOrderItem.product?.name || '未知产品';
+            throw new Error(
+              `产品 ${productName} 退货数量超过可退数量。` +
+                `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
+                `可退: ${remainingQuantity}, 本次退货: ${returnItem.returnQuantity}`
+            );
+          }
+
+          // 校验小计金额
+          const calculatedSubtotal =
+            returnItem.returnQuantity * returnItem.unitPrice;
+          if (Math.abs(returnItem.subtotal - calculatedSubtotal) > 0.01) {
+            throw new Error(
+              `退货明细金额计算错误。产品ID: ${returnItem.productId}, ` +
+                `前端: ${returnItem.subtotal}, 服务器: ${calculatedSubtotal}`
+            );
+          }
+        }
+
         // 删除原有明细
         await tx.returnOrderItem.deleteMany({
           where: { returnOrderId: id },
@@ -185,9 +301,9 @@ export const PUT = withAuth(
           })),
         });
 
-        // 重新计算总金额
+        // 重新计算总金额（使用服务器计算的值）
         const totalAmount = data.items.reduce(
-          (sum, item) => sum + item.subtotal,
+          (sum, item) => sum + item.returnQuantity * item.unitPrice,
           0
         );
         updateData.totalAmount = totalAmount;
