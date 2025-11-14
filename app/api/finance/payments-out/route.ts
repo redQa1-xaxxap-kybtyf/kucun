@@ -11,6 +11,8 @@ import {
 import { clearCacheAfterPaymentOut } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
+import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import type {
   PaymentOutRecordDetail,
   PaymentOutRecordListResponse,
@@ -291,6 +293,37 @@ export const POST = withAuth(
               updatedAt: new Date(),
             },
           });
+        }
+
+        // ✅ 修复问题1：记录供应商往来账本
+        // 在付款单创建成功后，调用 recordPartnerTransaction 记录账本
+        try {
+          await recordPartnerTransaction({
+            partnerId: data.supplierId,
+            partnerName: supplier.name,
+            partnerRole: 'supplier',
+            entityType: 'supplier',
+            transactionType: 'payment_out',
+            amount: data.paymentAmount,
+            referenceId: newPayment.id,
+            referenceNumber: paymentNumber,
+            description: `付款 ${paymentNumber} 已确认`,
+            occurredAt: newPayment.paymentDate,
+            metadata: {
+              paymentMethod: data.paymentMethod,
+              payableRecordId: data.payableRecordId ?? undefined,
+              voucherNumber: data.voucherNumber ?? undefined,
+              triggeredBy: 'payment_out:create',
+            },
+          });
+        } catch (error) {
+          logger.error('payments-out', '记录供应商往来账失败', error, {
+            paymentId: newPayment.id,
+            paymentNumber,
+            supplierId: data.supplierId,
+          });
+          // 账本记录失败时回滚整个事务
+          throw new Error('记录供应商往来账失败');
         }
 
         return newPayment;

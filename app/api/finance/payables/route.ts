@@ -10,6 +10,8 @@ import {
 } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   fetchPayableRecordList,
   normalizePayableQuery,
@@ -93,7 +95,7 @@ export const POST = withAuth(
       const payableNumber = await generatePayableNumber(tx);
 
       // 创建应付款记录
-      return await tx.payableRecord.create({
+      const newPayable = await tx.payableRecord.create({
         data: {
           ...data,
           payableNumber,
@@ -119,6 +121,39 @@ export const POST = withAuth(
           paymentOutRecords: true,
         },
       });
+
+      // ✅ 修复问题1：记录供应商往来账本
+      // 在应付款创建成功后，调用 recordPartnerTransaction 记录账本
+      try {
+        await recordPartnerTransaction({
+          partnerId: data.supplierId,
+          partnerName: supplier.name,
+          partnerRole: 'supplier',
+          entityType: 'supplier',
+          transactionType: 'purchase',
+          amount: data.payableAmount,
+          referenceId: newPayable.id,
+          referenceNumber: payableNumber,
+          description: `应付款 ${payableNumber} 创建`,
+          occurredAt: data.payableDate,
+          dueDate: data.dueDate,
+          metadata: {
+            source: data.source,
+            purchaseOrderId: data.purchaseOrderId ?? undefined,
+            triggeredBy: 'payable:create',
+          },
+        });
+      } catch (error) {
+        logger.error('payables', '记录供应商往来账失败', error, {
+          payableId: newPayable.id,
+          payableNumber,
+          supplierId: data.supplierId,
+        });
+        // 账本记录失败时回滚整个事务
+        throw new Error('记录供应商往来账失败');
+      }
+
+      return newPayable;
     });
 
     return successResponse(payable, 201, '应付款记录创建成功');
