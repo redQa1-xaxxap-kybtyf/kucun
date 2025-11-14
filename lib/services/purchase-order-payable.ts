@@ -31,9 +31,13 @@ export async function ensurePurchaseOrderPayable(
     userId: string;
     orderNumber: string;
     totalAmount: number;
+    expenseAmount?: number | null; // ✅ 新增：费用金额
   }
 ): Promise<void> {
-  if (order.totalAmount <= 0) {
+  // ✅ 修复：应付金额 = 物料金额 + 费用金额
+  const payableAmount = order.totalAmount + (order.expenseAmount ?? 0);
+
+  if (payableAmount <= 0) {
     return;
   }
 
@@ -61,9 +65,9 @@ export async function ensurePurchaseOrderPayable(
       sourceType: 'purchase_order',
       sourceId: order.id,
       sourceNumber: order.orderNumber,
-      payableAmount: order.totalAmount,
+      payableAmount, // ✅ 修复：使用包含费用的总金额
       paidAmount: 0,
-      remainingAmount: order.totalAmount,
+      remainingAmount: payableAmount, // ✅ 修复：使用包含费用的总金额
       dueDate,
       status: 'pending',
       paymentTerms: '30天',

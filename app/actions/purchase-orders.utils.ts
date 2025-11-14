@@ -427,6 +427,7 @@ export async function applyStatusUpdateTransaction(
         userId: order.userId,
         orderNumber: order.orderNumber,
         totalAmount: order.totalAmount,
+        expenseAmount: order.expenseAmount, // ✅ 修复：传递费用金额
       });
     }
 

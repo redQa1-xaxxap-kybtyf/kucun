@@ -379,6 +379,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           userId,
           orderNumber: newOrder.orderNumber,
           totalAmount,
+          expenseAmount, // ✅ 修复：传递费用金额
         });
       }
 
