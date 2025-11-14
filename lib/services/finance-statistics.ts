@@ -170,38 +170,58 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
     }
   }
 
-  const [total, statements] = await prisma.$transaction([
-    prisma.accountStatement.count({ where }),
-    prisma.accountStatement.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-    }),
-  ]);
+  // ✅ 修复问题2：统计卡片应基于全量数据，不受分页影响
+  // 1. 先查询全量数据用于统计（只查询必要字段）
+  const [total, statements, allStatementsForSummary] =
+    await prisma.$transaction([
+      prisma.accountStatement.count({ where }),
+      prisma.accountStatement.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+      }),
+      // 查询全量数据用于统计（不带 skip/take）
+      prisma.accountStatement.findMany({
+        where,
+        select: {
+          currentBalance: true,
+          partnerRole: true,
+          entityId: true,
+        },
+      }),
+    ]);
+
   const mappedStatements = statements.map(statement =>
     mapAccountStatementToSummary(statement)
   );
 
+  // 2. 基于全量数据计算统计（不受分页影响）
+  const customerIds = new Set<string>();
+  const supplierIds = new Set<string>();
+  let totalReceivable = 0;
+  let totalPayable = 0;
+
+  for (const statement of allStatementsForSummary) {
+    const balance = statement.currentBalance ?? 0;
+    const role = statement.partnerRole;
+
+    if (includesCustomerRole(role)) {
+      customerIds.add(statement.entityId);
+      totalReceivable += Math.max(balance, 0);
+    }
+
+    if (includesSupplierRole(role)) {
+      supplierIds.add(statement.entityId);
+      totalPayable += Math.max(-balance, 0);
+    }
+  }
+
   const summary = {
-    totalCustomers: mappedStatements.filter(statement =>
-      includesCustomerRole(statement.partnerRole)
-    ).length,
-    totalSuppliers: mappedStatements.filter(statement =>
-      includesSupplierRole(statement.partnerRole)
-    ).length,
-    totalReceivable: mappedStatements.reduce((sum, statement) => {
-      const balance = statement.currentBalance ?? 0;
-      return includesCustomerRole(statement.partnerRole)
-        ? sum + Math.max(balance, 0)
-        : sum;
-    }, 0),
-    totalPayable: mappedStatements.reduce((sum, statement) => {
-      const balance = statement.currentBalance ?? 0;
-      return includesSupplierRole(statement.partnerRole)
-        ? sum + Math.max(-balance, 0)
-        : sum;
-    }, 0),
+    totalCustomers: customerIds.size,
+    totalSuppliers: supplierIds.size,
+    totalReceivable,
+    totalPayable,
   };
 
   return {
