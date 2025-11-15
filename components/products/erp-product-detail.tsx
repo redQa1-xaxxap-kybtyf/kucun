@@ -297,44 +297,6 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           </div>
         </div>
 
-        {/* 扩展信息区域 - 预留给未来功能 */}
-        <div
-          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
-          <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
-            <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
-              扩展信息
-            </h4>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] p-6 text-center transition-colors hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]">
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  库存信息
-                </div>
-                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  功能开发中
-                </div>
-              </div>
-              <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] p-6 text-center transition-colors hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]">
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  销售记录
-                </div>
-                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  功能开发中
-                </div>
-              </div>
-              <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
-                <div className="text-muted-foreground text-xs">操作历史</div>
-                <div className="text-muted-foreground mt-1 text-sm">
-                  功能开发中
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* 删除确认对话框 */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialogContent>
