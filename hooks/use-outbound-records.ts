@@ -150,12 +150,21 @@ export function useOutboundRecords(
     }));
   };
 
+  const handlePageChange = (page: number) => {
+    setQueryParams(prev => ({
+      ...prev,
+      page,
+    }));
+  };
+
   return {
     outboundRecords,
+    pagination: data?.pagination,
     filters,
     isLoading,
     error,
     resetFilters,
     updateFilter,
+    onPageChange: handlePageChange,
   };
 }

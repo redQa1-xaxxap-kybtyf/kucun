@@ -15,8 +15,15 @@ interface ERPOutboundRecordsProps {
  * 采用紧凑布局，符合中国ERP系统用户习惯
  */
 export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
-  const { outboundRecords, filters, isLoading, resetFilters, updateFilter } =
-    useOutboundRecords(initialParams);
+  const {
+    outboundRecords,
+    pagination,
+    filters,
+    isLoading,
+    resetFilters,
+    updateFilter,
+    onPageChange,
+  } = useOutboundRecords(initialParams);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -32,7 +39,12 @@ export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
         />
 
         {/* 出库记录表格 */}
-        <OutboundRecordsTable records={outboundRecords} isLoading={isLoading} />
+        <OutboundRecordsTable
+          records={outboundRecords}
+          pagination={pagination}
+          isLoading={isLoading}
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

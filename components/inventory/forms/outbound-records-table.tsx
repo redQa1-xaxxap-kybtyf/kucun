@@ -5,6 +5,7 @@ import { Package, User } from 'lucide-react';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -23,7 +24,14 @@ import { formatDateTimeCN } from '@/lib/utils/datetime';
 
 interface OutboundRecordsTableProps {
   records: OutboundRecord[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   isLoading: boolean;
+  onPageChange?: (page: number) => void;
 }
 
 // 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
@@ -81,7 +89,9 @@ const formatQuantity = (quantity: number, piecesPerUnit?: number) => {
 
 export function OutboundRecordsTable({
   records,
+  pagination,
   isLoading,
+  onPageChange,
 }: OutboundRecordsTableProps) {
   if (isLoading) {
     return <ContentLoading text="加载出库记录..." />;
@@ -180,6 +190,19 @@ export function OutboundRecordsTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* 分页器 */}
+      {pagination && onPageChange && (
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+            disabled={isLoading}
+          />
+        </div>
+      )}
     </div>
   );
 }
