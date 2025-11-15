@@ -14,17 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { InboundRecord as BaseInboundRecord } from '@/lib/types/inbound';
+import {
+  INBOUND_REASON_LABELS,
+  type InboundRecord as BaseInboundRecord,
+} from '@/lib/types/inbound';
 import { formatDateTime } from '@/lib/utils/datetime';
-
-// 入库原因标签映射
-const INBOUND_REASON_LABELS = {
-  purchase: '采购入库',
-  return: '退货入库',
-  transfer: '调拨入库',
-  surplus: '盘盈入库',
-  other: '其他',
-} as const;
 
 interface InboundRecordWithProduct
   extends Omit<BaseInboundRecord, 'product' | 'batchSpecification'> {
@@ -64,11 +58,14 @@ const getOperationTypeLabel = (reason: string) =>
 const getOperationTypeVariant = (reason: string) => {
   const variants: Record<string, 'success' | 'warning' | 'info' | 'secondary'> =
     {
-      purchase: 'success',
-      return: 'warning',
-      transfer: 'info',
-      surplus: 'success',
-      other: 'secondary',
+      purchase: 'success', // 采购入库
+      return: 'warning', // 退货入库
+      transfer: 'info', // 调拨入库
+      surplus: 'success', // 盘盈入库
+      other: 'secondary', // 其他
+      sales_cancel: 'warning', // 销售订单取消入库
+      return_inbound: 'info', // 退货订单入库
+      opening_balance: 'secondary', // 期初库存
     };
   return variants[reason] || 'secondary';
 };
