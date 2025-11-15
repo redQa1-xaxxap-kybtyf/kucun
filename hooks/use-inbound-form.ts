@@ -68,26 +68,39 @@ export function calculateFinalQuantity(
   inputUnit: InboundUnit,
   piecesPerUnit: number | undefined
 ): number | undefined {
-  // ✅ 修改：返回类型改为 number | undefined
   try {
-    if (
-      !inputQuantity ||
-      inputQuantity <= 0 ||
-      !piecesPerUnit ||
-      piecesPerUnit <= 0
-    ) {
-      return undefined; // ✅ 修改：返回 undefined 而不是 0
+    // ✅ 修复：如果没有输入数量，返回 undefined
+    if (!inputQuantity || inputQuantity <= 0) {
+      return undefined;
     }
-    // 确保 piecesPerUnit 是有效的正整数
-    const validPiecesPerUnit =
-      Number.isInteger(piecesPerUnit) && piecesPerUnit > 0 ? piecesPerUnit : 1;
 
-    return calculateTotalPieces(
-      { value: inputQuantity, unit: inputUnit },
-      validPiecesPerUnit
-    );
+    // ✅ 修复：如果入库单位是"片"，直接返回输入数量，不需要换算
+    if (inputUnit === 'pieces') {
+      return inputQuantity;
+    }
+
+    // ✅ 如果入库单位是"件"，必须有件片比才能换算
+    if (inputUnit === 'boxes') {
+      if (!piecesPerUnit || piecesPerUnit <= 0) {
+        return undefined; // 缺少件片比，无法换算
+      }
+
+      // 确保 piecesPerUnit 是有效的正整数
+      const validPiecesPerUnit =
+        Number.isInteger(piecesPerUnit) && piecesPerUnit > 0
+          ? piecesPerUnit
+          : 1;
+
+      return calculateTotalPieces(
+        { value: inputQuantity, unit: inputUnit },
+        validPiecesPerUnit
+      );
+    }
+
+    // 其他单位，直接返回输入数量
+    return inputQuantity;
   } catch {
-    return inputQuantity; // ✅ 修改：发生错误时返回输入数量（可能是 undefined）
+    return inputQuantity;
   }
 }
 
