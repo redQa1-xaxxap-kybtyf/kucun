@@ -9,8 +9,11 @@ import {
   type PaymentOutStatus,
 } from '@/lib/types/payable';
 import { parseLocalDateString } from '@/lib/utils/datetime';
-// ✅ P0修复: 导入统一的付款方式常量
-import { PAYMENT_OUT_METHODS } from '@/lib/validations/payable';
+// ✅ P0修复: 导入统一的付款方式常量和查询参数校验 Schema
+import {
+  PAYMENT_OUT_METHODS,
+  paymentOutRecordQuerySchema,
+} from '@/lib/validations/payable';
 
 // ✅ P0修复: 使用统一的付款方式常量，避免多处定义导致漂移
 const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
@@ -33,6 +36,7 @@ export const metadata: Metadata = {
 
 /**
  * 服务器端获取付款数据
+ * ✅ P0修复: 添加参数校验，防止非法参数导致 500 错误
  */
 async function getPaymentsOutData(searchParams: {
   page?: string;
@@ -45,38 +49,34 @@ async function getPaymentsOutData(searchParams: {
   startDate?: string;
   endDate?: string;
 }) {
-  const page = parseInt(searchParams.page || '1', 10);
-  const limit = parseInt(searchParams.limit || '20', 10);
+  // ✅ P0修复: 使用 Schema 校验参数，防止 NaN 导致 Prisma 错误
+  const validationResult = paymentOutRecordQuerySchema.safeParse(searchParams);
+
+  if (!validationResult.success) {
+    // 如果校验失败，使用默认值而不是抛出错误
+    // 这样可以提供更好的用户体验
+    console.warn(
+      '付款记录查询参数校验失败:',
+      validationResult.error.issues[0]?.message
+    );
+  }
+
+  // 使用校验后的数据或默认值
+  const {
+    page = 1,
+    limit = 20,
+    search,
+    status,
+    paymentMethod,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    startDate,
+    endDate,
+  } = validationResult.success ? validationResult.data : {};
+
   const skip = (page - 1) * limit;
-  const search = searchParams.search || '';
-  const statusParam = searchParams.status;
-  const allowedStatuses: PaymentOutStatus[] = [
-    'pending',
-    'confirmed',
-    'cancelled',
-  ];
-  const status =
-    statusParam && allowedStatuses.includes(statusParam as PaymentOutStatus)
-      ? (statusParam as PaymentOutStatus)
-      : undefined;
-  const paymentMethodParam = searchParams.paymentMethod;
-  const paymentMethod =
-    paymentMethodParam &&
-    ALLOWED_PAYMENT_OUT_METHODS.includes(paymentMethodParam as PaymentOutMethod)
-      ? (paymentMethodParam as PaymentOutMethod)
-      : undefined;
-  const sortByParam = searchParams.sortBy || 'createdAt';
-  const sortBy: PaymentOutSortField = ALLOWED_PAYMENT_OUT_SORT_FIELDS.includes(
-    sortByParam as PaymentOutSortField
-  )
-    ? (sortByParam as PaymentOutSortField)
-    : 'createdAt';
-  const sortOrder =
-    searchParams.sortOrder === 'asc' || searchParams.sortOrder === 'desc'
-      ? (searchParams.sortOrder as 'asc' | 'desc')
-      : 'desc';
-  const startDateParam = searchParams.startDate;
-  const endDateParam = searchParams.endDate;
+
+  // ✅ P0修复: 移除重复的参数解析逻辑，直接使用校验后的值
 
   // 构建查询条件
   const whereConditions: Prisma.PaymentOutRecordWhereInput = {};
@@ -106,17 +106,17 @@ async function getPaymentsOutData(searchParams: {
     whereConditions.paymentMethod = paymentMethod;
   }
 
-  if (startDateParam || endDateParam) {
+  // ✅ P0修复: 使用校验后的 startDate 和 endDate
+  if (startDate || endDate) {
     const paymentDateFilter: { gte?: Date; lte?: Date } = {};
-    if (startDateParam) {
+    if (startDate) {
       paymentDateFilter.gte =
-        parseLocalDateString(startDateParam) ?? new Date(startDateParam);
+        parseLocalDateString(startDate) ?? new Date(startDate);
     }
-    if (endDateParam) {
-      const endDate =
-        parseLocalDateString(endDateParam) ?? new Date(endDateParam);
-      endDate.setHours(23, 59, 59, 999);
-      paymentDateFilter.lte = endDate;
+    if (endDate) {
+      const endDateObj = parseLocalDateString(endDate) ?? new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999);
+      paymentDateFilter.lte = endDateObj;
     }
     whereConditions.paymentDate = paymentDateFilter;
   }
