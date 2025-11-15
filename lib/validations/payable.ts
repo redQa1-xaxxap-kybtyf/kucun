@@ -19,13 +19,22 @@ export const payableSourceTypeSchema = z.enum(
   }
 );
 
-// 付款方式验证
-export const paymentOutMethodSchema = z.enum(
-  ['cash', 'bank_transfer', 'check', 'other'],
-  {
-    message: '请选择有效的付款方式',
-  }
-);
+// ✅ P0修复: 扩展付款方式，支持所有 6 种付款方式
+// 修复前：只支持 cash, bank_transfer, check, other（4 种）
+// 修复后：支持 cash, bank_transfer, alipay, wechat, check, other（6 种）
+// 影响：创建表单和筛选功能现在可以正常使用支付宝和微信
+export const PAYMENT_OUT_METHODS = [
+  'cash',
+  'bank_transfer',
+  'alipay',
+  'wechat',
+  'check',
+  'other',
+] as const;
+
+export const paymentOutMethodSchema = z.enum(PAYMENT_OUT_METHODS, {
+  message: '请选择有效的付款方式',
+});
 
 // 付款状态验证
 export const paymentOutStatusSchema = z.enum(

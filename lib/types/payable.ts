@@ -8,30 +8,30 @@
 
 // 从 Zod Schema 导入基础类型（单一真理源）
 import type {
-  PayableStatus,
-  PayableSourceType,
-  PaymentOutMethod,
-  PaymentOutStatus,
   CreatePayableRecordData,
-  UpdatePayableRecordData,
   CreatePaymentOutRecordData,
-  UpdatePaymentOutRecordData,
   PayableRecordQuery,
+  PayableSourceType,
+  PayableStatus,
+  PaymentOutMethod,
   PaymentOutRecordQuery,
+  PaymentOutStatus,
+  UpdatePayableRecordData,
+  UpdatePaymentOutRecordData,
 } from '@/lib/validations/payable';
 
 // 重新导出以保持向后兼容
 export type {
-  PayableStatus,
-  PayableSourceType,
-  PaymentOutMethod,
-  PaymentOutStatus,
   CreatePayableRecordData,
-  UpdatePayableRecordData,
   CreatePaymentOutRecordData,
-  UpdatePaymentOutRecordData,
   PayableRecordQuery,
+  PayableSourceType,
+  PayableStatus,
+  PaymentOutMethod,
   PaymentOutRecordQuery,
+  PaymentOutStatus,
+  UpdatePayableRecordData,
+  UpdatePaymentOutRecordData,
 };
 
 // 应付款记录基础数据
@@ -184,10 +184,12 @@ export const PAYABLE_SOURCE_TYPE_LABELS: Record<PayableSourceType, string> = {
   other: '其他',
 };
 
-// 付款方式标签映射
+// ✅ P0修复: 扩展付款方式标签映射，支持所有 6 种付款方式
 export const PAYMENT_OUT_METHOD_LABELS: Record<PaymentOutMethod, string> = {
   cash: '现金',
   bank_transfer: '银行转账',
+  alipay: '支付宝',
+  wechat: '微信支付',
   check: '支票',
   other: '其他',
 };

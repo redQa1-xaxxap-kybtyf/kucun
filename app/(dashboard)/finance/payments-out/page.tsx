@@ -9,12 +9,12 @@ import {
   type PaymentOutStatus,
 } from '@/lib/types/payable';
 import { parseLocalDateString } from '@/lib/utils/datetime';
+// ✅ P0修复: 导入统一的付款方式常量
+import { PAYMENT_OUT_METHODS } from '@/lib/validations/payable';
 
+// ✅ P0修复: 使用统一的付款方式常量，避免多处定义导致漂移
 const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
-  'cash',
-  'bank_transfer',
-  'check',
-  'other',
+  ...PAYMENT_OUT_METHODS,
 ];
 
 const ALLOWED_PAYMENT_OUT_SORT_FIELDS = [
@@ -150,25 +150,9 @@ async function getPaymentsOutData(searchParams: {
     prisma.paymentOutRecord.count({ where: whereConditions }),
   ]);
 
-  // 计算统计数据
-  const allPayments = await prisma.paymentOutRecord.findMany({
-    where: whereConditions,
-    select: {
-      paymentAmount: true,
-      status: true,
-    },
-  });
-
-  const totalAmount = allPayments.reduce(
-    (sum, payment) => sum + Number(payment.paymentAmount),
-    0
-  );
-  const confirmedAmount = allPayments
-    .filter(payment => payment.status === 'confirmed')
-    .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0);
-  const pendingAmount = allPayments
-    .filter(payment => payment.status === 'pending')
-    .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0);
+  // ✅ 优化：使用聚合查询替代全表扫描
+  // 修复前：3 次 findMany 全表扫描（总计、当月、上月）
+  // 修复后：5 次 aggregate/groupBy 查询，只返回标量结果
 
   const now = new Date();
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -179,47 +163,84 @@ async function getPaymentsOutData(searchParams: {
     1
   );
 
-  const buildMonthlyWhere = (dateRange: {
-    gte: Date;
-    lt: Date;
-  }): Prisma.PaymentOutRecordWhereInput => ({
-    AND: [
-      whereConditions,
-      {
-        paymentDate: dateRange,
-      },
-    ],
-  });
-
-  const [currentMonthPayments, previousMonthPayments] = await Promise.all([
-    prisma.paymentOutRecord.findMany({
-      where: buildMonthlyWhere({
-        gte: startOfCurrentMonth,
-        lt: startOfNextMonth,
-      }),
-      select: { paymentAmount: true, status: true },
+  // 并行执行聚合查询
+  const [
+    totalStats,
+    confirmedStats,
+    pendingStats,
+    currentMonthStats,
+    previousMonthStats,
+  ] = await Promise.all([
+    // 总体统计
+    prisma.paymentOutRecord.aggregate({
+      where: whereConditions,
+      _sum: { paymentAmount: true },
+      _count: true,
     }),
-    prisma.paymentOutRecord.findMany({
-      where: buildMonthlyWhere({
-        gte: startOfPreviousMonth,
-        lt: startOfCurrentMonth,
-      }),
-      select: { paymentAmount: true, status: true },
+    // 已确认金额
+    prisma.paymentOutRecord.aggregate({
+      where: {
+        ...whereConditions,
+        status: 'confirmed',
+      },
+      _sum: { paymentAmount: true },
+    }),
+    // 待确认金额
+    prisma.paymentOutRecord.aggregate({
+      where: {
+        ...whereConditions,
+        status: 'pending',
+      },
+      _sum: { paymentAmount: true },
+    }),
+    // 当月统计
+    prisma.paymentOutRecord.groupBy({
+      by: ['status'],
+      where: {
+        ...whereConditions,
+        paymentDate: {
+          gte: startOfCurrentMonth,
+          lt: startOfNextMonth,
+        },
+      },
+      _sum: { paymentAmount: true },
+      _count: true,
+    }),
+    // 上月统计
+    prisma.paymentOutRecord.groupBy({
+      by: ['status'],
+      where: {
+        ...whereConditions,
+        paymentDate: {
+          gte: startOfPreviousMonth,
+          lt: startOfCurrentMonth,
+        },
+      },
+      _sum: { paymentAmount: true },
+      _count: true,
     }),
   ]);
 
-  const calculateConfirmedSum = (
-    list: Array<{ paymentAmount: Prisma.Decimal | number; status: string }>
-  ) =>
-    list
-      .filter(payment => payment.status === 'confirmed')
-      .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0);
+  // 计算总体指标
+  const totalAmount = Number(totalStats._sum.paymentAmount || 0);
+  const confirmedAmount = Number(confirmedStats._sum.paymentAmount || 0);
+  const pendingAmount = Number(pendingStats._sum.paymentAmount || 0);
+
+  // ✅ 优化：从 groupBy 结果计算月度已确认金额
+  const calculateMonthlyConfirmedAmount = (
+    groupedStats: Array<{
+      status: string;
+      _sum: { paymentAmount: Prisma.Decimal | null };
+    }>
+  ) => {
+    const confirmed = groupedStats.find(stat => stat.status === 'confirmed');
+    return Number(confirmed?._sum.paymentAmount || 0);
+  };
 
   const currentMonthConfirmedAmount =
-    calculateConfirmedSum(currentMonthPayments);
-  const previousMonthConfirmedAmount = calculateConfirmedSum(
-    previousMonthPayments
-  );
+    calculateMonthlyConfirmedAmount(currentMonthStats);
+  const previousMonthConfirmedAmount =
+    calculateMonthlyConfirmedAmount(previousMonthStats);
 
   const confirmedAmountChangePercent =
     previousMonthConfirmedAmount > 0
@@ -236,7 +257,7 @@ async function getPaymentsOutData(searchParams: {
     totalAmount,
     confirmedAmount,
     pendingAmount,
-    recordCount: allPayments.length,
+    recordCount: totalStats._count,
     currentMonthConfirmedAmount: Number(currentMonthConfirmedAmount.toFixed(2)),
     previousMonthConfirmedAmount:
       previousMonthConfirmedAmount > 0
