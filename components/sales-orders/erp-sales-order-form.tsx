@@ -1219,6 +1219,7 @@ export function ERPSalesOrderForm({
             unitMapping={UNIT_MAPPING}
             form={form}
             selectedCustomerId={selectedCustomerId}
+            supplierId={supplierId}
             priceHistory={priceHistoryData?.data}
             priceType={priceType}
             toast={toast}
