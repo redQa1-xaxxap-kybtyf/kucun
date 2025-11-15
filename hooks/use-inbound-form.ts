@@ -10,9 +10,14 @@ import { calculateTotalPieces } from '@/lib/utils/piece-calculation';
 import {
   inboundFormSchema,
   type InboundFormData,
+  type InboundReason,
 } from '@/lib/validations/inbound';
 
-export function useInboundForm() {
+interface UseInboundFormOptions {
+  initialReason?: InboundReason;
+}
+
+export function useInboundForm(options?: UseInboundFormOptions) {
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
     null
   );
@@ -30,7 +35,7 @@ export function useInboundForm() {
       inputUnit: 'pieces' as InboundUnit,
       quantity: undefined, // ✅ 修改：默认值改为 undefined
       unitCost: undefined,
-      reason: 'purchase',
+      reason: options?.initialReason || 'purchase', // ✅ 修复：支持自定义初始值
       remarks: '',
       batchNumber: '',
       piecesPerUnit: undefined,

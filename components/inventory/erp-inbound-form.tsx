@@ -40,6 +40,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const isOpeningBalance = searchParams.get('type') === 'opening_balance';
 
   // 使用自定义Hook管理表单状态
+  // ✅ 修复：根据 URL 参数设置初始 reason 值
   const {
     form,
     selectedProduct,
@@ -48,7 +49,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     watchedInputQuantity,
     watchedInputUnit,
     watchedPiecesPerUnit,
-  } = useInboundForm();
+  } = useInboundForm({
+    initialReason: isOpeningBalance ? 'opening_balance' : 'purchase',
+  });
 
   // 产品选择逻辑
   const { handleProductSelect, handleReset } = useProductSelection(
@@ -105,13 +108,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     setShowProductPrompt(false);
     handleReset();
   };
-
-  // 期初入库：自动设置 reason 字段
-  useEffect(() => {
-    if (isOpeningBalance) {
-      form.setValue('reason', 'opening_balance');
-    }
-  }, [isOpeningBalance, form]);
 
   // 实时计算并更新最终片数
   useEffect(() => {
