@@ -83,10 +83,15 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         variant: 'success',
       });
 
-      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除产品后立即看到变化
-      await queryClient.refetchQueries({
-        queryKey: productQueryKeys.all,
-        type: 'active', // 立即重新获取所有活跃的查询
+      // ✅ 使用精确的缓存失效策略，避免刷新所有产品查询
+      // 1. 失效产品列表查询（触发重新获取）
+      await queryClient.invalidateQueries({
+        queryKey: productQueryKeys.lists(),
+      });
+
+      // 2. 移除已删除产品的详情查询
+      queryClient.removeQueries({
+        queryKey: productQueryKeys.detail(product.id),
       });
 
       // 跳转回产品列表
