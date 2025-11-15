@@ -91,12 +91,16 @@ async function getCostDetail(
   const salesCost = salesCostStats._sum.costAmount || 0;
 
   // 库存成本变化
+  // ✅ 修复：排除期初入库（opening_balance），期初库存不应冲击当期损益
   const [inboundCost, outboundCost] = await Promise.all([
     prisma.inboundRecord.aggregate({
       where: {
         createdAt: {
           gte: startDate,
           lte: endDate,
+        },
+        reason: {
+          not: 'opening_balance', // ✅ 排除期初入库
         },
       },
       _sum: {
