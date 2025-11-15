@@ -21,6 +21,7 @@ import { logger } from '@/lib/utils/console-logger';
  * 收款后清除相关缓存
  * 使用统一的缓存失效系统，自动级联失效相关缓存
  * ✅ P1修复: 同时失效Redis财务缓存
+ * ✅ P0修复: 添加销售订单缓存失效，确保列表付款状态实时更新
  */
 export async function clearCacheAfterPayment(): Promise<void> {
   // 失效应收款相关缓存（自动级联失效统计、往来账单等）
@@ -28,6 +29,10 @@ export async function clearCacheAfterPayment(): Promise<void> {
     revalidateFinance('receivables'),
     invalidateStatementsCache(),
     invalidateFinanceSummaryCache(),
+    // ✅ P0修复: 收款后失效销售订单缓存
+    // 修复前：收款后销售订单列表的付款状态字段卡在旧值，直到缓存过期才更新
+    // 修复后：收款后立即失效销售订单缓存，列表付款状态实时更新
+    revalidateSalesOrders(),
   ]);
 }
 
