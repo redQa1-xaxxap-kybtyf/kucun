@@ -311,6 +311,8 @@ model SalesOrderItem {
   transferQuantity    Float    @default(0) @map("transfer_quantity")
   costSubtotal        Float?   @map("cost_subtotal")
   profitAmount        Float?   @map("profit_amount")
+  allocatedExpense    Float?   @default(0) @map("allocated_expense")
+  profitMargin        Float?   @map("profit_margin")
   isManualProduct     Boolean? @map("is_manual_product")
   manualProductName   String?  @map("manual_product_name")
   manualSpecification String?  @map("manual_specification")
