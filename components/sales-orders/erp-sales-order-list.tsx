@@ -118,6 +118,7 @@ export function ERPSalesOrderList({
   const normalizedStatus = statusFilterValue;
 
   // 检查是否有活跃筛选条件
+  // ✅ P1修复: 将搜索词纳入活跃筛选判断
   const hasActiveFilters = React.useMemo(
     () =>
       Boolean(
@@ -126,7 +127,10 @@ export function ERPSalesOrderList({
           initialParams?.startDate ||
           initialParams?.endDate ||
           initialParams?.orderType ||
-          initialParams?.hasReturns
+          initialParams?.hasReturns ||
+          // ✅ P1修复: 搜索词也算活跃筛选
+          initialParams?.search ||
+          searchValue
       ),
     [
       normalizedStatus,
@@ -135,10 +139,13 @@ export function ERPSalesOrderList({
       initialParams?.endDate,
       initialParams?.orderType,
       initialParams?.hasReturns,
+      initialParams?.search,
+      searchValue,
     ]
   );
 
   // 清空所有筛选条件
+  // ✅ P1修复: 清空筛选时也清空搜索词
   const handleClearFilters = React.useCallback(() => {
     if (externalOnClearFilters) {
       externalOnClearFilters();
@@ -156,7 +163,14 @@ export function ERPSalesOrderList({
       'dateRange',
       JSON.stringify({ startDate: undefined, endDate: undefined })
     );
-  }, [externalOnClearFilters, externalOnFilter]);
+
+    // ✅ P1修复: 清空搜索词
+    // 修复前：清空筛选不会清空搜索词，导致用户困惑
+    // 修复后：清空筛选时同时清空搜索词，恢复到初始状态
+    if (externalOnSearch) {
+      externalOnSearch('');
+    }
+  }, [externalOnClearFilters, externalOnFilter, externalOnSearch]);
 
   // 切换订单类型（调货订单）
   const handleToggleTransferOrders = React.useCallback(() => {
