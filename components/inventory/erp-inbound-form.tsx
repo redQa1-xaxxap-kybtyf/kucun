@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertCircle } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import {
@@ -11,6 +13,7 @@ import {
 } from '@/components/inventory/forms/inbound-form-fields';
 import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-toolbar';
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form } from '@/components/ui/form';
 import {
   calculateFinalQuantity,
@@ -31,6 +34,10 @@ interface ERPInboundFormProps {
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const [showProductPrompt, setShowProductPrompt] = useState(false);
+  const searchParams = useSearchParams();
+
+  // 检测是否为期初入库操作
+  const isOpeningBalance = searchParams.get('type') === 'opening_balance';
 
   // 使用自定义Hook管理表单状态
   const {
@@ -99,6 +106,13 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     handleReset();
   };
 
+  // 期初入库：自动设置 reason 字段
+  useEffect(() => {
+    if (isOpeningBalance) {
+      form.setValue('reason', 'opening_balance');
+    }
+  }, [isOpeningBalance, form]);
+
   // 实时计算并更新最终片数
   useEffect(() => {
     if (watchedInputQuantity > 0 && watchedPiecesPerUnit > 0) {
@@ -122,6 +136,17 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           onReset={handleFormReset}
           onSubmit={handleToolbarSubmit}
         />
+
+        {/* 期初入库提示 Banner */}
+        {isOpeningBalance && (
+          <Alert className="border-amber-200 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-900">期初入库操作</AlertTitle>
+            <AlertDescription className="text-amber-800">
+              您正在创建期初入库记录，此操作将影响库存期初数据。请确保录入的数据准确无误。
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* 表单内容区域 */}
         <div className="overflow-hidden rounded-lg border bg-white shadow-md">

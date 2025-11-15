@@ -7,14 +7,18 @@
  * 与销售订单页面保持一致的结构
  */
 
-import { PackageCheck, Plus } from 'lucide-react';
+import { FileText, PackageCheck, Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
+import { can } from '@/lib/auth/permissions';
 
 export function InboundPageHeader() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const user = session?.user;
 
   return (
     <PageHeader
@@ -23,13 +27,30 @@ export function InboundPageHeader() {
       icon={<PackageCheck className="h-6 w-6 text-white" />}
       iconBgColor="hsl(var(--color-primary))"
       actions={
-        <Button
-          size="lg"
-          onClick={() => router.push('/inventory/inbound/create')}
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          新增入库
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* 期初入库按钮 - 仅对有权限的用户显示 */}
+          {can(user, 'inventory:opening_balance') && (
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() =>
+                router.push('/inventory/inbound/create?type=opening_balance')
+              }
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              期初入库
+            </Button>
+          )}
+
+          {/* 普通入库按钮 */}
+          <Button
+            size="lg"
+            onClick={() => router.push('/inventory/inbound/create')}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            新增入库
+          </Button>
+        </div>
       }
     />
   );
