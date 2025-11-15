@@ -9,6 +9,8 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { getExpenseStatistics } from '@/lib/services/expense-service';
+// ✅ P0修复: 导入本地时区日期解析函数
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { expenseStatisticsFilterSchema } from '@/lib/validations/expense';
 
 /**
@@ -39,8 +41,16 @@ export const GET = withAuth(
 
     const parsedQuery = validationResult.data;
 
+    // ✅ P0修复: 使用本地时区解析日期进行验证
     // 验证日期范围
-    if (new Date(parsedQuery.endDate) < new Date(parsedQuery.startDate)) {
+    const startDateObj =
+      parseLocalDateString(parsedQuery.startDate) ??
+      new Date(parsedQuery.startDate);
+    const endDateObj =
+      parseLocalDateString(parsedQuery.endDate) ??
+      new Date(parsedQuery.endDate);
+
+    if (endDateObj < startDateObj) {
       return errorResponse('结束日期不能早于开始日期', 400);
     }
 

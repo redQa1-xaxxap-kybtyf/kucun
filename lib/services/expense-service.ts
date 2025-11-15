@@ -203,13 +203,19 @@ export async function getExpenseRecords(
     where.expenseType = expenseType;
   }
 
+  // ✅ P0修复: 使用本地时区解析日期，并正确设置结束日期上限
   if (startDate || endDate) {
     where.expenseDate = {};
     if (startDate) {
-      where.expenseDate.gte = new Date(startDate);
+      // 开始日期：当天 00:00:00
+      where.expenseDate.gte =
+        parseLocalDateString(startDate) ?? new Date(startDate);
     }
     if (endDate) {
-      where.expenseDate.lte = new Date(endDate);
+      // 结束日期：当天 23:59:59.999
+      const endDateObj = parseLocalDateString(endDate) ?? new Date(endDate);
+      endDateObj.setHours(23, 59, 59, 999);
+      where.expenseDate.lte = endDateObj;
     }
   }
 
@@ -417,11 +423,16 @@ export async function getExpenseStatistics(
 ): Promise<ExpenseStatistics> {
   const { startDate, endDate, groupBy = 'type', expenseType } = params;
 
+  // ✅ P0修复: 使用本地时区解析日期，并正确设置结束日期上限
   // 构建查询条件
+  const startDateObj = parseLocalDateString(startDate) ?? new Date(startDate);
+  const endDateObj = parseLocalDateString(endDate) ?? new Date(endDate);
+  endDateObj.setHours(23, 59, 59, 999);
+
   const where: Prisma.ExpenseRecordWhereInput = {
     expenseDate: {
-      gte: new Date(startDate),
-      lte: new Date(endDate),
+      gte: startDateObj,
+      lte: endDateObj,
     },
   };
 
