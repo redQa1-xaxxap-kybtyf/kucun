@@ -120,25 +120,33 @@ export const POST = withAuth(
             select: {
               id: true,
               totalAmount: true,
+              roundingAdjustment: true,
               status: true,
             },
           });
 
           if (salesOrder) {
+            // ✅ P0修复: 聚合收款金额和抹零金额
             const confirmedSum = await tx.paymentRecord.aggregate({
               where: {
                 salesOrderId: updatedPayment.salesOrderId,
                 status: { in: ['confirmed', 'applied'] },
               },
-              _sum: { paymentAmount: true },
+              _sum: { paymentAmount: true, roundingAmount: true },
             });
 
-            const totalConfirmed = confirmedSum._sum.paymentAmount ?? 0;
+            // ✅ P0修复: 计算实际收款总额（包含抹零）
+            const totalPaid =
+              (confirmedSum._sum.paymentAmount ?? 0) +
+              (confirmedSum._sum.roundingAmount ?? 0);
 
-            if (
-              salesOrder.status === 'shipped' &&
-              totalConfirmed >= Number(salesOrder.totalAmount ?? 0)
-            ) {
+            // ✅ P0修复: 计算订单应收总额（包含订单抹零）
+            const orderDue =
+              Number(salesOrder.totalAmount ?? 0) +
+              Number(salesOrder.roundingAdjustment ?? 0);
+
+            // ✅ P0修复: 只有当实际收款 >= 订单应收时，才自动完结订单
+            if (salesOrder.status === 'shipped' && totalPaid >= orderDue) {
               await tx.salesOrder.update({
                 where: { id: salesOrder.id },
                 data: { status: 'completed' },
