@@ -2,20 +2,17 @@ import type {
   ReturnOrder,
   ReturnOrderStatus,
   ReturnOrderType,
-  ReturnProcessType,
 } from '@/lib/types/return-order';
 
 export interface ReturnOrderListViewProps {
   searchValue: string;
   statusFilter: ReturnOrderStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
-  processTypeFilter: ReturnProcessType | 'all';
   dateRange: { startDate?: string; endDate?: string };
   isSearching: boolean;
   onSearch: (value: string) => void;
   onStatusChange: (value: ReturnOrderStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
-  onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
   onDateRangeChange: (range: { startDate?: string; endDate?: string }) => void;
   onClearFilters: () => void;
   orders: ReturnOrder[];

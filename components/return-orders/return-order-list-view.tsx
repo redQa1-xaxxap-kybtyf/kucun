@@ -38,7 +38,6 @@ import { useToast } from '@/components/ui/use-toast';
 import {
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
-  RETURN_PROCESS_TYPE_LABELS,
   type ReturnOrder,
   type ReturnOrderStatus,
 } from '@/lib/types/return-order';
@@ -53,13 +52,11 @@ export function ReturnOrderListView({
   searchValue,
   statusFilter,
   typeFilter,
-  processTypeFilter,
   dateRange,
   isSearching,
   onSearch,
   onStatusChange,
   onTypeChange,
-  onProcessTypeChange,
   onDateRangeChange,
   onClearFilters,
   orders,
@@ -85,13 +82,11 @@ export function ReturnOrderListView({
         searchValue={searchValue}
         statusFilter={statusFilter}
         typeFilter={typeFilter}
-        processTypeFilter={processTypeFilter}
         dateRange={dateRange}
         isSearching={isSearching}
         onSearch={onSearch}
         onStatusChange={onStatusChange}
         onTypeChange={onTypeChange}
-        onProcessTypeChange={onProcessTypeChange}
         onDateRangeChange={onDateRangeChange}
         onClearFilters={onClearFilters}
       />
@@ -158,7 +153,6 @@ function ReturnOrderTable({
             <TableHead>关联销售单</TableHead>
             <TableHead>客户</TableHead>
             <TableHead>退货类型</TableHead>
-            <TableHead>处理方式</TableHead>
             <TableHead className="text-right">实际退款金额</TableHead>
             <TableHead>状态</TableHead>
             <TableHead>创建时间</TableHead>
@@ -268,9 +262,6 @@ function ReturnOrderRow({
       </TableCell>
       <TableCell className="text-[hsl(var(--color-text-secondary))]">
         {RETURN_ORDER_TYPE_LABELS[order.type]}
-      </TableCell>
-      <TableCell className="text-[hsl(var(--color-text-secondary))]">
-        {RETURN_PROCESS_TYPE_LABELS[order.processType]}
       </TableCell>
       <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
         {formatRefundAmount(order)}

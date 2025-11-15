@@ -141,7 +141,6 @@ export const updateReturnOrderSchema = z.object({
       'other',
     ])
     .optional(),
-  processType: z.enum(['refund', 'exchange']).optional(),
   reason: z.string().optional(),
   remarks: z.string().optional(),
   items: z.array(returnOrderItemSchema).optional(),
@@ -264,7 +263,6 @@ export const returnOrderQuerySchema = z.object({
       'other',
     ])
     .optional(),
-  processType: z.enum(['refund', 'exchange']).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   sortBy: z
@@ -300,7 +298,6 @@ export const returnOrderSearchSchema = z
         'other',
       ] as const)
       .optional(),
-    processType: z.enum(['', 'refund', 'exchange'] as const).optional(),
     customerId: z.string().optional(),
     salesOrderId: z.string().optional(),
     userId: z.string().optional(),
@@ -404,7 +401,6 @@ export const returnOrderSearchDefaults: ReturnOrderSearchFormData = {
   search: '',
   status: '',
   type: '',
-  processType: '',
   sortBy: 'createdAt',
   sortOrder: 'desc',
 };

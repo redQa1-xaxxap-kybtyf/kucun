@@ -118,7 +118,6 @@ export interface ReturnOrderQueryParams {
   search?: string;
   status?: ReturnOrderStatus;
   type?: ReturnOrderType;
-  processType?: ReturnProcessType;
   customerId?: string;
   salesOrderId?: string;
   userId?: string;

@@ -58,7 +58,6 @@ export const GET = withAuth(
       salesOrderId,
       status,
       type,
-      processType,
       startDate,
       endDate,
       sortBy = 'createdAt',
@@ -77,7 +76,6 @@ export const GET = withAuth(
       salesOrderId?: string;
       status?: string;
       type?: string;
-      processType?: string;
       createdAt?: {
         gte?: Date;
         lte?: Date;
@@ -113,10 +111,6 @@ export const GET = withAuth(
 
     if (type) {
       where.type = type;
-    }
-
-    if (processType) {
-      where.processType = processType;
     }
 
     if (startDate || endDate) {
