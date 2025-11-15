@@ -85,7 +85,7 @@ export class SalesOrderExpenseService {
       // 计算分摊费用（最后一项使用差额，避免精度问题）
       const allocatedExpense = isLastItem
         ? totalExpense - allocatedSum
-        : this.roundToTwoDecimals(totalExpense * ratio);
+        : roundToTwoDecimals(totalExpense * ratio);
 
       allocatedSum += allocatedExpense;
 
@@ -95,17 +95,14 @@ export class SalesOrderExpenseService {
 
       // 计算利润
       const profitAmount = item.subtotal - totalCost;
-      const profitMargin = this.calculateProfitMargin(
-        item.subtotal,
-        totalCost
-      );
+      const profitMargin = this.calculateProfitMargin(item.subtotal, totalCost);
 
       results.push({
         itemId: item.id,
-        allocatedExpense: this.roundToTwoDecimals(allocatedExpense),
-        totalCost: this.roundToTwoDecimals(totalCost),
-        profitAmount: this.roundToTwoDecimals(profitAmount),
-        profitMargin: this.roundToTwoDecimals(profitMargin),
+        allocatedExpense: roundToTwoDecimals(allocatedExpense),
+        totalCost: roundToTwoDecimals(totalCost),
+        profitAmount: roundToTwoDecimals(profitAmount),
+        profitMargin: roundToTwoDecimals(profitMargin),
       });
     });
 
@@ -133,17 +130,7 @@ export class SalesOrderExpenseService {
     const profitAmount = salesAmount - totalCost;
     const margin = (profitAmount / salesAmount) * 100;
 
-    return this.roundToTwoDecimals(margin);
-  }
-
-  /**
-   * 四舍五入到两位小数
-   *
-   * @param value - 原始值
-   * @returns 保留两位小数的值
-   */
-  private roundToTwoDecimals(value: number): number {
-    return Math.round(value * 100) / 100;
+    return roundToTwoDecimals(margin);
   }
 
   /**
@@ -195,15 +182,14 @@ export const allocateExpensesByValue = (
   totalExpense: number
 ) => salesOrderExpenseService.allocateExpensesByValue(items, totalExpense);
 
-export const calculateProfitMargin = (
-  salesAmount: number,
-  totalCost: number
-) => salesOrderExpenseService.calculateProfitMargin(salesAmount, totalCost);
+export const calculateProfitMargin = (salesAmount: number, totalCost: number) =>
+  salesOrderExpenseService.calculateProfitMargin(salesAmount, totalCost);
 
-export const updateItemsWithExpenseAllocation = <
-  T extends OrderItemForExpense,
->(
+export const updateItemsWithExpenseAllocation = <T extends OrderItemForExpense>(
   items: T[],
   totalExpense: number
-) => salesOrderExpenseService.updateItemsWithExpenseAllocation(items, totalExpense);
-
+) =>
+  salesOrderExpenseService.updateItemsWithExpenseAllocation(
+    items,
+    totalExpense
+  );
