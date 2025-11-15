@@ -43,8 +43,9 @@ export const paymentsApi = {
     if (query.page) {
       params.append('page', query.page.toString());
     }
+    // ✅ P0修复: 统一使用 limit 参数，与后端保持一致
     if (query.pageSize) {
-      params.append('pageSize', query.pageSize.toString());
+      params.append('limit', query.pageSize.toString());
     }
     if (query.search) {
       params.append('search', query.search);
