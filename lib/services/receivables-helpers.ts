@@ -123,6 +123,43 @@ function safeParseDate(value: string): Date {
   return new Date();
 }
 
+/**
+ * 计算应收款统计数据（基于全量数据）
+ *
+ * ✅ P0修复: 使用聚合查询计算统计数据，不受分页影响
+ *
+ * @param where - Prisma 查询条件
+ * @param paymentStatus - 支付状态筛选（可选）
+ */
+export async function calculateReceivablesSummary(
+  where: Prisma.SalesOrderWhereInput,
+  paymentStatus?: PaymentStatus
+): Promise<ReceivableSummary> {
+  // 获取全量订单基础数据（不分页）
+  const allOrders = await fetchReceivableBaseOrders(where, {
+    createdAt: 'desc',
+  });
+  const allOrderIds = allOrders.map(order => order.id);
+
+  // 聚合所有订单的收款信息
+  const paymentsByOrder = await aggregatePaymentsByOrder(allOrderIds);
+
+  // 构建应收款列表
+  const summaryReceivables = createSummaryReceivables(
+    allOrders,
+    paymentsByOrder
+  );
+
+  // 应用支付状态筛选
+  const filteredReceivables = filterReceivablesByStatus(
+    summaryReceivables,
+    paymentStatus
+  );
+
+  // 计算统计数据
+  return calculateSummary(filteredReceivables);
+}
+
 // ============ 查询与转换 ============
 export function buildWhereConditions(params: {
   search?: string;
@@ -305,9 +342,21 @@ type PaymentTotals = {
   pending: { actual: number; rounding: number };
 };
 
+/**
+ * 获取应收款订单基础数据
+ *
+ * ✅ P0修复: 移除硬编码的 5000 上限，支持标准分页
+ *
+ * @param where - Prisma 查询条件
+ * @param orderBy - 排序条件
+ * @param skip - 跳过的记录数（可选，用于分页）
+ * @param take - 获取的记录数（可选，用于分页）
+ */
 export async function fetchReceivableBaseOrders(
   where: Prisma.SalesOrderWhereInput,
-  orderBy: Prisma.SalesOrderOrderByWithRelationInput
+  orderBy: Prisma.SalesOrderOrderByWithRelationInput,
+  skip?: number,
+  take?: number
 ): Promise<BaseReceivableOrder[]> {
   return prisma.salesOrder.findMany({
     where,
@@ -320,7 +369,8 @@ export async function fetchReceivableBaseOrders(
       createdAt: true,
     },
     orderBy,
-    take: 5000, // 减少查询数量，提升性能
+    ...(skip !== undefined && { skip }),
+    ...(take !== undefined && { take }),
   });
 }
 
