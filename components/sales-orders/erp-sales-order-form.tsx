@@ -1107,6 +1107,18 @@ export function ERPSalesOrderForm({
                   <h4 className="mb-3 text-sm font-semibold text-orange-800">
                     调货销售信息
                   </h4>
+
+                  {/* 供应商未选择警告 */}
+                  {!supplierId && (
+                    <Alert className="mb-3 border-amber-300 bg-amber-50">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-sm text-amber-800">
+                        <strong>提示：</strong>
+                        调货订单需要选择供应商才能添加产品。请先在下方选择供应商。
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                     <FormField
                       control={form.control}

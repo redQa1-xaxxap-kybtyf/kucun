@@ -695,6 +695,11 @@ export function ERPSalesOrderList({
                             {TRANSFER_MODE_LABELS[order.transferMode] ??
                               order.transferMode}
                           </Badge>
+                          {!order.supplierId && (
+                            <Badge variant="destructive" className="w-fit">
+                              缺少供应商
+                            </Badge>
+                          )}
                         </div>
                       )}
                       {order.hasReturnOrder && (

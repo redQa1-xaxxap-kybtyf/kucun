@@ -196,7 +196,14 @@ export function OrderItemsSection({
                 size="sm"
                 onClick={onAddItem}
                 className="h-8 gap-1"
-                disabled={isSubmitting}
+                disabled={
+                  isSubmitting || (orderType === 'TRANSFER' && !supplierId)
+                }
+                title={
+                  orderType === 'TRANSFER' && !supplierId
+                    ? '请先选择供应商'
+                    : undefined
+                }
               >
                 <Plus className="h-3 w-3" />
                 添加产品
