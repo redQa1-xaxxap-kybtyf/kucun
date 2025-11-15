@@ -7,6 +7,8 @@
 
 /**
  * 库存总览筛选配置
+ * ✅ Bug修复：补全所有排序选项，与后端 buildOrderByClause 保持一致
+ * ⚠️ 注意：Inventory表没有created_at字段，只有updated_at
  */
 export const INVENTORY_FILTER_CONFIG = {
   filters: [
@@ -21,6 +23,9 @@ export const INVENTORY_FILTER_CONFIG = {
       options: [
         { label: '更新时间', value: 'updatedAt' },
         { label: '库存数量', value: 'quantity' },
+        { label: '预留数量', value: 'reservedQuantity' }, // ✅ 新增
+        { label: '批次号', value: 'batchNumber' }, // ✅ 新增
+        { label: '存储位置', value: 'location' }, // ✅ 新增
       ],
       width: 'w-[140px]' as const,
     },

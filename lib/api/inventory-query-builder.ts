@@ -55,12 +55,15 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
 
   // 搜索条件 - 性能优化（避免全表扫描）
+  // ✅ Bug修复：允许单字符搜索，优化用户体验
   // ✅ 优化策略：
   // - 空字符串或undefined：不加搜索条件，正常查询
-  // - 长度=1：返回空结果（不满足最小搜索长度）
+  // - 长度=1（单字符）：
+  //     • 前缀匹配：p.code（产品编码）
+  //     • 包含匹配：p.name（产品名称，支持中文单字搜索）
   // - 长度=2~4（短关键词）：
-  //     • 只使用前缀匹配（可命中索引）：p.code, i.batch_number
-  //     • 移除 LIKE '%keyword%' 避免全表扫描
+  //     • 前缀匹配（可命中索引）：p.code, i.batch_number
+  //     • 包含匹配：p.name（支持中文短词搜索）
   // - 长度>=5（长关键词）：
   //     • 前缀匹配：p.code, i.batch_number
   //     • 包含匹配：p.name, i.location（用户输入更完整，性能损失可接受）
@@ -68,14 +71,21 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
     const s = params.search.trim();
 
     if (s.length === 1) {
-      // ✅ 单字符搜索：返回空结果
-      conditions.push(Prisma.sql`1=0`);
-    } else if (s.length >= 2 && s.length <= 4) {
-      // ✅ 短关键词：只使用前缀匹配，避免全表扫描
+      // ✅ 单字符搜索：支持产品编码前缀和产品名称包含匹配
       const likePrefix = `${s}%`;
+      const likeAny = `%${s}%`;
       conditions.push(Prisma.sql`(
         p.code LIKE ${likePrefix} OR
-        i.batch_number LIKE ${likePrefix}
+        p.name LIKE ${likeAny}
+      )`);
+    } else if (s.length >= 2 && s.length <= 4) {
+      // ✅ 短关键词：前缀匹配 + 产品名称包含匹配
+      const likePrefix = `${s}%`;
+      const likeAny = `%${s}%`;
+      conditions.push(Prisma.sql`(
+        p.code LIKE ${likePrefix} OR
+        i.batch_number LIKE ${likePrefix} OR
+        p.name LIKE ${likeAny}
       )`);
     } else if (s.length >= 5) {
       // ✅ 长关键词：前缀匹配 + 包含匹配
@@ -160,15 +170,18 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
 
 /**
  * 构建ORDER BY子句
+ * ✅ Bug修复：补全所有前端支持的排序字段
+ * ⚠️ 注意：Inventory表没有created_at字段，只有updated_at
  */
 function buildOrderByClause(
   sortBy: string = 'updatedAt',
   sortOrder: string = 'desc'
 ): Prisma.Sql {
-  // 验证排序字段
+  // 验证排序字段 - 与 inventoryParamsSchema 保持一致
   const validSortFields: Record<string, string> = {
     updatedAt: 'i.updated_at',
     quantity: 'i.quantity',
+    reservedQuantity: 'i.reserved_quantity', // ✅ 新增：预留数量排序
     productId: 'i.product_id',
     batchNumber: 'i.batch_number',
     location: 'i.location',
