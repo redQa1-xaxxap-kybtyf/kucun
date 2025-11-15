@@ -401,23 +401,11 @@ async function handleCreateSubmit(args: SubmitHandlerArgs): Promise<void> {
     return;
   }
 
-  // 处理产品名称：如果为空且选择了分类，则使用分类名称
-  let name =
+  // 处理产品名称：现在是必填字段
+  const name =
     typeof values.name === 'string'
       ? normalizeOptionalTextField(form, 'name', values.name)
       : values.name;
-
-  // 如果产品名称为空，尝试使用分类名称
-  if (
-    (!name || name.trim() === '') &&
-    values.categoryId &&
-    values.categoryId !== 'uncategorized'
-  ) {
-    const categoryName = form.getValues('_categoryName' as any);
-    if (categoryName && typeof categoryName === 'string') {
-      name = categoryName;
-    }
-  }
 
   const createInput: ProductCreateFormData = {
     code,

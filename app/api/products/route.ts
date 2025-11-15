@@ -140,7 +140,7 @@ export const POST = withAuth(
         return await tx.product.create({
           data: {
             code,
-            name: name || code, // 如果name为空,使用code作为name
+            name, // 产品名称现在是必填字段
             specification,
             description,
             unit: 'sheet', // 默认单位为"片"（符合业务规则）

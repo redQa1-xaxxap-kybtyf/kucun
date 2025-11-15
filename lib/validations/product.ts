@@ -44,14 +44,13 @@ const baseValidations = {
     .max(50, '产品编码不能超过50个字符')
     .regex(/^[A-Za-z0-9-_]+$/, '产品编码只能包含字母、数字、短横线和下划线'),
 
-  /** 产品名称验证：选填，最多100字符，不允许HTML标签 */
+  /** 产品名称验证：必填，最多100字符，不允许HTML标签 */
   name: z
     .string()
     .trim()
+    .min(1, '产品名称不能为空')
     .max(100, '产品名称不能超过100个字符')
-    .refine(val => !/<[^>]*>/g.test(val), '产品名称不能包含HTML标签')
-    .optional()
-    .or(z.literal('')),
+    .refine(val => !/<[^>]*>/g.test(val), '产品名称不能包含HTML标签'),
 
   /** 规格描述验证：必填，最多200字符 */
   specification: z
