@@ -121,6 +121,12 @@ export async function getFactoryShipmentOrders(
   if (params.endDate) {
     searchParams.set('endDate', params.endDate.toISOString());
   }
+  // ✅ P0修复: 添加 search 参数序列化
+  // 修复前：search 参数被完全忽略，导致搜索、分享链接、轮询刷新全部失效
+  // 修复后：search 参数正确传递到 API 路由，支持同时搜索柜号和订单号
+  if (params.search) {
+    searchParams.set('search', params.search);
+  }
 
   const response = await fetch(`/api/factory-shipments?${searchParams}`);
 
