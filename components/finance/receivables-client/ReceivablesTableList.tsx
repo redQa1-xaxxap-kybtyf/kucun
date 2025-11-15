@@ -394,9 +394,9 @@ type ReceivableAmounts = {
 function getReceivableAmounts(receivable: ReceivableItem): ReceivableAmounts {
   const productAmount = receivable.totalAmount;
   const orderRoundingRaw = receivable.roundingAdjustment ?? 0;
-  const paymentRoundingRaw =
-    (receivable.paymentRoundingAmount ?? 0) +
-    (receivable.pendingRoundingAmount ?? 0);
+  // ✅ P1修复: 只使用已确认的抹零计算剩余金额
+  // 待确认的抹零不参与剩余金额计算
+  const paymentRoundingRaw = receivable.paymentRoundingAmount ?? 0;
   const paidActual = receivable.paidAmount ?? 0;
 
   const orderActualAmount = productAmount + orderRoundingRaw;

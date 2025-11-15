@@ -440,9 +440,10 @@ export function createSummaryReceivables(
     const pendingActual = amounts.pending.actual;
     const pendingRounding = amounts.pending.rounding;
 
-    const appliedRounding = confirmedRounding + pendingRounding;
+    // ✅ P1修复: 剩余金额只扣除已确认的收款和抹零
+    // 待确认的抹零不参与剩余金额计算，仅用于状态展示
     const orderDue = totalAmount + roundingAdjustment;
-    const paidAgainstOrder = confirmedActual + appliedRounding;
+    const paidAgainstOrder = confirmedActual + confirmedRounding;
     const pendingAgainstOrder = pendingActual;
     const remainingAmount = Math.max(0, orderDue - paidAgainstOrder);
     const statusDerived = calculatePaymentStatus(
@@ -461,8 +462,8 @@ export function createSummaryReceivables(
       orderDate: order.createdAt.toISOString(),
       totalAmount,
       roundingAdjustment,
-      paymentRoundingAmount: appliedRounding,
-      pendingRoundingAmount: 0,
+      paymentRoundingAmount: confirmedRounding, // 只包含已确认的抹零
+      pendingRoundingAmount: pendingRounding, // 待确认的抹零单独返回
       paidAmount: confirmedActual,
       pendingAmount: pendingActual,
       remainingAmount,
