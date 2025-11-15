@@ -77,19 +77,20 @@ export function ProductImageGallery({
   if (allImages.length === 0) {
     return (
       <div
-        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        className="overflow-hidden rounded-lg border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
         style={{ boxShadow: 'var(--shadow-medium)' }}
       >
-        <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
-          <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
+        <div className="border-b-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
+          <h4 className="flex items-center gap-2 font-semibold text-[hsl(var(--color-text-primary))]">
+            <ImageIcon className="h-5 w-5 text-[hsl(var(--color-text-tertiary))]" />
             产品图片
           </h4>
         </div>
         <div className="p-6">
-          <div className="flex h-64 items-center justify-center rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))]">
+          <div className="flex h-64 items-center justify-center rounded-lg border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-gradient-to-br from-[hsl(var(--color-bg-tertiary))] to-[hsl(var(--color-bg-secondary))]">
             <div className="text-center">
-              <ImageIcon className="mx-auto h-12 w-12 text-[hsl(var(--color-text-tertiary))]" />
-              <p className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+              <ImageIcon className="mx-auto h-16 w-16 text-[hsl(var(--color-text-tertiary))] opacity-50" />
+              <p className="mt-3 text-sm font-medium text-[hsl(var(--color-text-secondary))]">
                 暂无产品图片
               </p>
             </div>
@@ -102,18 +103,19 @@ export function ProductImageGallery({
   return (
     <>
       <div
-        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
+        className="overflow-hidden rounded-lg border-2 border-[hsl(var(--color-primary))] bg-gradient-to-br from-[hsl(var(--color-bg-card))] to-[hsl(var(--color-bg-secondary))]"
+        style={{ boxShadow: 'var(--shadow-large)' }}
       >
-        <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
-          <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
+        <div className="border-b-2 border-[hsl(var(--color-primary))] bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-bg-secondary))] px-6 py-4">
+          <h4 className="flex items-center gap-2 text-lg font-bold text-[hsl(var(--color-text-primary))]">
+            <ImageIcon className="h-5 w-5 text-[hsl(var(--color-primary))]" />
             产品图片
           </h4>
         </div>
-        <div className="p-6">
+        <div className="bg-[hsl(var(--color-bg-card))] p-6">
           {/* 主图展示 */}
           <div className="mb-4">
-            <div className="group relative aspect-video overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))]">
+            <div className="group relative aspect-video overflow-hidden rounded-lg border-2 border-[hsl(var(--color-border-primary))] bg-white shadow-lg transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-xl">
               <Image
                 src={allImages[0]}
                 alt={productName}
@@ -126,7 +128,7 @@ export function ProductImageGallery({
                   variant="secondary"
                   size="lg"
                   onClick={() => handleImageClick(0)}
-                  className="gap-2"
+                  className="gap-2 shadow-lg"
                 >
                   <ZoomIn className="h-4 w-4" />
                   查看大图
@@ -137,12 +139,12 @@ export function ProductImageGallery({
 
           {/* 缩略图列表 */}
           {allImages.length > 1 && (
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 md:grid-cols-8">
+            <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
               {allImages.map((imageUrl, index) => (
                 <button
                   key={index}
                   onClick={() => handleImageClick(index)}
-                  className="group relative aspect-square overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-md"
+                  className="group relative aspect-square overflow-hidden rounded-lg border-2 border-[hsl(var(--color-border-primary))] bg-white shadow-md transition-all hover:scale-105 hover:border-[hsl(var(--color-primary))] hover:shadow-lg"
                 >
                   <Image
                     src={imageUrl}
@@ -151,8 +153,8 @@ export function ProductImageGallery({
                     className="object-cover transition-transform duration-300 group-hover:scale-110"
                     sizes="(max-width: 768px) 25vw, (max-width: 1200px) 16vw, 12vw"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/30 group-hover:opacity-100">
-                    <ZoomIn className="h-4 w-4 text-white" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/40 group-hover:opacity-100">
+                    <ZoomIn className="h-4 w-4 text-white drop-shadow-lg" />
                   </div>
                 </button>
               ))}
@@ -188,7 +190,7 @@ export function ProductImageGallery({
                   variant="secondary"
                   size="icon"
                   onClick={handlePrevious}
-                  className="absolute left-2 top-1/2 -translate-y-1/2"
+                  className="absolute top-1/2 left-2 -translate-y-1/2"
                 >
                   <span className="sr-only">上一张</span>
                   <svg
@@ -209,7 +211,7 @@ export function ProductImageGallery({
                   variant="secondary"
                   size="icon"
                   onClick={handleNext}
-                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                  className="absolute top-1/2 right-2 -translate-y-1/2"
                 >
                   <span className="sr-only">下一张</span>
                   <svg
@@ -234,7 +236,7 @@ export function ProductImageGallery({
               variant="secondary"
               size="icon"
               onClick={() => setPreviewOpen(false)}
-              className="absolute right-2 top-2"
+              className="absolute top-2 right-2"
             >
               <X className="h-4 w-4" />
               <span className="sr-only">关闭</span>
@@ -270,4 +272,3 @@ export function ProductImageGallery({
     </>
   );
 }
-

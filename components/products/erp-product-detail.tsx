@@ -257,41 +257,27 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* 系统信息区域 */}
-        <div
-          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
-          <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
-            <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
-              系统信息
-            </h4>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  产品状态
+            {/* 系统信息 - 紧凑显示 */}
+            <div className="mt-6 border-t border-[hsl(var(--color-border-primary))] pt-4">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                    状态:
+                  </span>
+                  {getStatusBadge(product.status)}
                 </div>
-                <div className="mt-2">{getStatusBadge(product.status)}</div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  创建时间
+                <div className="flex items-center gap-2">
+                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                    创建时间:
+                  </span>
+                  <span>{formatDateTime(product.createdAt)}</span>
                 </div>
-                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  {formatDateTime(product.createdAt)}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                  更新时间
-                </div>
-                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                  {formatDateTime(product.updatedAt)}
+                <div className="flex items-center gap-2">
+                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                    更新时间:
+                  </span>
+                  <span>{formatDateTime(product.updatedAt)}</span>
                 </div>
               </div>
             </div>
