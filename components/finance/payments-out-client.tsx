@@ -253,8 +253,9 @@ export function PaymentsOutClient({
             <TrendingUp className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
+            {/* ✅ P1修复: 展示本月已确认金额，而非总已确认金额 */}
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
-              {formatCurrency(statistics.confirmedAmount)}
+              {formatCurrency(statistics.currentMonthConfirmedAmount ?? 0)}
             </div>
             <p className="text-muted-foreground text-xs">
               {confirmedAmountChangeLabel}
