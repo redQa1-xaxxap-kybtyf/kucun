@@ -66,6 +66,7 @@ const buildWhere = ({
   search,
   status,
   customerId,
+  userId,
   startDate,
   endDate,
   orderType,
@@ -92,6 +93,13 @@ const buildWhere = ({
 
   if (customerId) {
     where.customerId = customerId;
+  }
+
+  // ✅ P0修复: 添加 userId 筛选支持
+  // 修复前：userId 参数被完全忽略，导致按销售员过滤永远返回全部订单
+  // 修复后：支持按销售员筛选，用于销售报表和权限控制
+  if (userId) {
+    where.userId = userId;
   }
 
   if (orderType) {
