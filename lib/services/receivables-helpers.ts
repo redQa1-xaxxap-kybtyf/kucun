@@ -235,16 +235,48 @@ export function buildWhereConditions(params: {
   return where;
 }
 
+/**
+ * 构建排序条件
+ *
+ * ✅ P1修复: 扩展支持所有 Schema 定义的排序字段
+ *
+ * @param sortBy - 排序字段
+ * @param sortOrder - 排序顺序（asc/desc）
+ */
 export function buildOrderBy(
   sortBy: string = 'orderDate',
   sortOrder: 'asc' | 'desc' = 'desc'
 ): Prisma.SalesOrderOrderByWithRelationInput {
   const orderByMap: Record<string, Prisma.SalesOrderOrderByWithRelationInput> =
     {
+      // 订单创建日期（默认）
       orderDate: { createdAt: sortOrder },
-      totalAmount: { totalAmount: sortOrder },
+      createdAt: { createdAt: sortOrder },
+
+      // 订单更新日期
+      updatedAt: { updatedAt: sortOrder },
+
+      // 到期日期
+      dueDate: { dueDate: sortOrder },
+
+      // 订单编号
+      orderNumber: { orderNumber: sortOrder },
+
+      // 客户名称（关联排序）
       customerName: { customer: { name: sortOrder } },
+
+      // 订单总额
+      totalAmount: { totalAmount: sortOrder },
+
+      // 已付金额（计算字段，无法直接排序，回退到 totalAmount）
+      // 注意: paidAmount 需要通过聚合计算，无法在数据库层面排序
+      paidAmount: { totalAmount: sortOrder },
+
+      // 剩余金额（计算字段，无法直接排序，回退到 totalAmount）
+      // 注意: remainingAmount 是计算字段，无法在数据库层面排序
+      remainingAmount: { totalAmount: sortOrder },
     };
+
   return orderByMap[sortBy] ?? { createdAt: sortOrder };
 }
 
