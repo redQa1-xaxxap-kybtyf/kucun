@@ -8,6 +8,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
@@ -160,56 +161,8 @@ const orderListSelect = {
   },
 } satisfies Prisma.FactoryShipmentOrderSelect;
 
-async function enrichOrders(
-  orders: Array<
-    Prisma.FactoryShipmentOrderGetPayload<{ select: typeof orderListSelect }>
-  >
-) {
-  // 批量获取所有订单的最新运输状态
-  const orderIds = orders.map(order => order.id);
-  const latestQueries = await prisma.shippingQuery.findMany({
-    where: {
-      factoryShipmentOrderId: { in: orderIds },
-      queryStatus: 'success',
-    },
-    orderBy: {
-      queriedAt: 'desc',
-    },
-    select: {
-      factoryShipmentOrderId: true,
-      status: true,
-      queriedAt: true,
-    },
-  });
-
-  // 为每个订单找到最新的查询状态
-  const statusMap = new Map<string, string>();
-  for (const query of latestQueries) {
-    if (
-      query.factoryShipmentOrderId &&
-      !statusMap.has(query.factoryShipmentOrderId)
-    ) {
-      statusMap.set(query.factoryShipmentOrderId, query.status || '');
-    }
-  }
-
-  return orders.map(order => {
-    const customerOwnedAmount = order.items
-      .filter(item => item.ownership === 'customer')
-      .reduce((sum, item) => sum + item.totalPrice, 0);
-    const selfOwnedAmount = order.items
-      .filter(item => item.ownership === 'self')
-      .reduce((sum, item) => sum + item.totalPrice, 0);
-    return {
-      ...order,
-      latestShippingStatus: statusMap.get(order.id) || null, // 添加实际的运输状态
-      fulfillmentSummary: {
-        customerOwnedAmount,
-        selfOwnedAmount,
-      },
-    };
-  });
-}
+// ✅ P1修复: enrichOrders 函数已移至 lib/services/factory-shipment-enrichment.ts
+// 作为共享服务函数，确保 SSR 和 API 路由使用相同的字段增强逻辑
 
 // ----- POST helpers -----
 
@@ -603,7 +556,9 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       prisma.factoryShipmentOrder.count({ where }),
     ]);
 
-    const enrichedOrders = await enrichOrders(orders);
+    // ✅ P1修复: 使用共享的字段增强函数
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const enrichedOrders = await enrichFactoryShipmentOrders(orders as any);
 
     return NextResponse.json({
       data: enrichedOrders,

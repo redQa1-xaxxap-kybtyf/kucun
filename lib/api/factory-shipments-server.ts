@@ -9,6 +9,7 @@ import { cache } from 'react';
 
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import type { FactoryShipmentOrderListParams } from '@/lib/validations/factory-shipment';
 
@@ -174,8 +175,15 @@ export const getFactoryShipmentOrdersServer = cache(
       prisma.factoryShipmentOrder.count({ where }),
     ]);
 
+    // ✅ P1修复: 调用字段增强逻辑，添加运输状态和金额摘要
+    // 修复前：SSR 只返回 Prisma 原始记录，缺少 latestShippingStatus 和 fulfillmentSummary
+    // 修复后：SSR 和 API 路由使用相同的增强逻辑，首屏显示完整数据
+    const enrichedOrders = await enrichFactoryShipmentOrders(
+      orders as unknown as FactoryShipmentOrder[]
+    );
+
     return {
-      data: orders as unknown as FactoryShipmentOrder[],
+      data: enrichedOrders,
       total: totalCount,
       page,
       limit,
