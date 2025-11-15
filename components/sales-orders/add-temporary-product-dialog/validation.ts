@@ -49,7 +49,7 @@ export interface TemporaryProductValidationOptions {
 export function createTemporaryProductSchema(
   options: TemporaryProductValidationOptions = {}
 ) {
-  const { requireCode = true, requireName = false } = options;
+  const { requireCode = true, requireName = true } = options;
 
   return baseTemporaryProductSchema.superRefine((data, ctx) => {
     if (requireCode && (!data.productCode || data.productCode.length === 0)) {
