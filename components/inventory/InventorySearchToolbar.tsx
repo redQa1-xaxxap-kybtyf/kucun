@@ -113,12 +113,14 @@ function useInventoryToolbarLogic({
     [onFilter]
   );
 
+  // ✅ Bug修复：hasActiveFilters 应包含搜索词检查
   const hasActiveFilters =
     !!queryParams.categoryId ||
     !!queryParams.lowStock ||
     !!queryParams.hasStock ||
     !!queryParams.startDate ||
-    !!queryParams.endDate;
+    !!queryParams.endDate ||
+    !!(queryParams.search && queryParams.search.trim()); // ✅ 新增：检查搜索词
 
   return {
     handleFilterChange,

@@ -302,8 +302,10 @@ function useInventoryFilters(
     [updateParams]
   );
 
+  // ✅ Bug修复：清空筛选时也要清空搜索词
   const handleClearFilters = React.useCallback(() => {
     updateParams({
+      search: undefined, // ✅ 新增：清空搜索词
       categoryId: undefined,
       lowStock: false,
       hasStock: false,
