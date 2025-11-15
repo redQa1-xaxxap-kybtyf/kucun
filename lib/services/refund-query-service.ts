@@ -186,6 +186,23 @@ async function fetchRefundRecords(
   });
 }
 
+/**
+ * ✅ P1修复: 统一日期格式为 YYYY-MM-DD
+ *
+ * 修复前：
+ * - SSR: refundDate.toISOString() → "2025-11-15T08:00:00.000Z"
+ * - API: refundDate.toISOString().split('T')[0] → "2025-11-15"
+ * - 导致 Hydration 错误和页面闪烁
+ *
+ * 修复后：
+ * - SSR 和 API 都使用 YYYY-MM-DD 格式
+ * - 消除 Hydration 警告
+ */
+function formatDate(date: Date | null | undefined): string | null {
+  if (!date) return null;
+  return date.toISOString().split('T')[0];
+}
+
 function serializeRefundRecords(
   refundsData: Awaited<ReturnType<typeof fetchRefundRecords>>
 ) {
@@ -201,10 +218,9 @@ function serializeRefundRecords(
     refundAmount: Number(refund.refundAmount),
     processedAmount: Number(refund.processedAmount),
     remainingAmount: Number(refund.remainingAmount),
-    refundDate: refund.refundDate.toISOString(),
-    processedDate: refund.processedDate
-      ? refund.processedDate.toISOString()
-      : null,
+    // ✅ P1修复: 统一日期格式为 YYYY-MM-DD
+    refundDate: formatDate(refund.refundDate),
+    processedDate: formatDate(refund.processedDate),
     status: refund.status as RefundStatus,
     reason: refund.reason ?? null,
     remarks: refund.remarks ?? null,
