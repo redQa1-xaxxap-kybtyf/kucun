@@ -421,7 +421,13 @@ export async function deleteExpenseRecord(id: string): Promise<void> {
 export async function getExpenseStatistics(
   params: ExpenseStatisticsParams
 ): Promise<ExpenseStatistics> {
-  const { startDate, endDate, groupBy = 'type', expenseType } = params;
+  const {
+    startDate,
+    endDate,
+    groupBy = 'type',
+    expenseType,
+    relatedType,
+  } = params;
 
   // ✅ P0修复: 使用本地时区解析日期，并正确设置结束日期上限
   // 构建查询条件
@@ -438,6 +444,11 @@ export async function getExpenseStatistics(
 
   if (expenseType) {
     where.expenseType = expenseType;
+  }
+
+  // ✅ P1修复: 添加关联业务类型筛选
+  if (relatedType) {
+    where.relatedType = relatedType;
   }
 
   // 1. 计算总览数据

@@ -142,12 +142,14 @@ export interface ExpenseListResponse {
   };
 }
 
+// ✅ P1修复: 添加 relatedType 字段，支持按关联业务筛选统计
 // 费用统计查询参数
 export interface ExpenseStatisticsParams {
   startDate: string; // ISO日期字符串（必填）
   endDate: string; // ISO日期字符串（必填）
   groupBy?: 'type' | 'date' | 'month';
   expenseType?: ExpenseType;
+  relatedType?: ExpenseRelatedType; // ✅ P1修复: 添加关联业务类型筛选
 }
 
 // 按费用类型分组的统计数据

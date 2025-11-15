@@ -310,6 +310,7 @@ export const expenseFilterSchema = z.object({
 });
 
 // 费用统计筛选验证规则
+// ✅ P1修复: 添加 relatedType 字段，支持按关联业务筛选统计
 export const expenseStatisticsFilterSchema = z.object({
   startDate: z
     .string({ message: '开始日期不能为空' })
@@ -327,6 +328,11 @@ export const expenseStatisticsFilterSchema = z.object({
     .describe('分组方式（可选）'),
 
   expenseType: expenseTypeSchema.optional().describe('费用类型筛选（可选）'),
+
+  // ✅ P1修复: 添加关联业务类型筛选
+  relatedType: expenseRelatedTypeSchema
+    .optional()
+    .describe('关联业务类型筛选（可选）'),
 });
 
 // 费用记录ID验证

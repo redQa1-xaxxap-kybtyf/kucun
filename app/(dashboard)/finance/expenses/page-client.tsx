@@ -1,9 +1,9 @@
 'use client';
 
 import { Plus, Receipt } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';
@@ -70,6 +70,7 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
     };
   }, []);
 
+  // ✅ P1修复: 统计参数初始化时包含 relatedType
   // 统计参数（默认最近30天）
   const [statisticsParams, setStatisticsParams] =
     React.useState<ExpenseStatisticsParams>(() => {
@@ -80,6 +81,7 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
         endDate: filters.endDate || defaultRange.endDate,
         groupBy: 'type',
         expenseType: filters.expenseType,
+        relatedType: filters.relatedType, // ✅ P1修复: 添加 relatedType
       };
     });
 
@@ -133,7 +135,7 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
       setFilters(updatedFilters);
       updateURL(updatedFilters);
 
-      // 同时更新统计参数
+      // ✅ P1修复: 同时更新统计参数，包括 relatedType
       const shouldUpdateDates =
         Object.prototype.hasOwnProperty.call(newFilters, 'startDate') ||
         Object.prototype.hasOwnProperty.call(newFilters, 'endDate');
@@ -141,8 +143,13 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
         newFilters,
         'expenseType'
       );
+      // ✅ P1修复: 添加 relatedType 变化检测
+      const shouldUpdateRelatedType = Object.prototype.hasOwnProperty.call(
+        newFilters,
+        'relatedType'
+      );
 
-      if (shouldUpdateDates || shouldUpdateType) {
+      if (shouldUpdateDates || shouldUpdateType || shouldUpdateRelatedType) {
         const defaultRange = getDefaultDateRange();
         setStatisticsParams(prev => {
           const next = { ...prev };
@@ -179,6 +186,15 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
           if (shouldUpdateType) {
             next.expenseType = newFilters.expenseType as
               | ExpenseType
+              | undefined;
+          }
+
+          // ✅ P1修复: 同步 relatedType 到统计参数
+          if (shouldUpdateRelatedType) {
+            next.relatedType = newFilters.relatedType as
+              | 'inbound'
+              | 'outbound'
+              | 'sales_order'
               | undefined;
           }
 
