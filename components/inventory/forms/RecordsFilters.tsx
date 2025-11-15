@@ -286,13 +286,15 @@ export const OUTBOUND_FILTER_CONFIG: FilterConfig = {
   },
   typeFilter: {
     enabled: true,
-    label: '出库类型',
+    label: '出库原因',
     options: [
-      { value: 'sale', label: '销售出库' },
+      { value: 'normal_outbound', label: '正常出库' },
+      { value: 'manual_outbound', label: '手动出库' },
+      { value: 'sales_outbound', label: '销售出库' },
+      { value: 'adjust_outbound', label: '调整出库' },
       { value: 'transfer', label: '调拨出库' },
-      { value: 'return', label: '退货出库' },
-      { value: 'loss', label: '损耗出库' },
-      { value: 'other', label: '其他' },
+      { value: 'damage', label: '报损出库' },
+      { value: 'other', label: '其他出库' },
     ],
   },
   dateRange: {
