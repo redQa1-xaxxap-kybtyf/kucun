@@ -159,13 +159,16 @@ export function useProductSelection(
   };
 
   const handleReset = () => {
+    // ✅ 修复：保持当前的 reason 值，避免期初入库状态丢失
+    const currentReason = form.getValues('reason');
+
     form.reset({
       productId: '',
       inputQuantity: undefined,
       inputUnit: 'pieces' as InboundUnit,
-      quantity: undefined, // ✅ 修改：设置为 undefined
+      quantity: undefined,
       unitCost: undefined,
-      reason: 'purchase',
+      reason: currentReason, // ✅ 保持当前的 reason，而不是重置为 'purchase'
       remarks: '',
       batchNumber: '',
       piecesPerUnit: undefined,
