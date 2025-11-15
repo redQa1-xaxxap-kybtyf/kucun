@@ -259,8 +259,10 @@ return (
   - 检查：搜索框、排序字段、排序方式在同一行
 - [ ] **供应商管理页面**：`/suppliers`
   - 检查：搜索框、状态筛选在同一行
-- [ ] **产品管理页面**：`/products`
+- [x] **产品管理页面**：`/products` ✅ **已验证**
   - 检查：搜索框、分类筛选、状态筛选在同一行
+  - 使用 `SearchFilterCard` 组件（`components/products/erp-product-list.tsx:107-150`）
+  - 布局符合规范，横排显示
 - [ ] **销售订单页面**：`/sales-orders`
   - 检查：搜索框、订单状态在同一行
 - [ ] **分类管理页面**：`/categories`
