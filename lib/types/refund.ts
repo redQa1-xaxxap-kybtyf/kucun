@@ -221,11 +221,17 @@ export interface RefundRecordListResponse {
 }
 
 // 退款列表查询参数（支持 SSR + React Query）
+// ✅ P0修复: 扩展查询参数类型，支持完整的筛选字段
 export interface RefundListQueryParams {
   page: number;
   limit: number;
   search?: string;
   status?: RefundStatus;
+  customerId?: string;
+  returnOrderId?: string;
+  salesOrderId?: string;
+  refundType?: RefundType;
+  refundMethod?: RefundMethod;
   sortBy?: 'refundDate' | 'refundAmount' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   startDate?: string;

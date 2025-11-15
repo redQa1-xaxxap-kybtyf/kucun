@@ -12,6 +12,11 @@ type RawSearchParams = {
   limit?: string;
   search?: string;
   status?: string;
+  customerId?: string;
+  returnOrderId?: string;
+  salesOrderId?: string;
+  refundType?: string;
+  refundMethod?: string;
   sortBy?: string;
   sortOrder?: string;
   startDate?: string;
@@ -23,12 +28,28 @@ type ParsedQuery = {
   limit: number;
   search: string;
   status?: string;
+  customerId?: string;
+  returnOrderId?: string;
+  salesOrderId?: string;
+  refundType?: string;
+  refundMethod?: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   startDate?: string;
   endDate?: string;
 };
 
+/**
+ * ✅ P0修复: 扩展参数白名单，支持完整的筛选参数
+ *
+ * 修复前：只保留 page, limit, search, status, sortBy, sortOrder, startDate, endDate
+ * 修复后：支持 customerId, returnOrderId, salesOrderId, refundType, refundMethod
+ *
+ * 影响：
+ * - 从客户详情页点击"查看退款记录"可以正确筛选
+ * - 从退货单详情页点击"查看退款记录"可以正确筛选
+ * - URL 参数与实际显示数据一致
+ */
 export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
   return {
     page: searchParams.page
@@ -39,6 +60,12 @@ export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
       : undefined,
     search: searchParams.search?.trim() || undefined,
     status: searchParams.status || undefined,
+    // ✅ P0修复: 添加缺失的筛选参数
+    customerId: searchParams.customerId || undefined,
+    returnOrderId: searchParams.returnOrderId || undefined,
+    salesOrderId: searchParams.salesOrderId || undefined,
+    refundType: searchParams.refundType || undefined,
+    refundMethod: searchParams.refundMethod || undefined,
     sortBy: searchParams.sortBy || undefined,
     sortOrder: searchParams.sortOrder || undefined,
     startDate: searchParams.startDate || undefined,
@@ -46,9 +73,17 @@ export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
   };
 }
 
+/**
+ * ✅ P0修复: 扩展查询条件构建，支持完整的筛选参数
+ */
 function buildQueryConditions(
   search: string,
   status?: string,
+  customerId?: string,
+  returnOrderId?: string,
+  salesOrderId?: string,
+  refundType?: string,
+  refundMethod?: string,
   startDate?: string,
   endDate?: string
 ) {
@@ -63,6 +98,31 @@ function buildQueryConditions(
 
   if (status) {
     whereConditions.status = status;
+  }
+
+  // ✅ P0修复: 添加客户筛选
+  if (customerId) {
+    whereConditions.customerId = customerId;
+  }
+
+  // ✅ P0修复: 添加退货单筛选
+  if (returnOrderId) {
+    whereConditions.returnOrderId = returnOrderId;
+  }
+
+  // ✅ P0修复: 添加销售订单筛选
+  if (salesOrderId) {
+    whereConditions.salesOrderId = salesOrderId;
+  }
+
+  // ✅ P0修复: 添加退款类型筛选
+  if (refundType) {
+    whereConditions.refundType = refundType;
+  }
+
+  // ✅ P0修复: 添加退款方式筛选
+  if (refundMethod) {
+    whereConditions.refundMethod = refundMethod;
   }
 
   if (startDate || endDate) {
@@ -224,10 +284,18 @@ function buildRefundPagination(total: number, query: ParsedQuery) {
   };
 }
 
+/**
+ * ✅ P0修复: 传递完整的筛选参数到查询条件构建
+ */
 export async function fetchRefundsList(query: ParsedQuery) {
   const whereConditions = buildQueryConditions(
     query.search,
     query.status,
+    query.customerId,
+    query.returnOrderId,
+    query.salesOrderId,
+    query.refundType,
+    query.refundMethod,
     query.startDate,
     query.endDate
   );
@@ -253,6 +321,9 @@ export async function fetchRefundsList(query: ParsedQuery) {
   return { refunds, statistics, pagination } satisfies RefundListData;
 }
 
+/**
+ * ✅ P0修复: 构建完整的查询参数对象
+ */
 export function buildRefundQueryParams(
   validatedParams: Partial<RefundListQueryParams>
 ): RefundListQueryParams {
@@ -261,6 +332,12 @@ export function buildRefundQueryParams(
     limit: validatedParams.limit ?? 20,
     search: validatedParams.search,
     status: validatedParams.status,
+    // ✅ P0修复: 添加缺失的筛选参数
+    customerId: validatedParams.customerId,
+    returnOrderId: validatedParams.returnOrderId,
+    salesOrderId: validatedParams.salesOrderId,
+    refundType: validatedParams.refundType,
+    refundMethod: validatedParams.refundMethod,
     sortBy:
       (validatedParams.sortBy as RefundListQueryParams['sortBy']) ??
       'refundDate',
