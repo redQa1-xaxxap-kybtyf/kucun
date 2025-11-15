@@ -5,6 +5,7 @@ import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { ProductImageGallery } from '@/components/products/product-image-gallery';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -296,6 +297,13 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
             </div>
           </div>
         </div>
+
+        {/* 产品图片展示区域 */}
+        <ProductImageGallery
+          thumbnailUrl={product.thumbnailUrl}
+          images={product.images}
+          productName={product.name}
+        />
 
         {/* 删除确认对话框 */}
         <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
