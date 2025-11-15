@@ -277,14 +277,39 @@ export async function cancelFactoryShipmentOrder(id: string): Promise<void> {
 // React Query Hooks
 
 /**
+ * 转换 API 响应为客户端期望的数据结构
+ * ✅ P0修复: 提取数据转换逻辑，确保 SSR 和客户端使用相同的数据结构
+ */
+export function transformFactoryShipmentListResponse(rawResponse: {
+  data: FactoryShipmentOrder[];
+  total: number;
+  page: number;
+  limit: number;
+}) {
+  return {
+    orders: rawResponse.data,
+    pagination: {
+      page: rawResponse.page,
+      limit: rawResponse.limit,
+      totalCount: rawResponse.total,
+      totalPages: Math.ceil(rawResponse.total / rawResponse.limit),
+    },
+  };
+}
+
+/**
  * 获取厂家发货订单列表的 Hook
+ * ✅ P0修复: 使用数据转换函数，确保返回结构与组件期望一致
  */
 export function useFactoryShipmentOrders(
   params: FactoryShipmentOrderListParams
 ) {
   return useQuery({
     queryKey: queryKeys.factoryShipments.list(params),
-    queryFn: () => getFactoryShipmentOrders(params),
+    queryFn: async () => {
+      const rawData = await getFactoryShipmentOrders(params);
+      return transformFactoryShipmentListResponse(rawData);
+    },
     staleTime: 5 * 60 * 1000, // 5分钟
   });
 }

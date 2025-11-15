@@ -4,6 +4,7 @@ import {
   dehydrate,
 } from '@tanstack/react-query';
 
+import { transformFactoryShipmentListResponse } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
@@ -60,16 +61,18 @@ export default async function FactoryShipmentsPage({
   const queryClient = new QueryClient();
 
   // ✅ 服务端获取数据
-  const initialData = await getFactoryShipmentOrdersServer(queryParams);
+  const rawData = await getFactoryShipmentOrdersServer(queryParams);
+
+  // ✅ P0修复: 转换为客户端期望的数据结构
+  // 修复前：SSR 预填充 { data, total, page, limit }，客户端期望 { orders, pagination }
+  // 修复后：SSR 和客户端使用相同的数据结构，避免首屏闪烁和重复请求
+  const transformedData = transformFactoryShipmentListResponse(rawData);
 
   // ✅ 使用 setQueryData 预填充缓存（而非 prefetchQuery）
-  // 注意: API 返回 { data, total, page, limit },不是 { data, pagination }
-  queryClient.setQueryData(queryKeys.factoryShipments.list(queryParams), {
-    data: initialData.data,
-    total: initialData.total,
-    page: initialData.page,
-    limit: initialData.limit,
-  });
+  queryClient.setQueryData(
+    queryKeys.factoryShipments.list(queryParams),
+    transformedData
+  );
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
