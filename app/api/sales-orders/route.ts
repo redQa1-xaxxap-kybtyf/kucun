@@ -7,14 +7,7 @@ import type { CreateInput } from '@/lib/api/handlers/sales-orders/types';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
 import { withAuth } from '@/lib/auth/api-helpers';
-import {
-  buildCacheKey,
-  CACHE_STRATEGY,
-  getOrSetJSON,
-  revalidateFinance,
-  revalidateSalesOrders,
-} from '@/lib/cache';
-import { invalidateReportCache } from '@/lib/cache/finance-cache';
+import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
@@ -94,17 +87,15 @@ const createSalesOrderHandler = withErrorHandling(
 
       const order = await createSalesOrder(createInput, user.id);
 
-      // 使用统一的缓存失效系统（自动级联失效相关缓存）
-      await revalidateSalesOrders();
-
-      // ✅ 关键修复：销售订单创建后，同时失效应收款缓存
-      // 因为应收款数据来源于销售订单，新订单会影响应收款列表
-      await revalidateFinance('receivables');
-
-      // ✅ P0修复：销售订单创建后，失效报表缓存
-      // 因为报表数据包含销售收入，新订单会影响报表统计
-      invalidateReportCache().catch(error => {
-        console.error('Failed to invalidate report cache:', error);
+      // ✅ P0修复：销售订单创建后，失效销售订单和应收款缓存
+      const { invalidateSalesOrderAndReceivables } = await import(
+        '@/lib/cache/finance-cache'
+      );
+      invalidateSalesOrderAndReceivables(order.id).catch(error => {
+        console.error(
+          'Failed to invalidate sales order and receivables cache:',
+          error
+        );
       });
 
       return successResponse(order, 201, '销售订单创建成功');

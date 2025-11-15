@@ -8,7 +8,7 @@ import {
 import { getSalesOrderDetailWithPayments } from '@/lib/api/handlers/sales-orders/detail';
 import { updateSalesOrderDraft } from '@/lib/api/handlers/sales-orders/update-draft';
 import type { ApiHandler } from '@/lib/auth/api-helpers';
-import { invalidateReportCache } from '@/lib/cache/finance-cache';
+import { invalidateSalesOrderAndReceivables } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
@@ -181,9 +181,12 @@ export const putSalesOrderRoute: ApiHandler = async (
             ? '销售订单已取消'
             : '销售订单更新成功';
 
-  // ✅ P0修复：销售订单状态更新后，失效报表缓存
-  invalidateReportCache().catch(error => {
-    console.error('Failed to invalidate report cache:', error);
+  // ✅ P0修复：销售订单状态更新后，失效销售订单和应收款缓存
+  invalidateSalesOrderAndReceivables(id).catch(error => {
+    console.error(
+      'Failed to invalidate sales order and receivables cache:',
+      error
+    );
   });
 
   return NextResponse.json({ success: true, data, message });
@@ -242,9 +245,12 @@ export const patchSalesOrderRoute: ApiHandler = async (request, { params }) => {
 
   const data = await updateSalesOrderDraft(id, parsed.data, existingOrder);
 
-  // ✅ P0修复：销售订单草稿更新后，失效报表缓存
-  invalidateReportCache().catch(error => {
-    console.error('Failed to invalidate report cache:', error);
+  // ✅ P0修复：销售订单草稿更新后，失效销售订单和应收款缓存
+  invalidateSalesOrderAndReceivables(id).catch(error => {
+    console.error(
+      'Failed to invalidate sales order and receivables cache:',
+      error
+    );
   });
 
   return NextResponse.json({
@@ -282,9 +288,12 @@ export const deleteSalesOrderRoute: ApiHandler = async (
     await tx.salesOrder.delete({ where: { id } });
   });
 
-  // ✅ P0修复：销售订单删除后，失效报表缓存
-  invalidateReportCache().catch(error => {
-    console.error('Failed to invalidate report cache:', error);
+  // ✅ P0修复：销售订单删除后，失效销售订单和应收款缓存
+  invalidateSalesOrderAndReceivables(id).catch(error => {
+    console.error(
+      'Failed to invalidate sales order and receivables cache:',
+      error
+    );
   });
 
   return NextResponse.json({
