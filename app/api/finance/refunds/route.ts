@@ -129,8 +129,8 @@ export const GET = withAuth(
     // 计算分页
     const skip = (page - 1) * limit;
 
-    // 使用真实数据库查询退款记录
-    const [refunds, total, allRefunds] = await Promise.all([
+    // ✅ P0修复: 使用聚合查询替代全表扫描
+    const [refunds, total, aggregateResult] = await Promise.all([
       prisma.refundRecord.findMany({
         where,
         include: {
@@ -169,16 +169,25 @@ export const GET = withAuth(
         take: limit,
       }),
       prisma.refundRecord.count({ where }),
-      prisma.refundRecord.findMany({
+      // ✅ P0修复: 使用聚合查询替代全表扫描
+      prisma.refundRecord.aggregate({
         where,
-        select: {
+        _sum: {
           refundAmount: true,
           processedAmount: true,
           remainingAmount: true,
-          status: true,
         },
       }),
     ]);
+
+    // ✅ P0修复: 使用 groupBy 按状态统计数量
+    const statusCounts = await prisma.refundRecord.groupBy({
+      by: ['status'],
+      where,
+      _count: {
+        _all: true,
+      },
+    });
 
     // 格式化退款记录数据
     const formattedRefunds = refunds.map(refund => ({
@@ -227,26 +236,16 @@ export const GET = withAuth(
       user: refund.user,
     }));
 
-    // 统计数据
-    const totalRefundable = allRefunds.reduce(
-      (sum, r) => sum + Number(r.refundAmount ?? 0),
-      0
-    );
-    const totalProcessed = allRefunds.reduce(
-      (sum, r) => sum + Number(r.processedAmount ?? 0),
-      0
-    );
-    const totalRemaining = allRefunds.reduce(
-      (sum, r) => sum + Number(r.remainingAmount ?? 0),
-      0
-    );
-    const pendingCount = allRefunds.filter(r => r.status === 'pending').length;
-    const processingCount = allRefunds.filter(
-      r => r.status === 'processing'
-    ).length;
-    const completedCount = allRefunds.filter(
-      r => r.status === 'completed'
-    ).length;
+    // ✅ P0修复: 从聚合结果构建统计数据
+    const totalRefundable = Number(aggregateResult._sum.refundAmount ?? 0);
+    const totalProcessed = Number(aggregateResult._sum.processedAmount ?? 0);
+    const totalRemaining = Number(aggregateResult._sum.remainingAmount ?? 0);
+    const pendingCount =
+      statusCounts.find(s => s.status === 'pending')?._count._all ?? 0;
+    const processingCount =
+      statusCounts.find(s => s.status === 'processing')?._count._all ?? 0;
+    const completedCount =
+      statusCounts.find(s => s.status === 'completed')?._count._all ?? 0;
 
     return successResponse({
       refunds: formattedRefunds,
