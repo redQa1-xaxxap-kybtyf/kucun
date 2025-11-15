@@ -328,46 +328,54 @@ export const inboundFormSchema = z
 
     variantId: z.string().uuid('产品变体ID格式不正确').optional(),
 
-    // 用户输入的数量（根据选择的单位）- ✅ 修复：改为必填字段
-    inputQuantity: z.preprocess(
-      val => {
-        if (val === undefined || val === null || val === '') {
-          return undefined;
-        }
-        const num = typeof val === 'number' ? val : Number(val);
-        return Number.isNaN(num) ? undefined : num;
-      },
-      z
-        .number({
-          required_error: '请输入入库数量',
-          invalid_type_error: '入库数量必须是数字',
-        })
-        .min(1, { message: '入库数量必须大于0' })
-        .max(999999, { message: '入库数量不能超过999999' })
-        .int({ message: '入库数量必须是整数' })
-    ),
+    // 用户输入的数量（根据选择的单位）- ✅ 修复：使用 optional + refine 实现必填验证
+    inputQuantity: z
+      .preprocess(
+        val => {
+          if (val === undefined || val === null || val === '') {
+            return undefined;
+          }
+          const num = typeof val === 'number' ? val : Number(val);
+          return Number.isNaN(num) ? undefined : num;
+        },
+        z
+          .number({
+            invalid_type_error: '入库数量必须是数字',
+          })
+          .min(1, { message: '入库数量必须大于0' })
+          .max(999999, { message: '入库数量不能超过999999' })
+          .int({ message: '入库数量必须是整数' })
+          .optional()
+      )
+      .refine(val => val !== undefined && val !== null, {
+        message: '请输入入库数量',
+      }),
 
     // 用户选择的单位 - ✅ 移除 .default()
     inputUnit: inboundUnitSchema,
 
-    // 最终存储的片数（由前端计算后传入）- ✅ 修复：改为必填字段
-    quantity: z.preprocess(
-      val => {
-        if (val === undefined || val === null || val === '') {
-          return undefined;
-        }
-        const num = typeof val === 'number' ? val : Number(val);
-        return Number.isNaN(num) ? undefined : num;
-      },
-      z
-        .number({
-          required_error: '最终片数不能为空',
-          invalid_type_error: '最终片数必须是数字',
-        })
-        .min(1, { message: '最终片数必须大于0' })
-        .max(999999, { message: '最终片数不能超过999999' })
-        .int({ message: '最终片数必须是整数' })
-    ),
+    // 最终存储的片数（由前端计算后传入）- ✅ 修复：使用 optional + refine 实现必填验证
+    quantity: z
+      .preprocess(
+        val => {
+          if (val === undefined || val === null || val === '') {
+            return undefined;
+          }
+          const num = typeof val === 'number' ? val : Number(val);
+          return Number.isNaN(num) ? undefined : num;
+        },
+        z
+          .number({
+            invalid_type_error: '最终片数必须是数字',
+          })
+          .min(1, { message: '最终片数必须大于0' })
+          .max(999999, { message: '最终片数不能超过999999' })
+          .int({ message: '最终片数必须是整数' })
+          .optional()
+      )
+      .refine(val => val !== undefined && val !== null, {
+        message: '最终片数不能为空',
+      }),
 
     reason: inboundReasonSchema, // ✅ 移除 .default()
 
@@ -470,24 +478,28 @@ export const inboundFormSchema = z
         .optional()
     ),
 
-    // 成本字段（入库时必填）- ✅ 修复：改为必填字段
-    unitCost: z.preprocess(
-      val => {
-        if (val === undefined || val === null || val === '') {
-          return undefined;
-        }
-        const num = typeof val === 'number' ? val : Number(val);
-        return Number.isNaN(num) ? undefined : num;
-      },
-      z
-        .number({
-          required_error: '请输入单位成本',
-          invalid_type_error: '单位成本必须是数字',
-        })
-        .min(0.01, { message: '单位成本必须大于0' })
-        .max(999999.99, { message: '单位成本不能超过999,999.99' })
-        .multipleOf(0.01, { message: '单位成本最多保留2位小数' })
-    ),
+    // 成本字段（入库时必填）- ✅ 修复：使用 optional + refine 实现必填验证
+    unitCost: z
+      .preprocess(
+        val => {
+          if (val === undefined || val === null || val === '') {
+            return undefined;
+          }
+          const num = typeof val === 'number' ? val : Number(val);
+          return Number.isNaN(num) ? undefined : num;
+        },
+        z
+          .number({
+            invalid_type_error: '单位成本必须是数字',
+          })
+          .min(0.01, { message: '单位成本必须大于0' })
+          .max(999999.99, { message: '单位成本不能超过999,999.99' })
+          .multipleOf(0.01, { message: '单位成本最多保留2位小数' })
+          .optional()
+      )
+      .refine(val => val !== undefined && val !== null, {
+        message: '请输入单位成本',
+      }),
   })
   .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
     message: '传入采购订单明细时必须指定采购订单ID',
