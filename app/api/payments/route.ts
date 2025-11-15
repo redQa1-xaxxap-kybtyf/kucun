@@ -44,7 +44,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       status: searchParams.get('status') || undefined,
       paymentMethod: searchParams.get('paymentMethod') || undefined,
       customerId: searchParams.get('customerId') || undefined,
-      salesOrderId: searchParams.get('salesOrderId') || undefined,
+      // ✅ P0修复: 添加缺失的查询参数
+      userId: searchParams.get('userId') || undefined,
+      sortBy: searchParams.get('sortBy') || 'paymentDate',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
     });
@@ -67,6 +70,9 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       status,
       paymentMethod,
       customerId,
+      userId,
+      sortBy,
+      sortOrder,
       startDate,
       endDate,
     } = queryResult.data;
@@ -96,6 +102,11 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       where.customerId = customerId;
     }
 
+    // ✅ P0修复: 添加经办人筛选
+    if (userId) {
+      where.userId = userId;
+    }
+
     if (startDate || endDate) {
       const paymentDateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
@@ -106,6 +117,21 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       }
       where.paymentDate = paymentDateFilter;
     }
+
+    // ✅ P1修复: 构建动态排序条件
+    const orderByMap: Record<
+      string,
+      {
+        paymentDate?: 'asc' | 'desc';
+        paymentAmount?: 'asc' | 'desc';
+        createdAt?: 'asc' | 'desc';
+      }
+    > = {
+      paymentDate: { paymentDate: sortOrder as 'asc' | 'desc' },
+      paymentAmount: { paymentAmount: sortOrder as 'asc' | 'desc' },
+      createdAt: { createdAt: sortOrder as 'asc' | 'desc' },
+    };
+    const orderBy = orderByMap[sortBy] ?? { paymentDate: 'desc' };
 
     // 查询数据
     const [payments, total] = await Promise.all([
@@ -134,9 +160,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
             },
           },
         },
-        orderBy: {
-          paymentDate: 'desc',
-        },
+        orderBy,
         skip: (page - 1) * limit,
         take: limit,
       }),
