@@ -101,14 +101,12 @@ export function ExpenseList({
       return response.json();
     },
     onSuccess: () => {
-      // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除费用后立即看到变化
-      queryClient.refetchQueries({
+      // ✅ P0修复: 使用 exact: false 失效所有以 ['finance', 'expenses'] 开头的查询
+      // 修复前：只匹配 ['finance', 'expenses'] 精确键，无法匹配列表和统计查询
+      // 修复后：匹配所有 ['finance', 'expenses', ...] 查询，包括列表和统计
+      queryClient.invalidateQueries({
         queryKey: queryKeys.finance.expenses(),
-        type: 'active',
-      });
-      queryClient.refetchQueries({
-        queryKey: queryKeys.finance.expensesStatistics(),
-        type: 'active',
+        exact: false,
       });
     },
   });
