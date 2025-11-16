@@ -219,27 +219,25 @@ export const DateRangePicker = React.memo(
     }, [value?.startDate, value?.endDate]);
 
     // 处理日历日期选择
-    const handleCalendarSelect = React.useCallback(
-      (range: DateRange | undefined) => {
-        if (!range) {
-          onChange({});
-          return;
-        }
+    const [date, setDate] = React.useState<DateRange | undefined>(dateRange);
 
-        const newValue: DateRangeValue = {
-          startDate: range.from ? format(range.from, 'yyyy-MM-dd') : undefined,
-          endDate: range.to ? format(range.to, 'yyyy-MM-dd') : undefined,
-        };
+    // 当 value prop 改变时，同步内部状态
+    React.useEffect(() => {
+      setDate(dateRange);
+    }, [dateRange]);
 
-        onChange(newValue);
+    // 处理日历日期选择
+    const handleCalendarSelect = setDate;
 
-        // 如果两个日期都选中了，自动关闭弹窗
-        if (range.from && range.to) {
-          setIsOpen(false);
-        }
-      },
-      [onChange]
-    );
+    const handleConfirm = React.useCallback(() => {
+      if (date?.from && date?.to) {
+        onChange({
+          startDate: format(date.from, 'yyyy-MM-dd'),
+          endDate: format(date.to, 'yyyy-MM-dd'),
+        });
+        setIsOpen(false);
+      }
+    }, [date, onChange]);
 
     // 处理快捷预设点击
     const handlePresetClick = React.useCallback(
@@ -317,7 +315,7 @@ export const DateRangePicker = React.memo(
               <div className="p-3">
                 <Calendar
                   mode="range"
-                  selected={dateRange}
+                  selected={date}
                   onSelect={handleCalendarSelect}
                   numberOfMonths={1}
                   disabled={date => {
@@ -351,8 +349,8 @@ export const DateRangePicker = React.memo(
                       variant="default"
                       size="sm"
                       className="h-7 text-xs"
-                      onClick={() => setIsOpen(false)}
-                      disabled={!dateRange?.from || !dateRange?.to}
+                      onClick={handleConfirm}
+                      disabled={!date?.from || !date?.to}
                     >
                       确定
                     </Button>

@@ -17,6 +17,14 @@ import {
   type UpdateExpenseRequest,
 } from '@/lib/types/expense';
 
+function parseLocalDateString(dateString: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+    return null;
+  }
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
 async function getPurchaseOrderContainerMap(
   orderIds: string[]
 ): Promise<Map<string, string | null>> {
