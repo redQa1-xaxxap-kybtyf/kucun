@@ -262,7 +262,7 @@ function serializeRefundRecords(
   }));
 }
 
-function calculateRefundStatistics(
+function _calculateRefundStatistics(
   records: Array<{
     refundAmount: unknown;
     processedAmount: unknown;

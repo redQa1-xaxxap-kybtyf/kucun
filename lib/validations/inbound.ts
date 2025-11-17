@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 
-import type { InboundReason } from '@/lib/types/inbound';
+export type { InboundReason } from '@/lib/types/inbound';
 
 // 入库原因验证
 export const inboundReasonSchema = z.enum([
@@ -339,9 +339,7 @@ export const inboundFormSchema = z
           return Number.isNaN(num) ? undefined : num;
         },
         z
-          .number({
-            invalid_type_error: '入库数量必须是数字',
-          })
+          .number()
           .min(1, { message: '入库数量必须大于0' })
           .max(999999, { message: '入库数量不能超过999999' })
           .int({ message: '入库数量必须是整数' })
@@ -365,9 +363,7 @@ export const inboundFormSchema = z
           return Number.isNaN(num) ? undefined : num;
         },
         z
-          .number({
-            invalid_type_error: '最终片数必须是数字',
-          })
+          .number()
           .min(1, { message: '最终片数必须大于0' })
           .max(999999, { message: '最终片数不能超过999999' })
           .int({ message: '最终片数必须是整数' })
@@ -489,9 +485,7 @@ export const inboundFormSchema = z
           return Number.isNaN(num) ? undefined : num;
         },
         z
-          .number({
-            invalid_type_error: '单位成本必须是数字',
-          })
+          .number()
           .min(0.01, { message: '单位成本必须大于0' })
           .max(999999.99, { message: '单位成本不能超过999,999.99' })
           .multipleOf(0.01, { message: '单位成本最多保留2位小数' })

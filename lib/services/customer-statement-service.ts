@@ -970,7 +970,7 @@ async function calculateOpeningBalance(
 /**
  * 获取最后交易日期
  */
-async function getLastTransactionDate(
+async function _getLastTransactionDate(
   customerId: string,
   startDate?: string,
   endDate?: string
@@ -1036,7 +1036,7 @@ async function getLastTransactionDate(
 /**
  * 获取交易笔数
  */
-async function getTransactionCount(
+async function _getTransactionCount(
   customerId: string,
   startDate?: string,
   endDate?: string
