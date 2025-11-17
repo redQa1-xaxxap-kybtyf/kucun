@@ -142,18 +142,20 @@ export function RefundProcessForm({
   };
 
   const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
-    const value = checked === true;
+    const isChecked = checked === true;
 
     setFormData(prev => {
-      if (value) {
-        const processedAmount =
-          prev.processedAmount.trim() === '' ? '0' : prev.processedAmount;
-        return { ...prev, closeRemaining: true, processedAmount };
+      if (isChecked) {
+        // 当勾选时，自动填充为剩余金额
+        return {
+          ...prev,
+          closeRemaining: true,
+          processedAmount: refund?.remainingAmount.toString() ?? '0',
+        };
       }
 
-      const processedAmount =
-        prev.processedAmount === '0' ? '' : prev.processedAmount;
-      return { ...prev, closeRemaining: false, processedAmount };
+      // 当取消勾选时，清空金额
+      return { ...prev, closeRemaining: false, processedAmount: '' };
     });
   };
 

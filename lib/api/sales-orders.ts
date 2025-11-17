@@ -182,17 +182,19 @@ export async function deleteSalesOrder(
 }
 
 // 更新订单状态
-export async function updateSalesOrderStatus(
-  id: string,
-  status: SalesOrderStatus,
-  remarks?: string
-): Promise<ApiResponse<SalesOrder>> {
+export async function updateSalesOrderStatus(payload: {
+  id: string;
+  status: SalesOrderStatus;
+  remarks?: string;
+  idempotencyKey: string;
+}): Promise<ApiResponse<SalesOrder>> {
+  const { id, ...body } = payload;
   const response = await fetch(`${API_BASE}/${id}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ status, remarks }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -569,14 +571,18 @@ export function useUpdateSalesOrderStatus(
   options?: UseMutationOptions<
     ApiResponse<SalesOrder>,
     Error,
-    { id: string; status: SalesOrderStatus; remarks?: string }
+    {
+      id: string;
+      status: SalesOrderStatus;
+      remarks?: string;
+      idempotencyKey: string;
+    }
   >
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status, remarks }) =>
-      updateSalesOrderStatus(id, status, remarks),
+    mutationFn: updateSalesOrderStatus,
     onSuccess: (_, { id }) => {
       // ✅ 立即刷新当前模块缓存
       queryClient.refetchQueries({

@@ -454,6 +454,17 @@ async function executeOrderStatusUpdateWithInventory(
           operatorId: finalOperatorId,
         },
       });
+
+      // ✅ P0修复：将分配的费用和更新的成本写回销售订单明细
+      // 修复前：只在出库记录中计算了成本，未更新销售订单明细，导致利润分析不准
+      // 修复后：将分摊后的费用和成本更新回订单明细，确保数据一致性
+      await tx.salesOrderItem.update({
+        where: { id: item.id },
+        data: {
+          allocatedExpense,
+          costSubtotal: totalCostWithExpense,
+        },
+      });
     }
 
     const itemsAmountValue =

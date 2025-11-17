@@ -193,6 +193,10 @@ export async function processRefundWithLock(
 
       // 确定最终状态
       if (shouldCloseRemaining) {
+        // ✅ 修复：抹平操作必须有实际处理金额
+        if (processAmount <= 0) {
+          throw new Error('抹平剩余金额时，处理金额必须大于0');
+        }
         finalStatus = 'completed';
         processedAmountToPersist = refund.refundAmount;
         remainingAmountToPersist = 0;

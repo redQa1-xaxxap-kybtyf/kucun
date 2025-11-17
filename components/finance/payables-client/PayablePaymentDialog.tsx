@@ -43,12 +43,16 @@ import { payablesApi } from '@/lib/api/payables';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { formatDate as formatDateUtil } from '@/lib/utils/datetime';
+import {
+  PAYMENT_OUT_METHODS,
+  paymentOutMethodSchema,
+} from '@/lib/validations/payable';
 
 const paymentFormSchema = z.object({
   payableRecordId: z.string().min(1, '应付款ID不能为空'),
   supplierId: z.string().min(1, '供应商ID不能为空'),
   paymentAmount: z.number().min(0.01, '付款金额必须大于0'),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'] as const),
+  paymentMethod: paymentOutMethodSchema,
   paymentDate: z.string().min(1, '请选择付款日期'),
   bankInfo: z.string().optional(),
   remarks: z.string().max(200, '备注不能超过200个字符').optional(),
@@ -73,13 +77,16 @@ interface PayablePaymentDialogProps {
   payableInfo: PayableInfo | null;
 }
 
-// 付款方式选项
-const PAYMENT_METHODS = [
-  { value: 'cash', label: '现金', icon: '💵' },
-  { value: 'bank_transfer', label: '银行转账', icon: '🏦' },
-  { value: 'check', label: '支票', icon: '📄' },
-  { value: 'other', label: '其他', icon: '🔁' },
-] as const;
+const PAYMENT_METHOD_DETAILS: {
+  [key: string]: { label: string; icon: string };
+} = {
+  cash: { label: '现金', icon: '💵' },
+  bank_transfer: { label: '银行转账', icon: '🏦' },
+  alipay: { label: '支付宝', icon: '💳' },
+  wechat: { label: '微信支付', icon: '📱' },
+  check: { label: '支票', icon: '📄' },
+  other: { label: '其他', icon: '🔁' },
+};
 
 // 使用付款模态框状态的Hook
 function usePaymentDialogState(
@@ -263,14 +270,17 @@ const PaymentMethodField = ({
             </SelectTrigger>
           </FormControl>
           <SelectContent>
-            {PAYMENT_METHODS.map(method => (
-              <SelectItem key={method.value} value={method.value}>
-                <div className="flex items-center gap-2">
-                  <span>{method.icon}</span>
-                  <span>{method.label}</span>
-                </div>
-              </SelectItem>
-            ))}
+            {PAYMENT_OUT_METHODS.map(method => {
+              const details = PAYMENT_METHOD_DETAILS[method];
+              return (
+                <SelectItem key={method} value={method}>
+                  <div className="flex items-center gap-2">
+                    <span>{details.icon}</span>
+                    <span>{details.label}</span>
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
         <FormMessage />

@@ -80,7 +80,7 @@ export function calculateFinalQuantity(
     }
 
     // ✅ 如果入库单位是"件"，必须有件片比才能换算
-    if (inputUnit === 'boxes') {
+    if (inputUnit === 'units') {
       if (!piecesPerUnit || piecesPerUnit <= 0) {
         return undefined; // 缺少件片比，无法换算
       }

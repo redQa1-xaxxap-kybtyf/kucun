@@ -301,7 +301,11 @@ export function ERPSalesOrderList({
         return;
       }
       setUpdatingOrderId(order.id);
-      updateStatusMutation.mutate({ id: order.id, status: 'shipped' });
+      updateStatusMutation.mutate({
+        id: order.id,
+        status: 'shipped',
+        idempotencyKey: crypto.randomUUID(),
+      });
     },
     [toast, updateStatusMutation]
   );
@@ -334,7 +338,11 @@ export function ERPSalesOrderList({
     }
     const orderId = orderPendingCancel.id;
     setUpdatingOrderId(orderId);
-    updateStatusMutation.mutate({ id: orderId, status: 'cancelled' });
+    updateStatusMutation.mutate({
+      id: orderId,
+      status: 'cancelled',
+      idempotencyKey: crypto.randomUUID(),
+    });
     setCancelConfirmOpen(false);
     setOrderPendingCancel(null);
   }, [orderPendingCancel, updateStatusMutation]);
