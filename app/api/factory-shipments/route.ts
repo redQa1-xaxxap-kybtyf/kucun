@@ -188,6 +188,14 @@ function computeAmountSummary(
   );
 }
 
+function ensureProductCode(code?: string | null) {
+  const normalized = code?.trim();
+  if (!normalized) {
+    throw new Error('产品编码不能为空');
+  }
+  return normalized;
+}
+
 async function ensureCustomerExists(customerId: string) {
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
@@ -287,7 +295,7 @@ async function createOrderInTransaction(
         create: items.map(item => ({
           productId: item.isManualProduct ? null : item.productId,
           supplierId: item.supplierId,
-          productCode: item.productCode,
+          productCode: ensureProductCode(item.productCode),
           batchNumber: item.batchNumber?.trim() || null,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -517,8 +525,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     // 如果提供了 search 参数，使用 OR 逻辑同时匹配 containerNumber 和 orderNumber
     if (search) {
       where.OR = [
-        { containerNumber: { contains: search, mode: 'insensitive' } },
-        { orderNumber: { contains: search, mode: 'insensitive' } },
+        { containerNumber: { contains: search } },
+        { orderNumber: { contains: search } },
       ];
     } else {
       // 如果没有 search 参数，保留独立的 containerNumber 和 orderNumber 筛选

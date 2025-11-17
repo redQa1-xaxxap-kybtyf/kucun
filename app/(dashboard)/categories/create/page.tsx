@@ -79,11 +79,13 @@ function useCreateCategoryController(): CreateCategoryController {
   const [parentSearchTerm, setParentSearchTerm] = React.useState('');
   const deferredSearchTerm = React.useDeferredValue(parentSearchTerm);
 
-  const form = useForm<CreateCategoryData>({
+  const form = useForm<CreateCategoryData, any, CreateCategoryData>({
     resolver: standardSchemaResolver(CreateCategorySchema),
     defaultValues: {
       name: '',
-      parentId: undefined,
+      code: '',
+      status: 'active',
+      parentId: '',
       sortOrder: 0,
     },
   });

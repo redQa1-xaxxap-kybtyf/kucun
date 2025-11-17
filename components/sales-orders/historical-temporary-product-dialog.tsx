@@ -69,7 +69,7 @@ export function HistoricalTemporaryProductDialog({
         <div className="space-y-4">
           {/* 搜索框 */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
             <Input
               placeholder="搜索产品名称或规格..."
               value={search}
@@ -81,11 +81,11 @@ export function HistoricalTemporaryProductDialog({
           {/* 产品列表 */}
           <ScrollArea className="h-[400px] rounded-md border">
             {isLoading ? (
-              <div className="flex h-full items-center justify-center text-muted-foreground">
+              <div className="text-muted-foreground flex h-full items-center justify-center">
                 加载中...
               </div>
             ) : !data?.data.length ? (
-              <div className="flex h-full flex-col items-center justify-center gap-2 text-muted-foreground">
+              <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2">
                 <Package className="h-12 w-12 opacity-20" />
                 <p>暂无历史临时产品</p>
                 {search && <p className="text-sm">尝试修改搜索关键词</p>}
@@ -105,7 +105,7 @@ export function HistoricalTemporaryProductDialog({
 
           {/* 分页信息 */}
           {data && data.pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center justify-between text-sm">
               <span>
                 第 {data.pagination.page} / {data.pagination.totalPages} 页
               </span>
@@ -147,7 +147,7 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
     <button
       type="button"
       onClick={() => onSelect(product)}
-      className="w-full rounded-lg border bg-card p-4 text-left transition-colors hover:bg-accent"
+      className="bg-card hover:bg-accent w-full rounded-lg border p-4 text-left transition-colors"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-2">
@@ -161,13 +161,13 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
 
           {/* 规格信息 */}
           {product.specification && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               规格: {product.specification}
             </p>
           )}
 
           {/* 单位和重量 */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>单位: {product.unit}</span>
             <span>每件片数: {product.piecesPerUnit}</span>
             {product.weight && <span>重量: {product.weight}kg</span>}
@@ -180,7 +180,7 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
             使用 {product.usageCount} 次
           </Badge>
           {product.lastUsedAt && (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-muted-foreground text-xs">
               {new Date(product.lastUsedAt).toLocaleDateString('zh-CN')}
             </span>
           )}
@@ -189,4 +189,3 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
     </button>
   );
 }
-

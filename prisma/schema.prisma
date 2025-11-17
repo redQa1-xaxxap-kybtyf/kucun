@@ -162,6 +162,7 @@ model Product {
   piecesPerUnit Int      @default(1) @map("pieces_per_unit")
   weight        Float?
   thickness     Float?
+  minStock      Int?     @map("min_stock")
   categoryId    String?  @map("category_id") @db.Char(36)
   status        String   @default("active") @db.VarChar(32)
   thumbnailUrl  String?  @map("thumbnail_url")

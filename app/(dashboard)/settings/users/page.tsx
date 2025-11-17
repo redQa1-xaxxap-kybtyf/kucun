@@ -40,6 +40,7 @@ import type {
   UserListResponse,
   UserManagementUser,
 } from '@/lib/types/settings';
+import type { UserFormData } from '@/lib/validations/settings';
 
 export default function UsersSettingsPage() {
   const router = useRouter();
@@ -315,9 +316,7 @@ export default function UsersSettingsPage() {
     resetPasswordMutation.mutate({ userId, newPassword });
   };
 
-  const handleFormSubmit = (
-    data: CreateUserRequest | (UpdateUserRequest & { userId: string })
-  ) => {
+  const handleFormSubmit = (data: UserFormData) => {
     if (formMode === 'create') {
       createUserMutation.mutate(data as CreateUserRequest);
     } else {

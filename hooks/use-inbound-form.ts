@@ -23,7 +23,7 @@ export function useInboundForm(options?: UseInboundFormOptions) {
   );
 
   // 表单配置
-  const form = useForm<InboundFormData>({
+  const form = useForm<InboundFormData, any, InboundFormData>({
     resolver: standardSchemaResolver(inboundFormSchema),
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
@@ -107,7 +107,7 @@ export function calculateFinalQuantity(
 // 处理产品选择的逻辑
 // ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver
 export function useProductSelection(
-  form: ReturnType<typeof useForm<InboundFormData, any, any>>,
+  form: ReturnType<typeof useForm<InboundFormData>>,
   setSelectedProduct: (product: ProductOption | null) => void
 ) {
   const handleProductSelect = (product: ProductOption) => {

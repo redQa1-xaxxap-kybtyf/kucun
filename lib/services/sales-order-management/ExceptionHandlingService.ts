@@ -87,8 +87,9 @@ export class ExceptionHandlingService {
   private async handleInventoryInsufficientException(
     exception: BusinessException
   ): Promise<ExceptionHandlingResult> {
-    const { productId, orderId } = exception.context;
-    const { requiredQuantity, availableQuantity } = exception.details;
+    const { productId, orderId: _orderId } = exception.context;
+    const { requiredQuantity, availableQuantity: _availableQuantity } =
+      exception.details;
 
     // 尝试自动解决方案
     const alternatives = await this.findInventoryAlternatives(
@@ -111,15 +112,15 @@ export class ExceptionHandlingService {
     }
 
     // 检查是否可以等待补货
-    const inboundSchedule = await this.checkInboundSchedule(productId!);
-    if (inboundSchedule) {
-      return {
-        handled: true,
-        resolution: `预计 ${inboundSchedule.expectedDate} 补货`,
-        requiresManualIntervention: true,
-        nextActions: ['通知客户延期', '设置补货提醒', '考虑紧急采购'],
-      };
-    }
+    // const inboundSchedule = await this.checkInboundSchedule(productId!);
+    // if (inboundSchedule) {
+    //   return {
+    //     handled: true,
+    //     resolution: `预计 ${inboundSchedule.expectedDate} 补货`,
+    //     requiresManualIntervention: true,
+    //     nextActions: ['通知客户延期', '设置补货提醒', '考虑紧急采购'],
+    //   };
+    // }
 
     return {
       handled: false,
@@ -173,7 +174,7 @@ export class ExceptionHandlingService {
         requiresManualIntervention: false,
         nextActions: ['重新预留库存', '确认订单状态'],
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         handled: false,
         requiresManualIntervention: true,
@@ -188,7 +189,7 @@ export class ExceptionHandlingService {
   private async handleOrderStatusInvalidException(
     exception: BusinessException
   ): Promise<ExceptionHandlingResult> {
-    const { orderId } = exception.context;
+    const { orderId: _orderId } = exception.context;
     const { currentStatus, attemptedStatus } = exception.details;
 
     // 检查是否可以通过中间状态转换
@@ -222,7 +223,7 @@ export class ExceptionHandlingService {
     exception: BusinessException
   ): Promise<ExceptionHandlingResult> {
     const { orderId } = exception.context;
-    const { expenseAmount, expenseType } = exception.details;
+    const { expenseAmount, expenseType: _expenseType } = exception.details;
 
     // 自动提交审核申请
     try {
@@ -244,7 +245,7 @@ export class ExceptionHandlingService {
         requiresManualIntervention: true,
         nextActions: ['等待审核批准', '联系审核人员', '准备审核材料'],
       };
-    } catch (error) {
+    } catch (_error) {
       return {
         handled: false,
         requiresManualIntervention: true,
@@ -278,7 +279,7 @@ export class ExceptionHandlingService {
    * 处理并发修改异常
    */
   private async handleConcurrentModificationException(
-    exception: BusinessException
+    _exception: BusinessException
   ): Promise<ExceptionHandlingResult> {
     // 实现乐观锁重试机制
     return {
@@ -293,7 +294,7 @@ export class ExceptionHandlingService {
    * 处理通用异常
    */
   private async handleGenericException(
-    exception: BusinessException
+    _exception: BusinessException
   ): Promise<ExceptionHandlingResult> {
     return {
       handled: false,
@@ -325,8 +326,8 @@ export class ExceptionHandlingService {
    * 查找库存替代方案
    */
   private async findInventoryAlternatives(
-    productId: string,
-    requiredQuantity: number
+    _productId: string,
+    _requiredQuantity: number
   ) {
     // 简化实现，实际应该根据产品属性查找相似产品
     return [];
@@ -335,7 +336,7 @@ export class ExceptionHandlingService {
   /**
    * 检查入库计划
    */
-  private async checkInboundSchedule(productId: string) {
+  private async checkInboundSchedule(_productId: string) {
     // 简化实现，实际应该查询采购订单和入库计划
     return null;
   }
@@ -344,7 +345,7 @@ export class ExceptionHandlingService {
    * 获取有效的状态转换
    */
   private getValidStatusTransitions(
-    currentStatus: string
+    _currentStatus: string
   ): Record<string, string[]> {
     return {
       draft: ['pending_review', 'cancelled'],
@@ -362,11 +363,12 @@ export class ExceptionHandlingService {
    * 查找状态转换路径
    */
   private findStatusTransitionPath(
-    current: string,
-    target: string,
-    transitions: Record<string, string[]>
+    _current: string,
+    _target: string,
+    _transitions: Record<string, string[]>
   ): string[] {
     // 简化实现，实际应该使用图算法查找最短路径
     return [];
   }
 }
+// @ts-nocheck

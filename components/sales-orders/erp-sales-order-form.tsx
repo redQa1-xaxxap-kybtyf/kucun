@@ -2,8 +2,8 @@
 'use client';
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import { useQuery } from '@tanstack/react-query';
-import { Loader2, Save } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import {
@@ -18,6 +18,7 @@ import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { FeeItemsFormField } from '@/components/sales-orders/fee-items';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -66,6 +67,11 @@ import {
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
 import { PrepaymentSection } from './erp-sales-order-form/PrepaymentSection';
+
+import {
+  useCreateSalesOrder,
+  useUpdateSalesOrder,
+} from '@/hooks/use-sales-order-mutations';
 
 const UNIT_MAPPING: Record<string, string> = {
   piece: '件',
@@ -269,6 +275,7 @@ export function ERPSalesOrderForm({
   const transferMode = form.watch('transferMode') as
     | TransferFulfillmentMode
     | undefined;
+  const supplierId = form.watch('supplierId');
   const feeItems = (form.watch('feeItems') || []) as SalesOrderFeeItem[];
   const roundingAdjustment = Number(form.watch('roundingAdjustment') ?? 0);
 
@@ -303,7 +310,7 @@ export function ERPSalesOrderForm({
 
   // ✅ 使用新的 useCreateSalesOrder Hook，自动处理缓存刷新
   const createMutation = useCreateSalesOrder({
-    onSuccess: data => {
+    onSuccess: (data: { id: string; orderNumber: string }) => {
       toast({
         title: '订单创建成功',
         description: `订单号：${data.orderNumber}`,
@@ -317,7 +324,7 @@ export function ERPSalesOrderForm({
 
       onSuccess?.(data);
     },
-    onError: error => {
+    onError: (error: Error) => {
       toast({
         title: '创建失败',
         description: error.message,
@@ -328,7 +335,7 @@ export function ERPSalesOrderForm({
 
   // ✅ 使用新的 useUpdateSalesOrder Hook，自动处理缓存刷新
   const updateMutation = useUpdateSalesOrder({
-    onSuccess: response => {
+    onSuccess: (response: { data?: SalesOrder | null }) => {
       const order = response.data;
       toast({
         title: '订单更新成功',
@@ -345,7 +352,7 @@ export function ERPSalesOrderForm({
         onSuccess?.(order);
       }
     },
-    onError: error => {
+    onError: (error: Error) => {
       toast({
         title: '更新失败',
         description: error.message,
@@ -794,7 +801,7 @@ export function ERPSalesOrderForm({
   const handleSupplierCreated = (supplier: Supplier) => {
     queryClient.setQueryData<SuppliersResponse | undefined>(
       suppliersQueryKey,
-      previous => {
+      (previous: SuppliersResponse | undefined) => {
         if (!previous) {
           return {
             data: [supplier],
@@ -808,12 +815,12 @@ export function ERPSalesOrderForm({
         }
 
         const existingIndex = previous.data.findIndex(
-          existing => existing.id === supplier.id
+          (existing: Supplier) => existing.id === supplier.id
         );
 
         const updatedData =
           existingIndex >= 0
-            ? previous.data.map((item, index) =>
+            ? previous.data.map((item: Supplier, index: number) =>
                 index === existingIndex ? supplier : item
               )
             : [supplier, ...previous.data].slice(

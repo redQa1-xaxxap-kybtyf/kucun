@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, type QueryKey } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import * as React from 'react';
 
@@ -67,7 +67,10 @@ export function RelatedRecordSelector({
     return transformRecords(relatedType, data);
   }, [data, relatedType]);
 
-  const selectedRecord = React.useMemo(() => records.find(r => r.id === value), [records, value]);
+  const selectedRecord = React.useMemo(
+    () => records.find(r => r.id === value),
+    [records, value]
+  );
 
   const handleSelect = React.useCallback(
     (recordId: string) => {
@@ -157,7 +160,7 @@ export function RelatedRecordSelector({
 function getQueryKey(
   relatedType: ExpenseRelatedType,
   searchTerm: string
-): unknown[] {
+): QueryKey {
   const baseParams = {
     page: 1,
     limit: 50,
@@ -177,7 +180,7 @@ function getQueryKey(
     case 'sales_order':
       return queryKeys.salesOrders.list(baseParams);
     default:
-      return ['related-records', relatedType, searchTerm];
+      return ['related-records', relatedType, searchTerm] as const;
   }
 }
 
@@ -232,38 +235,58 @@ function transformRecords(
     case 'inbound':
       return (data as InboundRecord[]).map(record => ({
         id: record.id,
-        number: record.recordNumber,
-        date: record.createdAt?.split('T')[0],
+        number: ensureRecordNumber(record.recordNumber),
+        date: formatRecordDate(record.createdAt),
         amount: undefined,
       }));
 
     case 'outbound':
       return (data as OutboundRecord[]).map(record => ({
         id: record.id,
-        number: record.recordNumber,
-        date: record.createdAt?.split('T')[0],
+        number: ensureRecordNumber(record.recordNumber),
+        date: formatRecordDate(record.createdAt),
         amount: undefined,
       }));
 
     case 'purchase_order':
       return (data as PurchaseOrder[]).map(order => ({
         id: order.id,
-        number: order.containerNumber,
-        date: order.orderDate?.split('T')[0],
+        number: ensureRecordNumber(order.containerNumber ?? order.orderNumber),
+        date: formatRecordDate(order.orderDate),
         amount: order.totalAmount,
       }));
 
     case 'sales_order':
       return (data as SalesOrder[]).map(order => ({
         id: order.id,
-        number: order.orderNumber,
-        date: order.createdAt?.split('T')[0],
+        number: ensureRecordNumber(order.orderNumber),
+        date: formatRecordDate(order.createdAt),
         amount: order.totalAmount,
       }));
 
     default:
       return [];
   }
+}
+
+function ensureRecordNumber(value?: string | null): string {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+  return '未提供单号';
+}
+
+function formatRecordDate(value?: string | Date | null): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  if (value instanceof Date) {
+    return value.toISOString().split('T')[0];
+  }
+  if (typeof value === 'string') {
+    return value.split('T')[0] ?? value;
+  }
+  return undefined;
 }
 
 function getPlaceholder(relatedType: ExpenseRelatedType): string {

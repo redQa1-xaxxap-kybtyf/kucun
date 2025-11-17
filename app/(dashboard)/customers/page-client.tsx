@@ -206,7 +206,7 @@ export function CustomersPageClient({
             {
               key: 'sortBy',
               label: '排序字段',
-              options: CUSTOMER_SORT_OPTIONS,
+              options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
               width: 'w-36',
             },
             {

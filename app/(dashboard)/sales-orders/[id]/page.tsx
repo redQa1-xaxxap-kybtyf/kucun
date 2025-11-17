@@ -109,7 +109,11 @@ export default function SalesOrderDetailPage() {
     }
 
     setIsUpdatingStatus(true);
-    updateStatusMutation.mutate({ id, status: 'shipped' });
+    updateStatusMutation.mutate({
+      id,
+      status: 'shipped',
+      idempotencyKey: crypto.randomUUID(),
+    });
   };
 
   if (isLoading) {

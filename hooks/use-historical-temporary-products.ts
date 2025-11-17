@@ -42,4 +42,3 @@ export function useHistoricalTemporaryProducts(
     enabled: !!params.supplierId, // 只有提供了 supplierId 才查询
   });
 }
-

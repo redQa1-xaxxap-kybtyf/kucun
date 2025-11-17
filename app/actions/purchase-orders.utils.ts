@@ -363,6 +363,7 @@ export async function fetchOrderForStatusChange(orderId: string) {
       supplierId: true,
       userId: true,
       totalAmount: true,
+      expenseAmount: true,
       containerNumber: true,
       shippingCompany: true,
       items: {

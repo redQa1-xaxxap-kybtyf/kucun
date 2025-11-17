@@ -24,7 +24,8 @@ export interface InventoryQueryParams {
     | 'quantity'
     | 'reservedQuantity'
     | 'batchNumber'
-    | 'productId';
+    | 'productId'
+    | 'location';
   sortOrder?: 'asc' | 'desc';
   productId?: string;
   // variantId?: string; // 移除：当前系统不支持产品变体

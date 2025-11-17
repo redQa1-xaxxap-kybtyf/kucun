@@ -2,12 +2,12 @@
 
 /**
  * 方案三：带辅助计算器的单位成本字段
- * 
+ *
  * 优点：
  * - 提供辅助计算功能，用户体验最好
  * - 自动计算每片成本，减少用户计算错误
  * - 适合新手用户
- * 
+ *
  * 缺点：
  * - 代码复杂度较高
  * - 占用更多界面空间
@@ -96,7 +96,7 @@ export function InboundCostFieldWithCalculator({
               <PopoverContent className="w-80" align="end">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <h4 className="font-medium text-sm">单位成本计算器</h4>
+                    <h4 className="text-sm font-medium">单位成本计算器</h4>
                     <p className="text-xs text-gray-500">
                       输入每件成本和每件片数，自动计算每片成本
                     </p>
@@ -150,7 +150,7 @@ export function InboundCostFieldWithCalculator({
                     </Button>
 
                     {calculatedCost !== null && (
-                      <div className="rounded-md bg-blue-50 p-3 space-y-2">
+                      <div className="space-y-2 rounded-md bg-blue-50 p-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-gray-700">
                             每片成本：
@@ -160,7 +160,8 @@ export function InboundCostFieldWithCalculator({
                           </span>
                         </div>
                         <div className="text-xs text-gray-500">
-                          {unitCost} ÷ {piecesPerUnit} = {calculatedCost.toFixed(2)}
+                          {unitCost} ÷ {piecesPerUnit} ={' '}
+                          {calculatedCost.toFixed(2)}
                         </div>
                         <Button
                           type="button"
@@ -189,7 +190,7 @@ export function InboundCostFieldWithCalculator({
             />
           </FormControl>
           <FormDescription className="text-xs text-gray-500">
-            请填写每片的成本。如不确定，可使用"辅助计算"功能
+            请填写每片的成本。如不确定，可使用&ldquo;辅助计算&rdquo;功能
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -197,4 +198,3 @@ export function InboundCostFieldWithCalculator({
     />
   );
 }
-

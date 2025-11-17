@@ -23,7 +23,7 @@ import type {
 } from '@/lib/types/inventory';
 
 interface InventoryPageClientProps {
-  initialParams: InventoryQueryParams;
+  initialParams: Partial<InventoryQueryParams>;
   categoryOptions: CategoryOption[];
 }
 
@@ -63,7 +63,7 @@ export function InventoryPageClient({
   );
 }
 
-function useInventoryController(initialParams: InventoryQueryParams) {
+function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
   const { params, updateParams } = useUrlSearchParams(inventoryParamsSchema, {
     basePath: '/inventory',
     debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
@@ -82,7 +82,6 @@ function useInventoryController(initialParams: InventoryQueryParams) {
   }, [params.search]);
 
   const {
-    data,
     isLoading,
     isFetching,
     error,
@@ -177,7 +176,6 @@ function useInventoryController(initialParams: InventoryQueryParams) {
     params,
     searchInput, // ✅ 使用本地searchInput,即时UI反馈
     isSearching: shouldShowSearchingIndicator, // ✅ 优化后的搜索状态指示
-    data,
     isLoading,
     isFetching,
     error,

@@ -119,6 +119,7 @@ export interface PayableStatistics {
   totalPaidAmount: number;
   totalRemainingAmount: number;
   pendingCount: number;
+  partialCount?: number;
   paidCount: number;
   thisMonthPayables: number;
   thisMonthPayments: number;

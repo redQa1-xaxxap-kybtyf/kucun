@@ -22,7 +22,7 @@ interface Props {
 
 export function PayablesSummary({ filters, initialStatistics }: Props) {
   // ✅ 使用 TanStack Query 根据筛选条件动态获取统计数据
-  const { data: statistics, isLoading } = usePayableStatistics({
+  const { data: statistics, isLoading: _isLoading } = usePayableStatistics({
     filters,
     enabled: true,
   });
@@ -40,7 +40,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
 
   const totalTrackedCount =
     displayStatistics.pendingCount +
-    displayStatistics.partialCount +
+    (displayStatistics.partialCount ?? 0) +
     displayStatistics.paidCount;
 
   return (

@@ -3,8 +3,8 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
-import { getSession, signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getSession, signIn } from 'next-auth/react';
 import React, {
   useCallback,
   useEffect,

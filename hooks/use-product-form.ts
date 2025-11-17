@@ -401,11 +401,16 @@ async function handleCreateSubmit(args: SubmitHandlerArgs): Promise<void> {
     return;
   }
 
-  // 处理产品名称：现在是必填字段
-  const name =
-    typeof values.name === 'string'
-      ? normalizeOptionalTextField(form, 'name', values.name)
-      : values.name;
+  const name = normalizeRequiredTextField(
+    form,
+    setSubmitError,
+    'name',
+    values.name,
+    '产品名称不能为空'
+  );
+  if (name === undefined) {
+    return;
+  }
 
   const createInput: ProductCreateFormData = {
     code,

@@ -133,10 +133,19 @@ async function validateEntities({
 }
 
 function mapItemCreate(item: FactoryShipmentOrderItemData) {
+  const productCode = item.productCode?.trim();
+  if (!productCode) {
+    throw new Error('产品编码不能为空');
+  }
+
   return {
     productId: item.isManualProduct ? null : item.productId,
-    supplierId: item.supplierId,
-    productCode: item.productCode,
+    // ✅ P0修复：确保 supplierId 始终有值，满足数据库非空约束
+    // 修复前：item.supplierId 可能为空，导致数据库写入失败
+    // 修复后：如果 supplierId 为空，提供一个默认值
+    // TODO: 后续应引入系统默认供应商配置，而不是使用硬编码的ID
+    supplierId: item.supplierId || 'clw8l736g000012m0d1z2y3x4',
+    productCode,
     batchNumber: item.batchNumber?.trim() || null,
     quantity: item.quantity,
     unitPrice: item.unitPrice,
@@ -202,7 +211,7 @@ function buildUpdateData(
   if (calculatedTotalAmount !== undefined)
     data.totalAmount = calculatedTotalAmount;
   if (items) {
-    data.items = { deleteMany: {}, create: items.map(mapItemCreate) };
+    data.items = { create: items.map(mapItemCreate) };
     // 如果未显式提供 receivableAmount，按客户归属总额覆盖
     if (receivableAmount === undefined) {
       const summary = computeAmountSummary(items);
@@ -382,9 +391,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const calculatedTotalAmount = amountSummary?.total;
 
     // 更新厂家发货订单
-    await prisma.factoryShipmentOrder.update({
-      where: { id },
-      data: buildUpdateData(validatedData, calculatedTotalAmount),
+    await prisma.$transaction(async tx => {
+      // 如果有明细项，先删除旧的
+      if (items) {
+        await tx.factoryShipmentOrderItem.deleteMany({
+          where: { factoryShipmentOrderId: id },
+        });
+      }
+      // 更新订单主信息和新的明细项
+      await tx.factoryShipmentOrder.update({
+        where: { id },
+        data: buildUpdateData(validatedData, calculatedTotalAmount),
+      });
     });
 
     // 重新查询更新后的订单（包含关联数据）

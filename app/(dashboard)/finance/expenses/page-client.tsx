@@ -1,9 +1,9 @@
 'use client';
 
 import { Plus, Receipt } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';

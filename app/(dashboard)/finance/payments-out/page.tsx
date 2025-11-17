@@ -20,7 +20,7 @@ const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
   ...PAYMENT_OUT_METHODS,
 ];
 
-const ALLOWED_PAYMENT_OUT_SORT_FIELDS = [
+const _ALLOWED_PAYMENT_OUT_SORT_FIELDS = [
   'createdAt',
   'paymentAmount',
   'paymentDate',
@@ -175,7 +175,7 @@ async function getPaymentsOutData(searchParams: {
     prisma.paymentOutRecord.aggregate({
       where: whereConditions,
       _sum: { paymentAmount: true },
-      _count: true,
+      _count: { _all: true },
     }),
     // 已确认金额
     prisma.paymentOutRecord.aggregate({
@@ -222,19 +222,19 @@ async function getPaymentsOutData(searchParams: {
   ]);
 
   // 计算总体指标
-  const totalAmount = Number(totalStats._sum.paymentAmount || 0);
-  const confirmedAmount = Number(confirmedStats._sum.paymentAmount || 0);
-  const pendingAmount = Number(pendingStats._sum.paymentAmount || 0);
+  const totalAmount = totalStats._sum.paymentAmount ?? 0;
+  const confirmedAmount = confirmedStats._sum.paymentAmount ?? 0;
+  const pendingAmount = pendingStats._sum.paymentAmount ?? 0;
 
   // ✅ 优化：从 groupBy 结果计算月度已确认金额
   const calculateMonthlyConfirmedAmount = (
     groupedStats: Array<{
       status: string;
-      _sum: { paymentAmount: Prisma.Decimal | null };
+      _sum: { paymentAmount: number | null };
     }>
   ) => {
     const confirmed = groupedStats.find(stat => stat.status === 'confirmed');
-    return Number(confirmed?._sum.paymentAmount || 0);
+    return confirmed?._sum.paymentAmount ?? 0;
   };
 
   const currentMonthConfirmedAmount =
@@ -257,7 +257,7 @@ async function getPaymentsOutData(searchParams: {
     totalAmount,
     confirmedAmount,
     pendingAmount,
-    recordCount: totalStats._count,
+    recordCount: totalStats._count?._all ?? 0,
     currentMonthConfirmedAmount: Number(currentMonthConfirmedAmount.toFixed(2)),
     previousMonthConfirmedAmount:
       previousMonthConfirmedAmount > 0
@@ -282,7 +282,13 @@ async function getPaymentsOutData(searchParams: {
       bankInfo: payment.bankInfo ?? undefined,
       createdAt: payment.createdAt,
       updatedAt: payment.updatedAt,
-      payableRecord: payment.payableRecord ?? undefined,
+      payableRecord: payment.payableRecord
+        ? {
+            ...payment.payableRecord,
+            payableAmount: Number(payment.payableRecord.payableAmount),
+            remainingAmount: Number(payment.payableRecord.remainingAmount),
+          }
+        : undefined,
       supplier: {
         ...payment.supplier,
         phone: payment.supplier.phone ?? undefined,
@@ -309,7 +315,7 @@ async function getPaymentsOutData(searchParams: {
 export default async function PaymentsOutPage({
   searchParams,
 }: {
-  searchParams: Promise<{
+  searchParams: {
     page?: string;
     limit?: string;
     search?: string;
@@ -319,9 +325,9 @@ export default async function PaymentsOutPage({
     sortOrder?: string;
     startDate?: string;
     endDate?: string;
-  }>;
+  };
 }) {
-  const params = await searchParams;
+  const params = searchParams;
   const initialData = await getPaymentsOutData(params);
 
   const safeSortOrder =

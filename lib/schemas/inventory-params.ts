@@ -27,6 +27,7 @@ export const inventoryParamsSchema = z.object({
   // ⚠️ 注意：Inventory表没有created_at字段，只有updated_at
   sortBy: z
     .enum([
+      'createdAt',
       'updatedAt',
       'quantity',
       'reservedQuantity',

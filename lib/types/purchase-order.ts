@@ -149,21 +149,6 @@ export interface PurchaseOrder {
   expenses?: ExpenseRecord[];
 }
 
-// 费用记录类型（简化版，用于采购订单详情）
-export interface ExpenseRecord {
-  id: string;
-  expenseNumber: string;
-  expenseType: string;
-  expenseName: string;
-  expenseAmount: number;
-  remarks?: string;
-  relatedType: string;
-  relatedId: string;
-  relatedNumber?: string;
-  createdAt: Date | string;
-  updatedAt: Date | string;
-}
-
 // 创建采购订单的输入数据
 export interface CreatePurchaseOrderData {
   containerNumber?: string;

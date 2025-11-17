@@ -38,4 +38,3 @@ export interface HistoricalTemporaryProductListResponse {
     totalPages: number;
   };
 }
-

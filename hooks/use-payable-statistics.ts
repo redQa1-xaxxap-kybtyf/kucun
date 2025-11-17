@@ -5,7 +5,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import type { PayableRecordQuery, PayableStatistics } from '@/lib/types/payable';
+import type {
+  PayableRecordQuery,
+  PayableStatistics,
+} from '@/lib/types/payable';
 
 interface UsePayableStatisticsOptions {
   filters?: PayableRecordQuery;
@@ -19,7 +22,7 @@ interface UsePayableStatisticsOptions {
  * @param options.enabled - 是否启用查询
  */
 export function usePayableStatistics({
-  filters = {},
+  filters = { page: 1, limit: 20 },
   enabled = true,
 }: UsePayableStatisticsOptions = {}) {
   return useQuery({
@@ -49,4 +52,3 @@ export function usePayableStatistics({
     gcTime: 5 * 60 * 1000, // 5分钟后清除缓存
   });
 }
-

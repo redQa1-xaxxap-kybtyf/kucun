@@ -172,6 +172,7 @@ const buildStatistics = ({
     totalPaidAmount: totalPaidAmountResult._sum.paidAmount || 0,
     totalRemainingAmount: totalRemainingAmountResult._sum.remainingAmount || 0,
     pendingCount: statusCountMap.pending || 0,
+    partialCount: statusCountMap.partial || 0,
     paidCount: statusCountMap.paid || 0,
     thisMonthPayables: thisMonthPayablesResult._sum.payableAmount || 0,
     thisMonthPayments: thisMonthPaymentsResult._sum.paymentAmount || 0,

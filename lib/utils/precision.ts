@@ -121,10 +121,7 @@ export function safeDivide(a: number, b: number): number {
  * formatCurrency(1234.56, '$') // '$1,234.56'
  * ```
  */
-export function formatCurrency(
-  value: number,
-  currency: string = '¥'
-): string {
+export function formatCurrency(value: number, currency: string = '¥'): string {
   return `${currency}${value.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -144,10 +141,7 @@ export function formatCurrency(
  * formatPercentage(12.345, 1) // '12.3%'
  * ```
  */
-export function formatPercentage(
-  value: number,
-  decimals: number = 2
-): string {
+export function formatPercentage(value: number, decimals: number = 2): string {
   return `${roundToDecimals(value, decimals).toFixed(decimals)}%`;
 }
 
@@ -167,10 +161,7 @@ export function formatPercentage(
  * toSafeNumber('abc', 10) // 10
  * ```
  */
-export function toSafeNumber(
-  value: unknown,
-  defaultValue: number = 0
-): number {
+export function toSafeNumber(value: unknown, defaultValue: number = 0): number {
   if (value === null || value === undefined) {
     return defaultValue;
   }
@@ -218,4 +209,3 @@ export function average(values: number[]): number {
   }
   return safeDivide(sum(values), values.length);
 }
-
