@@ -9,6 +9,7 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { invalidateReportCache } from '@/lib/cache/finance-cache';
+import { logger } from '@/lib/logger';
 import {
   createExpenseRecord,
   getExpenseRecords,
@@ -26,13 +27,12 @@ export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析查询参数
     const searchParams = new URL(request.url).searchParams;
+    const pageParam = searchParams.get('page');
+    const pageSizeParam = searchParams.get('pageSize');
+
     const queryParams = {
-      page: searchParams.get('page')
-        ? parseInt(searchParams.get('page')!, 10)
-        : undefined,
-      pageSize: searchParams.get('pageSize')
-        ? parseInt(searchParams.get('pageSize')!, 10)
-        : undefined,
+      page: pageParam ? parseInt(pageParam, 10) : undefined,
+      pageSize: pageSizeParam ? parseInt(pageSizeParam, 10) : undefined,
       expenseType: searchParams.get('expenseType') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
@@ -92,7 +92,10 @@ export const POST = withAuth(
 
     // 失效报表缓存（异步执行，不阻塞响应）
     invalidateReportCache().catch(error => {
-      console.error('Failed to invalidate report cache:', error);
+      logger.error('cache', '费用记录缓存失效失败', error, {
+        expenseId: expense.id,
+        operation: 'invalidate_report_cache',
+      });
     });
 
     return successResponse(expense);
