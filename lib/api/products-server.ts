@@ -7,16 +7,16 @@
 import { cache } from 'react';
 
 import {
-  buildProductWhereClause,
-  buildProductSelect,
-  queryProducts,
-  getProductsInventory,
-  getProductsBatchSpecifications,
-  formatProductList,
   buildPagination,
+  buildProductSelect,
+  buildProductWhereClause,
+  formatProductList,
+  getProductsBatchSpecifications,
+  getProductsInventory,
+  queryProducts,
 } from '@/lib/api/handlers/products-list';
 import type { ProductListQueryParams } from '@/lib/api/products';
-import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
+import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
 import { paginationConfig, productConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product } from '@/lib/types/product';
@@ -139,14 +139,18 @@ export const getProductsForServer = cache(
     // 性能监控：记录慢查询
     const queryDuration = Date.now() - queryStartTime;
     if (queryDuration > 1000) {
-      console.warn(`[性能警告] 产品列表查询耗时过长: ${queryDuration}ms`, {
-        cacheKey,
-        includeInventory,
-        includeStatistics: finalIncludeStatistics,
-        includeBatchSpecs,
-        search,
-        page,
-        limit,
+      logger.warn('产品列表查询性能慢', {
+        context: {
+          operation: 'getProductsServer',
+          duration: queryDuration,
+          cacheKey,
+          includeInventory,
+          includeStatistics: finalIncludeStatistics,
+          includeBatchSpecs,
+          search,
+          page,
+          limit,
+        },
       });
     }
 

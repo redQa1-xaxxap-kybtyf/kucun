@@ -12,6 +12,7 @@ import type { Prisma } from '@prisma/client';
 import { revalidateCachePath, revalidateCaches } from '@/lib/cache/revalidate';
 import { CacheTags } from '@/lib/cache/tags';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import type {
   Category,
   CategoryListResult,
@@ -244,16 +245,19 @@ export async function getCategories(
 
   // 性能监控: 慢查询警告
   if (duration > 1000) {
-    console.warn(`Slow query: getCategories took ${duration}ms`, {
-      page,
-      limit,
-      search: filterParams.search || undefined,
-      parentId: filterParams.parentId || undefined,
-      status: filterParams.status || undefined,
-      sortBy,
-      sortOrder,
-      total,
-      duration,
+    logger.warn('分类查询性能慢', {
+      context: {
+        operation: 'getCategories',
+        duration,
+        page,
+        limit,
+        search: filterParams.search || undefined,
+        parentId: filterParams.parentId || undefined,
+        status: filterParams.status || undefined,
+        sortBy,
+        sortOrder,
+        total,
+      },
     });
   }
 

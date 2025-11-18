@@ -10,6 +10,7 @@ import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { parseProductImages } from '@/lib/utils/product-transforms';
 
 const DEFAULT_INVENTORY = {
@@ -240,9 +241,12 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
   // ✅ 防御性过滤：移除任何可能的孤儿记录
   const validBatchSpecs = batchSpecs.filter(spec => {
     if (!spec.productId || !productIds.includes(spec.productId)) {
-      console.warn(
-        `⚠️  警告: 批次规格 ${spec.batchNumber} 的产品不在查询范围内 (productId: ${spec.productId})`
-      );
+      logger.warn('批次规格的产品不在查询范围内', {
+        context: {
+          batchNumber: spec.batchNumber,
+          productId: spec.productId,
+        },
+      });
       return false;
     }
     return true;
@@ -283,9 +287,12 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
 
     if (!batchSpec) {
       // 批次规格缺失，跳过该批次（防止显示错误的每件片数）
-      console.warn(
-        `⚠️  警告: 批次 ${inv.batchNumber} 没有批次规格记录，跳过 (productId: ${inv.productId})`
-      );
+      logger.warn('批次没有批次规格记录', {
+        context: {
+          batchNumber: inv.batchNumber,
+          productId: inv.productId,
+        },
+      });
       return;
     }
 
