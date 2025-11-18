@@ -122,6 +122,7 @@ function formatText(entry: LogEntry): string {
 
 /**
  * 输出日志到控制台
+ * 注意：这是日志系统的底层输出，必须使用 console.*
  */
 function output(level: LogLevel, formatted: string): void {
   if (process.env.NODE_ENV === 'test') {
@@ -131,13 +132,16 @@ function output(level: LogLevel, formatted: string): void {
   switch (level) {
     case 'debug':
     case 'info':
+      // eslint-disable-next-line no-console
       console.log(formatted);
       break;
     case 'warn':
+      // eslint-disable-next-line no-console
       console.warn(formatted);
       break;
     case 'error':
     case 'critical':
+      // eslint-disable-next-line no-console
       console.error(formatted);
       break;
   }

@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * 记录设置变更日志
@@ -38,7 +39,13 @@ export async function logSettingChange(
       },
     });
   } catch (error) {
-    console.error('记录设置变更日志失败:', error);
+    logger.error('记录设置变更日志失败', {
+      error,
+      context: {
+        settingKey,
+        changedBy,
+      },
+    });
     // 不抛出错误,避免影响主流程
   }
 }
@@ -74,7 +81,13 @@ export async function logSettingChanges(
       })),
     });
   } catch (error) {
-    console.error('批量记录设置变更日志失败:', error);
+    logger.error('批量记录设置变更日志失败', {
+      error,
+      context: {
+        changeCount: changes.length,
+        changedBy,
+      },
+    });
     // 不抛出错误,避免影响主流程
   }
 }

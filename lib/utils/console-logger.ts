@@ -88,9 +88,11 @@ class ConsoleLogger {
         console.info(prefix, ...args);
         break;
       case 'warn':
+        // eslint-disable-next-line no-console
         console.warn(prefix, ...args);
         break;
       case 'error':
+        // eslint-disable-next-line no-console
         console.error(prefix, ...args);
         break;
     }

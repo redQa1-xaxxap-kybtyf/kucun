@@ -5,6 +5,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { DateTimeTransformer } from '@/lib/utils/datetime';
 
 /**
@@ -83,8 +84,13 @@ export function withDateTimeTransform(
       });
     } catch (error) {
       // 如果转换失败，返回原始响应
-
-      console.error('DateTime transform middleware error:', error);
+      logger.error('时间格式转换中间件错误', {
+        error,
+        context: {
+          url: request.url,
+          method: request.method,
+        },
+      });
       return handler(request, ...args);
     }
   };

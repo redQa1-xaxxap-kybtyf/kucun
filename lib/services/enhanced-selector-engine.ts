@@ -443,8 +443,9 @@ export class EnhancedSelectorEngine {
             );
             const node = result.singleNodeValue;
             return node?.textContent?.trim() || '';
-          } catch (error) {
-            console.error('XPath 执行失败:', error);
+          } catch (_error) {
+            // 注意：这里不能使用 logger，因为这段代码在浏览器环境中执行
+            // 只能返回空字符串，错误会在外层捕获
             return '';
           }
         },

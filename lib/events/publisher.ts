@@ -3,6 +3,7 @@
  * 通过 Redis Pub/Sub 实现业务事件与 WebSocket 的解耦
  */
 
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
 import { EventChannels, type BusinessEvent, type EventChannel } from './types';
@@ -29,7 +30,13 @@ export async function publishEvent(
 
     await redis.getClient().publish(redisChannel, payload);
   } catch (error) {
-    console.error('[Events] Failed to publish event:', error);
+    logger.error('事件发布失败', {
+      error,
+      context: {
+        channel,
+        eventType: event.type,
+      },
+    });
     // 不抛出错误，避免阻塞业务逻辑
   }
 }

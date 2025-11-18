@@ -6,6 +6,7 @@
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 import {
   handleLoginFailure,
@@ -138,7 +139,13 @@ export async function validateUserLogin(params: {
       },
     };
   } catch (error) {
-    console.error('验证用户登录失败:', error);
+    logger.error('验证用户登录失败', {
+      error,
+      context: {
+        username: params.username,
+        ip: params.ip,
+      },
+    });
     return {
       success: false,
       error: '登录验证失败,请稍后重试',

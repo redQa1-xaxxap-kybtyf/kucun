@@ -6,6 +6,7 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * 退款处理幂等性键生成
@@ -62,7 +63,13 @@ export class RefundProcessLock {
       this.acquired = true;
       return true;
     } catch (error) {
-      console.error('获取退款处理锁失败:', error);
+      logger.error('获取退款处理锁失败', {
+        error,
+        context: {
+          key: this.key,
+          ttl: this.ttl,
+        },
+      });
       return false;
     }
   }

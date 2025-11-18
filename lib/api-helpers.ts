@@ -7,6 +7,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import type { ZodType } from 'zod';
 
+import { logger } from '@/lib/logger';
+
 /**
  * 从请求头中验证用户身份
  * 中间件已经完成认证并透传 x-user-* 头信息
@@ -135,7 +137,12 @@ export function successResponse<T>(
  * 统一的 API 错误处理
  */
 export function handleApiError(error: unknown): NextResponse {
-  console.error('API 错误:', error);
+  logger.error('API错误', {
+    error,
+    context: {
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+    },
+  });
 
   if (error instanceof Error) {
     return errorResponse(error.message, 500);

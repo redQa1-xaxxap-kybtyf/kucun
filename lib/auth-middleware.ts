@@ -194,7 +194,13 @@ export async function authMiddleware(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('认证中间件错误:', error);
+    logger.error('认证中间件错误', {
+      error,
+      context: {
+        url: request.url,
+        method: request.method,
+      },
+    });
 
     // 认证错误时重定向到登录页
     const signInUrl = new URL('/auth/signin', request.url);
