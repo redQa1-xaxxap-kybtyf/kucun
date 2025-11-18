@@ -91,9 +91,19 @@ export class ExceptionHandlingService {
     const { requiredQuantity, availableQuantity: _availableQuantity } =
       exception.details;
 
+    // 检查 productId 是否存在
+    if (!productId) {
+      return {
+        handled: false,
+        resolution: '无法处理：缺少产品ID',
+        requiresManualIntervention: true,
+        nextActions: ['请检查异常上下文数据'],
+      };
+    }
+
     // 尝试自动解决方案
     const alternatives = await this.findInventoryAlternatives(
-      productId!,
+      productId,
       requiredQuantity
     );
 
@@ -222,19 +232,29 @@ export class ExceptionHandlingService {
   private async handleExpenseApprovalRequiredException(
     exception: BusinessException
   ): Promise<ExceptionHandlingResult> {
-    const { orderId } = exception.context;
+    const { orderId, userId } = exception.context;
     const { expenseAmount, expenseType: _expenseType } = exception.details;
+
+    // 检查必要的上下文数据
+    if (!orderId || !userId) {
+      return {
+        handled: false,
+        resolution: '无法处理：缺少订单ID或用户ID',
+        requiresManualIntervention: true,
+        nextActions: ['请检查异常上下文数据'],
+      };
+    }
 
     // 自动提交审核申请
     try {
       await prisma.expenseApproval.create({
         data: {
-          salesOrderId: orderId!,
+          salesOrderId: orderId,
           feeItemId: exception.details.feeItemId,
           expenseTypeId: exception.details.expenseTypeId,
           requestedAmount: expenseAmount,
           approvalStatus: 'PENDING',
-          requestedBy: exception.context.userId!,
+          requestedBy: userId,
           approvalReason: '系统自动提交审核',
         },
       });

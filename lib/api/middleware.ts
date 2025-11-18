@@ -94,10 +94,14 @@ export function withAuth<
       // 3. 执行处理器
       return await handler(request, context, session);
     } catch (error) {
-      // 使用日志库记录错误(生产环境不使用 console.error)
-      if (env.NODE_ENV === 'development') {
-        console.error('认证中间件错误:', error);
-      }
+      // 使用日志库记录错误
+      logger.error('认证中间件错误', {
+        error,
+        context: {
+          url: request.url,
+          method: request.method,
+        },
+      });
       return unauthorizedResponse('认证失败');
     }
   };
@@ -136,7 +140,13 @@ export function withValidation<
 
       return await handler(request, context, validatedData);
     } catch (error) {
-      console.error('验证中间件错误:', error);
+      logger.error('验证中间件错误', {
+        error,
+        context: {
+          url: request.url,
+          method: request.method,
+        },
+      });
       return badRequestResponse('数据验证失败');
     }
   };
@@ -164,7 +174,13 @@ export function withAuthAndValidation<
 
       return await handler(request, context, session, validatedData);
     } catch (error) {
-      console.error('验证错误:', error);
+      logger.error('验证错误', {
+        error,
+        context: {
+          url: request.url,
+          method: request.method,
+        },
+      });
       return badRequestResponse('数据验证失败');
     }
   });
@@ -330,8 +346,11 @@ function logError(
     error: extractErrorInfo(error),
   };
 
-  // 控制台日志
-  console.error('[API Error]', errorInfo);
+  // 使用统一日志系统记录错误
+  logger.error('API错误', {
+    error,
+    context: errorInfo,
+  });
 
   // TODO: 写入数据库或发送到错误监控服务
   // if (env.NODE_ENV === 'production') {
@@ -342,6 +361,6 @@ function logError(
   //       action: 'api_error',
   //       details: errorInfo,
   //     },
-  //   }).catch(console.error);
+  //   }).catch((err) => logger.error('记录错误日志失败', { error: err }));
   // }
 }

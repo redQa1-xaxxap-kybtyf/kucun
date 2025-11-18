@@ -1,4 +1,1309 @@
 
 > kucun@1.0.0 lint
-> next lint
+> npm run validate:schema && next lint
 
+
+> kucun@1.0.0 validate:schema
+> node scripts/validate-prisma-relations.js
+
+[34m
+🔍 开始检查 Prisma Schema 关系定义...
+[0m
+[32m
+✅ Prisma Schema 关系定义检查通过[0m
+[36m- 检查了 42 个模型[0m
+[36m- 验证了 90 个外键字段[0m
+[36m- 验证了 164 个关系定义[0m
+[36m- 所有关系定义完整
+[0m
+
+./app/(dashboard)/categories/create/page.tsx
+75:1  Warning: Function 'useCreateCategoryController' has too many lines (128). Maximum allowed is 100.  max-lines-per-function
+82:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+299:1  Warning: Function 'CreateCategoryForm' has too many lines (192). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/customers/page-client.tsx
+31:8  Warning: Function 'CustomersPageClient' has too many lines (207). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/customers/[id]/edit/page.tsx
+22:16  Warning: Function 'CustomerEditPage' has too many lines (137). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/dashboard/page.tsx
+36:16  Warning: Async function 'DashboardPage' has too many lines (113). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/factory-shipments/page-client.tsx
+35:8  Warning: Function 'FactoryShipmentsPageClient' has too many lines (248). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/customer-statements/page-client.tsx
+53:8  Warning: Function 'CustomerStatementsPageClient' has too many lines (356). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/customer-statements/[customerId]/page.tsx
+33:16  Warning: Function 'CustomerStatementDetailPage' has too many lines (493). Maximum allowed is 100.  max-lines-per-function
+546:1  Warning: File has too many lines (521). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/expenses/page-client.tsx
+34:8  Warning: Function 'ExpensesPageClient' has too many lines (222). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/payables/page-client.tsx
+432:1  Warning: Function 'usePayablesFilters' has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+541:1  Warning: File has too many lines (581). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/payables/page.tsx
+38:1  Warning: Async function 'getPayablesData' has too many lines (144). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/payments/create/page.tsx
+120:16  Warning: Function 'CreatePaymentPage' has too many lines (572). Maximum allowed is 100.  max-lines-per-function
+559:1  Warning: File has too many lines (675). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/payments/page-client.tsx
+89:8  Warning: Function 'PaymentsPageClient' has too many lines (322). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/payments/page.old.tsx
+136:16  Warning: Function 'PaymentsPage' has too many lines (335). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/payments/page.tsx
+67:1  Warning: Async function 'getPaymentsData' has too many lines (300). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/payments/[id]/page-client.tsx
+544:1  Warning: File has too many lines (502). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/payments-out/create/page.tsx
+150:1  Warning: Function 'PaymentOutFormFields' has too many lines (218). Maximum allowed is 100.  max-lines-per-function
+467:16  Warning: Function 'CreatePaymentOutPage' has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+563:1  Warning: File has too many lines (527). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/payments-out/page-client.tsx
+86:8  Warning: Function 'PaymentsOutPageClient' has too many lines (424). Maximum allowed is 100.  max-lines-per-function
+536:1  Warning: File has too many lines (502). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/payments-out/page.old.tsx
+33:16  Warning: Function 'PaymentsOutPage' has too many lines (354). Maximum allowed is 100.  max-lines-per-function
+281:42  Warning: Arrow function has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/payments-out/page.tsx
+41:1  Warning: Async function 'getPaymentsOutData' has too many lines (231). Maximum allowed is 100.  max-lines-per-function
+58:5  Warning: Unexpected console statement.  no-console
+
+./app/(dashboard)/finance/refunds/page-client.tsx
+30:8  Warning: Function 'RefundsPageClient' has too many lines (291). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/refunds/[id]/page.tsx
+134:16  Warning: Async function 'RefundDetailPage' has too many lines (257). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/reports/annual/page-client.tsx
+58:8  Warning: Function 'AnnualReportClient' has too many lines (338). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/reports/monthly/page-client.tsx
+30:8  Warning: Function 'MonthlyReportClient' has too many lines (318). Maximum allowed is 100.  max-lines-per-function
+31:9  Warning: The 'currentDate' object construction makes the dependencies of useMemo Hook (at line 65) change on every render. To fix this, wrap the initialization of 'currentDate' in its own useMemo() Hook.  react-hooks/exhaustive-deps
+
+./app/(dashboard)/finance/reports/profit-loss/page-client.tsx
+49:8  Warning: Function 'ProfitLossClient' has too many lines (451). Maximum allowed is 100.  max-lines-per-function
+533:1  Warning: File has too many lines (566). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/finance/statements/hooks/useStatementsFilters.ts
+65:8  Warning: Function 'useStatementsFilters' has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/statements/page.old.tsx
+73:16  Warning: Function 'StatementsPage' has too many lines (380). Maximum allowed is 100.  max-lines-per-function
+312:32  Warning: Arrow function has too many lines (118). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/statements/[id]/components/statement-transactions.tsx
+38:8  Warning: Function 'StatementTransactions' has too many lines (103). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/finance/statements/[id]/page.tsx
+35:16  Warning: Function 'StatementDetailPage' has too many lines (373). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/help/page.tsx
+151:16  Warning: Function 'HelpPage' has too many lines (209). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/adjust/components/InventoryAdjustTable.tsx
+25:8  Warning: Function 'InventoryAdjustTable' has too many lines (107). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/adjustments/components/AdjustmentDetailDialog.tsx
+28:8  Warning: Function 'AdjustmentDetailDialog' has too many lines (234). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/adjustments/components/AdjustmentRecordsTable.tsx
+41:8  Warning: Function 'AdjustmentRecordsTable' has too many lines (196). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/adjustments/page-client.tsx
+35:8  Warning: Function 'AdjustmentRecordsPageClient' has too many lines (148). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/batch/components/BatchSpecificationForm.tsx
+45:8  Warning: Function 'BatchSpecificationForm' has too many lines (231). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/batch/components/BatchSpecificationsTable.tsx
+36:8  Warning: Function 'BatchSpecificationsTable' has too many lines (184). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/batch/page-client.tsx
+92:8  Warning: Function 'BatchSpecificationPageClient' has too many lines (301). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/counts/page-client.tsx
+37:8  Warning: Function 'CountsPageClient' has too many lines (122). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/counts/statistics/page-client.tsx
+35:8  Warning: Function 'CountStatisticsPageClient' has too many lines (206). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/inventory/counts/[id]/execute/page-client.tsx
+43:8  Warning: Function 'ExecuteCountPageClient' has too many lines (325). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/purchase-orders/page-client.tsx
+37:8  Warning: Function 'PurchaseOrdersPageClient' has too many lines (170). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/return-orders/page-client.tsx
+32:8  Warning: Function 'ReturnOrdersPageClient' has too many lines (188). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/return-orders/[id]/page-client.tsx
+124:8  Warning: Function 'ReturnOrderDetailPageClient' has too many lines (589). Maximum allowed is 100.  max-lines-per-function
+526:1  Warning: File has too many lines (703). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/sales-orders/[id]/components/AmountSummaryCards.tsx
+18:8  Warning: Function 'AmountSummaryCards' has too many lines (155). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/sales-orders/[id]/components/BasicInfoCard.tsx
+16:8  Warning: Function 'BasicInfoCard' has too many lines (145). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/sales-orders/[id]/components/FeeItemsCard.tsx
+9:8  Warning: Function 'FeeItemsCard' has too many lines (145). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/sales-orders/[id]/components/SalesOrderPrintTemplate.tsx
+14:8  Warning: Function 'SalesOrderPrintTemplate' has too many lines (180). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/settings/basic/page.tsx
+24:27  Warning: Arrow function has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/settings/logs/page.tsx
+46:16  Warning: Function 'LogsSettingsPage' has too many lines (327). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/settings/shipping-query/page.tsx
+47:16  Warning: Function 'ShippingQueryPage' has too many lines (327). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/settings/shipping-sites/page.tsx
+110:16  Warning: Function 'ShippingSitesPage' has too many lines (645). Maximum allowed is 100.  max-lines-per-function
+564:1  Warning: File has too many lines (735). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/settings/shipping-sites/selector-helper/page.tsx
+40:16  Warning: Function 'SelectorHelperPage' has too many lines (642). Maximum allowed is 100.  max-lines-per-function
+153:23  Warning: Arrow function has too many lines (157). Maximum allowed is 100.  max-lines-per-function
+514:37  Warning: Arrow function has too many lines (116). Maximum allowed is 100.  max-lines-per-function
+577:1  Warning: File has too many lines (671). Maximum allowed is 500.  max-lines
+
+./app/(dashboard)/settings/storage/page.tsx
+33:16  Warning: Function 'StorageSettingsPage' has too many lines (238). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/settings/users/page.tsx
+45:16  Warning: Function 'UsersSettingsPage' has too many lines (456). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/suppliers/create/page.tsx
+37:16  Warning: Function 'CreateSupplierPage' has too many lines (197). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/suppliers/[id]/edit/page.tsx
+55:16  Warning: Function 'EditSupplierPage' has too many lines (287). Maximum allowed is 100.  max-lines-per-function
+
+./app/(dashboard)/suppliers/[id]/page-client.tsx
+57:8  Warning: Function 'SupplierDetailPageClient' has too many lines (290). Maximum allowed is 100.  max-lines-per-function
+
+./app/actions/categories.ts
+165:8  Warning: Async function 'updateCategory' has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./app/actions/factory-shipments.ts
+49:8  Warning: Async function 'createFactoryShipment' has too many lines (140). Maximum allowed is 100.  max-lines-per-function
+71:46  Warning: Async arrow function has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+220:8  Warning: Async function 'updateFactoryShipmentStatus' has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+651:1  Warning: File has too many lines (569). Maximum allowed is 500.  max-lines
+
+./app/actions/purchase-orders.ts
+160:8  Warning: Async function 'confirmPurchaseOrder' has too many lines (107). Maximum allowed is 100.  max-lines-per-function
+584:1  Warning: File has too many lines (591). Maximum allowed is 500.  max-lines
+
+./app/actions/return-orders.ts
+166:8  Warning: Async function 'updateReturnOrderStatus' has too many lines (121). Maximum allowed is 100.  max-lines-per-function
+
+./app/actions/sales-orders.ts
+213:8  Warning: Async function 'updateSalesOrderStatus' has too many lines (180). Maximum allowed is 100.  max-lines-per-function
+637:1  Warning: File has too many lines (528). Maximum allowed is 500.  max-lines
+
+./app/api/batches/match/route.ts
+35:8  Warning: Async function 'GET' has too many lines (138). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/dashboard/overview/route.ts
+11:29  Warning: Async arrow function has too many lines (257). Maximum allowed is 100.  max-lines-per-function
+38:7  Warning: Async arrow function has too many lines (210). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/dashboard/quick-actions/route.ts
+7:29  Warning: Async arrow function has too many lines (113). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/dashboard/route.ts
+10:29  Warning: Async arrow function has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/dashboard/todos/route.ts
+8:29  Warning: Async arrow function has too many lines (145). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/factory-shipments/route.ts
+556:1  Warning: File has too many lines (615). Maximum allowed is 500.  max-lines
+
+./app/api/factory-shipments/[id]/inbound/route.ts
+14:8  Warning: Async function 'POST' has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/factory-shipments/[id]/shipping-company/route.ts
+16:8  Warning: Async function 'PATCH' has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/finance/payments-out/route.ts
+32:3  Warning: Async arrow function has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+161:3  Warning: Async arrow function has too many lines (145). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/finance/payments-out/[id]/route.ts
+92:3  Warning: Async arrow function has too many lines (123). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/finance/receivables/statistics/route.ts
+11:29  Warning: Async arrow function has too many lines (206). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/finance/receivables/__tests__/route.test.ts
+48:42  Warning: Arrow function has too many lines (140). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/finance/refunds/route.ts
+26:3  Warning: Async arrow function has too many lines (212). Maximum allowed is 100.  max-lines-per-function
+276:3  Warning: Async arrow function has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+284:49  Warning: Async arrow function has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/inventory/adjustments/[id]/route.ts
+17:38  Warning: Async arrow function has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/inventory/alerts/route.ts
+15:44  Warning: Async arrow function has too many lines (335). Maximum allowed is 100.  max-lines-per-function
+84:7  Warning: Async arrow function has too many lines (218). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/inventory/inbound/route.ts
+57:3  Warning: Async arrow function has too many lines (138). Maximum allowed is 100.  max-lines-per-function
+63:23  Warning: Async arrow function has too many lines (132). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/inventory/inbound/[id]/route.ts
+88:3  Warning: Async arrow function has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/inventory/outbound/route.ts
+168:3  Warning: Async arrow function has too many lines (121). Maximum allowed is 100.  max-lines-per-function
+169:23  Warning: Async arrow function has too many lines (120). Maximum allowed is 100.  max-lines-per-function
+316:1  Warning: Async function 'executeOutboundTransaction' has too many lines (122). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/logs/route.ts
+23:29  Warning: Async arrow function has too many lines (123). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/logs/statistics/route.ts
+15:8  Warning: Async function 'GET' has too many lines (101). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/payments/route.ts
+36:29  Warning: Async arrow function has too many lines (139). Maximum allowed is 100.  max-lines-per-function
+197:30  Warning: Async arrow function has too many lines (294). Maximum allowed is 100.  max-lines-per-function
+199:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/api/payments/[id]/cancel/route.ts
+29:3  Warning: Async arrow function has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/payments/[id]/confirm/route.ts
+32:3  Warning: Async arrow function has too many lines (179). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/payments/[id]/route.ts
+86:3  Warning: Async arrow function has too many lines (111). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/performance/categories/route.ts
+29:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./app/api/price-history/customer/route.ts
+17:29  Warning: Async arrow function has too many lines (103). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/price-history/supplier/route.ts
+16:29  Warning: Async arrow function has too many lines (113). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/product-variants/batch/route.ts
+12:30  Warning: Async arrow function has too many lines (146). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/product-variants/generate-sku/route.ts
+142:29  Warning: Async arrow function has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/product-variants/route.ts
+13:29  Warning: Async arrow function has too many lines (119). Maximum allowed is 100.  max-lines-per-function
+148:30  Warning: Async arrow function has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/product-variants/[id]/inventory-summary/route.ts
+26:3  Warning: Async arrow function has too many lines (190). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/product-variants/[id]/route.ts
+11:3  Warning: Async arrow function has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+131:3  Warning: Async arrow function has too many lines (136). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/purchase-orders/route.ts
+276:30  Warning: Async arrow function has too many lines (131). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/purchase-orders/[id]/status/route.ts
+61:29  Warning: Async arrow function has too many lines (194). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/refunds/route.ts
+17:29  Warning: Async arrow function has too many lines (130). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/return-orders/route.ts
+36:3  Warning: Async arrow function has too many lines (147). Maximum allowed is 100.  max-lines-per-function
+211:3  Warning: Async arrow function has too many lines (302). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/return-orders/[id]/approve/route.ts
+16:3  Warning: Async arrow function has too many lines (151). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/return-orders/[id]/route.ts
+87:3  Warning: Async arrow function has too many lines (228). Maximum allowed is 100.  max-lines-per-function
+134:58  Warning: Async arrow function has too many lines (186). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/settings/basic/route.ts
+129:3  Warning: Async arrow function has too many lines (120). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/settings/logs/route.ts
+284:8  Warning: Async function 'DELETE' has too many lines (118). Maximum allowed is 100.  max-lines-per-function
+
+./app/api/settings/storage/route.ts
+171:3  Warning: Async arrow function has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+
+./app/auth/signin/page.tsx
+41:16  Warning: Function 'SignInPage' has too many lines (400). Maximum allowed is 100.  max-lines-per-function
+
+./components/batches/batch-selector.tsx
+58:8  Warning: Function 'BatchSelector' has too many lines (217). Maximum allowed is 100.  max-lines-per-function
+
+./components/categories/category-detail-skeleton.tsx
+9:8  Warning: Function 'CategoryDetailSkeleton' has too many lines (109). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/Breadcrumb.tsx
+205:8  Warning: Function 'Breadcrumb' has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/DashboardLayout.tsx
+37:8  Warning: Function 'DashboardLayout' has too many lines (151). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/DashboardLayoutClient.tsx
+84:8  Warning: Function 'DashboardLayoutClient' has too many lines (178). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/data-table.tsx
+180:8  Warning: Function 'DataTable' has too many lines (136). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/debug-panel.tsx
+20:8  Warning: Function 'DebugPanel' has too many lines (152). Maximum allowed is 100.  max-lines-per-function
+65:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/common/Header.tsx
+60:1  Warning: Function 'HeaderComponent' has too many lines (331). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/image-upload.tsx
+29:8  Warning: Function 'ImageUpload' has too many lines (222). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/MobileNav.tsx
+247:3  Warning: Arrow function has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/MobileOptimized.tsx
+121:8  Warning: Function 'MobileList' has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/search-filter-card.tsx
+108:3  Warning: Arrow function has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/Sidebar.tsx
+41:1  Warning: Function 'SidebarComponent' has too many lines (101). Maximum allowed is 100.  max-lines-per-function
+
+./components/common/SidebarNavItem.tsx
+36:3  Warning: Arrow function has too many lines (121). Maximum allowed is 100.  max-lines-per-function
+246:5  Warning: Arrow function has too many lines (180). Maximum allowed is 100.  max-lines-per-function
+
+./components/customers/customer-delete-dialog.tsx
+30:8  Warning: Function 'CustomerDeleteDialog' has too many lines (107). Maximum allowed is 100.  max-lines-per-function
+
+./components/customers/customer-detail/customer-contact-card.tsx
+141:1  Warning: Function 'BasicContactInfo' has too many lines (124). Maximum allowed is 100.  max-lines-per-function
+
+./components/customers/customer-edit-dialog.tsx
+60:8  Warning: Function 'CustomerEditDialog' has too many lines (166). Maximum allowed is 100.  max-lines-per-function
+
+./components/customers/customer-form.tsx
+72:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+72:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/customers/erp-customer-form.tsx
+81:1  Warning: Function 'useCustomerFormActions' has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+192:1  Warning: Function 'BasicInfoSection' has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./components/customers/erp-customer-list.tsx
+48:8  Warning: Function 'ERPCustomerList' has too many lines (213). Maximum allowed is 100.  max-lines-per-function
+152:29  Warning: Arrow function has too many lines (103). Maximum allowed is 100.  max-lines-per-function
+
+./components/customers/quick-add-customer-dialog.tsx
+52:8  Warning: Function 'QuickAddCustomerDialog' has too many lines (194). Maximum allowed is 100.  max-lines-per-function
+160:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/dashboard/erp-dashboard.tsx
+233:8  Warning: Function 'ERPDashboard' has too many lines (331). Maximum allowed is 100.  max-lines-per-function
+584:1  Warning: File has too many lines (524). Maximum allowed is 500.  max-lines
+
+./components/dashboard/inventory-alerts.tsx
+114:3  Warning: Arrow function has too many lines (138). Maximum allowed is 100.  max-lines-per-function
+278:3  Warning: Arrow function has too many lines (126). Maximum allowed is 100.  max-lines-per-function
+
+./components/dashboard/pending-orders.tsx
+37:8  Warning: Function 'PendingOrders' has too many lines (175). Maximum allowed is 100.  max-lines-per-function
+
+./components/dashboard/quick-actions.tsx
+256:3  Warning: Arrow function has too many lines (140). Maximum allowed is 100.  max-lines-per-function
+
+./components/dashboard/recent-orders.tsx
+66:8  Warning: Function 'RecentOrders' has too many lines (141). Maximum allowed is 100.  max-lines-per-function
+
+./components/dashboard/stat-cards-enhanced.tsx
+101:3  Warning: Arrow function has too many lines (180). Maximum allowed is 100.  max-lines-per-function
+
+./components/dashboard/stat-cards.tsx
+88:3  Warning: Arrow function has too many lines (108). Maximum allowed is 100.  max-lines-per-function
+
+./components/dashboard/todo-list.tsx
+103:3  Warning: Arrow function has too many lines (158). Maximum allowed is 100.  max-lines-per-function
+291:3  Warning: Arrow function has too many lines (152). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/confirm-arrival-dialog.tsx
+128:1  Warning: Function 'ConfirmArrivalForm' has too many lines (116). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/confirm-inbound-dialog.tsx
+153:1  Warning: Function 'InboundItemCard' has too many lines (103). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/factory-shipment-detail-skeleton.tsx
+9:8  Warning: Function 'FactoryShipmentDetailSkeleton' has too many lines (113). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/factory-shipment-fee-items-input.tsx
+39:5  Warning: Arrow function has too many lines (217). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/factory-shipment-order-detail.tsx
+67:8  Warning: Function 'FactoryShipmentOrderDetail' has too many lines (623). Maximum allowed is 100.  max-lines-per-function
+526:1  Warning: File has too many lines (681). Maximum allowed is 500.  max-lines
+
+./components/factory-shipments/factory-shipment-order-form.tsx
+75:8  Warning: Function 'FactoryShipmentOrderForm' has too many lines (338). Maximum allowed is 100.  max-lines-per-function
+198:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+240:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+359:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/factory-shipments/factory-shipment-order-list-view.tsx
+229:1  Warning: Function 'FactoryShipmentOrderRow' has too many lines (570). Maximum allowed is 100.  max-lines-per-function
+402:5  Warning: React Hook React.useCallback has an unnecessary dependency: 'manualQueryMutation.isPending'. Either exclude it or remove the dependency array.  react-hooks/exhaustive-deps
+564:1  Warning: File has too many lines (854). Maximum allowed is 500.  max-lines
+
+./components/factory-shipments/form-sections/amount-info-section.tsx
+18:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+25:8  Warning: Function 'AmountInfoSection' has too many lines (165). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/form-sections/basic-info-section.tsx
+28:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+28:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+48:8  Warning: Function 'BasicInfoSection' has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/form-sections/item-form.tsx
+49:25  Warning: Component definition is missing display name  react/display-name
+50:3  Warning: Arrow function has too many lines (357). Maximum allowed is 100.  max-lines-per-function
+
+./components/factory-shipments/form-sections/item-list-section.tsx
+13:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+13:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+14:74  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/factory-shipments/form-sections/items-table.tsx
+40:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+40:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+44:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+55:3  Warning: Arrow function has too many lines (469). Maximum allowed is 100.  max-lines-per-function
+218:28  Warning: Arrow function has too many lines (318). Maximum allowed is 100.  max-lines-per-function
+542:1  Warning: File has too many lines (517). Maximum allowed is 500.  max-lines
+
+./components/factory-shipments/supplement-shipping-info-dialog.tsx
+151:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+151:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+212:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+212:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+256:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+256:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/factory-shipments/supplier-price-selector.tsx
+23:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/finance/expenses/expense-detail.tsx
+39:8  Warning: Function 'ExpenseDetailClient' has too many lines (223). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/expenses/expense-filters.tsx
+29:8  Warning: Function 'ExpenseFilters' has too many lines (130). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/expenses/expense-form.tsx
+71:8  Warning: Function 'ExpenseForm' has too many lines (379). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/expenses/expense-list.tsx
+47:8  Warning: Function 'ExpenseList' has too many lines (313). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/expenses/related-record-selector.tsx
+48:8  Warning: Function 'RelatedRecordSelector' has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/payable-detail-client.tsx
+30:8  Warning: Function 'PayableDetailClient' has too many lines (313). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/payable-form.tsx
+63:8  Warning: Function 'PayableForm' has too many lines (335). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/payables-client/PayableTableList.tsx
+402:8  Warning: Function 'PayableTableList' has too many lines (111). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/payments-out-client.tsx
+151:8  Warning: Function 'PaymentsOutClient' has too many lines (319). Maximum allowed is 100.  max-lines-per-function
+358:28  Warning: Arrow function has too many lines (109). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/receivable-payment-dialog.tsx
+57:8  Warning: Function 'ReceivablePaymentDialog' has too many lines (391). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/receivables-client/ReceivablesTableList.tsx
+149:1  Warning: Function 'ReceivableTableRow' has too many lines (173). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/receivables-client/__tests__/useReceivablesController.test.tsx
+61:10  Warning: Component definition is missing display name  react/display-name
+66:38  Warning: Arrow function has too many lines (171). Maximum allowed is 100.  max-lines-per-function
+270:30  Warning: Arrow function has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+
+./components/finance/refund-process-form.tsx
+71:8  Warning: Function 'RefundProcessForm' has too many lines (471). Maximum allowed is 100.  max-lines-per-function
+552:1  Warning: File has too many lines (530). Maximum allowed is 500.  max-lines
+
+./components/finance/refunds-client.tsx
+40:8  Warning: Function 'RefundsClient' has too many lines (408). Maximum allowed is 100.  max-lines-per-function
+245:27  Warning: Arrow function has too many lines (176). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/counts/count-form.tsx
+55:8  Warning: Function 'CountForm' has too many lines (318). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/counts/count-items-table.tsx
+29:8  Warning: Function 'CountItemsTable' has too many lines (132). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/counts/count-list.tsx
+44:8  Warning: Function 'CountList' has too many lines (224). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/erp-inbound-form.tsx
+35:8  Warning: Function 'ERPInboundForm' has too many lines (118). Maximum allowed is 100.  max-lines-per-function
+70:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/inventory/forms/inbound-cost-field-with-calculator.tsx
+39:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+39:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+42:8  Warning: Function 'InboundCostFieldWithCalculator' has too many lines (148). Maximum allowed is 100.  max-lines-per-function
+80:15  Warning: Arrow function has too many lines (114). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/forms/inbound-cost-field-with-tooltip.tsx
+36:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+36:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/inventory/forms/inbound-form-fields.tsx
+33:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+33:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/inventory/forms/inbound-product-section.tsx
+19:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+37:8  Warning: Function 'InboundProductSection' has too many lines (203). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/forms/InventoryBasicInfoForm.tsx
+168:1  Warning: Function 'renderQuantitySection' has too many lines (204). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/forms/InventoryDetailForm.tsx
+45:8  Warning: Function 'InventoryDetailForm' has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/forms/outbound-records-table.tsx
+90:8  Warning: Function 'OutboundRecordsTable' has too many lines (116). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/hooks/useInventoryOperationForm.ts
+182:8  Warning: Function 'useInventoryOperationForm' has too many lines (117). Maximum allowed is 100.  max-lines-per-function
+202:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+212:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+221:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/inventory/inventory-adjust-form-with-actions.tsx
+46:8  Warning: Function 'InventoryAdjustFormWithActions' has too many lines (150). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/InventoryGroupedTable.tsx
+127:3  Warning: Arrow function has too many lines (269). Maximum allowed is 100.  max-lines-per-function
+181:24  Warning: Arrow function has too many lines (214). Maximum allowed is 100.  max-lines-per-function
+182:31  Warning: Arrow function has too many lines (213). Maximum allowed is 100.  max-lines-per-function
+
+./components/inventory/product-combobox.tsx
+32:8  Warning: Function 'ProductCombobox' has too many lines (161). Maximum allowed is 100.  max-lines-per-function
+
+./components/payments/accounts-receivable.tsx
+77:3  Warning: Arrow function has too many lines (430). Maximum allowed is 100.  max-lines-per-function
+545:1  Warning: File has too many lines (511). Maximum allowed is 500.  max-lines
+
+./components/payments/payment-form.tsx
+79:3  Warning: Arrow function has too many lines (494). Maximum allowed is 100.  max-lines-per-function
+200:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+569:1  Warning: File has too many lines (577). Maximum allowed is 500.  max-lines
+
+./components/payments/payment-list.tsx
+529:1  Warning: File has too many lines (639). Maximum allowed is 500.  max-lines
+
+./components/products/erp-product-detail.tsx
+71:8  Warning: Function 'ERPProductDetail' has too many lines (234). Maximum allowed is 100.  max-lines-per-function
+
+./components/products/erp-product-list.tsx
+32:8  Warning: Function 'ERPProductList' has too many lines (146). Maximum allowed is 100.  max-lines-per-function
+
+./components/products/product-detail-skeleton.tsx
+9:8  Warning: Function 'ProductDetailSkeleton' has too many lines (109). Maximum allowed is 100.  max-lines-per-function
+
+./components/products/product-form.tsx
+183:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+185:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/products/product-image-gallery.tsx
+26:8  Warning: Function 'ProductImageGallery' has too many lines (231). Maximum allowed is 100.  max-lines-per-function
+
+./components/products/product-image-upload.tsx
+23:8  Warning: Function 'ProductImageUpload' has too many lines (154). Maximum allowed is 100.  max-lines-per-function
+
+./components/products/product-selector.tsx
+163:8  Warning: Function 'ProductSelector' has too many lines (187). Maximum allowed is 100.  max-lines-per-function
+381:8  Warning: Function 'MultiProductSelector' has too many lines (161). Maximum allowed is 100.  max-lines-per-function
+
+./components/products/quick-create-product-dialog.tsx
+79:8  Warning: Function 'QuickCreateProductDialog' has too many lines (212). Maximum allowed is 100.  max-lines-per-function
+
+./components/purchase-orders/purchase-order-detail-sections.tsx
+525:1  Warning: File has too many lines (508). Maximum allowed is 500.  max-lines
+
+./components/purchase-orders/purchase-order-detail.tsx
+44:8  Warning: Function 'PurchaseOrderDetail' has too many lines (182). Maximum allowed is 100.  max-lines-per-function
+
+./components/purchase-orders/purchase-order-form.tsx
+83:8  Warning: Function 'PurchaseOrderForm' has too many lines (330). Maximum allowed is 100.  max-lines-per-function
+376:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/purchase-orders/purchase-order-list.tsx
+64:8  Warning: Function 'PurchaseOrderList' has too many lines (139). Maximum allowed is 100.  max-lines-per-function
+
+./components/purchase-orders/purchase-order-shipping-dialog.tsx
+88:8  Warning: Function 'PurchaseOrderShippingDialog' has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+
+./components/return-orders/customer-sales-order-selector.tsx
+63:8  Warning: Function 'CustomerSalesOrderSelector' has too many lines (239). Maximum allowed is 100.  max-lines-per-function
+
+./components/return-orders/erp-return-order-list.tsx
+75:8  Warning: Function 'ERPReturnOrderList' has too many lines (549). Maximum allowed is 100.  max-lines-per-function
+498:50  Warning: Arrow function has too many lines (131). Maximum allowed is 100.  max-lines-per-function
+567:1  Warning: File has too many lines (615). Maximum allowed is 500.  max-lines
+
+./components/return-orders/multi-order-item-selector.tsx
+136:1  Warning: Function 'SalesOrderSection' has too many lines (161). Maximum allowed is 100.  max-lines-per-function
+
+./components/return-orders/return-order-detail-skeleton.tsx
+9:8  Warning: Function 'ReturnOrderDetailSkeleton' has too many lines (111). Maximum allowed is 100.  max-lines-per-function
+
+./components/return-orders/return-order-form.tsx
+84:8  Warning: Function 'ReturnOrderForm' has too many lines (598). Maximum allowed is 100.  max-lines-per-function
+96:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+96:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+537:1  Warning: File has too many lines (675). Maximum allowed is 500.  max-lines
+
+./components/return-orders/return-order-list-view.tsx
+292:1  Warning: Function 'ReturnOrderActionMenu' has too many lines (131). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/add-temporary-product-dialog/components/TemporaryProductForm.tsx
+26:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+26:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/sales-orders/customer-create-dialog/CustomerCreateDialog.tsx
+71:1  Warning: Function 'CustomerCreateDialogView' has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/customer-selector.tsx
+97:7  Warning: Unexpected console statement.  no-console
+
+./components/sales-orders/enhanced-product-input.tsx
+57:8  Warning: Function 'EnhancedProductInput' has too many lines (251). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/enhanced-sales-order-form/hooks/useOrderItemsManager.ts
+143:1  Warning: Function 'useOrderItemUpdaters' has too many lines (114). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/enhanced-sales-order-form/hooks/useSalesOrderSubmission.ts
+33:7  Warning: Unexpected console statement.  no-console
+34:7  Warning: Unexpected console statement.  no-console
+35:7  Warning: Unexpected console statement.  no-console
+36:7  Warning: Unexpected console statement.  no-console
+36:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+37:7  Warning: Unexpected console statement.  no-console
+38:7  Warning: Unexpected console statement.  no-console
+
+./components/sales-orders/enhanced-sales-order-form/OrderItemsCard.tsx
+145:1  Warning: Function 'OrderItemRow' has too many lines (144). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/erp-sales-order-form/OrderItemsSection.tsx
+99:8  Warning: Function 'OrderItemsSection' has too many lines (193). Maximum allowed is 100.  max-lines-per-function
+189:20  Error: 'Clock' is not defined.  react/jsx-no-undef
+296:8  Error: 'HistoricalTemporaryProductDialog' is not defined.  react/jsx-no-undef
+
+./components/sales-orders/historical-temporary-product-dialog.tsx
+27:8  Warning: Function 'HistoricalTemporaryProductDialog' has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/intelligent-product-input.tsx
+44:8  Warning: Function 'IntelligentProductInput' has too many lines (302). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/inventory-checker.tsx
+41:8  Warning: Function 'InventoryChecker' has too many lines (185). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/order-items-editor.tsx
+61:8  Warning: Function 'OrderItemsEditor' has too many lines (145). Maximum allowed is 100.  max-lines-per-function
+243:1  Warning: Function 'OrderItemRow' has too many lines (284). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/order-number-generator.tsx
+25:8  Warning: Function 'OrderNumberGenerator' has too many lines (231). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/order-status-bar.tsx
+43:8  Warning: Function 'OrderStatusBar' has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/sales-order-form.tsx
+80:8  Warning: Function 'SalesOrderForm' has too many lines (347). Maximum allowed is 100.  max-lines-per-function
+184:9  Warning: The 'onSubmit' function makes the dependencies of useCallback Hook (at line 230) change on every render. Move it inside the useCallback callback. Alternatively, wrap the definition of 'onSubmit' in its own useCallback() Hook.  react-hooks/exhaustive-deps
+225:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/sales-orders/smart-product-search/SmartProductSearch.tsx
+30:8  Warning: Function 'SmartProductSearch' has too many lines (141). Maximum allowed is 100.  max-lines-per-function
+70:7  Warning: Unexpected console statement.  no-console
+
+./components/sales-orders/supplier-selector/SupplierSelector.tsx
+26:8  Warning: Function 'SupplierSelector' has too many lines (112). Maximum allowed is 100.  max-lines-per-function
+61:7  Warning: Unexpected console statement.  no-console
+
+./components/sales-orders/transfer-product-selector.tsx
+72:8  Warning: Function 'TransferProductSelector' has too many lines (176). Maximum allowed is 100.  max-lines-per-function
+
+./components/sales-orders/unified-product-input.tsx
+52:8  Warning: Function 'UnifiedProductInput' has too many lines (249). Maximum allowed is 100.  max-lines-per-function
+
+./components/settings/BasicSettingsForm.tsx
+118:8  Warning: Function 'BasicSettingsForm' has too many lines (350). Maximum allowed is 100.  max-lines-per-function
+173:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/settings/LogFilters.tsx
+67:27  Warning: Arrow function has too many lines (131). Maximum allowed is 100.  max-lines-per-function
+
+./components/settings/QiniuStorageForm.tsx
+66:33  Warning: Arrow function has too many lines (332). Maximum allowed is 100.  max-lines-per-function
+207:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/settings/StorageTestConnection.tsx
+38:38  Warning: Arrow function has too many lines (155). Maximum allowed is 100.  max-lines-per-function
+
+./components/settings/SystemLogsTable.tsx
+76:32  Warning: Arrow function has too many lines (181). Maximum allowed is 100.  max-lines-per-function
+
+./components/settings/UserActions.tsx
+53:56  Warning: Arrow function has too many lines (152). Maximum allowed is 100.  max-lines-per-function
+
+./components/settings/UserForm.tsx
+50:6  Warning: Arrow function has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+157:50  Warning: Arrow function has too many lines (110). Maximum allowed is 100.  max-lines-per-function
+245:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./components/suppliers/supplier-detail-skeleton.tsx
+9:8  Warning: Function 'SupplierDetailSkeleton' has too many lines (127). Maximum allowed is 100.  max-lines-per-function
+
+./components/suppliers/supplier-selector.tsx
+44:8  Warning: Function 'SupplierSelector' has too many lines (185). Maximum allowed is 100.  max-lines-per-function
+
+./components/suppliers/suppliers-page-client.tsx
+75:8  Warning: Function 'SuppliersPageClient' has too many lines (316). Maximum allowed is 100.  max-lines-per-function
+
+./components/ui/calendar.tsx
+18:1  Warning: Function 'Calendar' has too many lines (153). Maximum allowed is 100.  max-lines-per-function
+
+./components/ui/date-range-picker.tsx
+169:32  Warning: Component definition is missing display name  react/display-name
+170:3  Warning: Arrow function has too many lines (171). Maximum allowed is 100.  max-lines-per-function
+371:38  Warning: Component definition is missing display name  react/display-name
+
+./components/ui/mobile-search-bar.tsx
+74:3  Warning: Arrow function has too many lines (394). Maximum allowed is 100.  max-lines-per-function
+227:38  Warning: Arrow function has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+
+./components/ui/number-input.tsx
+27:3  Warning: Arrow function has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+
+./components/ui/specification-display.tsx
+109:3  Warning: Arrow function has too many lines (201). Maximum allowed is 100.  max-lines-per-function
+
+./components/ui/virtualized-table.tsx
+80:8  Warning: Function 'VirtualizedTable' has too many lines (126). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/customer-handlers.ts
+526:8  Warning: Async function 'getCustomerList' has too many lines (163). Maximum allowed is 100.  max-lines-per-function
+655:1  Warning: File has too many lines (557). Maximum allowed is 500.  max-lines
+
+./lib/api/datetime-middleware.ts
+87:7  Warning: Unexpected console statement.  no-console
+
+./lib/api/handlers/dashboard.ts
+8:8  Warning: Async function 'getDashboardData' has too many lines (160). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/handlers/factory-shipment-status.ts
+196:8  Warning: Async function 'updateFactoryShipmentStatus' has too many lines (345). Maximum allowed is 100.  max-lines-per-function
+230:36  Warning: Async arrow function has too many lines (315). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/handlers/products-list.ts
+186:8  Warning: Async function 'getProductsBatchSpecifications' has too many lines (119). Maximum allowed is 100.  max-lines-per-function
+243:7  Warning: Unexpected console statement.  no-console
+286:7  Warning: Unexpected console statement.  no-console
+337:8  Warning: Function 'formatProductList' has too many lines (150). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/handlers/return-order-status.ts
+63:8  Warning: Async function 'updateReturnOrderStatus' has too many lines (181). Maximum allowed is 100.  max-lines-per-function
+83:5  Warning: Async arrow function has too many lines (161). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/handlers/sales-order-status.ts
+159:1  Warning: Async function 'executeOrderStatusUpdateWithInventory' has too many lines (316). Maximum allowed is 100.  max-lines-per-function
+270:32  Warning: Async arrow function has too many lines (216). Maximum allowed is 100.  max-lines-per-function
+602:1  Warning: File has too many lines (586). Maximum allowed is 500.  max-lines
+
+./lib/api/handlers/sales-orders/create.ts
+128:8  Warning: Async function 'createSalesOrder' has too many lines (195). Maximum allowed is 100.  max-lines-per-function
+134:43  Warning: Async arrow function has too many lines (124). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/handlers/sales-orders/update-draft.ts
+13:8  Warning: Async function 'updateSalesOrderDraft' has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+15:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+110:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+122:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+136:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+140:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+167:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+192:9  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/api/inbound-server.ts
+23:8  Warning: Async function 'getInboundRecordByNumber' has too many lines (119). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/middleware.ts
+99:9  Warning: Unexpected console statement.  no-console
+139:7  Warning: Unexpected console statement.  no-console
+167:7  Warning: Unexpected console statement.  no-console
+334:3  Warning: Unexpected console statement.  no-console
+
+./lib/api/minimal-inbound-transaction.ts
+102:8  Warning: Async function 'executeMinimalInboundTransaction' has too many lines (113). Maximum allowed is 100.  max-lines-per-function
+106:15  Warning: Async arrow function has too many lines (104). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/products-server.ts
+35:3  Warning: Async arrow function has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+142:7  Warning: Unexpected console statement.  no-console
+
+./lib/api/response.ts
+47:5  Warning: Unexpected console statement.  no-console
+
+./lib/api/return-orders-server.ts
+23:8  Warning: Async function 'getReturnOrdersServer' has too many lines (223). Maximum allowed is 100.  max-lines-per-function
+
+./lib/api/routes/sales-orders-id.ts
+186:5  Warning: Unexpected console statement.  no-console
+250:5  Warning: Unexpected console statement.  no-console
+293:5  Warning: Unexpected console statement.  no-console
+
+./lib/api/sales-orders.ts
+640:1  Warning: File has too many lines (598). Maximum allowed is 500.  max-lines
+
+./lib/api-helpers.ts
+138:3  Warning: Unexpected console statement.  no-console
+
+./lib/auth-middleware.ts
+197:5  Warning: Unexpected console statement.  no-console
+
+./lib/cache/invalidation-strategy.ts
+186:9  Warning: Unexpected console statement.  no-console
+223:5  Warning: Unexpected console statement.  no-console
+271:11  Warning: Unexpected console statement.  no-console
+
+./lib/cache/inventory-cache.ts
+95:8  Warning: Async function 'getBatchCachedInventorySummary' has too many lines (118). Maximum allowed is 100.  max-lines-per-function
+
+./lib/cache/revalidate.ts
+151:1  Warning: Async function 'cascadeInvalidate' has too many lines (109). Maximum allowed is 100.  max-lines-per-function
+
+./lib/db/transaction-options.test.ts
+17:23  Warning: Arrow function has too many lines (130). Maximum allowed is 100.  max-lines-per-function
+
+./lib/events/publisher.ts
+32:5  Warning: Unexpected console statement.  no-console
+
+./lib/hooks/use-form-submit.ts
+276:9  Warning: Unexpected confirm.  no-alert
+
+./lib/hooks/useFormErrorHandling.ts
+75:8  Warning: Function 'useFormErrorHandling' has too many lines (171). Maximum allowed is 100.  max-lines-per-function
+
+./lib/logger/index.ts
+134:7  Warning: Unexpected console statement.  no-console
+137:7  Warning: Unexpected console statement.  no-console
+141:7  Warning: Unexpected console statement.  no-console
+
+./lib/queue/schedulers/shipping-query-scheduler.ts
+171:3  Warning: Async method 'scheduleAutoQuery' has too many lines (132). Maximum allowed is 100.  max-lines-per-function
+
+./lib/queue/workers/shipping-query-worker.ts
+41:1  Warning: Async function 'processShippingQueryJob' has too many lines (208). Maximum allowed is 100.  max-lines-per-function
+
+./lib/rate-limit/rate-limiter.ts
+88:9  Warning: Unexpected console statement.  no-console
+118:9  Warning: Unexpected console statement.  no-console
+154:9  Warning: Unexpected console statement.  no-console
+
+./lib/services/category-service.ts
+247:5  Warning: Unexpected console statement.  no-console
+
+./lib/services/customer-statement-service.ts
+19:8  Warning: Async function 'getCustomerStatements' has too many lines (217). Maximum allowed is 100.  max-lines-per-function
+480:8  Warning: Async function 'calculateCustomerStatementSummary' has too many lines (148). Maximum allowed is 100.  max-lines-per-function
+655:1  Warning: File has too many lines (876). Maximum allowed is 500.  max-lines
+671:1  Warning: Async function 'getCustomerTransactions' has too many lines (249). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/enhanced-selector-engine.ts
+447:13  Warning: Unexpected console statement.  no-console
+650:1  Warning: File has too many lines (831). Maximum allowed is 500.  max-lines
+
+./lib/services/expense-service.ts
+183:8  Warning: Async function 'getExpenseRecords' has too many lines (101). Maximum allowed is 100.  max-lines-per-function
+263:21  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+429:8  Warning: Async function 'getExpenseStatistics' has too many lines (197). Maximum allowed is 100.  max-lines-per-function
+548:24  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+560:24  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+609:1  Warning: File has too many lines (546). Maximum allowed is 500.  max-lines
+619:25  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+631:24  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+
+./lib/services/inventory-count-service.ts
+74:8  Warning: Async function 'createInventoryCount' has too many lines (130). Maximum allowed is 100.  max-lines-per-function
+225:8  Warning: Async function 'getInventoryCounts' has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+349:8  Warning: Async function 'getInventoryCountById' has too many lines (117). Maximum allowed is 100.  max-lines-per-function
+590:1  Warning: File has too many lines (916). Maximum allowed is 500.  max-lines
+
+./lib/services/inventory-realtime-service.ts
+49:8  Warning: Async function 'updateInventoryWithNotification' has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/notification-service.ts
+191:7  Warning: Unexpected console statement.  no-console
+208:7  Warning: Unexpected console statement.  no-console
+226:7  Warning: Unexpected console statement.  no-console
+246:9  Warning: Unexpected console statement.  no-console
+266:7  Warning: Unexpected console statement.  no-console
+285:7  Warning: Unexpected console statement.  no-console
+
+./lib/services/puppeteer-service.ts
+422:3  Warning: Static async method 'queryShipping' has too many lines (522). Maximum allowed is 100.  max-lines-per-function
+706:1  Warning: File has too many lines (985). Maximum allowed is 500.  max-lines
+
+./lib/services/sales-order-management/ExceptionHandlingService.ts
+28:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+96:7  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+232:25  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+237:24  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+
+./lib/services/sales-order-management/ExpenseManagementService.ts
+66:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+140:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+165:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+271:9  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+284:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+288:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/InventoryManagementService.ts
+74:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/OrderProcessingService.ts
+54:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/ProfitAnalysisService.ts
+125:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+133:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/ReportGenerationService.ts
+246:29  Warning: Forbidden non-null assertion.  @typescript-eslint/no-non-null-assertion
+287:3  Warning: Async method 'generateProfitAnalysisReport' has too many lines (106). Maximum allowed is 100.  max-lines-per-function
+558:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/SalesOrderManagementSystem.ts
+37:3  Warning: Async method 'processOrderComplete' has too many lines (130). Maximum allowed is 100.  max-lines-per-function
+38:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+44:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+45:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+46:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+111:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+162:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+193:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+196:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+242:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/types.ts
+195:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+206:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-management/ValidationService.ts
+56:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+63:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+65:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+92:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+179:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+201:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+208:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+210:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+259:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+266:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+268:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./lib/services/sales-order-service.ts
+60:8  Warning: Async function 'getReturnableItems' has too many lines (105). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/simple-order-number-generator.ts
+650:1  Warning: File has too many lines (505). Maximum allowed is 500.  max-lines
+
+./lib/services/smart-wait-strategy.ts
+277:3  Warning: Static async method 'waitForContentReady' has too many lines (118). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/__tests__/annual-report-factory-shipment.test.ts
+13:28  Warning: Arrow function has too many lines (263). Maximum allowed is 100.  max-lines-per-function
+18:46  Warning: Arrow function has too many lines (258). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/__tests__/monthly-report-factory-shipment.test.ts
+13:28  Warning: Arrow function has too many lines (218). Maximum allowed is 100.  max-lines-per-function
+18:47  Warning: Arrow function has too many lines (213). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/__tests__/profit-loss-factory-shipment.test.ts
+13:28  Warning: Arrow function has too many lines (354). Maximum allowed is 100.  max-lines-per-function
+18:48  Warning: Arrow function has too many lines (349). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/__tests__/receivables-service.test.ts
+27:28  Warning: Arrow function has too many lines (280). Maximum allowed is 100.  max-lines-per-function
+32:22  Warning: Arrow function has too many lines (102). Maximum allowed is 100.  max-lines-per-function
+
+./lib/services/__tests__/sales-order-expense-service.test.ts
+10:38  Warning: Arrow function has too many lines (125). Maximum allowed is 100.  max-lines-per-function
+
+./lib/test-api-authenticated.ts
+4:1  Warning: Async function 'testAuthenticatedApis' has too many lines (209). Maximum allowed is 100.  max-lines-per-function
+5:3  Warning: Unexpected console statement.  no-console
+11:5  Warning: Unexpected console statement.  no-console
+33:9  Warning: Unexpected console statement.  no-console
+35:9  Warning: Unexpected console statement.  no-console
+38:7  Warning: Unexpected console statement.  no-console
+43:5  Warning: Unexpected console statement.  no-console
+68:7  Warning: Unexpected console statement.  no-console
+71:7  Warning: Unexpected console statement.  no-console
+86:7  Warning: Unexpected console statement.  no-console
+88:7  Warning: Unexpected console statement.  no-console
+95:5  Warning: Unexpected console statement.  no-console
+124:7  Warning: Unexpected console statement.  no-console
+127:7  Warning: Unexpected console statement.  no-console
+131:5  Warning: Unexpected console statement.  no-console
+157:9  Warning: Unexpected console statement.  no-console
+163:9  Warning: Unexpected console statement.  no-console
+168:5  Warning: Unexpected console statement.  no-console
+181:7  Warning: Unexpected console statement.  no-console
+183:7  Warning: Unexpected console statement.  no-console
+190:5  Warning: Unexpected console statement.  no-console
+218:9  Warning: Unexpected console statement.  no-console
+221:9  Warning: Unexpected console statement.  no-console
+226:5  Warning: Unexpected console statement.  no-console
+237:9  Warning: Unexpected console statement.  no-console
+239:9  Warning: Unexpected console statement.  no-console
+242:7  Warning: Unexpected console statement.  no-console
+245:5  Warning: Unexpected console statement.  no-console
+247:5  Warning: Unexpected console statement.  no-console
+256:7  Warning: Unexpected console statement.  no-console
+260:7  Warning: Unexpected console statement.  no-console
+
+./lib/test-api-core.ts
+4:1  Warning: Async function 'testCoreApis' has too many lines (189). Maximum allowed is 100.  max-lines-per-function
+5:3  Warning: Unexpected console statement.  no-console
+11:5  Warning: Unexpected console statement.  no-console
+36:7  Warning: Unexpected console statement.  no-console
+38:7  Warning: Unexpected console statement.  no-console
+50:7  Warning: Unexpected console statement.  no-console
+52:7  Warning: Unexpected console statement.  no-console
+56:5  Warning: Unexpected console statement.  no-console
+84:7  Warning: Unexpected console statement.  no-console
+87:7  Warning: Unexpected console statement.  no-console
+96:7  Warning: Unexpected console statement.  no-console
+98:7  Warning: Unexpected console statement.  no-console
+102:5  Warning: Unexpected console statement.  no-console
+127:9  Warning: Unexpected console statement.  no-console
+133:9  Warning: Unexpected console statement.  no-console
+138:5  Warning: Unexpected console statement.  no-console
+146:7  Warning: Unexpected console statement.  no-console
+148:7  Warning: Unexpected console statement.  no-console
+152:5  Warning: Unexpected console statement.  no-console
+179:9  Warning: Unexpected console statement.  no-console
+182:9  Warning: Unexpected console statement.  no-console
+192:7  Warning: Unexpected console statement.  no-console
+197:7  Warning: Unexpected console statement.  no-console
+201:5  Warning: Unexpected console statement.  no-console
+207:9  Warning: Unexpected console statement.  no-console
+209:9  Warning: Unexpected console statement.  no-console
+214:5  Warning: Unexpected console statement.  no-console
+220:9  Warning: Unexpected console statement.  no-console
+222:9  Warning: Unexpected console statement.  no-console
+226:5  Warning: Unexpected console statement.  no-console
+228:5  Warning: Unexpected console statement.  no-console
+237:7  Warning: Unexpected console statement.  no-console
+241:7  Warning: Unexpected console statement.  no-console
+
+./lib/test-api-simple.ts
+5:3  Warning: Unexpected console statement.  no-console
+11:5  Warning: Unexpected console statement.  no-console
+13:5  Warning: Unexpected console statement.  no-console
+14:5  Warning: Unexpected console statement.  no-console
+20:5  Warning: Unexpected console statement.  no-console
+22:5  Warning: Unexpected console statement.  no-console
+23:5  Warning: Unexpected console statement.  no-console
+30:7  Warning: Unexpected console statement.  no-console
+33:7  Warning: Unexpected console statement.  no-console
+37:5  Warning: Unexpected console statement.  no-console
+49:5  Warning: Unexpected console statement.  no-console
+50:5  Warning: Unexpected console statement.  no-console
+59:7  Warning: Unexpected console statement.  no-console
+62:7  Warning: Unexpected console statement.  no-console
+69:5  Warning: Unexpected console statement.  no-console
+71:5  Warning: Unexpected console statement.  no-console
+72:5  Warning: Unexpected console statement.  no-console
+81:7  Warning: Unexpected console statement.  no-console
+84:7  Warning: Unexpected console statement.  no-console
+90:5  Warning: Unexpected console statement.  no-console
+92:5  Warning: Unexpected console statement.  no-console
+101:7  Warning: Unexpected console statement.  no-console
+105:7  Warning: Unexpected console statement.  no-console
+
+./lib/test-auth-simple.ts
+6:1  Warning: Async function 'testAuthenticationSimple' has too many lines (175). Maximum allowed is 100.  max-lines-per-function
+7:3  Warning: Unexpected console statement.  no-console
+11:5  Warning: Unexpected console statement.  no-console
+16:5  Warning: Unexpected console statement.  no-console
+17:5  Warning: Unexpected console statement.  no-console
+22:7  Warning: Unexpected console statement.  no-console
+33:7  Warning: Unexpected console statement.  no-console
+39:5  Warning: Unexpected console statement.  no-console
+42:5  Warning: Unexpected console statement.  no-console
+45:5  Warning: Unexpected console statement.  no-console
+57:5  Warning: Unexpected console statement.  no-console
+59:7  Warning: Unexpected console statement.  no-console
+65:5  Warning: Unexpected console statement.  no-console
+91:7  Warning: Unexpected console statement.  no-console
+98:7  Warning: Unexpected console statement.  no-console
+105:7  Warning: Unexpected console statement.  no-console
+111:5  Warning: Unexpected console statement.  no-console
+137:7  Warning: Unexpected console statement.  no-console
+144:7  Warning: Unexpected console statement.  no-console
+150:5  Warning: Unexpected console statement.  no-console
+163:7  Warning: Unexpected console statement.  no-console
+169:7  Warning: Unexpected console statement.  no-console
+176:7  Warning: Unexpected console statement.  no-console
+182:7  Warning: Unexpected console statement.  no-console
+189:7  Warning: Unexpected console statement.  no-console
+195:5  Warning: Unexpected console statement.  no-console
+201:7  Warning: Unexpected console statement.  no-console
+207:7  Warning: Unexpected console statement.  no-console
+213:5  Warning: Unexpected console statement.  no-console
+221:7  Warning: Unexpected console statement.  no-console
+227:7  Warning: Unexpected console statement.  no-console
+232:5  Warning: Unexpected console statement.  no-console
+234:5  Warning: Unexpected console statement.  no-console
+245:7  Warning: Unexpected console statement.  no-console
+249:7  Warning: Unexpected console statement.  no-console
+
+./lib/test-auth.ts
+48:1  Warning: Async function 'testAuthentication' has too many lines (168). Maximum allowed is 100.  max-lines-per-function
+49:3  Warning: Unexpected console statement.  no-console
+53:5  Warning: Unexpected console statement.  no-console
+75:7  Warning: Unexpected console statement.  no-console
+79:7  Warning: Unexpected console statement.  no-console
+85:5  Warning: Unexpected console statement.  no-console
+102:7  Warning: Unexpected console statement.  no-console
+113:7  Warning: Unexpected console statement.  no-console
+119:5  Warning: Unexpected console statement.  no-console
+143:7  Warning: Unexpected console statement.  no-console
+149:5  Warning: Unexpected console statement.  no-console
+163:7  Warning: Unexpected console statement.  no-console
+180:7  Warning: Unexpected console statement.  no-console
+186:5  Warning: Unexpected console statement.  no-console
+198:5  Warning: Unexpected console statement.  no-console
+200:7  Warning: Unexpected console statement.  no-console
+206:5  Warning: Unexpected console statement.  no-console
+211:5  Warning: Unexpected console statement.  no-console
+212:5  Warning: Unexpected console statement.  no-console
+215:5  Warning: Unexpected console statement.  no-console
+224:7  Warning: Unexpected console statement.  no-console
+236:7  Warning: Unexpected console statement.  no-console
+242:5  Warning: Unexpected console statement.  no-console
+252:7  Warning: Unexpected console statement.  no-console
+258:5  Warning: Unexpected console statement.  no-console
+262:5  Warning: Unexpected console statement.  no-console
+264:5  Warning: Unexpected console statement.  no-console
+266:5  Warning: Unexpected console statement.  no-console
+277:7  Warning: Unexpected console statement.  no-console
+281:7  Warning: Unexpected console statement.  no-console
+
+./lib/test-db.ts
+3:1  Warning: Async function 'testDatabase' has too many lines (148). Maximum allowed is 100.  max-lines-per-function
+4:3  Warning: Unexpected console statement.  no-console
+8:5  Warning: Unexpected console statement.  no-console
+15:5  Warning: Unexpected console statement.  no-console
+18:7  Warning: Unexpected console statement.  no-console
+19:7  Warning: Unexpected console statement.  no-console
+20:7  Warning: Unexpected console statement.  no-console
+21:7  Warning: Unexpected console statement.  no-console
+22:7  Warning: Unexpected console statement.  no-console
+23:7  Warning: Unexpected console statement.  no-console
+27:5  Warning: Unexpected console statement.  no-console
+37:5  Warning: Unexpected console statement.  no-console
+39:7  Warning: Unexpected console statement.  no-console
+43:5  Warning: Unexpected console statement.  no-console
+55:5  Warning: Unexpected console statement.  no-console
+57:7  Warning: Unexpected console statement.  no-console
+63:5  Warning: Unexpected console statement.  no-console
+72:5  Warning: Unexpected console statement.  no-console
+74:7  Warning: Unexpected console statement.  no-console
+78:5  Warning: Unexpected console statement.  no-console
+94:5  Warning: Unexpected console statement.  no-console
+96:7  Warning: Unexpected console statement.  no-console
+102:5  Warning: Unexpected console statement.  no-console
+122:5  Warning: Unexpected console statement.  no-console
+124:7  Warning: Unexpected console statement.  no-console
+130:5  Warning: Unexpected console statement.  no-console
+144:5  Warning: Unexpected console statement.  no-console
+155:7  Warning: Unexpected console statement.  no-console
+160:5  Warning: Unexpected console statement.  no-console
+162:5  Warning: Unexpected console statement.  no-console
+173:7  Warning: Unexpected console statement.  no-console
+177:7  Warning: Unexpected console statement.  no-console
+
+./lib/utils/auth-helpers.ts
+20:8  Warning: Async function 'validateUserLogin' has too many lines (108). Maximum allowed is 100.  max-lines-per-function
+141:5  Warning: Unexpected console statement.  no-console
+
+./lib/utils/category-code-generator.ts
+570:1  Warning: File has too many lines (509). Maximum allowed is 500.  max-lines
+
+./lib/utils/console-logger.ts
+91:9  Warning: Unexpected console statement.  no-console
+94:9  Warning: Unexpected console statement.  no-console
+
+./lib/utils/idempotency-refund.ts
+65:7  Warning: Unexpected console statement.  no-console
+106:8  Warning: Async function 'processRefundWithLock' has too many lines (122). Maximum allowed is 100.  max-lines-per-function
+
+./lib/utils/setting-change-log.ts
+41:5  Warning: Unexpected console statement.  no-console
+77:5  Warning: Unexpected console statement.  no-console
+
+./lib/validations/factory-shipment/__tests__/unit-field-validation.test.ts
+16:59  Warning: Arrow function has too many lines (150). Maximum allowed is 100.  max-lines-per-function
+
+./lib/validations/payment.ts
+583:1  Warning: File has too many lines (530). Maximum allowed is 500.  max-lines
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

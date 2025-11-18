@@ -17,6 +17,7 @@ import {
 } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache';
 import { FINANCE_CACHE_TTL_SECONDS } from '@/lib/constants/cache';
+import { logger } from '@/lib/logger';
 import { getReceivables } from '@/lib/services/receivables-service';
 import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
 
@@ -82,7 +83,9 @@ export const GET = withAuth(
       // 返回响应
       return successResponse(result);
     } catch (error) {
-      console.error('[Receivables API Error]', error);
+      logger.error('finance', '获取应收账款失败', error, {
+        userId: user.id,
+      });
       const errorMessage =
         error instanceof Error ? error.message : '获取应收账款失败';
       return errorResponse(errorMessage, 500);

@@ -243,12 +243,15 @@ export class ReportGenerationService {
       })
       .map(item => {
         const key = `${item.productId}-${item.variantId || ''}`;
-        const safetyStock = safetyStockMap.get(key)!;
+        const safetyStock = safetyStockMap.get(key);
+        // 由于前面的 filter 已经确保了 safetyStock 存在，这里应该总是有值
+        // 但为了类型安全，我们提供一个默认值
+        const safetyStockValue = safetyStock?.safetyStock || 0;
         return {
           productId: item.productId,
           productName: item.product.name,
           currentStock: item.quantity,
-          safetyStock: safetyStock.safetyStock,
+          safetyStock: safetyStockValue,
           stockValue: item.quantity * (item.unitCost || 0),
         };
       });

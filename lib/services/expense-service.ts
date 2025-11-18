@@ -260,7 +260,8 @@ export async function getExpenseRecords(
         expense.relatedType === 'purchase_order' &&
         expense.relatedId
     )
-    .map(expense => expense.relatedId!) as string[];
+    .map(expense => expense.relatedId)
+    .filter((id): id is string => id !== null) as string[];
 
   const containerMap = await getPurchaseOrderContainerMap(shippingOrderIds);
 
@@ -545,7 +546,9 @@ export async function getExpenseStatistics(
         });
       }
 
-      const dateData = dateMap.get(dateStr)!;
+      const dateData = dateMap.get(dateStr);
+      if (!dateData) continue;
+
       dateData.totalAmount += expense.expenseAmount;
       dateData.count += 1;
 
@@ -557,7 +560,9 @@ export async function getExpenseStatistics(
         });
       }
 
-      const typeData = dateData.byType.get(typeStr)!;
+      const typeData = dateData.byType.get(typeStr);
+      if (!typeData) continue;
+
       typeData.totalAmount += expense.expenseAmount;
       typeData.count += 1;
     });
@@ -616,7 +621,9 @@ export async function getExpenseStatistics(
         });
       }
 
-      const monthData = monthMap.get(monthStr)!;
+      const monthData = monthMap.get(monthStr);
+      if (!monthData) continue;
+
       monthData.totalAmount += expense.expenseAmount;
       monthData.count += 1;
 
@@ -628,7 +635,9 @@ export async function getExpenseStatistics(
         });
       }
 
-      const typeData = monthData.byType.get(typeStr)!;
+      const typeData = monthData.byType.get(typeStr);
+      if (!typeData) continue;
+
       typeData.totalAmount += expense.expenseAmount;
       typeData.count += 1;
     });

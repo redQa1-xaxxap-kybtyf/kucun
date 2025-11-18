@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 // 登录安全策略配置
 const LOGIN_SECURITY_CONFIG = {
@@ -34,7 +35,11 @@ export async function recordLoginAttempt(params: {
       },
     });
   } catch (error) {
-    console.error('记录登录尝试失败:', error);
+    logger.error('security', '记录登录尝试失败', error, {
+      username: params.username,
+      ipAddress: params.ipAddress,
+      success: String(params.success),
+    });
   }
 }
 
@@ -74,7 +79,9 @@ export async function isAccountLocked(username: string): Promise<{
       reason: lockout.reason,
     };
   } catch (error) {
-    console.error('检查账户锁定状态失败:', error);
+    logger.error('security', '检查账户锁定状态失败', error, {
+      username,
+    });
     return { locked: false };
   }
 }
@@ -110,7 +117,13 @@ export async function lockAccount(params: {
       },
     });
   } catch (error) {
-    console.error('锁定账户失败:', error);
+    logger.error('security', '锁定账户失败', error, {
+      username: params.username,
+      reason: params.reason,
+      durationMinutes: params.durationMinutes
+        ? String(params.durationMinutes)
+        : undefined,
+    });
     throw error;
   }
 }
@@ -135,7 +148,10 @@ export async function unlockAccount(params: {
       },
     });
   } catch (error) {
-    console.error('解锁账户失败:', error);
+    logger.error('security', '解锁账户失败', error, {
+      username: params.username,
+      unlockedBy: params.unlockedBy,
+    });
     throw error;
   }
 }
@@ -164,7 +180,9 @@ export async function getRecentFailedAttempts(
 
     return count;
   } catch (error) {
-    console.error('获取失败登录次数失败:', error);
+    logger.error('security', '获取失败登录次数失败', error, {
+      username,
+    });
     return 0;
   }
 }
@@ -217,7 +235,11 @@ export async function handleLoginFailure(params: {
       remainingAttempts,
     };
   } catch (error) {
-    console.error('处理登录失败错误:', error);
+    logger.error('security', '处理登录失败错误', error, {
+      username: params.username,
+      ipAddress: params.ipAddress,
+      failureReason: params.failureReason,
+    });
     return {
       shouldLock: false,
       remainingAttempts: LOGIN_SECURITY_CONFIG.maxFailedAttempts,
@@ -252,7 +274,10 @@ export async function handleLoginSuccess(params: {
       });
     }
   } catch (error) {
-    console.error('处理登录成功错误:', error);
+    logger.error('security', '处理登录成功错误', error, {
+      username: params.username,
+      ipAddress: params.ipAddress,
+    });
   }
 }
 
@@ -276,7 +301,9 @@ export async function cleanupOldLoginAttempts(): Promise<number> {
 
     return result.count;
   } catch (error) {
-    console.error('清理登录记录失败:', error);
+    logger.error('security', '清理登录记录失败', error, {
+      cleanupAfterDays: String(LOGIN_SECURITY_CONFIG.cleanupAfterDays),
+    });
     return 0;
   }
 }
@@ -313,7 +340,7 @@ export async function getLoginSecurityStats(): Promise<{
       lockedAccounts,
     };
   } catch (error) {
-    console.error('获取登录安全统计失败:', error);
+    logger.error('security', '获取登录安全统计失败', error);
     return {
       totalAttempts: 0,
       failedAttempts: 0,

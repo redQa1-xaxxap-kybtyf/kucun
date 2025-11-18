@@ -8,6 +8,7 @@ import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
+import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
@@ -92,10 +93,10 @@ const createSalesOrderHandler = withErrorHandling(
         '@/lib/cache/finance-cache'
       );
       invalidateSalesOrderAndReceivables(order.id).catch(error => {
-        console.error(
-          'Failed to invalidate sales order and receivables cache:',
-          error
-        );
+        logger.error('cache', '销售订单缓存失效失败', error, {
+          orderId: order.id,
+          operation: 'cache_invalidation',
+        });
       });
 
       return successResponse(order, 201, '销售订单创建成功');

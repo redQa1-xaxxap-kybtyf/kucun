@@ -9,7 +9,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env, paginationConfig } from '@/lib/env';
-import { extractRequestInfo, logUserAction } from '@/lib/logger';
+import { extractRequestInfo, logger, logUserAction } from '@/lib/logger';
 import type {
   UpdateUserRequest,
   UserListResponse,
@@ -132,7 +132,7 @@ export const GET = withAuth(
         data: response,
       });
     } catch (error) {
-      console.error('获取用户列表失败:', error);
+      logger.error('settings', '获取用户列表失败', error);
       return NextResponse.json(
         {
           success: false,
@@ -148,11 +148,12 @@ export const GET = withAuth(
 // POST - 创建新用户
 export const POST = withAuth(
   async (request: NextRequest, { user }) => {
-    try {
-      const userId = user.id;
+    const userId = user.id;
+    let body: unknown;
 
+    try {
       // 解析请求体
-      const body = await request.json();
+      body = await request.json();
 
       // 验证输入数据
       const validatedData = CreateUserSchema.parse(body);
@@ -230,7 +231,13 @@ export const POST = withAuth(
         message: '用户创建成功',
       });
     } catch (error) {
-      console.error('创建用户失败:', error);
+      logger.error('settings', '创建用户失败', error, {
+        operatorUserId: userId,
+        targetUsername:
+          body && typeof body === 'object' && 'username' in body
+            ? (body as { username?: string }).username
+            : undefined,
+      });
       return NextResponse.json(
         {
           success: false,
@@ -302,14 +309,15 @@ async function validateUserUpdate(
 // PUT - 更新用户信息
 export const PUT = withAuth(
   async (request: NextRequest, { user }) => {
-    try {
-      const operatorUserId = user.id;
+    const operatorUserId = user.id;
+    let validatedData: UpdateUserRequest | undefined;
 
+    try {
       // 解析请求体
       const body = await request.json();
 
       // 验证输入数据
-      const validatedData = UpdateUserSchema.parse(body);
+      validatedData = UpdateUserSchema.parse(body);
       const { userId, ...updateData } = validatedData;
 
       // 验证用户更新权限和数据
@@ -362,7 +370,10 @@ export const PUT = withAuth(
         message: '用户更新成功',
       });
     } catch (error) {
-      console.error('更新用户失败:', error);
+      logger.error('settings', '更新用户失败', error, {
+        operatorUserId,
+        targetUserId: validatedData?.userId,
+      });
       return NextResponse.json(
         {
           success: false,
@@ -378,11 +389,12 @@ export const PUT = withAuth(
 // DELETE - 软删除用户（设置状态为inactive）
 export const DELETE = withAuth(
   async (request: NextRequest, { user }) => {
-    try {
-      const operatorUserId = user.id;
+    const operatorUserId = user.id;
+    let body: { userId?: string } | undefined;
 
+    try {
       // 解析请求体
-      const body = await request.json();
+      body = (await request.json()) as { userId?: string };
       const { userId } = body;
 
       if (!userId) {
@@ -449,7 +461,10 @@ export const DELETE = withAuth(
         message: '用户删除成功',
       });
     } catch (error) {
-      console.error('删除用户失败:', error);
+      logger.error('settings', '删除用户失败', error, {
+        operatorUserId,
+        targetUserId: body?.userId,
+      });
       return NextResponse.json(
         {
           success: false,

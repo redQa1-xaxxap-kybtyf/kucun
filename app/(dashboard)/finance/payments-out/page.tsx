@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   PAYMENT_OUT_SORT_OPTIONS,
   type PaymentOutMethod,
@@ -55,10 +56,12 @@ async function getPaymentsOutData(searchParams: {
   if (!validationResult.success) {
     // 如果校验失败，使用默认值而不是抛出错误
     // 这样可以提供更好的用户体验
-    console.warn(
-      '付款记录查询参数校验失败:',
-      validationResult.error.issues[0]?.message
-    );
+    logger.warn('付款记录查询参数校验失败', {
+      context: {
+        error: validationResult.error.issues[0]?.message,
+        searchParams,
+      },
+    });
   }
 
   // 使用校验后的数据或默认值
