@@ -18,6 +18,8 @@
  * ```
  */
 
+import { logger } from '@/lib/logger';
+
 import { invalidateNamespace } from './cache';
 
 /**
@@ -183,7 +185,13 @@ export async function executeInvalidation(
           deferredPatterns.map(pattern => invalidateNamespace(pattern))
         );
       } catch (error) {
-        console.error('[缓存失效] 延迟失效执行失败:', error);
+        logger.error('缓存延迟失效执行失败', {
+          error,
+          context: {
+            strategy: strategy.name,
+            patterns: strategy.deferred,
+          },
+        });
         // 不抛出错误，避免影响后台任务
       }
     }, deferredDelay);
@@ -220,7 +228,12 @@ export async function warmupCache<T>(
       await getOrSetJSON(cacheKey, () => Promise.resolve(data), ttl);
     }
   } catch (error) {
-    console.error(`[缓存预热] 预热失败: ${cacheKey}`, error);
+    logger.error('缓存预热失败', {
+      error,
+      context: {
+        cacheKey,
+      },
+    });
     // 不抛出错误，预热失败不影响业务
   }
 }
@@ -268,7 +281,12 @@ export function createInvalidationWithWarmup<_T>(
         try {
           await warmupFn(options);
         } catch (error) {
-          console.error('[缓存预热] 预热执行失败:', error);
+          logger.error('缓存预热执行失败', {
+            error,
+            context: {
+              strategy: strategy.name,
+            },
+          });
         }
       }, 100); // 延迟100ms执行预热
     }

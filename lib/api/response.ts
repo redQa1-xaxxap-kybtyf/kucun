@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
+
 /**
  * 统一的API响应格式
  */
@@ -43,8 +45,14 @@ export function errorResponse(
     error,
   };
 
-  if (details && process.env.NODE_ENV === 'development') {
-    console.error('API Error:', error, details);
+  if (details) {
+    logger.error('API错误响应', {
+      error,
+      context: {
+        details,
+        status,
+      },
+    });
   }
 
   return NextResponse.json(response, { status });

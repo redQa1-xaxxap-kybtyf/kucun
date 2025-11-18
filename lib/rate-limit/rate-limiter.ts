@@ -3,7 +3,7 @@
  * 使用滑动窗口算法实现精确的速率限制
  */
 
-import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 import type { RateLimitConfig } from './config';
 import type { RateLimitStorage } from './storage';
@@ -84,9 +84,13 @@ export class RateLimiter {
         limit: this.config.maxRequests,
       };
     } catch (error) {
-      if (env.NODE_ENV === 'development') {
-        console.error('[RateLimiter] 检查限制错误:', error);
-      }
+      logger.error('速率限制检查错误', {
+        error,
+        context: {
+          key,
+          config: this.config,
+        },
+      });
 
       // 发生错误时，为了系统可用性，允许请求通过
       // 但记录错误日志便于排查问题
@@ -114,9 +118,12 @@ export class RateLimiter {
       // 清理所有请求记录
       await this.storage.cleanup(key, now + this.config.windowMs);
     } catch (error) {
-      if (env.NODE_ENV === 'development') {
-        console.error('[RateLimiter] 重置限制错误:', error);
-      }
+      logger.error('速率限制重置错误', {
+        error,
+        context: {
+          key,
+        },
+      });
     }
   }
 
@@ -150,9 +157,12 @@ export class RateLimiter {
         limit: this.config.maxRequests,
       };
     } catch (error) {
-      if (env.NODE_ENV === 'development') {
-        console.error('[RateLimiter] 获取状态错误:', error);
-      }
+      logger.error('速率限制状态获取错误', {
+        error,
+        context: {
+          key,
+        },
+      });
 
       return {
         allowed: true,
