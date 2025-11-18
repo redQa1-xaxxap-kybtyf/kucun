@@ -3,7 +3,7 @@
  * 统一管理所有 Pub/Sub 通知和用户通知
  */
 
-import { publish, subscribe, psubscribe } from '@/lib/redis/redis-pubsub';
+import { psubscribe, publish, subscribe } from '@/lib/redis/redis-pubsub';
 
 /**
  * 通知类型
@@ -188,7 +188,13 @@ export async function subscribeUserNotifications(
       const notification = JSON.parse(message) as Notification;
       callback(notification);
     } catch (error) {
-      console.error('[Notification] Failed to parse notification:', error);
+      logger.error('解析用户通知失败', {
+        error,
+        context: {
+          userId,
+          message,
+        },
+      });
     }
   });
 }
@@ -205,7 +211,12 @@ export async function subscribeSystemBroadcast(
       const notification = JSON.parse(message) as Notification;
       callback(notification);
     } catch (error) {
-      console.error('[Notification] Failed to parse system broadcast:', error);
+      logger.error('解析系统广播失败', {
+        error,
+        context: {
+          message,
+        },
+      });
     }
   });
 }
@@ -223,7 +234,13 @@ export async function subscribeOrderUpdates(
       const event = JSON.parse(message);
       callback(orderId, event);
     } catch (error) {
-      console.error('[Notification] Failed to parse order update:', error);
+      logger.error('解析订单更新失败', {
+        error,
+        context: {
+          channel,
+          message,
+        },
+      });
     }
   });
 }
@@ -243,10 +260,13 @@ export async function subscribeInventoryUpdates(
         const event = JSON.parse(message);
         callback(productId, event);
       } catch (error) {
-        console.error(
-          '[Notification] Failed to parse inventory update:',
-          error
-        );
+        logger.error('解析库存更新失败', {
+          error,
+          context: {
+            channel,
+            message,
+          },
+        });
       }
     }
   );
@@ -263,10 +283,12 @@ export async function subscribePaymentNotifications(
       const event = JSON.parse(message);
       callback(event);
     } catch (error) {
-      console.error(
-        '[Notification] Failed to parse payment notification:',
-        error
-      );
+      logger.error('解析付款通知失败', {
+        error,
+        context: {
+          message,
+        },
+      });
     }
   });
 }
@@ -282,7 +304,12 @@ export async function subscribeLowStockAlerts(
       const alert = JSON.parse(message);
       callback(alert);
     } catch (error) {
-      console.error('[Notification] Failed to parse low stock alert:', error);
+      logger.error('解析低库存警报失败', {
+        error,
+        context: {
+          message,
+        },
+      });
     }
   });
 }
@@ -331,7 +358,8 @@ export const NotificationChannels = {
  *
  * // 订阅用户通知
  * await subscribeUserNotifications('user-123', (notification) => {
- *   console.log('收到通知:', notification);
+ *   // 处理收到的通知
+ *   handleNotification(notification);
  * });
  *
  * // 发送系统广播
@@ -339,7 +367,8 @@ export const NotificationChannels = {
  *
  * // 订阅订单更新
  * await subscribeOrderUpdates((orderId, event) => {
- *   console.log(`订单 ${orderId} 状态更新:`, event);
+ *   // 处理订单状态更新
+ *   handleOrderUpdate(orderId, event);
  * });
  * ```
  */
