@@ -13,8 +13,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import {
-  ADJUSTMENT_REASON_LABELS,
   ADJUSTMENT_STATUS_VARIANTS,
+  getAdjustmentReasonLabel,
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
@@ -205,9 +205,7 @@ export function AdjustmentDetailDialog({
               </Label>
               <p className="mt-1">
                 <Badge variant="outline">
-                  {ADJUSTMENT_REASON_LABELS[
-                    adjustment.reason as keyof typeof ADJUSTMENT_REASON_LABELS
-                  ] || adjustment.reason}
+                  {getAdjustmentReasonLabel(adjustment.reason)}
                 </Badge>
               </p>
             </div>

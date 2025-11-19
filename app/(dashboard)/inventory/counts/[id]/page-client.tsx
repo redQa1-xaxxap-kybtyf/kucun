@@ -1,23 +1,20 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle, Pencil, Play, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle,
+  ClipboardCheck,
+  Pencil,
+  Play,
+  Trash2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { CountItemsTable } from '@/components/inventory/counts/count-items-table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +28,9 @@ import {
   type InventoryCountDetail,
 } from '@/lib/types/inventory-count';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
+
+import { AddProductDialog, DeleteCountDialog } from './count-dialogs';
+import { useCountItems } from './use-count-items';
 
 interface CountDetailPageClientProps {
   countId: string;
@@ -81,6 +81,7 @@ export function CountDetailPageClient({
       deleteDialogOpen={deleteDialogOpen}
       onDeleteDialogChange={setDeleteDialogOpen}
       onConfirmDelete={handleConfirmDelete}
+      onItemsChanged={mutations.invalidate}
     />
   );
 }
@@ -132,6 +133,7 @@ function useCountMutations({
     onSuccess: () => {
       toast({ title: '开始成功', description: '盘点计划已开始' });
       invalidateCount();
+      router.push(`/inventory/counts/${countId}/execute`);
     },
     onError: error =>
       toast({
@@ -187,6 +189,7 @@ function useCountMutations({
     isStarting: startMutation.isPending,
     isCompleting: completeMutation.isPending,
     isDeleting: deleteMutation.isPending,
+    invalidate: invalidateCount,
   };
 }
 
@@ -203,6 +206,7 @@ interface CountDetailLayoutProps {
   deleteDialogOpen: boolean;
   onDeleteDialogChange: (open: boolean) => void;
   onConfirmDelete: () => void;
+  onItemsChanged: () => void;
 }
 
 function CountDetailLayout({
@@ -218,6 +222,7 @@ function CountDetailLayout({
   deleteDialogOpen,
   onDeleteDialogChange,
   onConfirmDelete,
+  onItemsChanged,
 }: CountDetailLayoutProps) {
   return (
     <div className="space-y-6 p-6">
@@ -235,7 +240,12 @@ function CountDetailLayout({
 
       <CountInfoSection count={count} />
       <CountStatisticsSection count={count} />
-      <CountItemsCard items={count.items || []} />
+      <CountItemsCard
+        count={count}
+        countId={countId}
+        hasManagePermission={hasManagePermission}
+        onItemsChanged={onItemsChanged}
+      />
 
       <DeleteCountDialog
         open={deleteDialogOpen}
@@ -302,6 +312,14 @@ function CountHeader({
             <Play className="h-4 w-4" />
             {isStarting ? '开始中…' : '开始盘点'}
           </Button>
+          {count.status === 'in_progress' && (
+            <Button variant="default" size="sm" asChild className="gap-2">
+              <Link href={`/inventory/counts/${countId}/execute`}>
+                <ClipboardCheck className="h-4 w-4" />
+                执行盘点
+              </Link>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -383,47 +401,81 @@ function CountStatisticsSection({ count }: { count: InventoryCountDetail }) {
   );
 }
 
-function CountItemsCard({ items }: { items: InventoryCountDetail['items'] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>盘点明细</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <CountItemsTable items={items || []} />
-      </CardContent>
-    </Card>
-  );
-}
-
-function DeleteCountDialog({
-  open,
-  onOpenChange,
-  onConfirm,
-  isDeleting,
+function CountItemsCard({
+  count,
+  countId,
+  hasManagePermission,
+  onItemsChanged,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
-  isDeleting: boolean;
+  count: InventoryCountDetail;
+  countId: string;
+  hasManagePermission: boolean;
+  onItemsChanged: () => void;
 }) {
+  const [addDialogOpen, setAddDialogOpen] = React.useState(false);
+  const [selectedProductId, setSelectedProductId] = React.useState('');
+
+  const canEditItems = hasManagePermission && count.status === 'draft';
+
+  const {
+    isGenerateAllLoading,
+    isAddingProduct,
+    handleGenerateAll,
+    handleAddProductItems: addProductItems,
+  } = useCountItems({
+    count,
+    countId,
+    canEditItems,
+    onItemsChanged,
+  });
+
+  const handleAddProductClick = async () => {
+    const success = await addProductItems(selectedProductId);
+    if (success) {
+      setAddDialogOpen(false);
+      setSelectedProductId('');
+    }
+  };
+
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>确认删除</AlertDialogTitle>
-          <AlertDialogDescription>
-            确定要删除此盘点计划吗？此操作不可撤销。
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isDeleting}>取消</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isDeleting}>
-            {isDeleting ? '删除中…' : '确认删除'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle>盘点明细</CardTitle>
+          {canEditItems && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAddDialogOpen(true)}
+              >
+                手动添加产品
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateAll}
+                disabled={isGenerateAllLoading}
+              >
+                {isGenerateAllLoading ? '生成中…' : '整仓生成明细'}
+              </Button>
+            </div>
+          )}
+        </CardHeader>
+        <CardContent>
+          <CountItemsTable items={count.items || []} />
+        </CardContent>
+      </Card>
+
+      <AddProductDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        selectedProductId={selectedProductId}
+        onProductChange={setSelectedProductId}
+        onConfirm={handleAddProductClick}
+        isAdding={isAddingProduct}
+      />
+    </>
   );
 }
 
