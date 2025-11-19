@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { can } from '@/lib/auth/permissions';
+import { getInventoryCountById } from '@/lib/services/inventory-count/queries';
 
 import { ExecuteCountPageClient } from './page-client';
 
@@ -40,21 +41,7 @@ export default async function ExecuteCountPage({
   const { id } = await params;
 
   // 获取盘点计划详情
-  const response = await fetch(
-    `${process.env.NEXTAUTH_URL}/api/inventory/counts/${id}`,
-    {
-      cache: 'no-store',
-      headers: {
-        Cookie: `next-auth.session-token=${session.user.id}`,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    notFound();
-  }
-
-  const { data: count } = await response.json();
+  const count = await getInventoryCountById(id);
 
   if (!count) {
     notFound();

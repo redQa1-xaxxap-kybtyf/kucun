@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle, Save } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -21,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
+import { can } from '@/lib/auth/permissions';
 import {
   COUNT_ITEM_STATUS_LABELS,
   COUNT_STATUS_LABELS,
@@ -36,7 +38,7 @@ interface ExecuteCountPageClientProps {
 }
 
 interface ItemQuantity {
-  itemId: string;
+  id: string;
   actualQuantity: number | null;
 }
 
@@ -47,6 +49,12 @@ export function ExecuteCountPageClient({
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+
+  const hasFinancePermission = React.useMemo(
+    () => can(session?.user ?? null, 'finance:view'),
+    [session?.user]
+  );
 
   // 实际数量状态
   const [quantities, setQuantities] = React.useState<
@@ -168,8 +176,8 @@ export function ExecuteCountPageClient({
   const handleSubmit = () => {
     const data: ItemQuantity[] = Object.entries(quantities)
       .filter(([, qty]) => qty !== null)
-      .map(([itemId, actualQuantity]) => ({
-        itemId,
+      .map(([id, actualQuantity]) => ({
+        id,
         actualQuantity: actualQuantity as number,
       }));
 
@@ -196,6 +204,9 @@ export function ExecuteCountPageClient({
   };
 
   const calculateTotalCost = (item: InventoryCountItem) => {
+    if (!hasFinancePermission) {
+      return null;
+    }
     const diff = calculateDifference(item);
     if (diff === null || !item.unitCost) return null;
     return diff * item.unitCost;
@@ -316,8 +327,12 @@ export function ExecuteCountPageClient({
                   <TableHead className="text-right">系统数量</TableHead>
                   <TableHead className="text-right">实际数量</TableHead>
                   <TableHead className="text-right">差异数量</TableHead>
-                  <TableHead className="text-right">单位成本</TableHead>
-                  <TableHead className="text-right">差异金额</TableHead>
+                  {hasFinancePermission && (
+                    <>
+                      <TableHead className="text-right">单位成本</TableHead>
+                      <TableHead className="text-right">差异金额</TableHead>
+                    </>
+                  )}
                   <TableHead>状态</TableHead>
                 </TableRow>
               </TableHeader>
@@ -365,20 +380,24 @@ export function ExecuteCountPageClient({
                       >
                         {formatNumber(diff)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        {formatNumber(item.unitCost)}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right ${
-                          totalCost !== null && totalCost !== 0
-                            ? totalCost > 0
-                              ? 'text-green-600'
-                              : 'text-red-600'
-                            : ''
-                        }`}
-                      >
-                        {formatNumber(totalCost)}
-                      </TableCell>
+                      {hasFinancePermission && (
+                        <>
+                          <TableCell className="text-right">
+                            {formatNumber(item.unitCost)}
+                          </TableCell>
+                          <TableCell
+                            className={`text-right ${
+                              totalCost !== null && totalCost !== 0
+                                ? totalCost > 0
+                                  ? 'text-green-600'
+                                  : 'text-red-600'
+                                : ''
+                            }`}
+                          >
+                            {formatNumber(totalCost)}
+                          </TableCell>
+                        </>
+                      )}
                       <TableCell>
                         <Badge variant={getStatusBadgeVariant(item.status)}>
                           {COUNT_ITEM_STATUS_LABELS[item.status]}

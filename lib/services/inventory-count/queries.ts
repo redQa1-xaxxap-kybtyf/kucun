@@ -3,6 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import {
   type InventoryCount,
+  type InventoryCountDetail,
   type InventoryCountListItem,
   type InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
@@ -75,7 +76,7 @@ export async function getInventoryCounts(
 
 export async function getInventoryCountById(
   id: string
-): Promise<InventoryCount | null> {
+): Promise<InventoryCountDetail | null> {
   const count = await prisma.inventoryCount.findUnique({
     where: { id },
     include: INVENTORY_COUNT_WITH_ITEMS_RELATIONS,

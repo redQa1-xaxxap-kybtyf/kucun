@@ -1,6 +1,8 @@
 'use client';
 
 import { Pencil, Trash2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { can } from '@/lib/auth/permissions';
 import {
   COUNT_ITEM_STATUS_LABELS,
   type CountItemStatus,
@@ -33,6 +36,12 @@ export function CountItemsTable({
   onEdit,
   onDelete,
 }: CountItemsTableProps) {
+  const { data: session } = useSession();
+  const hasFinancePermission = React.useMemo(
+    () => can(session?.user ?? null, 'finance:view'),
+    [session?.user]
+  );
+
   const getStatusBadgeVariant = (status: CountItemStatus) => {
     const variants: Record<
       CountItemStatus,
@@ -75,8 +84,12 @@ export function CountItemsTable({
             <TableHead className="text-right">系统数量</TableHead>
             <TableHead className="text-right">实际数量</TableHead>
             <TableHead className="text-right">差异数量</TableHead>
-            <TableHead className="text-right">单位成本</TableHead>
-            <TableHead className="text-right">差异金额</TableHead>
+            {hasFinancePermission && (
+              <>
+                <TableHead className="text-right">单位成本</TableHead>
+                <TableHead className="text-right">差异金额</TableHead>
+              </>
+            )}
             <TableHead>状态</TableHead>
             {showActions && <TableHead className="text-right">操作</TableHead>}
           </TableRow>
@@ -112,20 +125,24 @@ export function CountItemsTable({
               >
                 {formatNumber(item.difference)}
               </TableCell>
-              <TableCell className="text-right">
-                {formatNumber(item.unitCost)}
-              </TableCell>
-              <TableCell
-                className={`text-right ${
-                  item.totalCost && item.totalCost !== 0
-                    ? item.totalCost > 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                    : ''
-                }`}
-              >
-                {formatNumber(item.totalCost)}
-              </TableCell>
+              {hasFinancePermission && (
+                <>
+                  <TableCell className="text-right">
+                    {formatNumber(item.unitCost)}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right ${
+                      item.totalCost && item.totalCost !== 0
+                        ? item.totalCost > 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                        : ''
+                    }`}
+                  >
+                    {formatNumber(item.totalCost)}
+                  </TableCell>
+                </>
+              )}
               <TableCell>
                 <Badge variant={getStatusBadgeVariant(item.status)}>
                   {COUNT_ITEM_STATUS_LABELS[item.status]}

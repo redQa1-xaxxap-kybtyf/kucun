@@ -2,7 +2,18 @@ import type { Prisma } from '@prisma/client';
 
 import type { CreateInventoryCountRequest } from '@/lib/types/inventory-count';
 
-type InventoryItemInput = NonNullable<CreateInventoryCountRequest['items']>;
+type InventoryItemBaseInput = {
+  productId: string;
+  variantId?: string;
+  batchNumber?: string;
+  actualQuantity?: number;
+  location?: string;
+  remarks?: string;
+};
+
+type InventoryItemInput =
+  | NonNullable<CreateInventoryCountRequest['items']>
+  | InventoryItemBaseInput[];
 
 type InventoryRecord = {
   productId: string;

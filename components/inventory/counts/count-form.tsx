@@ -75,6 +75,12 @@ export function CountForm({
     },
   });
 
+  const categoryOptions =
+    (Array.isArray(categoriesData?.data) ? categoriesData?.data : []) as {
+      id: string;
+      name: string;
+    }[];
+
   // ✅ 表单配置 - 使用统一的 InventoryCountFormData 类型
   const form = useForm<InventoryCountFormData>({
     resolver: standardSchemaResolver(inventoryCountFormSchema),
@@ -338,13 +344,11 @@ export function CountForm({
                         <SelectItem value={NO_CATEGORY_VALUE}>
                           不选择
                         </SelectItem>
-                        {categoriesData?.data?.categories?.map(
-                          (category: { id: string; name: string }) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          )
-                        )}
+                        {categoryOptions.map(category => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

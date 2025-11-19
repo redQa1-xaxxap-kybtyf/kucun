@@ -5,6 +5,7 @@ import {
   COUNT_TYPE_LABELS,
   type CountStatus,
   type InventoryCount,
+  type InventoryCountDetail,
   type InventoryCountItem,
   type InventoryCountListItem,
 } from '@/lib/types/inventory-count';
@@ -112,7 +113,7 @@ export function toInventoryCount(count: InventoryCountEntity): InventoryCount {
 
 export function toInventoryCountWithItems(
   count: InventoryCountWithItemsEntity
-): InventoryCount {
+): InventoryCountDetail {
   return {
     ...toInventoryCount(count),
     items: count.items.map(toInventoryCountItem),

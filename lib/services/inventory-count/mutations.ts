@@ -3,9 +3,11 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import type {
   InventoryCount,
+  InventoryCountDetail,
   SubmitCountDataRequest,
   UpdateInventoryCountRequest,
 } from '@/lib/types/inventory-count';
+import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 
 import { buildInventoryItems } from './items';
 import {
@@ -120,14 +122,25 @@ export async function submitCountData(
 
 export async function completeCount(
   countId: string,
-  _userId: string
+  userId: string
 ): Promise<InventoryCount> {
+  // 1. 验证盘点计划状态
   const existingCount = await prisma.inventoryCount.findUnique({
     where: { id: countId },
     select: {
       status: true,
       items: {
-        select: { status: true },
+        select: {
+          id: true,
+          status: true,
+          productId: true,
+          variantId: true,
+          batchNumber: true,
+          systemQuantity: true,
+          actualQuantity: true,
+          difference: true,
+          unitCost: true,
+        },
       },
     },
   });
@@ -147,13 +160,77 @@ export async function completeCount(
     throw new Error('还有未盘点的明细，无法完成盘点');
   }
 
-  const count = await prisma.inventoryCount.update({
-    where: { id: countId },
-    data: {
-      status: 'completed',
-      endDate: new Date(),
-    },
-    include: INVENTORY_COUNT_RELATIONS,
+  // 2. 在事务中完成盘点并自动调整库存
+  const count = await prisma.$transaction(async tx => {
+    // 2.1 遍历所有有差异的盘点明细，自动创建调整记录
+    const itemsWithDifference = existingCount.items.filter(
+      item => item.difference !== 0 && item.actualQuantity !== null
+    );
+
+    for (const item of itemsWithDifference) {
+      // 2.1.1 生成调整单号
+      const adjustmentNumber = await generateAdjustmentNumber();
+
+      // 2.1.2 确定调整原因（盘盈或盘亏）
+      const reason = item.difference > 0 ? 'surplus' : 'deficit';
+      const beforeQuantity = item.systemQuantity;
+      const afterQuantity = item.actualQuantity!;
+
+      // 2.1.3 更新库存数量
+      await tx.inventory.updateMany({
+        where: {
+          productId: item.productId,
+          ...(item.variantId && { variantId: item.variantId }),
+          ...(item.batchNumber && { batchNumber: item.batchNumber }),
+        },
+        data: {
+          quantity: afterQuantity,
+        },
+      });
+
+      // 2.1.4 创建调整记录（包含成本信息）
+      await tx.inventoryAdjustment.create({
+        data: {
+          adjustmentNumber,
+          productId: item.productId,
+          variantId: item.variantId,
+          batchNumber: item.batchNumber,
+          beforeQuantity,
+          adjustQuantity: item.difference,
+          afterQuantity,
+          unitCost: item.unitCost,
+          totalCost: item.unitCost
+            ? item.difference * Number(item.unitCost)
+            : null,
+          reason,
+          notes: `盘点自动调整（盘点单：${countId}）`,
+          status: 'approved',
+          operatorId: userId,
+          approverId: userId,
+          approvedAt: new Date(),
+        },
+      });
+
+      // 2.1.5 将盘点明细状态改为 'adjusted'
+      await tx.inventoryCountItem.update({
+        where: { id: item.id },
+        data: {
+          status: 'adjusted',
+        },
+      });
+    }
+
+    // 2.2 更新盘点计划状态
+    const updatedCount = await tx.inventoryCount.update({
+      where: { id: countId },
+      data: {
+        status: 'completed',
+        endDate: new Date(),
+      },
+      include: INVENTORY_COUNT_RELATIONS,
+    });
+
+    return updatedCount;
   });
 
   return toInventoryCount(count);
@@ -161,7 +238,7 @@ export async function completeCount(
 
 export async function getInventoryCountWithItems(
   id: string
-): Promise<InventoryCount> {
+): Promise<InventoryCountDetail> {
   const count = await prisma.inventoryCount.findUnique({
     where: { id },
     include: INVENTORY_COUNT_WITH_ITEMS_RELATIONS,
