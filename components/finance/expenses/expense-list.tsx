@@ -30,6 +30,7 @@ import {
 import { queryKeys } from '@/lib/queryKeys';
 import {
   EXPENSE_RELATED_TYPE_LABELS,
+  EXPENSE_STATUS_LABELS,
   EXPENSE_TYPE_LABELS,
   type ExpenseQueryParams,
   type ExpenseRecord,
@@ -54,10 +55,14 @@ export function ExpenseList({
   const [deleteTarget, setDeleteTarget] = React.useState<ExpenseRecord | null>(
     null
   );
+  const [approveTarget, setApproveTarget] =
+    React.useState<ExpenseRecord | null>(null);
 
   // 获取费用记录列表
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.finance.expensesList(filters),
+    // ✅ 覆盖全局设置：每次挂载时都重新拉取，确保从创建/编辑页面返回后列表是最新的
+    refetchOnMount: 'always',
     queryFn: async () => {
       const searchParams = new URLSearchParams();
 
@@ -83,6 +88,31 @@ export function ExpenseList({
 
       const result = await response.json();
       return result.data;
+    },
+  });
+
+  // 审核费用记录
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/finance/expenses/${id}/approve`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || '审核失败');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.expenses(),
+        exact: false,
+      });
+    },
+    onSettled: () => {
+      setApproveTarget(null);
     },
   });
 
@@ -204,6 +234,9 @@ export function ExpenseList({
                       <TableHead className="w-[100px] text-center">
                         费用类型
                       </TableHead>
+                      <TableHead className="w-[90px] text-center">
+                        状态
+                      </TableHead>
                       <TableHead>费用名称</TableHead>
                       <TableHead className="w-[120px] text-right">
                         <Button
@@ -228,6 +261,7 @@ export function ExpenseList({
                         </Button>
                       </TableHead>
                       <TableHead className="w-[150px]">关联业务</TableHead>
+                      <TableHead className="w-[220px]">备注</TableHead>
                       <TableHead className="w-[150px] text-center">
                         操作
                       </TableHead>
@@ -246,6 +280,11 @@ export function ExpenseList({
                             )}
                           >
                             {EXPENSE_TYPE_LABELS[expense.expenseType]}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline">
+                            {EXPENSE_STATUS_LABELS[expense.status]}
                           </Badge>
                         </TableCell>
                         <TableCell>{expense.expenseName}</TableCell>
@@ -279,6 +318,11 @@ export function ExpenseList({
                             <span className="text-muted-foreground">-</span>
                           )}
                         </TableCell>
+                        <TableCell>
+                          {expense.remarks && expense.remarks.trim().length > 0
+                            ? expense.remarks
+                            : '—'}
+                        </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">
                             <Link href={`/finance/expenses/${expense.id}`}>
@@ -295,11 +339,24 @@ export function ExpenseList({
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                 </Link>
+                                {expense.status === 'draft' && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setApproveTarget(expense)}
+                                    disabled={approveMutation.isPending}
+                                  >
+                                    审核
+                                  </Button>
+                                )}
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => handleDelete(expense)}
-                                  disabled={deleteMutation.isPending}
+                                  disabled={
+                                    deleteMutation.isPending ||
+                                    expense.status === 'approved'
+                                  }
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
@@ -375,6 +432,41 @@ export function ExpenseList({
               disabled={deleteMutation.isPending}
             >
               {deleteMutation.isPending ? '删除中...' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!approveTarget}
+        onOpenChange={open => {
+          if (!open) {
+            setApproveTarget(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认审核</AlertDialogTitle>
+            <AlertDialogDescription>
+              {approveTarget
+                ? `确定要审核费用记录 ${approveTarget.expenseNumber} 吗？审核后将不再允许修改类型、金额、日期和关联业务，只能修改备注。`
+                : ''}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={approveMutation.isPending}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (approveTarget) {
+                  approveMutation.mutate(approveTarget.id);
+                }
+              }}
+              disabled={approveMutation.isPending}
+            >
+              {approveMutation.isPending ? '审核中...' : '确认审核'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

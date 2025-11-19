@@ -29,6 +29,16 @@ export const EXPENSE_TYPE_OPTIONS = Object.entries(EXPENSE_TYPE_LABELS).map(
   ([value, label]) => ({ value: value as ExpenseType, label })
 );
 
+// 费用状态枚举
+export type ExpenseStatus = 'draft' | 'approved' | 'cancelled';
+
+// 费用状态标签映射
+export const EXPENSE_STATUS_LABELS: Record<ExpenseStatus, string> = {
+  draft: '草稿',
+  approved: '已审核',
+  cancelled: '已作废',
+};
+
 // 关联业务类型枚举
 export type ExpenseRelatedType =
   | 'inbound' // 入库记录
@@ -76,13 +86,18 @@ export interface ExpenseRecord {
   attachments?: string; // JSON字符串
 
   // 审计字段
+  status: ExpenseStatus;
   userId: string;
   createdAt: string; // ISO日期字符串
   updatedAt: string; // ISO日期字符串
+  approvedById?: string;
+  approvedAt?: string;
+  cancelReason?: string;
 
   // 关联数据（可选，根据查询需要包含）
   user?: Pick<User, 'id' | 'name' | 'email'>;
   userName?: string;
+  approvedBy?: Pick<User, 'id' | 'name' | 'email'>;
 }
 
 // 创建费用记录的请求数据
@@ -125,6 +140,7 @@ export interface ExpenseQueryParams {
   startDate?: string; // ISO日期字符串
   endDate?: string; // ISO日期字符串
   relatedType?: ExpenseRelatedType;
+  status?: ExpenseStatus;
   page?: number;
   pageSize?: number;
   sortBy?: 'expenseDate' | 'expenseAmount' | 'createdAt';

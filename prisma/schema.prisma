@@ -31,6 +31,7 @@ model User {
   paymentOutRecords        PaymentOutRecord[]
   systemLogs               SystemLog[]
   expenseRecords           ExpenseRecord[]
+  approvedExpenses         ExpenseRecord[]       @relation("ExpenseApprovedBy")
   createdTemporaryProducts TemporaryProduct[]
   createdInventoryCounts   InventoryCount[]       @relation("InventoryCountCreator")
   operatedInventoryCounts  InventoryCount[]       @relation("InventoryCountOperator")
@@ -540,6 +541,8 @@ model InventoryAdjustment {
   beforeQuantity   Int       @map("before_quantity")
   adjustQuantity   Int       @map("adjust_quantity")
   afterQuantity    Int       @map("after_quantity")
+  unitCost         Decimal?  @map("unit_cost") @db.Decimal(10, 2)
+  totalCost        Decimal?  @map("total_cost") @db.Decimal(12, 2)
   reason           String
   notes            String?
   status           String    @default("draft") @db.VarChar(32)
@@ -1085,17 +1088,23 @@ model ExpenseRecord {
   relatedNumber String?  @map("related_number") @db.VarChar(100)
   remarks       String?  @db.Text
   attachments   String?  @db.Text
+  status        String   @default("draft") @db.VarChar(32)
+  approvedById  String?  @map("approved_by_id") @db.Char(36)
+  approvedAt    DateTime? @map("approved_at")
+  cancelReason  String?  @map("cancel_reason") @db.Text
   userId        String   @map("user_id") @db.Char(36)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // 关系定义
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user       User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  approvedBy User? @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([expenseType], map: "idx_expense_records_type")
   @@index([expenseDate], map: "idx_expense_records_date")
   @@index([userId], map: "idx_expense_records_user")
   @@index([relatedType, relatedId], map: "idx_expense_records_related")
+  @@index([status], map: "idx_expense_records_status")
   @@map("expense_records")
 }
 

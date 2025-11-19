@@ -19,6 +19,8 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
   // 获取统计数据
   const { data: statistics, isLoading } = useQuery({
     queryKey: queryKeys.finance.expensesStatistics(params),
+    // ✅ 覆盖全局设置：从创建/编辑页面返回时总是重新获取统计，避免看到旧数据
+    refetchOnMount: 'always',
     queryFn: async () => {
       const searchParams = new URLSearchParams({
         startDate: params.startDate,

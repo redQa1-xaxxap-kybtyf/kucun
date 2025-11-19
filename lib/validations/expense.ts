@@ -22,6 +22,13 @@ export const expenseRelatedTypeSchema = z.enum([
   'purchase_order', // 采购订单
 ] as const);
 
+// 费用状态枚举
+export const expenseStatusSchema = z.enum([
+  'draft',
+  'approved',
+  'cancelled',
+] as const);
+
 // 创建费用记录验证规则
 export const createExpenseSchema = z.object({
   expenseType: expenseTypeSchema.describe('费用类型'),
@@ -286,6 +293,8 @@ export const expenseFilterSchema = z.object({
     .optional()
     .describe('关联业务类型筛选（可选）'),
 
+  status: expenseStatusSchema.optional().describe('费用单状态筛选（可选）'),
+
   page: z
     .number()
     .int('页码必须是整数')
@@ -343,6 +352,7 @@ export const expenseIdSchema = z.object({
 // 类型导出
 export type ExpenseType = z.infer<typeof expenseTypeSchema>;
 export type ExpenseRelatedType = z.infer<typeof expenseRelatedTypeSchema>;
+export type ExpenseStatus = z.infer<typeof expenseStatusSchema>;
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 export type ExpenseFilterInput = z.infer<typeof expenseFilterSchema>;

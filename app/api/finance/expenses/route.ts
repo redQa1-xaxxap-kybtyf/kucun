@@ -37,6 +37,7 @@ export const GET = withAuth(
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
       relatedType: searchParams.get('relatedType') || undefined,
+      status: searchParams.get('status') || undefined,
       sortBy: searchParams.get('sortBy') || undefined,
       sortOrder: searchParams.get('sortOrder') || undefined,
     };

@@ -1,13 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { Receipt } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
+import { PageHeader } from '@/components/common/page-header';
 import { ExpenseDetailClient } from '@/components/finance/expenses/expense-detail';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/queryKeys';
-import type { ExpenseRecord } from '@/lib/types/expense';
+import { EXPENSE_TYPE_LABELS, type ExpenseRecord } from '@/lib/types/expense';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 /**
@@ -66,16 +68,25 @@ export default function ExpenseDetailPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* 页面头部 - 显示费用编号 */}
-      <div className="flex items-center space-x-2">
-        <span className="text-muted-foreground">
-          费用编号：{expense.expenseNumber}
-        </span>
-      </div>
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 统一的页面标题 */}
+        <PageHeader
+          title={expense.expenseName}
+          description={
+            <div className="flex items-center gap-3">
+              <span>费用编号：{expense.expenseNumber}</span>
+              <span className="text-[hsl(var(--color-text-tertiary))]">•</span>
+              <span>类型：{EXPENSE_TYPE_LABELS[expense.expenseType]}</span>
+            </div>
+          }
+          icon={<Receipt className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-orange))"
+        />
 
-      {/* 详情内容 */}
-      <ExpenseDetailClient expense={expense} />
+        {/* 详情内容 */}
+        <ExpenseDetailClient expense={expense} />
+      </div>
     </div>
   );
 }

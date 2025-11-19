@@ -80,6 +80,7 @@ export function ExpenseForm({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const NO_RELATED_TYPE_VALUE = 'none';
   const isEditMode = mode === 'edit';
+  const isApproved = isEditMode && initialData?.status === 'approved';
 
   // ✅ 使用不含 transform 的 expenseFormSchema,避免类型推断问题
   const form = useForm<ExpenseFormData>({
@@ -100,8 +101,15 @@ export function ExpenseForm({
     },
   });
 
+  // ✅ 修复：使用 expenseId 作为依赖，避免 form 对象引用变化导致的重复调用
   React.useEffect(() => {
     if (isEditMode && initialData) {
+      console.log('🔍 [ExpenseForm] 编辑模式 - initialData:', {
+        expenseType: initialData.expenseType,
+        expenseName: initialData.expenseName,
+        expenseAmount: initialData.expenseAmount,
+      });
+
       form.reset({
         expenseType: initialData.expenseType,
         expenseName: initialData.expenseName,
@@ -112,8 +120,14 @@ export function ExpenseForm({
         relatedNumber: initialData.relatedNumber ?? '',
         remarks: initialData.remarks ?? '',
       });
+
+      console.log(
+        '✅ [ExpenseForm] form.reset 完成，当前值:',
+        form.getValues()
+      );
     }
-  }, [form, initialData, isEditMode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expenseId, isEditMode]);
 
   const watchedRelatedType = form.watch('relatedType');
 
@@ -257,7 +271,13 @@ export function ExpenseForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>费用类型 *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select
+                      key={`expenseType-${field.value}`}
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      defaultValue={field.value}
+                      disabled={isApproved}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="请选择费用类型" />
@@ -288,6 +308,7 @@ export function ExpenseForm({
                         placeholder="请输入费用名称"
                         {...field}
                         maxLength={100}
+                        disabled={isApproved}
                       />
                     </FormControl>
                     <FormMessage />
@@ -317,6 +338,7 @@ export function ExpenseForm({
                               : Number.parseFloat(e.target.value)
                           )
                         }
+                        disabled={isApproved}
                       />
                     </FormControl>
                     <FormDescription>最大金额：99,999,999.99</FormDescription>
@@ -341,6 +363,7 @@ export function ExpenseForm({
                               'pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
+                            disabled={isApproved}
                           >
                             {field.value ? (
                               format(new Date(field.value), 'yyyy-MM-dd')
@@ -386,6 +409,7 @@ export function ExpenseForm({
                         )
                       }
                       value={field.value ?? NO_RELATED_TYPE_VALUE}
+                      disabled={isApproved}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -420,10 +444,15 @@ export function ExpenseForm({
                         <RelatedRecordSelector
                           relatedType={watchedRelatedType}
                           value={field.value}
-                          onChange={field.onChange}
+                          onChange={value => {
+                            if (isApproved) return;
+                            field.onChange(value);
+                          }}
                           onRecordSelect={record => {
                             // 自动填充关联业务编号
-                            form.setValue('relatedNumber', record.number);
+                            if (!isApproved) {
+                              form.setValue('relatedNumber', record.number);
+                            }
                           }}
                         />
                       </FormControl>

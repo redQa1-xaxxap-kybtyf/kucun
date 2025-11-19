@@ -27,6 +27,7 @@ import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   EXPENSE_RELATED_TYPE_LABELS,
+  EXPENSE_STATUS_LABELS,
   EXPENSE_TYPE_LABELS,
   type ExpenseRecord,
 } from '@/lib/types/expense';
@@ -108,6 +109,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
 
   return (
     <div className="space-y-6">
+      {/* 操作按钮区域 */}
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
@@ -127,6 +129,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               onClick={() =>
                 router.push(`/finance/expenses/${expense.id}/edit`)
               }
+              className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
             >
               <Edit className="mr-2 h-4 w-4" />
               编辑
@@ -135,7 +138,10 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               variant="destructive"
               size="sm"
               onClick={() => setDeleteDialogOpen(true)}
-              disabled={deleteMutation.isPending}
+              disabled={
+                deleteMutation.isPending || expense.status === 'approved'
+              }
+              className="shadow-[var(--shadow-light)] transition-all hover:shadow-[var(--shadow-medium)]"
             >
               <Trash2 className="mr-2 h-4 w-4" />
               删除
@@ -144,30 +150,37 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
+      {/* 基本信息卡片 */}
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
+        <CardHeader className="bg-[hsl(var(--color-bg-secondary))]">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl font-bold">
-              {expense.expenseNumber}
+            <CardTitle className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
+              基本信息
             </CardTitle>
-            <Badge variant={getExpenseTypeBadgeVariant(expense.expenseType)}>
-              {EXPENSE_TYPE_LABELS[expense.expenseType]}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={getExpenseTypeBadgeVariant(expense.expenseType)}>
+                {EXPENSE_TYPE_LABELS[expense.expenseType]}
+              </Badge>
+              {expense.status && (
+                <Badge variant="outline">
+                  {EXPENSE_STATUS_LABELS[expense.status]}
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <div className="text-muted-foreground text-sm">费用名称</div>
-            <div className="text-lg font-medium">{expense.expenseName}</div>
-          </div>
-
-          <Separator />
-
-          <div>
-            <div className="text-muted-foreground text-sm">费用金额</div>
-            <div className="flex items-center gap-2">
-              <ChineseYuan className="h-5 w-5 text-green-600" />
-              <div className="text-3xl font-bold text-green-600">
+        <CardContent className="space-y-6 pt-6">
+          {/* 费用金额 - 突出显示 */}
+          <div className="rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 p-6 dark:from-green-950/20 dark:to-emerald-950/20">
+            <div className="mb-2 text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+              费用金额
+            </div>
+            <div className="flex items-center gap-3">
+              <ChineseYuan className="h-6 w-6 text-green-600" />
+              <div className="text-4xl font-bold text-green-600">
                 {formatCurrency(expense.expenseAmount)}
               </div>
             </div>
@@ -175,33 +188,67 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
 
           <Separator />
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <div className="text-muted-foreground text-sm">费用日期</div>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <div className="font-medium">
-                  {format(new Date(expense.expenseDate), 'yyyy-MM-dd')}
-                </div>
+          {/* 详细信息网格 */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                费用编号
+              </div>
+              <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
+                {expense.expenseNumber}
               </div>
             </div>
 
-            <div>
-              <div className="text-muted-foreground text-sm">创建时间</div>
-              <div className="font-medium">
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                费用名称
+              </div>
+              <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
+                {expense.expenseName}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                费用日期
+              </div>
+              <div className="flex items-center gap-2 text-base font-medium text-[hsl(var(--color-text-primary))]">
+                <Calendar className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
+                {format(new Date(expense.expenseDate), 'yyyy-MM-dd')}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                创建时间
+              </div>
+              <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
                 {format(new Date(expense.createdAt), 'yyyy-MM-dd HH:mm:ss')}
               </div>
             </div>
-          </div>
 
-          {expense.updatedAt !== expense.createdAt && (
-            <div>
-              <div className="text-muted-foreground text-sm">更新时间</div>
-              <div className="font-medium">
-                {format(new Date(expense.updatedAt), 'yyyy-MM-dd HH:mm:ss')}
+            {expense.updatedAt !== expense.createdAt && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                  更新时间
+                </div>
+                <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
+                  {format(new Date(expense.updatedAt), 'yyyy-MM-dd HH:mm:ss')}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {expense.userName && (
+              <div className="space-y-2">
+                <div className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                  创建人
+                </div>
+                <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
+                  {expense.userName}
+                </div>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 

@@ -3,6 +3,7 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { ApiError, handlePrismaError, isPrismaError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 import {
   EXPENSE_TYPE_LABELS,
@@ -16,6 +17,7 @@ import {
   type ExpenseStatisticsParams,
   type UpdateExpenseRequest,
 } from '@/lib/types/expense';
+import { validateExpenseType } from '@/lib/validations/expense';
 
 function parseLocalDateString(dateString: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
@@ -117,37 +119,70 @@ export async function createExpenseRecord(
   data: CreateExpenseRequest,
   userId: string
 ): Promise<ExpenseRecord> {
-  // 使用事务确保单号生成和记录创建的原子性
-  const expense = await prisma.$transaction(async tx => {
-    // 在事务内生成费用编号
-    const expenseNumber = await generateExpenseNumber(tx);
+  // 优先校验用户是否存在且可用，避免外键错误直接暴露给前端
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, status: true },
+  });
 
-    // 创建费用记录
-    return await tx.expenseRecord.create({
-      data: {
-        expenseNumber,
-        expenseType: data.expenseType,
-        expenseName: data.expenseName,
-        expenseAmount: data.expenseAmount,
-        expenseDate: new Date(data.expenseDate),
-        relatedType: data.relatedType || null,
-        relatedId: data.relatedId || null,
-        relatedNumber: data.relatedNumber || null,
-        remarks: data.remarks || null,
-        attachments: data.attachments || null,
-        userId,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+  if (!user) {
+    throw ApiError.unauthorized(
+      '当前登录用户不存在或已被删除，请重新登录后再创建费用记录'
+    );
+  }
+
+  if (user.status !== 'active') {
+    throw ApiError.forbidden('账户状态异常，无法创建费用记录');
+  }
+
+  let expense;
+
+  try {
+    // 使用事务确保单号生成和记录创建的原子性
+    expense = await prisma.$transaction(async tx => {
+      // 在事务内生成费用编号
+      const expenseNumber = await generateExpenseNumber(tx);
+
+      // 创建费用记录
+      return await tx.expenseRecord.create({
+        data: {
+          expenseNumber,
+          expenseType: data.expenseType,
+          expenseName: data.expenseName,
+          expenseAmount: data.expenseAmount,
+          expenseDate: new Date(data.expenseDate),
+          relatedType: data.relatedType || null,
+          relatedId: data.relatedId || null,
+          relatedNumber: data.relatedNumber || null,
+          remarks: data.remarks || null,
+          attachments: data.attachments || null,
+          status: 'draft',
+          userId,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          approvedBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
           },
         },
-      },
+      });
     });
-  });
+  } catch (error) {
+    if (isPrismaError(error)) {
+      throw handlePrismaError(error);
+    }
+    throw error;
+  }
 
   const containerNumber =
     expense.expenseType === 'shipping' &&
@@ -155,11 +190,15 @@ export async function createExpenseRecord(
       ? await getPurchaseOrderContainer(expense.relatedId)
       : undefined;
 
+  const safeExpenseType = validateExpenseType(expense.expenseType)
+    ? expense.expenseType
+    : 'other';
+
   // 转换为 ExpenseRecord 类型
   return {
     id: expense.id,
     expenseNumber: expense.expenseNumber,
-    expenseType: expense.expenseType as ExpenseRecord['expenseType'],
+    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
     expenseAmount: expense.expenseAmount,
     expenseDate: expense.expenseDate.toISOString(),
@@ -169,11 +208,105 @@ export async function createExpenseRecord(
     containerNumber,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
+    status: expense.status as ExpenseRecord['status'],
     userId: expense.userId,
     createdAt: expense.createdAt.toISOString(),
     updatedAt: expense.updatedAt.toISOString(),
     user: expense.user,
     userName: expense.user.name,
+    approvedById: expense.approvedById || undefined,
+    approvedAt: expense.approvedAt
+      ? expense.approvedAt.toISOString()
+      : undefined,
+    cancelReason: expense.cancelReason || undefined,
+    approvedBy: expense.approvedBy || undefined,
+  };
+}
+
+/**
+ * 审核费用记录
+ */
+export async function approveExpenseRecord(
+  id: string,
+  approverId: string
+): Promise<ExpenseRecord> {
+  const existing = await prisma.expenseRecord.findUnique({
+    where: { id },
+    select: { id: true, status: true },
+  });
+
+  if (!existing) {
+    throw ApiError.notFound('费用记录');
+  }
+
+  if (existing.status === 'approved') {
+    throw ApiError.badRequest('该费用记录已审核，无需重复审核');
+  }
+
+  if (existing.status === 'cancelled') {
+    throw ApiError.badRequest('已作废的费用记录不能审核');
+  }
+
+  const expense = await prisma.expenseRecord.update({
+    where: { id },
+    data: {
+      status: 'approved',
+      approvedById: approverId,
+      approvedAt: new Date(),
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      approvedBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  const containerNumber =
+    expense.expenseType === 'shipping' &&
+    expense.relatedType === 'purchase_order'
+      ? await getPurchaseOrderContainer(expense.relatedId)
+      : undefined;
+
+  const safeExpenseType = validateExpenseType(expense.expenseType)
+    ? expense.expenseType
+    : 'other';
+
+  return {
+    id: expense.id,
+    expenseNumber: expense.expenseNumber,
+    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
+    expenseName: expense.expenseName,
+    expenseAmount: expense.expenseAmount,
+    expenseDate: expense.expenseDate.toISOString(),
+    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
+    relatedId: expense.relatedId || undefined,
+    relatedNumber: expense.relatedNumber || undefined,
+    containerNumber,
+    remarks: expense.remarks || undefined,
+    attachments: expense.attachments || undefined,
+    status: expense.status as ExpenseRecord['status'],
+    userId: expense.userId,
+    createdAt: expense.createdAt.toISOString(),
+    updatedAt: expense.updatedAt.toISOString(),
+    user: expense.user,
+    userName: expense.user.name,
+    approvedById: expense.approvedById || undefined,
+    approvedAt: expense.approvedAt
+      ? expense.approvedAt.toISOString()
+      : undefined,
+    cancelReason: expense.cancelReason || undefined,
+    approvedBy: expense.approvedBy || undefined,
   };
 }
 
@@ -198,6 +331,7 @@ export async function getExpenseRecords(
     startDate,
     endDate,
     relatedType,
+    status,
     sortBy = 'expenseDate',
     sortOrder = 'desc',
   } = query;
@@ -231,6 +365,10 @@ export async function getExpenseRecords(
     where.relatedType = relatedType;
   }
 
+  if (status) {
+    where.status = status;
+  }
+
   // 查询总数
   const total = await prisma.expenseRecord.count({ where });
 
@@ -244,6 +382,13 @@ export async function getExpenseRecords(
     },
     include: {
       user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      approvedBy: {
         select: {
           id: true,
           name: true,
@@ -266,29 +411,42 @@ export async function getExpenseRecords(
   const containerMap = await getPurchaseOrderContainerMap(shippingOrderIds);
 
   // 转换为 ExpenseRecord 类型
-  const records: ExpenseRecord[] = expenses.map(expense => ({
-    id: expense.id,
-    expenseNumber: expense.expenseNumber,
-    expenseType: expense.expenseType as ExpenseRecord['expenseType'],
-    expenseName: expense.expenseName,
-    expenseAmount: expense.expenseAmount,
-    expenseDate: expense.expenseDate.toISOString(),
-    relatedType: expense.relatedType as ExpenseRecord['relatedType'],
-    relatedId: expense.relatedId || undefined,
-    relatedNumber: expense.relatedNumber || undefined,
-    containerNumber:
-      expense.expenseType === 'shipping' &&
-      expense.relatedType === 'purchase_order'
-        ? containerMap.get(expense.relatedId || '') || undefined
+  const records: ExpenseRecord[] = expenses.map(expense => {
+    const safeExpenseType = validateExpenseType(expense.expenseType)
+      ? expense.expenseType
+      : 'other';
+
+    return {
+      id: expense.id,
+      expenseNumber: expense.expenseNumber,
+      expenseType: safeExpenseType as ExpenseRecord['expenseType'],
+      expenseName: expense.expenseName,
+      expenseAmount: expense.expenseAmount,
+      expenseDate: expense.expenseDate.toISOString(),
+      relatedType: expense.relatedType as ExpenseRecord['relatedType'],
+      relatedId: expense.relatedId || undefined,
+      relatedNumber: expense.relatedNumber || undefined,
+      containerNumber:
+        expense.expenseType === 'shipping' &&
+        expense.relatedType === 'purchase_order'
+          ? containerMap.get(expense.relatedId || '') || undefined
+          : undefined,
+      remarks: expense.remarks || undefined,
+      attachments: expense.attachments || undefined,
+      status: expense.status as ExpenseRecord['status'],
+      userId: expense.userId,
+      createdAt: expense.createdAt.toISOString(),
+      updatedAt: expense.updatedAt.toISOString(),
+      user: expense.user,
+      userName: expense.user.name,
+      approvedById: expense.approvedById || undefined,
+      approvedAt: expense.approvedAt
+        ? expense.approvedAt.toISOString()
         : undefined,
-    remarks: expense.remarks || undefined,
-    attachments: expense.attachments || undefined,
-    userId: expense.userId,
-    createdAt: expense.createdAt.toISOString(),
-    updatedAt: expense.updatedAt.toISOString(),
-    user: expense.user,
-    userName: expense.user.name,
-  }));
+      cancelReason: expense.cancelReason || undefined,
+      approvedBy: expense.approvedBy || undefined,
+    };
+  });
 
   return {
     records,
@@ -317,6 +475,13 @@ export async function getExpenseRecordById(
           email: true,
         },
       },
+      approvedBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
     },
   });
 
@@ -330,11 +495,15 @@ export async function getExpenseRecordById(
       ? await getPurchaseOrderContainer(expense.relatedId)
       : undefined;
 
+  const safeExpenseType = validateExpenseType(expense.expenseType)
+    ? expense.expenseType
+    : 'other';
+
   // 转换为 ExpenseRecord 类型
   return {
     id: expense.id,
     expenseNumber: expense.expenseNumber,
-    expenseType: expense.expenseType as ExpenseRecord['expenseType'],
+    expenseType: safeExpenseType as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
     expenseAmount: expense.expenseAmount,
     expenseDate: expense.expenseDate.toISOString(),
@@ -344,11 +513,18 @@ export async function getExpenseRecordById(
     containerNumber,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
+    status: expense.status as ExpenseRecord['status'],
     userId: expense.userId,
     createdAt: expense.createdAt.toISOString(),
     updatedAt: expense.updatedAt.toISOString(),
     user: expense.user,
     userName: expense.user.name,
+    approvedById: expense.approvedById || undefined,
+    approvedAt: expense.approvedAt
+      ? expense.approvedAt.toISOString()
+      : undefined,
+    cancelReason: expense.cancelReason || undefined,
+    approvedBy: expense.approvedBy || undefined,
   };
 }
 
@@ -359,9 +535,27 @@ export async function updateExpenseRecord(
   id: string,
   data: UpdateExpenseRequest
 ): Promise<ExpenseRecord> {
-  const expense = await prisma.expenseRecord.update({
+  const existing = await prisma.expenseRecord.findUnique({
     where: { id },
-    data: {
+    select: { status: true },
+  });
+
+  if (!existing) {
+    throw ApiError.notFound('费用记录');
+  }
+
+  // 已审核费用记录：只允许修改备注和附件
+  let updateData: Prisma.ExpenseRecordUpdateInput = {};
+
+  if (existing.status === 'approved') {
+    if (data.remarks !== undefined) {
+      updateData.remarks = data.remarks;
+    }
+    if (data.attachments !== undefined) {
+      updateData.attachments = data.attachments;
+    }
+  } else {
+    updateData = {
       ...(data.expenseType && { expenseType: data.expenseType }),
       ...(data.expenseName && { expenseName: data.expenseName }),
       ...(data.expenseAmount !== undefined && {
@@ -375,9 +569,21 @@ export async function updateExpenseRecord(
       }),
       ...(data.remarks !== undefined && { remarks: data.remarks }),
       ...(data.attachments !== undefined && { attachments: data.attachments }),
-    },
+    };
+  }
+
+  const expense = await prisma.expenseRecord.update({
+    where: { id },
+    data: updateData,
     include: {
       user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      approvedBy: {
         select: {
           id: true,
           name: true,
@@ -397,7 +603,9 @@ export async function updateExpenseRecord(
   return {
     id: expense.id,
     expenseNumber: expense.expenseNumber,
-    expenseType: expense.expenseType as ExpenseRecord['expenseType'],
+    expenseType: (validateExpenseType(expense.expenseType)
+      ? expense.expenseType
+      : 'other') as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
     expenseAmount: expense.expenseAmount,
     expenseDate: expense.expenseDate.toISOString(),
@@ -407,11 +615,18 @@ export async function updateExpenseRecord(
     containerNumber,
     remarks: expense.remarks || undefined,
     attachments: expense.attachments || undefined,
+    status: expense.status as ExpenseRecord['status'],
     userId: expense.userId,
     createdAt: expense.createdAt.toISOString(),
     updatedAt: expense.updatedAt.toISOString(),
     user: expense.user,
     userName: expense.user.name,
+    approvedById: expense.approvedById || undefined,
+    approvedAt: expense.approvedAt
+      ? expense.approvedAt.toISOString()
+      : undefined,
+    cancelReason: expense.cancelReason || undefined,
+    approvedBy: expense.approvedBy || undefined,
   };
 }
 
@@ -419,9 +634,20 @@ export async function updateExpenseRecord(
  * 删除费用记录
  */
 export async function deleteExpenseRecord(id: string): Promise<void> {
-  await prisma.expenseRecord.delete({
+  const existing = await prisma.expenseRecord.findUnique({
     where: { id },
+    select: { id: true, status: true },
   });
+
+  if (!existing) {
+    throw ApiError.notFound('费用记录');
+  }
+
+  if (existing.status === 'approved') {
+    throw ApiError.forbidden('已审核的费用记录不允许删除');
+  }
+
+  await prisma.expenseRecord.delete({ where: { id } });
 }
 
 /**
