@@ -547,7 +547,7 @@ export async function getExpenseStatistics(
       }
 
       const dateData = dateMap.get(dateStr);
-      if (!dateData) continue;
+      if (!dateData) return;
 
       dateData.totalAmount += expense.expenseAmount;
       dateData.count += 1;
@@ -561,7 +561,7 @@ export async function getExpenseStatistics(
       }
 
       const typeData = dateData.byType.get(typeStr);
-      if (!typeData) continue;
+      if (!typeData) return;
 
       typeData.totalAmount += expense.expenseAmount;
       typeData.count += 1;
@@ -622,7 +622,7 @@ export async function getExpenseStatistics(
       }
 
       const monthData = monthMap.get(monthStr);
-      if (!monthData) continue;
+      if (!monthData) return;
 
       monthData.totalAmount += expense.expenseAmount;
       monthData.count += 1;
@@ -636,7 +636,7 @@ export async function getExpenseStatistics(
       }
 
       const typeData = monthData.byType.get(typeStr);
-      if (!typeData) continue;
+      if (!typeData) return;
 
       typeData.totalAmount += expense.expenseAmount;
       typeData.count += 1;

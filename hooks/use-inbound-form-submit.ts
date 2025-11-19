@@ -12,11 +12,18 @@ import {
 interface UseInboundFormSubmitProps {
   createMutation: ReturnType<typeof useCreateInboundRecord>;
   onSuccess?: () => void;
+  /**
+   * 是否跳过期初入库确认
+   * 当为 true 时，即使是期初入库也不会触发确认检查
+   * 用于在用户已经通过确认对话框确认后的实际提交
+   */
+  skipConfirm?: boolean;
 }
 
 export function useInboundFormSubmit({
   createMutation,
   onSuccess,
+  skipConfirm = false,
 }: UseInboundFormSubmitProps) {
   const router = useRouter();
 
@@ -28,16 +35,12 @@ export function useInboundFormSubmit({
   return useFormSubmit<InboundFormData>({
     onSubmit: async data => {
       // 期初库存录入二次确认
-      if (data.reason === 'opening_balance') {
-        const confirmed = window.confirm(
-          '您正在录入期初库存数据，请确认数据准确无误。\n\n' +
-            '期初库存将影响后续所有财务核算，建议录入完成后进行核对。\n\n' +
-            '确定要继续吗？'
-        );
-
-        if (!confirmed) {
-          throw new Error('已取消期初库存录入');
-        }
+      // 如果 skipConfirm 为 false 且是期初入库，则抛出特殊错误让调用方处理确认逻辑
+      if (!skipConfirm && data.reason === 'opening_balance') {
+        // 抛出特殊错误标识，让调用方知道需要显示确认对话框
+        const error = new Error('REQUIRES_OPENING_BALANCE_CONFIRMATION');
+        error.name = 'ConfirmationRequired';
+        throw error;
       }
 
       const idempotencyKey = generateIdempotencyKey();

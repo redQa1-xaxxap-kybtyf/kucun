@@ -144,21 +144,21 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         )}
       />
 
-      {/* 重量 */}
+      {/* 每件重量 */}
       <FormField
         control={form.control}
         name="weight"
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-semibold text-gray-900">
-              重量(kg) *
+              每件重量(kg) *
             </FormLabel>
             <FormControl>
               <Input
                 type="number"
                 min="0.01"
                 step="0.01"
-                placeholder="请输入重量"
+                placeholder="请输入每件重量"
                 className="h-9"
                 {...field}
                 value={field.value ?? ''}

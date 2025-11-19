@@ -13,6 +13,7 @@ import {
 } from '@/components/inventory/forms/inbound-form-fields';
 import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-toolbar';
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
+import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Form } from '@/components/ui/form';
 import {
@@ -34,6 +35,9 @@ interface ERPInboundFormProps {
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const [showProductPrompt, setShowProductPrompt] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingFormData, setPendingFormData] =
+    useState<InboundFormData | null>(null);
   const searchParams = useSearchParams();
 
   // 检测是否为期初入库操作
@@ -59,17 +63,37 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     setSelectedProduct
   );
 
-  // 表单提交逻辑
+  // 表单提交逻辑（不跳过确认）
   const { handleSubmit: submitInbound, isSubmitting } = useInboundFormSubmit({
     createMutation,
     onSuccess,
+    skipConfirm: false,
+  });
+
+  // 表单提交逻辑（跳过确认，用于用户已确认后的实际提交）
+  const { handleSubmit: submitInboundWithoutConfirm } = useInboundFormSubmit({
+    createMutation,
+    onSuccess,
+    skipConfirm: true,
   });
 
   // ✅ 修复: 使用类型断言以兼容 standardSchemaResolver
   const handleFormSubmit = form.handleSubmit(
     async (data: any) => {
       setShowProductPrompt(false);
-      await submitInbound(data as InboundFormData);
+      try {
+        await submitInbound(data as InboundFormData);
+      } catch (error) {
+        // 检查是否是需要确认的错误
+        if (error instanceof Error && error.name === 'ConfirmationRequired') {
+          // 保存待提交的数据，显示确认对话框
+          setPendingFormData(data as InboundFormData);
+          setShowConfirmDialog(true);
+        } else {
+          // 其他错误已经在 useInboundFormSubmit 中处理，这里重新抛出
+          throw error;
+        }
+      }
     },
     errors => {
       if (errors.productId) {
@@ -106,7 +130,27 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
   const handleFormReset = () => {
     setShowProductPrompt(false);
+    setShowConfirmDialog(false);
+    setPendingFormData(null);
     handleReset();
+  };
+
+  // 期初入库确认对话框的处理函数
+  const handleConfirmDialogConfirm = async () => {
+    if (pendingFormData) {
+      try {
+        await submitInboundWithoutConfirm(pendingFormData);
+      } catch (error) {
+        // 错误已经在 submitInboundWithoutConfirm 中处理
+        console.error('提交失败:', error);
+      } finally {
+        setPendingFormData(null);
+      }
+    }
+  };
+
+  const handleConfirmDialogCancel = () => {
+    setPendingFormData(null);
   };
 
   // 实时计算并更新最终片数
@@ -180,6 +224,14 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           </div>
         </div>
       </div>
+
+      {/* 期初入库确认对话框 */}
+      <OpeningBalanceConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmDialogConfirm}
+        onCancel={handleConfirmDialogCancel}
+      />
     </div>
   );
 }
