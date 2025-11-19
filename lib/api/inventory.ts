@@ -10,6 +10,7 @@ import type {
   Inventory,
   InventoryAdjustInput,
   InventoryAlert,
+  InventoryListResponse,
   InventoryQueryParams,
   OutboundCreateInput,
 } from '@/lib/types/inventory';
@@ -29,7 +30,7 @@ export const inventoryQueryKeys = queryKeys.inventory;
  */
 export async function getInventories(
   params: InventoryQueryParams
-): Promise<PaginatedResponse<Inventory>> {
+): Promise<InventoryListResponse['data']> {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {
@@ -44,7 +45,11 @@ export async function getInventories(
     throw new Error(`获取库存列表失败: ${response.statusText}`);
   }
 
-  const data: ApiResponse<PaginatedResponse<Inventory>> = await response.json();
+  type InventoryListPayload = InventoryListResponse['data'];
+  type LegacyInventoryPayload = PaginatedResponse<Inventory>;
+
+  const data: ApiResponse<InventoryListPayload | LegacyInventoryPayload> =
+    await response.json();
 
   if (!data.success) {
     throw new Error(data.error || '获取库存列表失败');
@@ -54,7 +59,21 @@ export async function getInventories(
     throw new Error('获取库存列表失败：数据为空');
   }
 
-  return data.data;
+  const payload = data.data;
+
+  if (
+    typeof (payload as InventoryListPayload).inventories !== 'undefined' &&
+    Array.isArray((payload as InventoryListPayload).inventories)
+  ) {
+    return payload as InventoryListPayload;
+  }
+
+  const legacy = payload as LegacyInventoryPayload;
+
+  return {
+    inventories: legacy.data,
+    pagination: legacy.pagination,
+  };
 }
 
 /**

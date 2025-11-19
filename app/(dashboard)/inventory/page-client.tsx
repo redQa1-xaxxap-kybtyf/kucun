@@ -10,8 +10,10 @@ import { ErrorBoundaryFallback } from '@/components/common/error-boundary-fallba
 import { PageHeader } from '@/components/common/page-header';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
+import { InventoryStatisticsCards } from '@/components/inventory/inventory-statistics-cards';
 import { Button } from '@/components/ui/button';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
+import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
@@ -363,6 +365,12 @@ function InventoryContent(props: {
     isSearching,
     error,
   } = props;
+  // 获取库存统计数据
+  const { data: statistics, isLoading: isLoadingStats } =
+    useInventoryStatistics({
+      categoryId: currentQueryParams.categoryId,
+    });
+
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
@@ -384,6 +392,13 @@ function InventoryContent(props: {
             </Button>
           }
         />
+
+        {/* 库存统计卡片 */}
+        <InventoryStatisticsCards
+          statistics={statistics ?? null}
+          isLoading={isLoadingStats}
+        />
+
         <Suspense fallback={<InventoryListSkeleton />}>
           {error ? (
             <ErrorBoundaryFallback
