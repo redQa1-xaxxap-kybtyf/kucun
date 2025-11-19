@@ -18,9 +18,8 @@ import { getBatchHistoryByNumber } from '@/lib/api/batch-history-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 import { INBOUND_REASON_LABELS, type InboundReason } from '@/lib/types/inbound';
 import {
-  ADJUSTMENT_REASON_LABELS,
   OUTBOUND_REASON_LABELS,
-  type AdjustmentReason,
+  getAdjustmentReasonLabel,
   type BatchHistoryResult,
   type BatchMovementGroup,
   type InventoryMovementEntry,
@@ -444,9 +443,7 @@ function resolveMovementReason(entry: InventoryMovementEntry) {
     return OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason;
   }
 
-  return (
-    ADJUSTMENT_REASON_LABELS[entry.reason as AdjustmentReason] ?? entry.reason
-  );
+  return getAdjustmentReasonLabel(entry.reason);
 }
 
 function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {

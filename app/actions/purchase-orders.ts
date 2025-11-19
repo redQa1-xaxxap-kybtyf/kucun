@@ -629,9 +629,15 @@ function mapExpenseRecord(expense: PrismaExpenseRecord): ExpenseRecordType {
     relatedNumber: expense.relatedNumber ?? undefined,
     remarks: expense.remarks ?? undefined,
     attachments: expense.attachments ?? undefined,
+    status: expense.status as ExpenseRecordType['status'],
     userId: expense.userId,
     createdAt: expense.createdAt.toISOString(),
     updatedAt: expense.updatedAt.toISOString(),
+    approvedById: expense.approvedById ?? undefined,
+    approvedAt: expense.approvedAt
+      ? expense.approvedAt.toISOString()
+      : undefined,
+    cancelReason: expense.cancelReason ?? undefined,
   };
 }
 

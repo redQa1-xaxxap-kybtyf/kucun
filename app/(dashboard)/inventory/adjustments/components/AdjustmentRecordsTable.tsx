@@ -20,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
-  ADJUSTMENT_REASON_LABELS,
+  getAdjustmentReasonLabel,
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
@@ -214,9 +214,7 @@ export function AdjustmentRecordsTable({
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <Badge variant="info" className="text-xs font-medium">
-                      {ADJUSTMENT_REASON_LABELS[
-                        adjustment.reason as keyof typeof ADJUSTMENT_REASON_LABELS
-                      ] || adjustment.reason}
+                      {getAdjustmentReasonLabel(adjustment.reason)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">

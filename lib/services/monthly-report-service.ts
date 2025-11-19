@@ -19,6 +19,7 @@ import {
   extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
 
+import { includesCustomerRole } from './finance-statistics-shared';
 import {
   buildExpenseWhere,
   buildPaymentWhere,
@@ -151,13 +152,17 @@ async function getMonthlyCosts(
 
   const salesCost = salesCostStats._sum.costAmount || 0;
 
-  // 库存成本变化（入库成本 - 出库成本）
-  const [inboundCost, outboundCost] = await Promise.all([
+  // 库存成本变化（入库成本 - 出库成本 + 盘点调整成本）
+  const [inboundCost, outboundCost, adjustmentCost] = await Promise.all([
     prisma.inboundRecord.aggregate({
       where: {
         createdAt: {
           gte: startDate,
           lte: endDate,
+        },
+        // 与盈亏分析保持一致：期初入库不计入当期成本
+        reason: {
+          not: 'opening_balance',
         },
       },
       _sum: {
@@ -175,10 +180,27 @@ async function getMonthlyCosts(
         totalCost: true,
       },
     }),
+    prisma.inventoryAdjustment.aggregate({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: 'approved',
+        reason: {
+          in: ['surplus', 'deficit'],
+        },
+      },
+      _sum: {
+        totalCost: true,
+      },
+    }),
   ]);
 
   const inventoryCostChange =
-    (inboundCost._sum.totalCost || 0) - (outboundCost._sum.totalCost || 0);
+    (inboundCost._sum.totalCost || 0) -
+    (outboundCost._sum.totalCost || 0) +
+    (adjustmentCost._sum.totalCost || 0);
   const totalCost = salesCost + Math.abs(inventoryCostChange);
 
   return {
@@ -197,8 +219,8 @@ async function getMonthlyReceivables(
 ): Promise<MonthlyReceivables> {
   const { startDate, endDate } = getMonthDateRange(year, month);
 
-  // 获取应收款数据
-  const receivableStats = await prisma.accountStatement.aggregate({
+  // 获取应收款余额（基于伙伴账本的当前余额快照，按角色拆分）
+  const accountStatements = await prisma.accountStatement.findMany({
     where: {
       partnerRole: { in: ['customer', 'partner'] },
       updatedAt: {
@@ -206,12 +228,20 @@ async function getMonthlyReceivables(
         lte: endDate,
       },
     },
-    _sum: {
-      totalAmount: true,
-      paidAmount: true,
+    select: {
+      partnerRole: true,
       currentBalance: true,
     },
   });
+
+  let totalReceivable = 0;
+  for (const statement of accountStatements) {
+    const balance = statement.currentBalance ?? 0;
+    if (includesCustomerRole(statement.partnerRole)) {
+      // 仅统计正向余额为应收
+      totalReceivable += Math.max(balance, 0);
+    }
+  }
 
   // 获取应付款数据
   const payableStats = await prisma.payableRecord.aggregate({
@@ -252,11 +282,11 @@ async function getMonthlyReceivables(
   });
 
   return {
-    totalReceivable: Math.abs(receivableStats._sum.totalAmount || 0),
+    totalReceivable,
     totalPayable: payableStats._sum.payableAmount || 0,
     receivedAmount: receivedStats._sum.actualPaymentAmount || 0,
     paidAmount: paidStats._sum.paymentAmount || 0,
-    receivableBalance: Math.abs(receivableStats._sum.currentBalance || 0),
+    receivableBalance: totalReceivable,
     payableBalance: payableStats._sum.remainingAmount || 0,
   };
 }

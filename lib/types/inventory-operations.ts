@@ -334,6 +334,53 @@ export const ADJUSTMENT_REASON_LABELS: Record<AdjustmentReason, string> = {
   other: '其他',
 };
 
+const ADJUSTMENT_REASON_ALIASES: Record<string, AdjustmentReason> = {
+  INVENTORY_GAIN: 'inventory_gain',
+  INVENTORY_LOSS: 'inventory_loss',
+  DAMAGE_LOSS: 'damage_loss',
+  SURPLUS_GAIN: 'surplus_gain',
+  TRANSFER: 'transfer',
+  OTHER: 'other',
+  PURCHASE: 'inventory_gain',
+  SALE: 'inventory_loss',
+  SALES: 'inventory_loss',
+  RETURN: 'inventory_gain',
+  DAMAGE: 'damage_loss',
+  SURPLUS: 'surplus_gain',
+  COUNT: 'other',
+};
+
+export function normalizeAdjustmentReason(
+  reason?: string | null
+): AdjustmentReason {
+  if (!reason) {
+    return 'other';
+  }
+
+  const trimmed = reason.trim();
+  if (!trimmed) {
+    return 'other';
+  }
+
+  const normalized = trimmed.toLowerCase();
+  if (
+    Object.prototype.hasOwnProperty.call(ADJUSTMENT_REASON_LABELS, normalized)
+  ) {
+    return normalized as AdjustmentReason;
+  }
+
+  const alias = ADJUSTMENT_REASON_ALIASES[trimmed.toUpperCase()];
+  if (alias) {
+    return alias;
+  }
+
+  return 'other';
+}
+
+export function getAdjustmentReasonLabel(reason?: string | null): string {
+  return ADJUSTMENT_REASON_LABELS[normalizeAdjustmentReason(reason)];
+}
+
 // 调整状态标签映射
 export const ADJUSTMENT_STATUS_LABELS: Record<AdjustmentStatus, string> = {
   draft: '草稿',

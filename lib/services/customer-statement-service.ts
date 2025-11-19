@@ -131,8 +131,12 @@ export async function getCustomerStatements(
   });
 
   // ✅ 批量聚合查询：退款记录
+  // 说明：
+  // - 退款金额在退货场景(ReturnOrder.refundAmount)中已经作为销售退货统计
+  // - 这里只对“补偿退款”(无退货关联的退款)做金额聚合，用于计算 refundPaid
+  // - 但为了统计最后交易日期和交易笔数，仍然需要聚合所有退款记录
   const refundAggregates = await prisma.refundRecord.groupBy({
-    by: ['customerId'],
+    by: ['customerId', 'returnOrderId'],
     where: {
       customerId: { in: customerIds },
       status: { in: ['pending', 'processing', 'completed'] },
@@ -151,14 +155,20 @@ export async function getCustomerStatements(
     const paymentData = paymentAggregates.find(
       p => p.customerId === customer.id
     );
-    const refundData = refundAggregates.find(r => r.customerId === customer.id);
+    const refundsForCustomer = refundAggregates.filter(
+      r => r.customerId === customer.id
+    );
 
     // 计算汇总数据
     const salesAmount = Number(salesData?._sum.totalAmount ?? 0);
     const salesReturnAmount = Number(returnData?._sum.refundAmount ?? 0);
     const paymentReceived = Number(paymentData?._sum.paymentAmount ?? 0);
     const prepaymentReceived = Number(paymentData?._sum.appliedAmount ?? 0);
-    const refundPaid = Number(refundData?._sum.processedAmount ?? 0);
+
+    // 仅统计“补偿退款”(无退货关联)到 refundPaid，避免与退货退款重复计算
+    const refundPaid = refundsForCustomer
+      .filter(r => r.returnOrderId === null)
+      .reduce((sum, r) => sum + Number(r._sum.processedAmount ?? 0), 0);
 
     // 应收账款 = 销售金额 - 销售退货 - 收款 - 预收款 + 退款
     const receivableBalance =
@@ -175,21 +185,31 @@ export async function getCustomerStatements(
     const netBalance = receivableBalance - payableBalance;
 
     // 获取最后交易日期
+    const lastRefundDate = refundsForCustomer
+      .map(r => r._max.refundDate)
+      .filter((date): date is Date => date instanceof Date)
+      .sort((a, b) => b.getTime() - a.getTime())[0];
+
     const lastTransactionDate = [
       salesData?._max.createdAt,
       returnData?._max.createdAt,
       paymentData?._max.paymentDate,
-      refundData?._max.refundDate,
+      lastRefundDate,
     ]
       .filter((date): date is Date => date instanceof Date)
       .sort((a, b) => b.getTime() - a.getTime())[0];
 
     // 计算交易笔数
+    const refundCount = refundsForCustomer.reduce(
+      (sum, r) => sum + (r._count.id ?? 0),
+      0
+    );
+
     const transactionCount =
       (salesData?._count.id ?? 0) +
       (returnData?._count.id ?? 0) +
       (paymentData?._count.id ?? 0) +
-      (refundData?._count.id ?? 0);
+      refundCount;
 
     return {
       customerId: customer.id,
@@ -800,6 +820,8 @@ async function getCustomerTransactions(
       customerId,
       status: { in: ['pending', 'processing', 'completed'] },
       refundDate: dateFilter,
+      // 只统计无退货关联的补偿退款，避免与退货退款重复影响应收余额
+      returnOrderId: null,
     },
     select: {
       id: true,
@@ -829,10 +851,6 @@ async function getCustomerTransactions(
     const descriptionParts = [
       `退款 ${refund.refundNumber} (${refund.refundMethod})`,
     ];
-
-    if (refund.returnOrderNumber) {
-      descriptionParts.push(`关联退货 ${refund.returnOrderNumber}`);
-    }
 
     if (effectiveRemaining > 0) {
       descriptionParts.push(`待退 ${effectiveRemaining.toFixed(2)}`);

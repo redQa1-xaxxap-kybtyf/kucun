@@ -14,9 +14,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getAdjustmentByNumber } from '@/lib/api/adjustments-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 import {
-  ADJUSTMENT_REASON_LABELS,
   ADJUSTMENT_STATUS_LABELS,
   ADJUSTMENT_STATUS_VARIANTS,
+  getAdjustmentReasonLabel,
+  normalizeAdjustmentReason,
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
@@ -315,11 +316,9 @@ export default async function InventoryAdjustmentDetailPage({
     notFound();
   }
 
-  const reasonLabel =
-    ADJUSTMENT_REASON_LABELS[
-      adjustment.reason as keyof typeof ADJUSTMENT_REASON_LABELS
-    ] || '库存调整';
-  const reasonVariant = (reasonVariantMap[adjustment.reason] ??
+  const normalizedReason = normalizeAdjustmentReason(adjustment.reason);
+  const reasonLabel = getAdjustmentReasonLabel(adjustment.reason);
+  const reasonVariant = (reasonVariantMap[normalizedReason] ??
     'outline') as ReasonVariant;
   const statusVariant = (ADJUSTMENT_STATUS_VARIANTS[
     adjustment.status as keyof typeof ADJUSTMENT_STATUS_VARIANTS

@@ -58,6 +58,8 @@ export {
   OUTBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_VARIANTS,
   calculateTotalCost,
+  getAdjustmentReasonLabel,
+  normalizeAdjustmentReason,
 } from './inventory-operations';
 
 // 库存查询相关类型

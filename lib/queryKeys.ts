@@ -190,6 +190,8 @@ export const inventoryKeys = {
 
   // 库存统计
   stats: () => [...inventoryKeys.all, 'stats'] as const,
+  statistics: (params?: { categoryId?: string }) =>
+    [...inventoryKeys.all, 'statistics', params] as const,
 
   // 库存预警
   alerts: () => [...inventoryKeys.all, 'alerts'] as const,

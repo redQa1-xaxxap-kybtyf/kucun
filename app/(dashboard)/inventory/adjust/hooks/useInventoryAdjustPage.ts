@@ -7,7 +7,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
-import type { InventoryQueryParams } from '@/lib/types/inventory';
+import type {
+  InventoryListResponse,
+  InventoryQueryParams,
+} from '@/lib/types/inventory';
 
 export function useInventoryAdjustPage() {
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
@@ -26,7 +29,8 @@ export function useInventoryAdjustPage() {
     queryFn: () => getInventories(queryParams),
   });
 
-  const inventoryRecords = data?.data || [];
+  const inventoryRecords: InventoryListResponse['data']['inventories'] =
+    data?.inventories || [];
 
   // 处理调整成功
   const handleAdjustSuccess = () => {
