@@ -3,13 +3,18 @@
 
 'use client';
 
-import { ArrowRight, Clock, Package, Truck, User } from 'lucide-react';
+import { ArrowRight, Clock, Truck, User } from 'lucide-react';
 import Link from 'next/link';
 
-import { ContentLoading } from '@/components/common/loading';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { DashboardFactoryShipmentSummary } from '@/lib/types/dashboard';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
@@ -61,137 +66,116 @@ const formatTime = (dateString: string) => {
   return formatDate(dateString);
 };
 
-function SectionHeader() {
-  return (
-    <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-success-light))] px-6 py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-success))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
-          <Truck className="h-5 w-5" />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
-            厂家发货订单
-          </h3>
-          <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-            最近的发货订单
-          </p>
-        </div>
-      </div>
-    </CardHeader>
-  );
-}
-
-function LoadingStateCard() {
-  return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)]">
-      <SectionHeader />
-      <CardContent className="p-6">
-        <ContentLoading text="加载发货订单..." />
-      </CardContent>
-    </Card>
-  );
-}
-
-function EmptyStateCard() {
-  return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)]">
-      <SectionHeader />
-      <CardContent className="flex flex-col items-center justify-center py-12">
-        <Package className="mb-4 h-12 w-12 text-[hsl(var(--color-border-secondary))]" />
-        <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-          暂无厂家发货订单
-        </p>
-        <p className="mt-1 text-sm text-[hsl(var(--color-text-tertiary))]">
-          所有发货均已完成
-        </p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function ShipmentListItem({
-  order,
-}: {
-  order: DashboardFactoryShipmentSummary;
-}) {
-  const badgeVariant = STATUS_VARIANT_MAP[order.status] ?? 'secondary';
-  return (
-    <Link
-      key={order.id}
-      href={`/factory-shipments/${order.id}`}
-      className="group block"
-    >
-      <div className="flex items-start gap-4 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-4 transition-all hover:border-[hsl(var(--color-success))] hover:shadow-[var(--shadow-light)]">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--color-success))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
-          <Truck className="h-5 w-5" />
-        </div>
-        <div className="min-w-0 flex-1 space-y-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate font-medium text-[hsl(var(--color-text-primary))]">
-              {order.orderNumber}
-            </span>
-            <Badge
-              variant={badgeVariant}
-              className="shrink-0 text-xs font-medium"
-            >
-              {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-4 text-sm text-[hsl(var(--color-text-secondary))]">
-            <div className="flex items-center gap-1">
-              <User className="h-3.5 w-3.5" />
-              <span className="truncate">
-                {order.customer?.name || '未知客户'}
-              </span>
-            </div>
-            <div className="shrink-0 font-medium text-[hsl(var(--color-success))]">
-              {formatCurrency(order.totalAmount)}
-            </div>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-            <Clock className="h-3 w-3" />
-            <span>{formatTime(order.createdAt)}</span>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center">
-          <ArrowRight className="h-4 w-4 text-[hsl(var(--color-text-tertiary))] transition-transform group-hover:translate-x-1 group-hover:text-[hsl(var(--color-success))]" />
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function ViewAllButton() {
-  return (
-    <div className="mt-4 text-center">
-      <Link href="/factory-shipments">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="group text-[hsl(var(--color-success))] hover:bg-[hsl(var(--color-success-light))] hover:text-[hsl(var(--color-success-hover))]"
-        >
-          查看全部发货订单
-          <ArrowRight className="ml-1 h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
-        </Button>
-      </Link>
-    </div>
-  );
-}
-
 export function FactoryShipments({ orders, loading }: FactoryShipmentsProps) {
-  if (loading) return <LoadingStateCard />;
-  if (orders.length === 0) return <EmptyStateCard />;
+  if (loading) {
+    return <FactoryShipmentsSkeleton />;
+  }
+
+  if (!orders || orders.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>厂家发货订单</CardTitle>
+          <CardDescription>最近的发货订单</CardDescription>
+        </CardHeader>
+        <CardContent className="py-12 text-center">
+          <Truck className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+          <p className="text-muted-foreground text-sm">暂无厂家发货订单</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)] transition-shadow hover:shadow-[var(--shadow-medium)]">
-      <SectionHeader />
-      <CardContent className="p-6">
-        <div className="space-y-3">
-          {orders.map(order => (
-            <ShipmentListItem key={order.id} order={order} />
-          ))}
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+          <CardTitle>厂家发货订单</CardTitle>
+          <CardDescription>最近的发货订单</CardDescription>
         </div>
-        <ViewAllButton />
+        <Link
+          href="/factory-shipments"
+          className="group text-primary hover:text-primary/80 flex items-center gap-1 text-sm font-medium transition-colors"
+        >
+          查看全部
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {orders.map(order => {
+          const badgeVariant = STATUS_VARIANT_MAP[order.status] ?? 'secondary';
+          return (
+            <Link
+              key={order.id}
+              href={`/factory-shipments/${order.id}`}
+              className="group block"
+            >
+              <div className="bg-card hover:bg-muted/50 flex items-start gap-4 rounded-lg border p-3 transition-all">
+                <div className="bg-success text-success-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-card-foreground group-hover:text-primary truncate font-semibold">
+                      {order.orderNumber}
+                    </span>
+                    <Badge
+                      variant={badgeVariant}
+                      className="shrink-0 text-xs font-medium"
+                    >
+                      {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
+                    </Badge>
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <User className="h-3 w-3" />
+                      <span className="truncate">
+                        {order.customer?.name || '未知客户'}
+                      </span>
+                    </div>
+                    <span className="text-success font-semibold">
+                      {formatCurrency(order.totalAmount)}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatTime(order.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
+// 骨架屏组件
+function FactoryShipmentsSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="mt-2 h-4 w-40" />
+        </div>
+        <Skeleton className="h-4 w-20" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-4 rounded-lg border p-3">
+            <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+            <div className="w-full space-y-2">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-5 w-2/5" />
+                <Skeleton className="h-5 w-1/5" />
+              </div>
+              <Skeleton className="h-4 w-3/5" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

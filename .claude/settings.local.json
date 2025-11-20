@@ -184,7 +184,8 @@
       "Bash(do cp \"E:\\kucun\\components\\sales-orders\\fee-items$file\" \"E:\\kucun\\components\\factory-shipments\\fee-items$file\")",
       "Bash(do cp \"$file\" \"../../factory-shipments/fee-items/$file\")",
       "Bash(Stop-Process -Force)",
-      "Bash(nul)"
+      "Bash(nul)",
+      "mcp__playwright__browser_tabs"
     ],
     "deny": [],
     "ask": []

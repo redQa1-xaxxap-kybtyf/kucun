@@ -5,13 +5,11 @@
 
 import {
   AlertTriangle,
-  ArrowRight,
   BadgeJapaneseYen,
   Minus,
   Package,
   RotateCcw,
   ShoppingCart,
-  Sparkles,
   TrendingDown,
   TrendingUp,
   Users,
@@ -20,6 +18,7 @@ import Link from 'next/link';
 import * as React from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { dashboardUtils } from '@/lib/api/dashboard';
 import type { BusinessOverview, StatCard } from '@/lib/types/dashboard';
@@ -129,57 +128,30 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardContent = (
       <Card
         className={cn(
-          'group relative overflow-hidden border-2 transition-all duration-300',
-          'hover:-translate-y-1 hover:shadow-2xl',
+          'group relative transition-all duration-300',
+          'hover:-translate-y-1 hover:shadow-md',
           href && 'cursor-pointer',
+          'border-l-4',
           colorClasses.border,
           className
         )}
         ref={ref}
         {...props}
       >
-        {/* 装饰性渐变背景 - 更柔和的效果 */}
-        <div
-          className={cn(
-            'absolute inset-0 opacity-30 transition-opacity duration-300 group-hover:opacity-50',
-            colorClasses.bg
-          )}
-        />
-
-        {/* 悬浮时的光效 */}
-        <div
-          className={cn(
-            'absolute -inset-1 rounded-lg opacity-0 blur-2xl transition-opacity duration-500',
-            'group-hover:opacity-40',
-            colorClasses.glow
-          )}
-        />
-
         <CardContent className="relative p-6">
           <div className="flex items-start justify-between gap-4">
             {/* 左侧内容区 */}
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-2">
               {/* 标题 - 增加图标装饰 */}
-              <div className="flex items-center gap-2">
-                <p className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
-                  {title}
-                </p>
-                {change && change.type !== 'neutral' && (
-                  <Sparkles
-                    className={cn(
-                      'h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100',
-                      colorClasses.icon
-                    )}
-                  />
-                )}
-              </div>
+              <p className="text-muted-foreground text-sm font-semibold tracking-wide">
+                {title}
+              </p>
 
               {/* 数值显示 - 更大更醒目 */}
               <div className="space-y-2">
                 <p
                   className={cn(
-                    'text-4xl font-black tracking-tight transition-all duration-300',
-                    'group-hover:scale-105',
+                    'text-3xl font-bold tracking-tight',
                     colorClasses.icon
                   )}
                 >
@@ -190,35 +162,31 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
                 {/* 变化趋势 - 优化视觉层次 */}
                 {change && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div
-                      className={cn(
-                        'flex items-center gap-1.5 rounded-full px-3 py-1.5 font-medium',
-                        'border shadow-sm transition-all duration-300 group-hover:shadow-md',
-                        change.type === 'increase' &&
-                          'border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 text-emerald-700',
-                        change.type === 'decrease' &&
-                          'border-rose-200 bg-gradient-to-r from-rose-50 to-rose-100 text-rose-700',
-                        change.type === 'neutral' &&
-                          'border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 text-gray-600'
-                      )}
+                  <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                    <Badge
+                      variant={
+                        change.type === 'increase'
+                          ? 'success'
+                          : change.type === 'decrease'
+                            ? 'destructive'
+                            : 'secondary'
+                      }
+                      className="gap-1 font-semibold"
                     >
                       {change.type === 'increase' && (
-                        <TrendingUp className="animate-in slide-in-from-bottom-2 h-4 w-4" />
+                        <TrendingUp className="h-3 w-3" />
                       )}
                       {change.type === 'decrease' && (
-                        <TrendingDown className="animate-in slide-in-from-top-2 h-4 w-4" />
+                        <TrendingDown className="h-3 w-3" />
                       )}
                       {change.type === 'neutral' && (
-                        <Minus className="h-4 w-4" />
+                        <Minus className="h-3 w-3" />
                       )}
-                      <span className="text-sm font-bold tabular-nums">
+                      <span>
                         {dashboardUtils.formatPercentage(change.value)}
                       </span>
-                    </div>
-                    <span className="text-muted-foreground text-xs font-medium">
-                      较{change.period}
-                    </span>
+                    </Badge>
+                    <span>较{change.period}</span>
                   </div>
                 )}
               </div>
@@ -226,59 +194,9 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
             {/* 右侧图标区 - 增强动效 */}
             <div className="relative flex-shrink-0">
-              <div
-                className={cn(
-                  'flex h-16 w-16 items-center justify-center rounded-2xl border-2',
-                  'shadow-lg backdrop-blur-sm',
-                  'transition-all duration-500',
-                  'group-hover:scale-110 group-hover:rotate-6 group-hover:shadow-xl',
-                  colorClasses.bg,
-                  colorClasses.border
-                )}
-              >
-                <IconComponent
-                  className={cn(
-                    'h-8 w-8 transition-transform duration-500',
-                    'group-hover:scale-110',
-                    colorClasses.icon
-                  )}
-                />
-              </div>
-              {/* 图标光晕效果 */}
-              <div
-                className={cn(
-                  'absolute inset-0 rounded-2xl blur-2xl',
-                  'opacity-0 transition-all duration-500',
-                  'group-hover:scale-110 group-hover:opacity-40',
-                  colorClasses.glow
-                )}
-              />
+              <IconComponent className={cn('h-8 w-8', colorClasses.icon)} />
             </div>
           </div>
-
-          {/* 查看详情链接 - 更明显的交互反馈 */}
-          {href && (
-            <div
-              className={cn(
-                'mt-5 border-t border-dashed pt-4',
-                'flex items-center justify-between gap-2',
-                'transition-all duration-300',
-                'opacity-60 group-hover:opacity-100',
-                colorClasses.border
-              )}
-            >
-              <span className={cn('text-sm font-semibold', colorClasses.icon)}>
-                查看详情
-              </span>
-              <ArrowRight
-                className={cn(
-                  'h-4 w-4 transition-transform duration-300',
-                  'group-hover:translate-x-2',
-                  colorClasses.icon
-                )}
-              />
-            </div>
-          )}
         </CardContent>
       </Card>
     );
@@ -379,7 +297,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
     return (
       <div
         className={cn(
-          'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4',
+          'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3',
           'animate-in fade-in-50 slide-in-from-bottom-8 duration-500',
           className
         )}
@@ -389,7 +307,10 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
         {statCards.map((card, index) => (
           <div
             key={index}
-            className="animate-in fade-in-50 slide-in-from-bottom-4"
+            className={cn(
+              'animate-in fade-in-50 slide-in-from-bottom-4',
+              index === 0 && 'lg:col-span-3'
+            )}
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <StatCard {...card} />

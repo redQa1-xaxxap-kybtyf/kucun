@@ -5,14 +5,19 @@ import {
   BadgeJapaneseYen,
   Clock,
   Package,
-  TrendingUp,
   User,
 } from 'lucide-react';
 import Link from 'next/link';
 
-import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   SALES_ORDER_STATUS_LABELS,
   type SalesOrderStatus,
@@ -65,94 +70,41 @@ const formatTime = (dateString: string) => {
 
 export function RecentOrders({ orders, loading }: RecentOrdersProps) {
   if (loading) {
-    return (
-      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]">
-        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
-                  实时订单动态
-                </h3>
-                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                  最近创建的销售订单
-                </p>
-              </div>
-            </div>
-            <Badge variant="info" className="text-xs font-medium">
-              实时更新
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 p-6">
-          <ContentLoading text="加载订单中..." />
-        </CardContent>
-      </Card>
-    );
+    return <RecentOrdersSkeleton />;
   }
 
   if (!orders || orders.length === 0) {
     return (
-      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]">
-        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
-                <TrendingUp className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
-                  实时订单动态
-                </h3>
-                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                  最近创建的销售订单
-                </p>
-              </div>
-            </div>
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>实时订单动态</CardTitle>
+          <CardDescription>最近创建的销售订单</CardDescription>
         </CardHeader>
         <CardContent className="py-12 text-center">
-          <Package className="mx-auto mb-4 h-16 w-16 text-[hsl(var(--color-border-secondary))]" />
-          <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-            暂无订单数据
-          </p>
+          <Package className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
+          <p className="text-muted-foreground text-sm">暂无订单数据</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)] transition-shadow hover:shadow-[var(--shadow-medium)]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
-              <TrendingUp className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
-                实时订单动态
-              </h3>
-              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                最近创建的销售订单
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/sales-orders"
-            className="group flex items-center gap-1 text-sm font-medium text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]"
-          >
-            查看全部
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-          </Link>
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+          <CardTitle>实时订单动态</CardTitle>
+          <CardDescription>最近创建的销售订单</CardDescription>
         </div>
+        <Link
+          href="/sales-orders"
+          className="group text-primary hover:text-primary/80 flex items-center gap-1 text-sm font-medium transition-colors"
+        >
+          查看全部
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </Link>
       </CardHeader>
-      <CardContent className="space-y-3 p-6">
+      <CardContent className="space-y-3">
         {orders.map(order => {
-          // 使用统一的状态标签和样式配置
           const statusLabel =
             SALES_ORDER_STATUS_LABELS[order.status as SalesOrderStatus] ||
             order.status;
@@ -165,19 +117,19 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
               href={`/sales-orders/${order.id}`}
               className="group block"
             >
-              <div className="flex items-start gap-4 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-4 transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-[var(--shadow-light)]">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-medium)] transition-transform group-hover:scale-110">
-                  <Package className="h-6 w-6" />
+              <div className="bg-card hover:bg-muted/50 flex items-start gap-4 rounded-lg border p-3 transition-all">
+                <div className="bg-primary text-primary-foreground flex h-10 w-10 shrink-0 items-center justify-center rounded-lg">
+                  <Package className="h-5 w-5" />
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <div className="mb-2 flex items-start justify-between gap-2">
+                  <div className="mb-1.5 flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-[hsl(var(--color-text-primary))] transition-colors group-hover:text-[hsl(var(--color-primary))]">
+                      <p className="text-card-foreground group-hover:text-primary font-semibold transition-colors">
                         {order.orderNumber}
                       </p>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                        <User className="h-3.5 w-3.5" />
+                      <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
+                        <User className="h-3 w-3" />
                         <span>{order.customer?.name || '未知客户'}</span>
                       </div>
                     </div>
@@ -189,15 +141,15 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
                     </Badge>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-secondary))]">
-                      <BadgeJapaneseYen className="h-3.5 w-3.5" />
-                      <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                  <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <div className="flex items-center gap-1.5">
+                      <BadgeJapaneseYen className="h-3 w-3" />
+                      <span className="text-foreground font-medium">
                         {formatCurrency(order.totalAmount)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-tertiary))]">
-                      <Clock className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="h-3 w-3" />
                       <span>{formatTime(order.createdAt)}</span>
                     </div>
                   </div>
@@ -206,6 +158,38 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
             </Link>
           );
         })}
+      </CardContent>
+    </Card>
+  );
+}
+
+// 骨架屏组件
+function RecentOrdersSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <div>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="mt-2 h-4 w-40" />
+        </div>
+        <Skeleton className="h-4 w-20" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-4 rounded-lg border p-3">
+            <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <Skeleton className="h-5 w-2/5" />
+                <Skeleton className="h-5 w-1/5" />
+              </div>
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-4 w-1/3" />
+              </div>
+            </div>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
