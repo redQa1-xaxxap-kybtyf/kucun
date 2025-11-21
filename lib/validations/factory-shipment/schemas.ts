@@ -72,8 +72,8 @@ export const factoryShipmentFeeItemSchema = z.object({
  * 只包含字段类型和长度限制，不包含复杂的业务逻辑
  */
 export const factoryShipmentOrderItemSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确').nullable(),
-  supplierId: z.string().min(1, '请选择供应商'),
+  productId: z.string().uuid('产品ID格式不正确').optional().nullable(),
+  supplierId: z.string().min(1, '请选择供应商').optional().or(z.literal('')),
   productCode: z
     .string()
     .max(50, '产品编码不能超过50个字符')

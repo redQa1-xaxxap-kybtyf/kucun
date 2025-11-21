@@ -168,7 +168,8 @@ export const updateFactoryShipmentOrderSchema = z
 
 // 表单专用的订单明细项Schema - 移除.transform()和.default()
 const factoryShipmentOrderItemFormSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确').nullable(),
+  // ✅ 允许初始状态为 undefined，避免 Zod 报 "expected string, received undefined"
+  productId: z.string().uuid('产品ID格式不正确').optional().nullable(),
   supplierId: z.string().min(1, '请选择供应商').optional().or(z.literal('')),
   productCode: z
     .string()

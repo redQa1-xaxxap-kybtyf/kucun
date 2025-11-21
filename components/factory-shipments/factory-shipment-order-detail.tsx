@@ -19,6 +19,7 @@ import { ContentLoading } from '@/components/common/loading';
 import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arrival-dialog';
 import { ConfirmInboundDialog } from '@/components/factory-shipments/confirm-inbound-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
+import { FeeItemsSection } from '@/components/factory-shipments/fee-items-section';
 import { SupplementShippingInfoDialog } from '@/components/factory-shipments/supplement-shipping-info-dialog';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -371,6 +372,9 @@ export function FactoryShipmentOrderDetail({
         </CardContent>
       </Card>
 
+      {/* 费用明细 */}
+      <FeeItemsSection feeItems={order.feeItems} />
+
       {/* 金额信息 */}
       <Card
         className="border border-[hsl(var(--color-border-primary))]"
@@ -382,15 +386,15 @@ export function FactoryShipmentOrderDetail({
             金额信息
           </CardTitle>
         </CardHeader>
-        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
+        <CardContent className="bg-[hsl(var(--color-bg-card))] p-4 sm:p-5">
           {/* 主要金额指标 - 使用渐变卡片突出显示 */}
-          <div className="mb-6 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-6 shadow-inner">
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mb-4 rounded-xl border bg-[hsl(var(--color-bg-card))] p-4 sm:p-5">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <p className="text-xs font-medium tracking-wide text-[hsl(var(--color-text-tertiary))] uppercase">
                   订单总金额
                 </p>
-                <p className="text-2xl font-bold text-[hsl(var(--color-text-primary))]">
+                <p className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
                   {formatAmount(order.totalAmount)}
                 </p>
               </div>
@@ -398,7 +402,7 @@ export function FactoryShipmentOrderDetail({
                 <p className="text-xs font-medium tracking-wide text-[hsl(var(--color-text-tertiary))] uppercase">
                   应收金额
                 </p>
-                <p className="text-2xl font-bold text-blue-700">
+                <p className="text-xl font-bold text-blue-700">
                   {formatAmount(order.receivableAmount)}
                 </p>
               </div>

@@ -626,6 +626,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       depositAmount,
       remarks,
       items,
+      feeItems,
     } = validatedData;
 
     // 验证客户是否存在
@@ -661,9 +662,16 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     const finalTotalAmount = calculatedTotalAmount;
     const customerAmount = amountSummary.customer;
     const finalDepositAmount = depositAmount || 0;
+
+    // ✅ 修复：计算客户承担的费用总额
+    const customerFees = (feeItems || [])
+      .filter(fee => fee.paidBy === 'customer')
+      .reduce((sum, fee) => sum + fee.feeAmount, 0);
+
+    // ✅ 修复：应收金额 = 客户货总金额 + 客户承担的费用 - 定金
     const finalReceivableAmount = Math.max(
       0,
-      customerAmount - finalDepositAmount
+      customerAmount + customerFees - finalDepositAmount
     );
 
     const order = await prisma.$transaction(tx =>

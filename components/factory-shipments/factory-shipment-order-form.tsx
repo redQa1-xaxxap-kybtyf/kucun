@@ -383,15 +383,15 @@ export function FactoryShipmentOrderForm({
           getBlurHandler={notifyBlur}
         />
 
-        {/* 金额信息 */}
-        <AmountInfoSection form={form} />
-
         {/* 费用项目 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
           <CardContent className="p-8">
             <FeeItemsFormField control={form.control} disabled={isLoading} />
           </CardContent>
         </Card>
+
+        {/* 金额信息 */}
+        <AmountInfoSection form={form} />
 
         {/* 操作按钮 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))] shadow-md">

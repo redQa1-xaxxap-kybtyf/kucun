@@ -176,7 +176,45 @@ export interface FactoryShipmentOrder {
     email: string;
   };
   items: FactoryShipmentOrderItem[];
+  feeItems?: FactoryShipmentOrderFeeItem[]; // 费用项
 }
+
+// 厂家发货订单费用项
+export interface FactoryShipmentOrderFeeItem {
+  id: string;
+  factoryShipmentOrderId: string;
+  feeType: FactoryShipmentFeeType;
+  feeName: string;
+  feeAmount: number;
+  paidBy: 'customer' | 'company';
+  remarks?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// 费用类型
+export type FactoryShipmentFeeType =
+  | 'freight'
+  | 'processing'
+  | 'packaging'
+  | 'loading_unloading'
+  | 'storage'
+  | 'customs'
+  | 'other';
+
+// 费用类型标签
+export const FACTORY_SHIPMENT_FEE_TYPE_LABELS: Record<
+  FactoryShipmentFeeType,
+  string
+> = {
+  freight: '运费',
+  processing: '加工费',
+  packaging: '包装费',
+  loading_unloading: '装卸费',
+  storage: '仓储费',
+  customs: '报关费',
+  other: '其他费用',
+};
 
 // 创建厂家发货订单的输入数据
 export interface CreateFactoryShipmentOrderData {

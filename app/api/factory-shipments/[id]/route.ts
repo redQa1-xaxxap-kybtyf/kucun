@@ -83,7 +83,7 @@ async function validateEntities({
   items?: Array<{
     isManualProduct?: boolean;
     productId?: string | null;
-    supplierId: string;
+    supplierId?: string;
   }>;
   customerId?: string;
 }) {
@@ -177,7 +177,8 @@ function mapItemCreate(item: FactoryShipmentOrderItemData) {
 
 function buildUpdateData(
   validatedData: UpdateFactoryShipmentOrderData,
-  calculatedTotalAmount?: number
+  calculatedTotalAmount?: number,
+  existingDepositAmount?: number
 ): Partial<Prisma.FactoryShipmentOrderUncheckedUpdateInput> {
   const {
     containerNumber,
@@ -193,6 +194,7 @@ function buildUpdateData(
     deliveryDate,
     completionDate,
     items,
+    feeItems,
   } = validatedData;
 
   const data: Partial<Prisma.FactoryShipmentOrderUncheckedUpdateInput> = {};
@@ -212,10 +214,27 @@ function buildUpdateData(
     data.totalAmount = calculatedTotalAmount;
   if (items) {
     data.items = { create: items.map(mapItemCreate) };
-    // 如果未显式提供 receivableAmount，按客户归属总额覆盖
+    // ✅ 修复：如果未显式提供 receivableAmount，自动计算
     if (receivableAmount === undefined) {
       const summary = computeAmountSummary(items);
-      data.receivableAmount = summary ? summary.customer : undefined;
+      const customerAmount = summary ? summary.customer : 0;
+
+      // 计算客户承担的费用总额
+      const customerFees = (feeItems || [])
+        .filter(fee => fee.paidBy === 'customer')
+        .reduce((sum, fee) => sum + fee.feeAmount, 0);
+
+      // 使用更新后的定金或现有定金
+      const finalDepositAmount =
+        depositAmount !== undefined
+          ? depositAmount
+          : existingDepositAmount || 0;
+
+      // 应收金额 = 客户货总金额 + 客户承担的费用 - 定金
+      data.receivableAmount = Math.max(
+        0,
+        customerAmount + customerFees - finalDepositAmount
+      );
     }
   }
   return data;
@@ -309,6 +328,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             },
           },
         },
+        feeItems: true, // ✅ 包含费用项
       },
     });
 
@@ -401,7 +421,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       // 更新订单主信息和新的明细项
       await tx.factoryShipmentOrder.update({
         where: { id },
-        data: buildUpdateData(validatedData, calculatedTotalAmount),
+        data: buildUpdateData(
+          validatedData,
+          calculatedTotalAmount,
+          existingOrder.depositAmount
+        ),
       });
     });
 
