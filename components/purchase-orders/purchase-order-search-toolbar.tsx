@@ -49,67 +49,72 @@ export function PurchaseOrderSearchToolbar({
 
   const hasActiveFilters = statusFilter !== 'all' || !!supplierId;
 
-  return (
-    <div className="space-y-3">
-      <SearchFilterCard
-        searchValue={searchValue}
-        onSearchChange={onSearch}
-        searchPlaceholder="搜索采购订单号、集装箱号..."
-        isSearching={isSearching}
-        // Toggle 按钮
-        toggleButtons={[
-          {
-            key: 'in_transit',
-            label: '运输中',
-            icon: <Truck className="h-3.5 w-3.5" />,
-            active: statusFilter === 'in_transit',
-            onClick: () =>
-              onStatusChange(
-                statusFilter === 'in_transit' ? 'all' : 'in_transit'
-              ),
-          },
-          {
-            key: 'arrived',
-            label: '已到港',
-            icon: <PackageCheck className="h-3.5 w-3.5" />,
-            active: statusFilter === 'arrived',
-            onClick: () =>
-              onStatusChange(statusFilter === 'arrived' ? 'all' : 'arrived'),
-          },
-        ]}
-        // 筛选器配置
-        filters={[
-          {
-            key: 'status',
-            label: '状态',
-            options: Object.entries(PURCHASE_ORDER_STATUS_LABELS).map(
-              ([value, label]) => ({
-                label,
-                value,
-              })
-            ),
-            width: 'w-full sm:w-40',
-          },
-        ]}
-        filterValues={{
-          status: statusFilter === 'all' ? 'all' : statusFilter,
-        }}
-        onFilterChange={handleFilterChange}
-        // 清空筛选
-        onClearFilters={onClearFilters}
-        hasActiveFilters={hasActiveFilters}
-        variant="elevated"
+  // 将供应商选择器整合到 SearchFilterCard 的自定义子节点中
+  const supplierFilterNode = (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-muted-foreground text-xs font-medium">
+        供应商
+      </label>
+      <SupplierSelector
+        value={supplierId}
+        onValueChange={handleSupplierChange}
+        placeholder="筛选供应商"
+        className="h-9 min-w-[200px]"
       />
-
-      {/* 供应商选择器 - 单独一行 */}
-      <div className="w-full min-w-[200px] sm:w-56">
-        <SupplierSelector
-          value={supplierId}
-          onValueChange={handleSupplierChange}
-          placeholder="筛选供应商"
-          className="h-10"
-        />
-      </div>
     </div>
+  );
+
+  return (
+    <SearchFilterCard
+      searchValue={searchValue}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索采购订单号、集装箱号..."
+      isSearching={isSearching}
+      // Toggle 按钮
+      toggleButtons={[
+        {
+          key: 'in_transit',
+          label: '运输中',
+          icon: <Truck className="h-3.5 w-3.5" />,
+          active: statusFilter === 'in_transit',
+          onClick: () =>
+            onStatusChange(
+              statusFilter === 'in_transit' ? 'all' : 'in_transit'
+            ),
+        },
+        {
+          key: 'arrived',
+          label: '已到港',
+          icon: <PackageCheck className="h-3.5 w-3.5" />,
+          active: statusFilter === 'arrived',
+          onClick: () =>
+            onStatusChange(statusFilter === 'arrived' ? 'all' : 'arrived'),
+        },
+      ]}
+      // 筛选器配置
+      filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: Object.entries(PURCHASE_ORDER_STATUS_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
+      ]}
+      filterValues={{
+        status: statusFilter === 'all' ? 'all' : statusFilter,
+      }}
+      onFilterChange={handleFilterChange}
+      // 清空筛选
+      onClearFilters={onClearFilters}
+      hasActiveFilters={hasActiveFilters}
+      variant="elevated"
+      // ✅ 添加供应商选择器作为自定义筛选器
+      customFilters={supplierFilterNode}
+    />
   );
 }

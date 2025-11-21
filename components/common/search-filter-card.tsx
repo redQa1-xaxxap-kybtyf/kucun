@@ -67,6 +67,9 @@ export interface SearchFilterCardProps {
   // 日期范围筛选器
   dateRangeFilter?: DateRangeFilterConfig;
 
+  // 自定义筛选器（例如：供应商选择器、客户选择器等）
+  customFilters?: React.ReactNode;
+
   // 切换按钮
   toggleButtons?: ToggleButton[];
 
@@ -115,6 +118,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     filterValues = {},
     onFilterChange,
     dateRangeFilter,
+    customFilters,
     toggleButtons = [],
     actionButtons = [],
     onClearFilters,
@@ -172,57 +176,56 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
             </span>
           </div>
 
-          <div className="flex flex-col gap-3">
-            {/* 主搜索栏 */}
-            <div className="flex flex-wrap items-end gap-2">
-              {/* 搜索框 - 添加标题包装 */}
-              <div className="flex flex-col gap-1.5">
-                {searchLabel && (
-                  <label className="text-muted-foreground text-xs font-medium">
-                    {searchLabel}
-                  </label>
-                )}
-                <UnifiedSearchBar
-                  searchValue={searchValue}
-                  onSearchChange={onSearchChange}
-                  searchPlaceholder={searchPlaceholder}
-                  isSearching={isSearching}
-                  filters={filters}
-                  filterValues={filterValues}
-                  onFilterChange={onFilterChange}
-                  toggleButtons={toggleButtons}
-                  actionButtons={actionButtons}
-                  compact={compact}
-                  debounceDelay={0} // 防抖由父组件处理
-                />
-              </div>
-
-              {/* 日期范围筛选器 */}
-              {dateRangeFilter && (
-                <DateRangePicker
-                  value={dateRangeFilter.value}
-                  onChange={dateRangeFilter.onChange}
-                  label={dateRangeFilter.label}
-                  placeholder={dateRangeFilter.placeholder || '选择日期范围'}
-                  showPresets={dateRangeFilter.showPresets ?? true}
-                  className={cn('min-w-[200px]', dateRangeFilter.className)}
-                />
+          {/* 主搜索栏 */}
+          <div className="flex flex-wrap items-end gap-2">
+            {/* 搜索框 - 添加标题包装 */}
+            <div className="flex flex-col gap-1.5">
+              {searchLabel && (
+                <label className="text-muted-foreground text-xs font-medium">
+                  {searchLabel}
+                </label>
               )}
+              <UnifiedSearchBar
+                searchValue={searchValue}
+                onSearchChange={onSearchChange}
+                searchPlaceholder={searchPlaceholder}
+                isSearching={isSearching}
+                filters={filters}
+                filterValues={filterValues}
+                onFilterChange={onFilterChange}
+                toggleButtons={toggleButtons}
+                actionButtons={actionButtons}
+                compact={compact}
+                debounceDelay={0} // 防抖由父组件处理
+              />
             </div>
 
-            {/* 重置筛选按钮 - 移至底部右侧 */}
+            {/* 日期范围筛选器 */}
+            {dateRangeFilter && (
+              <DateRangePicker
+                value={dateRangeFilter.value}
+                onChange={dateRangeFilter.onChange}
+                label={dateRangeFilter.label}
+                placeholder={dateRangeFilter.placeholder || '选择日期范围'}
+                showPresets={dateRangeFilter.showPresets ?? true}
+                className={cn('min-w-[200px]', dateRangeFilter.className)}
+              />
+            )}
+
+            {/* 自定义筛选器（例如：供应商选择器） */}
+            {customFilters && customFilters}
+
+            {/* 重置筛选按钮 - 与其他筛选器同行，优化空间利用 */}
             {showClearButton && hasFilters && onClearFilters && (
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClearFilters}
-                  className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-                >
-                  <RotateCcw className="mr-1 h-3 w-3" />
-                  重置筛选
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-8 gap-1.5 self-end transition-all hover:border-blue-300 hover:bg-blue-50"
+              >
+                <RotateCcw className="mr-1 h-3 w-3" />
+                重置筛选
+              </Button>
             )}
           </div>
         </CardContent>

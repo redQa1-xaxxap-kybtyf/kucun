@@ -249,9 +249,15 @@ const ToggleButtonsSection: React.FC<ToggleButtonsSectionProps> = ({
       {toggleButtons.map(toggle => (
         <Button
           key={toggle.key}
-          variant={toggle.active ? 'default' : 'outline'}
+          variant={'outline'}
           size={compact ? 'sm' : 'default'}
-          className={cn(buttonSize, 'gap-1')}
+          data-active={toggle.active || undefined}
+          className={cn(
+            buttonSize,
+            'gap-1',
+            // 将激活态局部化，避免大面积背景/阴影变动
+            'data-[active=true]:border-[hsl(var(--color-primary))] data-[active=true]:bg-[hsl(var(--color-primary-light))] data-[active=true]:text-[hsl(var(--color-primary))]'
+          )}
           onClick={toggle.onClick}
         >
           {toggle.icon}

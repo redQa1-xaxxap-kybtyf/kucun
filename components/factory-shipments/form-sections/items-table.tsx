@@ -1,9 +1,10 @@
 'use client';
 
-import { Package, Plus, Trash2 } from 'lucide-react';
-import React, { useCallback } from 'react';
+import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
+import { PricingResultDialog } from '@/components/factory-shipments/pricing-result-dialog';
 import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,11 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { getLatestPrice } from '@/hooks/use-price-history';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
+import {
+  calculateOrderPricing,
+  type ItemPricingResult,
+} from '@/lib/services/factory-shipment-pricing-service';
+import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
@@ -63,6 +69,12 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     getBlurHandler,
   }) => {
     const { toast } = useToast();
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [showPricingDialog, setShowPricingDialog] = useState(false);
+    const [pricingResults, setPricingResults] = useState<ItemPricingResult[]>(
+      []
+    );
+    const [totalExpenses, setTotalExpenses] = useState(0);
 
     // 计算单个明细的金额
     const calculateItemAmount = (index: number): number => {
@@ -70,6 +82,121 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       const unitPrice = form.watch(`items.${index}.unitPrice`) || 0;
       return quantity * unitPrice;
     };
+
+    // 计算建议销售价
+    const handleCalculatePricing = useCallback(() => {
+      setIsCalculating(true);
+
+      try {
+        // 获取当前的产品明细和费用项
+        const items = form.getValues('items');
+        const feeItems = form.getValues('feeItems') || [];
+
+        // 验证：至少有一个产品
+        if (items.length === 0) {
+          toast({
+            title: '无法计算',
+            description: '请先添加产品明细',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // 验证：所有产品都有进货价
+        const missingCostItems = items.filter(
+          item => !item.unitCost || item.unitCost <= 0
+        );
+        if (missingCostItems.length > 0) {
+          toast({
+            title: '无法计算',
+            description: '请先填写所有产品的进货价',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        // 计算总运费（使用 feeAmount 字段）
+        const totalExpenses = feeItems.reduce(
+          (sum, fee) => sum + (fee.feeAmount || 0),
+          0
+        );
+
+        // 转换为 FactoryShipmentOrderItem 格式
+        const itemsForCalculation: FactoryShipmentOrderItem[] = items.map(
+          (item, index) => ({
+            id: `temp-${index}`, // 临时 ID
+            factoryShipmentOrderId: '',
+            productId: item.productId || null,
+            supplierId: item.supplierId || '',
+            productCode: item.productCode || '',
+            batchNumber: item.batchNumber || null,
+            quantity: item.quantity || 0,
+            unitPrice: item.unitPrice || 0,
+            totalPrice: (item.unitPrice || 0) * (item.quantity || 0),
+            ownership: item.ownership || 'customer',
+            displayName: item.displayName || '',
+            specification: item.specification || null,
+            unit: item.unit || '片',
+            piecesPerUnit: item.piecesPerUnit || null,
+            weight: item.weight || null,
+            remarks: item.remarks || null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            unitCost: item.unitCost || null,
+            allocatedExpense: null,
+            profitAmount: null,
+            profitMargin: null,
+            supplier: {
+              id: item.supplierId || '',
+              name: '',
+            },
+          })
+        );
+
+        // 计算建议销售价
+        const results = calculateOrderPricing(
+          itemsForCalculation,
+          totalExpenses,
+          {
+            targetProfitMargin: 20, // 默认 20% 利润率
+            minProfitMargin: 10, // 最低 10% 利润率
+            roundingRule: 'nearest', // 四舍五入
+          }
+        );
+
+        // 保存结果并显示对话框
+        setPricingResults(results);
+        setTotalExpenses(totalExpenses);
+        setShowPricingDialog(true);
+      } catch (error) {
+        toast({
+          title: '计算失败',
+          description: error instanceof Error ? error.message : '未知错误',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsCalculating(false);
+      }
+    }, [form, toast]);
+
+    // 应用建议价格
+    const handleApplyPricing = useCallback(() => {
+      let updatedCount = 0;
+      pricingResults.forEach((result, index) => {
+        const currentPrice = form.getValues(`items.${index}.unitPrice`);
+        // 只更新未填写或为 0 的销售价
+        if (!currentPrice || currentPrice === 0) {
+          form.setValue(`items.${index}.unitPrice`, result.suggestedUnitPrice);
+          updatedCount++;
+        }
+      });
+
+      setShowPricingDialog(false);
+      toast({
+        title: '应用成功',
+        description: `已为 ${updatedCount} 个产品设置建议销售价`,
+      });
+    }, [form, pricingResults, toast]);
 
     // 使用 useCallback 稳定回调函数
     const handleProductChange = useCallback(
@@ -140,16 +267,29 @@ export const ItemsTable = React.memo<ItemsTableProps>(
             <Package className="h-4 w-4" />
             产品明细
           </div>
-          <Button
-            type="button"
-            onClick={onAddItem}
-            size="sm"
-            variant="outline"
-            className="h-8"
-          >
-            <Plus className="mr-1 h-3 w-3" />
-            添加产品
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              onClick={handleCalculatePricing}
+              size="sm"
+              variant="outline"
+              className="h-8"
+              disabled={isCalculating || fields.length === 0}
+            >
+              <Calculator className="mr-1 h-3 w-3" />
+              {isCalculating ? '计算中...' : '计算建议销售价'}
+            </Button>
+            <Button
+              type="button"
+              onClick={onAddItem}
+              size="sm"
+              variant="outline"
+              className="h-8"
+            >
+              <Plus className="mr-1 h-3 w-3" />
+              添加产品
+            </Button>
+          </div>
         </div>
 
         {/* 表格 */}
@@ -551,6 +691,15 @@ export const ItemsTable = React.memo<ItemsTableProps>(
             </TableBody>
           </Table>
         </div>
+
+        {/* 定价结果对话框 */}
+        <PricingResultDialog
+          open={showPricingDialog}
+          onOpenChange={setShowPricingDialog}
+          results={pricingResults}
+          totalExpenses={totalExpenses}
+          onConfirm={handleApplyPricing}
+        />
       </div>
     );
   }

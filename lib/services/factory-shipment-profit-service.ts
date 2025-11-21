@@ -115,30 +115,34 @@ export function calculateItemProfit(
   receivableAmount: number,
   allocatedExpense: number
 ): ItemProfitResult {
-  const cost = item.totalPrice; // 采购成本
+  // ✅ 修复：使用 unitCost 作为进货单价，unitPrice 作为销售单价
+  // 采购成本 = 进货单价 × 数量
+  const purchaseCost = (item.unitCost || item.unitPrice) * item.quantity;
   const revenue = receivableAmount; // 应收金额
   const expense = allocatedExpense; // 分摊费用
 
-  // 利润 = 收入 - 成本 - 费用
-  const profitAmount = roundToTwoDecimals(revenue - cost - expense);
+  // 利润 = 收入 - 采购成本 - 分摊费用
+  const profitAmount = roundToTwoDecimals(revenue - purchaseCost - expense);
 
   // 利润率 = (利润 / 收入) × 100%
   const profitMargin =
     revenue > 0 ? roundToTwoDecimals((profitAmount / revenue) * 100) : 0;
 
-  // 单位成本 = 采购单价 + 分摊费用 / 数量
-  const unitCost =
+  // 最终单位成本 = 进货单价 + 分摊费用 / 数量
+  const finalUnitCost =
     item.quantity > 0
-      ? roundToTwoDecimals(item.unitPrice + expense / item.quantity)
-      : item.unitPrice;
+      ? roundToTwoDecimals(
+          (item.unitCost || item.unitPrice) + expense / item.quantity
+        )
+      : item.unitCost || item.unitPrice;
 
   return {
     itemId: item.id,
     profitAmount,
     profitMargin,
-    unitCost,
+    unitCost: finalUnitCost,
     revenue,
-    cost,
+    cost: purchaseCost,
     allocatedExpense: expense,
   };
 }
@@ -146,7 +150,7 @@ export function calculateItemProfit(
 /**
  * 计算自有货的单位成本
  *
- * 公式: 单位成本 = 采购单价 + 分摊费用 / 数量
+ * 公式: 单位成本 = 进货单价 + 分摊费用 / 数量
  *
  * @param item - 发货明细
  * @param allocatedExpense - 分摊到该明细的费用
@@ -156,9 +160,11 @@ export function calculateSelfItemCost(
   item: FactoryShipmentOrderItem,
   allocatedExpense: number
 ): number {
+  // ✅ 修复：使用 unitCost 作为进货单价
+  const purchasePrice = item.unitCost || item.unitPrice;
   return item.quantity > 0
-    ? roundToTwoDecimals(item.unitPrice + allocatedExpense / item.quantity)
-    : item.unitPrice;
+    ? roundToTwoDecimals(purchasePrice + allocatedExpense / item.quantity)
+    : purchasePrice;
 }
 
 /**
@@ -205,7 +211,9 @@ export function calculateOrderProfit(
       totalCost += profitResult.cost;
     } else {
       // 自有货：只计算成本
-      const itemCost = item.totalPrice + allocatedExpense;
+      // ✅ 修复：使用 unitCost 作为进货单价
+      const purchaseCost = (item.unitCost || item.unitPrice) * item.quantity;
+      const itemCost = purchaseCost + allocatedExpense;
       selfCostAmount += itemCost;
     }
   });

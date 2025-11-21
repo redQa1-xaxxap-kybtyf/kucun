@@ -23,10 +23,14 @@ import type {
 // ==================== 辅助工具函数 ====================
 
 /**
- * 计算订单总金额
+ * 计算订单总金额（基于进货价）
+ * ✅ 修复：使用 unitCost 作为进货价，而非 unitPrice（销售价）
  */
 export function calculateTotalValue(items: FactoryShipmentOrderItem[]): number {
-  return items.reduce((sum, item) => sum + item.totalPrice, 0);
+  return items.reduce((sum, item) => {
+    const purchasePrice = item.unitCost || item.unitPrice;
+    return sum + purchasePrice * item.quantity;
+  }, 0);
 }
 
 /**
