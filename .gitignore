@@ -98,6 +98,16 @@ quick-check.js
 kill-all-node.bat
 start-clean.bat
 
+# 临时测试脚本（TypeScript）
+# 仅忽略以 test-/check-/verify- 前缀命名的 .ts 脚本
+# 注意：不影响正式 scripts 下的其他 .ts 文件
+scripts/test-*.ts
+scripts/check-*.ts
+scripts/verify-*.ts
+test-*.ts
+check-*.ts
+verify-*.ts
+
 # 清理规则：临时文件和旧版本文件
 temp*.txt
 jest-output.txt
