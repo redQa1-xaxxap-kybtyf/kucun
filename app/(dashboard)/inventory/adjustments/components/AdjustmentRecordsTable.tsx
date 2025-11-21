@@ -193,8 +193,10 @@ export function AdjustmentRecordsTable({
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {adjustment.batchNumber || '-'}
                   </TableCell>
-                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {adjustment.product?.piecesPerUnit || '-'}
+                  <TableCell className="text-center text-xs text-[hsl(var(--color-text-secondary))]">
+                    {adjustment.product?.piecesPerUnit
+                      ? `${adjustment.product.piecesPerUnit}片/件`
+                      : '-'}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <div className="flex flex-col gap-0.5">
