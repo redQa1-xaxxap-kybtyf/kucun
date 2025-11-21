@@ -6,16 +6,27 @@ import { useEffect, useState } from 'react';
 
 import {
   InboundCostField,
-  InboundOptionalFields,
   InboundQuantityFields,
   InboundReasonField,
   InboundSpecificationFields,
+  InboundSupplierField,
+  InboundTotalCostField,
 } from '@/components/inventory/forms/inbound-form-fields';
 import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-toolbar';
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
 import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Form } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   calculateFinalQuantity,
   useInboundForm,
@@ -203,21 +214,74 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                   />
                 </div>
 
-                {/* 入库数量信息 */}
+                {/* 按照要求的顺序排列字段 */}
+                {/* 1. 产品信息已在上面的产品选择区域显示 */}
+
+                {/* 2. 供应商 */}
+                <InboundSupplierField form={form} />
+
+                {/* 3. 批次号 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="batchNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold text-gray-900">
+                          批次号/色号 *
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="请输入批次号或色号"
+                            className="h-9"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-xs text-gray-500">
+                          瓷砖行业要求：同一项目必须使用相同批次/色号
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* 4. 数量、单位、每件片数 */}
                 <InboundQuantityFields form={form} />
 
-                {/* 产品规格信息 */}
+                {/* 5. 产品规格信息（每件重量） */}
                 <InboundSpecificationFields form={form} />
 
-                {/* 单位成本 */}
-                <InboundCostField form={form} />
+                {/* 6. 采购单价和总价 */}
+                <div className="grid grid-cols-2 gap-4">
+                  <InboundCostField form={form} />
+                  <InboundTotalCostField form={form} />
+                </div>
 
-                {/* 入库原因 */}
+                {/* 7. 入库原因 */}
                 <InboundReasonField form={form} />
 
-                {/* 可选信息 */}
+                {/* 8. 备注 */}
                 <div className="border-t pt-4">
-                  <InboundOptionalFields form={form} />
+                  <FormField
+                    control={form.control}
+                    name="remarks"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium text-gray-600">
+                          备注
+                        </FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="请输入备注信息（可选）"
+                            className="min-h-[36px] resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
               </form>
             </Form>

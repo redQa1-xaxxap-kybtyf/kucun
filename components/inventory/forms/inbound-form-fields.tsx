@@ -4,6 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useMemo } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
 
+import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import {
   FormControl,
   FormDescription,
@@ -241,6 +242,68 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
             请填写每片的成本。例如：每件100元，每件10片，则填写10元
           </FormDescription>
           <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+// 供应商选择字段
+export function InboundSupplierField({ form }: InboundFormFieldsProps) {
+  return (
+    <FormField
+      control={form.control}
+      name="supplierId"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-sm font-semibold text-gray-900">
+            供应商 *
+          </FormLabel>
+          <FormControl>
+            <SupplierSelector
+              value={field.value}
+              onValueChange={field.onChange}
+              placeholder="请选择供应商"
+              onBlur={field.onBlur}
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
+// 总价显示字段（只读）
+export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
+  const watchedQuantity = form.watch('quantity');
+  const watchedUnitCost = form.watch('unitCost');
+
+  const totalCost = useMemo(() => {
+    if (!watchedQuantity || !watchedUnitCost) return 0;
+    return watchedQuantity * watchedUnitCost;
+  }, [watchedQuantity, watchedUnitCost]);
+
+  return (
+    <FormField
+      control={form.control}
+      name="totalCost"
+      render={() => (
+        <FormItem>
+          <FormLabel className="text-sm font-medium text-gray-600">
+            总价（元）
+          </FormLabel>
+          <FormControl>
+            <Input
+              type="text"
+              readOnly
+              className="bg-muted h-9"
+              value={totalCost > 0 ? `¥${totalCost.toFixed(2)}` : ''}
+            />
+          </FormControl>
+          <FormDescription className="text-xs text-gray-500">
+            自动计算：数量 × 单价
+          </FormDescription>
         </FormItem>
       )}
     />

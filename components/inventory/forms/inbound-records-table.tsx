@@ -198,10 +198,10 @@ function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
           <TableHead>产品名称</TableHead>
           <TableHead>规格</TableHead>
           <TableHead>每件片数</TableHead>
+          <TableHead>批次号</TableHead>
           <TableHead>重量</TableHead>
           <TableHead>入库数量</TableHead>
           <TableHead>操作类型</TableHead>
-          <TableHead>批次号</TableHead>
           <TableHead>操作时间</TableHead>
           <TableHead>备注</TableHead>
         </TableRow>
@@ -245,6 +245,9 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
         {piecesPerUnit || '-'}
       </TableCell>
       <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {record.batchNumber || '-'}
+      </TableCell>
+      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
         {getActualWeight(record)}
       </TableCell>
       <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
@@ -259,9 +262,6 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
         >
           {getOperationTypeLabel(record.reason)}
         </Badge>
-      </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {record.batchNumber || '-'}
       </TableCell>
       <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
         <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">

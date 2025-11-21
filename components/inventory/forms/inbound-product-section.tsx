@@ -136,7 +136,13 @@ export function InboundProductSection({
       {/* 选中产品信息展示 */}
       {selectedProduct && (
         <div className="rounded-md border border-green-300 bg-green-50/50 p-3">
-          <div className="grid grid-cols-5 gap-x-4 gap-y-2 text-xs">
+          <div className="grid grid-cols-6 gap-x-4 gap-y-2 text-xs">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-gray-600">产品名称</span>
+              <span className="font-semibold text-gray-900">
+                {selectedProduct.label}
+              </span>
+            </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-gray-600">产品编码</span>
               <span className="font-semibold text-blue-700">
@@ -144,9 +150,9 @@ export function InboundProductSection({
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-gray-600">产品名称</span>
-              <span className="font-semibold text-gray-900">
-                {selectedProduct.label}
+              <span className="text-gray-600">规格</span>
+              <span className="font-medium text-gray-800">
+                {selectedProduct.specification || '—'}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">

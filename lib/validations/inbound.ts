@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 
+import type { InboundReason } from '@/lib/types/inbound';
+
 export type { InboundReason } from '@/lib/types/inbound';
 
 // 入库原因验证
@@ -403,7 +405,11 @@ export const inboundFormSchema = z
       .optional()
       .or(z.literal('')),
 
-    supplierId: z.string().uuid('供应商ID格式不正确').optional(),
+    // 供应商字段（必填）
+    supplierId: z
+      .string({ message: '供应商为必填项' })
+      .min(1, '请选择供应商')
+      .uuid('供应商ID格式不正确'),
 
     productionDate: z
       .string()

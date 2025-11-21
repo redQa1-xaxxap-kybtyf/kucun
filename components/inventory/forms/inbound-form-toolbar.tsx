@@ -16,6 +16,7 @@ interface InboundFormToolbarProps {
   isSubmitting: boolean;
   onReset: () => void;
   onSubmit: () => void;
+  onSelectProduct?: () => void; // 新增：选择产品入口（F3）
 }
 
 /**
