@@ -36,6 +36,10 @@ import {
   type PriceType,
 } from '@/hooks/use-price-history';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
+import {
+  useCreateSalesOrder,
+  useUpdateSalesOrder,
+} from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
@@ -67,11 +71,6 @@ import {
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
 import { PrepaymentSection } from './erp-sales-order-form/PrepaymentSection';
-
-import {
-  useCreateSalesOrder,
-  useUpdateSalesOrder,
-} from '@/hooks/use-sales-order-mutations';
 
 const UNIT_MAPPING: Record<string, string> = {
   piece: '件',

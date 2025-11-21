@@ -1,4 +1,4 @@
-import { Package, Plus } from 'lucide-react';
+import { Clock, Package, Plus } from 'lucide-react';
 import React from 'react';
 import type {
   FieldArrayWithId,
@@ -6,6 +6,7 @@ import type {
   UseFormReturn,
 } from 'react-hook-form';
 
+import { HistoricalTemporaryProductDialog } from '@/components/sales-orders/historical-temporary-product-dialog';
 import { OrderItemRow } from '@/components/sales-orders/order-item-row';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,6 +28,7 @@ import type {
   SalesOrderType,
   TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
+import type { HistoricalTemporaryProduct } from '@/lib/types/temporary-product';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 interface OrderItemsSectionProps {
