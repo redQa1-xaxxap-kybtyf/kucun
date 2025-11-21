@@ -21,6 +21,17 @@ import type {
 
 import { roundToTwoDecimals } from './factory-shipment-expense-service';
 
+/**
+ * 获取实际片数（考虑单位转换）
+ * 如果单位是"件"且有每件片数，则转换为片数；否则直接返回数量
+ */
+function getActualQuantityInPieces(item: FactoryShipmentOrderItem): number {
+  if (item.unit === '件' && item.piecesPerUnit && item.piecesPerUnit > 0) {
+    return item.quantity * item.piecesPerUnit;
+  }
+  return item.quantity;
+}
+
 // ==================== 辅助工具函数 ====================
 
 /**
@@ -116,8 +127,11 @@ export function calculateItemProfit(
   allocatedExpense: number
 ): ItemProfitResult {
   // ✅ 修复：使用 unitCost 作为进货单价，unitPrice 作为销售单价
-  // 采购成本 = 进货单价 × 数量
-  const purchaseCost = (item.unitCost || item.unitPrice) * item.quantity;
+  // ✅ 修复：考虑单位转换（件 → 片）
+  const actualQuantity = getActualQuantityInPieces(item);
+
+  // 采购成本 = 进货单价 × 实际片数
+  const purchaseCost = (item.unitCost || item.unitPrice) * actualQuantity;
   const revenue = receivableAmount; // 应收金额
   const expense = allocatedExpense; // 分摊费用
 
@@ -128,11 +142,11 @@ export function calculateItemProfit(
   const profitMargin =
     revenue > 0 ? roundToTwoDecimals((profitAmount / revenue) * 100) : 0;
 
-  // 最终单位成本 = 进货单价 + 分摊费用 / 数量
+  // 最终单位成本 = 进货单价 + 分摊费用 / 实际片数
   const finalUnitCost =
-    item.quantity > 0
+    actualQuantity > 0
       ? roundToTwoDecimals(
-          (item.unitCost || item.unitPrice) + expense / item.quantity
+          (item.unitCost || item.unitPrice) + expense / actualQuantity
         )
       : item.unitCost || item.unitPrice;
 
@@ -161,9 +175,11 @@ export function calculateSelfItemCost(
   allocatedExpense: number
 ): number {
   // ✅ 修复：使用 unitCost 作为进货单价
+  // ✅ 修复：考虑单位转换（件 → 片）
   const purchasePrice = item.unitCost || item.unitPrice;
-  return item.quantity > 0
-    ? roundToTwoDecimals(purchasePrice + allocatedExpense / item.quantity)
+  const actualQuantity = getActualQuantityInPieces(item);
+  return actualQuantity > 0
+    ? roundToTwoDecimals(purchasePrice + allocatedExpense / actualQuantity)
     : purchasePrice;
 }
 
@@ -212,7 +228,9 @@ export function calculateOrderProfit(
     } else {
       // 自有货：只计算成本
       // ✅ 修复：使用 unitCost 作为进货单价
-      const purchaseCost = (item.unitCost || item.unitPrice) * item.quantity;
+      // ✅ 修复：考虑单位转换（件 → 片）
+      const actualQuantity = getActualQuantityInPieces(item);
+      const purchaseCost = (item.unitCost || item.unitPrice) * actualQuantity;
       const itemCost = purchaseCost + allocatedExpense;
       selfCostAmount += itemCost;
     }

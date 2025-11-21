@@ -61,10 +61,16 @@ export function calculateSuggestedPrice(
   // 进货单价
   const unitCost = item.unitCost || item.unitPrice;
 
-  // 最终单位成本 = 进货单价 + 分摊运费 / 数量
+  // 计算实际片数：如果单位是"件"，需要转换为片数
+  let actualQuantityInPieces = item.quantity;
+  if (item.unit === '件' && item.piecesPerUnit && item.piecesPerUnit > 0) {
+    actualQuantityInPieces = item.quantity * item.piecesPerUnit;
+  }
+
+  // 最终单位成本 = 进货单价 + 分摊运费 / 实际片数
   const finalUnitCost =
-    item.quantity > 0
-      ? roundToTwoDecimals(unitCost + allocatedExpense / item.quantity)
+    actualQuantityInPieces > 0
+      ? roundToTwoDecimals(unitCost + allocatedExpense / actualQuantityInPieces)
       : unitCost;
 
   // 建议销售价 = 最终单位成本 × (1 + 目标利润率)

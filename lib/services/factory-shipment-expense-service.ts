@@ -23,35 +23,51 @@ import type {
 // ==================== 辅助工具函数 ====================
 
 /**
+ * 获取实际片数（考虑单位转换）
+ * 如果单位是"件"且有每件片数，则转换为片数；否则直接返回数量
+ */
+function getActualQuantityInPieces(item: FactoryShipmentOrderItem): number {
+  if (item.unit === '件' && item.piecesPerUnit && item.piecesPerUnit > 0) {
+    return item.quantity * item.piecesPerUnit;
+  }
+  return item.quantity;
+}
+
+/**
  * 计算订单总金额（基于进货价）
  * ✅ 修复：使用 unitCost 作为进货价，而非 unitPrice（销售价）
+ * ✅ 修复：考虑单位转换（件 → 片）
  */
 export function calculateTotalValue(items: FactoryShipmentOrderItem[]): number {
   return items.reduce((sum, item) => {
     const purchasePrice = item.unitCost || item.unitPrice;
-    return sum + purchasePrice * item.quantity;
+    const actualQuantity = getActualQuantityInPieces(item);
+    return sum + purchasePrice * actualQuantity;
   }, 0);
 }
 
 /**
  * 计算订单总重量
+ * ✅ 修复：考虑单位转换（件 → 片）
  */
 export function calculateTotalWeight(
   items: FactoryShipmentOrderItem[]
 ): number {
   return items.reduce((sum, item) => {
     const weight = item.weight || item.manualWeight || 0;
-    return sum + weight * item.quantity;
+    const actualQuantity = getActualQuantityInPieces(item);
+    return sum + weight * actualQuantity;
   }, 0);
 }
 
 /**
- * 计算订单总数量
+ * 计算订单总数量（片数）
+ * ✅ 修复：考虑单位转换（件 → 片）
  */
 export function calculateTotalQuantity(
   items: FactoryShipmentOrderItem[]
 ): number {
-  return items.reduce((sum, item) => sum + item.quantity, 0);
+  return items.reduce((sum, item) => sum + getActualQuantityInPieces(item), 0);
 }
 
 /**
@@ -280,10 +296,11 @@ export function allocateExpensesByWeight(
     return allocateExpensesByValue(items, totalExpenses);
   }
 
-  // 按重量比例分摊
+  // 按重量比例分摊（考虑单位转换）
   items.forEach(item => {
     const weight = item.weight || item.manualWeight || 0;
-    const itemWeight = weight * item.quantity;
+    const actualQuantity = getActualQuantityInPieces(item);
+    const itemWeight = weight * actualQuantity;
     const ratio = itemWeight / totalWeight;
     const allocated = roundToTwoDecimals(totalExpenses * ratio);
     allocations.set(item.id, allocated);
@@ -324,9 +341,10 @@ export function allocateExpensesByQuantity(
     return adjustAllocationForRoundingError(allocations, totalExpenses);
   }
 
-  // 按数量比例分摊
+  // 按数量比例分摊（考虑单位转换）
   items.forEach(item => {
-    const ratio = item.quantity / totalQuantity;
+    const actualQuantity = getActualQuantityInPieces(item);
+    const ratio = actualQuantity / totalQuantity;
     const allocated = roundToTwoDecimals(totalExpenses * ratio);
     allocations.set(item.id, allocated);
   });
