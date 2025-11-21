@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { TableCell, TableRow } from '@/components/ui/table';
 import type { Product } from '@/lib/types/product';
+import { cn } from '@/lib/utils';
 import type { CreatePurchaseOrderData } from '@/lib/validations/purchase-order';
 
 interface PurchaseOrderItemRowProps {
@@ -61,23 +62,28 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
     const amount = Number(watchedQuantity || 0) * Number(watchedUnitPrice || 0);
 
     return (
-      <TableRow className="h-12">
-        <TableCell className="border-r py-2 text-center text-sm">
+      <TableRow className="h-10 text-[13px]">
+        {/* 冻结列：序号 */}
+        <TableCell className="sticky left-0 z-10 border-r bg-white py-2 text-center text-sm">
           {index + 1}
         </TableCell>
 
+        {/* 冻结列：产品名称（选择器） */}
         <ProductSelectorCell
           form={form}
           index={index}
           onProductChange={onProductChange}
+          cellClassName="sticky left-[50px] z-10 w-[200px] bg-white"
         />
-        <SupplierSelectorCell form={form} index={index} />
+        {/* 冻结列：产品编码 */}
         <TextInputCell
           form={form}
           index={index}
           name={`items.${index}.productCode`}
           placeholder="产品编码"
+          cellClassName="sticky left-[250px] z-10 w-[140px] bg-white"
         />
+        <SupplierSelectorCell form={form} index={index} />
         <TextInputCell
           form={form}
           index={index}
@@ -132,11 +138,17 @@ function ProductSelectorCell({
   form,
   index,
   onProductChange,
+  cellClassName,
 }: FormCellProps & {
   onProductChange: (index: number, product: Product | null) => void;
+  cellClassName?: string;
 }) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell
+      className={`border-r py-2 ${cellClassName ?? ''}`}
+      data-selector="product"
+      data-row-index={index}
+    >
       <FormField
         control={form.control}
         name={`items.${index}.productId`}
@@ -185,11 +197,17 @@ interface TextInputCellProps extends FormCellProps {
     | `items.${number}.specification`
     | `items.${number}.remarks`;
   placeholder: string;
+  cellClassName?: string;
 }
 
-function TextInputCell({ form, name, placeholder }: TextInputCellProps) {
+function TextInputCell({
+  form,
+  name,
+  placeholder,
+  cellClassName,
+}: TextInputCellProps) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className={cn('border-r py-2', cellClassName)}>
       <FormField
         control={form.control}
         name={name}

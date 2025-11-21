@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -124,38 +124,73 @@ function PurchaseOrderItemsTableView({
   onQuantityChange,
   onUnitPriceChange,
 }: PurchaseOrderItemsTableViewProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  const focusNewRowProductCell = useCallback((rowIndex: number) => {
+    if (!containerRef.current) return;
+    // 延迟到下一帧，等待DOM渲染
+    requestAnimationFrame(() => {
+      const cell = containerRef.current?.querySelector(
+        `[data-selector="product"][data-row-index="${rowIndex}"] button[role="combobox"]`
+      ) as HTMLButtonElement | null;
+      cell?.focus();
+    });
+  }, []);
+
+  const handleAddAndFocus = useCallback(() => {
+    const nextIndex = fields.length; // 新行的索引
+    onAddItem();
+    // 聚焦到新行的产品选择器触发点
+    focusNewRowProductCell(nextIndex);
+  }, [fields.length, onAddItem, focusNewRowProductCell]);
+
   return (
-    <div className="space-y-3">
-      <div className="flex justify-end">
+    <div
+      ref={containerRef}
+      className="space-y-3"
+      onKeyDown={e => {
+        if (e.key === 'F3') {
+          e.preventDefault();
+          handleAddAndFocus();
+        }
+      }}
+    >
+      <div className="flex items-center justify-between">
         <Button
           type="button"
-          onClick={onAddItem}
+          onClick={handleAddAndFocus}
           size="sm"
-          variant="outline"
+          variant="default"
           className="h-8"
+          aria-label="选择产品"
+          title="选择产品(F3)"
         >
           <Plus className="mr-1 h-3 w-3" />
-          添加产品
+          选择产品(F3)
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
+      <div className="relative overflow-x-auto rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="h-9 w-[50px] border-r py-2 text-xs">
+              {/* 冻结列：序号 */}
+              <TableHead className="bg-muted/50 sticky left-0 z-10 h-9 w-[50px] border-r py-2 text-xs">
                 序号
               </TableHead>
-              <TableHead className="h-9 min-w-[200px] border-r py-2 text-xs">
-                产品 *
+              {/* 冻结列：产品名称 */}
+              <TableHead className="bg-muted/50 sticky left-[50px] z-10 h-9 w-[200px] border-r py-2 text-xs">
+                产品名称 *
               </TableHead>
+              {/* 冻结列：产品编码 */}
+              <TableHead className="bg-muted/50 sticky left-[250px] z-10 h-9 w-[140px] min-w-[120px] border-r py-2 text-xs">
+                产品编码 *
+              </TableHead>
+              {/* 非冻结列 */}
               <TableHead className="h-9 min-w-[180px] border-r py-2 text-xs">
                 供应商 *
               </TableHead>
-              <TableHead className="h-9 min-w-[150px] border-r py-2 text-xs">
-                产品编码 *
-              </TableHead>
-              <TableHead className="h-9 min-w-[150px] border-r py-2 text-xs">
+              <TableHead className="h-9 max-w-[220px] min-w-[200px] border-r py-2 text-xs">
                 规格
               </TableHead>
               <TableHead className="h-9 min-w-[180px] border-r py-2 text-xs">
@@ -164,7 +199,7 @@ function PurchaseOrderItemsTableView({
               <TableHead className="h-9 w-[100px] border-r py-2 text-right text-xs">
                 数量 *
               </TableHead>
-              <TableHead className="h-9 w-[80px] border-r py-2 text-xs">
+              <TableHead className="h-9 w-[80px] border-r py-2 text-center text-xs">
                 单位
               </TableHead>
               <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
