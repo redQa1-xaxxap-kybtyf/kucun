@@ -55,47 +55,32 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
 
   // 搜索条件 - 性能优化（避免全表扫描）
-  // ✅ Bug修复：允许单字符搜索，优化用户体验
+  // ✅ Bug修复：产品编码使用包含匹配,支持搜索TC152中的"152"
   // ✅ 优化策略：
   // - 空字符串或undefined：不加搜索条件，正常查询
-  // - 长度=1（单字符）：
-  //     • 前缀匹配：p.code（产品编码）
-  //     • 包含匹配：p.name（产品名称，支持中文单字搜索）
-  // - 长度=2~4（短关键词）：
-  //     • 前缀匹配（可命中索引）：p.code, i.batch_number
-  //     • 包含匹配：p.name（支持中文短词搜索）
-  // - 长度>=5（长关键词）：
-  //     • 前缀匹配：p.code, i.batch_number
-  //     • 包含匹配：p.name, i.location（用户输入更完整，性能损失可接受）
+  // - 所有长度：
+  //     • 包含匹配（支持任意位置搜索）：p.code, p.name
+  //     • 前缀匹配（可命中索引）：i.batch_number
+  //     • 长关键词(>=5)额外包含：i.location
   if (typeof params.search === 'string' && params.search.trim()) {
     const s = params.search.trim();
+    const likeAny = `%${s}%`;
+    const likePrefix = `${s}%`;
 
-    if (s.length === 1) {
-      // ✅ 单字符搜索：支持产品编码前缀和产品名称包含匹配
-      const likePrefix = `${s}%`;
-      const likeAny = `%${s}%`;
+    if (s.length >= 5) {
+      // ✅ 长关键词：包含匹配所有字段
       conditions.push(Prisma.sql`(
-        p.code LIKE ${likePrefix} OR
-        p.name LIKE ${likeAny}
-      )`);
-    } else if (s.length >= 2 && s.length <= 4) {
-      // ✅ 短关键词：前缀匹配 + 产品名称包含匹配
-      const likePrefix = `${s}%`;
-      const likeAny = `%${s}%`;
-      conditions.push(Prisma.sql`(
-        p.code LIKE ${likePrefix} OR
-        i.batch_number LIKE ${likePrefix} OR
-        p.name LIKE ${likeAny}
-      )`);
-    } else if (s.length >= 5) {
-      // ✅ 长关键词：前缀匹配 + 包含匹配
-      const likePrefix = `${s}%`;
-      const likeAny = `%${s}%`;
-      conditions.push(Prisma.sql`(
-        p.code LIKE ${likePrefix} OR
-        i.batch_number LIKE ${likePrefix} OR
+        p.code LIKE ${likeAny} OR
         p.name LIKE ${likeAny} OR
+        i.batch_number LIKE ${likePrefix} OR
         i.location LIKE ${likeAny}
+      )`);
+    } else {
+      // ✅ 短关键词(1-4字符)：包含匹配产品编码和名称,前缀匹配批次号
+      conditions.push(Prisma.sql`(
+        p.code LIKE ${likeAny} OR
+        p.name LIKE ${likeAny} OR
+        i.batch_number LIKE ${likePrefix}
       )`);
     }
   }
