@@ -631,6 +631,29 @@ const envSchema = z.object({
     .default('true')
     .transform(val => val === 'true')
     .describe('是否启用运输查询自动调度'),
+
+  // 阶段2 Feature Flags（费用自动化）
+  EXPENSE_AUTO_CREATE: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform(val => val === 'true')
+    .describe('是否自动从订单/厂家直发创建公司承担费用记录'),
+  EXPENSE_AUTO_APPROVE: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(val => val === 'true')
+    .describe('是否自动审核公司承担费用记录'),
+
+  // 阶段3 Feature Flags（费用→应付账款集成）
+  EXPENSE_TO_PAYABLE_ENABLED: z
+    .enum(['true', 'false'])
+    .default('true')
+    .transform(val => val === 'true')
+    .describe('是否启用费用审批后自动创建/更新应付款记录'),
+  EXPENSE_TO_PAYABLE_STRATEGY: z
+    .enum(['merge', 'standalone'])
+    .default('merge')
+    .describe('应付款创建策略：merge=按供应商+来源合并；standalone=独立创建'),
 });
 
 // 环境变量类型推断

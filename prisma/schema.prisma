@@ -963,6 +963,7 @@ model PayableRecord {
   supplier          Supplier           @relation(fields: [supplierId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   user              User               @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   paymentOutRecords PaymentOutRecord[]
+  expenseRecords    ExpenseRecord[]
 
   @@index([supplierId], map: "idx_payable_records_supplier")
   @@index([userId], map: "idx_payable_records_user")
@@ -1077,34 +1078,44 @@ model ShippingQuery {
 }
 
 model ExpenseRecord {
-  id            String   @id @default(uuid()) @db.Char(36)
-  expenseNumber String   @unique @map("expense_number") @db.VarChar(100)
-  expenseType   String   @map("expense_type") @db.VarChar(32)
-  expenseName   String   @map("expense_name") @db.VarChar(100)
-  expenseAmount Float    @map("expense_amount")
-  expenseDate   DateTime @map("expense_date")
-  relatedType   String?  @map("related_type") @db.VarChar(32)
-  relatedId     String?  @map("related_id") @db.Char(36)
-  relatedNumber String?  @map("related_number") @db.VarChar(100)
-  remarks       String?  @db.Text
-  attachments   String?  @db.Text
-  status        String   @default("draft") @db.VarChar(32)
-  approvedById  String?  @map("approved_by_id") @db.Char(36)
-  approvedAt    DateTime? @map("approved_at")
-  cancelReason  String?  @map("cancel_reason") @db.Text
-  userId        String   @map("user_id") @db.Char(36)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid()) @db.Char(36)
+  expenseNumber   String   @unique @map("expense_number") @db.VarChar(100)
+  expenseType     String   @map("expense_type") @db.VarChar(32)
+  expenseName     String   @map("expense_name") @db.VarChar(100)
+  expenseAmount   Float    @map("expense_amount")
+  expenseDate     DateTime @map("expense_date")
+  relatedType     String?  @map("related_type") @db.VarChar(32)
+  relatedId       String?  @map("related_id") @db.Char(36)
+  relatedNumber   String?  @map("related_number") @db.VarChar(100)
+  remarks         String?  @db.Text
+  attachments     String?  @db.Text
+  status          String   @default("draft") @db.VarChar(32)
+  approvedById    String?  @map("approved_by_id") @db.Char(36)
+  approvedAt      DateTime? @map("approved_at")
+  cancelReason    String?  @map("cancel_reason") @db.Text
+  userId          String   @map("user_id") @db.Char(36)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  // 新增：支付状态与应付款关联、幂等键
+  paymentStatus   String   @default("unpaid") @map("payment_status") @db.VarChar(16)
+  payableId       String?  @map("payable_id") @db.Char(36)
+  idempotencyKey  String?  @unique @map("idempotency_key") @db.VarChar(191)
 
   // 关系定义
   user       User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   approvedBy User? @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  payable    PayableRecord? @relation(fields: [payableId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  // 可选：直接冗余存储供应商ID，便于筛选与统计（来源为销售订单/厂家直发）
+  supplierId String? @map("supplier_id") @db.Char(36)
 
   @@index([expenseType], map: "idx_expense_records_type")
   @@index([expenseDate], map: "idx_expense_records_date")
   @@index([userId], map: "idx_expense_records_user")
   @@index([relatedType, relatedId], map: "idx_expense_records_related")
   @@index([status], map: "idx_expense_records_status")
+  @@index([paymentStatus], map: "idx_expense_records_payment_status")
+  @@index([supplierId], map: "idx_expense_records_supplier")
   @@map("expense_records")
 }
 
