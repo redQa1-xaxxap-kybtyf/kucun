@@ -1,5 +1,6 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
   // 图片优化配置
   images: {
     domains: ['localhost'],
@@ -63,14 +64,16 @@ const nextConfig = {
 
       // 排除服务器端专用包
       config.externals = config.externals || [];
-      config.externals.push({
-        ioredis: 'ioredis',
-        // 🔒 排除 Puppeteer 相关包（服务器端专用）
-        puppeteer: 'puppeteer',
-        'puppeteer-core': 'puppeteer-core',
-        'puppeteer-extra': 'puppeteer-extra',
-        'puppeteer-extra-plugin-stealth': 'puppeteer-extra-plugin-stealth',
-      });
+      if (Array.isArray(config.externals)) {
+        config.externals.push({
+          ioredis: 'ioredis',
+          // 排除 Puppeteer 相关包（服务器端专用）
+          puppeteer: 'puppeteer',
+          'puppeteer-core': 'puppeteer-core',
+          'puppeteer-extra': 'puppeteer-extra',
+          'puppeteer-extra-plugin-stealth': 'puppeteer-extra-plugin-stealth',
+        });
+      }
 
       // 忽略警告
       config.ignoreWarnings = [
@@ -87,7 +90,7 @@ const nextConfig = {
         {
           module: /node_modules\/ioredis/,
         },
-        // 🔒 忽略 Puppeteer 相关包的警告
+        // 忽略 Puppeteer 相关包的警告
         {
           module: /node_modules\/puppeteer/,
         },
@@ -104,7 +107,7 @@ const nextConfig = {
     return config;
   },
 
-  // 🔒 服务器端专用包配置（Puppeteer 相关包只在服务器端使用）
+  // 服务器端专用包配置（Puppeteer 相关包只在服务器端使用）
   // Next.js 15+ 已将此配置从 experimental 移至顶层
   serverExternalPackages: [
     'puppeteer',
@@ -125,4 +128,4 @@ const nextConfig = {
   //   : undefined,
 };
 
-module.exports = nextConfig;
+export default nextConfig;
