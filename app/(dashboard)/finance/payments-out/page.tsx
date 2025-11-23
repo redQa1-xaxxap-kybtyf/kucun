@@ -318,7 +318,7 @@ async function getPaymentsOutData(searchParams: {
 export default async function PaymentsOutPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     limit?: string;
     search?: string;
@@ -328,9 +328,10 @@ export default async function PaymentsOutPage({
     sortOrder?: string;
     startDate?: string;
     endDate?: string;
-  };
+  }>;
 }) {
-  const params = searchParams;
+  // ✅ Next.js 15: searchParams 需要 await
+  const params = await searchParams;
   const initialData = await getPaymentsOutData(params);
 
   const safeSortOrder =
