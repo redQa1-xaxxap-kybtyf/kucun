@@ -540,3 +540,80 @@ export class DateTimeTransformer {
     return transformed as T;
   }
 }
+
+/**
+ * 获取相对时间文本(中文)
+ * 24小时内显示相对时间,超过24小时显示标准日期格式
+ *
+ * @param input - 日期输入
+ * @returns 相对时间文本
+ *
+ * @example
+ * getRelativeTimeText(new Date()) // "刚刚"
+ * getRelativeTimeText(Date.now() - 30 * 60 * 1000) // "30分钟前"
+ * getRelativeTimeText(Date.now() - 5 * 3600 * 1000) // "5小时前"
+ * getRelativeTimeText(Date.now() - 25 * 3600 * 1000) // "2025-01-01 10:00"
+ */
+export function getRelativeTimeText(input: DateInput): string {
+  const date = parseDate(input);
+  if (!date) {
+    return '';
+  }
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  // 未来时间,显示标准格式
+  if (diffMs < 0) {
+    return formatDateTime(date, DATE_FORMATS.DATETIME_SHORT);
+  }
+
+  // 小于1分钟
+  if (diffMins < 1) {
+    return '刚刚';
+  }
+
+  // 小于1小时
+  if (diffMins < 60) {
+    return `${diffMins}分钟前`;
+  }
+
+  // 小于24小时
+  if (diffHours < 24) {
+    return `${diffHours}小时前`;
+  }
+
+  // 超过24小时,显示标准日期时间格式(不含秒)
+  return formatDateTime(date, DATE_FORMATS.DATETIME_SHORT);
+}
+
+/**
+ * 判断日期是否在24小时内
+ *
+ * @param input - 日期输入
+ * @returns 是否在24小时内
+ */
+export function isWithin24Hours(input: DateInput): boolean {
+  const date = parseDate(input);
+  if (!date) {
+    return false;
+  }
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = diffMs / 3600000;
+
+  return diffHours >= 0 && diffHours < 24;
+}
+
+/**
+ * 格式化完整时间戳(用于Tooltip显示)
+ *
+ * @param input - 日期输入
+ * @returns 完整时间戳字符串
+ */
+export function formatFullTimestamp(input: DateInput): string {
+  return formatDateTime(input, DATE_FORMATS.DATETIME);
+}

@@ -9,7 +9,9 @@ import { Eye, Package } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
+import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,7 +26,6 @@ import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
-import { formatDate } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -209,7 +210,6 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                   item.quantity,
                   item.reservedQuantity || 0
                 );
-                const formattedDate = formatDate(item.updatedAt);
                 const reservedDisplay = (() => {
                   const reserved = item.reservedQuantity ?? 0;
                   if (reserved <= 0) {
@@ -249,7 +249,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     >
                       {isFirstInGroup ? (
                         <div className="flex flex-col gap-0.5">
-                          <span>{group.productCode}</span>
+                          <CopyableText text={group.productCode} />
                           {group.items.length > 1 && (
                             <span className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
                               共 {group.items.length} 个批次
@@ -257,7 +257,10 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                           )}
                         </div>
                       ) : (
-                        `└ ${group.productCode}`
+                        <CopyableText
+                          text={group.productCode}
+                          displayText={`└ ${group.productCode}`}
+                        />
                       )}
                     </TableCell>
 
@@ -341,7 +344,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 批次号 */}
                     <TableCell className="font-mono font-medium text-[hsl(var(--color-primary))]">
-                      {item.batchNumber || '-'}
+                      {item.batchNumber ? (
+                        <CopyableText text={item.batchNumber} />
+                      ) : (
+                        '-'
+                      )}
                     </TableCell>
 
                     {/* 库存数量 */}
@@ -391,8 +398,8 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 最后更新 */}
-                    <TableCell className="text-muted-foreground text-xs">
-                      {formattedDate}
+                    <TableCell className="text-xs">
+                      <RelativeTime date={item.updatedAt} />
                     </TableCell>
 
                     {/* 操作 */}

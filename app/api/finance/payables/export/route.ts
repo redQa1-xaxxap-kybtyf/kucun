@@ -16,7 +16,7 @@ import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ExportAuditService } from '@/lib/services/export-audit-service';
-import { payablesQuerySchema } from '@/lib/validations/payment';
+import { payableRecordQuerySchema } from '@/lib/validations/payable';
 
 /**
  * POST /api/finance/payables/export - 导出应付款
@@ -30,10 +30,10 @@ export const POST = withAuth(
       const body = await request.json();
       const { format = 'excel', ...restBody } = body ?? {};
 
-      const validationResult = payablesQuerySchema.safeParse({
+      const validationResult = payableRecordQuerySchema.safeParse({
         ...restBody,
-        page: 1,
-        limit: restBody?.limit ?? 50000, // 限制最大5万条
+        page: '1',
+        limit: String(restBody?.limit ?? 50000), // 限制最大5万条
       });
 
       if (!validationResult.success) {

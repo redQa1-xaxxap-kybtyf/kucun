@@ -2,8 +2,10 @@
 
 import { Package, User } from 'lucide-react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
+import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/pagination';
 import {
@@ -20,7 +22,6 @@ import {
   OUTBOUND_TYPE_VARIANTS,
   type OutboundRecord,
 } from '@/lib/types/inventory';
-import { formatDateTimeCN } from '@/lib/utils/datetime';
 
 interface OutboundRecordsTableProps {
   records: OutboundRecord[];
@@ -144,7 +145,11 @@ export function OutboundRecordsTable({
                   className="h-10 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                 >
                   <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
-                    {record.productCode}
+                    {record.productCode ? (
+                      <CopyableText text={record.productCode} />
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     {record.productName}
@@ -153,7 +158,11 @@ export function OutboundRecordsTable({
                     {formatSpecification(record.productSpecification) || '-'}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {record.batchNumber || '-'}
+                    {record.batchNumber ? (
+                      <CopyableText text={record.batchNumber} />
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {record.piecesPerUnit || '-'}
@@ -181,7 +190,7 @@ export function OutboundRecordsTable({
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
                       <User className="h-3 w-3" />
-                      {formatDateTimeCN(record.createdAt)}
+                      <RelativeTime date={record.createdAt} />
                     </div>
                   </TableCell>
                 </TableRow>

@@ -190,7 +190,10 @@
       "Bash(xxd:*)",
       "mcp__playwright__browser_run_code",
       "Bash(xargs:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(do if grep -q \"searchParams\" \"$file\")",
+      "Bash(then if ! grep -q \"searchParams: Promise\" \"$file\")",
+      "Bash(then echo \"$file\")"
     ],
     "deny": [],
     "ask": []

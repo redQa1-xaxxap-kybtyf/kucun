@@ -2,8 +2,10 @@
 
 import { Package, User } from 'lucide-react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
+import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/pagination';
 import {
@@ -18,7 +20,6 @@ import {
   INBOUND_REASON_LABELS,
   type InboundRecord as BaseInboundRecord,
 } from '@/lib/types/inbound';
-import { formatDateTime } from '@/lib/utils/datetime';
 
 interface InboundRecordWithProduct
   extends Omit<BaseInboundRecord, 'product' | 'batchSpecification'> {
@@ -233,7 +234,11 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
   return (
     <TableRow className="h-12 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]">
       <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
-        {record.product?.code || record.productId}
+        {record.product?.code ? (
+          <CopyableText text={record.product.code} />
+        ) : (
+          record.productId
+        )}
       </TableCell>
       <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
         {record.product?.name || '未知产品'}
@@ -245,7 +250,7 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
         {piecesPerUnit || '-'}
       </TableCell>
       <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {record.batchNumber || '-'}
+        {record.batchNumber ? <CopyableText text={record.batchNumber} /> : '-'}
       </TableCell>
       <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
         {getActualWeight(record)}
@@ -266,7 +271,7 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
       <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
         <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
           <User className="h-3 w-3" />
-          {formatDateTime(record.createdAt)}
+          <RelativeTime date={record.createdAt} />
         </div>
       </TableCell>
       <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">

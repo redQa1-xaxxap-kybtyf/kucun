@@ -9,6 +9,8 @@
 import { Eye, MoreHorizontal } from 'lucide-react';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
+import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -192,7 +194,7 @@ function InventoryRowView({
   availableDisplay,
   stockBadge,
   formattedSpecification,
-  formattedDate,
+  formattedDate: _formattedDate,
 }: InventoryRowViewProps) {
   return (
     <TableRow
@@ -200,7 +202,7 @@ function InventoryRowView({
       style={style}
     >
       <TableCell className="font-medium text-blue-600">
-        {item.product?.code || '-'}
+        {item.product?.code ? <CopyableText text={item.product.code} /> : '-'}
       </TableCell>
       <TableCell className="font-medium">{item.product?.name || '-'}</TableCell>
       <TableCell>{formattedSpecification}</TableCell>
@@ -216,7 +218,9 @@ function InventoryRowView({
           <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
         )}
       </TableCell>
-      <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
+      <TableCell className="font-mono">
+        {item.batchNumber ? <CopyableText text={item.batchNumber} /> : '-'}
+      </TableCell>
       <TableCell className="font-semibold text-[hsl(var(--color-success))]">
         {quantityDisplay}
       </TableCell>
@@ -242,8 +246,8 @@ function InventoryRowView({
         </>
       )}
       <TableCell>{stockBadge}</TableCell>
-      <TableCell className="text-muted-foreground text-xs">
-        {formattedDate}
+      <TableCell className="text-xs">
+        <RelativeTime date={item.updatedAt} />
       </TableCell>
       <TableCell>
         <DropdownMenu>
