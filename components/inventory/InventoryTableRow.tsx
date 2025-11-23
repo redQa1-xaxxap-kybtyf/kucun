@@ -43,7 +43,14 @@ interface InventoryTableRowProps {
 const getStockBadge = (quantity: number, reservedQuantity: number = 0) => {
   const { label, variant } = getInventoryStatus(quantity, reservedQuantity);
   return (
-    <Badge variant={variant} className="text-xs">
+    <Badge
+      variant={variant}
+      className={`text-xs font-medium ${
+        variant === 'destructive' || variant === 'warning'
+          ? 'animate-breathe'
+          : ''
+      }`}
+    >
       {label}
     </Badge>
   );
@@ -189,7 +196,7 @@ function InventoryRowView({
 }: InventoryRowViewProps) {
   return (
     <TableRow
-      className={`text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
+      className={`even:bg-muted/20 text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
       style={style}
     >
       <TableCell className="font-medium text-blue-600">
@@ -210,9 +217,15 @@ function InventoryRowView({
         )}
       </TableCell>
       <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
-      <TableCell className="font-medium">{quantityDisplay}</TableCell>
-      <TableCell>{reservedDisplay}</TableCell>
-      <TableCell className="font-medium">{availableDisplay}</TableCell>
+      <TableCell className="font-semibold text-[hsl(var(--color-success))]">
+        {quantityDisplay}
+      </TableCell>
+      <TableCell className="font-medium text-[hsl(var(--color-warning))]">
+        {reservedDisplay}
+      </TableCell>
+      <TableCell className="font-medium text-[hsl(var(--color-primary))]">
+        {availableDisplay}
+      </TableCell>
       {/* 成本信息（仅财务权限可见） */}
       {hasFinancePermission && (
         <>
@@ -221,7 +234,7 @@ function InventoryRowView({
             {item.unitCost ? formatCurrency(item.unitCost) : '-'}
           </TableCell>
           {/* 库存总成本 */}
-          <TableCell className="text-right font-semibold">
+          <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))]">
             {item.unitCost
               ? formatCurrency(item.quantity * item.unitCost)
               : '-'}
@@ -229,7 +242,9 @@ function InventoryRowView({
         </>
       )}
       <TableCell>{stockBadge}</TableCell>
-      <TableCell>{formattedDate}</TableCell>
+      <TableCell className="text-muted-foreground text-xs">
+        {formattedDate}
+      </TableCell>
       <TableCell>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

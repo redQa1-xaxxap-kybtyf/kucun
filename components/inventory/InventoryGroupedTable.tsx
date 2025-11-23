@@ -178,9 +178,13 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
               </TableCell>
             </TableRow>
           ) : (
-            groups.map(group =>
-              group.items.map((item, index) => {
+            groups.map((group, groupIndex) => {
+              const isEvenGroup = groupIndex % 2 === 0;
+              const groupBgClass = isEvenGroup ? 'bg-white' : 'bg-muted/20';
+
+              return group.items.map((item, index) => {
                 const isFirstInGroup = index === 0;
+                const isLastInGroup = index === group.items.length - 1;
 
                 const packaging =
                   item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
@@ -229,7 +233,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                 return (
                   <TableRow
                     key={item.id}
-                    className={`border-b border-[hsl(var(--color-border-primary))] text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]' : ''}`}
+                    className={`text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] ${groupBgClass} ${
+                      isLastInGroup
+                        ? 'border-b-2 border-[hsl(var(--color-border-primary))]' // 组最后一行加粗下边框
+                        : 'border-b-0' // 组内无边框
+                    } ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))]' : ''}`}
                   >
                     {/* 产品编码 */}
                     <TableCell
@@ -347,7 +355,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 可用数量 */}
-                    <TableCell className="font-semibold text-[hsl(var(--color-text-primary))]">
+                    <TableCell className="font-medium text-[hsl(var(--color-primary))]">
                       {availableDisplay}
                     </TableCell>
 
@@ -370,13 +378,20 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 库存状态 */}
                     <TableCell>
-                      <Badge variant={variant} className="text-xs font-medium">
+                      <Badge
+                        variant={variant}
+                        className={`text-xs font-medium ${
+                          variant === 'destructive' || variant === 'warning'
+                            ? 'animate-breathe'
+                            : ''
+                        }`}
+                      >
                         {label}
                       </Badge>
                     </TableCell>
 
                     {/* 最后更新 */}
-                    <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    <TableCell className="text-muted-foreground text-xs">
                       {formattedDate}
                     </TableCell>
 
@@ -406,8 +421,8 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
                   </TableRow>
                 );
-              })
-            )
+              });
+            })
           )}
         </TableBody>
       </Table>

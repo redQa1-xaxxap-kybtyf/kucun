@@ -11,10 +11,10 @@ import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { CountUp } from '@/components/ui/count-up';
 import { Skeleton } from '@/components/ui/skeleton';
 import { can } from '@/lib/auth/permissions';
 import type { InventoryStatistics } from '@/lib/types/inventory-statistics';
-import { formatCurrency, formatNumber } from '@/lib/utils/format';
 
 interface InventoryStatisticsCardsProps {
   statistics: InventoryStatistics | null;
@@ -25,7 +25,7 @@ interface StatCard {
   id: string;
   title: string;
   icon: typeof DollarSign;
-  value: string;
+  value: React.ReactNode;
   description: string;
   color: string;
   bgColor: string;
@@ -57,7 +57,14 @@ function buildStatCards(
       id: 'totalValue',
       title: '库存总金额',
       icon: DollarSign,
-      value: formatCurrency(statistics.totalValue),
+      value: (
+        <CountUp
+          end={statistics.totalValue}
+          prefix="¥"
+          decimals={2}
+          separator=","
+        />
+      ),
       description: '当前库存总价值',
       color: 'text-green-600',
       bgColor: 'bg-green-50',
@@ -69,7 +76,14 @@ function buildStatCards(
       id: 'openingBalance',
       title: '期初库存金额',
       icon: Wallet,
-      value: formatCurrency(statistics.openingBalance.totalCost),
+      value: (
+        <CountUp
+          end={statistics.openingBalance.totalCost}
+          prefix="¥"
+          decimals={2}
+          separator=","
+        />
+      ),
       description: `${statistics.openingBalance.recordCount} 条期初记录`,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -82,7 +96,7 @@ function buildStatCards(
       id: 'totalProducts',
       title: '库存产品数',
       icon: Package,
-      value: formatNumber(statistics.totalProducts),
+      value: <CountUp end={statistics.totalProducts} separator="," />,
       description: 'SKU 数量',
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
@@ -91,7 +105,7 @@ function buildStatCards(
       id: 'totalQuantity',
       title: '库存总数量',
       icon: TrendingUp,
-      value: formatNumber(statistics.totalQuantity),
+      value: <CountUp end={statistics.totalQuantity} separator="," />,
       description: '片',
       color: 'text-indigo-600',
       bgColor: 'bg-indigo-50',
@@ -104,7 +118,13 @@ function buildStatCards(
     id: 'stockHealth',
     title: '库存健康度',
     icon: AlertTriangle,
-    value: `${statistics.stockHealthPercentage}%`,
+    value: (
+      <CountUp
+        end={statistics.stockHealthPercentage}
+        suffix="%"
+        separator=","
+      />
+    ),
     description: `${statistics.lowStockCount} 个低库存产品`,
     ...healthColors,
   });

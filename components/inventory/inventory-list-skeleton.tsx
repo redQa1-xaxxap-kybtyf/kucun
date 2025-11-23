@@ -29,32 +29,42 @@ export function InventoryListSkeleton() {
       </div>
 
       {/* 表格骨架 */}
-      <div className="bg-card rounded-lg border shadow-sm">
-        {/* 表头 */}
-        <div className="border-b bg-gray-50 p-4">
-          <div className="grid grid-cols-6 gap-4">
-            {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="h-4 animate-pulse rounded bg-gray-200" />
-            ))}
-          </div>
-        </div>
-
-        {/* 表格行 */}
-        {[1, 2, 3, 4, 5].map(row => (
-          <div key={row} className="border-b p-4 last:border-b-0">
-            <div className="grid grid-cols-6 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(col => (
-                <div
-                  key={col}
-                  className="h-4 animate-pulse rounded bg-gray-200"
-                  style={{
-                    animationDelay: `${(row * 6 + col) * 50}ms`,
-                  }}
-                />
+      <div className="rounded-md border shadow-sm">
+        <div className="relative w-full overflow-auto">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="[&_tr]:border-b">
+              <tr className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <th
+                    key={i}
+                    className="text-muted-foreground h-12 px-4 text-left align-middle font-medium"
+                  >
+                    <div className="bg-muted h-4 w-20 animate-pulse rounded" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {Array.from({ length: 5 }).map((_, row) => (
+                <tr
+                  key={row}
+                  className="hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors"
+                >
+                  {Array.from({ length: 8 }).map((_, col) => (
+                    <td key={col} className="p-4 align-middle">
+                      <div
+                        className="bg-muted h-4 w-full animate-pulse rounded"
+                        style={{
+                          width: `${Math.floor(Math.random() * 40 + 60)}%`,
+                        }}
+                      />
+                    </td>
+                  ))}
+                </tr>
               ))}
-            </div>
-          </div>
-        ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* 分页骨架 */}
