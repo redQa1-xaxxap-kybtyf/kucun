@@ -6,6 +6,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { createPurchaseOrderExpenses } from '@/lib/services/purchase-expense-service';
 import {
   ensurePurchaseOrderPayable,
   shouldCreatePayable,
@@ -383,22 +384,15 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         });
       }
 
+      // ✅ P1修复：使用统一的费用创建服务（带幂等性）
       if (feeItems && feeItems.length > 0) {
-        const expenseRecords = feeItems.map(feeItem => ({
-          expenseNumber: `EXP-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          expenseType: feeItem.feeType,
-          expenseName: feeItem.feeName,
-          expenseAmount: feeItem.feeAmount,
-          expenseDate: new Date(),
-          relatedType: 'purchase_order',
-          relatedId: newOrder.id,
-          relatedNumber: newOrder.orderNumber,
-          remarks: feeItem.remarks || undefined,
+        await createPurchaseOrderExpenses({
+          tx,
+          orderId: newOrder.id,
+          orderNumber: newOrder.orderNumber,
+          supplierId: normalizedSupplierId,
           userId,
-        }));
-
-        await tx.expenseRecord.createMany({
-          data: expenseRecords,
+          feeItems,
         });
       }
 

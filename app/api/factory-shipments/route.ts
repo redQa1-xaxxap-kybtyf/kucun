@@ -6,8 +6,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { paginationConfig } from '@/lib/env';
+import { env, paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import {
+  type CompanyFeeItemLike,
+  ensureCompanyExpenses,
+} from '@/lib/services/expense-service';
 import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
@@ -265,6 +269,8 @@ async function createOrderInTransaction(
     depositAmount?: number;
     remarks?: string;
     items: FactoryShipmentOrderItemData[];
+    feeItems?: CompanyFeeItemLike[];
+    supplierId?: string | null;
   }
 ) {
   const {
@@ -278,6 +284,8 @@ async function createOrderInTransaction(
     depositAmount,
     remarks,
     items,
+    feeItems,
+    supplierId,
   } = args;
 
   const newOrder = await tx.factoryShipmentOrder.create({
@@ -420,6 +428,26 @@ async function createOrderInTransaction(
   }, []);
   if (supplierPriceData.length > 0) {
     await tx.supplierProductPrice.createMany({ data: supplierPriceData });
+  }
+
+  // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等）
+  if (env.EXPENSE_AUTO_CREATE && feeItems && feeItems.length > 0) {
+    try {
+      await ensureCompanyExpenses({
+        tx,
+        sourceType: 'factory_shipment',
+        sourceId: newOrder.id,
+        sourceNumber: orderNumber,
+        userId,
+        supplierId: supplierId ?? null,
+        feeItems,
+      });
+    } catch (e) {
+      logger.warn('factory-shipments', '自动创建费用记录失败(已忽略)', e, {
+        orderId: newOrder.id,
+        orderNumber,
+      });
+    }
   }
 
   return newOrder;
@@ -674,6 +702,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       customerAmount + customerFees - finalDepositAmount
     );
 
+    // 尝试从items中提取第一个非空supplierId用于费用记录
+    const firstSupplierId =
+      items.find(item => item.supplierId)?.supplierId ?? null;
+
     const order = await prisma.$transaction(tx =>
       createOrderInTransaction(tx, {
         orderNumber,
@@ -686,6 +718,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         depositAmount: finalDepositAmount,
         remarks,
         items,
+        feeItems,
+        supplierId: firstSupplierId,
       })
     );
 
