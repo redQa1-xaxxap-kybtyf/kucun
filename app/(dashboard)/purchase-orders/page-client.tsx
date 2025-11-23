@@ -32,6 +32,8 @@ interface FilterSnapshot {
   search: string;
   status: PurchaseOrderStatus | 'all';
   supplierId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export function PurchaseOrdersPageClient({
@@ -49,6 +51,13 @@ export function PurchaseOrdersPageClient({
   const [supplierFilter, setSupplierFilter] = React.useState<
     string | undefined
   >(initialParams.supplierId);
+  const [dateRange, setDateRange] = React.useState<{
+    startDate?: string;
+    endDate?: string;
+  }>({
+    startDate: initialParams.startDate?.toISOString().split('T')[0],
+    endDate: initialParams.endDate?.toISOString().split('T')[0],
+  });
   const sortBy = initialParams.sortBy || 'createdAt';
   const sortOrder = initialParams.sortOrder || 'desc';
 
@@ -57,8 +66,10 @@ export function PurchaseOrdersPageClient({
       search: overrides.search ?? searchValue,
       status: overrides.status ?? statusFilter,
       supplierId: overrides.supplierId ?? supplierFilter,
+      startDate: overrides.startDate ?? dateRange.startDate,
+      endDate: overrides.endDate ?? dateRange.endDate,
     }),
-    [searchValue, statusFilter, supplierFilter]
+    [searchValue, statusFilter, supplierFilter, dateRange]
   );
 
   const syncFiltersToURL = useDebouncedCallback((snapshot: FilterSnapshot) => {
@@ -74,6 +85,12 @@ export function PurchaseOrdersPageClient({
       }
       if (snapshot.supplierId) {
         params.set('supplierId', snapshot.supplierId);
+      }
+      if (snapshot.startDate) {
+        params.set('startDate', snapshot.startDate);
+      }
+      if (snapshot.endDate) {
+        params.set('endDate', snapshot.endDate);
       }
       if (sortBy && sortBy !== 'createdAt') {
         params.set('sortBy', sortBy);
@@ -116,10 +133,21 @@ export function PurchaseOrdersPageClient({
     [buildSnapshot, syncFiltersToURL]
   );
 
+  const handleDateRangeChange = React.useCallback(
+    (range: { startDate?: string; endDate?: string }) => {
+      setDateRange(range);
+      syncFiltersToURL(
+        buildSnapshot({ startDate: range.startDate, endDate: range.endDate })
+      );
+    },
+    [buildSnapshot, syncFiltersToURL]
+  );
+
   const handleClearFilters = React.useCallback(() => {
     setSearchValue('');
     setStatusFilter('all');
     setSupplierFilter(undefined);
+    setDateRange({});
     startTransition(() => {
       router.push('/purchase-orders');
     });
@@ -139,6 +167,12 @@ export function PurchaseOrdersPageClient({
         }
         if (supplierFilter) {
           params.set('supplierId', supplierFilter);
+        }
+        if (dateRange.startDate) {
+          params.set('startDate', dateRange.startDate);
+        }
+        if (dateRange.endDate) {
+          params.set('endDate', dateRange.endDate);
         }
         if (sortBy && sortBy !== 'createdAt') {
           params.set('sortBy', sortBy);
@@ -164,6 +198,7 @@ export function PurchaseOrdersPageClient({
       searchValue,
       statusFilter,
       supplierFilter,
+      dateRange,
       sortBy,
       sortOrder,
       initialParams.limit,
@@ -198,10 +233,12 @@ export function PurchaseOrdersPageClient({
           searchValue={searchValue}
           statusFilter={statusFilter}
           supplierId={supplierFilter}
+          dateRange={dateRange}
           isSearching={false}
           onSearch={handleSearch}
           onStatusChange={handleStatusChange}
           onSupplierChange={handleSupplierChange}
+          onDateRangeChange={handleDateRangeChange}
           onClearFilters={handleClearFilters}
         />
 
@@ -211,6 +248,10 @@ export function PurchaseOrdersPageClient({
           search={searchValue}
           status={statusFilter === 'all' ? undefined : statusFilter}
           supplierId={supplierFilter}
+          startDate={
+            dateRange.startDate ? new Date(dateRange.startDate) : undefined
+          }
+          endDate={dateRange.endDate ? new Date(dateRange.endDate) : undefined}
           sortBy={sortBy}
           sortOrder={sortOrder}
           onPageChange={handlePageChange}

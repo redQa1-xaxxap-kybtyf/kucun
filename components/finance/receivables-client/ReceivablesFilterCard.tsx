@@ -130,6 +130,7 @@ function ReceivablesFilterBar({
         placeholder: '选择订单日期范围',
       }}
       variant="default"
+      compact={true}
     />
   );
 }

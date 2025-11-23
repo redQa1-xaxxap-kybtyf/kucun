@@ -627,6 +627,7 @@ export function ERPSalesOrderList({
         onClearFilters={handleClearFilters}
         hasActiveFilters={hasActiveFilters}
         variant="elevated"
+        compact={true}
       />
 
       {/* 数据表格 */}

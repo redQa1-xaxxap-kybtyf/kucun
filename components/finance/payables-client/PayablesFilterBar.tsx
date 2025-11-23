@@ -86,6 +86,7 @@ export function PayablesFilterBar({
         placeholder: '选择单据日期范围',
       }}
       variant="elevated"
+      compact={true}
     />
   );
 }

@@ -286,6 +286,8 @@ export function SuppliersPageClient({
               handleStatusChange(value as Supplier['status'] | undefined);
             }
           }}
+          variant="elevated"
+          compact={true}
         />
 
         {isError && (

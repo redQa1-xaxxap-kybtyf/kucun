@@ -228,6 +228,7 @@ function ReturnOrderToolbarView({
       onClearFilters={handleClearFilters}
       hasActiveFilters={hasActiveFilters}
       variant="elevated"
+      compact={true}
     />
   );
 }

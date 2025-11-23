@@ -223,6 +223,7 @@ export function RefundsClient({
           placeholder: '选择退款日期范围',
         }}
         variant="elevated"
+        compact={true}
       />
 
       <Card className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)]">

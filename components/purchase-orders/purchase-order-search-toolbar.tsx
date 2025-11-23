@@ -3,6 +3,7 @@ import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   PURCHASE_ORDER_STATUS_LABELS,
   type PurchaseOrderStatus,
@@ -12,10 +13,12 @@ interface PurchaseOrderSearchToolbarProps {
   searchValue: string;
   statusFilter: PurchaseOrderStatus | 'all';
   supplierId?: string;
+  dateRange?: { startDate?: string; endDate?: string };
   isSearching?: boolean;
   onSearch: (value: string) => void;
   onStatusChange: (value: PurchaseOrderStatus | 'all') => void;
   onSupplierChange: (value: string | undefined) => void;
+  onDateRangeChange?: (range: { startDate?: string; endDate?: string }) => void;
   onClearFilters: () => void;
 }
 
@@ -23,10 +26,12 @@ export function PurchaseOrderSearchToolbar({
   searchValue,
   statusFilter,
   supplierId,
+  dateRange,
   isSearching,
   onSearch,
   onStatusChange,
   onSupplierChange,
+  onDateRangeChange,
   onClearFilters,
 }: PurchaseOrderSearchToolbarProps) {
   const handleFilterChange = React.useCallback(
@@ -47,7 +52,11 @@ export function PurchaseOrderSearchToolbar({
     [onSupplierChange]
   );
 
-  const hasActiveFilters = statusFilter !== 'all' || !!supplierId;
+  const hasActiveFilters =
+    statusFilter !== 'all' ||
+    !!supplierId ||
+    !!dateRange?.startDate ||
+    !!dateRange?.endDate;
 
   // 将供应商选择器整合到 SearchFilterCard 的自定义子节点中
   const supplierFilterNode = (
@@ -109,10 +118,31 @@ export function PurchaseOrderSearchToolbar({
         status: statusFilter === 'all' ? 'all' : statusFilter,
       }}
       onFilterChange={handleFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={
+        onDateRangeChange
+          ? {
+              key: 'dateRange',
+              label: '订单日期',
+              value: {
+                startDate: dateRange?.startDate,
+                endDate: dateRange?.endDate,
+              },
+              onChange: (range: DateRangeValue) => {
+                onDateRangeChange({
+                  startDate: range.startDate,
+                  endDate: range.endDate,
+                });
+              },
+              placeholder: '选择订单日期范围',
+            }
+          : undefined
+      }
       // 清空筛选
       onClearFilters={onClearFilters}
       hasActiveFilters={hasActiveFilters}
       variant="elevated"
+      compact={true}
       // ✅ 添加供应商选择器作为自定义筛选器
       customFilters={supplierFilterNode}
     />

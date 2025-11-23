@@ -147,6 +147,7 @@ export function ERPProductList({
         }}
         onClearFilters={handleClearFilters}
         variant="elevated"
+        compact={true}
       />
 
       {/* 产品列表 */}

@@ -214,6 +214,7 @@ function InboundToolbarView({
       onClearFilters={handleClearFilters}
       hasActiveFilters={hasActiveFilters}
       variant="elevated"
+      compact={true}
     />
   );
 }

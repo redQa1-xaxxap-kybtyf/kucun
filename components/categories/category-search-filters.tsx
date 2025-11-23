@@ -51,6 +51,7 @@ export function CategorySearchFilters({
       }}
       onFilterChange={handleFilterChange}
       variant="elevated"
+      compact={true}
     />
   );
 }

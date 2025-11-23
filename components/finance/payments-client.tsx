@@ -2,21 +2,11 @@
 import { CheckCircle, Clock, TrendingUp } from 'lucide-react';
 import * as React from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { PaymentsTableList } from '@/components/finance/payments-table-list';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useToast } from '@/components/ui/use-toast';
 import { useConfirmPayment } from '@/lib/api/payments';
 import type { PaymentStatus } from '@/lib/types/payment';
@@ -178,7 +168,7 @@ function usePaymentEventHandlers({
   );
 
   const handleFilterChange = React.useCallback(
-    (key: string, value: string) => {
+    (key: string, value: string | undefined) => {
       if (!externalOnFilter) return;
       if (value === 'all' || !value) {
         externalOnFilter(key, undefined);
@@ -424,7 +414,7 @@ interface PaymentFiltersProps {
     endDate?: string;
   };
   onSearch: (value: string) => void;
-  onFilterChange: (key: string, value: string) => void;
+  onFilterChange: (key: string, value: string | undefined) => void;
   onDateRangeChange: (range: DateRangeValue) => void;
 }
 
@@ -436,55 +426,53 @@ function PaymentFilters({
   onDateRangeChange,
 }: PaymentFiltersProps) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-      <div className="flex-1">
-        <UnifiedSearchBar
-          searchValue={searchValue}
-          onSearchChange={onSearch}
-          searchPlaceholder="搜索收款单号、客户名称或订单号..."
-        />
-      </div>
-      <Select
-        value={initialParams?.status || 'all'}
-        onValueChange={value => onFilterChange('status', value)}
-      >
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder="全部状态" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">全部状态</SelectItem>
-          <SelectItem value="pending">待确认</SelectItem>
-          <SelectItem value="confirmed">已确认</SelectItem>
-          <SelectItem value="applied">已冲抵</SelectItem>
-          <SelectItem value="cancelled">已取消</SelectItem>
-        </SelectContent>
-      </Select>
-      <Select
-        value={initialParams?.paymentMethod || 'all'}
-        onValueChange={value => onFilterChange('paymentMethod', value)}
-      >
-        <SelectTrigger className="w-full sm:w-[180px]">
-          <SelectValue placeholder="支付方式" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">全部方式</SelectItem>
-          <SelectItem value="cash">现金</SelectItem>
-          <SelectItem value="bank_transfer">银行转账</SelectItem>
-          <SelectItem value="alipay">支付宝</SelectItem>
-          <SelectItem value="wechat">微信支付</SelectItem>
-        </SelectContent>
-      </Select>
-      <DateRangePicker
-        value={{
+    <SearchFilterCard
+      searchValue={searchValue}
+      onSearchChange={onSearch}
+      searchPlaceholder="搜索收款单号、客户名称或订单号..."
+      // 筛选器配置
+      filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: [
+            { label: '待确认', value: 'pending' },
+            { label: '已确认', value: 'confirmed' },
+            { label: '已冲抵', value: 'applied' },
+            { label: '已取消', value: 'cancelled' },
+          ],
+          width: 'w-[140px]',
+        },
+        {
+          key: 'paymentMethod',
+          label: '支付方式',
+          options: [
+            { label: '现金', value: 'cash' },
+            { label: '银行转账', value: 'bank_transfer' },
+            { label: '支付宝', value: 'alipay' },
+            { label: '微信支付', value: 'wechat' },
+          ],
+          width: 'w-[140px]',
+        },
+      ]}
+      filterValues={{
+        status: initialParams?.status || 'all',
+        paymentMethod: initialParams?.paymentMethod || 'all',
+      }}
+      onFilterChange={onFilterChange}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '收款日期',
+        value: {
           startDate: initialParams?.startDate,
           endDate: initialParams?.endDate,
-        }}
-        onChange={onDateRangeChange}
-        label=""
-        placeholder="选择收款日期范围"
-        showPresets
-        className="w-full sm:w-auto sm:min-w-[240px]"
-      />
-    </div>
+        },
+        onChange: onDateRangeChange,
+        placeholder: '选择收款日期范围',
+      }}
+      variant="default"
+      compact={true}
+    />
   );
 }

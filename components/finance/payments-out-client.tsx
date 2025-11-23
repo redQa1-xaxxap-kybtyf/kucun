@@ -7,23 +7,13 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { Pagination } from '@/components/ui/pagination';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { formatPaymentDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -267,84 +257,71 @@ export function PaymentsOutClient({
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 flex-wrap items-center gap-2">
-              <UnifiedSearchBar
-                searchValue={searchValue}
-                onSearchChange={value => {
-                  setSearchValue(value);
-                  onSearch?.(value);
-                }}
-                searchPlaceholder="搜索付款单号、供应商名称、凭证号..."
-                className="max-w-sm"
-              />
-
-              <Select
-                value={initialParams?.status || 'all'}
-                onValueChange={value =>
-                  onFilter?.('status', value === 'all' ? undefined : value)
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="pending">待确认</SelectItem>
-                  <SelectItem value="confirmed">已确认</SelectItem>
-                  <SelectItem value="cancelled">已取消</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={initialParams?.paymentMethod || 'all'}
-                onValueChange={value =>
-                  onFilter?.(
-                    'paymentMethod',
-                    value === 'all' ? undefined : value
-                  )
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="付款方式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部方式</SelectItem>
-                  <SelectItem value="cash">现金</SelectItem>
-                  <SelectItem value="bank_transfer">银行转账</SelectItem>
-                  <SelectItem value="alipay">支付宝</SelectItem>
-                  <SelectItem value="wechat">微信</SelectItem>
-                  <SelectItem value="check">支票</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={initialParams?.sortBy || 'createdAt'}
-                onValueChange={value => onFilter?.('sortBy', value)}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="排序" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt">创建时间</SelectItem>
-                  <SelectItem value="paymentAmount">付款金额</SelectItem>
-                  <SelectItem value="paymentDate">付款日期</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <DateRangePicker
-              value={{
+          <SearchFilterCard
+            searchValue={searchValue}
+            onSearchChange={value => {
+              setSearchValue(value);
+              onSearch?.(value);
+            }}
+            searchPlaceholder="搜索付款单号、供应商名称、凭证号..."
+            // 筛选器配置
+            filters={[
+              {
+                key: 'status',
+                label: '状态',
+                options: [
+                  { label: '待确认', value: 'pending' },
+                  { label: '已确认', value: 'confirmed' },
+                  { label: '已取消', value: 'cancelled' },
+                ],
+                width: 'w-[140px]',
+              },
+              {
+                key: 'paymentMethod',
+                label: '付款方式',
+                options: [
+                  { label: '现金', value: 'cash' },
+                  { label: '银行转账', value: 'bank_transfer' },
+                  { label: '支付宝', value: 'alipay' },
+                  { label: '微信', value: 'wechat' },
+                  { label: '支票', value: 'check' },
+                  { label: '其他', value: 'other' },
+                ],
+                width: 'w-[140px]',
+              },
+              {
+                key: 'sortBy',
+                label: '排序',
+                options: [
+                  { label: '创建时间', value: 'createdAt' },
+                  { label: '付款金额', value: 'paymentAmount' },
+                  { label: '付款日期', value: 'paymentDate' },
+                ],
+                width: 'w-[140px]',
+              },
+            ]}
+            filterValues={{
+              status: initialParams?.status || 'all',
+              paymentMethod: initialParams?.paymentMethod || 'all',
+              sortBy: initialParams?.sortBy || 'createdAt',
+            }}
+            onFilterChange={(key, value) =>
+              onFilter?.(key, value === 'all' ? undefined : value)
+            }
+            // 日期范围筛选
+            dateRangeFilter={{
+              key: 'dateRange',
+              label: '付款日期',
+              value: {
                 startDate: initialParams?.startDate,
                 endDate: initialParams?.endDate,
-              }}
-              onChange={handleDateRangeChange}
-              label=""
-              placeholder="选择付款日期范围"
-              showPresets
-              className="w-full min-w-[220px] md:w-auto"
-            />
-          </div>
+              },
+              onChange: handleDateRangeChange,
+              placeholder: '选择付款日期范围',
+            }}
+            variant="default"
+            compact={true}
+          />
 
           {/* 付款记录列表 */}
           <div className="mt-6 space-y-4">
