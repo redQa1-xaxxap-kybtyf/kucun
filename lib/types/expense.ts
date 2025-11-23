@@ -94,6 +94,11 @@ export interface ExpenseRecord {
   approvedAt?: string;
   cancelReason?: string;
 
+  // 阶段2新增：支付状态（为阶段3对接做准备）
+  paymentStatus?: 'unpaid' | 'partial' | 'paid';
+  payableId?: string;
+  supplierId?: string;
+
   // 关联数据（可选，根据查询需要包含）
   user?: Pick<User, 'id' | 'name' | 'email'>;
   userName?: string;

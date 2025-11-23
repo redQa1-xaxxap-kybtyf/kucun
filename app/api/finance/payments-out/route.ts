@@ -11,7 +11,9 @@ import {
 import { clearCacheAfterPaymentOut } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { updateExpensePaymentStatusAfterPayment } from '@/lib/services/expense-payable-integration';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import type {
   PaymentOutRecordDetail,
@@ -293,6 +295,29 @@ export const POST = withAuth(
               updatedAt: new Date(),
             },
           });
+
+          // 阶段3：付款核销后联动更新关联费用的支付状态
+          if (env.EXPENSE_TO_PAYABLE_ENABLED && data.payableRecordId) {
+            try {
+              await updateExpensePaymentStatusAfterPayment({
+                payableRecordId: data.payableRecordId,
+                paymentAmount: data.paymentAmount,
+                tx,
+              });
+            } catch (error) {
+              logger.warn(
+                'payments-out',
+                '付款后更新费用状态失败，但不影响付款记录',
+                error,
+                {
+                  paymentNumber,
+                  payableRecordId: data.payableRecordId,
+                  paymentAmount: data.paymentAmount,
+                }
+              );
+              // 不抛出错误，允许付款继续完成
+            }
+          }
         }
 
         // ✅ 修复问题1：记录供应商往来账本

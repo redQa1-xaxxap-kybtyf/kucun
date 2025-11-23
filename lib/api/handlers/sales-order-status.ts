@@ -463,6 +463,25 @@ async function executeOrderStatusUpdateWithInventory(
         data: {
           allocatedExpense,
           costSubtotal: totalCostWithExpense,
+          // ✅ 新增：在发货时将单位成本更新为包含分摊费用后的单位成本
+          unitCost: unitCostWithExpense ?? undefined,
+          // ✅ 新增：在发货时更新利润金额和利润率，保证订单项级别的利润分析准确
+          profitAmount:
+            item.subtotal !== undefined && totalCostWithExpense !== undefined
+              ? roundCurrency(
+                  (item.subtotal ?? 0) - (totalCostWithExpense ?? 0)
+                )
+              : undefined,
+          profitMargin:
+            item.subtotal &&
+            item.subtotal > 0 &&
+            totalCostWithExpense !== undefined
+              ? roundCurrency(
+                  (((item.subtotal ?? 0) - (totalCostWithExpense ?? 0)) /
+                    (item.subtotal ?? 1)) *
+                    100
+                )
+              : undefined,
         },
       });
     }

@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
+import { allocateExpensesByValue } from '@/lib/services/sales-order-expense-service';
 import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 
 import type { CreateInput } from './types';
@@ -59,26 +60,32 @@ export const calculateFinancials = (
   data: CreateInput,
   transferMode: CreateInput['transferMode']
 ) => {
-  const { itemsAmount, costAmount, profitAmount } = calculateItemTotals(
-    data,
-    transferMode
-  );
+  const { itemsAmount, costAmount } = calculateItemTotals(data, transferMode);
   const customerPaidFees = roundCurrency(
     calculateCustomerPaidFees(data.feeItems || [])
   );
   const companyPaidFees = roundCurrency(
     calculateCompanyPaidFees(data.feeItems || [])
   );
+
+  // 客户承担费用计入应收；公司承担费用计入成本
   const additionalFees = customerPaidFees;
   const roundingAdjustment = roundCurrency(data.roundingAdjustment ?? 0);
+
+  // ✅ 修复：公司承担费用计入成本
+  const costAmountWithExpense = roundCurrency(costAmount + companyPaidFees);
+  const profitAmountWithExpense = roundCurrency(
+    itemsAmount - costAmountWithExpense
+  );
+
   const totalAmount = roundCurrency(
     itemsAmount + additionalFees + roundingAdjustment
   );
 
   return {
     itemsAmount,
-    costAmount,
-    profitAmount,
+    costAmount: costAmountWithExpense,
+    profitAmount: profitAmountWithExpense,
     additionalFees,
     expenseAmount: companyPaidFees,
     roundingAdjustment,
@@ -90,10 +97,44 @@ export const buildOrderItemsInput = (
   data: CreateInput,
   transferMode: CreateInput['transferMode'],
   temporaryProductIds?: Map<number, string>
-): Prisma.SalesOrderItemUncheckedCreateWithoutSalesOrderInput[] =>
-  data.items.map((item, index) => {
+): Prisma.SalesOrderItemUncheckedCreateWithoutSalesOrderInput[] => {
+  // 计算公司承担的费用总额
+  const companyPaidFees = roundCurrency(
+    calculateCompanyPaidFees(data.feeItems || [])
+  );
+
+  // 组装用于费用分摊的临时项（保持顺序一致）
+  const allocationSources = data.items.map((item, index) => {
+    const quantity = item.quantity ?? 0;
+    const unitPrice = item.unitPrice ?? 0;
+    const subtotal = item.subtotal ?? quantity * unitPrice;
+    const effectiveTransferQuantity =
+      data.orderType === 'TRANSFER' && transferMode === 'MIXED'
+        ? (item.transferQuantity ?? 0)
+        : quantity;
+    const unitCost = item.unitCost ?? 0;
+    const costSubtotal = unitCost * effectiveTransferQuantity;
+
+    return {
+      id: String(index),
+      subtotal,
+      costSubtotal,
+      unitCost,
+      quantity,
+    };
+  });
+
+  // 执行按销售金额分摊（若费用为0则结果全为0）
+  const allocationResults = allocateExpensesByValue(
+    allocationSources,
+    companyPaidFees
+  );
+
+  // 生成用于创建的订单项输入
+  return data.items.map((item, index) => {
     const quantity = item.quantity ?? 0;
     const subtotal = item.subtotal ?? quantity * (item.unitPrice ?? 0);
+
     // 本地数量：只有调货订单的混合模式才有本地发货
     const localQuantity =
       data.orderType === 'TRANSFER' && transferMode === 'MIXED'
@@ -106,6 +147,13 @@ export const buildOrderItemsInput = (
           ? (item.transferQuantity ?? 0)
           : quantity
         : 0;
+
+    const allocation = allocationResults[index];
+    const allocatedExpense = allocation?.allocatedExpense ?? 0;
+    const costSubtotalWithExpense =
+      allocation?.totalCost ?? item.costSubtotal ?? null;
+    const profitAmount = allocation?.profitAmount ?? item.profitAmount ?? null;
+    const profitMargin = allocation?.profitMargin ?? null;
 
     return {
       productId: item.productId ?? null,
@@ -121,8 +169,10 @@ export const buildOrderItemsInput = (
       unitCost: item.unitCost ?? null,
       localQuantity,
       transferQuantity,
-      costSubtotal: item.costSubtotal ?? null,
-      profitAmount: item.profitAmount ?? null,
+      allocatedExpense,
+      costSubtotal: costSubtotalWithExpense,
+      profitAmount,
+      profitMargin,
       displayUnit: item.displayUnit || '片',
       displayQuantity: item.displayQuantity ?? quantity,
       piecesPerUnit: item.piecesPerUnit ?? null,
@@ -135,6 +185,7 @@ export const buildOrderItemsInput = (
       manualUnit: item.manualUnit ?? null,
     } satisfies Prisma.SalesOrderItemUncheckedCreateWithoutSalesOrderInput;
   });
+};
 
 export const buildFeeItemsInput = (data: CreateInput) =>
   data.feeItems?.map(fee => ({

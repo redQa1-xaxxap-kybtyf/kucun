@@ -295,6 +295,17 @@ export const expenseFilterSchema = z.object({
 
   status: expenseStatusSchema.optional().describe('费用单状态筛选（可选）'),
 
+  paymentStatus: z
+    .enum(['unpaid', 'partial', 'paid'])
+    .optional()
+    .describe('费用支付状态筛选（可选）'),
+
+  supplierId: z
+    .string()
+    .uuid('供应商ID格式不正确')
+    .optional()
+    .describe('供应商筛选（可选）'),
+
   page: z
     .number()
     .int('页码必须是整数')

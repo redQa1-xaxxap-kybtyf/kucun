@@ -38,6 +38,8 @@ export const GET = withAuth(
       endDate: searchParams.get('endDate') || undefined,
       relatedType: searchParams.get('relatedType') || undefined,
       status: searchParams.get('status') || undefined,
+      paymentStatus: searchParams.get('paymentStatus') || undefined,
+      supplierId: searchParams.get('supplierId') || undefined,
       sortBy: searchParams.get('sortBy') || undefined,
       sortOrder: searchParams.get('sortOrder') || undefined,
     };

@@ -9,6 +9,10 @@ import { refreshPurchaseOrderFulfillment } from '@/lib/api/purchase-orders/fulfi
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+  createPurchaseOrderExpenses,
+  replacePurchaseOrderExpenses,
+} from '@/lib/services/purchase-expense-service';
 import { resolveInboundUnitCost } from '@/lib/services/purchase-order-cost-service';
 import {
   ensurePurchaseOrderPayable,
@@ -121,13 +125,15 @@ export async function createPurchaseOrderInternal(
       },
     });
 
-    await createExpenseRecords(
+    // ✅ P1修复：使用统一的费用创建服务（带幂等性）
+    await createPurchaseOrderExpenses({
       tx,
-      data.feeItems ?? [],
-      order.id,
-      order.orderNumber,
-      userId
-    );
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      supplierId: primarySupplierId,
+      userId,
+      feeItems: data.feeItems ?? [],
+    });
 
     // 按供应商分组创建应付账款
     if (shouldAutoCreatePayable(status, totalAmount)) {
@@ -169,35 +175,6 @@ export async function createPurchaseOrderInternal(
   });
 }
 
-async function createExpenseRecords(
-  tx: PrismaTransaction,
-  feeItems: NonNullable<PurchaseOrderFormData['feeItems']>,
-  orderId: string,
-  orderNumber: string,
-  userId: string
-): Promise<void> {
-  if (!feeItems || feeItems.length === 0) {
-    return;
-  }
-
-  const expenseRecords = feeItems.map(feeItem => ({
-    expenseNumber: `EXP-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`,
-    expenseType: feeItem.feeType,
-    expenseName: feeItem.feeName,
-    expenseAmount: feeItem.feeAmount,
-    expenseDate: new Date(),
-    relatedType: 'purchase_order',
-    relatedId: orderId,
-    relatedNumber: orderNumber,
-    remarks: feeItem.remarks || undefined,
-    userId,
-  }));
-
-  await tx.expenseRecord.createMany({ data: expenseRecords });
-}
-
 function shouldAutoCreatePayable(
   status: PurchaseOrderStatus,
   totalAmount: number
@@ -230,14 +207,16 @@ export async function updatePurchaseOrderInternal({
       where: { purchaseOrderId: orderId },
     });
 
-    // ✅ 修复：先处理费用记录，获取费用总额
-    const expenseAmount = await replaceExpenseRecords(
+    // ✅ P1修复：使用统一的费用创建服务（带幂等性）
+    const expenseResult = await replacePurchaseOrderExpenses({
       tx,
       orderId,
-      data.feeItems ?? [],
-      existingOrder.orderNumber,
-      userId
-    );
+      orderNumber: existingOrder.orderNumber,
+      supplierId: existingOrder.supplierId,
+      userId,
+      feeItems: data.feeItems ?? [],
+    });
+    const expenseAmount = expenseResult.totalAmount;
 
     // ✅ 修复：更新订单时同步更新 expenseAmount
     await tx.purchaseOrder.update({
@@ -276,51 +255,6 @@ export async function updatePurchaseOrderInternal({
   });
 
   return { success: true, data: null };
-}
-
-async function replaceExpenseRecords(
-  tx: PrismaTransaction,
-  orderId: string,
-  feeItems: NonNullable<PurchaseOrderFormData['feeItems']>,
-  orderNumber: string,
-  userId: string
-): Promise<number> {
-  // ✅ 修复：无条件删除旧费用记录，即使 feeItems 为空
-  await tx.expenseRecord.deleteMany({
-    where: {
-      relatedType: 'purchase_order',
-      relatedId: orderId,
-    },
-  });
-
-  // 如果没有新费用，返回 0
-  if (!feeItems || feeItems.length === 0) {
-    return 0;
-  }
-
-  // 创建新费用记录
-  for (const feeItem of feeItems) {
-    const expenseNumber = `EXP-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)}`;
-    await tx.expenseRecord.create({
-      data: {
-        expenseNumber,
-        expenseType: feeItem.feeType,
-        expenseName: feeItem.feeName.trim(),
-        expenseAmount: feeItem.feeAmount,
-        expenseDate: new Date(),
-        remarks: feeItem.remarks?.trim() || undefined,
-        relatedType: 'purchase_order',
-        relatedId: orderId,
-        relatedNumber: orderNumber,
-        userId,
-      },
-    });
-  }
-
-  // ✅ 修复：返回费用总额
-  return feeItems.reduce((sum, item) => sum + item.feeAmount, 0);
 }
 
 export function normalizeStatusPayload(

@@ -6,7 +6,9 @@ import {
 } from '@/lib/cache/invalidation-strategy';
 import { prisma } from '@/lib/db';
 import { getLongTransactionOptions } from '@/lib/db/transaction-options';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { ensureCompanyExpenses } from '@/lib/services/expense-service';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
@@ -192,6 +194,30 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       },
       select: createSelect,
     });
+
+    // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等）
+    if (
+      env.EXPENSE_AUTO_CREATE &&
+      validatedData.feeItems &&
+      validatedData.feeItems.length > 0
+    ) {
+      try {
+        await ensureCompanyExpenses({
+          tx,
+          sourceType: 'sales_order',
+          sourceId: salesOrder.id,
+          sourceNumber: salesOrder.orderNumber,
+          userId,
+          supplierId: validatedData.supplierId ?? null,
+          feeItems: validatedData.feeItems,
+        });
+      } catch (e) {
+        logger.warn('sales-orders', '自动创建费用记录失败(已忽略)', e, {
+          orderId: salesOrder.id,
+          orderNumber: salesOrder.orderNumber,
+        });
+      }
+    }
 
     await recordCustomerPriceHistory(tx, validatedData, salesOrder.id);
     await maybeCreatePayable(tx, validatedData, financials.costAmount, userId, {

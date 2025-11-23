@@ -1,10 +1,16 @@
 // 费用记录服务层
+/*
+ * 注意：阶段2新增 - 费用幂等创建与公司承担费用批量创建工具
+ */
+
 // 提供费用记录的创建、查询、更新和删除功能
 
 import type { Prisma } from '@prisma/client';
 
 import { ApiError, handlePrismaError, isPrismaError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
+import { createOrMergePayableFromExpense } from '@/lib/services/expense-payable-integration';
 import {
   EXPENSE_TYPE_LABELS,
   type CreateExpenseRequest,
@@ -220,7 +226,130 @@ export async function createExpenseRecord(
       : undefined,
     cancelReason: expense.cancelReason || undefined,
     approvedBy: expense.approvedBy || undefined,
+    paymentStatus: (expense as { paymentStatus?: string }).paymentStatus as
+      | 'unpaid'
+      | 'partial'
+      | 'paid'
+      | undefined,
+    payableId:
+      (expense as { payableId?: string | null }).payableId || undefined,
+    supplierId:
+      (expense as { supplierId?: string | null }).supplierId || undefined,
   };
+}
+
+/**
+ * 费用类型映射（销售/厂家费用 → ExpenseRecord.expenseType）
+ */
+function mapFeeTypeToExpenseType(feeType: string): string {
+  switch (feeType) {
+    case 'freight':
+    case 'shipping':
+      return 'shipping';
+    case 'loading_unloading':
+      return 'loading_unloading';
+    case 'storage':
+      return 'storage';
+    case 'labor':
+      return 'labor';
+    case 'travel':
+      return 'travel';
+    case 'living':
+      return 'living';
+    default:
+      return 'other';
+  }
+}
+
+export interface CompanyFeeItemLike {
+  feeType: string;
+  feeName: string;
+  feeAmount: number;
+  paidBy?: 'customer' | 'company';
+  remarks?: string | null;
+}
+
+export interface EnsureCompanyExpensesParams {
+  tx: Prisma.TransactionClient;
+  sourceType: 'sales_order' | 'factory_shipment';
+  sourceId: string;
+  sourceNumber?: string;
+  userId: string;
+  supplierId?: string | null; // 可选，便于后续供应商维度统计
+  feeItems: CompanyFeeItemLike[];
+  expenseDate?: Date; // 默认 new Date()
+}
+
+/**
+ * 幂等创建公司承担费用的 ExpenseRecord 列表
+ * - 仅处理 paidBy === 'company' 的费用项
+ * - 使用 (sourceType, sourceId, feeType, feeName, amount, yyyy-MM-dd) 生成幂等键
+ */
+export async function ensureCompanyExpenses(
+  params: EnsureCompanyExpensesParams
+): Promise<number> {
+  const {
+    tx,
+    sourceType,
+    sourceId,
+    sourceNumber,
+    userId,
+    supplierId,
+    feeItems,
+  } = params;
+  const expenseDate = params.expenseDate ?? new Date();
+
+  // 动态导入以避免循环依赖
+  const { generateExpenseIdempotencyKey } = await import(
+    '@/lib/services/expense-idempotency'
+  );
+
+  let created = 0;
+
+  for (const fee of feeItems) {
+    if ((fee.paidBy ?? 'customer') !== 'company') continue;
+    if (!fee.feeAmount || fee.feeAmount <= 0) continue;
+
+    const idempotencyKey = generateExpenseIdempotencyKey({
+      sourceType,
+      sourceId,
+      feeType: fee.feeType,
+      feeName: fee.feeName,
+      feeAmount: fee.feeAmount,
+      expenseDate,
+    });
+
+    // 命中即跳过（幂等）
+    const dup = await tx.expenseRecord.findUnique({
+      where: { idempotencyKey },
+      select: { id: true },
+    });
+    if (dup) continue;
+
+    const expenseType = mapFeeTypeToExpenseType(fee.feeType);
+
+    await tx.expenseRecord.create({
+      data: {
+        expenseNumber: await generateExpenseNumber(tx),
+        expenseType,
+        expenseName: fee.feeName,
+        expenseAmount: Math.round(fee.feeAmount * 100) / 100,
+        expenseDate,
+        relatedType: sourceType,
+        relatedId: sourceId,
+        relatedNumber: sourceNumber || null,
+        remarks: fee.remarks || null,
+        userId,
+        status: 'draft',
+        paymentStatus: 'unpaid',
+        idempotencyKey,
+        supplierId: supplierId || null,
+      },
+    });
+    created += 1;
+  }
+
+  return created;
 }
 
 /**
@@ -239,37 +368,139 @@ export async function approveExpenseRecord(
     throw ApiError.notFound('费用记录');
   }
 
+  // 幂等性：如果已审核，直接返回现有记录而不抛错误
   if (existing.status === 'approved') {
-    throw ApiError.badRequest('该费用记录已审核，无需重复审核');
+    const approvedExpense = await prisma.expenseRecord.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        approvedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!approvedExpense) {
+      throw ApiError.notFound('费用记录');
+    }
+
+    const containerNumber =
+      approvedExpense.expenseType === 'shipping' &&
+      approvedExpense.relatedType === 'purchase_order'
+        ? await getPurchaseOrderContainer(approvedExpense.relatedId)
+        : undefined;
+
+    const safeExpenseType = validateExpenseType(approvedExpense.expenseType)
+      ? approvedExpense.expenseType
+      : 'other';
+
+    return {
+      id: approvedExpense.id,
+      expenseNumber: approvedExpense.expenseNumber,
+      expenseType: safeExpenseType as ExpenseRecord['expenseType'],
+      expenseName: approvedExpense.expenseName,
+      expenseAmount: approvedExpense.expenseAmount,
+      expenseDate: approvedExpense.expenseDate.toISOString(),
+      relatedType: approvedExpense.relatedType as ExpenseRecord['relatedType'],
+      relatedId: approvedExpense.relatedId || undefined,
+      relatedNumber: approvedExpense.relatedNumber || undefined,
+      containerNumber,
+      remarks: approvedExpense.remarks || undefined,
+      attachments: approvedExpense.attachments || undefined,
+      status: approvedExpense.status as ExpenseRecord['status'],
+      userId: approvedExpense.userId,
+      createdAt: approvedExpense.createdAt.toISOString(),
+      updatedAt: approvedExpense.updatedAt.toISOString(),
+      user: approvedExpense.user,
+      userName: approvedExpense.user.name,
+      approvedById: approvedExpense.approvedById || undefined,
+      approvedAt: approvedExpense.approvedAt
+        ? approvedExpense.approvedAt.toISOString()
+        : undefined,
+      cancelReason: approvedExpense.cancelReason || undefined,
+      approvedBy: approvedExpense.approvedBy || undefined,
+    };
   }
 
   if (existing.status === 'cancelled') {
     throw ApiError.badRequest('已作废的费用记录不能审核');
   }
 
-  const expense = await prisma.expenseRecord.update({
-    where: { id },
-    data: {
-      status: 'approved',
-      approvedById: approverId,
-      approvedAt: new Date(),
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
+  // 使用事务包装审批+应付款创建，确保原子性
+  const expense = await prisma.$transaction(async tx => {
+    // 1. 更新费用状态为已审批
+    const updatedExpense = await tx.expenseRecord.update({
+      where: { id },
+      data: {
+        status: 'approved',
+        approvedById: approverId,
+        approvedAt: new Date(),
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        approvedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
         },
       },
-      approvedBy: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
+    });
+
+    // 2. 阶段3：费用审批后自动创建/更新应付款（可选功能）
+    if (
+      env.EXPENSE_TO_PAYABLE_ENABLED &&
+      updatedExpense.supplierId &&
+      updatedExpense.expenseAmount > 0
+    ) {
+      try {
+        await createOrMergePayableFromExpense({
+          expenseId: updatedExpense.id,
+          expenseNumber: updatedExpense.expenseNumber,
+          expenseAmount: updatedExpense.expenseAmount,
+          supplierId: updatedExpense.supplierId,
+          sourceType: updatedExpense.relatedType as
+            | 'sales_order'
+            | 'factory_shipment'
+            | 'purchase_order'
+            | 'other',
+          sourceId: updatedExpense.relatedId,
+          sourceNumber: updatedExpense.relatedNumber,
+          userId: updatedExpense.userId,
+          tx,
+        });
+      } catch (error) {
+        logger.warn(
+          'expense-service',
+          '审批后创建应付款失败，但不影响审批结果',
+          error,
+          {
+            expenseId: updatedExpense.id,
+            expenseNumber: updatedExpense.expenseNumber,
+          }
+        );
+        // 不抛出错误，允许审批继续完成
+      }
+    }
+
+    return updatedExpense;
   });
 
   const containerNumber =

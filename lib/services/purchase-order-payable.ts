@@ -57,7 +57,7 @@ export async function ensurePurchaseOrderPayable(
   const dueDate = new Date();
   dueDate.setDate(dueDate.getDate() + 30);
 
-  await tx.payableRecord.create({
+  const newPayable = await tx.payableRecord.create({
     data: {
       payableNumber,
       supplierId: order.supplierId,
@@ -72,6 +72,18 @@ export async function ensurePurchaseOrderPayable(
       status: 'pending',
       paymentTerms: '30天',
       remarks: `系统自动生成：采购订单 ${order.orderNumber} 发货应付`,
+    },
+  });
+
+  // ✅ P0修复：关联费用记录到应付款
+  await tx.expenseRecord.updateMany({
+    where: {
+      relatedType: 'purchase_order',
+      relatedId: order.id,
+      payableId: null, // 仅更新未关联的费用
+    },
+    data: {
+      payableId: newPayable.id,
     },
   });
 }

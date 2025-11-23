@@ -6,6 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import type { PaymentOutRecordDetail } from '@/lib/types/payable';
@@ -211,6 +212,63 @@ const putPaymentHandler = withAuth(
                 status: newStatus,
               },
             });
+
+            // 阶段3：付款金额变更后联动更新关联费用的支付状态
+            if (env.EXPENSE_TO_PAYABLE_ENABLED) {
+              try {
+                // 判断支付状态并更新关联费用
+                const tolerance = 0.01;
+                const isFullyPaid = Math.abs(newRemainingAmount) <= tolerance;
+
+                if (isFullyPaid) {
+                  // 全额支付：所有关联费用标记为 paid
+                  await tx.expenseRecord.updateMany({
+                    where: {
+                      payableId: payableRecord.id,
+                      paymentStatus: { in: ['unpaid', 'partial'] },
+                    },
+                    data: { paymentStatus: 'paid' },
+                  });
+                  logger.info(
+                    'payments-out',
+                    '付款更新后应付款已全额支付，费用状态更新为paid',
+                    {
+                      paymentId: payment.id,
+                      payableId: payableRecord.id,
+                    }
+                  );
+                } else if (newPaidAmount > 0) {
+                  // 部分支付：未支付的费用标记为 partial
+                  await tx.expenseRecord.updateMany({
+                    where: {
+                      payableId: payableRecord.id,
+                      paymentStatus: 'unpaid',
+                    },
+                    data: { paymentStatus: 'partial' },
+                  });
+                  logger.info(
+                    'payments-out',
+                    '付款更新后应付款部分支付，费用状态更新为partial',
+                    {
+                      paymentId: payment.id,
+                      payableId: payableRecord.id,
+                      remainingAmount: newRemainingAmount,
+                    }
+                  );
+                }
+              } catch (error) {
+                logger.warn(
+                  'payments-out',
+                  '付款更新后费用状态更新失败，但不影响付款记录',
+                  error,
+                  {
+                    paymentId: payment.id,
+                    payableId: payableRecord.id,
+                  }
+                );
+                // 不抛出错误，允许付款更新继续完成
+              }
+            }
           }
         }
 
