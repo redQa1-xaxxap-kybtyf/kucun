@@ -123,6 +123,8 @@ patch.diff
 
 # Playwright MCP 测试文件和工具缓存
 .playwright-mcp/*.png
+.playwright-mcp/*.xlsx
+.playwright-mcp/*.csv
 .playwright-mcp/.playwright-mcp/
 
 # 临时脚本和补丁
