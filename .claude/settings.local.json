@@ -185,7 +185,12 @@
       "Bash(do cp \"$file\" \"../../factory-shipments/fee-items/$file\")",
       "Bash(Stop-Process -Force)",
       "Bash(nul)",
-      "mcp__playwright__browser_tabs"
+      "mcp__playwright__browser_tabs",
+      "WebFetch(domain:www.codeconcisely.com)",
+      "Bash(xxd:*)",
+      "mcp__playwright__browser_run_code",
+      "Bash(xargs:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []
