@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PageHeader } from '@/components/common/page-header';
 import { FactoryShipmentOrderList } from '@/components/factory-shipments/factory-shipment-order-list';
 import { Button } from '@/components/ui/button';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentQueryParams {
@@ -37,6 +38,7 @@ export function FactoryShipmentsPageClient({
 }: FactoryShipmentsPageClientProps) {
   const router = useRouter();
   const [, startTransition] = React.useTransition();
+  const { exportData, isExporting } = useFinanceExport();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -247,6 +249,21 @@ export function FactoryShipmentsPageClient({
     ]
   );
 
+  // 导出处理
+  const handleExport = React.useCallback(() => {
+    exportData('/api/factory-shipments/export', {
+      format: 'excel',
+      filters: {
+        status,
+        search,
+        containerNumber: search,
+        orderNumber: search,
+        startDate: startDate?.toISOString().split('T')[0],
+        endDate: endDate?.toISOString().split('T')[0],
+      },
+    });
+  }, [exportData, status, search, startDate, endDate]);
+
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="mb-6 flex-shrink-0">
@@ -261,13 +278,12 @@ export function FactoryShipmentsPageClient({
               <Button
                 variant="outline"
                 size="lg"
-                asChild
+                onClick={handleExport}
+                disabled={isExporting}
                 className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
               >
-                <Link href="/factory-shipments/export">
-                  <Download className="mr-2 h-4 w-4" />
-                  导出
-                </Link>
+                <Download className="mr-2 h-4 w-4" />
+                {isExporting ? '导出中...' : '导出'}
               </Button>
               <Button
                 size="lg"

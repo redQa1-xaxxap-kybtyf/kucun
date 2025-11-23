@@ -1,11 +1,27 @@
 'use client';
 
-import { Download, Plus, TrendingUp } from 'lucide-react';
+import {
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Plus,
+  TrendingUp,
+} from 'lucide-react';
 import Link from 'next/link';
+import { useCallback } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
 import type { ReceivablesResult } from '@/lib/services/receivables-service';
 
@@ -20,6 +36,18 @@ export function ReceivablesPageClient({
   initialData,
   initialParams,
 }: ReceivablesPageClientProps) {
+  const { exportData, isExporting } = useFinanceExport();
+
+  const handleExport = useCallback(
+    (format: 'excel' | 'csv') => {
+      exportData('/api/finance/receivables/export', {
+        format,
+        filters: initialParams,
+      });
+    },
+    [exportData, initialParams]
+  );
+
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
@@ -30,17 +58,37 @@ export function ReceivablesPageClient({
           iconBgColor="hsl(var(--color-primary))"
           actions={
             <>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-              >
-                <Link href="/finance/receivables/export">
-                  <Download className="mr-2 h-4 w-4" />
-                  导出
-                </Link>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    disabled={isExporting}
+                    className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {isExporting ? '导出中...' : '导出'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel>选择导出格式</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => handleExport('excel')}
+                    disabled={isExporting}
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                    Excel 格式 (.xlsx)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleExport('csv')}
+                    disabled={isExporting}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    CSV 格式 (.csv)
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 size="lg"
                 asChild

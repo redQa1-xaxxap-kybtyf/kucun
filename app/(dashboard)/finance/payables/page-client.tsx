@@ -11,6 +11,7 @@ import { PayablesClient } from '@/components/finance/payables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
   PAYABLE_SORT_OPTIONS,
   type PayableSourceType,
@@ -558,6 +559,15 @@ export function PayablesPageClient({
     handleDateRangeChange,
   } = usePayablesFilters(router, initialParams);
 
+  const { exportData, isExporting } = useFinanceExport();
+
+  const handleExport = React.useCallback(() => {
+    exportData('/api/finance/payables/export', {
+      format: 'excel',
+      filters: normalizedInitialParams,
+    });
+  }, [exportData, normalizedInitialParams]);
+
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
@@ -582,13 +592,12 @@ export function PayablesPageClient({
                 <Button
                   variant="outline"
                   size="lg"
-                  asChild
+                  onClick={handleExport}
+                  disabled={isExporting}
                   className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
-                  <Link href="/finance/payables/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
+                  <Download className="mr-2 h-4 w-4" />
+                  {isExporting ? '导出中...' : '导出'}
                 </Button>
                 <Button
                   size="lg"
