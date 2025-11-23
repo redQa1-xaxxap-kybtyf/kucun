@@ -287,3 +287,161 @@
     font-feature-settings: 'liga', 'kern';
   }
 }
+
+/* ========================================================================
+   打印样式 (Print Styles)
+   ======================================================================== */
+
+@media print {
+  /* 隐藏非打印元素 */
+  .no-print,
+  nav,
+  header:not(.print-header),
+  footer:not(.print-footer),
+  aside,
+  .sidebar,
+  .actions,
+  button:not(.print-include),
+  [role='navigation'],
+  [role='complementary'] {
+    display: none !important;
+  }
+
+  /* 显示仅打印元素 */
+  .print-only {
+    display: block !important;
+  }
+
+  /* 打印容器全屏 */
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 打印内容区域 */
+  .print-content {
+    width: var(--print-width, 297mm) !important;
+    min-height: var(--print-height, 210mm) !important;
+    padding: var(--print-margin-top, 10mm) var(--print-margin-right, 10mm)
+      var(--print-margin-bottom, 10mm) var(--print-margin-left, 10mm) !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    page-break-after: always;
+  }
+
+  /* 页面设置 */
+  @page {
+    size: var(--print-width, 297mm) var(--print-height, 210mm);
+    margin: 0;
+  }
+
+  /* 表格跨页处理 */
+  table {
+    page-break-inside: auto;
+    border-collapse: collapse;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  tr,
+  th,
+  td {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* 避免元素被截断 */
+  .avoid-break,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 强制打印背景色 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* 移除阴影、圆角等装饰 */
+  * {
+    box-shadow: none !important;
+  }
+
+  /* 确保文本清晰 */
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial,
+      sans-serif;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+
+  /* 链接样式 */
+  a {
+    text-decoration: none;
+    color: #000;
+  }
+
+  a[href]::after {
+    content: none;
+  }
+
+  /* 表格样式优化 */
+  table {
+    width: 100%;
+    border: 1px solid #000;
+  }
+
+  th,
+  td {
+    border: 1px solid #000;
+    padding: 4pt 8pt;
+    text-align: left;
+  }
+
+  th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+  }
+
+  /* 页眉页脚 */
+  .print-header {
+    display: block;
+  }
+
+  .print-footer {
+    display: block;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+  }
+}
+
+/* 打印预览模式（屏幕显示） */
+@media screen {
+  .print-only {
+    display: none;
+  }
+
+  .print-container {
+    margin: 20px auto;
+  }
+}

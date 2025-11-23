@@ -9,8 +9,9 @@ import {
   Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
+import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,12 +22,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
+import { salesOrderPrintConfig } from '@/lib/config/print-fields/sales-order-fields';
 import {
   SALES_ORDER_STATUS_LABELS,
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
+import { SalesOrderPrintContent } from './SalesOrderPrintContent';
 import type { SalesOrderDetail } from './types';
 
 interface Props {
@@ -51,6 +54,7 @@ interface HeaderActionsProps {
   onBack: () => void;
   onEdit: () => void;
   onConfirmShipment: () => void;
+  onPrint: () => void;
   onExportImage: () => void;
   onExportExcel: () => void;
   onExportCompleteExcel: () => void;
@@ -130,6 +134,7 @@ function HeaderActions({
   onBack,
   onEdit,
   onConfirmShipment,
+  onPrint,
   onExportImage,
   onExportExcel,
   onExportCompleteExcel,
@@ -172,7 +177,7 @@ function HeaderActions({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={onPrint}>
             <Printer className="mr-2 h-4 w-4" />
             打印订单
           </DropdownMenuItem>
@@ -215,6 +220,8 @@ export function HeaderCard({
     isExportingExcel,
   } = useSalesOrderExport();
 
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+
   const handleExportImage = useCallback(async () => {
     const printTemplate = document.getElementById('sales-order-print-template');
 
@@ -250,6 +257,10 @@ export function HeaderCard({
     onShowToast('无法编辑', '只有草稿状态的订单才能编辑', 'destructive');
   }, [canEditOrder, id, onShowToast, router]);
 
+  const handlePrint = useCallback(() => {
+    setIsPrintDialogOpen(true);
+  }, []);
+
   return (
     <Card
       className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
@@ -267,12 +278,29 @@ export function HeaderCard({
             onBack={() => router.back()}
             onEdit={handleEdit}
             onConfirmShipment={onConfirmShipment}
+            onPrint={handlePrint}
             onExportImage={handleExportImage}
             onExportExcel={handleExportExcel}
             onExportCompleteExcel={handleExportCompleteExcel}
           />
         </div>
       </CardContent>
+      {isPrintDialogOpen && (
+        <PrintPreviewDialog
+          open={isPrintDialogOpen}
+          onClose={() => setIsPrintDialogOpen(false)}
+          documentType="sales-order"
+          printConfig={salesOrderPrintConfig}
+          renderContent={(styleConfig, fieldSelection) => (
+            <SalesOrderPrintContent
+              order={order}
+              styleConfig={styleConfig}
+              fieldSelection={fieldSelection}
+            />
+          )}
+          title="销售订单打印"
+        />
+      )}
     </Card>
   );
 }

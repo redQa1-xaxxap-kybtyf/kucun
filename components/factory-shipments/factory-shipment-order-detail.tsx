@@ -9,6 +9,7 @@ import {
   Edit,
   Package,
   PackageCheck,
+  Printer,
   Ship,
   Truck,
   User,
@@ -19,9 +20,11 @@ import { ContentLoading } from '@/components/common/loading';
 import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arrival-dialog';
 import { ConfirmInboundDialog } from '@/components/factory-shipments/confirm-inbound-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
+import { FactoryShipmentPrintContent } from '@/components/factory-shipments/FactoryShipmentPrintContent';
 import { FeeItemsSection } from '@/components/factory-shipments/fee-items-section';
 import { SupplementShippingInfoDialog } from '@/components/factory-shipments/supplement-shipping-info-dialog';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
+import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getFactoryShipmentOrder } from '@/lib/api/factory-shipments';
+import { factoryShipmentPrintConfig } from '@/lib/config/print-fields/factory-shipment-fields';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
@@ -74,6 +78,7 @@ export function FactoryShipmentOrderDetail({
   const [arrivalDialogOpen, setArrivalDialogOpen] = useState(false);
   const [inboundDialogOpen, setInboundDialogOpen] = useState(false);
   const [supplementDialogOpen, setSupplementDialogOpen] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const handleOrderRefresh = () => {
@@ -206,6 +211,14 @@ export function FactoryShipmentOrderDetail({
                   确认入库
                 </Button>
               )}
+              <Button
+                variant="outline"
+                onClick={() => setIsPrintDialogOpen(true)}
+                className="bg-white/50"
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                打印
+              </Button>
               <Button
                 variant="outline"
                 onClick={onEdit}
@@ -710,6 +723,23 @@ export function FactoryShipmentOrderDetail({
         onOpenChange={setSupplementDialogOpen}
         onSuccess={handleOrderRefresh}
       />
+
+      {isPrintDialogOpen && (
+        <PrintPreviewDialog
+          open={isPrintDialogOpen}
+          onClose={() => setIsPrintDialogOpen(false)}
+          documentType="factory-shipment"
+          printConfig={factoryShipmentPrintConfig}
+          renderContent={(styleConfig, fieldSelection) => (
+            <FactoryShipmentPrintContent
+              order={order}
+              styleConfig={styleConfig}
+              fieldSelection={fieldSelection}
+            />
+          )}
+          title="厂家发货单打印"
+        />
+      )}
     </div>
   );
 }

@@ -5,12 +5,14 @@ import {
   Calendar,
   Edit,
   Package,
+  Printer,
   Trash2,
   User,
   Warehouse,
 } from 'lucide-react';
-import type { Dispatch, SetStateAction } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 
+import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
 import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
@@ -44,6 +47,7 @@ import {
   formatCurrency,
 } from './purchase-order-detail-constants';
 import type { PurchaseOrderDetailData } from './purchase-order-detail.types';
+import { PurchaseOrderPrintContent } from './PurchaseOrderPrintContent';
 
 interface OrderSummaryCardProps {
   order: PurchaseOrderDetailData;
@@ -62,73 +66,100 @@ export function OrderSummaryCard({
   onBack,
   onRequestDelete,
 }: OrderSummaryCardProps) {
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Warehouse className="text-primary h-8 w-8" />
-            <div>
-              <CardTitle className="text-2xl">采购订单详情</CardTitle>
-              <p className="text-muted-foreground text-sm">
-                订单号: {order.orderNumber}
-              </p>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Warehouse className="text-primary h-8 w-8" />
+              <div>
+                <CardTitle className="text-2xl">采购订单详情</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  订单号: {order.orderNumber}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              {isDraft && (
+                <>
+                  <Button variant="outline" onClick={onEdit}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    编辑
+                  </Button>
+                  <Button variant="destructive" onClick={onRequestDelete}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    删除
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setIsPrintDialogOpen(true)}
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                打印
+              </Button>
+              <Button variant="outline" onClick={onBack}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回
+              </Button>
             </div>
           </div>
-          <div className="flex gap-2">
-            {isDraft && (
-              <>
-                <Button variant="outline" onClick={onEdit}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  编辑
-                </Button>
-                <Button variant="destructive" onClick={onRequestDelete}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  删除
-                </Button>
-              </>
-            )}
-            <Button variant="outline" onClick={onBack}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              返回
-            </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-muted-foreground text-sm">状态</p>
+              <Badge variant={STATUS_CONFIG[currentStatus].variant}>
+                {STATUS_CONFIG[currentStatus].label}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">集装箱号</p>
+              <p>{order.containerNumber || '-'}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">船运公司</p>
+              <p>
+                {order.shippingCompany
+                  ? order.shippingCompany
+                  : currentStatus === PURCHASE_ORDER_STATUS.SHIPPED ||
+                      currentStatus === PURCHASE_ORDER_STATUS.IN_TRANSIT
+                    ? '待补充'
+                    : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">创建时间</p>
+              <p>{new Date(order.createdAt).toLocaleString('zh-CN')}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-sm">更新时间</p>
+              <p>{new Date(order.updatedAt).toLocaleString('zh-CN')}</p>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-muted-foreground text-sm">状态</p>
-            <Badge variant={STATUS_CONFIG[currentStatus].variant}>
-              {STATUS_CONFIG[currentStatus].label}
-            </Badge>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm">集装箱号</p>
-            <p>{order.containerNumber || '-'}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm">船运公司</p>
-            <p>
-              {order.shippingCompany
-                ? order.shippingCompany
-                : currentStatus === PURCHASE_ORDER_STATUS.SHIPPED ||
-                    currentStatus === PURCHASE_ORDER_STATUS.IN_TRANSIT
-                  ? '待补充'
-                  : '-'}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm">创建时间</p>
-            <p>{new Date(order.createdAt).toLocaleString('zh-CN')}</p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-sm">更新时间</p>
-            <p>{new Date(order.updatedAt).toLocaleString('zh-CN')}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      {isPrintDialogOpen && (
+        <PrintPreviewDialog
+          open={isPrintDialogOpen}
+          onClose={() => setIsPrintDialogOpen(false)}
+          documentType="purchase-order"
+          printConfig={purchaseOrderPrintConfig}
+          renderContent={(styleConfig, fieldSelection) => (
+            <PurchaseOrderPrintContent
+              order={order}
+              styleConfig={styleConfig}
+              fieldSelection={fieldSelection}
+            />
+          )}
+          title="采购订单打印"
+        />
+      )}
+    </>
   );
 }
 
