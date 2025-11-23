@@ -140,7 +140,7 @@ export const createPurchaseOrderSchema = z.object({
     .max(50, '集装箱号码不能超过50个字符')
     .optional()
     .or(z.literal('')),
-  orderDate: z.date().optional().describe('订单日期'),
+  orderDate: z.coerce.date().optional().describe('订单日期'),
   status: purchaseOrderStatusSchema.optional(),
   totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
   remarks: z
