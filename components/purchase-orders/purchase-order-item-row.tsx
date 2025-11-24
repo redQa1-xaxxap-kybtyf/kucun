@@ -7,6 +7,7 @@ import { useWatch, type UseFormReturn } from 'react-hook-form';
 import { BatchSelector } from '@/components/batches/batch-selector';
 import { ProductSelector } from '@/components/products/product-selector';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
@@ -68,29 +69,14 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
           {index + 1}
         </TableCell>
 
-        {/* 冻结列：产品信息（合并名称和编码） */}
-        <TableCell className="bg-background sticky left-[50px] z-10 border-r px-3 py-3">
-          <FormField
-            control={form.control}
-            name={`items.${index}.productId`}
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <ProductSelector
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    onProductChange={product => onProductChange(index, product)}
-                    className="w-full"
-                    placeholder="搜索名称/编码"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </TableCell>
-
+        {/* 非冻结列：按用户要求的顺序排列 */}
         <SupplierSelectorCell form={form} index={index} />
+        <ProductCodeCell productCode={productCode} />
+        <ProductNameCell
+          form={form}
+          index={index}
+          onProductChange={onProductChange}
+        />
         <TextInputCell
           form={form}
           index={index}
@@ -105,12 +91,12 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
           supplierId={supplierId}
           specification={specification}
         />
+        <UnitCell form={form} index={index} />
         <QuantityCell
           form={form}
           index={index}
           onQuantityChange={onQuantityChange}
         />
-        <UnitCell form={form} index={index} />
         <PiecesPerUnitCell form={form} index={index} />
         <UnitPriceCell
           form={form}
@@ -153,6 +139,53 @@ function SupplierSelectorCell({ form, index }: FormCellProps) {
               <SupplierSelector
                 value={field.value}
                 onValueChange={field.onChange}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </TableCell>
+  );
+}
+
+function ProductCodeCell({ productCode }: { productCode: string | undefined }) {
+  return (
+    <TableCell className="border-r px-3 py-3 text-center">
+      {productCode ? (
+        <Badge
+          variant="outline"
+          className="border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] font-mono text-xs font-semibold text-[hsl(var(--color-info))]"
+        >
+          {productCode}
+        </Badge>
+      ) : (
+        <span className="text-muted-foreground text-xs">未选择</span>
+      )}
+    </TableCell>
+  );
+}
+
+function ProductNameCell({
+  form,
+  index,
+  onProductChange,
+}: FormCellProps & {
+  onProductChange: (index: number, product: Product | null) => void;
+}) {
+  return (
+    <TableCell className="border-r px-3 py-3">
+      <FormField
+        control={form.control}
+        name={`items.${index}.productId`}
+        render={({ field }) => (
+          <FormItem>
+            <FormControl>
+              <ProductSelector
+                value={field.value}
+                onValueChange={field.onChange}
+                onProductChange={product => onProductChange(index, product)}
+                placeholder="搜索产品名称/编码"
               />
             </FormControl>
             <FormMessage />

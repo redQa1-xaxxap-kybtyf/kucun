@@ -223,13 +223,15 @@ function PurchaseOrderItemsTableView({
               <TableHead className="bg-muted/50 text-foreground sticky left-0 z-10 h-10 w-[50px] border-r py-2 text-center text-xs font-medium">
                 序号
               </TableHead>
-              {/* 冻结列：产品信息 (合并名称和编码) */}
-              <TableHead className="bg-muted/50 text-foreground sticky left-[50px] z-10 h-10 w-[220px] border-r py-2 text-xs font-medium">
-                产品（名称/编码） <span className="text-destructive">*</span>
-              </TableHead>
-              {/* 非冻结列 */}
+              {/* 非冻结列：按用户要求的顺序 */}
               <TableHead className="text-foreground h-10 w-[160px] border-r py-2 text-xs font-medium">
                 供应商 <span className="text-destructive">*</span>
+              </TableHead>
+              <TableHead className="text-foreground h-10 w-[100px] border-r py-2 text-center text-xs font-medium">
+                产品编码 <span className="text-destructive">*</span>
+              </TableHead>
+              <TableHead className="text-foreground h-10 w-[180px] border-r py-2 text-xs font-medium">
+                产品名称 <span className="text-destructive">*</span>
               </TableHead>
               <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">
                 规格
@@ -237,11 +239,11 @@ function PurchaseOrderItemsTableView({
               <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">
                 批次号
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[100px] border-r py-2 text-right text-xs font-medium">
-                数量 <span className="text-destructive">*</span>
-              </TableHead>
               <TableHead className="text-foreground h-10 w-[70px] border-r py-2 text-center text-xs font-medium">
                 单位
+              </TableHead>
+              <TableHead className="text-foreground h-10 w-[100px] border-r py-2 text-right text-xs font-medium">
+                数量 <span className="text-destructive">*</span>
               </TableHead>
               <TableHead className="text-foreground h-10 w-[90px] border-r py-2 text-right text-xs font-medium">
                 每件片数
