@@ -77,12 +77,7 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
           onProductChange={onProductChange}
         />
         <ProductNameCell displayName={displayName} />
-        <TextInputCell
-          form={form}
-          index={index}
-          name={`items.${index}.specification`}
-          placeholder="规格"
-        />
+        <SpecificationCell specification={specification} />
         <BatchSelectorCell
           form={form}
           index={index}
@@ -191,11 +186,24 @@ function ProductNameCell({ displayName }: { displayName: string | undefined }) {
   );
 }
 
+function SpecificationCell({
+  specification,
+}: {
+  specification: string | undefined;
+}) {
+  return (
+    <TableCell className="border-r px-3 py-3">
+      <div className="text-sm">
+        {specification || (
+          <span className="text-muted-foreground text-xs">—</span>
+        )}
+      </div>
+    </TableCell>
+  );
+}
+
 interface TextInputCellProps extends FormCellProps {
-  name:
-    | `items.${number}.productCode`
-    | `items.${number}.specification`
-    | `items.${number}.remarks`;
+  name: `items.${number}.remarks`;
   placeholder: string;
   cellClassName?: string;
 }
@@ -206,9 +214,6 @@ function TextInputCell({
   placeholder,
   cellClassName,
 }: TextInputCellProps) {
-  // 判断是否为备注列
-  const isRemarksField = name.includes('remarks');
-
   return (
     <TableCell className={cn('border-r px-3 py-3', cellClassName)}>
       <FormField
@@ -220,12 +225,8 @@ function TextInputCell({
               <Input
                 {...field}
                 placeholder={placeholder}
-                className={cn('h-9 text-sm', isRemarksField && 'max-w-[180px]')}
-                title={
-                  isRemarksField && field.value
-                    ? String(field.value)
-                    : undefined
-                }
+                className="h-9 max-w-[180px] text-sm"
+                title={field.value ? String(field.value) : undefined}
               />
             </FormControl>
             <FormMessage />
