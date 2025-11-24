@@ -109,39 +109,48 @@ function ProductLabel({
     return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
   }, [product.specification]);
 
-  // 紧凑模式：只显示产品编码
-  if (compactMode && product.code) {
+  // 紧凑模式：显示产品名称和编码（优化后的显示）
+  if (compactMode) {
     return (
-      <div className="flex items-center gap-2">
-        <Badge
-          variant="outline"
-          className="border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] font-mono text-xs font-semibold text-[hsl(var(--color-info))]"
-        >
-          {product.code}
-        </Badge>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="truncate text-sm font-medium">{product.name}</span>
+        {product.code && (
+          <Badge
+            variant="outline"
+            className="shrink-0 border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] font-mono text-xs font-semibold text-[hsl(var(--color-info))]"
+          >
+            {product.code}
+          </Badge>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         {showCode && product.code && (
-          <span className="text-muted-foreground font-mono text-sm">
+          <Badge
+            variant="outline"
+            className="shrink-0 border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] font-mono text-xs font-semibold text-[hsl(var(--color-info))]"
+          >
             {product.code}
-          </span>
-        )}
-        <span className="truncate text-sm font-medium">{product.name}</span>
-        {product.status === 'inactive' && (
-          <Badge variant="secondary" className="text-xs">
-            停用
           </Badge>
         )}
+        <span className="truncate text-sm font-medium">{product.name}</span>
+        {showSpecification && formattedSpecification && (
+          <>
+            <span className="text-muted-foreground shrink-0">|</span>
+            <span className="text-muted-foreground truncate text-xs">
+              {formattedSpecification}
+            </span>
+          </>
+        )}
       </div>
-      {showSpecification && formattedSpecification && (
-        <span className="text-muted-foreground truncate text-xs">
-          {formattedSpecification}
-        </span>
+      {product.status === 'inactive' && (
+        <Badge variant="secondary" className="shrink-0 text-xs">
+          停用
+        </Badge>
       )}
     </div>
   );
@@ -163,7 +172,7 @@ interface ProductSelectorProps {
 export function ProductSelector({
   value,
   onValueChange,
-  placeholder = '选择产品...',
+  placeholder = '搜索产品名称/编码...',
   disabled = false,
   className,
   showCode = true,

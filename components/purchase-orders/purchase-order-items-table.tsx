@@ -1,9 +1,10 @@
 'use client';
 
 import { Plus } from 'lucide-react';
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
+import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -125,6 +126,7 @@ function PurchaseOrderItemsTableView({
   onUnitPriceChange,
 }: PurchaseOrderItemsTableViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const [bulkSupplierId, setBulkSupplierId] = useState<string>('');
 
   const focusNewRowProductCell = useCallback((rowIndex: number) => {
     if (!containerRef.current) return;
@@ -144,6 +146,27 @@ function PurchaseOrderItemsTableView({
     focusNewRowProductCell(nextIndex);
   }, [fields.length, onAddItem, focusNewRowProductCell]);
 
+  const items = form.watch('items') || [];
+  const totalQuantity = items.reduce(
+    (sum, item) => sum + (Number(item.quantity) || 0),
+    0
+  );
+  const totalAmount = items.reduce(
+    (sum, item) => sum + (Number(item.totalPrice) || 0),
+    0
+  );
+
+  const handleApplyBulkSupplier = useCallback(() => {
+    if (!bulkSupplierId) return;
+    const currentItems = form.getValues('items') || [];
+    currentItems.forEach((_item, index) => {
+      form.setValue(`items.${index}.supplierId`, bulkSupplierId, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    });
+  }, [bulkSupplierId, form]);
+
   return (
     <div
       ref={containerRef}
@@ -155,19 +178,41 @@ function PurchaseOrderItemsTableView({
         }
       }}
     >
-      <div className="flex items-center justify-between">
-        <Button
-          type="button"
-          onClick={handleAddAndFocus}
-          size="sm"
-          variant="default"
-          className="h-8"
-          aria-label="选择产品"
-          title="选择产品(F3)"
-        >
-          <Plus className="mr-1 h-3 w-3" />
-          选择产品(F3)
-        </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            onClick={handleAddAndFocus}
+            size="sm"
+            variant="default"
+            className="h-9"
+            aria-label="选择产品"
+            title="选择产品(F3)"
+          >
+            <Plus className="mr-1 h-4 w-4" />
+            选择产品(F3)
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground text-sm">批量设置供应商:</span>
+          <div className="w-60">
+            <SupplierSelector
+              value={bulkSupplierId}
+              onValueChange={setBulkSupplierId}
+              placeholder="选择供应商"
+            />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={handleApplyBulkSupplier}
+            disabled={!bulkSupplierId || items.length === 0}
+          >
+            应用到全部明细
+          </Button>
+        </div>
       </div>
 
       <div className="relative overflow-x-auto rounded-lg border">
@@ -175,46 +220,42 @@ function PurchaseOrderItemsTableView({
           <TableHeader>
             <TableRow className="bg-muted/50">
               {/* 冻结列：序号 */}
-              <TableHead className="bg-muted/50 sticky left-0 z-10 h-9 w-[50px] border-r py-2 text-xs">
+              <TableHead className="bg-muted/50 text-foreground sticky left-0 z-10 h-10 w-[50px] border-r py-2 text-center text-xs font-medium">
                 序号
               </TableHead>
-              {/* 冻结列：产品名称 */}
-              <TableHead className="bg-muted/50 sticky left-[50px] z-10 h-9 w-[200px] border-r py-2 text-xs">
-                产品名称 *
-              </TableHead>
-              {/* 冻结列：产品编码 */}
-              <TableHead className="bg-muted/50 sticky left-[250px] z-10 h-9 w-[140px] min-w-[120px] border-r py-2 text-xs">
-                产品编码 *
+              {/* 冻结列：产品信息 (合并名称和编码) */}
+              <TableHead className="bg-muted/50 text-foreground sticky left-[50px] z-10 h-10 w-[220px] border-r py-2 text-xs font-medium">
+                产品（名称/编码） <span className="text-destructive">*</span>
               </TableHead>
               {/* 非冻结列 */}
-              <TableHead className="h-9 min-w-[180px] border-r py-2 text-xs">
-                供应商 *
+              <TableHead className="text-foreground h-10 w-[160px] border-r py-2 text-xs font-medium">
+                供应商 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="h-9 max-w-[220px] min-w-[200px] border-r py-2 text-xs">
+              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">
                 规格
               </TableHead>
-              <TableHead className="h-9 min-w-[180px] border-r py-2 text-xs">
+              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">
                 批次号
               </TableHead>
-              <TableHead className="h-9 w-[100px] border-r py-2 text-right text-xs">
-                数量 *
+              <TableHead className="text-foreground h-10 w-[100px] border-r py-2 text-right text-xs font-medium">
+                数量 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="h-9 w-[80px] border-r py-2 text-center text-xs">
+              <TableHead className="text-foreground h-10 w-[70px] border-r py-2 text-center text-xs font-medium">
                 单位
               </TableHead>
-              <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
+              <TableHead className="text-foreground h-10 w-[90px] border-r py-2 text-right text-xs font-medium">
                 每件片数
               </TableHead>
-              <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
-                采购单价 *
+              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-right text-xs font-medium">
+                采购单价 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="h-9 w-[120px] border-r py-2 text-right text-xs">
+              <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-right text-xs font-medium">
                 总价
               </TableHead>
-              <TableHead className="h-9 min-w-[150px] border-r py-2 text-xs">
+              <TableHead className="text-foreground h-10 w-[180px] max-w-[180px] border-r py-2 text-xs font-medium">
                 备注
               </TableHead>
-              <TableHead className="h-9 w-[80px] py-2 text-center text-xs">
+              <TableHead className="text-foreground h-10 w-[80px] py-2 text-center text-xs font-medium">
                 操作
               </TableHead>
             </TableRow>
@@ -234,6 +275,20 @@ function PurchaseOrderItemsTableView({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 底部汇总栏 */}
+      <div className="bg-muted/10 flex items-center justify-end gap-8 rounded-lg border px-6 py-4">
+        <div className="text-sm">
+          <span className="text-muted-foreground mr-2">总数量:</span>
+          <span className="font-medium">{totalQuantity}</span>
+        </div>
+        <div className="flex items-baseline text-sm">
+          <span className="text-muted-foreground mr-2">预计总金额:</span>
+          <span className="font-mono text-xl font-bold text-orange-600">
+            ￥{totalAmount.toFixed(2)}
+          </span>
+        </div>
       </div>
     </div>
   );

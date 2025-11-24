@@ -62,27 +62,34 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
     const amount = Number(watchedQuantity || 0) * Number(watchedUnitPrice || 0);
 
     return (
-      <TableRow className="h-10 text-[13px]">
+      <TableRow className="hover:bg-muted/30">
         {/* 冻结列：序号 */}
-        <TableCell className="sticky left-0 z-10 border-r bg-white py-2 text-center text-sm">
+        <TableCell className="bg-background sticky left-0 z-10 border-r py-3 text-center text-sm font-medium">
           {index + 1}
         </TableCell>
 
-        {/* 冻结列：产品名称（选择器） */}
-        <ProductSelectorCell
-          form={form}
-          index={index}
-          onProductChange={onProductChange}
-          cellClassName="sticky left-[50px] z-10 w-[200px] bg-white"
-        />
-        {/* 冻结列：产品编码 */}
-        <TextInputCell
-          form={form}
-          index={index}
-          name={`items.${index}.productCode`}
-          placeholder="产品编码"
-          cellClassName="sticky left-[250px] z-10 w-[140px] bg-white"
-        />
+        {/* 冻结列：产品信息（合并名称和编码） */}
+        <TableCell className="bg-background sticky left-[50px] z-10 border-r px-3 py-3">
+          <FormField
+            control={form.control}
+            name={`items.${index}.productId`}
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <ProductSelector
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    onProductChange={product => onProductChange(index, product)}
+                    className="w-full"
+                    placeholder="搜索名称/编码"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </TableCell>
+
         <SupplierSelectorCell form={form} index={index} />
         <TextInputCell
           form={form}
@@ -134,44 +141,9 @@ interface FormCellProps {
   index: number;
 }
 
-function ProductSelectorCell({
-  form,
-  index,
-  onProductChange,
-  cellClassName,
-}: FormCellProps & {
-  onProductChange: (index: number, product: Product | null) => void;
-  cellClassName?: string;
-}) {
-  return (
-    <TableCell
-      className={`border-r py-2 ${cellClassName ?? ''}`}
-      data-selector="product"
-      data-row-index={index}
-    >
-      <FormField
-        control={form.control}
-        name={`items.${index}.productId`}
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <ProductSelector
-                value={field.value}
-                onValueChange={field.onChange}
-                onProductChange={product => onProductChange(index, product)}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </TableCell>
-  );
-}
-
 function SupplierSelectorCell({ form, index }: FormCellProps) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className="border-r px-3 py-3">
       <FormField
         control={form.control}
         name={`items.${index}.supplierId`}
@@ -206,15 +178,27 @@ function TextInputCell({
   placeholder,
   cellClassName,
 }: TextInputCellProps) {
+  // 判断是否为备注列
+  const isRemarksField = name.includes('remarks');
+
   return (
-    <TableCell className={cn('border-r py-2', cellClassName)}>
+    <TableCell className={cn('border-r px-3 py-3', cellClassName)}>
       <FormField
         control={form.control}
         name={name}
         render={({ field }) => (
           <FormItem>
             <FormControl>
-              <Input {...field} placeholder={placeholder} className="h-8" />
+              <Input
+                {...field}
+                placeholder={placeholder}
+                className={cn('h-9 text-sm', isRemarksField && 'max-w-[180px]')}
+                title={
+                  isRemarksField && field.value
+                    ? String(field.value)
+                    : undefined
+                }
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -240,7 +224,7 @@ function BatchSelectorCell({
   specification,
 }: BatchSelectorCellProps) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className="border-r px-3 py-3">
       <FormField
         control={form.control}
         name={`items.${index}.batchNumber`}
@@ -273,7 +257,7 @@ function QuantityCell({
   onQuantityChange: (index: number, value: string) => void;
 }) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className="border-r px-3 py-3">
       <FormField
         control={form.control}
         name={`items.${index}.quantity`}
@@ -300,7 +284,7 @@ function QuantityCell({
                   field.onChange(Number.isNaN(parsed) ? undefined : parsed);
                   onQuantityChange(index, value);
                 }}
-                className="h-8 text-right"
+                className="h-9 text-right text-sm"
               />
             </FormControl>
             <FormMessage />
@@ -313,7 +297,7 @@ function QuantityCell({
 
 function UnitCell({ form, index }: FormCellProps) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className="border-r px-3 py-3">
       <FormField
         control={form.control}
         name={`items.${index}.unit`}
@@ -321,7 +305,7 @@ function UnitCell({ form, index }: FormCellProps) {
           <FormItem>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl>
-                <SelectTrigger className="h-8">
+                <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
               </FormControl>
@@ -346,7 +330,7 @@ function UnitPriceCell({
   onUnitPriceChange: (index: number, value: string) => void;
 }) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className="border-r px-3 py-3">
       <FormField
         control={form.control}
         name={`items.${index}.unitPrice`}
@@ -373,7 +357,7 @@ function UnitPriceCell({
                   field.onChange(Number.isNaN(parsed) ? undefined : parsed);
                   onUnitPriceChange(index, value);
                 }}
-                className="h-8 text-right"
+                className="h-9 text-right text-sm"
               />
             </FormControl>
             <FormMessage />
@@ -386,7 +370,7 @@ function UnitPriceCell({
 
 function PiecesPerUnitCell({ form, index }: FormCellProps) {
   return (
-    <TableCell className="border-r py-2">
+    <TableCell className="border-r px-3 py-3">
       <FormField
         control={form.control}
         name={`items.${index}.piecesPerUnit`}
@@ -412,7 +396,7 @@ function PiecesPerUnitCell({ form, index }: FormCellProps) {
                   const parsed = Number(value);
                   field.onChange(Number.isNaN(parsed) ? undefined : parsed);
                 }}
-                className="h-8 text-right"
+                className="h-9 text-right text-sm"
                 placeholder="—"
               />
             </FormControl>
@@ -426,7 +410,7 @@ function PiecesPerUnitCell({ form, index }: FormCellProps) {
 
 function TotalAmountCell({ amount }: { amount: number }) {
   return (
-    <TableCell className="border-r py-2 text-right text-sm font-medium">
+    <TableCell className="border-r px-3 py-3 text-right text-sm font-medium">
       ¥{amount.toFixed(2)}
     </TableCell>
   );
@@ -442,7 +426,7 @@ function ActionsCell({
   disableRemove: boolean;
 }) {
   return (
-    <TableCell className="py-2 text-center">
+    <TableCell className="px-2 py-3 text-center">
       <Button
         type="button"
         variant="ghost"
