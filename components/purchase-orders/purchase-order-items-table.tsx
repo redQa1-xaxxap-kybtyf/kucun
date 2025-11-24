@@ -227,10 +227,10 @@ function PurchaseOrderItemsTableView({
               <TableHead className="text-foreground h-10 w-[160px] border-r py-2 text-xs font-medium">
                 供应商 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[100px] border-r py-2 text-center text-xs font-medium">
+              <TableHead className="text-foreground h-10 w-[200px] border-r py-2 text-xs font-medium">
                 产品编码 <span className="text-destructive">*</span>
               </TableHead>
-              <TableHead className="text-foreground h-10 w-[180px] border-r py-2 text-xs font-medium">
+              <TableHead className="text-foreground h-10 w-[150px] border-r py-2 text-xs font-medium">
                 产品名称 <span className="text-destructive">*</span>
               </TableHead>
               <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-xs font-medium">

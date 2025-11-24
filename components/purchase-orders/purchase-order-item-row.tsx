@@ -7,7 +7,6 @@ import { useWatch, type UseFormReturn } from 'react-hook-form';
 import { BatchSelector } from '@/components/batches/batch-selector';
 import { ProductSelector } from '@/components/products/product-selector';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
@@ -61,6 +60,7 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
       name: `items.${index}.unitPrice`,
     });
     const amount = Number(watchedQuantity || 0) * Number(watchedUnitPrice || 0);
+    const displayName = form.watch(`items.${index}.displayName`);
 
     return (
       <TableRow className="hover:bg-muted/30">
@@ -71,12 +71,12 @@ export const PurchaseOrderItemRow = React.memo<PurchaseOrderItemRowProps>(
 
         {/* 非冻结列：按用户要求的顺序排列 */}
         <SupplierSelectorCell form={form} index={index} />
-        <ProductCodeCell productCode={productCode} />
-        <ProductNameCell
+        <ProductCodeCell
           form={form}
           index={index}
           onProductChange={onProductChange}
         />
+        <ProductNameCell displayName={displayName} />
         <TextInputCell
           form={form}
           index={index}
@@ -149,24 +149,7 @@ function SupplierSelectorCell({ form, index }: FormCellProps) {
   );
 }
 
-function ProductCodeCell({ productCode }: { productCode: string | undefined }) {
-  return (
-    <TableCell className="border-r px-3 py-3 text-center">
-      {productCode ? (
-        <Badge
-          variant="outline"
-          className="border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] font-mono text-xs font-semibold text-[hsl(var(--color-info))]"
-        >
-          {productCode}
-        </Badge>
-      ) : (
-        <span className="text-muted-foreground text-xs">未选择</span>
-      )}
-    </TableCell>
-  );
-}
-
-function ProductNameCell({
+function ProductCodeCell({
   form,
   index,
   onProductChange,
@@ -185,13 +168,25 @@ function ProductNameCell({
                 value={field.value}
                 onValueChange={field.onChange}
                 onProductChange={product => onProductChange(index, product)}
-                placeholder="搜索产品名称/编码"
+                placeholder="搜索产品编码/名称"
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
+    </TableCell>
+  );
+}
+
+function ProductNameCell({ displayName }: { displayName: string | undefined }) {
+  return (
+    <TableCell className="border-r px-3 py-3">
+      <div className="text-sm">
+        {displayName || (
+          <span className="text-muted-foreground text-xs">未选择产品</span>
+        )}
+      </div>
     </TableCell>
   );
 }
