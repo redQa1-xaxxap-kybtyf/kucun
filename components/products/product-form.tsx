@@ -178,7 +178,7 @@ function ProductInfoCard({ form, isEdit, isLoading }: ProductInfoCardProps) {
             isLoading={isLoading}
             isCreateMode={!isEdit}
             onCategoryChange={(categoryId, categoryName) => {
-              // 保存分类名称，供提交时使用（如果产品名称为空）
+              // 🎯 只保存分类名称，供提交时使用（如果产品名称为空）
               if (categoryId && categoryId !== 'uncategorized') {
                 form.setValue('_categoryName' as any, categoryName);
               } else {

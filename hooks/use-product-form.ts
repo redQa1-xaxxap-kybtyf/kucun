@@ -401,11 +401,25 @@ async function handleCreateSubmit(args: SubmitHandlerArgs): Promise<void> {
     return;
   }
 
+  // 🎯 智能处理产品名称：如果为空则使用分类名称作为回退
+  let productName = values.name;
+  if (!productName || productName.trim() === '') {
+    const categoryName = form.getValues('_categoryName' as any);
+    if (categoryName && typeof categoryName === 'string') {
+      productName = categoryName;
+      // 更新表单显示，让用户看到最终使用的名称
+      form.setValue('name', categoryName, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    }
+  }
+
   const name = normalizeRequiredTextField(
     form,
     setSubmitError,
     'name',
-    values.name,
+    productName,
     '产品名称不能为空'
   );
   if (name === undefined) {
@@ -487,7 +501,7 @@ function getProductFormLoadingState({
 function normalizeRequiredTextField(
   form: UseFormReturn<ProductFormValues>,
   setSubmitError: (message: string) => void,
-  field: 'code' | 'specification',
+  field: 'code' | 'specification' | 'name', // ✅ 添加 'name' 支持
   value: unknown,
   message: string
 ): string | undefined {
