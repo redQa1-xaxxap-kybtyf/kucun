@@ -7,12 +7,15 @@
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FolderTree, Save, X } from 'lucide-react';
+import { ArrowLeft, FolderTree, Save, ShieldAlert, X } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import type { z } from 'zod';
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -45,6 +48,7 @@ import {
   getCategories,
   type Category,
 } from '@/lib/api/categories';
+import { can } from '@/lib/auth/permissions';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import { CreateCategorySchema } from '@/lib/validations/category';
@@ -53,10 +57,120 @@ type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
 
 /**
  * 新建分类页面组件
+ * 包含权限检查，确保用户有创建分类的权限
  */
 export default function CreateCategoryPage() {
+  const { data: session, status } = useSession();
   const controller = useCreateCategoryController();
+
+  // 加载中状态
+  if (status === 'loading') {
+    return <LoadingState />;
+  }
+
+  // 未登录状态
+  if (status === 'unauthenticated' || !session?.user) {
+    return <UnauthorizedState />;
+  }
+
+  // 权限检查
+  const hasPermission = can(session.user, 'categories:create');
+
+  if (!hasPermission) {
+    return <NoPermissionState userRole={session.user.role} />;
+  }
+
+  // 有权限，显示创建表单
   return <CreateCategoryView {...controller} />;
+}
+
+/**
+ * 加载中状态组件
+ */
+function LoadingState() {
+  return (
+    <div className="flex h-[50vh] items-center justify-center">
+      <div className="text-center">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent" />
+        <p className="text-muted-foreground mt-4 text-sm">加载中...</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 未登录状态组件
+ */
+function UnauthorizedState() {
+  return (
+    <div className="container mx-auto max-w-4xl py-8">
+      <Alert variant="destructive">
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>需要登录</AlertTitle>
+        <AlertDescription>
+          请先登录后再创建分类。
+          <Link
+            href="/auth/signin?callbackUrl=/categories/create"
+            className="ml-2 underline"
+          >
+            前往登录
+          </Link>
+        </AlertDescription>
+      </Alert>
+      <div className="mt-6 flex gap-4">
+        <Button variant="outline" asChild>
+          <Link href="/categories">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回分类列表
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 权限不足状态组件
+ */
+function NoPermissionState({ userRole }: { userRole: string }) {
+  const roleDisplayName =
+    userRole === 'admin'
+      ? '管理员'
+      : userRole === 'sales'
+        ? '销售员'
+        : userRole === 'warehouse'
+          ? '仓库员'
+          : userRole === 'finance'
+            ? '财务员'
+            : userRole;
+
+  return (
+    <div className="container mx-auto max-w-4xl py-8">
+      <Alert variant="destructive">
+        <ShieldAlert className="h-4 w-4" />
+        <AlertTitle>权限不足</AlertTitle>
+        <AlertDescription>
+          您没有创建分类的权限，请联系管理员。
+          <div className="mt-2 text-sm">
+            <p>
+              当前角色：<span className="font-medium">{roleDisplayName}</span>
+            </p>
+            <p className="text-muted-foreground mt-1">
+              所需权限：创建分类（categories:create）
+            </p>
+          </div>
+        </AlertDescription>
+      </Alert>
+      <div className="mt-6 flex gap-4">
+        <Button variant="outline" asChild>
+          <Link href="/categories">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回分类列表
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 interface CreateCategoryController {
@@ -83,9 +197,8 @@ function useCreateCategoryController(): CreateCategoryController {
     resolver: standardSchemaResolver(CreateCategorySchema),
     defaultValues: {
       name: '',
-      code: '',
       status: 'active',
-      parentId: '',
+      parentId: 'none',
       sortOrder: 0,
     },
   });
@@ -182,19 +295,105 @@ function useCreateCategoryController(): CreateCategoryController {
       router.refresh();
     },
     onError: error => {
+      // 解析错误类型并显示对应的友好提示
       const errorMessage = error instanceof Error ? error.message : '创建失败';
+
+      // 401 未授权 - 用户未登录
+      if (
+        errorMessage.includes('未授权') ||
+        errorMessage.includes('401') ||
+        errorMessage.includes('Unauthorized')
+      ) {
+        toast({
+          title: '需要登录',
+          description: '请先登录后再创建分类',
+          variant: 'destructive',
+          duration: 3000,
+        });
+        return;
+      }
+
+      // 403 权限不足 - 用户没有创建权限
+      if (
+        errorMessage.includes('权限不足') ||
+        errorMessage.includes('403') ||
+        errorMessage.includes('Forbidden')
+      ) {
+        toast({
+          title: '权限不足',
+          description: '您没有创建分类的权限，请联系管理员',
+          variant: 'destructive',
+          duration: 3000,
+        });
+        return;
+      }
+
+      // 400 数据验证失败 - 显示具体的验证错误
+      if (
+        errorMessage.includes('400') ||
+        errorMessage.includes('Bad Request') ||
+        errorMessage.includes('已存在') ||
+        errorMessage.includes('不能为空') ||
+        errorMessage.includes('不能超过') ||
+        errorMessage.includes('层级')
+      ) {
+        toast({
+          title: '数据验证失败',
+          description: errorMessage,
+          variant: 'destructive',
+          duration: 4000,
+        });
+        return;
+      }
+
+      // 500 服务器错误
+      if (
+        errorMessage.includes('500') ||
+        errorMessage.includes('Internal Server Error') ||
+        errorMessage.includes('服务器错误')
+      ) {
+        toast({
+          title: '服务器错误',
+          description: '服务器遇到问题，请稍后重试',
+          variant: 'destructive',
+          duration: 3000,
+        });
+        return;
+      }
+
+      // 网络错误
+      if (
+        errorMessage.includes('网络') ||
+        errorMessage.includes('Network') ||
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('连接')
+      ) {
+        toast({
+          title: '网络连接失败',
+          description: '请检查网络连接后重试',
+          variant: 'destructive',
+          duration: 3000,
+        });
+        return;
+      }
+
+      // 其他未知错误 - 显示原始错误信息
       toast({
         title: '创建失败',
-        description: `创建分类失败：${errorMessage}。请检查分类名称是否重复或网络连接是否正常。`,
+        description: errorMessage || '创建分类时发生未知错误，请重试',
         variant: 'destructive',
+        duration: 3000,
       });
     },
   });
 
   const handleSubmit = React.useCallback(
     (data: CreateCategoryData) => {
+      const normalizedCode =
+        data.code && data.code.trim().length > 0 ? data.code.trim() : undefined;
       const submitData = {
         ...data,
+        code: normalizedCode,
         parentId: data.parentId === 'none' ? undefined : data.parentId,
       };
       createMutation.mutate(submitData);
