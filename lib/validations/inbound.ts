@@ -116,6 +116,16 @@ export const createInboundSchema = z
         val && val.trim().length > 0 ? val.trim() : undefined
       ),
 
+    // 供应商字段（服务端创建入库时可选，按需要携带）
+    supplierId: z
+      .string()
+      .uuid('供应商ID格式不正确')
+      .optional()
+      .or(z.literal(''))
+      .transform(val =>
+        val && val.trim().length > 0 ? val.trim() : undefined
+      ),
+
     // 产品参数字段（入库时确定）
     // ✅ 使用 z.preprocess 正确处理 undefined、null、空字符串
     piecesPerUnit: z.preprocess(
@@ -405,11 +415,12 @@ export const inboundFormSchema = z
       .optional()
       .or(z.literal('')),
 
-    // 供应商字段（必填）
+    // 供应商字段：普通入库必填，期初入库可选
     supplierId: z
-      .string({ message: '供应商为必填项' })
-      .min(1, '请选择供应商')
-      .uuid('供应商ID格式不正确'),
+      .string()
+      .uuid('供应商ID格式不正确')
+      .optional()
+      .or(z.literal('')),
 
     productionDate: z
       .string()
@@ -501,10 +512,22 @@ export const inboundFormSchema = z
         message: '请输入单位成本',
       }),
   })
+  // 规则1：如果指定了采购明细，必须同时指定采购订单
   .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
     message: '传入采购订单明细时必须指定采购订单ID',
     path: ['purchaseOrderId'],
-  });
+  })
+  // 规则2：普通入库必须选择供应商；期初入库(opening_balance)可以不选
+  .refine(
+    data =>
+      data.reason === 'opening_balance' ||
+      (typeof data.supplierId === 'string' &&
+        data.supplierId.trim().length > 0),
+    {
+      message: '请选择供应商',
+      path: ['supplierId'],
+    }
+  );
 
 // 类型导出
 export type CreateInboundData = z.infer<typeof createInboundSchema>;

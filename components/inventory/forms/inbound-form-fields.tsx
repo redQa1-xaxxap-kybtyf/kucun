@@ -250,6 +250,9 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
 
 // 供应商选择字段
 export function InboundSupplierField({ form }: InboundFormFieldsProps) {
+  const currentReason = form.watch('reason');
+  const isRequired = currentReason !== 'opening_balance';
+
   return (
     <FormField
       control={form.control}
@@ -257,7 +260,10 @@ export function InboundSupplierField({ form }: InboundFormFieldsProps) {
       render={({ field }) => (
         <FormItem>
           <FormLabel className="text-sm font-semibold text-gray-900">
-            供应商 *
+            供应商
+            {isRequired && (
+              <span className="ml-0.5 align-middle text-red-500">*</span>
+            )}
           </FormLabel>
           <FormControl>
             <SupplierSelector

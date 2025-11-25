@@ -189,6 +189,7 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     recordNumber: record.recordNumber,
     productId: record.productId,
     variantId: record.variantId ?? undefined,
+    supplierId: record.supplierId ?? undefined,
     quantity: record.quantity,
     reason: record.reason as import('@/lib/types/inbound').InboundReason,
     remarks: record.remarks ?? undefined,
@@ -247,6 +248,16 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
       name: record.user.name ?? '',
       email: record.user.email ?? '',
     },
+
+    // 供应商信息（如果存在）
+    supplier: record.supplier
+      ? {
+          id: record.supplier.id,
+          name: record.supplier.name ?? '',
+          phone: record.supplier.phone ?? undefined,
+          address: record.supplier.address ?? undefined,
+        }
+      : undefined,
 
     // 保持向后兼容的扁平化字段
     productName: record.product.name,

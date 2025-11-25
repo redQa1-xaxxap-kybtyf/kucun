@@ -88,6 +88,11 @@ export function InboundSummaryCard({
       icon: <BadgeCheck className="h-5 w-5" />,
     },
     {
+      label: '供应商',
+      value: record.supplier?.name || '—',
+      icon: <Package className="h-5 w-5" />,
+    },
+    {
       label: '当前批次库存',
       value:
         record.inventoryBalance !== undefined

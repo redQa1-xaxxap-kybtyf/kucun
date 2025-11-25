@@ -68,6 +68,14 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
           thickness: true,
         },
       },
+      supplier: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          address: true,
+        },
+      },
     },
   });
 
@@ -91,6 +99,7 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
     recordNumber: record.recordNumber,
     productId: record.productId,
     variantId: record.variantId ?? undefined,
+    supplierId: record.supplierId ?? undefined,
     batchNumber: record.batchNumber ?? undefined,
     batchSpecificationId: record.batchSpecificationId ?? undefined,
     quantity: Number(record.quantity),
@@ -128,6 +137,14 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
           id: record.user.id,
           name: record.user.name ?? '—',
           email: record.user.email ?? undefined,
+        }
+      : undefined,
+    supplier: record.supplier
+      ? {
+          id: record.supplier.id,
+          name: record.supplier.name ?? '—',
+          phone: record.supplier.phone ?? undefined,
+          address: record.supplier.address ?? undefined,
         }
       : undefined,
     batchSpecification: record.batchSpecification

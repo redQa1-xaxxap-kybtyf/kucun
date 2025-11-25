@@ -246,6 +246,7 @@ export async function updatePurchaseOrderInternal({
             displayName: item.displayName.trim(),
             specification: item.specification?.trim() || null,
             unit: item.unit,
+            piecesPerUnit: item.piecesPerUnit ?? null,
             weight: item.weight || null,
             remarks: item.remarks?.trim() || null,
           })),
@@ -431,6 +432,8 @@ async function createArrivalInboundRecords(
         userId,
         purchaseOrderId: order.id,
         purchaseOrderItemId: item.id,
+        // 使用订单级主供应商，便于后续按供应商维度统计进货
+        supplierId: order.supplierId ?? undefined,
       },
       { tx }
     );

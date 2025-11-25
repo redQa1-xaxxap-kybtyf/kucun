@@ -48,6 +48,7 @@ export interface MinimalInboundTransactionData {
   userId: string;
   purchaseOrderId?: string;
   purchaseOrderItemId?: string;
+  supplierId?: string;
 }
 
 /**
@@ -130,6 +131,7 @@ export async function executeMinimalInboundTransaction(
         userId: data.userId,
         purchaseOrderId: data.purchaseOrderId || null,
         purchaseOrderItemId: data.purchaseOrderItemId || null,
+        supplierId: data.supplierId || null,
       },
       include: {
         product: {

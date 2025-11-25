@@ -91,6 +91,7 @@ export const INBOUND_RECORD_SELECT = {
   recordNumber: true,
   productId: true,
   variantId: true,
+  supplierId: true,
   quantity: true,
   reason: true,
   remarks: true,
@@ -133,6 +134,14 @@ export const INBOUND_RECORD_SELECT = {
       piecesPerUnit: true,
       weight: true,
       thickness: true,
+    },
+  },
+  supplier: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      address: true,
     },
   },
 } as const satisfies Prisma.InboundRecordSelect;

@@ -71,6 +71,7 @@ const postInboundRecordHandler = withAuth(
         weight,
         purchaseOrderId,
         purchaseOrderItemId,
+        supplierId,
       } = validatedData;
 
       // 步骤1.1: 权限验证 - 期初库存录入需要特殊权限
@@ -175,6 +176,7 @@ const postInboundRecordHandler = withAuth(
             userId: context.user.id,
             purchaseOrderId,
             purchaseOrderItemId,
+            supplierId,
           })
       );
 

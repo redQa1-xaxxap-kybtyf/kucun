@@ -67,6 +67,12 @@ export function useInboundFormSubmit({
         reason: data.reason,
       };
 
+      // 普通入库场景下，若选择了供应商则一并提交；
+      // 期初入库(opening_balance)时供应商为可选。
+      if (data.supplierId && data.supplierId.trim().length > 0) {
+        requestData.supplierId = data.supplierId.trim();
+      }
+
       if (data.variantId) {
         requestData.variantId = data.variantId;
       }
