@@ -8,7 +8,6 @@ import {
   Calendar,
   Edit,
   Package,
-  PackageCheck,
   Printer,
   Ship,
   Truck,
@@ -18,7 +17,6 @@ import { useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arrival-dialog';
-import { ConfirmInboundDialog } from '@/components/factory-shipments/confirm-inbound-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
 import { FactoryShipmentPrintContent } from '@/components/factory-shipments/FactoryShipmentPrintContent';
 import { FeeItemsSection } from '@/components/factory-shipments/fee-items-section';
@@ -42,13 +40,11 @@ import { getFactoryShipmentOrder } from '@/lib/api/factory-shipments';
 import { factoryShipmentPrintConfig } from '@/lib/config/print-fields/factory-shipment-fields';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import {
   canConfirmArrival,
-  canConfirmInbound,
   canConfirmShipment,
   formatAmount,
   formatDate,
@@ -65,8 +61,7 @@ interface FactoryShipmentOrderDetailProps {
 
 /**
  * 厂家发货订单详情组件
- * 改进后的版本，符合ERP风格，添加确认发货功能
- * 优化：紧凑布局，合并信息卡片
+ * 客户直发场景：所有货物归属客户
  */
 export function FactoryShipmentOrderDetail({
   orderId,
@@ -75,7 +70,6 @@ export function FactoryShipmentOrderDetail({
 }: FactoryShipmentOrderDetailProps) {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [arrivalDialogOpen, setArrivalDialogOpen] = useState(false);
-  const [inboundDialogOpen, setInboundDialogOpen] = useState(false);
   const [supplementDialogOpen, setSupplementDialogOpen] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -119,26 +113,11 @@ export function FactoryShipmentOrderDetail({
     );
   }
 
+  // 客户直发场景：所有货物归属客户
   const customerOwnedAmount =
     order.fulfillmentSummary?.customerOwnedAmount ??
-    order.items
-      ?.filter(
-        item => item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER
-      )
-      .reduce((sum, item) => sum + (item.totalPrice ?? 0), 0) ??
+    order.items?.reduce((sum, item) => sum + (item.totalPrice ?? 0), 0) ??
     0;
-  const selfOwnedAmount =
-    order.fulfillmentSummary?.selfOwnedAmount ??
-    order.items
-      ?.filter(item => item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF)
-      .reduce((sum, item) => sum + item.totalPrice, 0) ??
-    0;
-  const hasPendingSelfInbound =
-    order.items?.some(
-      item =>
-        item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF &&
-        item.selfInboundStatus !== 'received'
-    ) ?? false;
   const payableAmount = Math.max(
     0,
     (order.costAmount ?? 0) - (order.depositAmount ?? 0)
@@ -200,17 +179,6 @@ export function FactoryShipmentOrderDetail({
                 >
                   <Anchor className="mr-2 h-3.5 w-3.5" />
                   确认到港
-                </Button>
-              )}
-              {canConfirmInbound(order.status, hasPendingSelfInbound) && (
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setInboundDialogOpen(true)}
-                  className="shadow-[var(--shadow-light)]"
-                >
-                  <PackageCheck className="mr-2 h-3.5 w-3.5" />
-                  确认入库
                 </Button>
               )}
               <Button
@@ -465,21 +433,13 @@ export function FactoryShipmentOrderDetail({
           </div>
 
           {/* 次要金额指标 */}
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                客户货金额
+                货物总金额
               </label>
               <p className="text-base font-semibold text-[hsl(var(--color-primary))]">
                 {formatAmount(customerOwnedAmount)}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                自用补货金额
-              </label>
-              <p className="text-base font-semibold text-[hsl(var(--color-text-secondary))]">
-                {formatAmount(selfOwnedAmount)}
               </p>
             </div>
             <div className="space-y-1">
@@ -703,15 +663,6 @@ export function FactoryShipmentOrderDetail({
         containerNumber={order.containerNumber}
         open={arrivalDialogOpen}
         onOpenChange={setArrivalDialogOpen}
-        onSuccess={handleOrderRefresh}
-      />
-
-      <ConfirmInboundDialog
-        orderId={orderId}
-        orderNumber={order.orderNumber}
-        items={order.items}
-        open={inboundDialogOpen}
-        onOpenChange={setInboundDialogOpen}
         onSuccess={handleOrderRefresh}
       />
 
