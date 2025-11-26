@@ -2,17 +2,17 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    Anchor,
-    ArrowLeft,
-    Calendar,
-    Edit,
-    Package,
-    PackageCheck,
-    Printer,
-    Ship,
-    Truck,
-    User,
+  AlertCircle,
+  Anchor,
+  ArrowLeft,
+  Calendar,
+  Edit,
+  Package,
+  PackageCheck,
+  Printer,
+  Ship,
+  Truck,
+  User,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -31,32 +31,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { getFactoryShipmentOrder } from '@/lib/api/factory-shipments';
 import { factoryShipmentPrintConfig } from '@/lib/config/print-fields/factory-shipment-fields';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-    FACTORY_SHIPMENT_ITEM_OWNERSHIP,
-    FACTORY_SHIPMENT_STATUS_LABELS,
-    type FactoryShipmentItemOwnership,
-    type FactoryShipmentOrder,
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  FACTORY_SHIPMENT_STATUS_LABELS,
+  type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import {
-    canConfirmArrival,
-    canConfirmInbound,
-    canConfirmShipment,
-    FACTORY_SHIPMENT_OWNERSHIP_LABELS,
-    formatAmount,
-    formatDate,
-    formatOwnershipStatus,
-    formatUnit,
-    getFactoryShipmentStatusBadgeVariant,
+  canConfirmArrival,
+  canConfirmInbound,
+  canConfirmShipment,
+  formatAmount,
+  formatDate,
+  formatOwnershipStatus,
+  formatUnit,
+  getFactoryShipmentStatusBadgeVariant,
 } from '@/lib/utils/factory-shipment-helpers';
 
 interface FactoryShipmentOrderDetailProps {
@@ -541,9 +539,6 @@ export function FactoryShipmentOrderDetail({
                     <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
                       供应商
                     </TableHead>
-                    <TableHead className="w-[100px] py-2 text-xs font-semibold">
-                      归属
-                    </TableHead>
                     <TableHead className="w-[120px] py-2 text-xs font-semibold">
                       履约状态
                     </TableHead>
@@ -578,17 +573,7 @@ export function FactoryShipmentOrderDetail({
                 </TableHeader>
                 <TableBody>
                   {order.items?.map((item, index) => {
-                    const ownership =
-                      (item.ownership as FactoryShipmentItemOwnership) ??
-                      FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER;
                     const ownershipStatus = formatOwnershipStatus(item);
-                    // 使用 ownership 映射到对应的 badge variant
-                    const ownershipBadgeVariant =
-                      ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER
-                        ? 'default'
-                        : 'secondary';
-                    const ownershipLabel =
-                      FACTORY_SHIPMENT_OWNERSHIP_LABELS[ownership];
                     return (
                       <TableRow
                         key={item.id ?? index}
@@ -602,19 +587,6 @@ export function FactoryShipmentOrderDetail({
                         </TableCell>
                         <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
                           {item.supplier?.name || '-'}
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <Badge
-                            variant={ownershipBadgeVariant}
-                            className="text-xs font-medium"
-                          >
-                            {ownershipLabel}
-                          </Badge>
-                          {item.ownershipRemarks && (
-                            <p className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                              {item.ownershipRemarks}
-                            </p>
-                          )}
                         </TableCell>
                         <TableCell className="py-2">
                           <Badge
@@ -771,4 +743,3 @@ export function FactoryShipmentOrderDetail({
     </div>
   );
 }
-

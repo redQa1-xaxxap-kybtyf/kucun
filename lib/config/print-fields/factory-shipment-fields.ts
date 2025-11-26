@@ -250,7 +250,7 @@ const factoryShipmentItemFields: PrintFieldDefinition[] = [
     type: 'item',
     width: '100px',
     align: 'center',
-    defaultVisible: true,
+    defaultVisible: false, // 客户直发场景下默认不显示，因为都是客户货
     format: value => {
       const ownershipMap: Record<string, string> = {
         customer: '客户货',

@@ -198,7 +198,10 @@ const factoryShipmentOrderItemFormSchema = z.object({
   unitCost: z
     .preprocess(coerceNumber, z.number().min(0, '进货价不能为负数'))
     .optional(),
-  ownership: z.nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP), // 移除.default()
+  // 客户直发场景下，货物归属默认为客户，UI 不再显示此字段
+  ownership: z
+    .nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP)
+    .default(FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER),
   customerDeliveryStatus: z.enum(['pending', 'delivered']).optional(),
   selfInboundStatus: z.enum(['pending', 'received']).optional(),
   ownershipRemarks: z

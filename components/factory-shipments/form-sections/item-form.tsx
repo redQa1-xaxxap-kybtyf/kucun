@@ -179,56 +179,6 @@ export const ItemForm = React.memo<ItemFormProps>(
               />
             </div>
 
-            {/* 归属信息 */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <FormField
-                control={form.control}
-                name={`items.${index}.ownership`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                      货物归属{' '}
-                      <span className="text-[hsl(var(--color-error))]">*</span>
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20">
-                          <SelectValue placeholder="请选择归属" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="customer">
-                          客户货（需收款）
-                        </SelectItem>
-                        <SelectItem value="self">自用补货（入库）</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name={`items.${index}.ownershipRemarks`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                      归属备注
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="如自用用途、客户要求"
-                        className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {/* 第二行：供应商、规格、重量 */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {/* 供应商选择（带价格自动填充） */}
@@ -374,9 +324,7 @@ export const ItemForm = React.memo<ItemFormProps>(
                             field.onChange(0);
                           } else {
                             const parsed = Number.parseFloat(value);
-                            field.onChange(
-                              Number.isNaN(parsed) ? 0 : parsed
-                            );
+                            field.onChange(Number.isNaN(parsed) ? 0 : parsed);
                           }
                           field.onBlur();
                         }}
