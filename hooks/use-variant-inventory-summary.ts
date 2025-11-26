@@ -14,6 +14,7 @@ interface VariantInventorySummaryData {
       id: string;
       code: string;
       name: string;
+      piecesPerUnit?: number;
     };
   };
   inventory: {

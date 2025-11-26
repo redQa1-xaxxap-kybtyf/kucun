@@ -152,7 +152,8 @@ export interface InventoryCountItem {
   updatedAt: string; // ISO日期字符串
 
   // 关联数据（可选，根据查询需要包含）
-  product?: Pick<Product, 'id' | 'code' | 'name' | 'unit'>;
+  // ✅ 补充每件片数，便于“件/片”统一展示
+  product?: Pick<Product, 'id' | 'code' | 'name' | 'unit' | 'piecesPerUnit'>;
   variant?: Pick<ProductVariant, 'id' | 'colorCode' | 'colorName' | 'sku'>;
   counter?: Pick<User, 'id' | 'name' | 'email'>;
 }

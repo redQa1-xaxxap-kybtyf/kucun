@@ -51,6 +51,7 @@ export const INVENTORY_COUNT_WITH_ITEMS_RELATIONS = {
           code: true,
           name: true,
           unit: true,
+          piecesPerUnit: true,
         },
       },
       variant: {
@@ -147,6 +148,7 @@ export function toInventoryCountItem(
           code: item.product.code,
           name: item.product.name,
           unit: item.product.unit as 'piece' | 'sheet',
+          piecesPerUnit: item.product.piecesPerUnit as number,
         }
       : undefined,
     variant: item.variant

@@ -1,7 +1,6 @@
 'use client';
 
 import { Package } from 'lucide-react';
-import React from 'react';
 
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import {
@@ -12,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryOverviewCardProps {
   variant: {
@@ -22,6 +22,7 @@ interface InventoryOverviewCardProps {
       id: string;
       code: string;
       name: string;
+      piecesPerUnit?: number;
     };
   };
   inventory: {
@@ -59,7 +60,14 @@ export function InventoryOverviewCard({
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
-              {inventory.totalQuantity}
+              {(() => {
+                const ppu = variant.product.piecesPerUnit ?? 0;
+                return ppu > 0
+                  ? formatPieceSummary(inventory.totalQuantity, ppu, {
+                      fallbackUnit: '片',
+                    })
+                  : `${inventory.totalQuantity}片`;
+              })()}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
               总库存
@@ -67,7 +75,14 @@ export function InventoryOverviewCard({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
-              {inventory.availableQuantity}
+              {(() => {
+                const ppu = variant.product.piecesPerUnit ?? 0;
+                return ppu > 0
+                  ? formatPieceSummary(inventory.availableQuantity, ppu, {
+                      fallbackUnit: '片',
+                    })
+                  : `${inventory.availableQuantity}片`;
+              })()}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
               可用库存
@@ -75,7 +90,14 @@ export function InventoryOverviewCard({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
-              {inventory.reservedQuantity}
+              {(() => {
+                const ppu = variant.product.piecesPerUnit ?? 0;
+                return ppu > 0
+                  ? formatPieceSummary(inventory.reservedQuantity, ppu, {
+                      fallbackUnit: '片',
+                    })
+                  : `${inventory.reservedQuantity}片`;
+              })()}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
               预留库存

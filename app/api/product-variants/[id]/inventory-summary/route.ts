@@ -54,6 +54,7 @@ export const GET = withAuth(
               id: true,
               code: true,
               name: true,
+              piecesPerUnit: true,
             },
           },
         },

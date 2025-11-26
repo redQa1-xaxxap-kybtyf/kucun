@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle, Save } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -21,8 +21,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { queryKeys } from '@/lib/queryKeys';
 import { can } from '@/lib/auth/permissions';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   COUNT_ITEM_STATUS_LABELS,
   COUNT_STATUS_LABELS,
@@ -31,6 +31,7 @@ import {
   type InventoryCountDetail,
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface ExecuteCountPageClientProps {
   countId: string;
@@ -355,7 +356,15 @@ export function ExecuteCountPageClient({
                       </TableCell>
                       <TableCell>{item.batchNumber || '-'}</TableCell>
                       <TableCell className="text-right">
-                        {formatNumber(item.systemQuantity)}
+                        {(() => {
+                          const ppu = item.product?.piecesPerUnit ?? 0;
+                          return ppu > 0
+                            ? formatPieceSummary(item.systemQuantity, ppu, {
+                                fallbackUnit: '片',
+                                zeroDisplay: '0片',
+                              })
+                            : `${item.systemQuantity}片`;
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <Input
@@ -378,7 +387,20 @@ export function ExecuteCountPageClient({
                             : ''
                         }`}
                       >
-                        {formatNumber(diff)}
+                        {(() => {
+                          if (diff === null) return '-';
+                          const ppu = item.product?.piecesPerUnit ?? 0;
+                          const abs = Math.abs(diff);
+                          const text =
+                            ppu > 0
+                              ? formatPieceSummary(abs, ppu, {
+                                  fallbackUnit: '片',
+                                  zeroDisplay: '0片',
+                                })
+                              : `${abs}片`;
+                          const sign = diff > 0 ? '+' : diff < 0 ? '-' : '';
+                          return sign ? `${sign}${text}` : text;
+                        })()}
                       </TableCell>
                       {hasFinancePermission && (
                         <>

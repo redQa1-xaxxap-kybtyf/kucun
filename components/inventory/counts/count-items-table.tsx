@@ -20,6 +20,7 @@ import {
   type CountItemStatus,
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface CountItemsTableProps {
   items: InventoryCountItem[];
@@ -109,10 +110,31 @@ export function CountItemsTable({
               </TableCell>
               <TableCell>{item.batchNumber || '-'}</TableCell>
               <TableCell className="text-right">
-                {formatNumber(item.systemQuantity)}
+                {(() => {
+                  const ppu = item.product?.piecesPerUnit ?? 0;
+                  return ppu > 0
+                    ? formatPieceSummary(item.systemQuantity, ppu, {
+                        fallbackUnit: '片',
+                        zeroDisplay: '0片',
+                      })
+                    : `${item.systemQuantity}片`;
+                })()}
               </TableCell>
               <TableCell className="text-right">
-                {formatNumber(item.actualQuantity)}
+                {(() => {
+                  if (
+                    item.actualQuantity === null ||
+                    item.actualQuantity === undefined
+                  )
+                    return '—';
+                  const ppu = item.product?.piecesPerUnit ?? 0;
+                  return ppu > 0
+                    ? formatPieceSummary(item.actualQuantity, ppu, {
+                        fallbackUnit: '片',
+                        zeroDisplay: '0片',
+                      })
+                    : `${item.actualQuantity}片`;
+                })()}
               </TableCell>
               <TableCell
                 className={`text-right ${
@@ -123,7 +145,22 @@ export function CountItemsTable({
                     : ''
                 }`}
               >
-                {formatNumber(item.difference)}
+                {(() => {
+                  if (item.difference === null || item.difference === undefined)
+                    return '-';
+                  const ppu = item.product?.piecesPerUnit ?? 0;
+                  const abs = Math.abs(item.difference);
+                  const text =
+                    ppu > 0
+                      ? formatPieceSummary(abs, ppu, {
+                          fallbackUnit: '片',
+                          zeroDisplay: '0片',
+                        })
+                      : `${abs}片`;
+                  const sign =
+                    item.difference > 0 ? '+' : item.difference < 0 ? '-' : '';
+                  return sign ? `${sign}${text}` : text;
+                })()}
               </TableCell>
               {hasFinancePermission && (
                 <>
