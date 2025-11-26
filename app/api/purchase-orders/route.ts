@@ -7,10 +7,6 @@ import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { createPurchaseOrderExpenses } from '@/lib/services/purchase-expense-service';
-import {
-  ensurePurchaseOrderPayable,
-  shouldCreatePayable,
-} from '@/lib/services/purchase-order-payable';
 import { generatePurchaseOrderNumber } from '@/lib/services/simple-order-number-generator';
 import {
   PURCHASE_ORDER_STATUS,
@@ -24,6 +20,7 @@ import {
 type ListParams = {
   page: number;
   limit: number;
+  search?: string;
   status?: PurchaseOrderStatus;
   supplierId?: string;
   containerNumber?: string;
@@ -45,6 +42,7 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
             paginationConfig.defaultPageSize.toString()
         )
       : paginationConfig.defaultPageSize,
+    search: searchParams.get('search') || undefined,
     status: searchParams.get('status') || undefined,
     supplierId: searchParams.get('supplierId') || undefined,
     containerNumber: searchParams.get('containerNumber') || undefined,
@@ -62,6 +60,7 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
   return {
     page: parsed.page ?? 1,
     limit: parsed.limit ?? paginationConfig.defaultPageSize,
+    search: parsed.search,
     status: parsed.status as PurchaseOrderStatus | undefined,
     supplierId: parsed.supplierId,
     containerNumber: parsed.containerNumber,
@@ -79,10 +78,29 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
 function buildWhere(params: ListParams): Prisma.PurchaseOrderWhereInput {
   const where: Prisma.PurchaseOrderWhereInput = {};
   if (params.status) where.status = params.status;
-  if (params.supplierId) where.supplierId = params.supplierId;
-  if (params.containerNumber)
-    where.containerNumber = { contains: params.containerNumber };
-  if (params.orderNumber) where.orderNumber = { contains: params.orderNumber };
+  // ✅ 按明细级供应商筛选，而不是订单级字段
+  if (params.supplierId) {
+    where.items = {
+      some: {
+        supplierId: params.supplierId,
+      },
+    };
+  }
+
+  // 通用搜索：订单号 / 集装箱号 任一匹配即可
+  if (params.search && params.search.trim()) {
+    const keyword = params.search.trim();
+    where.OR = [
+      { orderNumber: { contains: keyword } },
+      { containerNumber: { contains: keyword } },
+    ];
+  } else {
+    // 精确字段筛选：仅在未提供通用搜索时生效
+    if (params.containerNumber)
+      where.containerNumber = { contains: params.containerNumber };
+    if (params.orderNumber)
+      where.orderNumber = { contains: params.orderNumber };
+  }
   if (params.startDate || params.endDate) {
     where.createdAt = {};
     if (params.startDate) where.createdAt.gte = params.startDate;
@@ -143,15 +161,19 @@ const orderListSelect = {
   },
 } satisfies Prisma.PurchaseOrderSelect;
 
-async function ensureSupplierExists(supplierId: string) {
-  const supplier = await prisma.supplier.findUnique({
-    where: { id: supplierId },
+async function ensureSuppliersExist(supplierIds: string[]) {
+  if (!supplierIds.length) return;
+  const existing = await prisma.supplier.findMany({
+    where: { id: { in: supplierIds } },
     select: { id: true },
   });
-  if (!supplier) {
-    throw new NextResponse(JSON.stringify({ error: '供应商不存在' }), {
-      status: 400,
-    }) as unknown as Error;
+  const existingIds = new Set(existing.map(s => s.id));
+  const missing = supplierIds.filter(id => !existingIds.has(id));
+  if (missing.length > 0) {
+    throw new NextResponse(
+      JSON.stringify({ error: `供应商不存在: ${missing.join(', ')}` }),
+      { status: 400 }
+    ) as unknown as Error;
   }
 }
 
@@ -298,18 +320,29 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         { status: 422 }
       );
     }
-    const { containerNumber, supplierId, status, remarks, items, feeItems } =
-      parsed.data;
+    const { containerNumber, status, remarks, items, feeItems } = parsed.data;
 
-    if (!supplierId || !supplierId.trim()) {
+    // ✅ 采购订单改为纯明细级供应商：从明细中推导主供应商，仅用于兼容旧字段
+    const uniqueSupplierIds = Array.from(
+      new Set(
+        (items || [])
+          .map(item => item.supplierId)
+          .filter((id): id is string => Boolean(id && id.trim()))
+      )
+    );
+
+    if (uniqueSupplierIds.length === 0) {
       return NextResponse.json(
-        { error: '订单级别供应商不能为空' },
+        { error: '至少需要为一个明细选择供应商' },
         { status: 400 }
       );
     }
-    const normalizedSupplierId = supplierId.trim();
-    await ensureSupplierExists(normalizedSupplierId);
+
+    await ensureSuppliersExist(uniqueSupplierIds);
     await ensureProductsExist(items);
+
+    // 仍然写入一个“主供应商”到订单上，用于兼容旧的统计/应付逻辑
+    const primarySupplierId = uniqueSupplierIds[0];
 
     const orderNumber = await generatePurchaseOrderNumber();
     const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0);
@@ -321,7 +354,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         data: {
           orderNumber,
           containerNumber: containerNumber?.trim() || null,
-          supplierId: normalizedSupplierId,
+          supplierId: primarySupplierId,
           userId,
           status: status ?? PURCHASE_ORDER_STATUS.DRAFT,
           totalAmount,
@@ -332,6 +365,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
               productId: item.isManualProduct ? null : item.productId,
               supplierId: item.supplierId,
               productCode: item.productCode,
+              batchNumber: item.batchNumber?.trim() || null,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
@@ -343,6 +377,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
               displayName: item.displayName,
               specification: item.specification?.trim() || null,
               unit: item.unit || 'piece',
+              piecesPerUnit: item.piecesPerUnit ?? null,
               weight: item.weight,
               remarks: item.remarks?.trim() || null,
             })),
@@ -373,24 +408,14 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         },
       });
 
-      if (shouldCreatePayable(newOrder.status as PurchaseOrderStatus)) {
-        await ensurePurchaseOrderPayable(tx, {
-          id: newOrder.id,
-          supplierId: newOrder.supplierId,
-          userId,
-          orderNumber: newOrder.orderNumber,
-          totalAmount,
-          expenseAmount, // ✅ 修复：传递费用金额
-        });
-      }
-
       // ✅ P1修复：使用统一的费用创建服务（带幂等性）
       if (feeItems && feeItems.length > 0) {
         await createPurchaseOrderExpenses({
           tx,
           orderId: newOrder.id,
           orderNumber: newOrder.orderNumber,
-          supplierId: normalizedSupplierId,
+          // 费用记录仍然挂在主供应商名下，后续如需按多供应商拆分，可在费用分摊层面再细化
+          supplierId: primarySupplierId,
           userId,
           feeItems,
         });

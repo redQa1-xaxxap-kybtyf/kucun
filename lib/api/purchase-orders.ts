@@ -16,6 +16,8 @@ export const purchaseOrderQueryKeys = queryKeys.purchaseOrders;
 export interface PurchaseOrderListParams {
   page?: number;
   limit?: number;
+  // 通用搜索关键字：支持订单号 / 集装箱号 模糊查询
+  search?: string;
   status?: PurchaseOrderStatus;
   supplierId?: string;
   containerNumber?: string;
@@ -44,6 +46,9 @@ export async function getPurchaseOrders(
   }
   if (params.limit) {
     searchParams.set('limit', params.limit.toString());
+  }
+  if (params.search) {
+    searchParams.set('search', params.search);
   }
   if (params.status) {
     searchParams.set('status', params.status);

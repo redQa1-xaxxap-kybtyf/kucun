@@ -12,12 +12,22 @@ import {
 
 // 采购订单费用项验证（复用厂家发货的费用项验证）
 export const purchaseOrderFeeItemSchema = z.object({
-  feeType: z.enum(['shipping', 'storage', 'customs', 'other']),
+  feeType: z.enum([
+    'freight', // 运费
+    'processing', // 加工费
+    'packaging', // 包装费
+    'loading_unloading', // 装卸费
+    'storage', // 仓储费
+    'customs', // 报关费
+    'other', // 其他费用
+  ]),
   feeName: z
     .string()
     .min(1, '费用名称不能为空')
     .max(100, '费用名称不能超过100个字符'),
   feeAmount: z.number().min(0, '费用金额不能为负数'),
+  // 费用对应的结算供应商（如物流公司），可选；不填时由后端决定默认供应商
+  supplierId: z.string().uuid('费用供应商ID格式不正确').optional(),
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')
@@ -200,6 +210,8 @@ export const purchaseOrderListParamsSchema = z
         `每页数量不能超过${paginationConfig.maxPageSize}`
       )
       .optional(),
+    // 通用搜索关键字：用于同时模糊匹配订单号 / 集装箱号
+    search: z.string().max(50, '搜索关键字不能超过50个字符').optional(),
     status: purchaseOrderStatusSchema.optional(),
     supplierId: z.string().uuid('供应商ID格式不正确').optional(),
     containerNumber: z

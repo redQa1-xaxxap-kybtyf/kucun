@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type {
   PayableRecordQuery,
@@ -176,6 +177,7 @@ const buildStatistics = ({
     paidCount: statusCountMap.paid || 0,
     thisMonthPayables: thisMonthPayablesResult._sum.payableAmount || 0,
     thisMonthPayments: thisMonthPaymentsResult._sum.paymentAmount || 0,
+    // 采购相关统计在下方构建时补充
   };
 };
 
@@ -211,9 +213,77 @@ export const GET = withAuth(async (request: Request) => {
     );
     const statistics = buildStatistics(aggregates);
 
+    // 扩展：采购相关货款+运费+总成本
+    // 默认：totalPayables 等于「应付款合计」，具体含义取决于是否开启费用→应付集成
+    let purchaseGoodsAmount = statistics.totalPayables;
+
+    // 2) 运费：统计与供应商和筛选条件匹配的、关联采购订单的费用记录
+    const freightWhere: Prisma.ExpenseRecordWhereInput = {
+      relatedType: 'purchase_order',
+      // 仅统计已经挂到应付款上的费用，避免「有费用没应付」导致统计数据虚高
+      payableId: { not: null },
+      // 仅针对本次应付筛选范围内的供应商
+      ...(queryParams.supplierId ? { supplierId: queryParams.supplierId } : {}),
+    };
+
+    if (queryParams.startDate || queryParams.endDate) {
+      const dateFilter: { gte?: Date; lte?: Date } = {};
+      if (queryParams.startDate) {
+        dateFilter.gte = new Date(queryParams.startDate);
+      }
+      if (queryParams.endDate) {
+        const end = new Date(queryParams.endDate);
+        end.setHours(23, 59, 59, 999);
+        dateFilter.lte = end;
+      }
+      freightWhere.expenseDate = dateFilter;
+    }
+
+    const freightAggregate = await prisma.expenseRecord.aggregate({
+      _sum: { expenseAmount: true },
+      where: freightWhere,
+    });
+
+    const rawFreightAmount = freightAggregate._sum.expenseAmount || 0;
+
+    let purchaseFreightAmount = rawFreightAmount;
+    let purchaseTotalCost: number;
+
+    if (env.EXPENSE_TO_PAYABLE_ENABLED) {
+      // ✅ 阶段3模式：费用已经通过 createOrMergePayableFromExpense 合并进应付款
+      // - payableRecord.payableAmount ≈ 货款 + 已挂账费用
+      // - expenseRecord 再算一遍会导致运费等费用被「重复统计」
+      //
+      // 约定：
+      // - totalPayables 视为「货款 + 运费等费用」的合计成本
+      // - 货款 = totalPayables - 运费
+      // - 总成本 = totalPayables（避免再次把运费加一遍）
+      purchaseGoodsAmount = Math.max(
+        0,
+        statistics.totalPayables - rawFreightAmount
+      );
+      purchaseFreightAmount = rawFreightAmount;
+      purchaseTotalCost = statistics.totalPayables;
+    } else {
+      // 旧模式：应付只包含货款，费用单独统计
+      // - 货款 = totalPayables
+      // - 运费 = 费用记录之和
+      // - 总成本 = 货款 + 运费
+      purchaseGoodsAmount = statistics.totalPayables;
+      purchaseFreightAmount = rawFreightAmount;
+      purchaseTotalCost = purchaseGoodsAmount + purchaseFreightAmount;
+    }
+
+    const extendedStatistics: PayableStatistics = {
+      ...statistics,
+      purchaseGoodsAmount,
+      purchaseFreightAmount,
+      purchaseTotalCost,
+    };
+
     return NextResponse.json({
       success: true,
-      data: statistics,
+      data: extendedStatistics,
     });
   } catch (error) {
     logger.error('finance-payables', '获取应付款统计失败', error);
