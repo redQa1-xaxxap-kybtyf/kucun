@@ -4,7 +4,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Clock, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
+import { RelativeTime } from '@/components/common/relative-time';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
   AlertDialog,
@@ -155,11 +157,11 @@ const PayableIdentifiersCell = ({
   <TableCell className="h-8 text-xs">
     <div className="flex flex-col gap-1">
       <span className="font-mono font-semibold text-[hsl(var(--color-primary))]">
-        {payable.payableNumber}
+        <CopyableText text={payable.payableNumber} />
       </span>
       {payable.sourceNumber && (
         <span className="text-[hsl(var(--color-text-tertiary))]">
-          来源: {payable.sourceNumber}
+          来源: <CopyableText text={payable.sourceNumber} />
         </span>
       )}
     </div>
@@ -250,7 +252,7 @@ const PayableDueDateCell = ({ payable }: { payable: PayableRecordDetail }) => {
 
 const PayableCreatedAtCell = ({ createdAt }: { createdAt: Date | string }) => (
   <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-    {formatDateTime(createdAt)}
+    <RelativeTime date={createdAt} />
   </TableCell>
 );
 

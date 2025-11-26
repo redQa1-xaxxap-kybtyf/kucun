@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
 import type { InboundRecordDetail } from '@/lib/types/inbound';
 import { formatCurrency, formatNumber } from '@/lib/utils/format';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 type ReasonVariant = 'default' | 'secondary' | 'info' | 'outline' | 'success';
 
@@ -75,11 +76,15 @@ export function InboundSummaryCard({
     // 公共统计项
     {
       label: '入库数量',
-      value: (
-        <>
-          {formatNumber(record.quantity)} {record.product?.unit || '片'}
-        </>
-      ),
+      value: (() => {
+        const ppu =
+          record.batchSpecification?.piecesPerUnit ??
+          record.product?.piecesPerUnit ??
+          0;
+        return ppu > 0
+          ? formatPieceSummary(record.quantity, ppu, { fallbackUnit: '片' })
+          : `${formatNumber(record.quantity)}片`;
+      })(),
       icon: <Boxes className="h-5 w-5" />,
     },
     {
@@ -94,10 +99,18 @@ export function InboundSummaryCard({
     },
     {
       label: '当前批次库存',
-      value:
-        record.inventoryBalance !== undefined
-          ? `${formatNumber(record.inventoryBalance)} ${record.product?.unit || '片'}`
-          : '—',
+      value: (() => {
+        if (record.inventoryBalance === undefined) return '—';
+        const ppu =
+          record.batchSpecification?.piecesPerUnit ??
+          record.product?.piecesPerUnit ??
+          0;
+        return ppu > 0
+          ? formatPieceSummary(record.inventoryBalance, ppu, {
+              fallbackUnit: '片',
+            })
+          : `${formatNumber(record.inventoryBalance)}片`;
+      })(),
       icon: <Warehouse className="h-5 w-5" />,
     },
     {

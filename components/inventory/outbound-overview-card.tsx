@@ -21,6 +21,7 @@ import {
   type OutboundRecordDetail,
 } from '@/lib/types/inventory';
 import { formatCurrency, formatNumber } from '@/lib/utils/format';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 const OUTBOUND_REASON_LABELS: Record<string, string> = {
   manual_outbound: '手动出库',
@@ -96,7 +97,15 @@ export function OutboundOverviewCard({
     // 公共统计项
     {
       label: '出库数量',
-      value: `${formatNumber(record.quantity)} ${record.product?.unit || '片'}`,
+      value: (() => {
+        const ppu =
+          record.batchSpecification?.piecesPerUnit ??
+          record.product?.piecesPerUnit ??
+          0;
+        return ppu > 0
+          ? formatPieceSummary(record.quantity, ppu, { fallbackUnit: '片' })
+          : `${formatNumber(record.quantity)}片`;
+      })(),
       icon: Boxes,
       iconClassName:
         'bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
@@ -118,10 +127,18 @@ export function OutboundOverviewCard({
       : []),
     {
       label: '当前批次库存',
-      value:
-        record.inventoryBalance !== undefined
-          ? `${formatNumber(record.inventoryBalance)} ${record.product?.unit || '片'}`
-          : '—',
+      value: (() => {
+        if (record.inventoryBalance === undefined) return '—';
+        const ppu =
+          record.batchSpecification?.piecesPerUnit ??
+          record.product?.piecesPerUnit ??
+          0;
+        return ppu > 0
+          ? formatPieceSummary(record.inventoryBalance, ppu, {
+              fallbackUnit: '片',
+            })
+          : `${formatNumber(record.inventoryBalance)}片`;
+      })(),
       icon: Warehouse,
       iconClassName:
         'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',

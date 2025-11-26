@@ -147,7 +147,22 @@ export function SalesOrderPrintTemplate({ order }: Props) {
                   {item.displayUnit || item.product?.unit || '-'}
                 </td>
                 <td style={tableCellStyle}>
-                  {item.displayQuantity || item.quantity}
+                  {(() => {
+                    const qty = (item.displayQuantity ?? item.quantity) || 0;
+                    const ppu =
+                      item.piecesPerUnit ?? item.product?.piecesPerUnit;
+                    if (typeof ppu === 'number' && ppu > 0) {
+                      const units = Math.floor(qty / ppu);
+                      const pieces = Math.floor(qty % ppu);
+                      const main = `${qty}片`;
+                      const approx =
+                        units > 0 || pieces > 0
+                          ? ` (约${units > 0 ? `${units}件` : ''}${pieces > 0 ? `${pieces}片` : ''})`
+                          : '';
+                      return `${main}${approx}`;
+                    }
+                    return `${qty}片`;
+                  })()}
                 </td>
                 <td style={tableCellStyle}>{piecesPerPackage}</td>
                 <td style={tableCellStyle}>{formatCurrency(item.unitPrice)}</td>

@@ -1,6 +1,13 @@
 'use client';
 
-import { AlertCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  BarChart3,
+  ClipboardList,
+  DollarSign,
+  FileText,
+  Package,
+} from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -41,8 +48,13 @@ interface ERPInboundFormProps {
 
 /**
  * ERP风格产品入库表单组件
- * 符合中国ERP系统的紧凑布局和操作习惯
- * ✅ 符合产品模块UI风格规范
+ *
+ * ✅ 优化亮点：
+ * 1. 紧凑布局：产品与供应商合并，批次与数量规格合并
+ * 2. 视觉层次清晰：使用lucide-react专业图标，每组独特配色
+ * 3. 符合操作流程：按用户自然思维顺序排列字段
+ * 4. 空间利用合理：减少分组数量，优化垂直空间
+ * 5. 现代化设计：增强边框和标题，提升视觉对比度
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const [showProductPrompt, setShowProductPrompt] = useState(false);
@@ -88,23 +100,21 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     skipConfirm: true,
   });
 
-  // ✅ 修复: 使用类型断言以兼容 standardSchemaResolver
+  // ✅ 使用 React Hook Form 的 handleSubmit，并在这里处理期初入库二次确认逻辑
   const handleFormSubmit = form.handleSubmit(
     async (data: any) => {
       setShowProductPrompt(false);
-      try {
-        await submitInbound(data as InboundFormData);
-      } catch (error) {
-        // 检查是否是需要确认的错误
-        if (error instanceof Error && error.name === 'ConfirmationRequired') {
-          // 保存待提交的数据，显示确认对话框
-          setPendingFormData(data as InboundFormData);
-          setShowConfirmDialog(true);
-        } else {
-          // 其他错误已经在 useInboundFormSubmit 中处理，这里重新抛出
-          throw error;
-        }
+      const typedData = data as InboundFormData;
+
+      // 期初入库：先弹出确认对话框，不直接提交
+      if (typedData.reason === 'opening_balance') {
+        setPendingFormData(typedData);
+        setShowConfirmDialog(true);
+        return;
       }
+
+      // 普通入库：直接提交
+      await submitInbound(typedData);
     },
     errors => {
       if (errors.productId) {
@@ -204,84 +214,132 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           <div className="p-6">
             <Form {...form}>
               <form onSubmit={handleFormSubmit} className="space-y-6">
-                {/* 产品选择区域 */}
-                <div className="rounded-md border border-blue-200 bg-blue-50/50 p-4">
-                  <InboundProductSection
-                    form={form}
-                    selectedProduct={selectedProduct}
-                    onProductSelect={handleProductSelectWithPrompt}
-                    showProductPrompt={showProductPrompt}
-                  />
+                {/* 1️⃣ 入库原因 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100">
+                      <ClipboardList className="h-4 w-4 text-indigo-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      入库原因
+                    </h3>
+                  </div>
+                  <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/40 p-4">
+                    <InboundReasonField form={form} />
+                  </div>
                 </div>
 
-                {/* 按照要求的顺序排列字段 */}
-                {/* 1. 产品信息已在上面的产品选择区域显示 */}
-
-                {/* 2. 供应商 */}
-                <InboundSupplierField form={form} />
-
-                {/* 3. 批次号 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="batchNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-semibold text-gray-900">
-                          批次号/色号 *
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="请输入批次号或色号"
-                            className="h-9"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormDescription className="text-xs text-gray-500">
-                          瓷砖行业要求：同一项目必须使用相同批次/色号
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* 2️⃣ 产品与供应商 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                      <Package className="h-4 w-4 text-blue-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      产品与供应商
+                    </h3>
+                  </div>
+                  <div className="space-y-4 rounded-lg border-2 border-blue-200 bg-blue-50/40 p-4">
+                    <InboundProductSection
+                      form={form}
+                      selectedProduct={selectedProduct}
+                      onProductSelect={handleProductSelectWithPrompt}
+                      showProductPrompt={showProductPrompt}
+                    />
+                    <InboundSupplierField form={form} />
+                  </div>
                 </div>
 
-                {/* 4. 数量、单位、每件片数 */}
-                <InboundQuantityFields form={form} />
+                {/* 3️⃣ 数量规格与批次 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                      <BarChart3 className="h-4 w-4 text-green-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      数量规格与批次
+                    </h3>
+                  </div>
+                  <div className="space-y-4 rounded-lg border-2 border-green-200 bg-green-50/40 p-4">
+                    {/* 批次号 */}
+                    <FormField
+                      control={form.control}
+                      name="batchNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold text-gray-900">
+                            批次号/色号 *
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="请输入批次号或色号"
+                              className="h-9"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs text-gray-500">
+                            瓷砖行业要求：同一项目必须使用相同批次/色号
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                {/* 5. 产品规格信息（每件重量） */}
-                <InboundSpecificationFields form={form} />
+                    {/* 入库数量、单位、最终片数 */}
+                    <InboundQuantityFields form={form} />
 
-                {/* 6. 采购单价和总价 */}
-                <div className="grid grid-cols-2 gap-4">
-                  <InboundCostField form={form} />
-                  <InboundTotalCostField form={form} />
+                    {/* 每件片数、每件重量 */}
+                    <InboundSpecificationFields form={form} />
+                  </div>
                 </div>
 
-                {/* 7. 入库原因 */}
-                <InboundReasonField form={form} />
+                {/* 4️⃣ 成本信息 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
+                      <DollarSign className="h-4 w-4 text-amber-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      成本信息
+                    </h3>
+                  </div>
+                  <div className="rounded-lg border-2 border-amber-200 bg-amber-50/40 p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <InboundCostField form={form} />
+                      <InboundTotalCostField form={form} />
+                    </div>
+                  </div>
+                </div>
 
-                {/* 8. 备注 */}
-                <div className="border-t pt-4">
-                  <FormField
-                    control={form.control}
-                    name="remarks"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm font-medium text-gray-600">
-                          备注
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="请输入备注信息（可选）"
-                            className="min-h-[36px] resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                {/* 5️⃣ 备注 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+                      <FileText className="h-4 w-4 text-gray-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">备注</h3>
+                  </div>
+                  <div className="rounded-lg border-2 border-gray-200 bg-gray-50/40 p-4">
+                    <FormField
+                      control={form.control}
+                      name="remarks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-900">
+                            备注信息
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="请输入备注信息（可选）"
+                              className="min-h-[80px] resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
               </form>
             </Form>

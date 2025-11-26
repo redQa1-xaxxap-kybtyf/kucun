@@ -13,7 +13,7 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 
 import { PrintLayout } from '@/components/print/PrintLayout';
 import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
@@ -322,7 +322,14 @@ export function PurchaseOrderPrintContent({
               specification:
                 item.specification || item.product?.specification || '-',
               unit: item.unit || item.product?.unit || '-',
-              quantity: item.quantity,
+              quantity: (() => {
+                const qty = Math.floor(item.quantity ?? 0);
+                const ppu =
+                  item.piecesPerUnit || item.product?.piecesPerUnit || 0;
+                return ppu > 0
+                  ? formatPieceSummary(qty, ppu, { fallbackUnit: '片' })
+                  : `${qty}片`;
+              })(),
               piecesPerUnit:
                 item.piecesPerUnit || item.product?.piecesPerUnit || '-',
               unitPrice: item.unitPrice,

@@ -6,6 +6,7 @@ import { ShoppingCart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/datetime';
+import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 
 import type { SalesOrderDetail } from './types';
 
@@ -26,9 +27,15 @@ function resolveUnitLabel(item: SalesOrderDetail['items'][number]) {
 }
 
 function formatQuantityDisplay(item: SalesOrderDetail['items'][number]) {
-  if (typeof item.displayQuantity === 'number')
-    return formatDecimal(item.displayQuantity);
-  return formatDecimal(item.quantity || 0);
+  // 以片为基准，显示“总片数（约X件+Y片）”格式
+  const qty = (item.displayQuantity ?? item.quantity) || 0;
+  const ppu = item.piecesPerUnit ?? item.product?.piecesPerUnit;
+  if (ppu && Number.isInteger(ppu) && ppu > 0) {
+    // 例如：123片 (约12件+3片)
+    const result = calculatePieceDisplay(Math.floor(qty), ppu);
+    return `${result.totalPieces}片 (约${result.displayText})`;
+  }
+  return `${formatDecimal(qty)}片`;
 }
 
 function formatPiecesBreakdown(item: SalesOrderDetail['items'][number]) {

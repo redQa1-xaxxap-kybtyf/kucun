@@ -281,8 +281,10 @@ export function ProductDetailsCard({
                   <TableRow>
                     <TableHead>序号</TableHead>
                     <TableHead>产品编码</TableHead>
+                    <TableHead>规格</TableHead>
                     <TableHead>供应商</TableHead>
                     <TableHead className="text-right">数量</TableHead>
+                    <TableHead className="text-right">每件片数</TableHead>
                     <TableHead className="text-right">采购单价</TableHead>
                     <TableHead className="text-right">总价</TableHead>
                     <TableHead>备注</TableHead>
@@ -293,9 +295,34 @@ export function ProductDetailsCard({
                     <TableRow key={item.id}>
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{item.productCode}</TableCell>
+                      <TableCell>
+                        {item.specification ||
+                          item.product?.specification ||
+                          '-'}
+                      </TableCell>
                       <TableCell>{item.supplier?.name || '-'}</TableCell>
                       <TableCell className="text-right">
-                        {item.quantity} {item.unit || '件'}
+                        {(() => {
+                          const ppu =
+                            item.piecesPerUnit ?? item.product?.piecesPerUnit;
+                          const qty = Math.floor(item.quantity ?? 0);
+                          if (ppu && ppu > 0) {
+                            const units = Math.floor(qty / ppu);
+                            const pieces = qty % ppu;
+                            const parts: string[] = [];
+                            if (units > 0) parts.push(`${units}件`);
+                            if (pieces > 0) parts.push(`${pieces}片`);
+                            const main = parts.length ? parts.join('') : '0片';
+                            return `${main}（共${qty}片）`;
+                          }
+                          return `${qty}片`;
+                        })()}
+                      </TableCell>
+                      {/* 每件片数 */}
+                      <TableCell className="text-right">
+                        {typeof item.piecesPerUnit === 'number'
+                          ? item.piecesPerUnit
+                          : '-'}
                       </TableCell>
                       <TableCell className="text-right">
                         ¥{item.unitPrice.toFixed(2)}
