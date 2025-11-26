@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { UserManagementUser } from '@/lib/types/settings';
+import { formatDateTime } from '@/lib/utils/date';
 
 import { UserActions } from './UserActions';
 
