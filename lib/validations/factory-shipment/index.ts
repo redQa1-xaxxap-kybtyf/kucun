@@ -167,6 +167,18 @@ export const updateFactoryShipmentOrderSchema = z
  */
 
 // 表单专用的订单明细项Schema - 移除.transform()和.default()
+// 使用 preprocess 处理字符串输入，避免输入过程中的验证错误
+const coerceNumber = (val: unknown) => {
+  if (val === '' || val === undefined || val === null) return 0;
+  if (typeof val === 'string') {
+    // 处理输入中间状态（如 "12."）
+    if (val.endsWith('.')) return Number.parseFloat(val + '0');
+    const parsed = Number.parseFloat(val);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+  return typeof val === 'number' ? val : 0;
+};
+
 const factoryShipmentOrderItemFormSchema = z.object({
   // ✅ 允许初始状态为 undefined，避免 Zod 报 "expected string, received undefined"
   productId: z.string().uuid('产品ID格式不正确').optional().nullable(),
@@ -181,9 +193,11 @@ const factoryShipmentOrderItemFormSchema = z.object({
     .max(100, '批次号不能超过100个字符')
     .optional()
     .or(z.literal('')),
-  quantity: z.number().positive('数量必须大于0'),
-  unitPrice: z.number().min(0, '单价不能为负数'),
-  unitCost: z.number().min(0, '进货价不能为负数').optional(),
+  quantity: z.preprocess(coerceNumber, z.number().positive('数量必须大于0')),
+  unitPrice: z.preprocess(coerceNumber, z.number().min(0, '单价不能为负数')),
+  unitCost: z
+    .preprocess(coerceNumber, z.number().min(0, '进货价不能为负数'))
+    .optional(),
   ownership: z.nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP), // 移除.default()
   customerDeliveryStatus: z.enum(['pending', 'delivered']).optional(),
   selfInboundStatus: z.enum(['pending', 'received']).optional(),
@@ -229,12 +243,14 @@ const factoryShipmentFeeItemFormSchema = z.object({
     .string()
     .min(1, '费用名称不能为空')
     .max(100, '费用名称不能超过100个字符'),
-  feeAmount: z
-    .number()
-    .nonnegative('费用金额不能为负数')
-    .finite('费用金额必须是有效数字')
-    .max(999999.99, '费用金额不能超过999,999.99')
-    .multipleOf(0.01, '费用金额最多保留2位小数'),
+  feeAmount: z.preprocess(
+    coerceNumber,
+    z
+      .number()
+      .nonnegative('费用金额不能为负数')
+      .finite('费用金额必须是有效数字')
+      .max(999999.99, '费用金额不能超过999,999.99')
+  ),
   paidBy: z.enum(['customer', 'company']), // 移除.default()
   remarks: z
     .string()
