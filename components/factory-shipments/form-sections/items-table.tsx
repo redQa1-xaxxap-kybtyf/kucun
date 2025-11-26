@@ -296,50 +296,47 @@ export const ItemsTable = React.memo<ItemsTableProps>(
         <div className="overflow-x-auto rounded-lg border">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[60px] border-r px-3 py-3 text-center">
+              <TableRow className="bg-muted/50 hover:bg-muted/50">
+                <TableHead className="text-foreground w-[50px] border-r px-2 py-3 text-center font-semibold">
                   序号
                 </TableHead>
-                <TableHead className="w-[180px] border-r px-3 py-3">
-                  产品编码 *
+                <TableHead className="text-foreground w-[180px] border-r px-3 py-3 font-semibold">
+                  产品信息 <span className="text-destructive">*</span>
                 </TableHead>
-                <TableHead className="w-[200px] border-r px-3 py-3">
-                  产品名称 *
+                <TableHead className="text-foreground w-[160px] border-r px-3 py-3 font-semibold">
+                  供应商 <span className="text-destructive">*</span>
                 </TableHead>
-                <TableHead className="w-[180px] border-r px-3 py-3">
-                  供应商 *
-                </TableHead>
-                <TableHead className="w-[140px] border-r px-3 py-3">
+                <TableHead className="text-foreground w-[180px] border-r px-3 py-3 font-semibold">
                   规格
                 </TableHead>
-                <TableHead className="w-[120px] border-r px-3 py-3">
+                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 font-semibold">
                   批次
                 </TableHead>
-                <TableHead className="w-[100px] border-r px-3 py-3 text-right">
+                <TableHead className="text-foreground w-[90px] border-r px-3 py-3 text-right font-semibold">
                   每件片数
                 </TableHead>
-                <TableHead className="w-[100px] border-r px-3 py-3 text-right">
-                  数量 *
+                <TableHead className="text-foreground w-[90px] border-r px-3 py-3 text-right font-semibold">
+                  数量 <span className="text-destructive">*</span>
                 </TableHead>
-                <TableHead className="w-[80px] border-r px-3 py-3 text-center">
+                <TableHead className="text-foreground w-[70px] border-r px-3 py-3 text-center font-semibold">
                   单位
                 </TableHead>
-                <TableHead className="w-[110px] border-r px-3 py-3 text-right">
+                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 text-right font-semibold">
                   进货价
                 </TableHead>
-                <TableHead className="w-[110px] border-r px-3 py-3 text-right">
-                  销售价 *
+                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 text-right font-semibold">
+                  销售价 <span className="text-destructive">*</span>
                 </TableHead>
-                <TableHead className="w-[110px] border-r px-3 py-3 text-right">
+                <TableHead className="text-foreground w-[100px] border-r px-3 py-3 text-right font-semibold">
                   金额
                 </TableHead>
-                <TableHead className="w-[100px] border-r px-3 py-3">
-                  归属 *
+                <TableHead className="text-foreground w-[90px] border-r px-3 py-3 font-semibold">
+                  归属 <span className="text-destructive">*</span>
                 </TableHead>
-                <TableHead className="w-[180px] border-r px-3 py-3">
+                <TableHead className="text-foreground w-[150px] border-r px-3 py-3 font-semibold">
                   备注
                 </TableHead>
-                <TableHead className="w-[80px] px-3 py-3 text-center">
+                <TableHead className="text-foreground w-[60px] px-2 py-3 text-center font-semibold">
                   操作
                 </TableHead>
               </TableRow>
@@ -347,7 +344,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
             <TableBody>
               {fields.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={14} className="h-32 text-center">
+                  <TableCell colSpan={13} className="h-32 text-center">
                     <div className="text-muted-foreground flex flex-col items-center gap-2">
                       <Package className="h-8 w-8" />
                       <p>暂无产品明细，请点击「添加产品」开始填写</p>
@@ -358,40 +355,38 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                 fields.map((field, index) => (
                   <TableRow key={field.id} className="hover:bg-muted/30">
                     {/* 序号 */}
-                    <TableCell className="border-r px-3 py-3 text-center font-medium">
+                    <TableCell className="border-r px-2 py-3 text-center font-medium">
                       {index + 1}
                     </TableCell>
 
-                    {/* 产品编码（智能选择器） */}
+                    {/* 产品信息（合并编码和名称） */}
                     <TableCell className="border-r px-3 py-3">
-                      <IntelligentProductInput
-                        form={form}
-                        index={index}
-                        products={products}
-                        onProductChange={handleProductChange(index)}
-                        placeholder="搜索产品或添加临时产品"
-                      />
-                    </TableCell>
-
-                    {/* 产品名称 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.displayName`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                placeholder="产品名称"
-                                className="h-8 text-xs"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
+                      <div className="flex flex-col gap-2">
+                        <IntelligentProductInput
+                          form={form}
+                          index={index}
+                          products={products}
+                          onProductChange={handleProductChange(index)}
+                          placeholder="搜索产品或添加临时产品"
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.displayName`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  value={field.value || ''}
+                                  placeholder="产品名称"
+                                  className="text-muted-foreground h-8 text-xs"
+                                />
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </TableCell>
 
                     {/* 供应商 */}
@@ -431,7 +426,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                 {...field}
                                 value={field.value || ''}
                                 placeholder="规格"
-                                className="h-8 text-xs"
+                                className="h-9 text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -452,7 +447,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                 {...field}
                                 value={field.value || ''}
                                 placeholder="批次号"
-                                className="h-8 text-xs"
+                                className="h-9 text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -492,7 +487,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                   );
                                 }}
                                 placeholder="片/件"
-                                className="h-8 text-right text-xs"
+                                className="h-9 text-right text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -518,7 +513,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                   )
                                 }
                                 placeholder="数量"
-                                className="h-8 text-right text-xs"
+                                className="h-9 text-right text-sm font-medium"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -539,7 +534,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                 value={field.value || '片'}
                                 onValueChange={field.onChange}
                               >
-                                <SelectTrigger className="h-8 text-xs">
+                                <SelectTrigger className="h-9 text-sm">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -582,7 +577,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                   );
                                 }}
                                 placeholder="进货价"
-                                className="h-8 text-right text-xs"
+                                className="h-9 text-right text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -608,7 +603,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                   )
                                 }
                                 placeholder="销售单价"
-                                className="h-8 text-right text-xs"
+                                className="h-9 text-right text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -623,12 +618,10 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                         ￥{calculateItemAmount(index).toFixed(2)}
                       </span>
                     </TableCell>
-
-                    {/* 归属 */}
                     <TableCell className="border-r px-3 py-3">
                       <FormField
                         control={form.control}
-                        name={`items.${index}.ownership`}
+                        name={`items.${index}.attribution`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
@@ -636,12 +629,12 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                 value={field.value || 'customer'}
                                 onValueChange={field.onChange}
                               >
-                                <SelectTrigger className="h-8 text-xs">
+                                <SelectTrigger className="h-9 text-sm">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="customer">客户</SelectItem>
-                                  <SelectItem value="self">自有</SelectItem>
+                                  <SelectItem value="factory">工厂</SelectItem>
                                 </SelectContent>
                               </Select>
                             </FormControl>
@@ -650,12 +643,10 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                         )}
                       />
                     </TableCell>
-
-                    {/* 备注 */}
                     <TableCell className="border-r px-3 py-3">
                       <FormField
                         control={form.control}
-                        name={`items.${index}.ownershipRemarks`}
+                        name={`items.${index}.remark`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>
@@ -663,7 +654,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                 {...field}
                                 value={field.value || ''}
                                 placeholder="备注"
-                                className="h-8 text-xs"
+                                className="h-9 text-sm"
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -671,16 +662,13 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                         )}
                       />
                     </TableCell>
-
-                    {/* 操作 */}
                     <TableCell className="px-3 py-3 text-center">
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
                         onClick={() => onRemoveItem(index)}
-                        disabled={fields.length === 1}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive h-8 w-8 p-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -690,6 +678,70 @@ export const ItemsTable = React.memo<ItemsTableProps>(
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* 底部汇总栏 */}
+        <div className="bg-muted/10 flex items-center justify-end gap-8 rounded-lg border px-6 py-4">
+          <div className="text-sm">
+            <span className="text-muted-foreground mr-2">总数量:</span>
+            <span className="font-medium">
+              {(() => {
+                // 严格换算：先将所有行数量换算为总片数
+                let totalPieces = 0;
+                const ppuSet = new Set<number>();
+                fields.forEach((_, index) => {
+                  const qty = Number(
+                    form.watch(`items.${index}.quantity`) || 0
+                  );
+                  const unit = form.watch(`items.${index}.unit`) || '片';
+                  const ppu = Number(
+                    form.watch(`items.${index}.piecesPerUnit`) || 0
+                  );
+
+                  if (unit === '件') {
+                    if (ppu > 0) {
+                      ppuSet.add(ppu);
+                      totalPieces += Math.floor(qty) * ppu;
+                    } else {
+                      // 缺少每件片数时，无法将“件”精确换算为片，按0处理避免误导
+                      totalPieces += 0;
+                    }
+                  } else {
+                    totalPieces += Math.floor(qty);
+                  }
+                });
+
+                if (!Number.isFinite(totalPieces) || totalPieces <= 0) {
+                  return '0片';
+                }
+
+                // 当所有带“件”的行的每件片数完全一致时，使用该值做件/片精确表示
+                const uniquePpu = [...ppuSet].filter(v => v > 0);
+                if (uniquePpu.length === 1) {
+                  const ppu = uniquePpu[0];
+                  const fullUnits = Math.floor(totalPieces / ppu);
+                  const remaining = totalPieces % ppu;
+                  if (fullUnits === 0)
+                    return `${remaining}片（共${totalPieces}片）`;
+                  if (remaining === 0)
+                    return `${fullUnits}件（共${totalPieces}片）`;
+                  return `${fullUnits}件${remaining}片（共${totalPieces}片）`;
+                }
+
+                // 否则仅显示严格总片数
+                return `${totalPieces}片`;
+              })()}
+            </span>
+          </div>
+          <div className="flex items-baseline text-sm">
+            <span className="text-muted-foreground mr-2">预计总金额:</span>
+            <span className="font-mono text-xl font-bold text-orange-600">
+              ￥
+              {fields
+                .reduce((sum, _, index) => sum + calculateItemAmount(index), 0)
+                .toFixed(2)}
+            </span>
+          </div>
         </div>
 
         {/* 定价结果对话框 */}
