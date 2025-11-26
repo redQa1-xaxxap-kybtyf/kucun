@@ -35,6 +35,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
+import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
@@ -281,7 +282,9 @@ export function ProductDetailsCard({
                   <TableRow>
                     <TableHead>序号</TableHead>
                     <TableHead>产品编码</TableHead>
+                    <TableHead>产品名称</TableHead>
                     <TableHead>规格</TableHead>
+                    <TableHead>单位</TableHead>
                     <TableHead>供应商</TableHead>
                     <TableHead className="text-right">数量</TableHead>
                     <TableHead className="text-right">每件片数</TableHead>
@@ -296,9 +299,26 @@ export function ProductDetailsCard({
                       <TableCell>{index + 1}</TableCell>
                       <TableCell>{item.productCode}</TableCell>
                       <TableCell>
+                        {item.displayName ||
+                          item.manualProductName ||
+                          item.product?.name ||
+                          '-'}
+                      </TableCell>
+                      <TableCell>
                         {item.specification ||
                           item.product?.specification ||
                           '-'}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const unit = item.unit || item.product?.unit;
+                          if (!unit) return '-';
+                          return (
+                            PRODUCT_UNIT_LABELS[
+                              unit as keyof typeof PRODUCT_UNIT_LABELS
+                            ] || unit
+                          );
+                        })()}
                       </TableCell>
                       <TableCell>{item.supplier?.name || '-'}</TableCell>
                       <TableCell className="text-right">

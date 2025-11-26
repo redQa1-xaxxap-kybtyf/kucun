@@ -5,7 +5,7 @@ import { Edit, Eye } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { CopyableText } from '@/components/common/copyable-text';
+import { CopyButton } from '@/components/common/copy-button';
 import { ContentLoading } from '@/components/common/loading';
 import { RelativeTime } from '@/components/common/relative-time';
 import { PurchaseOrderContainerNumberEditDialog } from '@/components/purchase-orders/purchase-order-container-number-edit-dialog';
@@ -159,7 +159,16 @@ export function PurchaseOrderList({
             {orders.map((order: PurchaseOrder) => (
               <TableRow key={order.id}>
                 <TableCell className="font-medium">
-                  <CopyableText text={order.orderNumber} />
+                  <span className="inline-flex items-center gap-1">
+                    <Link
+                      href={`/purchase-orders/${order.id}`}
+                      className="text-[hsl(var(--color-primary))] hover:underline"
+                      title={`查看采购订单 ${order.orderNumber}`}
+                    >
+                      {order.orderNumber}
+                    </Link>
+                    <CopyButton text={order.orderNumber} iconSize="sm" />
+                  </span>
                 </TableCell>
                 <TableCell>
                   {formatPurchaseOrderSuppliers(order.items || [])}
