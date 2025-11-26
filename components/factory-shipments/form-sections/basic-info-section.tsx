@@ -8,18 +8,18 @@ import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import {
-  FACTORY_SHIPMENT_STATUS,
-  FACTORY_SHIPMENT_STATUS_LABELS,
+    FACTORY_SHIPMENT_STATUS,
+    FACTORY_SHIPMENT_STATUS_LABELS,
 } from '@/lib/types/factory-shipment';
 import type { Customer } from '@/lib/types/models';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
@@ -62,14 +62,9 @@ export function BasicInfoSection({
 
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))]">
-        <CardTitle className="flex items-center gap-3 text-lg">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm">
-            <Truck className="h-5 w-5" />
-          </div>
-          <span className="font-semibold text-[hsl(var(--color-text-primary))]">
-            基本信息
-          </span>
+      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+        <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
+          基本信息
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-8 p-8">
@@ -123,21 +118,28 @@ export function BasicInfoSection({
                   集装箱号
                 </FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="请输入集装箱号"
-                    className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
-                    {...field}
-                  />
+                  <div className="relative">
+                    <Truck className="absolute left-3 top-2.5 h-4 w-4 text-[hsl(var(--color-text-secondary))]" />
+                    <Input
+                      placeholder="请输入集装箱号"
+                      className="pl-9 transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
+                      {...field}
+                      value={field.value || ''}
+                    />
+                  </div>
                 </FormControl>
+                <FormDescription>
+                  可选，用于追踪货物运输状态
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
-        {/* 第二行：订单状态（编辑时） */}
+        {/* 订单状态（仅在编辑模式且showStatus为true时显示） */}
         {showStatus && (
-          <div className="grid grid-cols-1 gap-6">
+          <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
             <FormField
               control={form.control}
               name="status"
@@ -146,24 +148,22 @@ export function BasicInfoSection({
                   <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                     订单状态
                   </FormLabel>
-                  <FormControl>
-                    <input type="hidden" {...field} />
-                  </FormControl>
-                  <Badge
-                    variant="outline"
-                    className="inline-flex min-h-10 items-center justify-start rounded-md border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-4 text-sm font-medium text-[hsl(var(--color-text-primary))]"
-                  >
-                    {FACTORY_SHIPMENT_STATUS_LABELS[
-                      (field.value ??
-                        FACTORY_SHIPMENT_STATUS.DRAFT) as keyof typeof FACTORY_SHIPMENT_STATUS_LABELS
-                    ] ??
-                      FACTORY_SHIPMENT_STATUS_LABELS[
-                        FACTORY_SHIPMENT_STATUS.DRAFT
-                      ]}
-                  </Badge>
-                  <FormDescription className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    状态由系统流程自动更新，用户无需手动选择
-                  </FormDescription>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {Object.values(FACTORY_SHIPMENT_STATUS).map(status => (
+                      <Badge
+                        key={status}
+                        variant={field.value === status ? 'default' : 'outline'}
+                        className={`cursor-pointer px-4 py-1.5 text-sm transition-all hover:scale-105 ${
+                          field.value === status
+                            ? 'bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm'
+                            : 'hover:bg-[hsl(var(--color-bg-secondary))]'
+                        }`}
+                        onClick={() => field.onChange(status)}
+                      >
+                        {FACTORY_SHIPMENT_STATUS_LABELS[status]}
+                      </Badge>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

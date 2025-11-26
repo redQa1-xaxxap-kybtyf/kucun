@@ -58,11 +58,8 @@ export default function PayableDetailPage() {
   return (
     <div className="space-y-6 p-6">
       {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
-      <div className="flex items-center space-x-2">
-        <span className="text-muted-foreground">
-          应付款单号：{payable.payableNumber}
-        </span>
-      </div>
+      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
+      {/* 标题已移至 PayableDetailClient 组件中渲染 */}
 
       {/* 详情内容 */}
       <PayableDetailClient payable={payable} />

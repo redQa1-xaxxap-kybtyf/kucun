@@ -6,16 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  FACTORY_SHIPMENT_FEE_TYPE_LABELS,
-  type FactoryShipmentOrderFeeItem,
+    FACTORY_SHIPMENT_FEE_TYPE_LABELS,
+    type FactoryShipmentOrderFeeItem,
 } from '@/lib/types/factory-shipment';
 import { formatAmount } from '@/lib/utils/factory-shipment-helpers';
 
@@ -30,6 +30,7 @@ interface FeeItemsSectionProps {
  * - 显示费用明细表格
  * - 区分客户承担和公司承担的费用
  * - 显示费用汇总统计
+ * 优化：紧凑布局
  */
 export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
   // 如果没有费用项，显示空状态
@@ -39,13 +40,13 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
         className="border border-[hsl(var(--color-border-primary))]"
         style={{ boxShadow: 'var(--shadow-medium)' }}
       >
-        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <DollarSign className="h-5 w-5 text-[hsl(var(--color-primary))]" />
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
             费用明细
           </CardTitle>
         </CardHeader>
-        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
+        <CardContent className="bg-[hsl(var(--color-bg-card))] p-4">
           <div className="text-center text-sm text-[hsl(var(--color-text-tertiary))]">
             暂无费用
           </div>
@@ -70,10 +71,10 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
       className="border border-[hsl(var(--color-border-primary))]"
       style={{ boxShadow: 'var(--shadow-medium)' }}
     >
-      <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+      <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <DollarSign className="h-5 w-5 text-[hsl(var(--color-primary))]" />
+          <CardTitle className="flex items-center gap-2 text-sm font-medium">
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
             费用明细
           </CardTitle>
           <Badge variant="outline" className="text-xs">
@@ -85,23 +86,23 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-[hsl(var(--color-bg-table-header))]">
-              <TableRow className="border-b-2 border-[hsl(var(--color-border-primary))]">
-                <TableHead className="w-[60px] text-xs font-semibold">
+              <TableRow className="border-b border-[hsl(var(--color-border-primary))]">
+                <TableHead className="w-[50px] py-2 text-xs font-semibold">
                   序号
                 </TableHead>
-                <TableHead className="min-w-[120px] text-xs font-semibold">
+                <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
                   费用类型
                 </TableHead>
-                <TableHead className="min-w-[180px] text-xs font-semibold">
+                <TableHead className="min-w-[180px] py-2 text-xs font-semibold">
                   费用名称
                 </TableHead>
-                <TableHead className="w-[140px] text-right text-xs font-semibold">
+                <TableHead className="w-[140px] py-2 text-right text-xs font-semibold">
                   费用金额
                 </TableHead>
-                <TableHead className="w-[120px] text-xs font-semibold">
+                <TableHead className="w-[120px] py-2 text-xs font-semibold">
                   承担方
                 </TableHead>
-                <TableHead className="min-w-[200px] text-xs font-semibold">
+                <TableHead className="min-w-[200px] py-2 text-xs font-semibold">
                   备注
                 </TableHead>
               </TableRow>
@@ -112,19 +113,19 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
                   key={fee.id}
                   className="border-b border-[hsl(var(--color-border-primary))] hover:bg-[hsl(var(--color-bg-hover))]"
                 >
-                  <TableCell className="py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="py-2 text-center text-sm text-[hsl(var(--color-text-secondary))]">
                     {index + 1}
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="py-2 text-sm text-[hsl(var(--color-text-primary))]">
                     {FACTORY_SHIPMENT_FEE_TYPE_LABELS[fee.feeType]}
                   </TableCell>
-                  <TableCell className="py-3 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="py-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
                     {fee.feeName}
                   </TableCell>
-                  <TableCell className="py-3 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                  <TableCell className="py-2 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                     {formatAmount(fee.feeAmount)}
                   </TableCell>
-                  <TableCell className="py-3">
+                  <TableCell className="py-2">
                     <Badge
                       variant={
                         fee.paidBy === 'customer' ? 'default' : 'secondary'
@@ -134,7 +135,7 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
                       {fee.paidBy === 'customer' ? '客户承担' : '公司承担'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="py-3 text-sm text-[hsl(var(--color-text-secondary))]">
+                  <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
                     {fee.remarks || '-'}
                   </TableCell>
                 </TableRow>
@@ -145,29 +146,29 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
 
         {/* 费用汇总 */}
         <Separator />
-        <div className="bg-[hsl(var(--color-bg-secondary))] p-6">
+        <div className="bg-[hsl(var(--color-bg-secondary))] p-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-2">
-              <p className="text-xs font-medium tracking-wide text-[hsl(var(--color-text-tertiary))] uppercase">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                 客户承担费用
               </p>
-              <p className="text-lg font-bold text-blue-600">
+              <p className="text-base font-bold text-blue-600">
                 {formatAmount(customerFees)}
               </p>
             </div>
-            <div className="space-y-2">
-              <p className="text-xs font-medium tracking-wide text-[hsl(var(--color-text-tertiary))] uppercase">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                 公司承担费用
               </p>
-              <p className="text-lg font-bold text-gray-600">
+              <p className="text-base font-bold text-gray-600">
                 {formatAmount(companyFees)}
               </p>
             </div>
-            <div className="space-y-2">
-              <p className="text-xs font-medium tracking-wide text-[hsl(var(--color-text-tertiary))] uppercase">
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                 费用总计
               </p>
-              <p className="text-lg font-bold text-[hsl(var(--color-primary))]">
+              <p className="text-base font-bold text-[hsl(var(--color-primary))]">
                 {formatAmount(totalFees)}
               </p>
             </div>

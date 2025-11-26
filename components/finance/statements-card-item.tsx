@@ -1,6 +1,7 @@
-import { format } from 'date-fns';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+
+import { RelativeTime } from '@/components/common/relative-time';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,9 +9,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
 
 import {
-  STATUS_LABEL_MAP,
-  TYPE_LABEL_MAP,
-  type AccountStatementItem,
+    STATUS_LABEL_MAP,
+    TYPE_LABEL_MAP,
+    type AccountStatementItem,
 } from './statements-types';
 
 type StatementCardItemProps = {
@@ -194,10 +195,7 @@ function StatementTimeline({ statement }: { statement: AccountStatementItem }) {
         <div className="flex items-center gap-1.5">
           <span className="font-medium">最后交易:</span>
           <span>
-            {format(
-              new Date(statement.lastTransactionDate),
-              'yyyy-MM-dd HH:mm'
-            )}
+            <RelativeTime date={statement.lastTransactionDate} />
           </span>
         </div>
       )}
@@ -205,7 +203,7 @@ function StatementTimeline({ statement }: { statement: AccountStatementItem }) {
         <div className="flex items-center gap-1.5">
           <span className="font-medium">最近收付:</span>
           <span>
-            {format(new Date(statement.lastPaymentDate), 'yyyy-MM-dd HH:mm')}
+            <RelativeTime date={statement.lastPaymentDate} />
           </span>
         </div>
       )}

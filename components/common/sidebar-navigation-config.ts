@@ -1,6 +1,6 @@
 import {
   ArrowUpRight,
-  BarChart3,
+  Briefcase,
   Calendar,
   CalendarDays,
   ClipboardCheck,
@@ -32,7 +32,7 @@ import type { NavigationItem } from '@/lib/types/layout';
 
 /**
  * 主要功能模块导航配置
- * 严格按照项目要求包含所有功能模块
+ * 优化后的菜单结构：按业务流程分组，层级扁平化
  */
 export const navigationItems: NavigationItem[] = [
   {
@@ -40,6 +40,46 @@ export const navigationItems: NavigationItem[] = [
     title: '仪表盘',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    id: 'business',
+    title: '业务管理',
+    href: '/sales-orders',
+    icon: Briefcase,
+    children: [
+      {
+        id: 'sales-orders',
+        title: '销售订单',
+        href: '/sales-orders',
+        icon: ShoppingCart,
+      },
+      {
+        id: 'return-orders',
+        title: '退货订单',
+        href: '/return-orders',
+        icon: RotateCcw,
+      },
+      {
+        id: 'factory-shipments',
+        title: '厂家发货',
+        href: '/factory-shipments',
+        icon: Truck,
+        children: [
+          {
+            id: 'factory-shipments-customer-direct',
+            title: '客户直发',
+            href: '/factory-shipments',
+            icon: PackageCheck,
+          },
+          {
+            id: 'factory-shipments-warehouse-inbound',
+            title: '仓库进货',
+            href: '/purchase-orders',
+            icon: Warehouse,
+          },
+        ],
+      },
+    ],
   },
   {
     id: 'inventory',
@@ -98,60 +138,44 @@ export const navigationItems: NavigationItem[] = [
     ],
   },
   {
-    id: 'products',
-    title: '产品管理',
+    id: 'product-center',
+    title: '产品中心',
     href: '/products',
     icon: Package,
-  },
-  {
-    id: 'categories',
-    title: '分类管理',
-    href: '/categories',
-    icon: FolderTree,
-  },
-  {
-    id: 'sales-orders',
-    title: '销售订单',
-    href: '/sales-orders',
-    icon: ShoppingCart,
-  },
-  {
-    id: 'factory-shipments',
-    title: '厂家发货',
-    href: '/factory-shipments',
-    icon: Truck,
     children: [
       {
-        id: 'factory-shipments-customer-direct',
-        title: '客户直发',
-        href: '/factory-shipments',
-        icon: PackageCheck,
+        id: 'products',
+        title: '产品管理',
+        href: '/products',
+        icon: Package,
       },
       {
-        id: 'factory-shipments-warehouse-inbound',
-        title: '仓库进货',
-        href: '/purchase-orders',
-        icon: Warehouse,
+        id: 'categories',
+        title: '分类管理',
+        href: '/categories',
+        icon: FolderTree,
       },
     ],
   },
   {
-    id: 'return-orders',
-    title: '退货订单',
-    href: '/return-orders',
-    icon: RotateCcw,
-  },
-  {
-    id: 'customers',
-    title: '客户管理',
+    id: 'partners',
+    title: '客户供应商',
     href: '/customers',
     icon: Users,
-  },
-  {
-    id: 'suppliers',
-    title: '供应商管理',
-    href: '/suppliers',
-    icon: Truck,
+    children: [
+      {
+        id: 'customers',
+        title: '客户管理',
+        href: '/customers',
+        icon: Users,
+      },
+      {
+        id: 'suppliers',
+        title: '供应商管理',
+        href: '/suppliers',
+        icon: Truck,
+      },
+    ],
   },
   {
     id: 'finance',

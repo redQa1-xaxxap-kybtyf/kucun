@@ -5,7 +5,14 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { PURCHASE_ORDER_STATUS } from '@/lib/types/purchase-order';
-import { updatePurchaseOrderSchema } from '@/lib/validations/purchase-order';
+import {
+  updatePurchaseOrderSchema,
+  type UpdatePurchaseOrderFormData,
+} from '@/lib/validations/purchase-order-form';
+import {
+  calculateOrderTotal,
+  updatePurchaseOrderInternal,
+} from '@/app/actions/purchase-orders.utils';
 
 type PurchaseOrderParams = { id: string };
 
@@ -129,38 +136,45 @@ export const GET = withAuth(async (_request: NextRequest, context) => {
   }
 });
 
-export const PUT = withAuth(async (request: NextRequest, context) => {
+const handleUpdate = withAuth(async (request: NextRequest, context) => {
   const { user } = context;
   const { id: orderId } = await resolveOrderParams(context.params);
-  try {
-    const body = await request.json();
-    const validatedData = updatePurchaseOrderSchema.parse(body);
 
-    const existingOrder = await prisma.purchaseOrder.findUnique({
-      where: { id: orderId },
+  try {
+    const body = (await request.json()) as unknown;
+    const parsed = updatePurchaseOrderSchema.parse(
+      body
+    ) as UpdatePurchaseOrderFormData;
+    const items = parsed.items ?? [];
+    const totalAmount = calculateOrderTotal(items);
+
+    const result = await updatePurchaseOrderInternal({
+      orderId,
+      data: parsed,
+      items,
+      totalAmount,
+      userId: user.id,
     });
 
-    if (!existingOrder) {
-      return NextResponse.json({ error: '采购订单不存在' }, { status: 404 });
+    if (!result.success) {
+      const statusCode = result.validationErrors ? 422 : 400;
+      return NextResponse.json(
+        {
+          error: result.error,
+          validationErrors: result.validationErrors,
+        },
+        { status: statusCode }
+      );
     }
 
-    const updatedOrder = await prisma.purchaseOrder.update({
+    const updatedOrder = await prisma.purchaseOrder.findUnique({
       where: { id: orderId },
-      data: {
-        containerNumber: validatedData.containerNumber?.trim() || null,
-        remarks: validatedData.remarks?.trim() || null,
-        orderDate: validatedData.orderDate
-          ? new Date(validatedData.orderDate)
-          : undefined,
-        shipmentDate: validatedData.shipmentDate
-          ? new Date(validatedData.shipmentDate)
-          : undefined,
-        estimatedArrival: validatedData.estimatedArrival
-          ? new Date(validatedData.estimatedArrival)
-          : undefined,
-      },
       select: orderDetailSelect,
     });
+
+    if (!updatedOrder) {
+      return NextResponse.json({ error: '采购订单不存在' }, { status: 404 });
+    }
 
     return NextResponse.json({ data: updatedOrder });
   } catch (error) {
@@ -171,6 +185,9 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
     return NextResponse.json({ error: '更新订单失败' }, { status: 500 });
   }
 });
+
+export const PUT = handleUpdate;
+export const PATCH = handleUpdate;
 
 export const DELETE = withAuth(async (_request: NextRequest, context) => {
   const { user } = context;

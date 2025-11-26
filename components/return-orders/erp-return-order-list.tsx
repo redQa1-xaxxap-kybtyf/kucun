@@ -5,55 +5,56 @@ import { Ban, Edit, Eye, MoreHorizontal, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
+import { RelativeTime } from '@/components/common/relative-time';
 import { ReturnOrderSearchToolbar } from '@/components/return-orders/return-order-search-toolbar';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { getReturnOrders } from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  type ReturnOrder,
-  type ReturnOrderQueryParams,
-  type ReturnOrderStatus,
-  type ReturnOrderType,
-  type ReturnProcessType,
-  RETURN_ORDER_STATUS_LABELS,
-  RETURN_ORDER_TYPE_LABELS,
-  RETURN_PROCESS_TYPE_LABELS,
+    type ReturnOrder,
+    type ReturnOrderQueryParams,
+    type ReturnOrderStatus,
+    type ReturnOrderType,
+    type ReturnProcessType,
+    RETURN_ORDER_STATUS_LABELS,
+    RETURN_ORDER_TYPE_LABELS,
+    RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
-import { formatDateTime } from '@/lib/utils/datetime';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -502,10 +503,14 @@ export function ERPReturnOrderList({
                   onClick={() => handleViewDetail(returnOrder)}
                 >
                   <TableCell className="font-mono font-medium text-blue-600">
-                    {returnOrder.returnNumber}
+                    <CopyableText text={returnOrder.returnNumber} />
                   </TableCell>
                   <TableCell className="text-muted-foreground font-mono">
-                    {returnOrder.salesOrder?.orderNumber || '-'}
+                    {returnOrder.salesOrder?.orderNumber ? (
+                      <CopyableText text={returnOrder.salesOrder.orderNumber} />
+                    ) : (
+                      '-'
+                    )}
                   </TableCell>
                   <TableCell className="font-medium text-gray-900">
                     {returnOrder.customer?.name || '-'}
@@ -557,7 +562,7 @@ export function ERPReturnOrderList({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDateTime(returnOrder.createdAt)}
+                    <RelativeTime date={returnOrder.createdAt} />
                   </TableCell>
                   <TableCell className="text-center">
                     <DropdownMenu>

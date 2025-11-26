@@ -1,30 +1,13 @@
 'use client';
 
-import {
-  AlertCircle,
-  Calendar,
-  Eye,
-  Package,
-  Plus,
-  RefreshCw,
-  ShoppingCart,
-  Users,
-  Zap,
-} from 'lucide-react';
+import { Package, RefreshCw, ShoppingCart, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-import { FactoryShipments } from '@/components/dashboard/factory-shipments';
-import { RecentOrders } from '@/components/dashboard/recent-orders';
+import { DashboardTodoBar } from '@/components/dashboard/dashboard-todo-bar';
+import { DashboardTrendChart } from '@/components/dashboard/dashboard-trend-chart';
 import { StatCardsGrid } from '@/components/dashboard/stat-cards-enhanced';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -70,12 +53,13 @@ export function ERPDashboard({
   const {
     dashboardData,
     dashboardApiData,
+    salesTrend,
     selectedPeriod,
     setSelectedPeriod,
-    recentOrders,
+    recentOrders: _recentOrders,
     pendingOrders,
-    factoryShipments,
-    isLoadingOrders,
+    factoryShipments: _factoryShipments,
+    isLoadingOrders: _isLoadingOrders,
     isRefreshing,
     refreshData,
   } = useErpDashboardData({
@@ -114,30 +98,21 @@ export function ERPDashboard({
           onManageInventory={() => router.push('/inventory')}
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* 左侧主内容区 */}
-          <div className="space-y-6 lg:col-span-2">
-            {/* 核心指标卡片 */}
-            {dashboardApiData && (
-              <StatCardsGrid overview={dashboardApiData} loading={false} />
-            )}
-            <DashboardOrdersSection
-              recentOrders={recentOrders}
-              factoryShipments={factoryShipments}
-              isLoadingOrders={isLoadingOrders}
-            />
-          </div>
+        {/* 待办事项栏 (TodoBar) */}
+        <DashboardTodoBar
+          lowStockItems={dashboardData.lowStockItems}
+          pendingOrderCount={pendingOrders.length}
+          onViewInventory={() => router.push('/inventory')}
+          onViewOrders={() => router.push('/sales-orders')}
+        />
 
-          {/* 右侧边栏 */}
-          <div className="space-y-6 lg:col-span-1">
-            <DashboardAttentionPanel
-              lowStockItems={dashboardData.lowStockItems}
-              pendingOrderCount={pendingOrders.length}
-              onViewInventory={() => router.push('/inventory')}
-              onViewOrders={() => router.push('/sales-orders')}
-            />
-          </div>
-        </div>
+        {/* 核心指标卡片 */}
+        {dashboardApiData && (
+          <StatCardsGrid overview={dashboardApiData} loading={false} />
+        )}
+
+        {/* 销售趋势图 */}
+        {salesTrend && <DashboardTrendChart data={salesTrend} />}
       </div>
     </div>
   );
@@ -164,28 +139,44 @@ function DashboardHeader({
   onCreateProduct,
   onCreateOrder,
   onCreateCustomer,
-  onManageInventory,
+  onManageInventory: _onManageInventory,
 }: DashboardHeaderProps) {
   const quickActions = [
     { label: '新建订单', action: onCreateOrder, icon: ShoppingCart },
     { label: '新建产品', action: onCreateProduct, icon: Package },
     { label: '新建客户', action: onCreateCustomer, icon: Users },
-    { label: '库存管理', action: onManageInventory, icon: Zap },
   ];
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
       <div>
         <h2 className="text-2xl font-bold tracking-tight">业务概览</h2>
         <p className="text-muted-foreground text-sm">
-          欢迎回来，{userName || '用户'}
+          欢迎回来，{userName || '用户'}。这是您今天的业务动态。
         </p>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* 快捷操作按钮组 */}
         <div className="flex items-center gap-2">
-          <Calendar className="text-muted-foreground h-4 w-4" />
+          {quickActions.map(({ label, action, icon: Icon }) => (
+            <Button
+              key={label}
+              size="sm"
+              variant="outline"
+              className="h-9"
+              onClick={action}
+            >
+              <Icon className="mr-2 h-4 w-4" />
+              {label}
+            </Button>
+          ))}
+        </div>
+
+        <div className="bg-border h-6 w-px" />
+
+        <div className="flex items-center gap-2">
           <Select value={selectedPeriod} onValueChange={onPeriodChange}>
-            <SelectTrigger className="h-9 w-[120px]">
+            <SelectTrigger className="h-9 w-[110px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -195,134 +186,20 @@ function DashboardHeader({
               <SelectItem value="90d">最近90天</SelectItem>
             </SelectContent>
           </Select>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            title="刷新数据"
+          >
+            <RefreshCw
+              className={cn('h-4 w-4', isRefreshing && 'animate-spin')}
+            />
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRefresh}
-          disabled={isRefreshing}
-        >
-          <RefreshCw
-            className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')}
-          />
-          刷新
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              新建
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {quickActions.map(({ label, action, icon: Icon }) => (
-              <DropdownMenuItem key={label} onClick={action}>
-                <Icon className="mr-2 h-4 w-4" />
-                {label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
-    </div>
-  );
-}
-
-interface DashboardAttentionPanelProps {
-  lowStockItems: number;
-  pendingOrderCount: number;
-  onViewInventory: () => void;
-  onViewOrders: () => void;
-}
-
-function DashboardAttentionPanel({
-  lowStockItems,
-  pendingOrderCount,
-  onViewInventory,
-  onViewOrders,
-}: DashboardAttentionPanelProps) {
-  const attentionItems = [
-    {
-      title: '库存不足',
-      value: `${lowStockItems} 个产品`,
-      icon: Package,
-      action: onViewInventory,
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
-    },
-    {
-      title: '待处理订单',
-      value: `${pendingOrderCount} 个订单`,
-      icon: ShoppingCart,
-      action: onViewOrders,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-  ];
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <AlertCircle className="text-warning h-4 w-4" />
-          <span>需要关注</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-3">
-          {attentionItems.map((item, index) => (
-            <div
-              key={index}
-              className={cn(
-                'flex items-center justify-between rounded-lg p-3',
-                item.bgColor
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <div className={cn('flex-shrink-0', item.color)}>
-                  <item.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className={cn('text-sm font-semibold', item.color)}>
-                    {item.title}
-                  </p>
-                  <p className="text-muted-foreground text-xs">{item.value}</p>
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className={cn('h-8', item.color)}
-                onClick={item.action}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface DashboardOrdersSectionProps {
-  recentOrders: DashboardSalesOrderSummary[];
-  factoryShipments: DashboardFactoryShipmentSummary[];
-  isLoadingOrders: boolean;
-}
-
-function DashboardOrdersSection({
-  recentOrders,
-  factoryShipments,
-  isLoadingOrders,
-}: DashboardOrdersSectionProps) {
-  return (
-    <div className="grid gap-6 xl:grid-cols-2">
-      <RecentOrders
-        orders={recentOrders.slice(0, 8)}
-        loading={isLoadingOrders}
-      />
-      <FactoryShipments orders={factoryShipments} loading={isLoadingOrders} />
     </div>
   );
 }

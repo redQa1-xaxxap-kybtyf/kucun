@@ -40,6 +40,17 @@ const fullOrderInclude = {
       },
     },
   },
+  // ✅ 统一详情 include 中的费用字段，供编辑页面恢复 feeItems 使用
+  feeItems: {
+    select: {
+      id: true,
+      feeType: true,
+      feeName: true,
+      feeAmount: true,
+      paidBy: true,
+      remarks: true,
+    },
+  },
 } as const;
 
 function fulfillmentSummary(
@@ -179,8 +190,8 @@ function buildUpdateData(
   validatedData: UpdateFactoryShipmentOrderData,
   calculatedTotalAmount?: number,
   existingDepositAmount?: number
-): Partial<Prisma.FactoryShipmentOrderUncheckedUpdateInput> {
-  const {
+  ): Partial<Prisma.FactoryShipmentOrderUncheckedUpdateInput> {
+    const {
     containerNumber,
     customerId,
     status,
@@ -192,9 +203,9 @@ function buildUpdateData(
     shipmentDate,
     arrivalDate,
     deliveryDate,
-    completionDate,
-    items,
-    feeItems,
+      completionDate,
+      items,
+      feeItems,
   } = validatedData;
 
   const data: Partial<Prisma.FactoryShipmentOrderUncheckedUpdateInput> = {};
@@ -212,12 +223,12 @@ function buildUpdateData(
   if (completionDate !== undefined) data.completionDate = completionDate;
   if (calculatedTotalAmount !== undefined)
     data.totalAmount = calculatedTotalAmount;
-  if (items) {
-    data.items = { create: items.map(mapItemCreate) };
-    // ✅ 修复：如果未显式提供 receivableAmount，自动计算
-    if (receivableAmount === undefined) {
-      const summary = computeAmountSummary(items);
-      const customerAmount = summary ? summary.customer : 0;
+    if (items) {
+      data.items = { create: items.map(mapItemCreate) };
+      // ✅ 修复：如果未显式提供 receivableAmount，自动计算
+      if (receivableAmount === undefined) {
+        const summary = computeAmountSummary(items);
+        const customerAmount = summary ? summary.customer : 0;
 
       // 计算客户承担的费用总额
       const customerFees = (feeItems || [])
@@ -230,13 +241,27 @@ function buildUpdateData(
           ? depositAmount
           : existingDepositAmount || 0;
 
-      // 应收金额 = 客户货总金额 + 客户承担的费用 - 定金
-      data.receivableAmount = Math.max(
-        0,
-        customerAmount + customerFees - finalDepositAmount
-      );
+        // 应收金额 = 客户货总金额 + 客户承担的费用 - 定金
+        data.receivableAmount = Math.max(
+          0,
+          customerAmount + customerFees - finalDepositAmount
+        );
+      }
     }
-  }
+
+    // ✅ 同步更新费用明细到 factory_shipment_order_fee_items，便于编辑页面恢复
+    if (feeItems) {
+      data.feeItems = {
+        deleteMany: {}, // 删除旧的费用明细
+        create: feeItems.map(fee => ({
+          feeType: fee.feeType,
+          feeName: fee.feeName,
+          feeAmount: fee.feeAmount,
+          paidBy: fee.paidBy ?? 'customer',
+          remarks: fee.remarks ?? null,
+        })),
+      };
+    }
   return data;
 }
 

@@ -140,6 +140,14 @@ export function transformFactoryShipmentFromAPI(
       manualUnit: item.manualUnit ?? '',
       manualWeight: toOptionalNumber(item.manualWeight),
     })),
-    feeItems: [],
+    // 从订单详情恢复费用项，保持与表单 feeItems 结构一致
+    feeItems: (order.feeItems ?? []).map(fee => ({
+      id: fee.id,
+      feeType: fee.feeType,
+      feeName: trimToString(fee.feeName),
+      feeAmount: toNumberOr(fee.feeAmount, 0),
+      paidBy: fee.paidBy ?? 'customer',
+      remarks: trimToUndefined(fee.remarks),
+    })),
   };
 }

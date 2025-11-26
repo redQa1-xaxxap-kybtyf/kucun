@@ -23,7 +23,7 @@ interface UseInboundFormSubmitProps {
 export function useInboundFormSubmit({
   createMutation,
   onSuccess,
-  skipConfirm = false,
+  skipConfirm: _skipConfirm = false,
 }: UseInboundFormSubmitProps) {
   const router = useRouter();
 
@@ -34,15 +34,6 @@ export function useInboundFormSubmit({
 
   return useFormSubmit<InboundFormData>({
     onSubmit: async data => {
-      // 期初库存录入二次确认
-      // 如果 skipConfirm 为 false 且是期初入库，则抛出特殊错误让调用方处理确认逻辑
-      if (!skipConfirm && data.reason === 'opening_balance') {
-        // 抛出特殊错误标识，让调用方知道需要显示确认对话框
-        const error = new Error('REQUIRES_OPENING_BALANCE_CONFIRMATION');
-        error.name = 'ConfirmationRequired';
-        throw error;
-      }
-
       const idempotencyKey = generateIdempotencyKey();
 
       if (!data.inputQuantity || data.inputQuantity <= 0) {

@@ -4,30 +4,30 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowDownIcon, ArrowUpIcon, Calendar, Package } from 'lucide-react';
 import * as React from 'react';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Legend,
+    Line,
+    LineChart,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
 } from 'recharts';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { queryKeys } from '@/lib/queryKeys';
@@ -194,6 +194,31 @@ export function AnnualReportClient() {
             />
           </div>
         </div>
+
+        {/* 库存周转率 */}
+        {report.inventoryTurnover && (
+          <div>
+            <h2 className="mb-4 text-xl font-semibold">库存周转率</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              <SummaryCard
+                title="周转率（年度）"
+                value={report.inventoryTurnover.turnoverRate}
+                isCurrency={false}
+                suffix=" 次/年"
+              />
+              <SummaryCard
+                title="周转天数"
+                value={report.inventoryTurnover.turnoverDays}
+                isCurrency={false}
+                suffix=" 天"
+              />
+              <SummaryCard
+                title="平均库存价值"
+                value={report.inventoryTurnover.averageInventoryValue}
+              />
+            </div>
+          </div>
+        )}
 
         {/* 月度趋势图 */}
         <Card>

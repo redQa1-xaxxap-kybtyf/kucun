@@ -10,45 +10,46 @@ import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
 import {
-  ReturnItemsSection,
-  type ReturnOrderProductInfo,
-  type ReturnOrderSelectableItem,
+    ReturnItemsSection,
+    type ReturnOrderProductInfo,
+    type ReturnOrderSelectableItem,
 } from '@/components/return-orders/erp-return-order-form/ReturnItemsSection';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
-  useCreateReturnOrder,
-  useSalesOrderReturnableItems,
-  useUpdateReturnOrder,
+    useCreateReturnOrder,
+    useSalesOrderReturnableItems,
+    useUpdateReturnOrder,
 } from '@/lib/api/return-orders';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
-  RETURN_ORDER_MODE_LABELS,
-  RETURN_ORDER_TYPE_LABELS,
-  RETURN_PROCESS_TYPE_LABELS,
-  type ReturnOrder,
+    RETURN_ORDER_MODE_LABELS,
+    RETURN_ORDER_TYPE_LABELS,
+    RETURN_PROCESS_TYPE_LABELS,
+    type ReturnOrder,
 } from '@/lib/types/return-order';
 import {
-  createReturnOrderDefaults,
-  returnOrderFormSchema,
-  type ReturnOrderFormData,
+    createReturnOrderDefaults,
+    returnOrderFormSchema,
+    type ReturnOrderFormData,
 } from '@/lib/validations/return-order';
 
 interface ERPReturnOrderFormProps {
@@ -364,282 +365,267 @@ export function ERPReturnOrderForm({
   const error = createMutation.error || updateMutation.error;
 
   return (
-    <div className="bg-card rounded border">
-      {/* ERP标准工具栏 */}
-      <div className="bg-muted/30 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">
-            {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
-          </h3>
-          <div className="text-muted-foreground text-xs">
-            {mode === 'create' ? '填写退货信息' : '修改退货信息'}
+    <div className="space-y-4">
+      {/* 顶部导航栏 */}
+      <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 shadow-sm">
+        <div className="flex items-center gap-4">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="-ml-2 h-8 w-8 rounded-full"
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-lg font-semibold">
+              {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {mode === 'create' ? '填写退货信息' : '修改退货信息'}
+            </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleCancel}
+            disabled={isLoading}
+          >
+            取消
+          </Button>
+          <Button
+            type="button"
+            onClick={form.handleSubmit(onSubmit)}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            {isLoading
+              ? '保存中...'
+              : mode === 'create'
+                ? '创建退货订单'
+                : '保存修改'}
+          </Button>
         </div>
       </div>
 
-      {/* 操作工具栏 */}
-      <div className="bg-muted/10 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={handleCancel}
-              disabled={isLoading}
-            >
-              <ArrowLeft className="mr-1 h-3 w-3" />
-              返回
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              className="h-7"
-              onClick={form.handleSubmit(onSubmit)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Save className="mr-1 h-3 w-3" />
-              )}
-              {isLoading
-                ? '保存中...'
-                : mode === 'create'
-                  ? '创建退货订单'
-                  : '保存修改'}
-            </Button>
-          </div>
-        </div>
-      </div>
+
 
       {/* 错误提示 */}
       {error && (
-        <div className="border-b bg-red-50 px-3 py-2">
-          <div className="text-xs text-red-600">
-            {mode === 'create' ? '创建失败' : '更新失败'}: {error.message}
-          </div>
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {mode === 'create' ? '创建失败' : '更新失败'}: {error.message}
         </div>
       )}
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* 基本信息 */}
-          <div className="bg-muted/5 border-b px-3 py-2">
-            <div className="text-muted-foreground text-xs">基本信息</div>
-          </div>
-          <div className="px-3 py-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="returnMode"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">退货模式 *</FormLabel>
-                    <Select
-                      onValueChange={value => {
-                        field.onChange(value);
-                        // 切换模式时清空订单选择和明细
-                        form.setValue('salesOrderId', '');
-                        replace([]);
-                        setSelectedSalesOrderId('');
-                        setSelectedCustomerId('');
-                        setProductInfoMap({});
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="h-7 text-xs">
-                          <SelectValue placeholder="请选择退货模式" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(RETURN_ORDER_MODE_LABELS).map(
-                          ([value, label]) => (
-                            <SelectItem
-                              key={value}
-                              value={value}
-                              className="text-xs"
-                            >
-                              {label}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              {returnMode === 'single_order' && (
-                <FormItem>
-                  <FormLabel className="text-xs">关联销售订单 *</FormLabel>
-                  <FormControl>
-                    <CustomerSalesOrderSelector
-                      customers={customers}
-                      salesOrders={salesOrders}
-                      selectedCustomerId={selectedCustomerId}
-                      value={form.watch('salesOrderId')}
-                      onCustomerChange={customerId => {
-                        setSelectedCustomerId(customerId);
-                        form.setValue('customerId', customerId);
-                        // 清空之前选择的订单
-                        form.setValue('salesOrderId', '');
-                        replace([]);
-                        setProductInfoMap({});
-                      }}
-                      onValueChange={(salesOrderId, salesOrder) => {
-                        setSelectedSalesOrderId(salesOrderId);
-                        form.setValue('salesOrderId', salesOrderId);
-                        form.setValue('customerId', salesOrder.customerId);
-                        // 清空现有明细
-                        replace([]);
-                        setProductInfoMap({});
-                        toast({
-                          title: '已选择销售订单',
-                          description: `订单号：${salesOrder.orderNumber}`,
-                          variant: 'default',
-                        });
-                      }}
-                      placeholder="选择客户和销售订单"
-                      isLoadingCustomers={isLoadingCustomers}
-                      isLoadingSalesOrders={isLoadingSalesOrders}
-                      className="h-9"
-                    />
-                  </FormControl>
-                  {form.formState.errors.salesOrderId && (
-                    <p className="text-destructive text-xs">
-                      {form.formState.errors.salesOrderId.message}
-                    </p>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">基本信息</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <FormField
+                  control={form.control}
+                  name="returnMode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>退货模式 *</FormLabel>
+                      <Select
+                        onValueChange={value => {
+                          field.onChange(value);
+                          // 切换模式时清空订单选择和明细
+                          form.setValue('salesOrderId', '');
+                          replace([]);
+                          setSelectedSalesOrderId('');
+                          setSelectedCustomerId('');
+                          setProductInfoMap({});
+                        }}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="请选择退货模式" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(RETURN_ORDER_MODE_LABELS).map(
+                            ([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
                   )}
-                </FormItem>
-              )}
-              {returnMode === 'multi_order' && (
-                <FormItem>
-                  <FormLabel className="text-xs">客户选择 *</FormLabel>
-                  <Select
-                    onValueChange={value => {
-                      setSelectedCustomerId(value);
-                      form.setValue('customerId', value);
-                      replace([]);
-                      setProductInfoMap({});
-                    }}
-                    value={selectedCustomerId}
-                  >
+                />
+                {returnMode === 'single_order' && (
+                  <FormItem>
+                    <FormLabel>关联销售订单 *</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="h-7 text-xs">
-                        <SelectValue placeholder="请选择客户" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map(customer => (
-                        <SelectItem
-                          key={customer.id}
-                          value={customer.id}
-                          className="text-xs"
-                        >
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.customerId && (
-                    <p className="text-destructive text-xs">
-                      {form.formState.errors.customerId.message}
-                    </p>
-                  )}
-                </FormItem>
-              )}
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">退货类型 *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="h-7 text-xs">
-                          <SelectValue placeholder="请选择退货类型" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(RETURN_ORDER_TYPE_LABELS).map(
-                          ([value, label]) => (
-                            <SelectItem
-                              key={value}
-                              value={value}
-                              className="text-xs"
-                            >
-                              {label}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="processType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">处理方式 *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="h-7 text-xs">
-                          <SelectValue placeholder="请选择处理方式" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(RETURN_PROCESS_TYPE_LABELS).map(
-                          ([value, label]) => (
-                            <SelectItem
-                              key={value}
-                              value={value}
-                              className="text-xs"
-                            >
-                              {label}
-                            </SelectItem>
-                          )
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="mt-3">
-              <FormField
-                control={form.control}
-                name="reason"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">退货原因</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请详细描述退货原因（可选）"
-                        className="min-h-16 text-xs"
-                        {...field}
+                      <CustomerSalesOrderSelector
+                        customers={customers}
+                        salesOrders={salesOrders}
+                        selectedCustomerId={selectedCustomerId}
+                        value={form.watch('salesOrderId')}
+                        onCustomerChange={customerId => {
+                          setSelectedCustomerId(customerId);
+                          form.setValue('customerId', customerId);
+                          // 清空之前选择的订单
+                          form.setValue('salesOrderId', '');
+                          replace([]);
+                          setProductInfoMap({});
+                        }}
+                        onValueChange={(salesOrderId, salesOrder) => {
+                          setSelectedSalesOrderId(salesOrderId);
+                          form.setValue('salesOrderId', salesOrderId);
+                          form.setValue('customerId', salesOrder.customerId);
+                          // 清空现有明细
+                          replace([]);
+                          setProductInfoMap({});
+                          toast({
+                            title: '已选择销售订单',
+                            description: `订单号：${salesOrder.orderNumber}`,
+                            variant: 'default',
+                          });
+                        }}
+                        placeholder="选择客户和销售订单"
+                        isLoadingCustomers={isLoadingCustomers}
+                        isLoadingSalesOrders={isLoadingSalesOrders}
+                        className="h-10"
                       />
                     </FormControl>
-                    <FormMessage className="text-xs" />
+                    {form.formState.errors.salesOrderId && (
+                      <p className="text-destructive text-sm font-medium">
+                        {form.formState.errors.salesOrderId.message}
+                      </p>
+                    )}
                   </FormItem>
                 )}
-              />
-            </div>
-          </div>
+                {returnMode === 'multi_order' && (
+                  <FormItem>
+                    <FormLabel>客户选择 *</FormLabel>
+                    <Select
+                      onValueChange={value => {
+                        setSelectedCustomerId(value);
+                        form.setValue('customerId', value);
+                        replace([]);
+                        setProductInfoMap({});
+                      }}
+                      value={selectedCustomerId}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择客户" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map(customer => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.formState.errors.customerId && (
+                      <p className="text-destructive text-sm font-medium">
+                        {form.formState.errors.customerId.message}
+                      </p>
+                    )}
+                  </FormItem>
+                )}
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>退货类型 *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="请选择退货类型" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(RETURN_ORDER_TYPE_LABELS).map(
+                            ([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="processType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>处理方式 *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="请选择处理方式" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(RETURN_PROCESS_TYPE_LABELS).map(
+                            ([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            )
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="mt-6">
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>退货原因</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="请详细描述退货原因（可选）"
+                          className="min-h-20 resize-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           <ReturnItemsSection
             form={form}
@@ -657,30 +643,30 @@ export function ERPReturnOrderForm({
           />
 
           {/* 备注信息 */}
-          <div className="bg-muted/5 border-b px-3 py-2">
-            <div className="text-muted-foreground text-xs">
-              备注信息（可选）
-            </div>
-          </div>
-          <div className="px-3 py-3">
-            <FormField
-              control={form.control}
-              name="remarks"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs">备注</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="请输入备注信息"
-                      className="min-h-16 text-xs"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-          </div>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">备注信息</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="remarks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>备注</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="请输入备注信息（可选）"
+                        className="min-h-20 resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
         </form>
       </Form>
     </div>

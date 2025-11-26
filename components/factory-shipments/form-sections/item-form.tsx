@@ -344,17 +344,42 @@ export const ItemForm = React.memo<ItemFormProps>(
                     </FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="请输入销售单价"
                         className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                         {...field}
-                        onChange={e =>
-                          field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : 0
-                          )
+                        value={
+                          field.value === undefined ||
+                          Number.isNaN(field.value as number)
+                            ? ''
+                            : field.value
                         }
+                        onChange={event => {
+                          const value = event.target.value;
+                          // 允许输入数字、小数点、空字符串
+                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            // 允许空值，不立即转换为数字，避免打小数点时被截断
+                            field.onChange(value === '' ? '' : value);
+                          }
+                        }}
+                        onFocus={event => {
+                          // 聚焦时自动全选，方便覆盖输入
+                          event.target.select();
+                        }}
+                        onBlur={event => {
+                          const value = event.target.value;
+                          // 失焦时统一转换为数字
+                          if (!value || value === '.') {
+                            field.onChange(0);
+                          } else {
+                            const parsed = Number.parseFloat(value);
+                            field.onChange(
+                              Number.isNaN(parsed) ? 0 : parsed
+                            );
+                          }
+                          field.onBlur();
+                        }}
                       />
                     </FormControl>
                     <FormMessage />

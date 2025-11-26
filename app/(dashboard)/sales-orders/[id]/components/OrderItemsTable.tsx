@@ -112,7 +112,28 @@ export function OrderItemsTable({
                 总数量
               </span>
               <span className="ml-2 text-sm font-bold text-[hsl(var(--color-text-primary))]">
-                {formatDecimal(totalDisplayQuantity)}
+                {(() => {
+                  const items = order.items ?? [];
+                  const totalPieces = Math.floor(totalDisplayQuantity || 0);
+                  const uniquePpu = Array.from(
+                    new Set(
+                      items
+                        .map(i => i.piecesPerUnit ?? i.product?.piecesPerUnit)
+                        .filter(
+                          ppu => typeof ppu === 'number' && (ppu as number) > 0
+                        )
+                    )
+                  ) as number[];
+                  if (uniquePpu.length === 1) {
+                    const ppu = uniquePpu[0];
+                    const units = Math.floor(totalPieces / ppu);
+                    const pieces = totalPieces % ppu;
+                    if (units === 0) return `${pieces}片（共${totalPieces}片）`;
+                    if (pieces === 0) return `${units}件（共${totalPieces}片）`;
+                    return `${units}件${pieces}片（共${totalPieces}片）`;
+                  }
+                  return `${totalPieces}片`;
+                })()}
               </span>
             </div>
           </div>

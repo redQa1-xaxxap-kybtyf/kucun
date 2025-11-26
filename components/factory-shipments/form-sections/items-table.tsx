@@ -524,29 +524,113 @@ export const ItemsTable = React.memo<ItemsTableProps>(
 
                     {/* 单位 */}
                     <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.unit`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Select
-                                value={field.value || '片'}
-                                onValueChange={field.onChange}
-                              >
-                                <SelectTrigger className="h-9 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="片">片</SelectItem>
-                                  <SelectItem value="件">件</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.unit`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Select
+                                  value={field.value || '片'}
+                                  onValueChange={newUnit => {
+                                    const oldUnit = field.value || '片';
+                                    const piecesPerUnit =
+                                      Number(
+                                        form.getValues(
+                                          `items.${index}.piecesPerUnit`
+                                        ) || 0
+                                      ) || 0;
+                                    const currentSalePrice =
+                                      Number(
+                                        form.getValues(
+                                          `items.${index}.unitPrice`
+                                        ) || 0
+                                      ) || 0;
+                                    const currentCostPrice =
+                                      Number(
+                                        form.getValues(
+                                          `items.${index}.unitCost`
+                                        ) || 0
+                                      ) || 0;
+
+                                    // 只有在片/件之间切换且有每件片数时才做换算
+                                    if (
+                                      piecesPerUnit > 0 &&
+                                      (oldUnit !== newUnit &&
+                                        (oldUnit === '片' ||
+                                          oldUnit === '件') &&
+                                        (newUnit === '片' ||
+                                          newUnit === '件'))
+                                    ) {
+                                      // 片 -> 件：价格 * 每件片数
+                                      if (oldUnit === '片' && newUnit === '件') {
+                                        if (currentSalePrice > 0) {
+                                          form.setValue(
+                                            `items.${index}.unitPrice`,
+                                            Number(
+                                              (
+                                                currentSalePrice *
+                                                piecesPerUnit
+                                              ).toFixed(2)
+                                            )
+                                          );
+                                        }
+                                        if (currentCostPrice > 0) {
+                                          form.setValue(
+                                            `items.${index}.unitCost`,
+                                            Number(
+                                              (
+                                                currentCostPrice *
+                                                piecesPerUnit
+                                              ).toFixed(2)
+                                            )
+                                          );
+                                        }
+                                      }
+
+                                      // 件 -> 片：价格 / 每件片数
+                                      if (oldUnit === '件' && newUnit === '片') {
+                                        if (currentSalePrice > 0) {
+                                          form.setValue(
+                                            `items.${index}.unitPrice`,
+                                            Number(
+                                              (
+                                                currentSalePrice /
+                                                piecesPerUnit
+                                              ).toFixed(4)
+                                            )
+                                          );
+                                        }
+                                        if (currentCostPrice > 0) {
+                                          form.setValue(
+                                            `items.${index}.unitCost`,
+                                            Number(
+                                              (
+                                                currentCostPrice /
+                                                piecesPerUnit
+                                              ).toFixed(4)
+                                            )
+                                          );
+                                        }
+                                      }
+                                    }
+
+                                    field.onChange(newUnit);
+                                  }}
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="片">片</SelectItem>
+                                    <SelectItem value="件">件</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
                     </TableCell>
 
                     {/* 单价 */}
@@ -587,30 +671,65 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                     </TableCell>
 
                     {/* 销售价 */}
-                    <TableCell className="border-r px-3 py-3">
-                      <FormField
-                        control={form.control}
-                        name={`items.${index}.unitPrice`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                value={field.value || ''}
-                                onChange={e =>
-                                  field.onChange(
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                placeholder="销售单价"
-                                className="h-9 text-right text-sm"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </TableCell>
+                      <TableCell className="border-r px-3 py-3">
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.unitPrice`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  type="text"
+                                  inputMode="decimal"
+                                  {...field}
+                                  value={
+                                    field.value === undefined ||
+                                    Number.isNaN(field.value as number)
+                                      ? ''
+                                      : field.value
+                                  }
+                                  placeholder="销售单价"
+                                  className="h-9 text-right text-sm"
+                                  onChange={event => {
+                                    const value = event.target.value;
+                                    // 允许输入数字、小数点、空字符串
+                                    if (
+                                      value === '' ||
+                                      /^\d*\.?\d*$/.test(value)
+                                    ) {
+                                      // 允许空值，不立即转换为数字，避免打小数点时被截断
+                                      field.onChange(
+                                        value === '' ? '' : value
+                                      );
+                                    }
+                                  }}
+                                  onFocus={event => {
+                                    // 聚焦时自动选中内容，方便覆盖输入
+                                    event.target.select();
+                                  }}
+                                  onBlur={event => {
+                                    const value = event.target.value;
+                                    // 失焦时统一转换为数字
+                                    if (!value || value === '.') {
+                                      field.onChange(0);
+                                    } else {
+                                      const parsed =
+                                        Number.parseFloat(value);
+                                      field.onChange(
+                                        Number.isNaN(parsed)
+                                          ? 0
+                                          : parsed
+                                      );
+                                    }
+                                    field.onBlur();
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
+                      </TableCell>
 
                     {/* 金额（自动计算） */}
                     <TableCell className="border-r px-3 py-3 text-right font-medium">

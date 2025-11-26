@@ -1,16 +1,27 @@
 /**
  * 登录安全控制工具
+ * 
+ * 架构说明:
+ * - 本模块主要用于管理员手动锁定/解锁账户
+ * - 自动登录限制已统一到 login-log-service.ts (基于Redis)
+ * - 避免双重机制导致的逻辑冗余和不一致
+ * 
  * 遵循全局约定规范和唯一真理原则
  */
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+    isLoginBlocked as checkIfBlocked,
+    logLoginFailure,
+    logLoginSuccess,
+} from '@/lib/services/login-log-service';
 
 // 登录安全策略配置
 const LOGIN_SECURITY_CONFIG = {
-  maxFailedAttempts: 5, // 最大失败次数
-  lockoutDuration: 15, // 锁定时长(分钟)
-  attemptWindow: 15, // 统计时间窗口(分钟)
+  maxFailedAttempts: 5, // 最大失败次数(已废弃,使用Redis机制)
+  lockoutDuration: 15, // 手动锁定默认时长(分钟)
+  attemptWindow: 15, // 统计时间窗口(分钟,已废弃)
   cleanupAfterDays: 30, // 清理N天前的记录
 };
 
@@ -189,7 +200,8 @@ export async function getRecentFailedAttempts(
 
 /**
  * 检查并处理登录失败
- * 如果失败次数超过阈值,自动锁定账户
+ * @deprecated 建议直接使用 login-log-service.logLoginFailure
+ * 本函数保留是为了兼容性,实际委托给 login-log-service
  */
 export async function handleLoginFailure(params: {
   username: string;
@@ -201,7 +213,7 @@ export async function handleLoginFailure(params: {
   remainingAttempts: number;
 }> {
   try {
-    // 记录登录失败
+    // 记录登录尝试到数据库(用于长期审计)
     await recordLoginAttempt({
       username: params.username,
       ipAddress: params.ipAddress,
@@ -210,29 +222,20 @@ export async function handleLoginFailure(params: {
       failureReason: params.failureReason,
     });
 
-    // 获取最近的失败次数
-    const failedCount = await getRecentFailedAttempts(params.username);
-    const remainingAttempts = Math.max(
-      0,
-      LOGIN_SECURITY_CONFIG.maxFailedAttempts - failedCount
+    // 委托给 login-log-service 处理 Redis 限制
+    await logLoginFailure(
+      params.username,
+      params.ipAddress,
+      params.failureReason as any,
+      params.userAgent
     );
 
-    // 检查是否需要锁定
-    if (failedCount >= LOGIN_SECURITY_CONFIG.maxFailedAttempts) {
-      await lockAccount({
-        username: params.username,
-        reason: `连续${failedCount}次登录失败`,
-      });
-
-      return {
-        shouldLock: true,
-        remainingAttempts: 0,
-      };
-    }
+    // 检查是否被限制
+    const isBlocked = await checkIfBlocked(params.username);
 
     return {
-      shouldLock: false,
-      remainingAttempts,
+      shouldLock: isBlocked,
+      remainingAttempts: isBlocked ? 0 : 5, // 简化返回
     };
   } catch (error) {
     logger.error('security', '处理登录失败错误', error, {
@@ -249,7 +252,8 @@ export async function handleLoginFailure(params: {
 
 /**
  * 处理登录成功
- * 清除失败记录
+ * @deprecated 建议直接使用 login-log-service.logLoginSuccess
+ * 本函数保留是为了兼容性,实际委托给 login-log-service
  */
 export async function handleLoginSuccess(params: {
   username: string;
@@ -257,7 +261,7 @@ export async function handleLoginSuccess(params: {
   userAgent?: string;
 }): Promise<void> {
   try {
-    // 记录登录成功
+    // 记录登录成功到数据库(用于长期审计)
     await recordLoginAttempt({
       username: params.username,
       ipAddress: params.ipAddress,
@@ -265,7 +269,16 @@ export async function handleLoginSuccess(params: {
       success: true,
     });
 
-    // 如果账户被锁定,自动解锁
+    // 委托给 login-log-service 重置失败次数(Redis)
+    // 这会自动重置基于用户名和IP的失败计数
+    await logLoginSuccess(
+      'temp-user-id', // userId会在实际登录成功后由auth.ts提供
+      params.username,
+      params.ipAddress,
+      params.userAgent
+    );
+
+    // 如果账户被手动锁定,自动解锁
     const lockStatus = await isAccountLocked(params.username);
     if (lockStatus.locked) {
       await unlockAccount({

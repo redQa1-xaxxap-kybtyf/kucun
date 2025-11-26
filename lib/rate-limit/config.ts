@@ -82,7 +82,7 @@ export const DEFAULT_RATE_LIMIT_CONFIGS: Record<
     type: RateLimitType.LOGIN,
   },
   [RateLimitType.CAPTCHA]: {
-    maxRequests: parseInt(process.env.RATE_LIMIT_CAPTCHA || '10', 10),
+    maxRequests: parseInt(process.env.RATE_LIMIT_CAPTCHA || '20', 10), // 调整为20次/分钟,适应登录重试场景
     windowMs: 60 * 1000, // 1分钟
     keyPrefix: 'rate_limit:captcha',
     type: RateLimitType.CAPTCHA,

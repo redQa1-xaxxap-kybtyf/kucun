@@ -127,6 +127,18 @@ export interface MonthlyFactoryShipmentProfit {
 }
 
 /**
+ * 库存周转率数据
+ */
+export interface InventoryTurnover {
+  turnoverRate: number; // 周转率（次）
+  turnoverDays: number; // 周转天数
+  averageInventoryValue: number; // 平均库存价值
+  salesCost: number; // 销售成本
+  beginningInventory: number; // 期初库存
+  endingInventory: number; // 期末库存
+}
+
+/**
  * 月度报表完整数据
  */
 export interface MonthlyReport {
@@ -137,6 +149,7 @@ export interface MonthlyReport {
   receivables: MonthlyReceivables; // 应收应付数据
   profit: MonthlyProfit; // 利润数据
   factoryShipmentProfit: MonthlyFactoryShipmentProfit; // 厂家发货利润数据
+  inventoryTurnover?: InventoryTurnover; // 库存周转率数据
   comparison?: {
     revenue: ComparisonData; // 收入环比
     profit: ComparisonData; // 利润环比
@@ -227,6 +240,7 @@ export interface AnnualReport {
   quarterlyData: QuarterlyData[]; // 季度数据 (4个季度)
   expenseDistribution: ExpenseDistribution[]; // 费用分布
   factoryShipmentProfit: AnnualFactoryShipmentProfit; // 厂家发货利润数据
+  inventoryTurnover?: InventoryTurnover; // 库存周转率数据
   yearOverYear?: {
     revenue: ComparisonData; // 收入同比
     profit: ComparisonData; // 利润同比

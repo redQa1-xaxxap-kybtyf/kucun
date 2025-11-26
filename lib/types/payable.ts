@@ -123,6 +123,10 @@ export interface PayableStatistics {
   paidCount: number;
   thisMonthPayables: number;
   thisMonthPayments: number;
+  // 采购相关扩展统计（按供应商维度汇总）
+  purchaseGoodsAmount?: number; // 货款总额（来自采购订单明细）
+  purchaseFreightAmount?: number; // 关联运费/费用总额（来自采购订单费用记录）
+  purchaseTotalCost?: number; // 货款 + 运费
 }
 
 // 应付款列表响应

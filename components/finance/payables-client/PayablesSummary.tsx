@@ -17,6 +17,9 @@ interface Props {
     pendingCount: number;
     partialCount: number;
     paidCount: number;
+    purchaseGoodsAmount?: number;
+    purchaseFreightAmount?: number;
+    purchaseTotalCost?: number;
   };
 }
 
@@ -36,6 +39,9 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
       pendingCount: 0,
       partialCount: 0,
       paidCount: 0,
+      purchaseGoodsAmount: 0,
+      purchaseFreightAmount: 0,
+      purchaseTotalCost: 0,
     };
 
   const totalTrackedCount =
@@ -61,6 +67,34 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
             待付款 {displayStatistics.pendingCount} · 部分付款{' '}
             {displayStatistics.partialCount}
           </p>
+        </CardContent>
+      </Card>
+
+      {/* 采购货款 + 运费 + 总成本 总览 */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">
+            采购货款 + 运费
+          </CardTitle>
+          <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+        </CardHeader>
+        <CardContent className="space-y-1">
+          <div className="text-sm text-[hsl(var(--color-text-secondary))]">
+            货款：
+            <span className="font-semibold text-[hsl(var(--color-text-primary))]">
+              {formatCurrency(displayStatistics.purchaseGoodsAmount ?? 0)}
+            </span>
+          </div>
+          <div className="text-sm text-[hsl(var(--color-text-secondary))]">
+            运费等费用：
+            <span className="font-semibold text-[hsl(var(--color-text-primary))]">
+              {formatCurrency(displayStatistics.purchaseFreightAmount ?? 0)}
+            </span>
+          </div>
+          <div className="text-base font-bold text-[hsl(var(--color-primary))]">
+            总成本：
+            {formatCurrency(displayStatistics.purchaseTotalCost ?? 0)}
+          </div>
         </CardContent>
       </Card>
 

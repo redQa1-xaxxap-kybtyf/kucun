@@ -3,7 +3,7 @@
 import type { UseFieldArrayReturn, UseFormReturn } from 'react-hook-form';
 
 import { ItemsTable } from '@/components/factory-shipments/form-sections/items-table';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
@@ -58,6 +58,11 @@ export function ItemListSection({
 
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+        <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
+          产品明细
+        </CardTitle>
+      </CardHeader>
       <CardContent className="p-8">
         <ItemsTable
           form={form}

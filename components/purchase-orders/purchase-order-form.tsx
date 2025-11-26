@@ -103,6 +103,7 @@ export function PurchaseOrderForm({
       ? {
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: initialData.containerNumber || '',
+          shippingCompany: initialData.shippingCompany || '',
           orderDate: initialData.orderDate
             ? new Date(initialData.orderDate).toISOString()
             : undefined,
@@ -138,13 +139,15 @@ export function PurchaseOrderForm({
                   | 'other',
                 feeName: expense.expenseName,
                 feeAmount: Number(expense.expenseAmount),
+                supplierId: expense.supplierId || undefined,
                 remarks: expense.remarks || '',
               }))
             : [],
         }
-      : {
+       : {
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: '',
+          shippingCompany: '',
           orderDate: new Date().toISOString(), // 默认为当前日期
           status: PURCHASE_ORDER_STATUS.DRAFT,
           remarks: '',
@@ -337,6 +340,29 @@ export function PurchaseOrderForm({
                       <Input
                         {...field}
                         placeholder="请输入集装箱号（可选）"
+                        className="h-9"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="shippingCompany"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">
+                      船运公司
+                      <span className="ml-1 text-xs text-yellow-600">
+                        （推荐填写）
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="如已知，请填写船运公司（用于后续追踪）"
                         className="h-9"
                       />
                     </FormControl>

@@ -49,6 +49,8 @@ export const GET = withAuth(
                 id: true,
                 name: true,
                 code: true,
+                unit: true,
+                piecesPerUnit: true,
                 category: true,
               },
             },

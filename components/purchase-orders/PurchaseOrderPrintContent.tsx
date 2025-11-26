@@ -19,6 +19,7 @@ import { PrintLayout } from '@/components/print/PrintLayout';
 import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
 import type { FieldSelection } from '@/lib/types/print-config';
 import type { PrintStyleConfig } from '@/lib/types/print-style';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 import type { PurchaseOrderDetailData } from './purchase-order-detail.types';
 

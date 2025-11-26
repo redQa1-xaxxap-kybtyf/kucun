@@ -2,37 +2,38 @@
 
 import { Calendar, Clock, DollarSign, Eye, MoreHorizontal } from 'lucide-react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
+import { RelativeTime } from '@/components/common/relative-time';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type {
-  PaymentStatus,
-  ReceivableItem,
-  ReceivablesResult,
+    PaymentStatus,
+    ReceivableItem,
+    ReceivablesResult,
 } from '@/lib/services/receivables-service';
 import { formatCurrency } from '@/lib/utils';
-import { DATE_FORMATS, formatDateTime } from '@/lib/utils/datetime';
 
 import { formatCurrencyWithSign, isMeaningfulAmount } from './utils';
 
@@ -157,7 +158,9 @@ function ReceivableTableRow({
     <TableRow className="hover:bg-muted/50">
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-sm">{receivable.orderNumber}</span>
+          <span className="font-mono text-sm">
+            <CopyableText text={receivable.orderNumber} />
+          </span>
         </div>
       </TableCell>
 
@@ -235,10 +238,7 @@ function ReceivableTableRow({
       <TableCell>
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="text-muted-foreground h-3.5 w-3.5" />
-          <span>{formatDateTime(receivable.orderDate, DATE_FORMATS.DATE)}</span>
-          <span className="text-muted-foreground">
-            {formatDateTime(receivable.orderDate, DATE_FORMATS.TIME)}
-          </span>
+          <RelativeTime date={receivable.orderDate} />
         </div>
       </TableCell>
 
@@ -246,12 +246,7 @@ function ReceivableTableRow({
         {receivable.lastPaymentDate ? (
           <div className="flex items-center gap-2 text-sm">
             <Calendar className="h-3.5 w-3.5 text-green-600" />
-            <span>
-              {formatDateTime(receivable.lastPaymentDate, DATE_FORMATS.DATE)}
-            </span>
-            <span className="text-green-600">
-              {formatDateTime(receivable.lastPaymentDate, DATE_FORMATS.TIME)}
-            </span>
+            <RelativeTime date={receivable.lastPaymentDate} />
           </div>
         ) : (
           <div className="text-muted-foreground flex items-center gap-2 text-sm">

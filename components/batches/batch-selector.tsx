@@ -50,7 +50,7 @@ interface BatchSelectorProps {
  * 批次选择器组件
  *
  * 功能:
- * 1. 查询匹配的现有批次(相同产品+相同供应商+相同规格)
+ * 1. 查询匹配的现有批次(相同产品+相同规格)
  * 2. 显示现有批次列表供用户选择
  * 3. 支持手动输入新批次号
  * 4. 显示批次详情(库存数量、成本等)
@@ -228,7 +228,7 @@ export function BatchSelector({
                       未找到匹配的批次
                       <br />
                       <span className="text-muted-foreground text-xs">
-                        (相同产品+相同供应商+相同规格)
+                        (相同产品+相同规格)
                       </span>
                     </CommandEmpty>
                   )}

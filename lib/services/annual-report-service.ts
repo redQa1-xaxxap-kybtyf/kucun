@@ -6,26 +6,26 @@
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
 import type {
-  AnnualFactoryShipmentProfit,
-  AnnualReport,
-  AnnualSummary,
-  ExpenseDistribution,
-  MonthlyTrendData,
-  QuarterlyData,
+    AnnualFactoryShipmentProfit,
+    AnnualReport,
+    AnnualSummary,
+    ExpenseDistribution,
+    MonthlyTrendData,
+    QuarterlyData
 } from '@/lib/types/report';
 import { getExpenseTypeName } from '@/lib/utils/expense-type-helpers';
 
 import {
-  buildExpenseWhere,
-  buildSalesOrderWhere,
-  calculateComparison,
-  calculateProfitMargin,
-  createAnnualPeriod,
-  formatQuarterLabel,
-  generateExpenseAlerts,
-  generateProfitAlerts,
-  getMonthDateRange,
-  getYearDateRange,
+    buildExpenseWhere,
+    buildSalesOrderWhere,
+    calculateComparison,
+    calculateProfitMargin,
+    createAnnualPeriod,
+    formatQuarterLabel,
+    generateExpenseAlerts,
+    generateProfitAlerts,
+    getMonthDateRange,
+    getYearDateRange,
 } from './report-helpers';
 
 // ==================== 数据查询函数 ====================
@@ -246,6 +246,90 @@ async function getExpenseDistribution(
   return distribution.sort((a, b) => b.amount - a.amount);
 }
 
+/**
+ * 获取年度库存周转率数据
+ */
+async function getAnnualInventoryTurnover(
+  year: number,
+  salesCost: number
+): Promise<InventoryTurnover> {
+  const { startDate, endDate } = getYearDateRange(year);
+
+  // 获取期末库存价值（当前库存）
+  const currentInventory = await prisma.inventory.findMany({
+    where: {
+      quantity: {
+        gt: 0,
+      },
+    },
+    select: {
+      quantity: true,
+      unitCost: true,
+    },
+  });
+
+  const endingValue = currentInventory.reduce(
+    (sum, inv) => sum + inv.quantity * (inv.unitCost || 0),
+    0
+  );
+
+  // 计算期初库存价值
+  // 期初库存 = 期末库存 - 本年入库 + 本年出库
+  const [inboundStats, outboundStats] = await Promise.all([
+    prisma.inboundRecord.aggregate({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+        // 排除期初入库
+        reason: {
+          not: 'opening_balance',
+        },
+      },
+      _sum: {
+        totalCost: true,
+      },
+    }),
+    prisma.outboundRecord.aggregate({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        totalCost: true,
+      },
+    }),
+  ]);
+
+  const inboundCost = inboundStats._sum.totalCost || 0;
+  const outboundCost = outboundStats._sum.totalCost || 0;
+
+  // 期初库存 = 期末库存 - 入库成本 + 出库成本
+  const beginningValue = endingValue - inboundCost + outboundCost;
+
+  // 计算平均库存价值
+  const averageInventoryValue = (beginningValue + endingValue) / 2;
+
+  // 计算周转率 = 销售成本 / 平均库存价值
+  const turnoverRate =
+    averageInventoryValue > 0 ? salesCost / averageInventoryValue : 0;
+
+  // 计算周转天数 = 365 / 周转率（年度报表用365天）
+  const turnoverDays = turnoverRate > 0 ? 365 / turnoverRate : 0;
+
+  return {
+    turnoverRate: roundToTwoDecimals(turnoverRate),
+    turnoverDays: roundToTwoDecimals(turnoverDays),
+    averageInventoryValue: roundToTwoDecimals(averageInventoryValue),
+    salesCost: roundToTwoDecimals(salesCost),
+    beginningInventory: roundToTwoDecimals(beginningValue),
+    endingInventory: roundToTwoDecimals(endingValue),
+  };
+}
+
 // ==================== 主服务函数 ====================
 
 /**
@@ -270,6 +354,12 @@ export async function getAnnualReport(
     getAnnualFactoryShipmentProfit(year),
   ]);
 
+  // 计算库存周转率
+  const inventoryTurnover = await getAnnualInventoryTurnover(
+    year,
+    summary.totalCost
+  );
+
   // 创建报表周期
   const period = createAnnualPeriod(year);
 
@@ -292,6 +382,7 @@ export async function getAnnualReport(
     quarterlyData,
     expenseDistribution,
     factoryShipmentProfit,
+    inventoryTurnover,
     alerts,
   };
 

@@ -43,11 +43,24 @@ const LOGIN_LIMIT_CONFIG = {
  */
 export async function createLoginLog(log: LoginLog): Promise<void> {
   try {
-    // 这里应该创建一个 LoginLog 表来存储日志
-    // 由于当前数据库模型中没有这个表,我们先记录到控制台
-    // 后续可以通过 Prisma 迁移添加这个表
+    // 导入 Prisma客户端
+    const { prisma } = await import('@/lib/db');
 
-    logger.info('login-log-service', '记录登录日志', {
+    // 写入数据库
+    await prisma.loginLog.create({
+      data: {
+        userId: log.userId || null,
+        username: log.username,
+        type: log.type,
+        failureReason: log.failureReason || null,
+        clientIp: log.clientIp,
+        userAgent: log.userAgent || null,
+        createdAt: log.timestamp,
+      },
+    });
+
+    // 同时记录到控制台日志
+    logger.info('login-log-service', '登录日志已记录', {
       type: log.type,
       username: log.username,
       userId: log.userId,
@@ -56,21 +69,9 @@ export async function createLoginLog(log: LoginLog): Promise<void> {
       userAgent: log.userAgent,
       timestamp: log.timestamp.toISOString(),
     });
-
-    // TODO: 添加到数据库
-    // await prisma.loginLog.create({
-    //   data: {
-    //     userId: log.userId,
-    //     username: log.username,
-    //     type: log.type,
-    //     failureReason: log.failureReason,
-    //     clientIp: log.clientIp,
-    //     userAgent: log.userAgent,
-    //     timestamp: log.timestamp,
-    //   },
-    // });
   } catch (error) {
     logger.error('login-log-service', '记录登录日志失败', error);
+    // 不抛出错误,避免影响登录流程
   }
 }
 

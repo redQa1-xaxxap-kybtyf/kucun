@@ -281,12 +281,12 @@ export async function verifyCaptcha(
     });
   }
 
-  // 测试环境绕过逻辑：允许使用固定验证码 "TEST1234"
-  // 支持 test 和 development 环境（方便 E2E 测试）
+  // 🔒 安全加固：测试绕过仅在测试环境且显式启用时生效
+  // 生产和开发环境不允许绕过验证码验证
   const isTestBypass =
-    (process.env.NODE_ENV === 'test' ||
-      process.env.NODE_ENV === 'development') &&
-    captcha.toUpperCase() === 'TEST1234';
+    process.env.NODE_ENV === 'test' &&
+    process.env.TEST_CAPTCHA_BYPASS === 'true' &&
+    captcha.toUpperCase() === (process.env.TEST_CAPTCHA_CODE || 'TEST1234');
 
   // 验证验证码
   const isValid = isTestBypass || captcha.toUpperCase() === session.captchaText;

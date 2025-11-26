@@ -36,5 +36,7 @@ export interface FactoryShipmentFeeItem {
   feeName: string;
   feeAmount: number;
   paidBy: FactoryShipmentFeePaidBy;
+  // 可选：费用对应的结算供应商（如物流公司）
+  supplierId?: string;
   remarks?: string;
 }

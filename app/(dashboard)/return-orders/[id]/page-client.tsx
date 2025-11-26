@@ -43,6 +43,7 @@ import {
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
+
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { formatDateTime } from '@/lib/utils/datetime';
@@ -534,22 +535,84 @@ export function ReturnOrderDetailPageClient({
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-sm text-[hsl(var(--color-text-secondary))]">
-                            {item.originalQuantity}
-                          </span>
-                          <span className="ml-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                            {item.product.unit}
+                            {(() => {
+                              const qty = Math.floor(
+                                item.originalQuantity || 0
+                              );
+                              const unit = item.product.unit;
+                              const ppu =
+                                (item.product as any).piecesPerUnit || 0;
+                              if (unit === '件') {
+                                return ppu > 0
+                                  ? `${qty}件（共${qty * ppu}片）`
+                                  : `${qty}件`;
+                              }
+                              if (unit === '片') {
+                                if (ppu > 0) {
+                                  const units = Math.floor(qty / ppu);
+                                  const pieces = qty % ppu;
+                                  if (units === 0) return `${pieces}片`;
+                                  if (pieces === 0)
+                                    return `${units}件（共${qty}片）`;
+                                  return `${units}件${pieces}片（共${qty}片）`;
+                                }
+                                return `${qty}片`;
+                              }
+                              return `${qty}${unit}`;
+                            })()}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-sm font-semibold text-[hsl(var(--color-error))]">
-                            {item.returnQuantity}
-                          </span>
-                          <span className="ml-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                            {item.product.unit}
+                            {(() => {
+                              const qty = Math.floor(item.returnQuantity || 0);
+                              const unit = item.product.unit;
+                              const ppu =
+                                (item.product as any).piecesPerUnit || 0;
+                              if (unit === '件') {
+                                return ppu > 0
+                                  ? `${qty}件（共${qty * ppu}片）`
+                                  : `${qty}件`;
+                              }
+                              if (unit === '片') {
+                                if (ppu > 0) {
+                                  const units = Math.floor(qty / ppu);
+                                  const pieces = qty % ppu;
+                                  if (units === 0) return `${pieces}片`;
+                                  if (pieces === 0)
+                                    return `${units}件（共${qty}片）`;
+                                  return `${units}件${pieces}片（共${qty}片）`;
+                                }
+                                return `${qty}片`;
+                              }
+                              return `${qty}${unit}`;
+                            })()}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-                          {item.damagedQuantity || 0}
+                          {(() => {
+                            const qty = Math.floor(item.damagedQuantity || 0);
+                            const unit = item.product.unit;
+                            const ppu =
+                              (item.product as any).piecesPerUnit || 0;
+                            if (unit === '件') {
+                              return ppu > 0
+                                ? `${qty}件（共${qty * ppu}片）`
+                                : `${qty}件`;
+                            }
+                            if (unit === '片') {
+                              if (ppu > 0) {
+                                const units = Math.floor(qty / ppu);
+                                const pieces = qty % ppu;
+                                if (units === 0) return `${pieces}片`;
+                                if (pieces === 0)
+                                  return `${units}件（共${qty}片）`;
+                                return `${units}件${pieces}片（共${qty}片）`;
+                              }
+                              return `${qty}片`;
+                            }
+                            return `${qty}${unit}`;
+                          })()}
                         </td>
                         <td className="px-4 py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
                           {formatCurrency(item.unitPrice)}

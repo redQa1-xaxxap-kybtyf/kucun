@@ -38,6 +38,7 @@ model User {
   approvedInventoryCounts  InventoryCount[]       @relation("InventoryCountApprover")
   countedInventoryItems    InventoryCountItem[]   @relation("InventoryCountItemCounter")
   operatedOutboundRecords  OutboundRecord[]       @relation("OutboundRecordOperator")
+  loginLogs                LoginLog[]
 
   @@index([email])
   @@index([username])
@@ -1299,3 +1300,32 @@ model FactoryShipmentOrderFeeItem {
   @@index([paidBy], map: "idx_factory_shipment_fee_items_paid_by")
   @@map("factory_shipment_order_fee_items")
 }
+
+// 登录日志表 - 用于安全审计和异常检测
+// MySQL 5.7兼容性说明:
+// - 组合索引总长度控制在767字节以内
+// - VARCHAR使用utf8mb4字符集(每字符4字节)
+model LoginLog {
+  id            String   @id @default(uuid()) @db.Char(36)
+  userId        String?  @map("user_id") @db.Char(36)
+  username      String   @db.VarChar(100)
+  type          String   @db.VarChar(32) // 'success' | 'failed' | 'blocked'
+  failureReason String?  @map("failure_reason") @db.VarChar(64) // 失败原因
+  clientIp      String   @map("client_ip") @db.VarChar(45) // IPv6最大长度45
+  userAgent     String?  @map("user_agent") @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // 关系定义
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "fk_login_logs_user")
+
+  // 索引设计 - MySQL 5.7兼容
+  @@index([username], map: "idx_login_logs_username")
+  @@index([clientIp], map: "idx_login_logs_client_ip")
+  @@index([createdAt], map: "idx_login_logs_created_at")
+  @@index([type], map: "idx_login_logs_type")
+  @@index([userId], map: "idx_login_logs_user_id")
+  // 组合索引: username(100*4) + type(32*4) + createdAt(8) = 536字节 < 767字节限制
+  @@index([username, type, createdAt], map: "idx_login_logs_username_type_created")
+  @@map("login_logs")
+}
+

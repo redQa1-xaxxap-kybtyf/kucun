@@ -3,19 +3,29 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
-  (
-    { className, type, value, defaultValue, onFocus, inputMode, ...props },
-    ref
-  ) => {
-    // 简化受控/非受控组件逻辑
-    // 如果提供了 value 属性，则使用受控模式
-    // 否则使用非受控模式
-    const inputProps =
-      value !== undefined
-        ? { value: value ?? '' } // 受控模式：确保 value 不为 undefined，同时保留0等有效值
-        : defaultValue !== undefined
-          ? { defaultValue: defaultValue ?? '' } // 非受控模式：使用 defaultValue
-          : {}; // 完全非受控模式
+  ({ className, type, onFocus, inputMode, ...restProps }, ref) => {
+    const hasValueProp = Object.prototype.hasOwnProperty.call(
+      restProps,
+      'value'
+    );
+    const hasDefaultValueProp = Object.prototype.hasOwnProperty.call(
+      restProps,
+      'defaultValue'
+    );
+
+    const normalizedProps: React.ComponentProps<'input'> = {
+      ...restProps,
+    };
+
+    if (hasValueProp) {
+      normalizedProps.value =
+        normalizedProps.value === undefined ? '' : normalizedProps.value;
+    } else if (hasDefaultValueProp) {
+      normalizedProps.defaultValue =
+        normalizedProps.defaultValue === undefined
+          ? ''
+          : normalizedProps.defaultValue;
+    }
 
     // 处理焦点事件：数字输入框自动全选内容
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -45,8 +55,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
         )}
         ref={ref}
         onFocus={handleFocus}
-        {...inputProps}
-        {...props}
+        {...normalizedProps}
       />
     );
   }

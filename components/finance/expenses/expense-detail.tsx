@@ -3,20 +3,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, Edit, FileText, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
+import { RelativeTime } from '@/components/common/relative-time';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,10 +29,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  EXPENSE_RELATED_TYPE_LABELS,
-  EXPENSE_STATUS_LABELS,
-  EXPENSE_TYPE_LABELS,
-  type ExpenseRecord,
+    EXPENSE_RELATED_TYPE_LABELS,
+    EXPENSE_STATUS_LABELS,
+    EXPENSE_TYPE_LABELS,
+    type ExpenseRecord,
 } from '@/lib/types/expense';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -106,6 +109,25 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
     };
     return variants[type] || 'default';
   };
+
+  const getRelatedLink = (type: string | null, id: string | null) => {
+    if (!type || !id) return null;
+    switch (type) {
+      case 'purchase_order':
+        return `/purchase-orders/${id}`;
+      case 'sales_order':
+        return `/sales-orders/${id}`;
+      case 'return_order':
+        return `/return-orders/${id}`;
+      default:
+        return null;
+    }
+  };
+
+  const relatedLink = getRelatedLink(
+    expense.relatedType || null,
+    expense.relatedId || null
+  );
 
   return (
     <div className="space-y-6">
@@ -195,7 +217,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                 费用编号
               </div>
               <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
-                {expense.expenseNumber}
+                <CopyableText text={expense.expenseNumber} />
               </div>
             </div>
 
@@ -223,7 +245,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                 创建时间
               </div>
               <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
-                {format(new Date(expense.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+                <RelativeTime date={expense.createdAt} />
               </div>
             </div>
 
@@ -233,7 +255,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
                   更新时间
                 </div>
                 <div className="text-base font-medium text-[hsl(var(--color-text-primary))]">
-                  {format(new Date(expense.updatedAt), 'yyyy-MM-dd HH:mm:ss')}
+                  <RelativeTime date={expense.updatedAt} />
                 </div>
               </div>
             )}
@@ -261,8 +283,8 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="space-y-2">
                 <div className="text-muted-foreground text-sm">业务类型</div>
                 <div className="font-medium">
                   {EXPENSE_RELATED_TYPE_LABELS[expense.relatedType]}
@@ -270,21 +292,32 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               </div>
 
               {expense.relatedNumber && (
-                <div>
+                <div className="space-y-2">
                   <div className="text-muted-foreground text-sm">业务编号</div>
-                  <div className="font-medium">{expense.relatedNumber}</div>
+                  <div className="font-medium flex items-center gap-2">
+                    {relatedLink ? (
+                      <Link
+                        href={relatedLink}
+                        className="text-blue-600 hover:underline hover:text-blue-800"
+                      >
+                        <CopyableText text={expense.relatedNumber} />
+                      </Link>
+                    ) : (
+                      <CopyableText text={expense.relatedNumber} />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {expense.relatedId && (
+                <div className="space-y-2">
+                  <div className="text-muted-foreground text-sm">业务ID</div>
+                  <div className="text-muted-foreground font-mono text-sm">
+                    <CopyableText text={expense.relatedId} />
+                  </div>
                 </div>
               )}
             </div>
-
-            {expense.relatedId && (
-              <div>
-                <div className="text-muted-foreground text-sm">业务ID</div>
-                <div className="text-muted-foreground font-mono text-sm">
-                  {expense.relatedId}
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}

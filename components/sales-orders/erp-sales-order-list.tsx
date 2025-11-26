@@ -4,61 +4,63 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  AlertCircle,
-  Ban,
-  Clock,
-  Edit,
-  Eye,
-  MoreHorizontal,
-  Package,
-  Trash2,
-  Truck,
+    AlertCircle,
+    Ban,
+    Clock,
+    Edit,
+    Eye,
+    MoreHorizontal,
+    Package,
+    Trash2,
+    Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
+import { RelativeTime } from '@/components/common/relative-time';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  getSalesOrders,
-  salesOrderQueryKeys,
-  useDeleteSalesOrder,
-  useUpdateSalesOrderStatus,
+    getSalesOrders,
+    salesOrderQueryKeys,
+    useDeleteSalesOrder,
+    useUpdateSalesOrderStatus,
 } from '@/lib/api/sales-orders';
 import {
-  SALES_ORDER_STATUS_LABELS,
-  TRANSFER_MODE_LABELS,
-  type SalesOrder,
-  type SalesOrderQueryParams,
-  type SalesOrderStatus,
+    SALES_ORDER_STATUS_LABELS,
+    TRANSFER_MODE_LABELS,
+    type SalesOrder,
+    type SalesOrderQueryParams,
+    type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 import { formatDateTime } from '@/lib/utils/datetime';
 
@@ -695,7 +697,7 @@ export function ERPSalesOrderList({
                   <TableCell className="h-8 text-xs">
                     <div className="flex flex-col gap-1">
                       <span className="font-mono font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
-                        {order.orderNumber}
+                        <CopyableText text={order.orderNumber} />
                       </span>
                       {order.orderType === 'TRANSFER' && (
                         <div className="flex flex-wrap gap-1">
@@ -774,10 +776,10 @@ export function ERPSalesOrderList({
                     )}
                   </TableCell>
                   <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                    {formatDateTime(order.createdAt)}
+                    <RelativeTime date={order.createdAt} />
                   </TableCell>
                   <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                    {formatDateTime(order.updatedAt)}
+                    <RelativeTime date={order.updatedAt} />
                   </TableCell>
                   <TableCell className="h-8 text-xs">
                     <DropdownMenu>

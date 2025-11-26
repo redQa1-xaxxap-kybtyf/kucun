@@ -2,13 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  Calendar,
-  MinusIcon,
-  Package,
-  TrendingDown,
-  TrendingUp,
+    ArrowDownIcon,
+    ArrowUpIcon,
+    Calendar,
+    MinusIcon,
+    Package,
+    RefreshCw,
+    TrendingDown,
+    TrendingUp
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -16,11 +17,11 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { queryKeys } from '@/lib/queryKeys';
@@ -257,6 +258,34 @@ export function MonthlyReportClient() {
             />
           </div>
         </div>
+
+        {/* 库存周转率 */}
+        {report.inventoryTurnover && (
+          <div>
+            <h2 className="mb-4 text-xl font-semibold">库存周转率</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              <StatCard
+                title="周转率"
+                value={report.inventoryTurnover.turnoverRate}
+                icon={<RefreshCw className="h-4 w-4" />}
+                isCurrency={false}
+                subtitle={`${report.inventoryTurnover.turnoverRate.toFixed(2)} 次/月`}
+              />
+              <StatCard
+                title="周转天数"
+                value={report.inventoryTurnover.turnoverDays}
+                icon={<Calendar className="h-4 w-4" />}
+                isCurrency={false}
+                subtitle={`${report.inventoryTurnover.turnoverDays.toFixed(0)} 天`}
+              />
+              <StatCard
+                title="平均库存价值"
+                value={report.inventoryTurnover.averageInventoryValue}
+                icon={<Package className="h-4 w-4" />}
+              />
+            </div>
+          </div>
+        )}
 
         {/* 应收应付 */}
         <div>

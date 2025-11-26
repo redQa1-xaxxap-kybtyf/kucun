@@ -11,31 +11,31 @@ import { AmountInfoSection } from '@/components/factory-shipments/form-sections/
 import { BasicInfoSection } from '@/components/factory-shipments/form-sections/basic-info-section';
 import { ItemListSection } from '@/components/factory-shipments/form-sections/item-list-section';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { useCustomerPriceHistory } from '@/hooks/use-price-history';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
-  FactoryShipmentValidationError,
-  useCreateFactoryShipmentOrder,
-  useFactoryShipmentOrder,
-  useUpdateFactoryShipmentOrder,
+    FactoryShipmentValidationError,
+    useCreateFactoryShipmentOrder,
+    useFactoryShipmentOrder,
+    useUpdateFactoryShipmentOrder,
 } from '@/lib/api/factory-shipments';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import type { Customer } from '@/lib/types/customer';
 import {
-  FACTORY_SHIPMENT_STATUS,
-  type FactoryShipmentOrder,
+    FACTORY_SHIPMENT_STATUS,
+    type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import {
-  prepareFactoryShipmentForSubmit,
-  transformFactoryShipmentFromAPI,
+    prepareFactoryShipmentForSubmit,
+    transformFactoryShipmentFromAPI,
 } from '@/lib/utils/factory-shipment-transforms';
 import {
-  factoryShipmentOrderFormSchema,
-  type FactoryShipmentOrderFormData,
+    factoryShipmentOrderFormSchema,
+    type FactoryShipmentOrderFormData,
 } from '@/lib/validations/factory-shipment';
 
 const generateIdempotencyKey = (): string => {
@@ -199,29 +199,67 @@ export function FactoryShipmentOrderForm({
     }
   }, [form, isEditing, orderDetail]);
 
-  // 监听产品明细变化，自动计算总金额
+  // 监听金额相关字段变化，自动计算：
+  // - 订单总金额 = 全部明细金额合计
+  // - 应收金额 = 客户货金额 + 客户承担费用 - 定金
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name?.startsWith('items')) {
-        const items = value.items || [];
-        const total = items.reduce((sum, item) => {
-          const quantity = item?.quantity || 0;
-          const unitPrice = item?.unitPrice || 0;
-          return sum + quantity * unitPrice;
-        }, 0);
-        const customerAmount = items.reduce((sum, item) => {
-          const ownership = item?.ownership || 'customer';
-          if (ownership !== 'customer') {
-            return sum;
-          }
-          const quantity = item?.quantity || 0;
-          const unitPrice = item?.unitPrice || 0;
-          return sum + quantity * unitPrice;
-        }, 0);
-        form.setValue('totalAmount', total);
-        form.setValue('receivableAmount', customerAmount);
+      // 避免我们自己 setValue(totalAmount/receivableAmount) 触发死循环
+      if (name === 'totalAmount' || name === 'receivableAmount') {
+        return;
       }
+
+      // 只在明细、费用或定金变化时重新计算
+      if (
+        name &&
+        !name.startsWith('items') &&
+        !name.startsWith('feeItems') &&
+        name !== 'depositAmount'
+      ) {
+        return;
+      }
+
+      const items = value.items || [];
+      const feeItems = value.feeItems || [];
+      const depositAmount = Number(value.depositAmount || 0) || 0;
+
+      // 明细金额汇总（和后端 computeAmountSummary 保持一致）
+      const summary = items.reduce(
+        (acc, item) => {
+          if (!item) return acc;
+          const quantity = Number(item.quantity || 0) || 0;
+          const unitPrice = Number(item.unitPrice || 0) || 0;
+          const lineTotal = quantity * unitPrice;
+
+          acc.total += lineTotal;
+          const ownership = item.ownership || 'customer';
+          if (ownership === 'customer') {
+            acc.customer += lineTotal;
+          } else {
+            acc.self += lineTotal;
+          }
+          return acc;
+        },
+        { total: 0, customer: 0, self: 0 }
+      );
+
+      // 客户承担的费用
+      const customerFees = feeItems.reduce((sum: number, fee: any) => {
+        if (!fee || fee.paidBy !== 'customer') return sum;
+        const amount = Number(fee.feeAmount || 0) || 0;
+        return sum + amount;
+      }, 0);
+
+      const totalAmount = summary.total;
+      const finalReceivableAmount = Math.max(
+        0,
+        summary.customer + customerFees - depositAmount
+      );
+
+      form.setValue('totalAmount', totalAmount);
+      form.setValue('receivableAmount', finalReceivableAmount);
     });
+
     return () => subscription.unsubscribe();
   }, [form]);
 
@@ -385,6 +423,11 @@ export function FactoryShipmentOrderForm({
 
         {/* 费用项目 */}
         <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+          <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+            <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
+              费用项目
+            </CardTitle>
+          </CardHeader>
           <CardContent className="p-8">
             <FeeItemsFormField control={form.control} disabled={isLoading} />
           </CardContent>

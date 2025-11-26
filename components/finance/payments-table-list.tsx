@@ -1,43 +1,44 @@
 'use client';
 
 import {
-  Calendar,
-  CheckCircle,
-  Clock,
-  Eye,
-  MoreHorizontal,
-  Receipt,
-  XCircle,
+    Calendar,
+    CheckCircle,
+    Clock,
+    Eye,
+    MoreHorizontal,
+    Receipt,
+    XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
+import { RelativeTime } from '@/components/common/relative-time';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { PaymentStatus } from '@/lib/types/payment';
-import { formatPaymentDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface PaymentRecord {
@@ -174,7 +175,9 @@ function PaymentTableRow({
       {/* 收款单号 */}
       <TableCell className="font-medium">
         <div className="flex items-center gap-2">
-          <span className="font-mono text-sm">{payment.paymentNumber}</span>
+          <span className="font-mono text-sm">
+            <CopyableText text={payment.paymentNumber} />
+          </span>
         </div>
       </TableCell>
 
@@ -184,7 +187,7 @@ function PaymentTableRow({
           href={`/sales-orders/${payment.salesOrder.id}`}
           className="font-mono text-sm text-blue-600 hover:underline"
         >
-          {payment.salesOrder.orderNumber}
+          <CopyableText text={payment.salesOrder.orderNumber} />
         </Link>
       </TableCell>
 
@@ -230,9 +233,7 @@ function PaymentTableRow({
       <TableCell>
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="text-muted-foreground h-3.5 w-3.5" />
-          <span>
-            {formatPaymentDateTime(payment.paymentDate, payment.createdAt)}
-          </span>
+          <RelativeTime date={payment.paymentDate} />
         </div>
       </TableCell>
 

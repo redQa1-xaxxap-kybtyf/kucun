@@ -3,17 +3,17 @@
 import * as React from 'react';
 
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
-  formatFullTimestamp,
-  getRelativeTimeText,
-  isWithin24Hours,
-  type DateInput,
+    formatFullTimestamp,
+    getRelativeTimeText,
+    isWithin24Hours,
+    type DateInput,
 } from '@/lib/utils/datetime';
 
 interface RelativeTimeProps {
@@ -81,7 +81,7 @@ export function RelativeTime({
         <TooltipTrigger asChild>
           <span
             className={cn(
-              'text-muted-foreground cursor-help underline decoration-dotted',
+              'text-muted-foreground',
               className
             )}
           >

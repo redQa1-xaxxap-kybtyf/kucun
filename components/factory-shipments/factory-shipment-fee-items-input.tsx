@@ -3,6 +3,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
+import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -159,10 +160,11 @@ export const FactoryShipmentFeeItemsInput =
               {localItems.map((item, index) => (
                 <div
                   key={index}
-                  className="grid grid-cols-12 gap-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-card))] p-4"
+                className="space-y-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-card))] p-4"
                 >
-                  {/* 费用类型 */}
-                  <div className="col-span-3">
+                  <div className="grid grid-cols-12 gap-3">
+                    {/* 费用类型 */}
+                    <div className="col-span-3">
                     <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
                       费用类型
                     </Label>
@@ -184,10 +186,10 @@ export const FactoryShipmentFeeItemsInput =
                         ))}
                       </SelectContent>
                     </Select>
-                  </div>
+                    </div>
 
-                  {/* 费用名称 */}
-                  <div className="col-span-3">
+                    {/* 费用名称 */}
+                    <div className="col-span-3">
                     <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
                       费用名称
                     </Label>
@@ -200,10 +202,10 @@ export const FactoryShipmentFeeItemsInput =
                       }
                       disabled={disabled}
                     />
-                  </div>
+                    </div>
 
-                  {/* 费用金额 */}
-                  <div className="col-span-2">
+                    {/* 费用金额 */}
+                    <div className="col-span-2">
                     <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
                       费用金额
                     </Label>
@@ -223,10 +225,42 @@ export const FactoryShipmentFeeItemsInput =
                       }
                       disabled={disabled}
                     />
+                    </div>
+
+                    {/* 费用供应商（可选，用于应付归属，如物流公司） */}
+                    <div className="col-span-3">
+                      <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        费用供应商（可选）
+                      </Label>
+                      <div className="mt-1">
+                        <SupplierSelector
+                          value={item.supplierId}
+                          onValueChange={value =>
+                            handleUpdateFeeItem(index, 'supplierId', value)
+                          }
+                          disabled={disabled}
+                          placeholder="选择费用结算对象"
+                        />
+                      </div>
+                    </div>
+
+                    {/* 删除按钮 */}
+                    <div className="col-span-1 flex items-end justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveFeeItem(index)}
+                      disabled={disabled}
+                      className="text-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error))]/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    </div>
                   </div>
 
                   {/* 备注 */}
-                  <div className="col-span-3">
+                  <div>
                     <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
                       备注
                     </Label>
@@ -239,20 +273,6 @@ export const FactoryShipmentFeeItemsInput =
                       }
                       disabled={disabled}
                     />
-                  </div>
-
-                  {/* 删除按钮 */}
-                  <div className="col-span-1 flex items-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFeeItem(index)}
-                      disabled={disabled}
-                      className="text-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error))]/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
               ))}

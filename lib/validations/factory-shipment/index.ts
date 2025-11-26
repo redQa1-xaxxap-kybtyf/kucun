@@ -202,7 +202,8 @@ const factoryShipmentOrderItemFormSchema = z.object({
     .max(200, '规格不能超过200个字符')
     .optional()
     .or(z.literal('')),
-  unit: z.enum(['片', '件']).optional(),
+  // 与 factoryShipmentOrderItemSchema 保持一致：单位来自产品数据，允许任意字符串
+  unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
   piecesPerUnit: z.number().positive('每件片数必须大于0').optional(),
   weight: z.number().positive('重量必须大于0').optional(),
   remarks: z

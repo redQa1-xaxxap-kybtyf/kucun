@@ -13,6 +13,7 @@ export interface PurchaseOrderFeeItem {
   feeType: string;
   feeName: string;
   feeAmount: number;
+  supplierId?: string | null;
   remarks?: string | null;
 }
 
@@ -106,6 +107,9 @@ export async function createPurchaseOrderExpenses(
       continue;
     }
 
+    // 如果费用项单独指定了供应商,优先使用该供应商；否则回落到订单级供应商
+    const effectiveSupplierId = fee.supplierId || supplierId;
+
     // 创建新费用记录
     const expenseType = mapFeeTypeToExpenseType(fee.feeType);
     const expenseNumber = await generateExpenseNumber(tx);
@@ -123,7 +127,7 @@ export async function createPurchaseOrderExpenses(
         relatedNumber: orderNumber,
         remarks: fee.remarks || null,
         userId,
-        supplierId, // ✅ P0修复：设置 supplierId
+        supplierId: effectiveSupplierId, // ✅ 费用挂在对应供应商名下（可为物流公司等服务商）
         status: 'draft', // ✅ P0修复：明确设置状态
         paymentStatus: 'unpaid', // ✅ P0修复：明确设置支付状态
         idempotencyKey, // ✅ P1修复：设置幂等键

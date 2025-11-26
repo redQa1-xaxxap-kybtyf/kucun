@@ -1,41 +1,58 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowUpDown, Eye, Pencil, Trash2 } from 'lucide-react';
+import {
+    ArrowUpDown,
+    Eye,
+    FileText,
+    Package,
+    Pencil,
+    ShoppingCart,
+    Trash2,
+    Truck,
+} from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
+import { CopyableText } from '@/components/common/copyable-text';
+import { RelativeTime } from '@/components/common/relative-time';
+
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  EXPENSE_RELATED_TYPE_LABELS,
-  EXPENSE_STATUS_LABELS,
-  EXPENSE_TYPE_LABELS,
-  type ExpenseQueryParams,
-  type ExpenseRecord,
+    EXPENSE_RELATED_TYPE_LABELS,
+    EXPENSE_STATUS_LABELS,
+    EXPENSE_TYPE_LABELS,
+    type ExpenseQueryParams,
+    type ExpenseRecord,
 } from '@/lib/types/expense';
-import { formatDate } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseListProps {
@@ -172,6 +189,32 @@ export function ExpenseList({
     return variants[type] || 'default';
   };
 
+  // 获取状态标签样式
+  const getStatusBadgeVariant = (status: string) => {
+    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+      draft: 'secondary',
+      approved: 'default', // 使用默认深色表示已审核/生效
+      cancelled: 'destructive',
+    };
+    return variants[status] || 'secondary';
+  };
+
+  // 获取关联业务图标
+  const getRelatedTypeIcon = (type: string) => {
+    switch (type) {
+      case 'sales_order':
+        return <ShoppingCart className="h-3 w-3" />;
+      case 'purchase_order':
+        return <ShoppingCart className="h-3 w-3" />;
+      case 'inbound':
+        return <Package className="h-3 w-3" />;
+      case 'outbound':
+        return <Truck className="h-3 w-3" />;
+      default:
+        return <FileText className="h-3 w-3" />;
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -271,7 +314,7 @@ export function ExpenseList({
                     {records.map((expense: ExpenseRecord) => (
                       <TableRow key={expense.id}>
                         <TableCell className="font-medium">
-                          {expense.expenseNumber}
+                          <CopyableText text={expense.expenseNumber} />
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge
@@ -283,45 +326,75 @@ export function ExpenseList({
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge variant="outline">
+                          <Badge
+                            variant={getStatusBadgeVariant(expense.status)}
+                            className={
+                              expense.status === 'approved'
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : ''
+                            }
+                          >
                             {EXPENSE_STATUS_LABELS[expense.status]}
                           </Badge>
                         </TableCell>
                         <TableCell>{expense.expenseName}</TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-right font-mono text-base font-bold">
                           {formatCurrency(expense.expenseAmount)}
                         </TableCell>
                         <TableCell className="text-center">
-                          {formatDate(expense.expenseDate)}
+                          <RelativeTime date={expense.expenseDate} />
                         </TableCell>
                         <TableCell>
                           {expense.relatedType && expense.relatedNumber ? (
-                            <div className="text-sm">
-                              <div className="text-muted-foreground">
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 font-medium">
+                                {getRelatedTypeIcon(expense.relatedType)}
+                                <CopyableText text={expense.relatedNumber} />
+                              </div>
+                              <div className="text-muted-foreground text-xs">
                                 {
                                   EXPENSE_RELATED_TYPE_LABELS[
                                     expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS
                                   ]
                                 }
+                                {expense.expenseType === 'shipping' &&
+                                  expense.containerNumber && (
+                                    <span className="ml-1">
+                                      (柜号:
+                                      <CopyableText
+                                        text={expense.containerNumber}
+                                        className="ml-0.5 inline-flex"
+                                        iconSize="sm"
+                                      />
+                                      )
+                                    </span>
+                                  )}
                               </div>
-                              <div className="font-medium">
-                                {expense.relatedNumber}
-                              </div>
-                              {expense.expenseType === 'shipping' &&
-                                expense.containerNumber && (
-                                  <div className="text-muted-foreground text-xs">
-                                    集装箱号：{expense.containerNumber}
-                                  </div>
-                                )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground">−</span>
                           )}
                         </TableCell>
                         <TableCell>
-                          {expense.remarks && expense.remarks.trim().length > 0
-                            ? expense.remarks
-                            : '—'}
+                          {expense.remarks &&
+                          expense.remarks.trim().length > 0 ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="max-w-[180px] truncate text-sm">
+                                    {expense.remarks}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className="max-w-[300px] break-words">
+                                    {expense.remarks}
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">

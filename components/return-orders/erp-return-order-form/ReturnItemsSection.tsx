@@ -1,22 +1,23 @@
 /* eslint-disable max-lines-per-function */
 import { Package, Plus, Trash2 } from 'lucide-react';
 import type {
-  FieldArrayWithId,
-  UseFieldArrayRemove,
-  UseFormReturn,
+    FieldArrayWithId,
+    UseFieldArrayRemove,
+    UseFormReturn,
 } from 'react-hook-form';
 
 import { MultiOrderItemSelector } from '@/components/return-orders/multi-order-item-selector';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import type { ReturnOrderItem } from '@/lib/types/return-order';
 import type { ReturnOrderFormData } from '@/lib/validations/return-order';
@@ -84,15 +85,16 @@ export function ReturnItemsSection({
 
   return (
     <>
-      <div className="bg-muted/5 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <div className="text-muted-foreground text-xs">退货明细</div>
-          <div className="text-muted-foreground text-xs">
-            总金额: ￥{calculateTotal().toFixed(2)}
-          </div>
-        </div>
-      </div>
-      <div className="px-3 py-3">
+      <Card className="mt-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center justify-between">
+            <span>退货明细</span>
+            <span className="text-sm font-normal text-muted-foreground">
+              总金额: <span className="text-orange-600 font-bold">￥{calculateTotal().toFixed(2)}</span>
+            </span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
         {isMultiOrder && selectedCustomerId && (
           <div className="mb-4">
             <div className="mb-2 text-xs font-medium">
@@ -122,52 +124,52 @@ export function ReturnItemsSection({
               : '暂无退货明细，请从上方选择要退货的产品'}
           </div>
         ) : (
-          <div className="rounded border">
-            <div className="bg-muted/20 flex items-center justify-between border-b px-3 py-2">
-              <span className="text-sm font-medium">退货明细列表</span>
+          <div className="rounded-md border">
+            <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-3">
+              <span className="text-sm font-semibold">退货明细列表</span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={onAddItem}
                 disabled={isSubmitting}
-                className="h-6 px-2 text-xs"
+                className="h-8 px-3 text-xs"
               >
-                <Plus className="mr-1 h-3 w-3" />
+                <Plus className="mr-1 h-3.5 w-3.5" />
                 添加明细
               </Button>
             </div>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="text-xs">
-                    <TableHead className="h-8 px-2">产品</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[250px] pl-4">产品信息</TableHead>
                     {isMultiOrder && (
-                      <TableHead className="h-8 px-2">来源订单</TableHead>
+                      <TableHead className="w-[150px]">来源订单</TableHead>
                     )}
-                    <TableHead className="h-8 px-2">原始数量</TableHead>
-                    <TableHead className="h-8 px-2">退货数量</TableHead>
-                    <TableHead className="h-8 px-2">破损数量</TableHead>
-                    <TableHead className="h-8 px-2">退货单价</TableHead>
-                    <TableHead className="h-8 px-2">小计</TableHead>
-                    <TableHead className="h-8 px-2 text-center">操作</TableHead>
+                    <TableHead className="w-[100px] text-right">原始数量</TableHead>
+                    <TableHead className="w-[120px] text-right">退货数量</TableHead>
+                    <TableHead className="w-[120px] text-right">破损数量</TableHead>
+                    <TableHead className="w-[120px] text-right">退货单价</TableHead>
+                    <TableHead className="w-[120px] text-right">小计</TableHead>
+                    <TableHead className="w-[60px] text-center">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {fields.map((field, index) => (
-                    <TableRow key={field.id} className="text-xs">
-                      <TableCell className="h-8 px-2">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1">
-                            <Package className="text-muted-foreground h-3 w-3" />
-                            <span className="font-medium">
+                    <TableRow key={field.id} className="hover:bg-muted/50">
+                      <TableCell className="pl-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-semibold text-sm">
                               {/* ✅ 修复：使用 salesOrderItemId 查找产品信息 */}
                               {productInfoMap[field.salesOrderItemId]?.name ||
                                 `产品 ${index + 1}`}
                             </span>
                           </div>
                           {productInfoMap[field.salesOrderItemId] && (
-                            <div className="text-muted-foreground flex gap-2 text-xs">
+                            <div className="ml-6 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                               <span>
                                 {productInfoMap[field.salesOrderItemId]?.code}
                               </span>
@@ -188,29 +190,29 @@ export function ReturnItemsSection({
                         </div>
                       </TableCell>
                       {isMultiOrder && (
-                        <TableCell className="h-8 px-2">
-                          <span className="text-muted-foreground font-mono text-xs">
+                        <TableCell>
+                          <span className="font-mono text-xs text-muted-foreground">
                             {/* ✅ 修复：使用 salesOrderItemId 查找来源订单号 */}
                             {productInfoMap[field.salesOrderItemId]
                               ?.salesOrderNumber || '-'}
                           </span>
                         </TableCell>
                       )}
-                      <TableCell className="h-8 px-2">
+                      <TableCell className="text-right">
                         <FormField
                           control={form.control}
                           name={`items.${index}.originalQuantity`}
                           render={({ field: fieldControl }) => (
                             <Input
                               type="number"
-                              className="h-6 w-20 text-xs"
+                              className="h-9 w-full text-right text-sm bg-muted/50"
                               readOnly
                               {...fieldControl}
                             />
                           )}
                         />
                       </TableCell>
-                      <TableCell className="h-8 px-2">
+                      <TableCell className="text-right">
                         <FormField
                           control={form.control}
                           name={`items.${index}.returnQuantity`}
@@ -218,7 +220,7 @@ export function ReturnItemsSection({
                             <Input
                               type="number"
                               min="1"
-                              className="h-6 w-16 text-xs"
+                              className="h-9 w-full text-right text-sm font-medium"
                               {...fieldControl}
                               onChange={event => {
                                 fieldControl.onChange(
@@ -230,7 +232,7 @@ export function ReturnItemsSection({
                           )}
                         />
                       </TableCell>
-                      <TableCell className="h-8 px-2">
+                      <TableCell className="text-right">
                         <FormField
                           control={form.control}
                           name={`items.${index}.damagedQuantity`}
@@ -240,7 +242,7 @@ export function ReturnItemsSection({
                               min="0"
                               step="0.01"
                               placeholder="0"
-                              className="h-6 w-16 text-xs"
+                              className="h-9 w-full text-right text-sm"
                               {...fieldControl}
                               onChange={event => {
                                 fieldControl.onChange(
@@ -251,7 +253,7 @@ export function ReturnItemsSection({
                           )}
                         />
                       </TableCell>
-                      <TableCell className="h-8 px-2">
+                      <TableCell className="text-right">
                         <FormField
                           control={form.control}
                           name={`items.${index}.unitPrice`}
@@ -259,7 +261,7 @@ export function ReturnItemsSection({
                             <Input
                               type="number"
                               step="0.01"
-                              className="h-6 w-20 text-xs"
+                              className="h-9 w-full text-right text-sm"
                               {...fieldControl}
                               onChange={event => {
                                 fieldControl.onChange(
@@ -271,23 +273,23 @@ export function ReturnItemsSection({
                           )}
                         />
                       </TableCell>
-                      <TableCell className="h-8 px-2">
-                        <span className="font-mono text-xs">
+                      <TableCell className="text-right">
+                        <span className="font-mono font-bold text-sm">
                           ￥
                           {form.watch(`items.${index}.subtotal`)?.toFixed(2) ||
                             '0.00'}
                         </span>
                       </TableCell>
-                      <TableCell className="h-8 px-2">
+                      <TableCell className="text-center">
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          className="h-6 w-6 p-0"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
                           onClick={() => onRemove(index)}
                           disabled={isSubmitting}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -295,14 +297,32 @@ export function ReturnItemsSection({
                 </TableBody>
               </Table>
             </div>
+            
+            {/* 底部汇总栏 */}
+            <div className="flex items-center justify-end gap-8 border-t bg-muted/10 px-6 py-4">
+              <div className="text-sm">
+                <span className="text-muted-foreground mr-2">总数量:</span>
+                <span className="font-medium">
+                  {fields.reduce((sum, field) => sum + (field.returnQuantity || 0), 0)}
+                </span>
+              </div>
+              <div className="text-sm flex items-baseline">
+                <span className="text-muted-foreground mr-2">预计退款总额:</span>
+                <span className="text-xl font-bold text-orange-600 font-mono">
+                  ￥{calculateTotal().toFixed(2)}
+                </span>
+              </div>
+            </div>
           </div>
         )}
-      </div>
+        </CardContent>
+      </Card>
     </>
   );
 }
 
 export type {
-  ProductInfo as ReturnOrderProductInfo,
-  SelectableItem as ReturnOrderSelectableItem,
+    ProductInfo as ReturnOrderProductInfo,
+    SelectableItem as ReturnOrderSelectableItem
 };
+

@@ -11,7 +11,12 @@ import type { BatchMatchResult, ExistingBatch } from '@/lib/types/batch';
 const batchMatchQuerySchema = z.object({
   productId: z.string().uuid('产品ID格式不正确'),
   productCode: z.string().min(1, '产品编码不能为空'),
-  supplierId: z.string().uuid('供应商ID格式不正确'),
+  // 供应商ID 改为可选：仅用于补充显示，不再作为过滤条件
+  supplierId: z
+    .string()
+    .uuid('供应商ID格式不正确')
+    .optional()
+    .or(z.literal('')),
   specification: z.string().optional(),
 });
 
@@ -22,13 +27,12 @@ const batchMatchQuerySchema = z.object({
  * 查询参数:
  * - productId: 产品ID (必填)
  * - productCode: 产品编码 (必填)
- * - supplierId: 供应商ID (必填)
+ * - supplierId: 供应商ID (可选，用于补充显示供应商名称)
  * - specification: 规格 (可选)
  *
  * 匹配条件:
  * - 相同产品ID
  * - 相同产品编码
- * - 相同供应商ID
  * - 相同规格(如果提供)
  * - 库存数量 > 0
  */
@@ -111,7 +115,6 @@ export async function GET(request: NextRequest) {
     const purchaseOrderItems = await prisma.purchaseOrderItem.findMany({
       where: {
         batchNumber: { in: batchNumbers },
-        supplierId: validatedParams.supplierId,
       },
       include: {
         supplier: {
@@ -136,27 +139,22 @@ export async function GET(request: NextRequest) {
     );
 
     // 过滤出匹配供应商的批次
-    const matchedBatches: ExistingBatch[] = inventoryBatches
-      .filter(inv => {
-        const supplierInfo = batchSupplierMap.get(inv.batchNumber || '');
-        return supplierInfo?.supplierId === validatedParams.supplierId;
-      })
-      .map(inv => {
-        const supplierInfo = batchSupplierMap.get(inv.batchNumber || '');
-        return {
-          batchNumber: inv.batchNumber || '',
-          productId: inv.productId,
-          productCode: inv.product.code,
-          productName: inv.product.name,
-          specification: inv.product.specification,
-          supplierId: supplierInfo?.supplierId || '',
-          supplierName: supplierInfo?.supplierName || '',
-          quantity: inv.quantity,
-          unitCost: inv.unitCost,
-          createdAt: inv.updatedAt, // 使用 updatedAt 作为创建时间的近似值
-          updatedAt: inv.updatedAt,
-        };
-      });
+    const matchedBatches: ExistingBatch[] = inventoryBatches.map(inv => {
+      const supplierInfo = batchSupplierMap.get(inv.batchNumber || '');
+      return {
+        batchNumber: inv.batchNumber || '',
+        productId: inv.productId,
+        productCode: inv.product.code,
+        productName: inv.product.name,
+        specification: inv.product.specification,
+        supplierId: supplierInfo?.supplierId || '',
+        supplierName: supplierInfo?.supplierName || '',
+        quantity: inv.quantity,
+        unitCost: inv.unitCost,
+        createdAt: inv.updatedAt, // 使用 updatedAt 作为创建时间的近似值
+        updatedAt: inv.updatedAt,
+      };
+    });
 
     const result: BatchMatchResult = {
       hasMatch: matchedBatches.length > 0,

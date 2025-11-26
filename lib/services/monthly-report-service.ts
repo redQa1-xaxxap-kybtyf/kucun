@@ -6,31 +6,32 @@
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
 import type {
-  MonthlyCosts,
-  MonthlyExpenses,
-  MonthlyFactoryShipmentProfit,
-  MonthlyProfit,
-  MonthlyReceivables,
-  MonthlyReport,
-  MonthlyRevenue,
+    InventoryTurnover,
+    MonthlyCosts,
+    MonthlyExpenses,
+    MonthlyFactoryShipmentProfit,
+    MonthlyProfit,
+    MonthlyReceivables,
+    MonthlyReport,
+    MonthlyRevenue,
 } from '@/lib/types/report';
 import {
-  calculateTotalExpenses,
-  extractExpensesByType,
+    calculateTotalExpenses,
+    extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
 
 import { includesCustomerRole } from './finance-statistics-shared';
 import {
-  buildExpenseWhere,
-  buildPaymentWhere,
-  buildSalesOrderWhere,
-  calculateComparison,
-  calculateProfitMargin,
-  createMonthlyPeriod,
-  generateExpenseAlerts,
-  generateProfitAlerts,
-  getMonthDateRange,
-  getPreviousMonth,
+    buildExpenseWhere,
+    buildPaymentWhere,
+    buildSalesOrderWhere,
+    calculateComparison,
+    calculateProfitMargin,
+    createMonthlyPeriod,
+    generateExpenseAlerts,
+    generateProfitAlerts,
+    getMonthDateRange,
+    getPreviousMonth,
 } from './report-helpers';
 
 // ==================== 数据查询函数 ====================
@@ -292,6 +293,91 @@ async function getMonthlyReceivables(
 }
 
 /**
+ * 获取库存周转率数据
+ */
+async function getInventoryTurnover(
+  year: number,
+  month: number,
+  salesCost: number
+): Promise<InventoryTurnover> {
+  const { startDate, endDate } = getMonthDateRange(year, month);
+
+  // 获取期末库存价值（当前库存）
+  const currentInventory = await prisma.inventory.findMany({
+    where: {
+      quantity: {
+        gt: 0,
+      },
+    },
+    select: {
+      quantity: true,
+      unitCost: true,
+    },
+  });
+
+  const endingValue = currentInventory.reduce(
+    (sum, inv) => sum + inv.quantity * (inv.unitCost || 0),
+    0
+  );
+
+  // 计算期初库存价值
+  // 期初库存 = 期末库存 - 本月入库 + 本月出库
+  const [inboundStats, outboundStats] = await Promise.all([
+    prisma.inboundRecord.aggregate({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+        // 排除期初入库
+        reason: {
+          not: 'opening_balance',
+        },
+      },
+      _sum: {
+        totalCost: true,
+      },
+    }),
+    prisma.outboundRecord.aggregate({
+      where: {
+        createdAt: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+      _sum: {
+        totalCost: true,
+      },
+    }),
+  ]);
+
+  const inboundCost = inboundStats._sum.totalCost || 0;
+  const outboundCost = outboundStats._sum.totalCost || 0;
+
+  // 期初库存 = 期末库存 - 入库成本 + 出库成本
+  const beginningValue = endingValue - inboundCost + outboundCost;
+
+  // 计算平均库存价值
+  const averageInventoryValue = (beginningValue + endingValue) / 2;
+
+  // 计算周转率 = 销售成本 / 平均库存价值
+  const turnoverRate =
+    averageInventoryValue > 0 ? salesCost / averageInventoryValue : 0;
+
+  // 计算周转天数 = 30 / 周转率（月度报表用30天）
+  const turnoverDays = turnoverRate > 0 ? 30 / turnoverRate : 0;
+
+  return {
+    turnoverRate: roundToTwoDecimals(turnoverRate),
+    turnoverDays: roundToTwoDecimals(turnoverDays),
+    averageInventoryValue: roundToTwoDecimals(averageInventoryValue),
+    salesCost: roundToTwoDecimals(salesCost),
+    beginningInventory: roundToTwoDecimals(beginningValue),
+    endingInventory: roundToTwoDecimals(endingValue),
+  };
+}
+
+/**
  * 计算月度利润数据
  */
 function calculateMonthlyProfit(
@@ -347,6 +433,13 @@ export async function getMonthlyReport(
   // 计算利润
   const profit = calculateMonthlyProfit(revenue, costs, expenses);
 
+  // 计算库存周转率
+  const inventoryTurnover = await getInventoryTurnover(
+    year,
+    month,
+    costs.salesCost
+  );
+
   // 创建报表周期
   const period = createMonthlyPeriod(year, month);
 
@@ -369,6 +462,7 @@ export async function getMonthlyReport(
     receivables,
     profit,
     factoryShipmentProfit,
+    inventoryTurnover,
     alerts,
   };
 

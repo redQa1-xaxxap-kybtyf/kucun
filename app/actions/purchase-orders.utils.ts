@@ -94,6 +94,8 @@ export async function createPurchaseOrderInternal(
       data: {
         orderNumber,
         containerNumber: data.containerNumber?.trim() || null,
+        shippingCompany:
+          normalizeOptionalString(data.shippingCompany) ?? null,
         status,
         totalAmount,
         orderDate: data.orderDate ? new Date(data.orderDate) : null,
@@ -226,6 +228,10 @@ export async function updatePurchaseOrderInternal({
           data.containerNumber !== undefined
             ? data.containerNumber.trim() || null
             : existingOrder.containerNumber,
+        shippingCompany:
+          data.shippingCompany !== undefined
+            ? normalizeOptionalString(data.shippingCompany) ?? null
+            : existingOrder.shippingCompany,
         remarks: data.remarks?.trim() ?? existingOrder.remarks ?? null,
         totalAmount,
         expenseAmount, // ✅ 新增：同步更新费用总额

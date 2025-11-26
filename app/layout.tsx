@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { getServerSession } from 'next-auth';
+import { Inter } from 'next/font/google';
 
 import ChunkLoadRecovery from '@/components/providers/chunkload-recovery';
 import QueryProvider from '@/components/providers/query-provider';
@@ -29,7 +29,7 @@ export default async function RootLayout({
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <AuthSessionProvider session={session}>
           <QueryProvider>
             <ChunkLoadRecovery />

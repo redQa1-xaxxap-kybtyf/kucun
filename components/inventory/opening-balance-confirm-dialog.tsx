@@ -51,13 +51,15 @@ export function OpeningBalanceConfirmDialog({
             <AlertTriangle className="h-5 w-5 text-amber-600" />
             期初入库确认
           </DialogTitle>
-          <DialogDescription className="space-y-3 pt-2">
-            <p className="text-base font-medium text-gray-900">
-              您正在录入期初库存数据，请确认数据准确无误。
-            </p>
-            <p className="text-sm text-gray-600">
-              期初库存将影响后续所有财务核算，建议录入完成后进行核对。
-            </p>
+          <DialogDescription asChild>
+            <div className="space-y-3 pt-2 text-muted-foreground text-sm">
+              <p className="text-base font-medium text-gray-900">
+                您正在录入期初库存数据，请确认数据准确无误。
+              </p>
+              <p className="text-sm text-gray-600">
+                期初库存将影响后续所有财务核算，建议录入完成后进行核对。
+              </p>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

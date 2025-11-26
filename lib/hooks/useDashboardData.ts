@@ -2,14 +2,15 @@
 
 import * as React from 'react';
 
-import { useBusinessOverview } from '@/lib/api/dashboard';
+import { useBusinessOverview, useSalesTrend } from '@/lib/api/dashboard';
 import type {
-  BusinessOverview,
-  DashboardData,
-  DashboardFactoryShipmentSummary,
-  DashboardSalesOrderStatus,
-  DashboardSalesOrderSummary,
-  TimeRange,
+    BusinessOverview,
+    DashboardData,
+    DashboardFactoryShipmentSummary,
+    DashboardSalesOrderStatus,
+    DashboardSalesOrderSummary,
+    SalesTrendData,
+    TimeRange,
 } from '@/lib/types/dashboard';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 import { logger } from '@/lib/utils/console-logger';
@@ -203,6 +204,7 @@ interface UseErpDashboardDataParams {
 interface UseErpDashboardDataResult {
   dashboardData: DashboardStats | null;
   dashboardApiData: BusinessOverview | undefined;
+  salesTrend: SalesTrendData | undefined;
   isApiLoading: boolean;
 
   selectedPeriod: string;
@@ -256,15 +258,21 @@ export function useErpDashboardData(
   >(initialOrders?.shipments || []);
   const [isLoadingOrders, setIsLoadingOrders] = React.useState(!initialOrders);
 
+  const timeRange = mapPeriodToTimeRange(selectedPeriod);
+
   const {
     data: dashboardApiData,
     isLoading: isApiLoading,
-    refetch,
-  } = useBusinessOverview(mapPeriodToTimeRange(selectedPeriod), {
+    refetch: refetchOverview,
+  } = useBusinessOverview(timeRange, {
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+
+  const { data: salesTrend, refetch: refetchSalesTrend } = useSalesTrend(
+    timeRange
+  );
 
   const loadDashboardData = React.useCallback(
     async (source?: BusinessOverview | null) => {
@@ -328,8 +336,11 @@ export function useErpDashboardData(
   const refreshData = React.useCallback(async () => {
     setIsRefreshing(true);
     try {
-      const result = await refetch();
-      await loadDashboardData(result.data ?? null);
+      const [overviewResult] = await Promise.all([
+        refetchOverview(),
+        refetchSalesTrend(),
+      ]);
+      await loadDashboardData(overviewResult.data ?? null);
       await loadOrdersData();
     } catch (error) {
       logger.error('dashboard:erp', '刷新仪表盘数据失败', error, {
@@ -338,7 +349,7 @@ export function useErpDashboardData(
     } finally {
       setIsRefreshing(false);
     }
-  }, [loadDashboardData, loadOrdersData, refetch]);
+  }, [loadDashboardData, loadOrdersData, refetchOverview, refetchSalesTrend]);
 
   React.useEffect(() => {
     if (!isApiLoading && !initialData && !dashboardData) {
@@ -349,6 +360,7 @@ export function useErpDashboardData(
   return {
     dashboardData,
     dashboardApiData,
+    salesTrend: salesTrend ?? initialData?.salesTrend,
     isApiLoading,
     selectedPeriod,
     setSelectedPeriod,
