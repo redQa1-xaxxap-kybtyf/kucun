@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  BarChart3,
   Briefcase,
   Calendar,
   CalendarDays,
@@ -184,30 +185,22 @@ export const navigationItems: NavigationItem[] = [
     icon: ChineseYuan,
     children: [
       {
-        id: 'finance-reports',
-        title: '财务报表',
+        id: 'finance-reports-monthly',
+        title: '月度报表',
         href: '/finance/reports/monthly',
+        icon: Calendar,
+      },
+      {
+        id: 'finance-reports-annual',
+        title: '年度报表',
+        href: '/finance/reports/annual',
+        icon: CalendarDays,
+      },
+      {
+        id: 'finance-reports-profit-loss',
+        title: '盈亏分析',
+        href: '/finance/reports/profit-loss',
         icon: BarChart3,
-        children: [
-          {
-            id: 'finance-reports-monthly',
-            title: '月度报表',
-            href: '/finance/reports/monthly',
-            icon: Calendar,
-          },
-          {
-            id: 'finance-reports-annual',
-            title: '年度报表',
-            href: '/finance/reports/annual',
-            icon: CalendarDays,
-          },
-          {
-            id: 'finance-reports-profit-loss',
-            title: '盈亏分析',
-            href: '/finance/reports/profit-loss',
-            icon: TrendingUp,
-          },
-        ],
       },
       {
         id: 'finance-receivables',
