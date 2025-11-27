@@ -20,7 +20,8 @@ export function SupplierPageHeader() {
       title="供应商管理"
       description="管理供应商信息，跟踪采购和合作情况"
       icon={<Building2 className="h-6 w-6 text-white" />}
-      iconBgColor="hsl(var(--color-orange))"
+      // 使用全局 ERP 色板中的橙色（warning）变量，避免使用未定义的 --color-orange
+      iconBgColor="hsl(var(--color-warning))"
       actions={
         <Button
           size="lg"

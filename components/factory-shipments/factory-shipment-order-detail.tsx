@@ -48,7 +48,6 @@ import {
   canConfirmShipment,
   formatAmount,
   formatDate,
-  formatOwnershipStatus,
   formatUnit,
   getFactoryShipmentStatusBadgeVariant,
 } from '@/lib/utils/factory-shipment-helpers';
@@ -499,16 +498,13 @@ export function FactoryShipmentOrderDetail({
                     <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
                       供应商
                     </TableHead>
-                    <TableHead className="w-[120px] py-2 text-xs font-semibold">
-                      履约状态
-                    </TableHead>
                     <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
                       规格
                     </TableHead>
                     <TableHead className="min-w-[120px] py-2 text-xs font-semibold">
                       批次
                     </TableHead>
-                    <TableHead className="w-[100px] py-2 text-right text-xs font-semibold">
+                    <TableHead className="w-[120px] px-4 py-2 text-left text-xs font-semibold">
                       数量
                     </TableHead>
                     <TableHead className="w-[80px] py-2 text-xs font-semibold">
@@ -532,91 +528,80 @@ export function FactoryShipmentOrderDetail({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {order.items?.map((item, index) => {
-                    const ownershipStatus = formatOwnershipStatus(item);
-                    return (
-                      <TableRow
-                        key={item.id ?? index}
-                        className="border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))/50]"
+                  {order.items?.map((item, index) => (
+                    <TableRow
+                      key={item.id ?? index}
+                      className="border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))/50]"
+                    >
+                      <TableCell className="py-2 text-center text-sm text-[hsl(var(--color-text-tertiary))]">
+                        {index + 1}
+                      </TableCell>
+                      <TableCell className="py-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        {item.displayName}
+                      </TableCell>
+                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        {item.supplier?.name || '-'}
+                      </TableCell>
+                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        {item.specification || '-'}
+                      </TableCell>
+                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        {item.batchNumber || '-'}
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-left text-sm font-medium whitespace-nowrap text-[hsl(var(--color-text-primary))]">
+                        {(() => {
+                          const qty = Math.floor(item.quantity || 0);
+                          const unit = item.unit;
+                          const ppu = item.piecesPerUnit || 0;
+                          if (unit === '件') {
+                            return ppu > 0
+                              ? `${qty}件（共${qty * ppu}片）`
+                              : `${qty}件`;
+                          }
+                          if (unit === '片') {
+                            if (ppu > 0) {
+                              const units = Math.floor(qty / ppu);
+                              const pieces = qty % ppu;
+                              if (units === 0) return `${pieces}片`;
+                              if (pieces === 0)
+                                return `${units}件（共${qty}片）`;
+                              return `${units}件${pieces}片（共${qty}片）`;
+                            }
+                            return `${qty}片`;
+                          }
+                          return `${qty}${formatUnit(unit)}`;
+                        })()}
+                      </TableCell>
+                      <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        {formatUnit(item.unit)}
+                      </TableCell>
+                      <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
+                        {item.piecesPerUnit ?? '-'}
+                      </TableCell>
+                      <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
+                        {formatAmount(item.unitCost || 0)}
+                      </TableCell>
+                      <TableCell className="py-2 text-right text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        {formatAmount(item.unitPrice)}
+                      </TableCell>
+                      <TableCell className="py-2 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                        {formatAmount(item.quantity * item.unitPrice)}
+                      </TableCell>
+                      <TableCell
+                        className={`py-2 text-right text-sm font-semibold ${
+                          (item.profitAmount || 0) >= 0
+                            ? 'text-emerald-600'
+                            : 'text-red-600'
+                        }`}
                       >
-                        <TableCell className="py-2 text-center text-sm text-[hsl(var(--color-text-tertiary))]">
-                          {index + 1}
-                        </TableCell>
-                        <TableCell className="py-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                          {item.displayName}
-                        </TableCell>
-                        <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                          {item.supplier?.name || '-'}
-                        </TableCell>
-                        <TableCell className="py-2">
-                          <Badge
-                            variant={ownershipStatus.variant}
-                            className="text-xs font-medium"
-                          >
-                            {ownershipStatus.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                          {item.specification || '-'}
-                        </TableCell>
-                        <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                          {item.batchNumber || '-'}
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                          {(() => {
-                            const qty = Math.floor(item.quantity || 0);
-                            const unit = item.unit;
-                            const ppu = item.piecesPerUnit || 0;
-                            if (unit === '件') {
-                              return ppu > 0
-                                ? `${qty}件（共${qty * ppu}片）`
-                                : `${qty}件`;
-                            }
-                            if (unit === '片') {
-                              if (ppu > 0) {
-                                const units = Math.floor(qty / ppu);
-                                const pieces = qty % ppu;
-                                if (units === 0) return `${pieces}片`;
-                                if (pieces === 0)
-                                  return `${units}件（共${qty}片）`;
-                                return `${units}件${pieces}片（共${qty}片）`;
-                              }
-                              return `${qty}片`;
-                            }
-                            return `${qty}${formatUnit(unit)}`;
-                          })()}
-                        </TableCell>
-                        <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                          {formatUnit(item.unit)}
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
-                          {item.piecesPerUnit ?? '-'}
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
-                          {formatAmount(item.unitCost || 0)}
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                          {formatAmount(item.unitPrice)}
-                        </TableCell>
-                        <TableCell className="py-2 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                          {formatAmount(item.quantity * item.unitPrice)}
-                        </TableCell>
-                        <TableCell
-                          className={`py-2 text-right text-sm font-semibold ${
-                            (item.profitAmount || 0) >= 0
-                              ? 'text-emerald-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          {formatAmount(
-                            item.profitAmount ||
-                              (item.unitPrice - (item.unitCost || 0)) *
-                                item.quantity
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                        {formatAmount(
+                          item.profitAmount ||
+                            (item.unitPrice - (item.unitCost || 0)) *
+                              item.quantity
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
                   {order.items && order.items.length > 0 && (
                     <TableRow className="border-t border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-blue-50 to-indigo-50">
                       <TableCell

@@ -172,7 +172,7 @@ const coerceNumber = (val: unknown) => {
   if (val === '' || val === undefined || val === null) return 0;
   if (typeof val === 'string') {
     // 处理输入中间状态（如 "12."）
-    if (val.endsWith('.')) return Number.parseFloat(val + '0');
+    if (val.endsWith('.')) return Number.parseFloat(`${val}0`);
     const parsed = Number.parseFloat(val);
     return Number.isNaN(parsed) ? 0 : parsed;
   }
@@ -255,6 +255,8 @@ const factoryShipmentFeeItemFormSchema = z.object({
       .max(999999.99, '费用金额不能超过999,999.99')
   ),
   paidBy: z.enum(['customer', 'company']), // 移除.default()
+  // 费用对应的结算供应商（如物流公司），可选
+  supplierId: z.string().uuid('费用供应商ID格式不正确').optional().nullable(),
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')

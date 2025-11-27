@@ -9,8 +9,8 @@ import { prisma } from '@/lib/db';
 import { env, paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import {
-  type CompanyFeeItemLike,
   ensureCompanyExpenses,
+  type CompanyFeeItemLike,
 } from '@/lib/services/expense-service';
 import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
 import {
@@ -272,8 +272,8 @@ async function createOrderInTransaction(
     feeItems?: CompanyFeeItemLike[];
     supplierId?: string | null;
   }
-  ) {
-    const {
+) {
+  const {
     orderNumber,
     containerNumber,
     customerId,
@@ -283,72 +283,74 @@ async function createOrderInTransaction(
     finalReceivableAmount,
     depositAmount,
     remarks,
-      items,
-      feeItems,
-      supplierId,
-    } = args;
+    items,
+    feeItems,
+    supplierId,
+  } = args;
 
-    const newOrder = await tx.factoryShipmentOrder.create({
-      data: {
-        orderNumber,
-        containerNumber,
-        customerId,
-        userId,
-        status: status ?? FACTORY_SHIPMENT_STATUS.DRAFT,
-        totalAmount: finalTotalAmount,
-        receivableAmount: finalReceivableAmount,
-        depositAmount: depositAmount || 0,
-        remarks,
-        items: {
-          create: items.map(item => ({
-            productId: item.isManualProduct ? null : item.productId,
-            supplierId: item.supplierId,
-            productCode: ensureProductCode(item.productCode),
-            batchNumber: item.batchNumber?.trim() || null,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            unitCost: item.unitCost ?? null,
-            totalPrice: item.quantity * item.unitPrice,
-            ownership: item.ownership ?? FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
-            ownershipRemarks: item.ownershipRemarks || null,
-            customerDeliveryStatus:
-              item.ownership === 'customer'
-                ? (item.customerDeliveryStatus ?? 'pending')
-                : null,
-            selfInboundStatus:
-              item.ownership === 'self'
-                ? (item.selfInboundStatus ?? 'pending')
-                : null,
-            deliveryConfirmedAt: null,
-            inboundReceivedAt: null,
-            isManualProduct: item.isManualProduct || false,
-            manualProductName: item.manualProductName,
-            manualSpecification: item.manualSpecification,
-            manualWeight: item.manualWeight,
-            manualUnit: item.manualUnit,
-            displayName: item.displayName || '',
-            specification: item.specification,
-            unit: item.unit,
-            piecesPerUnit: item.piecesPerUnit ?? null,
-            weight: item.weight,
-            remarks: item.remarks,
-          })),
-        },
-        // ✅ 同步保存费用明细到 factory_shipment_order_fee_items，便于编辑页面恢复
-        feeItems: feeItems && feeItems.length > 0
+  const newOrder = await tx.factoryShipmentOrder.create({
+    data: {
+      orderNumber,
+      containerNumber,
+      customerId,
+      userId,
+      status: status ?? FACTORY_SHIPMENT_STATUS.DRAFT,
+      totalAmount: finalTotalAmount,
+      receivableAmount: finalReceivableAmount,
+      depositAmount: depositAmount || 0,
+      remarks,
+      items: {
+        create: items.map(item => ({
+          productId: item.isManualProduct ? null : item.productId,
+          supplierId: item.supplierId,
+          productCode: ensureProductCode(item.productCode),
+          batchNumber: item.batchNumber?.trim() || null,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          unitCost: item.unitCost ?? null,
+          totalPrice: item.quantity * item.unitPrice,
+          ownership: item.ownership ?? FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
+          ownershipRemarks: item.ownershipRemarks || null,
+          customerDeliveryStatus:
+            item.ownership === 'customer'
+              ? (item.customerDeliveryStatus ?? 'pending')
+              : null,
+          selfInboundStatus:
+            item.ownership === 'self'
+              ? (item.selfInboundStatus ?? 'pending')
+              : null,
+          deliveryConfirmedAt: null,
+          inboundReceivedAt: null,
+          isManualProduct: item.isManualProduct || false,
+          manualProductName: item.manualProductName,
+          manualSpecification: item.manualSpecification,
+          manualWeight: item.manualWeight,
+          manualUnit: item.manualUnit,
+          displayName: item.displayName || '',
+          specification: item.specification,
+          unit: item.unit,
+          piecesPerUnit: item.piecesPerUnit ?? null,
+          weight: item.weight,
+          remarks: item.remarks,
+        })),
+      },
+      // ✅ 同步保存费用明细到 factory_shipment_order_fee_items，便于编辑页面恢复
+      feeItems:
+        feeItems && feeItems.length > 0
           ? {
               create: feeItems.map(fee => ({
                 feeType: fee.feeType,
                 feeName: fee.feeName,
                 feeAmount: fee.feeAmount,
                 paidBy: fee.paidBy ?? 'customer',
+                supplierId: fee.supplierId ?? null,
                 remarks: fee.remarks ?? null,
               })),
             }
           : undefined,
-      },
-      include: {
-        customer: {
+    },
+    include: {
+      customer: {
         select: { id: true, name: true, phone: true, address: true },
       },
       user: { select: { id: true, name: true, email: true } },

@@ -245,21 +245,6 @@ const factoryShipmentItemFields: PrintFieldDefinition[] = [
     format: value => (typeof value === 'number' ? `¥${value.toFixed(2)}` : '-'),
   },
   {
-    key: 'ownership',
-    label: '货物归属',
-    type: 'item',
-    width: '100px',
-    align: 'center',
-    defaultVisible: false, // 客户直发场景下默认不显示，因为都是客户货
-    format: value => {
-      const ownershipMap: Record<string, string> = {
-        customer: '客户货',
-        self: '自有货',
-      };
-      return ownershipMap[value as string] || (value as string);
-    },
-  },
-  {
     key: 'batchNumber',
     label: '批次号',
     type: 'item',

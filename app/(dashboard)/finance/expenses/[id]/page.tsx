@@ -81,7 +81,8 @@ export default function ExpenseDetailPage() {
             </div>
           }
           icon={<Receipt className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-orange))"
+          // 使用已定义的 ERP 橙色（warning）变量，避免未定义的 --color-orange 导致图标背景丢失
+          iconBgColor="hsl(var(--color-warning))"
         />
 
         {/* 详情内容 */}

@@ -37,6 +37,7 @@ export const factoryShipmentStatusSchema = z.enum([
 /**
  * 厂家发货订单费用项验证
  * 支持 paidBy 字段区分客户/公司承担费用
+ * 支持 supplierId 指定费用供应商（如物流公司）
  */
 export const factoryShipmentFeeItemSchema = z.object({
   id: z.string().optional(),
@@ -60,6 +61,8 @@ export const factoryShipmentFeeItemSchema = z.object({
     .max(999999.99, '费用金额不能超过999,999.99')
     .multipleOf(0.01, '费用金额最多保留2位小数'),
   paidBy: z.enum(['customer', 'company']).default('customer'),
+  // 费用对应的结算供应商（如物流公司），可选
+  supplierId: z.string().uuid('费用供应商ID格式不正确').optional().nullable(),
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')

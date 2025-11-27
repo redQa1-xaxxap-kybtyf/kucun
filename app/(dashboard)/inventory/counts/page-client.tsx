@@ -131,45 +131,48 @@ export function CountsPageClient({ initialParams }: CountsPageClientProps) {
   }, [initialParams.pageSize, updateURL]);
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <PageHeader
-        title="库存盘点"
-        description="管理库存盘点计划，跟踪盘点进度"
-        icon={<ClipboardCheck className="h-6 w-6 text-white" />}
-        iconBgColor="hsl(var(--color-info))"
-        actions={
-          hasManagePermission ? (
-            <Button
-              size="lg"
-              asChild
-              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-            >
-              <Link href="/inventory/counts/new">
-                <Plus className="mr-2 h-4 w-4" />
-                新建盘点计划
-              </Link>
-            </Button>
-          ) : undefined
-        }
-      />
+    // 与库存总览等页面保持一致的布局容器，统一滚动和边距
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <PageHeader
+          title="库存盘点"
+          description="管理库存盘点计划，跟踪盘点进度"
+          icon={<ClipboardCheck className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-info))"
+          actions={
+            hasManagePermission ? (
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/inventory/counts/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建盘点计划
+                </Link>
+              </Button>
+            ) : undefined
+          }
+        />
 
-      {/* 筛选条件 */}
-      <CountRecordsFilters
-        filters={filters}
-        onFiltersChange={handleFilterChange}
-        onReset={handleResetFilters}
-      />
+        {/* 筛选条件 */}
+        <CountRecordsFilters
+          filters={filters}
+          onFiltersChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
 
-      {/* 盘点计划列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>盘点计划列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CountList filters={filters} />
-        </CardContent>
-      </Card>
+        {/* 盘点计划列表 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>盘点计划列表</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CountList filters={filters} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

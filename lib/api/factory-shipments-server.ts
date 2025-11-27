@@ -37,6 +37,8 @@ const factoryShipmentItemSelect = {
   displayName: true,
   specification: true,
   unit: true,
+  // ✅ 包含每件片数字段, 供客户直发详情页展示“每件片数”和数量换算
+  piecesPerUnit: true,
   weight: true,
   remarks: true,
   unitCost: true,
@@ -96,6 +98,18 @@ const factoryShipmentOrderListSelect = {
   },
   items: {
     select: factoryShipmentItemSelect,
+  },
+  // ✅ 包含费用明细, 以便详情页和编辑页能显示/恢复费用项目
+  feeItems: {
+    select: {
+      id: true,
+      feeType: true,
+      feeName: true,
+      feeAmount: true,
+      paidBy: true,
+      supplierId: true,
+      remarks: true,
+    },
   },
 } satisfies Prisma.FactoryShipmentOrderSelect;
 

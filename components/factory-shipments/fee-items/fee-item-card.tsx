@@ -5,6 +5,7 @@
  * - 集成 React Hook Form 的 FormField
  * - 自动处理验证和错误提示
  * - 费用类型变更时自动更新承担方
+ * - 支持费用供应商选择（如物流公司）
  * - 完整的可访问性支持
  */
 
@@ -14,6 +15,7 @@ import { Trash2 } from 'lucide-react';
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
 
+import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
@@ -32,9 +34,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  FACTORY_SHIPMENT_FEE_TYPE_OPTIONS as FEE_TYPE_OPTIONS,
   FACTORY_SHIPMENT_FEE_PAID_BY_OPTIONS as FEE_PAID_BY_OPTIONS,
   FACTORY_SHIPMENT_FEE_TYPE_LABELS as FEE_TYPE_LABELS,
+  FACTORY_SHIPMENT_FEE_TYPE_OPTIONS as FEE_TYPE_OPTIONS,
   getDefaultFactoryShipmentFeePaidBy as getDefaultFeePaidBy,
 } from '@/lib/types/factory-shipment-fee';
 import { isFactoryShipmentFeeType } from '@/lib/types/unified-fee';
@@ -54,7 +56,8 @@ interface FeeItemCardProps {
  * - 费用类型选择器
  * - 费用名称输入框
  * - 费用金额输入框
- * - 承担方选择器 (⭐ 新增)
+ * - 承担方选择器
+ * - 费用供应商选择器（可选，如物流公司）
  * - 备注输入框
  * - 删除按钮
  */
@@ -90,7 +93,15 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
               <FormLabel htmlFor={field.name}>费用类型</FormLabel>
               <Select
                 onValueChange={value => {
+                  // 更新费用类型
                   field.onChange(value);
+                  // 同步更新费用名称为对应类型的默认名称
+                  if (isFactoryShipmentFeeType(value)) {
+                    setValue(
+                      `feeItems.${index}.feeName`,
+                      FEE_TYPE_LABELS[value]
+                    );
+                  }
                 }}
                 value={field.value}
                 disabled={isDisabled}
@@ -205,8 +216,33 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
         />
       </div>
 
+      {/* 费用供应商（可选，如物流公司） */}
+      <div className="col-span-2">
+        <FormField
+          control={control}
+          name={`feeItems.${index}.supplierId`}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel htmlFor={field.name}>费用供应商</FormLabel>
+              <FormControl>
+                <SupplierSelector
+                  value={field.value ?? undefined}
+                  onValueChange={field.onChange}
+                  disabled={isDisabled}
+                  placeholder="选择供应商（可选）"
+                />
+              </FormControl>
+              <FormDescription className="text-xs">
+                如物流公司等费用结算对象
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
       {/* 备注 */}
-      <div className="col-span-3">
+      <div className="col-span-1">
         <FormField
           control={control}
           name={`feeItems.${index}.remarks`}
@@ -230,7 +266,7 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
       </div>
 
       {/* 删除按钮 */}
-      <div className="col-span-1 flex items-end">
+      <div className="col-span-1 flex items-start pt-8">
         <Button
           type="button"
           variant="ghost"

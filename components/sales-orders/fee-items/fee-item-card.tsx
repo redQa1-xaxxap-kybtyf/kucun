@@ -88,7 +88,13 @@ export function FeeItemCard({ index }: FeeItemCardProps) {
               <FormLabel htmlFor={field.name}>费用类型</FormLabel>
               <Select
                 onValueChange={value => {
+                  // 更新费用类型
                   field.onChange(value);
+                  // 同步更新费用名称为对应类型的默认名称
+                  setValue(
+                    `feeItems.${index}.feeName`,
+                    FEE_TYPE_LABELS[(value as FeeType) || 'other']
+                  );
                 }}
                 value={field.value}
                 disabled={isDisabled}

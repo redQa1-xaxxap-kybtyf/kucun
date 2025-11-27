@@ -26,22 +26,25 @@ export const metadata = {
 
 export default function TemporaryProductsPage() {
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="外调产品库"
-        description="查看调货销售中使用的外调产品，系统自动记录，无需手动管理"
-        icon={<FileText className="h-5 w-5" />}
-      />
+    // 与库存总览、库存调整等页面保持一致的布局容器
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        <PageHeader
+          title="外调产品库"
+          description="查看调货销售中使用的外调产品，系统自动记录，无需手动管理"
+          icon={<FileText className="h-5 w-5" />}
+        />
 
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-8">
-            <div className="text-muted-foreground text-sm">加载中...</div>
-          </div>
-        }
-      >
-        <TemporaryProductsClient />
-      </Suspense>
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-8">
+              <div className="text-muted-foreground text-sm">加载中...</div>
+            </div>
+          }
+        >
+          <TemporaryProductsClient />
+        </Suspense>
+      </div>
     </div>
   );
 }

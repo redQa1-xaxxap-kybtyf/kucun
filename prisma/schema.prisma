@@ -86,6 +86,7 @@ model Supplier {
 
   salesOrders               SalesOrder[]
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
+  factoryShipmentFeeItems   FactoryShipmentOrderFeeItem[]
   temporaryProducts         TemporaryProduct[]
   productPrices             SupplierProductPrice[]
   purchaseOrders            PurchaseOrder[]
@@ -1288,16 +1289,19 @@ model FactoryShipmentOrderFeeItem {
   feeName                String   @map("fee_name") @db.VarChar(200)
   feeAmount              Float    @map("fee_amount")
   paidBy                 String   @default("customer") @map("paid_by") @db.VarChar(20)
+  supplierId             String?  @map("supplier_id") @db.Char(36)
   remarks                String?  @db.Text
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   // 关系定义
   factoryShipmentOrder FactoryShipmentOrder @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  supplier             Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([factoryShipmentOrderId], map: "idx_factory_shipment_fee_items_order")
   @@index([feeType], map: "idx_factory_shipment_fee_items_type")
   @@index([paidBy], map: "idx_factory_shipment_fee_items_paid_by")
+  @@index([supplierId], map: "idx_factory_shipment_fee_items_supplier")
   @@map("factory_shipment_order_fee_items")
 }
 
