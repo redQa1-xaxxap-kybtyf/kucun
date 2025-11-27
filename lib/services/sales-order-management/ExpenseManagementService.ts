@@ -63,7 +63,15 @@ export class ExpenseManagementService {
       }
 
       let calculatedAmount = 0;
-      const calculationDetails: any = {
+      const calculationDetails: {
+        method: string;
+        baseAmount?: number;
+        rate?: number;
+        quantity?: number;
+        weight?: number;
+        minAmount?: number;
+        maxAmount?: number;
+      } = {
         method: expenseType.calculationMethod,
       };
 
@@ -137,8 +145,9 @@ export class ExpenseManagementService {
         requiresApproval,
         calculationDetails,
       };
-    } catch (error: any) {
-      throw new Error(`费用计算失败: ${error.message}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '未知错误';
+      throw new Error(`费用计算失败: ${message}`);
     }
   }
 
@@ -162,8 +171,9 @@ export class ExpenseManagementService {
       });
 
       return approval as ExpenseApproval;
-    } catch (error: any) {
-      throw new Error(`提交审核申请失败: ${error.message}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '未知错误';
+      throw new Error(`提交审核申请失败: ${message}`);
     }
   }
 
@@ -265,10 +275,11 @@ export class ExpenseManagementService {
 
   /**
    * 重新计算订单总金额
+   * 同时根据最新费用分摊结果，重新计算订单成本和利润
    */
   private async recalculateOrderTotal(
     salesOrderId: string,
-    tx: any
+    tx: SalesOrderManagementPrisma
   ): Promise<void> {
     const order = await tx.salesOrder.findUnique({
       where: { id: salesOrderId },
@@ -280,15 +291,27 @@ export class ExpenseManagementService {
 
     if (!order) return;
 
-    const itemsAmount = order.items.reduce(
-      (sum: number, item: any) => sum + item.subtotal,
-      0
-    );
-    const additionalFees = order.feeItems.reduce(
-      (sum: number, fee: any) => sum + fee.feeAmount,
-      0
-    );
-    const totalAmount = itemsAmount + additionalFees + order.roundingAdjustment;
+    const { itemsAmount, additionalFees, totalAmount } =
+      computeOrderAmounts(order);
+
+    const { normalizedCompanyExpense, allocations } =
+      computeCompanyExpenseAllocations(order);
+
+    const { itemUpdates, normalizedCostAmount, normalizedProfitAmount } =
+      computeItemCostAndProfit(order, allocations, itemsAmount);
+
+    // 批量更新明细行
+    for (const u of itemUpdates) {
+      await tx.salesOrderItem.update({
+        where: { id: u.id },
+        data: {
+          allocatedExpense: u.allocatedExpense,
+          costSubtotal: u.costSubtotal,
+          profitAmount: u.profitAmount ?? undefined,
+          profitMargin: u.profitMargin ?? undefined,
+        },
+      });
+    }
 
     await tx.salesOrder.update({
       where: { id: salesOrderId },
@@ -296,7 +319,174 @@ export class ExpenseManagementService {
         itemsAmount,
         additionalFees,
         totalAmount,
+        costAmount: normalizedCostAmount,
+        profitAmount: normalizedProfitAmount,
+        expenseAmount: normalizedCompanyExpense,
       },
     });
   }
+}
+
+// ===== 内部辅助函数，拆分费用重算逻辑，便于测试和减少单函数行数 =====
+
+function round2(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+function computeOrderAmounts(order: {
+  items: Array<{ subtotal: number | null }>;
+  feeItems: Array<{ feeAmount: number | null }>;
+  roundingAdjustment: number | null;
+}): {
+  itemsAmount: number;
+  additionalFees: number;
+  totalAmount: number;
+} {
+  const itemsAmount = order.items.reduce(
+    (sum, item) => sum + Number(item.subtotal ?? 0),
+    0
+  );
+  const additionalFees = order.feeItems.reduce(
+    (sum, fee) => sum + Number(fee.feeAmount ?? 0),
+    0
+  );
+  const roundingAdjustment = Number(order.roundingAdjustment ?? 0);
+
+  const totalAmount = round2(itemsAmount + additionalFees + roundingAdjustment);
+
+  return {
+    itemsAmount: round2(itemsAmount),
+    additionalFees: round2(additionalFees),
+    roundingAdjustment,
+    totalAmount,
+  };
+}
+
+function computeCompanyExpenseAllocations(order: {
+  items: Array<{ id: string; subtotal: number | null }>;
+  feeItems: Array<{ feeAmount: number | null; paidBy: string | null }>;
+}): {
+  normalizedCompanyExpense: number;
+  allocations: Map<string, number>;
+} {
+  const companyExpenseAmount = order.feeItems.reduce((sum, fee) => {
+    const paidBy = fee.paidBy ?? 'customer';
+    if (paidBy !== 'company') {
+      return sum;
+    }
+    const amount = Number(fee.feeAmount ?? 0);
+    return Number.isFinite(amount) ? sum + amount : sum;
+  }, 0);
+
+  const normalizedCompanyExpense = round2(companyExpenseAmount);
+
+  const totalSalesValue = order.items.reduce(
+    (sum, item) => sum + Math.max(0, Number(item.subtotal ?? 0)),
+    0
+  );
+
+  const allocations = new Map<string, number>();
+
+  if (order.items.length > 0 && normalizedCompanyExpense > 0) {
+    if (totalSalesValue > 0) {
+      let allocated = 0;
+      order.items.forEach((item, index) => {
+        const subtotal = Math.max(0, Number(item.subtotal ?? 0));
+        const ratio = subtotal / totalSalesValue;
+        const value =
+          index === order.items.length - 1
+            ? round2(normalizedCompanyExpense - allocated)
+            : round2(normalizedCompanyExpense * ratio);
+        allocations.set(item.id, value);
+        allocated += value;
+      });
+    } else {
+      const evenShare = round2(normalizedCompanyExpense / order.items.length);
+      let allocated = 0;
+      order.items.forEach((item, index) => {
+        const value =
+          index === order.items.length - 1
+            ? round2(normalizedCompanyExpense - allocated)
+            : evenShare;
+        allocations.set(item.id, value);
+        allocated += value;
+      });
+    }
+  }
+
+  return { normalizedCompanyExpense, allocations, totalSalesValue };
+}
+
+type ItemUpdate = {
+  id: string;
+  allocatedExpense: number;
+  costSubtotal: number;
+  profitAmount: number | null;
+  profitMargin: number | null;
+};
+
+function computeItemCostAndProfit(
+  order: {
+    items: Array<{
+      id: string;
+      subtotal: number | null;
+      allocatedExpense: number | null;
+      costSubtotal: number | null;
+      unitCost: number | null;
+      quantity: number | null;
+    }>;
+  },
+  allocations: Map<string, number>,
+  itemsAmount: number
+): {
+  itemUpdates: ItemUpdate[];
+  normalizedCostAmount: number;
+  normalizedProfitAmount: number;
+} {
+  const itemUpdates: ItemUpdate[] = [];
+  let totalCostAmount = 0;
+
+  for (const item of order.items) {
+    const subtotal = Number(item.subtotal ?? 0);
+    const previousAllocated = Number(item.allocatedExpense ?? 0);
+    const previousCostSubtotal = Number(item.costSubtotal ?? 0);
+
+    let baseCost = 0;
+    if (previousCostSubtotal || previousAllocated) {
+      baseCost = previousCostSubtotal - previousAllocated;
+    } else if (
+      item.unitCost !== null &&
+      item.unitCost !== undefined &&
+      item.quantity !== null &&
+      item.quantity !== undefined
+    ) {
+      baseCost = Number(item.unitCost) * Number(item.quantity);
+    }
+    baseCost = round2(baseCost);
+
+    const allocatedExpense = allocations.get(item.id) ?? 0;
+    const costSubtotal = round2(baseCost + allocatedExpense);
+
+    let profitAmount: number | null = null;
+    let profitMargin: number | null = null;
+    if (subtotal) {
+      profitAmount = round2(subtotal - costSubtotal);
+      profitMargin = round2((profitAmount / subtotal) * 100);
+    }
+
+    totalCostAmount += costSubtotal;
+
+    itemUpdates.push({
+      id: item.id,
+      allocatedExpense,
+      costSubtotal,
+      profitAmount,
+      profitMargin,
+    });
+  }
+
+  const normalizedCostAmount = round2(totalCostAmount);
+  const normalizedProfitAmount = round2(itemsAmount - normalizedCostAmount);
+
+  return { itemUpdates, normalizedCostAmount, normalizedProfitAmount };
 }

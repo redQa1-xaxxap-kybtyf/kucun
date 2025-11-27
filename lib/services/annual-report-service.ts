@@ -6,26 +6,26 @@
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
 import type {
-    AnnualFactoryShipmentProfit,
-    AnnualReport,
-    AnnualSummary,
-    ExpenseDistribution,
-    MonthlyTrendData,
-    QuarterlyData
+  AnnualFactoryShipmentProfit,
+  AnnualReport,
+  AnnualSummary,
+  ExpenseDistribution,
+  MonthlyTrendData,
+  QuarterlyData,
 } from '@/lib/types/report';
 import { getExpenseTypeName } from '@/lib/utils/expense-type-helpers';
 
 import {
-    buildExpenseWhere,
-    buildSalesOrderWhere,
-    calculateComparison,
-    calculateProfitMargin,
-    createAnnualPeriod,
-    formatQuarterLabel,
-    generateExpenseAlerts,
-    generateProfitAlerts,
-    getMonthDateRange,
-    getYearDateRange,
+  buildExpenseWhere,
+  buildSalesOrderWhere,
+  calculateComparison,
+  calculateProfitMargin,
+  createAnnualPeriod,
+  formatQuarterLabel,
+  generateExpenseAlerts,
+  generateProfitAlerts,
+  getMonthDateRange,
+  getYearDateRange,
 } from './report-helpers';
 
 // ==================== 数据查询函数 ====================
@@ -235,7 +235,7 @@ async function getExpenseDistribution(
 
     return {
       type: item.expenseType,
-      typeName: getExpenseTypeName(item.expenseType as never),
+      typeName: getExpenseTypeName(item.expenseType),
       amount,
       percentage,
       count: item._count.id,
