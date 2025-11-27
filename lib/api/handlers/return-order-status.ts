@@ -8,6 +8,9 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 
+const roundCurrency = (value: number): number =>
+  Math.round(Number(value || 0) * 100) / 100;
+
 /**
  * 状态流转规则
  */
@@ -54,6 +57,74 @@ export interface ReturnOrderStatusUpdateResult {
     remarks?: string | null;
   };
   refundCreated: boolean;
+}
+
+/**
+ * 退货完成时按退款金额比例,回算并调整原销售订单利润
+ *
+ * 设计原则:
+ * - 使用退款金额占销售金额(itemsAmount)的比例,按比例回退成本
+ * - 利润扣减 = 退款金额 - 按比例回退的成本
+ * - 不直接修改订单金额和成本字段,仅调整利润字段,避免破坏原始订单金额
+ */
+async function adjustSalesOrderProfitOnReturn(
+  tx: Prisma.TransactionClient,
+  params: { salesOrderId: string; refundAmount: number }
+): Promise<void> {
+  const refundAmount = roundCurrency(
+    Math.max(0, Number(params.refundAmount || 0))
+  );
+
+  if (refundAmount <= 0) {
+    return;
+  }
+
+  const salesOrder = await tx.salesOrder.findUnique({
+    where: { id: params.salesOrderId },
+    select: {
+      itemsAmount: true,
+      costAmount: true,
+      profitAmount: true,
+    },
+  });
+
+  if (!salesOrder) {
+    return;
+  }
+
+  const itemsAmount = roundCurrency(Number(salesOrder.itemsAmount || 0));
+  const costAmount = roundCurrency(Number(salesOrder.costAmount || 0));
+  const currentProfit = roundCurrency(Number(salesOrder.profitAmount || 0));
+
+  // 如果没有有效的销售金额,退货只能视为直接减少利润 = 退款金额
+  if (itemsAmount <= 0) {
+    const updatedProfit = roundCurrency(currentProfit - refundAmount);
+
+    await tx.salesOrder.update({
+      where: { id: params.salesOrderId },
+      data: { profitAmount: updatedProfit },
+    });
+
+    return;
+  }
+
+  // 退款金额不能超过销售金额,避免异常数据导致利润计算反向
+  const effectiveRefund = Math.min(refundAmount, itemsAmount);
+  const refundRatio = effectiveRefund / itemsAmount; // 0~1 之间
+
+  const returnCost = roundCurrency(costAmount * refundRatio);
+  const profitDelta = roundCurrency(effectiveRefund - returnCost);
+
+  if (profitDelta === 0) {
+    return;
+  }
+
+  const updatedProfit = roundCurrency(currentProfit - profitDelta);
+
+  await tx.salesOrder.update({
+    where: { id: params.salesOrderId },
+    data: { profitAmount: updatedProfit },
+  });
 }
 
 /**
@@ -250,6 +321,14 @@ export async function updateReturnOrderStatus(
             await tx.refundRecord.create({ data: refundData });
 
             refundCreated = true;
+          }
+
+          // ✅ 在退货完成时,按退款金额比例回退原销售订单利润
+          if (order.salesOrderId) {
+            await adjustSalesOrderProfitOnReturn(tx, {
+              salesOrderId: order.salesOrderId,
+              refundAmount: computedRefundAmount,
+            });
           }
         }
       }

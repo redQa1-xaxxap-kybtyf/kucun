@@ -108,6 +108,8 @@ export function canTransition(current: string, next: string): boolean {
 export async function applyCompletionEffects(
   tx: Tx,
   returnOrder: {
+    // 关联的销售订单,用于追溯出库成本
+    salesOrderId?: string | null;
     returnNumber: string;
     items: Array<{
       productId: string;
@@ -118,6 +120,52 @@ export async function applyCompletionEffects(
   operatorId: string
 ): Promise<MinimalInboundTransactionResult[]> {
   const inboundResults: MinimalInboundTransactionResult[] = [];
+
+  // 预先按商品聚合原销售出库记录的成本,避免在循环中反复查询
+  const outboundCostByProduct = new Map<
+    string,
+    { totalCost: number; totalQty: number }
+  >();
+
+  if (returnOrder.salesOrderId) {
+    const outboundRecords = await tx.outboundRecord.findMany({
+      where: {
+        salesOrderId: returnOrder.salesOrderId,
+        reason: 'sales_outbound',
+      },
+      select: {
+        productId: true,
+        quantity: true,
+        unitCost: true,
+        totalCost: true,
+      },
+    });
+
+    for (const record of outboundRecords) {
+      const qty = Number(record.quantity ?? 0);
+      if (qty <= 0) continue;
+
+      const recordTotalCost =
+        typeof record.totalCost === 'number'
+          ? Number(record.totalCost)
+          : typeof record.unitCost === 'number'
+            ? Number(record.unitCost) * qty
+            : 0;
+
+      if (!Number.isFinite(recordTotalCost) || recordTotalCost === 0) {
+        continue;
+      }
+
+      const key = record.productId;
+      const agg = outboundCostByProduct.get(key) ?? {
+        totalCost: 0,
+        totalQty: 0,
+      };
+      agg.totalCost += recordTotalCost;
+      agg.totalQty += qty;
+      outboundCostByProduct.set(key, agg);
+    }
+  }
 
   for (const item of returnOrder.items) {
     const damaged = item.damagedQuantity ?? 0;
@@ -130,12 +178,23 @@ export async function applyCompletionEffects(
       continue;
     }
 
-    const inventory = await tx.inventory.findFirst({
-      where: { productId: item.productId },
-    });
+    // 优先使用原销售出库记录的加权平均成本
+    const outboundAgg = outboundCostByProduct.get(item.productId);
+    let unitCost: number | null = null;
 
-    const unitCost =
-      typeof inventory?.unitCost === 'number' ? inventory.unitCost : 0;
+    if (outboundAgg && outboundAgg.totalQty > 0) {
+      unitCost = outboundAgg.totalCost / outboundAgg.totalQty;
+    }
+
+    // 如果无法追溯出库记录,退回到当前库存成本(保持兼容性)
+    if (unitCost === null || !Number.isFinite(unitCost)) {
+      const inventory = await tx.inventory.findFirst({
+        where: { productId: item.productId },
+      });
+
+      unitCost =
+        typeof inventory?.unitCost === 'number' ? inventory.unitCost : 0;
+    }
 
     const inboundRecord = await executeMinimalInboundTransaction(
       {

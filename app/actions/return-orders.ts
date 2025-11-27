@@ -253,6 +253,7 @@ export async function updateReturnOrderStatus(
             inboundResults = await applyCompletionEffects(
               tx,
               {
+                salesOrderId: returnOrder.salesOrderId ?? undefined,
                 returnNumber: returnOrder.returnNumber,
                 items: returnOrder.items,
               },
