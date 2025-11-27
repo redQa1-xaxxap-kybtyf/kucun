@@ -157,6 +157,64 @@ const postInboundRecordHandler = withAuth(
         validatedData.batchNumber
       );
 
+      // 步骤3.1: 期初入库专用校验 - 防止重复/不合理的期初数据
+      if (validatedData.reason === 'opening_balance') {
+        const [
+          existingOpeningBalance,
+          existingInventory,
+          existingBusinessInbound,
+        ] = await Promise.all([
+          // 1) 同一产品/变体/批次是否已经有期初入库记录
+          prisma.inboundRecord.findFirst({
+            where: {
+              productId,
+              variantId: validatedData.variantId ?? null,
+              batchNumber,
+              reason: 'opening_balance',
+            },
+          }),
+          // 2) 是否已经存在库存记录（可能来自历史业务入库）
+          prisma.inventory.findFirst({
+            where: {
+              productId,
+              variantId: validatedData.variantId ?? null,
+              batchNumber,
+            },
+          }),
+          // 3) 是否已经存在非期初的入库业务
+          prisma.inboundRecord.findFirst({
+            where: {
+              productId,
+              variantId: validatedData.variantId ?? null,
+              batchNumber,
+              reason: {
+                not: 'opening_balance',
+              },
+            },
+          }),
+        ]);
+
+        if (existingOpeningBalance) {
+          return NextResponse.json(
+            {
+              error:
+                '该产品/批次已经录入过期初库存，如需调整数量，请使用“库存调整”功能，而不是重复期初入库。',
+            },
+            { status: 400 }
+          );
+        }
+
+        if (existingBusinessInbound || existingInventory) {
+          return NextResponse.json(
+            {
+              error:
+                '该产品/批次已存在业务入库或库存记录，不能再作为期初库存录入，请改用“库存调整”修正。',
+            },
+            { status: 400 }
+          );
+        }
+      }
+
       // 步骤4: 最小化核心事务 (幂等性保护)
       const inboundRecord = await withIdempotency(
         idempotencyKey,
