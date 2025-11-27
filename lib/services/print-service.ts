@@ -91,8 +91,9 @@ export class PrintService {
     }
 
     // 检查全局对象
-    if (typeof window !== 'undefined' && (window as never)['html2canvas']) {
-      const cachedHtml2canvas = (window as never)['html2canvas'];
+    if (typeof window !== 'undefined' && (window as any).html2canvas) {
+      const cachedHtml2canvas = (window as any)
+        .html2canvas as Html2CanvasFunction;
       this.html2canvasInstance = cachedHtml2canvas;
       return this.html2canvasInstance;
     }
@@ -107,7 +108,9 @@ export class PrintService {
       script.async = true;
 
       script.onload = () => {
-        const loadedHtml2canvas = (window as never)['html2canvas'];
+        const loadedHtml2canvas = (window as any).html2canvas as
+          | Html2CanvasFunction
+          | undefined;
         if (loadedHtml2canvas) {
           this.html2canvasInstance = loadedHtml2canvas;
           resolve(this.html2canvasInstance);

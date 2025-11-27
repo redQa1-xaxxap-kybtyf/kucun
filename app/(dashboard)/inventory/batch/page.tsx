@@ -68,7 +68,8 @@ function normalizeParams(
     NonNullable<BatchSpecificationQueryParams['sortBy']>
   >[] = ['createdAt', 'batchNumber', 'piecesPerUnit', 'weight'];
   const sortBy =
-    sortByRaw && allowedSortFields.includes(sortByRaw as never)
+    sortByRaw &&
+    allowedSortFields.includes(sortByRaw as (typeof allowedSortFields)[number])
       ? (sortByRaw as (typeof allowedSortFields)[number])
       : DEFAULT_SORT_BY;
 

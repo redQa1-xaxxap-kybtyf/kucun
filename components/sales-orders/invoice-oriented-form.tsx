@@ -211,7 +211,7 @@ export function SalesOrderForm({
       displayQuantity: 1,
       unitCost: undefined,
       manualWeight: undefined,
-    } as unknown as never);
+    });
   };
 
   // 删除订单项

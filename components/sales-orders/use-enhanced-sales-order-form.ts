@@ -268,7 +268,7 @@ export function useOrderItems(
       displayQuantity: 1,
       unitCost: undefined,
       manualWeight: undefined,
-    } as unknown as never);
+    });
   }, [append]);
 
   const removeOrderItem = React.useCallback(

@@ -335,7 +335,10 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
   return (
     <FormField
       control={form.control}
-      name={`items.${index}.productId` as never}
+      // 这里依赖于外层表单的结构中存在 items[index].productId 字段
+      // 使用 string 索引避免强制的 never 断言
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      name={`items.${index}.productId` as any}
       rules={{
         validate: (value: unknown) => {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any

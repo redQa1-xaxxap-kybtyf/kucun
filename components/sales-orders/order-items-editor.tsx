@@ -99,7 +99,7 @@ export function OrderItemsEditor<
       productId: '',
       quantity: 1,
       unitPrice: 0,
-    } as unknown as never);
+    } as SalesOrderItemCreateFormData);
   };
 
   // 删除明细

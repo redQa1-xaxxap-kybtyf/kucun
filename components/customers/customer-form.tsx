@@ -64,12 +64,13 @@ export function CustomerForm({
     : customerCreateDefaults.extendedInfo;
 
   // 明确表单类型,避免联合类型导致的类型推断问题
-  type FormData = typeof isEdit extends true
-    ? CustomerUpdateFormData
-    : CustomerCreateFormData;
+  type FormData = CustomerCreateFormData | CustomerUpdateFormData;
 
   const form = useForm<FormData>({
-    resolver: standardSchemaResolver(schema as any) as any,
+    // 这里 schema 在运行时会是 create 或 update 的 zod schema，
+    // 标准解析器本身已经对输入做了运行时检查，因此使用泛型进行约束。
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: standardSchemaResolver(schema as any) as never,
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -238,13 +239,13 @@ export function CustomerForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <CustomerBasicInfoSection
-            form={form as never}
+            form={form}
             isLoading={isLoading}
             excludeCustomerId={initialData?.id}
           />
 
           <CustomerExtendedInfoSection
-            form={form as never}
+            form={form}
             isLoading={isLoading}
             newTag={newTag}
             onNewTagChange={setNewTag}
