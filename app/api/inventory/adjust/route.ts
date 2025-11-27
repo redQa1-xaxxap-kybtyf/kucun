@@ -7,9 +7,16 @@ import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishInventoryChange } from '@/lib/events';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import {
+  consumeFIFOQueue,
+  getWeightedAverageCostFromFIFO,
+} from '@/lib/services/fifo-cost-service';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { inventoryAdjustSchema } from '@/lib/validations/inventory-operations';
+
+const roundCurrency = (value: number): number =>
+  Math.round(Number(value || 0) * 100) / 100;
 
 interface AdjustmentData {
   productId: string;
@@ -115,7 +122,77 @@ async function executeAdjustmentTransaction(
         });
       }
 
-      // 3. 创建调整记录（审计追溯）
+      // 3. 计算调整成本（严格按 FIFO 成本优先）
+      let unitCost: number | null = null;
+      let totalCost: number | null = null;
+
+      if (adjustQuantity > 0) {
+        // 增加库存：优先使用 FIFO 队列的加权平均成本，其次使用库存单价
+        const fifoAvg = await getWeightedAverageCostFromFIFO(
+          productId,
+          variantId || null
+        );
+
+        if (fifoAvg > 0) {
+          unitCost = fifoAvg;
+        } else if (
+          existingInventory?.unitCost !== null &&
+          existingInventory?.unitCost !== undefined
+        ) {
+          unitCost = Number(existingInventory.unitCost);
+        }
+
+        if (unitCost !== null) {
+          totalCost = roundCurrency(adjustQuantity * unitCost);
+        }
+      } else if (adjustQuantity < 0) {
+        // 减少库存：按 FIFO 队列逐批消耗计算成本
+        const absQty = Math.abs(adjustQuantity);
+
+        try {
+          const fifoCost = await consumeFIFOQueue(
+            productId,
+            variantId || null,
+            absQty,
+            tx
+          );
+
+          if (absQty > 0) {
+            unitCost = roundCurrency(fifoCost.totalCost / absQty);
+          }
+          // 调整数量为负数，成本也为负
+          totalCost = -roundCurrency(fifoCost.totalCost);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes('FIFO队列为空')
+          ) {
+            // FIFO 队列为空时退回到加权平均/库存单价
+            const fifoAvg = await getWeightedAverageCostFromFIFO(
+              productId,
+              variantId || null
+            );
+
+            if (fifoAvg > 0) {
+              unitCost = fifoAvg;
+            } else if (
+              existingInventory?.unitCost !== null &&
+              existingInventory?.unitCost !== undefined
+            ) {
+              unitCost = Number(existingInventory.unitCost);
+            }
+
+            if (unitCost !== null) {
+              totalCost = roundCurrency(adjustQuantity * unitCost);
+            }
+          } else {
+            // 其它 FIFO 错误（如库存不足）直接抛出，避免账实不符
+            throw error;
+          }
+        }
+      }
+
+      // 4. 创建调整记录（审计追溯）
       const adjustmentRecord = await tx.inventoryAdjustment.create({
         data: {
           adjustmentNumber,
@@ -125,6 +202,8 @@ async function executeAdjustmentTransaction(
           beforeQuantity,
           adjustQuantity,
           afterQuantity,
+          unitCost,
+          totalCost,
           reason,
           notes,
           status: 'approved', // 直接审批通过，后续可改为需要审批

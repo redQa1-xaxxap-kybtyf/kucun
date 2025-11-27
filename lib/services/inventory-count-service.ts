@@ -5,6 +5,10 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import {
+  consumeFIFOQueue,
+  getWeightedAverageCostFromFIFO,
+} from '@/lib/services/fifo-cost-service';
+import {
   COUNT_STATUS_LABELS,
   COUNT_TYPE_LABELS,
   type CountStatus,
@@ -18,6 +22,9 @@ import {
   type UpdateInventoryCountRequest,
 } from '@/lib/types/inventory-count';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
+
+const roundCurrency = (value: number): number =>
+  Math.round(Number(value || 0) * 100) / 100;
 
 /**
  * 生成盘点编号
@@ -804,6 +811,8 @@ export async function submitCountData(
         },
         select: {
           id: true,
+          productId: true,
+          variantId: true,
           systemQuantity: true,
           unitCost: true,
         },
@@ -820,6 +829,7 @@ export async function submitCountData(
       }
 
       const countItemMap = new Map(countItems.map(item => [item.id, item]));
+      const fifoCostCache = new Map<string, number>();
 
       for (const item of data.items) {
         const existingItem = countItemMap.get(item.id);
@@ -832,14 +842,37 @@ export async function submitCountData(
         }
 
         const difference = item.actualQuantity - existingItem.systemQuantity;
-        const unitCost = existingItem.unitCost ?? null;
-        const totalCost = unitCost !== null ? difference * unitCost : null;
+
+        const cacheKey = `${existingItem.productId}-${
+          existingItem.variantId || ''
+        }`;
+
+        let unitCost =
+          existingItem.unitCost !== null && existingItem.unitCost !== undefined
+            ? Number(existingItem.unitCost)
+            : null;
+
+        if (unitCost === null) {
+          if (!fifoCostCache.has(cacheKey)) {
+            const fifoAvgCost = await getWeightedAverageCostFromFIFO(
+              existingItem.productId,
+              existingItem.variantId
+            );
+            fifoCostCache.set(cacheKey, fifoAvgCost);
+          }
+          const fifoCost = fifoCostCache.get(cacheKey) ?? 0;
+          unitCost = fifoCost > 0 ? fifoCost : null;
+        }
+
+        const totalCost =
+          unitCost !== null ? roundCurrency(difference * unitCost) : null;
 
         await tx.inventoryCountItem.update({
           where: { id: item.id },
           data: {
             actualQuantity: item.actualQuantity,
             difference,
+            unitCost,
             totalCost,
             status: 'counted',
             countedBy: userId,
@@ -934,11 +967,13 @@ export async function completeCount(
     );
 
     for (const item of itemsWithDifference) {
+      const difference = item.difference;
+
       // 2.1.1 生成调整单号
       const adjustmentNumber = await generateAdjustmentNumber();
 
       // 2.1.2 确定调整原因（盘盈或盘亏）
-      const reason = item.difference > 0 ? 'surplus' : 'deficit';
+      const reason = difference > 0 ? 'surplus' : 'deficit';
       const beforeQuantity = item.systemQuantity;
       const afterQuantity = item.actualQuantity!;
 
@@ -954,6 +989,102 @@ export async function completeCount(
         },
       });
 
+      // 2.1.4 计算调整成本（严格按 FIFO 成本优先）
+      let unitCost: number | null =
+        item.unitCost !== null && item.unitCost !== undefined
+          ? Number(item.unitCost)
+          : null;
+      let totalCost: number | null = null;
+
+      if (difference > 0) {
+        // 盘盈：视为“补录库存”，优先使用已有单价，其次使用 FIFO 队列的加权平均成本
+        if (unitCost === null) {
+          const fifoAvg = await getWeightedAverageCostFromFIFO(
+            item.productId,
+            item.variantId
+          );
+          unitCost = fifoAvg > 0 ? fifoAvg : null;
+
+          if (unitCost === null) {
+            const inventory = await tx.inventory.findFirst({
+              where: {
+                productId: item.productId,
+                ...(item.variantId && { variantId: item.variantId }),
+                ...(item.batchNumber && { batchNumber: item.batchNumber }),
+              },
+              select: {
+                unitCost: true,
+              },
+            });
+            if (
+              inventory?.unitCost !== null &&
+              inventory?.unitCost !== undefined
+            ) {
+              unitCost = Number(inventory.unitCost);
+            }
+          }
+        }
+
+        totalCost =
+          unitCost !== null ? roundCurrency(difference * unitCost) : null;
+      } else if (difference < 0) {
+        // 盘亏：按 FIFO 队列逐批次消耗，得到真实差异成本
+        const absDiff = Math.abs(difference);
+
+        try {
+          const fifoCost = await consumeFIFOQueue(
+            item.productId,
+            item.variantId,
+            absDiff,
+            tx
+          );
+
+          if (absDiff > 0) {
+            unitCost = roundCurrency(fifoCost.totalCost / absDiff);
+          }
+          // 差异为负数，totalCost 也应为负数
+          totalCost = -roundCurrency(fifoCost.totalCost);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes('FIFO队列为空')
+          ) {
+            // FIFO 队列为空时退回到平均成本/库存单价，但仍完成盘点
+            const fifoAvg = await getWeightedAverageCostFromFIFO(
+              item.productId,
+              item.variantId
+            );
+            unitCost =
+              fifoAvg > 0 ? fifoAvg : unitCost !== null ? unitCost : null;
+
+            if (unitCost === null) {
+              const inventory = await tx.inventory.findFirst({
+                where: {
+                  productId: item.productId,
+                  ...(item.variantId && { variantId: item.variantId }),
+                  ...(item.batchNumber && { batchNumber: item.batchNumber }),
+                },
+                select: {
+                  unitCost: true,
+                },
+              });
+              if (
+                inventory?.unitCost !== null &&
+                inventory?.unitCost !== undefined
+              ) {
+                unitCost = Number(inventory.unitCost);
+              }
+            }
+
+            totalCost =
+              unitCost !== null ? roundCurrency(difference * unitCost) : null;
+          } else {
+            // 其它 FIFO 错误（如库存数量不足）直接抛出，避免账实不符
+            throw error;
+          }
+        }
+      }
+
       // 2.1.4 创建调整记录（包含成本信息）
       await tx.inventoryAdjustment.create({
         data: {
@@ -962,12 +1093,10 @@ export async function completeCount(
           variantId: item.variantId,
           batchNumber: item.batchNumber,
           beforeQuantity,
-          adjustQuantity: item.difference,
+          adjustQuantity: difference,
           afterQuantity,
-          unitCost: item.unitCost,
-          totalCost: item.unitCost
-            ? item.difference * Number(item.unitCost)
-            : null,
+          unitCost,
+          totalCost,
           reason,
           notes: `盘点自动调整（盘点单：${countId}）`,
           status: 'approved',

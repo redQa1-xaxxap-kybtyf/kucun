@@ -6,6 +6,7 @@
 
 import { prisma, withTransaction } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { consumeFIFOQueue } from '@/lib/services/fifo-cost-service';
 import {
   generateUniqueOrderNumber,
   type OrderNumberConfig,
@@ -377,13 +378,13 @@ async function executeOrderStatusUpdateWithInventory(
       }
     }
 
-    // 第二步：更新库存并创建出库记录 - 使用乐观锁
+    // 第二步：更新库存并创建出库记录 - 使用乐观锁 + FIFO成本
     for (const { item, productId, inventory } of inventoryChecks) {
-      // 使用乐观锁更新库存 - 确保并发安全
+      // 使用乐观锁更新库存数量和预留量，确保并发安全
       const updatedCount = await tx.inventory.updateMany({
         where: {
           id: inventory.id,
-          quantity: { gte: item.quantity }, // 确保库存足够
+          quantity: { gte: item.quantity }, // 再次确认库存足够
         },
         data: {
           quantity: { decrement: item.quantity },
@@ -398,6 +399,53 @@ async function executeOrderStatusUpdateWithInventory(
         throw new Error(
           `产品 ${item.product?.name || '未知产品'} 库存不足或已被其他订单占用,请重试`
         );
+      }
+
+      const itemQuantity = item.quantity ?? 0;
+
+      // 使用 FIFO 队列计算成本；仅在 FIFO 队列为空时回退到库存单位成本
+      let baseUnitCost: number | undefined;
+      let baseTotalCost: number | undefined;
+
+      try {
+        const fifoCost = await consumeFIFOQueue(
+          productId,
+          inventory.variantId,
+          itemQuantity,
+          tx
+        );
+        baseTotalCost = roundCurrency(fifoCost.totalCost);
+        baseUnitCost =
+          itemQuantity > 0
+            ? roundCurrency(fifoCost.totalCost / itemQuantity)
+            : fifoCost.averageUnitCost;
+      } catch (error) {
+        if (error instanceof Error && !error.message.includes('FIFO队列为空')) {
+          // 非队列为空的错误（例如库存不足）直接抛出
+          throw error;
+        }
+
+        logger.warn(
+          'sales-order-status',
+          'FIFO队列为空, 回退到库存单位成本计算出库成本',
+          {
+            orderId: existingOrder.id,
+            orderNumber: existingOrder.orderNumber,
+            salesOrderItemId: item.id,
+            productId,
+          }
+        );
+
+        baseUnitCost =
+          item.unitCost !== undefined && item.unitCost !== null
+            ? Number(item.unitCost)
+            : inventory.unitCost !== undefined && inventory.unitCost !== null
+              ? Number(inventory.unitCost)
+              : undefined;
+        baseTotalCost =
+          baseUnitCost !== undefined
+            ? roundCurrency(baseUnitCost * itemQuantity)
+            : undefined;
       }
 
       const mappedBatchNumber = item.productionDate
@@ -415,17 +463,6 @@ async function executeOrderStatusUpdateWithInventory(
         { tx }
       );
 
-      const itemQuantity = item.quantity ?? 0;
-      const baseUnitCost =
-        item.unitCost !== undefined && item.unitCost !== null
-          ? Number(item.unitCost)
-          : inventory.unitCost !== undefined && inventory.unitCost !== null
-            ? Number(inventory.unitCost)
-            : undefined;
-      const baseTotalCost =
-        baseUnitCost !== undefined
-          ? roundCurrency(baseUnitCost * itemQuantity)
-          : undefined;
       const allocatedExpense = expenseAllocations.get(item.id) ?? 0;
       const totalCostWithExpense =
         baseTotalCost !== undefined || allocatedExpense > 0
@@ -436,7 +473,7 @@ async function executeOrderStatusUpdateWithInventory(
           ? roundCurrency(totalCostWithExpense / itemQuantity)
           : baseUnitCost;
 
-      // 创建出库记录（使用事务内生成的单号）
+      // 创建出库记录（使用事务内生成的单号 + FIFO成本）
       await tx.outboundRecord.create({
         data: {
           recordNumber: outboundRecordNumber,
@@ -455,17 +492,13 @@ async function executeOrderStatusUpdateWithInventory(
         },
       });
 
-      // ✅ P0修复：将分配的费用和更新的成本写回销售订单明细
-      // 修复前：只在出库记录中计算了成本，未更新销售订单明细，导致利润分析不准
-      // 修复后：将分摊后的费用和成本更新回订单明细，确保数据一致性
+      // 将分配的费用和成本写回销售订单明细（利润仍按销售金额 - 成本计算）
       await tx.salesOrderItem.update({
         where: { id: item.id },
         data: {
           allocatedExpense,
           costSubtotal: totalCostWithExpense,
-          // ✅ 新增：在发货时将单位成本更新为包含分摊费用后的单位成本
           unitCost: unitCostWithExpense ?? undefined,
-          // ✅ 新增：在发货时更新利润金额和利润率，保证订单项级别的利润分析准确
           profitAmount:
             item.subtotal !== undefined && totalCostWithExpense !== undefined
               ? roundCurrency(

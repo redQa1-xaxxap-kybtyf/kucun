@@ -31,7 +31,7 @@ model User {
   paymentOutRecords        PaymentOutRecord[]
   systemLogs               SystemLog[]
   expenseRecords           ExpenseRecord[]
-  approvedExpenses         ExpenseRecord[]       @relation("ExpenseApprovedBy")
+  approvedExpenses         ExpenseRecord[]        @relation("ExpenseApprovedBy")
   createdTemporaryProducts TemporaryProduct[]
   createdInventoryCounts   InventoryCount[]       @relation("InventoryCountCreator")
   operatedInventoryCounts  InventoryCount[]       @relation("InventoryCountOperator")
@@ -190,6 +190,7 @@ model Product {
   inventoryOperations       InventoryOperation[]
   inventoryCountItems       InventoryCountItem[]
   batchSpecifications       BatchSpecification[]
+  InventoryCostQueue        InventoryCostQueue[]
 
   @@index([code])
   @@index([name])
@@ -221,6 +222,7 @@ model ProductVariant {
   inventoryCountItems  InventoryCountItem[]
   inventory            Inventory[]
   outboundRecords      OutboundRecord[]
+  InventoryCostQueue   InventoryCostQueue[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -452,13 +454,14 @@ model InboundRecord {
   supplierId           String?  @map("supplier_id") @db.Char(36)
 
   // 关系定义
-  product            Product             @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  user               User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  variant            ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  batchSpecification BatchSpecification? @relation(fields: [batchSpecificationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  purchaseOrder      PurchaseOrder?      @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  purchaseOrderItem  PurchaseOrderItem?  @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
-  supplier           Supplier?           @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  product            Product              @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant            ProductVariant?      @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  batchSpecification BatchSpecification?  @relation(fields: [batchSpecificationId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  purchaseOrder      PurchaseOrder?       @relation(fields: [purchaseOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  purchaseOrderItem  PurchaseOrderItem?   @relation(fields: [purchaseOrderItemId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  supplier           Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  costQueueEntries   InventoryCostQueue[] // FIFO成本队列条目
 
   @@index([productId], map: "idx_inbound_records_product")
   @@index([variantId], map: "idx_inbound_records_variant")
@@ -470,6 +473,38 @@ model InboundRecord {
   @@index([purchaseOrderId], map: "idx_inbound_records_purchase_order")
   @@index([purchaseOrderItemId], map: "idx_inbound_records_purchase_order_item")
   @@map("inbound_records")
+}
+
+// FIFO成本队列表 - 用于先进先出成本核算
+// 记录每批入库的成本信息,按入库时间排序出库
+model InventoryCostQueue {
+  id              String  @id @default(uuid()) @db.Char(36)
+  productId       String  @map("product_id") @db.Char(36)
+  variantId       String? @map("variant_id") @db.Char(36)
+  batchNumber     String? @map("batch_number") @db.VarChar(100)
+  inboundRecordId String  @map("inbound_record_id") @db.Char(36)
+
+  remainingQty Float    @map("remaining_qty") // 该批次剩余可用数量
+  unitCost     Float    @map("unit_cost") // 该批次单位成本
+  inboundDate  DateTime @map("inbound_date") // 入库时间(FIFO排序关键)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系定义
+  product       Product         @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  inboundRecord InboundRecord   @relation(fields: [inboundRecordId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  // FIFO核心索引: 按产品+变体+入库时间排序
+  @@index([productId, variantId, inboundDate], map: "idx_cost_queue_fifo")
+  // 可用库存查询索引
+  @@index([productId, variantId, remainingQty], map: "idx_cost_queue_available")
+  // 批次查询索引
+  @@index([batchNumber], map: "idx_cost_queue_batch")
+  // 入库记录关联索引
+  @@index([inboundRecordId], map: "idx_cost_queue_inbound")
+  @@map("inventory_cost_queue")
 }
 
 model OutboundRecord {
@@ -1080,32 +1115,32 @@ model ShippingQuery {
 }
 
 model ExpenseRecord {
-  id              String   @id @default(uuid()) @db.Char(36)
-  expenseNumber   String   @unique @map("expense_number") @db.VarChar(100)
-  expenseType     String   @map("expense_type") @db.VarChar(32)
-  expenseName     String   @map("expense_name") @db.VarChar(100)
-  expenseAmount   Float    @map("expense_amount")
-  expenseDate     DateTime @map("expense_date")
-  relatedType     String?  @map("related_type") @db.VarChar(32)
-  relatedId       String?  @map("related_id") @db.Char(36)
-  relatedNumber   String?  @map("related_number") @db.VarChar(100)
-  remarks         String?  @db.Text
-  attachments     String?  @db.Text
-  status          String   @default("draft") @db.VarChar(32)
-  approvedById    String?  @map("approved_by_id") @db.Char(36)
-  approvedAt      DateTime? @map("approved_at")
-  cancelReason    String?  @map("cancel_reason") @db.Text
-  userId          String   @map("user_id") @db.Char(36)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id             String    @id @default(uuid()) @db.Char(36)
+  expenseNumber  String    @unique @map("expense_number") @db.VarChar(100)
+  expenseType    String    @map("expense_type") @db.VarChar(32)
+  expenseName    String    @map("expense_name") @db.VarChar(100)
+  expenseAmount  Float     @map("expense_amount")
+  expenseDate    DateTime  @map("expense_date")
+  relatedType    String?   @map("related_type") @db.VarChar(32)
+  relatedId      String?   @map("related_id") @db.Char(36)
+  relatedNumber  String?   @map("related_number") @db.VarChar(100)
+  remarks        String?   @db.Text
+  attachments    String?   @db.Text
+  status         String    @default("draft") @db.VarChar(32)
+  approvedById   String?   @map("approved_by_id") @db.Char(36)
+  approvedAt     DateTime? @map("approved_at")
+  cancelReason   String?   @map("cancel_reason") @db.Text
+  userId         String    @map("user_id") @db.Char(36)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
   // 新增：支付状态与应付款关联、幂等键
-  paymentStatus   String   @default("unpaid") @map("payment_status") @db.VarChar(16)
-  payableId       String?  @map("payable_id") @db.Char(36)
-  idempotencyKey  String?  @unique @map("idempotency_key") @db.VarChar(191)
+  paymentStatus  String    @default("unpaid") @map("payment_status") @db.VarChar(16)
+  payableId      String?   @map("payable_id") @db.Char(36)
+  idempotencyKey String?   @unique @map("idempotency_key") @db.VarChar(191)
 
   // 关系定义
-  user       User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  approvedBy User? @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  user       User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  approvedBy User?          @relation("ExpenseApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull, onUpdate: Cascade)
   payable    PayableRecord? @relation(fields: [payableId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   // 可选：直接冗余存储供应商ID，便于筛选与统计（来源为销售订单/厂家直发）
@@ -1332,4 +1367,3 @@ model LoginLog {
   @@index([username, type, createdAt], map: "idx_login_logs_username_type_created")
   @@map("login_logs")
 }
-

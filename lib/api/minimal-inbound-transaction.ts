@@ -16,11 +16,9 @@ import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
+import { addToFIFOQueue } from '@/lib/services/fifo-cost-service';
 import { INBOUND_REASON_LABELS } from '@/lib/types/inbound';
-import {
-  calculateTotalCost,
-  calculateWeightedAverageCost,
-} from '@/lib/utils/cost-calculation';
+import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks } from '@/lib/validations/inbound';
 
@@ -151,8 +149,23 @@ export async function executeMinimalInboundTransaction(
       },
     });
 
-    // 🎯 核心操作 2: 原子更新库存（包含成本计算）
-    // 使用 findFirst + create/update 模式,因为 upsert 的 where 条件无法正确匹配 NULL 值
+    // 🎯 核心操作 2: 添加到FIFO成本队列
+    // 记录本批次入库的成本信息,用于后续FIFO出库成本计算
+    await addToFIFOQueue(
+      {
+        productId: data.productId,
+        variantId: data.variantId || null,
+        batchNumber: data.batchNumber || null,
+        inboundRecordId: inboundRecord.id,
+        quantity: data.quantity,
+        unitCost: data.unitCost,
+        inboundDate: new Date(),
+      },
+      tx
+    );
+
+    // 🎯 核心操作 3: 原子更新库存数量
+    // unitCost仅作为最新批次成本的缓存,实际成本计算使用FIFO队列
     const existingInventory = await tx.inventory.findFirst({
       where: {
         productId: data.productId,
@@ -161,30 +174,18 @@ export async function executeMinimalInboundTransaction(
       },
     });
 
-    let newUnitCost: number;
-
     if (existingInventory) {
-      // 计算加权平均成本
-      newUnitCost = calculateWeightedAverageCost(
-        existingInventory.quantity,
-        existingInventory.unitCost || 0, // 如果原成本为null，视为0
-        data.quantity,
-        data.unitCost
-      );
-
-      // 更新现有库存（包含成本）
+      // 更新现有库存
       await tx.inventory.update({
         where: { id: existingInventory.id },
         data: {
           quantity: { increment: data.quantity }, // 原子递增
-          unitCost: newUnitCost, // 更新加权平均成本
+          unitCost: data.unitCost, // 更新为最新批次成本(缓存用)
           updatedAt: new Date(),
         },
       });
     } else {
-      // 新建库存记录，直接使用入库成本
-      newUnitCost = data.unitCost;
-
+      // 新建库存记录
       await tx.inventory.create({
         data: {
           productId: data.productId,
@@ -192,7 +193,7 @@ export async function executeMinimalInboundTransaction(
           batchNumber: data.batchNumber || null,
           quantity: data.quantity,
           reservedQuantity: 0,
-          unitCost: newUnitCost, // 设置初始成本
+          unitCost: data.unitCost, // 设置初始成本
         },
       });
     }

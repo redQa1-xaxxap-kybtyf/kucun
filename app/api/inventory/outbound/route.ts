@@ -6,7 +6,9 @@ import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { publishInventoryChange } from '@/lib/events';
+import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { consumeFIFOQueue } from '@/lib/services/fifo-cost-service';
 import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
@@ -395,10 +397,6 @@ async function executeOutboundTransaction(
     // 记录出库前的数量（用于事件发布）
     const oldQuantity = availableInventory.quantity;
 
-    // 获取当前库存成本
-    const currentUnitCost = availableInventory.unitCost || 0;
-    const totalCost = calculateTotalCost(quantity, currentUnitCost);
-
     // 检查可用库存
     const availableQuantity =
       availableInventory.quantity - availableInventory.reservedQuantity;
@@ -429,6 +427,42 @@ async function executeOutboundTransaction(
       throw new Error('库存不足或已被其他操作占用,请重试');
     }
 
+    // 2.1 使用 FIFO 队列计算成本；仅在 FIFO 队列为空时回退到库存单位成本
+    const outboundQty = quantity;
+    let unitCost: number | undefined;
+    let totalCost: number | undefined;
+
+    try {
+      const fifoCost = await consumeFIFOQueue(
+        productId,
+        availableInventory.variantId,
+        outboundQty,
+        tx
+      );
+
+      // FIFO 服务已在内部做四舍五入
+      unitCost = fifoCost.averageUnitCost;
+      totalCost = fifoCost.totalCost;
+    } catch (error) {
+      if (error instanceof Error && !error.message.includes('FIFO队列为空')) {
+        // 非队列为空的错误（例如 FIFO 队列库存不足）直接抛出
+        throw error;
+      }
+
+      logger.warn(
+        'inventory-outbound',
+        'FIFO队列为空, 回退到库存单位成本计算出库成本',
+        {
+          productId,
+          batchNumber,
+        }
+      );
+
+      const fallbackUnitCost = availableInventory.unitCost || 0;
+      unitCost = fallbackUnitCost;
+      totalCost = calculateTotalCost(quantity, fallbackUnitCost);
+    }
+
     // 3. 获取更新后的库存记录
     const updatedInventory = await tx.inventory.findUnique({
       where: { id: availableInventory.id },
@@ -448,8 +482,8 @@ async function executeOutboundTransaction(
         productId,
         inventoryId: availableInventory.id,
         quantity,
-        unitCost: currentUnitCost, // 记录出库单位成本
-        totalCost, // 记录出库总成本
+        unitCost, // FIFO 或库存单位成本
+        totalCost, // FIFO 或库存总成本
         reason: reason || 'manual_outbound',
         batchNumber: availableInventory.batchNumber,
         variantId: availableInventory.variantId,
