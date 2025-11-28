@@ -209,11 +209,30 @@ export async function consumeFIFOQueue(
       const batchCost = consumeQty * batch.unitCost;
       const newRemainingQty = batch.remainingQty - consumeQty;
 
-      // 更新队列剩余数量
-      await tx.inventoryCostQueue.update({
-        where: { id: batch.id },
-        data: { remainingQty: newRemainingQty },
+      // 使用乐观并发控制更新队列剩余数量
+      // 通过 remainingQty 条件防止两个事务同时消耗同一批次
+      const updateResult = await tx.inventoryCostQueue.updateMany({
+        where: {
+          id: batch.id,
+          remainingQty: batch.remainingQty,
+        },
+        data: {
+          remainingQty: newRemainingQty,
+        },
       });
+
+      // 如果没有任何行被更新，说明在本事务期间有并发修改，触发重试或报错
+      if (updateResult.count === 0) {
+        logger.warn(
+          'fifo-cost-service',
+          'FIFO队列并发冲突，批次已被其他事务修改',
+          {
+            batchId: batch.id,
+            expectedRemainingQty: batch.remainingQty,
+          }
+        );
+        throw new Error('FIFO队列并发冲突，请重试出库操作');
+      }
 
       totalCost += batchCost;
       batches.push({

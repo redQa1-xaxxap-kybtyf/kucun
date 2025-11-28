@@ -43,6 +43,7 @@ import type {
   ShippingQuery,
   ShippingSitesResponse,
 } from '@/lib/types/shipping';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 export default function ShippingQueryPage() {
   const router = useRouter();
@@ -94,11 +95,14 @@ export default function ShippingQueryPage() {
   // 执行查询
   const queryMutation = useMutation({
     mutationFn: async (data: { siteId: string; keyword: string }) => {
-      const response = await fetch('/api/shipping/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/shipping/query',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

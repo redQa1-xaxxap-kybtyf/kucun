@@ -53,6 +53,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 // 创建付款记录表单Schema
 const createPaymentOutSchema = z.object({
@@ -428,13 +429,14 @@ function useCreatePaymentOut() {
 
   return useMutation({
     mutationFn: async (data: CreatePaymentOutFormData) => {
-      const response = await fetch('/api/finance/payments-out', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/finance/payments-out',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

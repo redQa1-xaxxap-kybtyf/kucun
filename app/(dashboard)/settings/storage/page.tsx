@@ -29,6 +29,7 @@ import type {
   QiniuStorageTestResponse,
   SettingsApiResponse,
 } from '@/lib/types/settings';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 export default function StorageSettingsPage() {
   const router = useRouter();
@@ -64,11 +65,14 @@ export default function StorageSettingsPage() {
   // 保存配置
   const saveConfigMutation = useMutation({
     mutationFn: async (data: QiniuStorageConfig) => {
-      const response = await fetch('/api/settings/storage', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/settings/storage',
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '保存配置失败');
@@ -99,16 +103,19 @@ export default function StorageSettingsPage() {
   // 测试连接
   const testConnectionMutation = useMutation({
     mutationFn: async (data: QiniuStorageConfig) => {
-      const response = await fetch('/api/settings/storage/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          accessKey: data.accessKey,
-          secretKey: data.secretKey,
-          bucket: data.bucket,
-          region: data.region,
-        }),
-      });
+      const response = await fetch(
+        '/api/settings/storage/test',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessKey: data.accessKey,
+            secretKey: data.secretKey,
+            bucket: data.bucket,
+            region: data.region,
+          }),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '连接测试失败');

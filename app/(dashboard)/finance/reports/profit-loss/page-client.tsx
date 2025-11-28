@@ -284,11 +284,16 @@ export function ProfitLossClient() {
         {/* 收入明细 */}
         <div>
           <h2 className="mb-4 text-xl font-semibold">收入明细</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <DetailCard
               title="销售收入"
               value={analysis.revenue.salesRevenue}
               icon={<ChineseYuan className="h-4 w-4" />}
+            />
+            <DetailCard
+              title="直发收入"
+              value={analysis.revenue.factoryShipmentRevenue}
+              icon={<Package className="h-4 w-4" />}
             />
             <DetailCard
               title="其他收入"
@@ -378,7 +383,7 @@ export function ProfitLossClient() {
         {/* 利润计算 */}
         <div>
           <h2 className="mb-4 text-xl font-semibold">利润计算</h2>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <DetailCard
               title="毛利润"
               value={analysis.profit.grossProfit}
@@ -396,6 +401,12 @@ export function ProfitLossClient() {
               value={analysis.profit.netProfit}
               icon={<ChineseYuan className="h-4 w-4" />}
               subtitle={`净利率: ${analysis.profit.netProfitMargin.toFixed(2)}%`}
+            />
+            <DetailCard
+              title="直发净利润"
+              value={analysis.factoryShipmentProfit.customerProfit}
+              icon={<ChineseYuan className="h-4 w-4" />}
+              subtitle={`占总净利润: ${analysis.factoryShipmentProfit.percentageOfTotal.toFixed(2)}%`}
             />
           </div>
         </div>

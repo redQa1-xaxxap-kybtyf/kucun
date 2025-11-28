@@ -60,21 +60,10 @@ export function detectDatabaseType(): DatabaseType {
  *   3. 写事务会阻塞所有其他事务（读和写）
  * - 这种机制确保了完全的事务隔离，防止脏读、不可重复读和幻读
  *
- * MySQL/PostgreSQL行为说明（2025-10-21性能优化）：
+ * MySQL/PostgreSQL行为说明：
  * - 支持多种隔离级别（Read Uncommitted, Read Committed, Repeatable Read, Serializable）
- * - 采用READ COMMITTED作为默认隔离级别（性能优化）
- * - READ COMMITTED是MySQL默认隔离级别，平衡性能和一致性
- * - 使用锁或MVCC机制实现隔离
- *
- * 性能优化依据（READ COMMITTED vs SERIALIZABLE）：
- * - Microsoft官方建议: "Many applications can be coded to use READ COMMITTED.
- *   Few transactions require SERIALIZABLE."
- * - Percona性能测试数据:
- *   * TPS提升: +400% (800 -> 5000 transactions/sec)
- *   * 延迟降低: -84% (125ms -> 20ms)
- *   * 锁等待: -94% (80ms -> 5ms)
- * - 业务分析: 入库/出库/调整操作不需要SERIALIZABLE的严格间隙锁保证
- * - MySQL默认: READ COMMITTED已经足够保证写入一致性
+ * - 为避免丢失更新 / 幻读风险，库存、往来账等关键事务统一使用 SERIALIZABLE
+ * - 通过更强隔离级别，换取更高的数据一致性和审计可靠性
  *
  * 参考文档:
  * - https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-transaction-locking-and-row-versioning-guide
@@ -90,9 +79,9 @@ export function detectDatabaseType(): DatabaseType {
  * getTransactionOptions(10000)
  * // 返回: { timeout: 10000 }
  *
- * // MySQL环境 (2025-10-21优化后)
+ * // MySQL/PostgreSQL环境
  * getTransactionOptions(15000)
- * // 返回: { isolationLevel: 'ReadCommitted', timeout: 15000 }
+ * // 返回: { isolationLevel: 'Serializable', timeout: 15000 }
  * ```
  */
 export function getTransactionOptions(
@@ -106,24 +95,15 @@ export function getTransactionOptions(
     return { timeout };
   }
 
-  // MySQL和PostgreSQL: 使用ReadCommitted隔离级别 (性能优化)
+  // MySQL和PostgreSQL: 使用 SERIALIZABLE 隔离级别（数据一致性优先）
   //
-  // 2025-10-21性能优化: 根据Microsoft和MySQL官方最佳实践
-  // - Microsoft建议: "Many applications can be coded to use READ COMMITTED.
-  //   Few transactions require SERIALIZABLE."
-  // - MySQL默认隔离级别就是READ COMMITTED
-  // - Percona性能测试: READ COMMITTED vs SERIALIZABLE
-  //   * TPS提升: +400% (800 -> 5000 transactions/sec)
-  //   * 延迟降低: -84% (125ms -> 20ms)
-  //   * 锁等待: -94% (80ms -> 5ms)
-  //
-  // 业务分析: 入库/出库/调整操作不需要SERIALIZABLE的严格保证
-  // - READ COMMITTED足以保证写入的一致性
-  // - 避免了间隙锁(Gap Lock)带来的严重性能损失
-  // - 大幅提升并发吞吐量,减少超时风险从30%降至<1%
+  // 2025-11 调整：
+  // - 原先为 READ COMMITTED（性能优先），在高并发下存在不可重复读 / 幻读 / 丢失更新风险
+  // - 为库存、往来账、财务等关键写事务提供更强的隔离保证，统一提升为 SERIALIZABLE
+  // - 如需针对部分批量统计/报表降级隔离级别，可在未来按调用点单独定制事务选项
   if (dbType === 'mysql' || dbType === 'postgresql') {
     return {
-      isolationLevel: 'ReadCommitted' as const,
+      isolationLevel: 'Serializable' as const,
       timeout,
     };
   }
@@ -164,4 +144,32 @@ export function getLongTransactionOptions(): TransactionOptions {
  */
 export function getShortTransactionOptions(): TransactionOptions {
   return getTransactionOptions(5000);
+}
+
+/**
+ * 快捷方法：获取报表/统计类事务选项
+ *
+ * 设计目标：
+ * - 用于只读或轻量级统计类查询（报表、仪表盘等）
+ * - 在 MySQL / PostgreSQL 上显式使用 READ COMMITTED，以降低锁竞争
+ * - 不用于库存、订单、往来账等关键写事务
+ *
+ * 注意：
+ * - 调用方应确保只在“读取为主”的报表场景使用
+ * - 不建议在任何会执行写操作的事务中使用
+ */
+export function getReportingTransactionOptions(
+  timeout: number = 10000
+): TransactionOptions {
+  const dbType = detectDatabaseType();
+
+  if (dbType === 'mysql' || dbType === 'postgresql') {
+    return {
+      isolationLevel: 'ReadCommitted',
+      timeout,
+    };
+  }
+
+  // SQLite / 其他：沿用默认（SQLite 本身接近串行化）
+  return { timeout };
 }

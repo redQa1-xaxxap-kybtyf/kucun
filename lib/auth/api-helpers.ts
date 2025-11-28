@@ -8,6 +8,7 @@
  * 3. 使用 withAuth() 包装 API 处理函数，自动处理认证和错误
  */
 
+import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
@@ -169,6 +170,46 @@ export function withAuth(
     }
   ) => {
     try {
+      // 0. CSRF 防护
+      const method = request.method.toUpperCase();
+      const isStateChanging = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
+        method
+      );
+
+      if (isStateChanging) {
+        // 0.1 同源检查：Origin 必须与当前站点一致（如果存在 Origin）
+        const origin = request.headers.get('origin');
+        const requestOrigin = request.nextUrl.origin;
+
+        if (origin && origin !== requestOrigin) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: '无效请求来源（可能存在 CSRF 风险）',
+            },
+            { status: 403 }
+          );
+        }
+
+        // 0.2 双提交 Cookie 校验：X-CSRF-Token 需与 csrf_token Cookie 一致
+        const csrfHeader =
+          request.headers.get('x-csrf-token') ||
+          request.headers.get('X-CSRF-Token');
+
+        const cookieStore = cookies();
+        const csrfCookie = cookieStore.get('csrf_token')?.value;
+
+        if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'CSRF 校验失败，请刷新页面后重试',
+            },
+            { status: 403 }
+          );
+        }
+      }
+
       // 1. 认证检查
       const user = requireAuth(request);
 

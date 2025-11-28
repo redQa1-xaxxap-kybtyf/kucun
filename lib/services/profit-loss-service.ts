@@ -44,26 +44,54 @@ async function getRevenueDetail(
 ): Promise<RevenueDetail> {
   const where = buildSalesOrderWhere(startDate, endDate);
 
-  const salesStats = await prisma.salesOrder.aggregate({
-    where,
-    _sum: {
-      totalAmount: true,
-      itemsAmount: true,
-    },
-    _count: {
-      id: true,
-    },
-  });
+  // 销售收入拆分：
+  // - salesRevenue: 普通销售订单收入
+  // - factoryShipmentRevenue: 厂家直发应收金额
+  const [salesStats, factoryShipmentStats] = await Promise.all([
+    prisma.salesOrder.aggregate({
+      where,
+      _sum: {
+        totalAmount: true,
+        itemsAmount: true,
+      },
+      _count: {
+        id: true,
+      },
+    }),
+    prisma.factoryShipmentOrder.aggregate({
+      where: {
+        shipmentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          in: ['arrived', 'completed'],
+        },
+      },
+      _sum: {
+        receivableAmount: true,
+      },
+      _count: {
+        id: true,
+      },
+    }),
+  ]);
 
   const salesRevenue = salesStats._sum.totalAmount || 0;
-  const orderCount = salesStats._count.id || 0;
+  const factoryShipmentRevenue =
+    (factoryShipmentStats._sum?.receivableAmount as number | null) || 0;
 
-  // 暂时没有其他收入来源
+  const orderCount =
+    (salesStats._count.id || 0) +
+    ((factoryShipmentStats._count?.id as number | null) || 0);
+
+  // 暂时没有其他收入来源（利息、杂项等）
   const otherRevenue = 0;
-  const totalRevenue = salesRevenue + otherRevenue;
+  const totalRevenue = salesRevenue + factoryShipmentRevenue + otherRevenue;
 
   return {
     salesRevenue,
+    factoryShipmentRevenue,
     otherRevenue,
     totalRevenue,
     orderCount,
@@ -72,6 +100,10 @@ async function getRevenueDetail(
 
 /**
  * 获取成本明细
+ *
+ * 会计口径（权责发生制）说明：
+ * - 当期损益中的「成本」只包含已经实现的销售成本（COGS），来源于 salesOrder.costAmount
+ * - 库存相关的入库/出库金额视为「资产变动」，不直接计入当期成本，但作为 inventoryCost 维度展示
  */
 async function getCostDetail(
   startDate: Date,
@@ -80,7 +112,7 @@ async function getCostDetail(
 ): Promise<CostDetail> {
   const where = buildSalesOrderWhere(startDate, endDate);
 
-  // 销售成本
+  // 1) 销售成本（COGS）—— 唯一会计意义上的当期成本
   const salesCostStats = await prisma.salesOrder.aggregate({
     where,
     _sum: {
@@ -90,8 +122,8 @@ async function getCostDetail(
 
   const salesCost = salesCostStats._sum.costAmount || 0;
 
-  // 库存成本变化
-  // ✅ 修复：排除期初入库（opening_balance），期初库存不应冲击当期损益
+  // 2) 库存成本变动（仅作为资产变动分析维度，不计入 totalCost）
+  //    - 排除期初入库（opening_balance），期初库存不应冲击当期损益
   const [inboundCost, outboundCost] = await Promise.all([
     prisma.inboundRecord.aggregate({
       where: {
@@ -100,7 +132,7 @@ async function getCostDetail(
           lte: endDate,
         },
         reason: {
-          not: 'opening_balance', // ✅ 排除期初入库
+          not: 'opening_balance',
         },
       },
       _sum: {
@@ -120,10 +152,14 @@ async function getCostDetail(
     }),
   ]);
 
-  const inventoryCost =
-    (inboundCost._sum.totalCost || 0) - (outboundCost._sum.totalCost || 0);
+  const inboundTotal = inboundCost._sum.totalCost || 0;
+  const outboundTotal = outboundCost._sum.totalCost || 0;
 
-  const totalCost = salesCost + Math.abs(inventoryCost);
+  // 保留「入库成本 - 出库成本」的口径，作为库存资产变动的一个近似指标
+  const inventoryCost = inboundTotal - outboundTotal;
+
+  // 关键修正：利润表中的 totalCost 仅等于销售成本（COGS），不再叠加库存成本变动
+  const totalCost = salesCost;
   const costRate = calculateCostRate(totalCost, totalRevenue);
 
   return {
@@ -336,9 +372,51 @@ export async function getProfitLossAnalysis(
     getExpenseDetail(start, end, revenue.totalRevenue),
     getFactoryShipmentProfitDetail(start, end, revenue.totalRevenue),
   ]);
+  // 先计算主营业务的基础利润（不含厂家直发收入）
+  const coreRevenue: RevenueDetail = {
+    ...revenue,
+    factoryShipmentRevenue: 0,
+    totalRevenue: revenue.salesRevenue + revenue.otherRevenue,
+  };
+  const baseProfit = calculateProfit(
+    coreRevenue,
+    costs,
+    expenses,
+    refundAmount
+  );
 
-  // 计算利润
-  const profit = calculateProfit(revenue, costs, expenses, refundAmount);
+  // 厂家直发利润视为额外的经营利润块，并入整体利润
+  const factoryNetProfit = factoryShipmentProfit.customerProfit;
+
+  const profit: ProfitCalculation = {
+    grossProfit: baseProfit.grossProfit + factoryNetProfit,
+    grossProfitMargin: calculateProfitMargin(
+      baseProfit.grossProfit + factoryNetProfit,
+      revenue.totalRevenue
+    ),
+    operatingProfit: baseProfit.operatingProfit + factoryNetProfit,
+    operatingProfitMargin: calculateProfitMargin(
+      baseProfit.operatingProfit + factoryNetProfit,
+      revenue.totalRevenue
+    ),
+    netProfit: baseProfit.netProfit + factoryNetProfit,
+    netProfitMargin: calculateProfitMargin(
+      baseProfit.netProfit + factoryNetProfit,
+      revenue.totalRevenue
+    ),
+  };
+
+  // 重新计算厂家直发占总利润的比例（基于合并后的净利润）
+  const totalNetProfit = profit.netProfit;
+  const percentageOfTotal =
+    Math.abs(totalNetProfit) > 0.01
+      ? roundToTwoDecimals((factoryNetProfit / totalNetProfit) * 100)
+      : 0;
+
+  const normalizedFactoryShipmentProfit: FactoryShipmentProfitDetail = {
+    ...factoryShipmentProfit,
+    percentageOfTotal,
+  };
 
   // 判断盈亏状态
   const status = determineProfitLossStatus(profit.netProfit);
@@ -364,7 +442,7 @@ export async function getProfitLossAnalysis(
     costs,
     expenses,
     profit,
-    factoryShipmentProfit,
+    factoryShipmentProfit: normalizedFactoryShipmentProfit,
     trend,
     alerts,
   };

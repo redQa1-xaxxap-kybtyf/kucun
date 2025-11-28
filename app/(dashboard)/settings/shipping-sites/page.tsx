@@ -62,6 +62,7 @@ import type {
   ShippingSite,
   ShippingSitesResponse,
 } from '@/lib/types/shipping';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
   normalizeSelector,
   normalizeSelectorGroup,
@@ -189,11 +190,14 @@ export default function ShippingSitesPage() {
       const requestBody =
         method === 'POST' ? payload : { ...payload, id: data.id };
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+      const response = await fetch(
+        url,
+        getCsrfTokenHeader({
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -225,9 +229,10 @@ export default function ShippingSitesPage() {
   // 删除站点
   const deleteSiteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/shipping/sites/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/shipping/sites/${id}`,
+        getCsrfTokenHeader({ method: 'DELETE' })
+      );
       if (!response.ok) {
         throw new Error('删除失败');
       }

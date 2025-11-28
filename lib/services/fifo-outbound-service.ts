@@ -35,7 +35,7 @@ export interface FIFOOutboundParams {
   quantity: number;
   reason: string;
   remarks?: string;
-  userId: string;
+  userId: string; // 操作人，用于填充 operatorId
   // 关联单据信息(可选)
   salesOrderId?: string;
   salesOrderItemId?: string;
@@ -134,14 +134,14 @@ export async function executeFIFOOutbound(
         productId: params.productId,
         variantId: params.variantId,
         batchNumber: params.batchNumber,
+        inventoryId: inventory.id,
         quantity: params.quantity,
         unitCost: fifoCost.averageUnitCost,
         totalCost: fifoCost.totalCost,
         reason: params.reason,
-        remarks: params.remarks || null,
-        userId: params.userId,
+        notes: params.remarks || null,
+        operatorId: params.userId,
         salesOrderId: params.salesOrderId || null,
-        salesOrderItemId: params.salesOrderItemId || null,
       },
     });
 

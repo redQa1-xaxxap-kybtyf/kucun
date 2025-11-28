@@ -260,7 +260,8 @@ export type ProfitLossStatus = 'profit' | 'loss' | 'breakeven';
  * 收入明细
  */
 export interface RevenueDetail {
-  salesRevenue: number; // 销售收入
+  salesRevenue: number; // 销售订单收入
+  factoryShipmentRevenue: number; // 厂家直发收入
   otherRevenue: number; // 其他收入
   totalRevenue: number; // 总收入
   orderCount: number; // 订单数量

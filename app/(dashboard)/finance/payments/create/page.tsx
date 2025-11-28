@@ -60,6 +60,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 // 创建收款记录表单Schema
 const createPaymentSchema = z
@@ -201,13 +202,16 @@ export default function CreatePaymentPage() {
   // 创建收款记录
   const createMutation = useMutation({
     mutationFn: async (data: CreatePaymentFormData) => {
-      const response = await fetch('/api/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/payments',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

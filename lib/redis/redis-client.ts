@@ -214,18 +214,25 @@ function createClient(url: string): Redis {
 }
 
 // 修复: 防止热重载时的连接泄漏
-// 在开发环境中，使用全局变量存储连接池，避免每次热重载都创建新连接
+// 在开发环境中，可以使用全局变量缓存连接池；
+// 但在生产环境，必须始终使用进程私有的连接池，避免资源泄漏或跨请求意外共享。
 declare global {
+  // 仅在开发环境下使用，用于 Next.js HMR
+  // 不在生产环境写入或依赖此变量
+
   var __redisPool: Redis[] | undefined;
 }
 
 // Simple round-robin pool
 const pool: Redis[] =
-  typeof global !== 'undefined' && global.__redisPool
+  env.NODE_ENV === 'development' &&
+  typeof global !== 'undefined' &&
+  global.__redisPool
     ? global.__redisPool
     : Array.from({ length: poolSize }, () => createClient(redisUrl));
 
-// 在开发环境中保存连接池到全局变量
+// 仅在开发环境中把连接池挂到全局，避免 HMR 重复创建连接；
+// 生产环境禁止写入全局，防止长生命周期资源泄漏。
 if (env.NODE_ENV === 'development' && typeof global !== 'undefined') {
   global.__redisPool = pool;
 }

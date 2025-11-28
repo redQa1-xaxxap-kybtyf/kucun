@@ -14,38 +14,39 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { cn, formatCurrency } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 // 编辑付款记录表单Schema
 const editPaymentOutSchema = z.object({
@@ -215,13 +216,16 @@ export function EditPaymentOutClient({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const updateMutation = useMutation({
     mutationFn: async (data: EditPaymentOutFormData) => {
-      const response = await fetch(`/api/finance/payments-out/${initialPayment.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        `/api/finance/payments-out/${initialPayment.id}`,
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -256,7 +260,7 @@ export function EditPaymentOutClient({
       const maxAmount =
         initialPayment.payableRecord.remainingAmount +
         initialPayment.paymentAmount;
-      
+
       if (data.paymentAmount > maxAmount) {
         toast({
           title: '验证失败',
@@ -320,8 +324,8 @@ export function EditPaymentOutClient({
                     className="space-y-6"
                   >
                     {/* 供应商信息（只读） */}
-                    <div className="rounded-md bg-muted p-4">
-                      <p className="text-sm font-medium text-muted-foreground">
+                    <div className="bg-muted rounded-md p-4">
+                      <p className="text-muted-foreground text-sm font-medium">
                         供应商
                       </p>
                       <p className="text-lg font-semibold">
@@ -502,10 +506,7 @@ export function EditPaymentOutClient({
                       >
                         取消
                       </Button>
-                      <Button
-                        type="submit"
-                        disabled={updateMutation.isPending}
-                      >
+                      <Button type="submit" disabled={updateMutation.isPending}>
                         <Save className="mr-2 h-4 w-4" />
                         {updateMutation.isPending ? '保存中...' : '保存修改'}
                       </Button>

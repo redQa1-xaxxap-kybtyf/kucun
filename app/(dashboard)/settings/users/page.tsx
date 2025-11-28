@@ -40,6 +40,7 @@ import type {
   UserListResponse,
   UserManagementUser,
 } from '@/lib/types/settings';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import type { UserFormData } from '@/lib/validations/settings';
 
 export default function UsersSettingsPage() {
@@ -107,11 +108,14 @@ export default function UsersSettingsPage() {
   // 创建用户
   const createUserMutation = useMutation({
     mutationFn: async (data: CreateUserRequest) => {
-      const response = await fetch('/api/settings/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/settings/users',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '创建用户失败');
@@ -143,11 +147,14 @@ export default function UsersSettingsPage() {
   // 更新用户
   const updateUserMutation = useMutation({
     mutationFn: async (data: UpdateUserRequest & { userId: string }) => {
-      const response = await fetch('/api/settings/users', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/settings/users',
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '更新用户失败');
@@ -179,11 +186,14 @@ export default function UsersSettingsPage() {
   // 删除用户
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const response = await fetch('/api/settings/users', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      });
+      const response = await fetch(
+        '/api/settings/users',
+        getCsrfTokenHeader({
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId }),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '删除用户失败');
@@ -220,11 +230,14 @@ export default function UsersSettingsPage() {
       userId: string;
       status: 'active' | 'inactive';
     }) => {
-      const response = await fetch('/api/settings/users', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, status }),
-      });
+      const response = await fetch(
+        '/api/settings/users',
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, status }),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '更新用户状态失败');
@@ -261,11 +274,14 @@ export default function UsersSettingsPage() {
       userId: string;
       newPassword: string;
     }) => {
-      const response = await fetch('/api/settings/users/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, newPassword }),
-      });
+      const response = await fetch(
+        '/api/settings/users/reset-password',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, newPassword }),
+        })
+      );
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || '重置密码失败');

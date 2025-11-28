@@ -4,12 +4,11 @@
  * 测试目标：
  * 1. 期初入库不影响当期损益
  * 2. 销售期初库存的成本计算正确
- * 3. 本期采购计入成本
- * 4. 混合场景（期初入库 + 本期采购）
+ * 3. 本期采购仅影响库存维度，不直接计入当期损益成本
+ * 4. 混合场景（期初入库 + 本期采购）下，利润按权责发生制计算
  */
 
 import { getProfitLossAnalysis } from '@/lib/services/profit-loss-service';
-import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
 
 // Mock Prisma Client
 jest.mock('@/lib/db', () => ({
@@ -30,6 +29,7 @@ jest.mock('@/lib/db', () => ({
       aggregate: jest.fn(),
     },
     factoryShipmentOrder: {
+      aggregate: jest.fn(),
       findMany: jest.fn(),
     },
   },
@@ -70,6 +70,10 @@ describe('profit-loss-service', () => {
       _sum: { processedAmount: 0 },
     });
     
+    prisma.factoryShipmentOrder.aggregate.mockResolvedValue({
+      _sum: { receivableAmount: 0 },
+      _count: { id: 0 },
+    });
     prisma.factoryShipmentOrder.findMany.mockResolvedValue([]);
   });
 
@@ -147,7 +151,7 @@ describe('profit-loss-service', () => {
   });
 
   describe('本期采购处理', () => {
-    it('应该将本期采购计入库存成本变化', async () => {
+    it('本期采购应体现在库存成本变化维度，但不会重复计入当期成本', async () => {
       // Arrange: 准备测试数据
       // 1. 本期采购入库 1,000 元（reason = 'purchase'）
       prisma.inboundRecord.aggregate.mockImplementation((args: any) => {
@@ -184,12 +188,12 @@ describe('profit-loss-service', () => {
       // Assert: 验证结果
       expect(result.revenue.totalRevenue).toBe(1500); // 收入 1,500 元
       expect(result.costs.salesCost).toBe(1000); // 销售成本 1,000 元
-      expect(result.costs.inventoryCost).toBe(1000); // 库存成本变化 = 1000 - 0 = 1000
-      expect(result.costs.totalCost).toBe(2000); // 总成本 = 1000 + |1000| = 2000
-      expect(result.profit.grossProfit).toBe(-500); // 毛利润 = 1500 - 2000 = -500
+      expect(result.costs.inventoryCost).toBe(1000); // 库存成本变化 = 1000 - 0 = 1000（仅作资产变动展示）
+      expect(result.costs.totalCost).toBe(1000); // 总成本 = 当期 COGS = 1000
+      expect(result.profit.grossProfit).toBe(500); // 毛利润 = 1500 - 1000 = 500
     });
 
-    it('应该正确处理本期采购和出库', async () => {
+    it('本期采购 + 出库时，利润仍应按销售成本（COGS）计算', async () => {
       // Arrange: 准备测试数据
       // 1. 本期采购入库 1,000 元
       prisma.inboundRecord.aggregate.mockImplementation((args: any) => {
@@ -224,13 +228,13 @@ describe('profit-loss-service', () => {
 
       // Assert: 验证结果
       expect(result.costs.inventoryCost).toBe(500); // 库存成本变化 = 1000 - 500 = 500
-      expect(result.costs.totalCost).toBe(1500); // 总成本 = 1000 + |500| = 1500
-      expect(result.profit.grossProfit).toBe(0); // 毛利润 = 1500 - 1500 = 0
+      expect(result.costs.totalCost).toBe(1000); // 总成本仍等于 COGS = 1000
+      expect(result.profit.grossProfit).toBe(500); // 毛利润 = 1500 - 1000 = 500
     });
   });
 
   describe('混合场景', () => {
-    it('应该正确处理期初入库和本期采购的混合场景', async () => {
+    it('期初入库 + 本期采购时，应按权责发生制计算利润', async () => {
       // Arrange: 准备测试数据
       // 1. 期初入库 2,575 元 + 本期采购 1,000 元
       prisma.inboundRecord.aggregate.mockImplementation((args: any) => {
@@ -271,9 +275,9 @@ describe('profit-loss-service', () => {
       expect(result.revenue.totalRevenue).toBe(4500); // 收入 4,500 元
       expect(result.costs.salesCost).toBe(3575); // 销售成本 3,575 元
       expect(result.costs.inventoryCost).toBe(500); // 库存成本变化 = 1000 - 500 = 500
-      expect(result.costs.totalCost).toBe(4075); // 总成本 = 3575 + |500| = 4075
-      expect(result.profit.grossProfit).toBe(425); // 毛利润 = 4500 - 4075 = 425
-      expect(result.profit.netProfit).toBe(425); // 净利润 = 425（没有费用）
+      expect(result.costs.totalCost).toBe(3575); // 总成本 = 当期销售成本 = 3575
+      expect(result.profit.grossProfit).toBe(925); // 毛利润 = 4500 - 3575 = 925
+      expect(result.profit.netProfit).toBe(925); // 净利润 = 925（没有费用）
       
       // 验证期初入库被正确排除
       expect(prisma.inboundRecord.aggregate).toHaveBeenCalledWith(
@@ -286,4 +290,3 @@ describe('profit-loss-service', () => {
     });
   });
 });
-

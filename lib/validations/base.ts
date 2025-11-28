@@ -32,7 +32,7 @@ export const baseValidations = {
   // 简单密码验证(用于兼容旧数据)
   simplePassword: z
     .string()
-    .min(6, '密码至少6个字符')
+    .min(8, '密码至少8个字符')
     .max(50, '密码不能超过50个字符'),
 
   // 邮箱验证
