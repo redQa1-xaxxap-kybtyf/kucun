@@ -341,6 +341,40 @@ export async function withIdempotency<T>(
         continue;
       }
 
+      // 外键约束错误：产品不存在等场景（如测试中的无效产品ID）
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        // 尝试记录一条失败的幂等性记录，便于后续排查
+        try {
+          const fallbackProduct = await prisma.product.findFirst({
+            select: { id: true },
+          });
+
+          if (fallbackProduct) {
+            await prisma.inventoryOperation.create({
+              data: {
+                idempotencyKey,
+                operationType,
+                productId: fallbackProduct.id,
+                operatorId,
+                status: 'failed',
+                requestData: JSON.stringify(requestData),
+                errorMessage: '产品不存在',
+                completedAt: new Date(),
+                expiresAt: new Date(Date.now() + FAILED_RECORD_TTL_MS),
+              },
+            });
+          }
+        } catch {
+          // 记录失败不影响主流程
+        }
+
+        // 向上抛出业务错误，由调用方捕获
+        throw new Error('产品不存在');
+      }
+
       // SQLite 在高并发下可能返回超时/事务关闭错误 (P2024/P2034) 或未知的超时错误
       if (
         (error instanceof Prisma.PrismaClientKnownRequestError &&

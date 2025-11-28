@@ -640,6 +640,7 @@ model PaymentRecord {
   @@index([status], map: "idx_payment_records_status")
   @@index([paymentType], map: "idx_payment_records_type")
   @@index([paymentMethod], map: "idx_payment_records_method")
+  @@index([paymentDate], map: "idx_payment_records_payment_date")
   @@index([customerId, paymentType, status], map: "idx_payment_records_customer_type_status")
   @@index([salesOrderId, status], map: "idx_payment_records_order_status")
   @@map("payment_records")
@@ -845,6 +846,7 @@ model RefundRecord {
   @@index([status], map: "idx_refund_records_status")
   @@index([refundType], map: "idx_refund_records_type")
   @@index([refundMethod], map: "idx_refund_records_method")
+  @@index([refundDate], map: "idx_refund_records_date")
   @@index([salesOrderId, status], map: "idx_refund_records_order_status")
   @@index([returnOrderId, status], map: "idx_refund_records_return_status")
   @@map("refund_records")
@@ -1038,6 +1040,7 @@ model PaymentOutRecord {
   @@index([userId], map: "idx_payment_out_records_user")
   @@index([status], map: "idx_payment_out_records_status")
   @@index([paymentMethod], map: "idx_payment_out_records_method")
+  @@index([paymentDate], map: "idx_payment_out_records_payment_date")
   @@index([payableRecordId, status], map: "idx_payment_out_records_payable_status")
   @@map("payment_out_records")
 }

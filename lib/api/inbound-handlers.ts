@@ -6,6 +6,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
+import { upsertBatchSpecification } from '@/lib/api/batch-specification-handlers';
 import { ApiError } from '@/lib/api/errors';
 import {
   INBOUND_RECORD_SELECT,
@@ -377,11 +378,28 @@ export async function createInboundRecord(
   // 验证产品存在 - 使用事务上下文确保原子性
   await validateProductExists(data.productId, prismaClient);
 
-  // ⚡ 性能优化: 批次规格参数操作移到事务外部异步执行
-  // 原因: upsertBatchSpecification 会持有 batch_specifications 表的锁,
-  //       导致事务时间从 500ms 增加到 10-20 秒
-  // 修复: 批次规格关联设置为 null, 由调用方在事务外异步更新
-  const batchSpecificationId: string | null = null;
+  // 如果提供了批次号和规格参数，则在同一事务中维护批次规格记录
+  let batchSpecificationId: string | null = null;
+  if (
+    data.batchNumber &&
+    (typeof data.piecesPerUnit === 'number' || typeof data.weight === 'number')
+  ) {
+    const batchSpec = await upsertBatchSpecification(
+      {
+        productId: data.productId,
+        batchNumber: data.batchNumber,
+        piecesPerUnit:
+          typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0
+            ? data.piecesPerUnit
+            : 1,
+        weight: data.weight,
+      },
+      // 在有事务上下文时复用事务，确保原子性
+      tx as unknown as Prisma.TransactionClient | undefined
+    );
+
+    batchSpecificationId = batchSpec.id;
+  }
 
   // 生成记录编号
   const recordNumber = generateInboundRecordNumber();
@@ -393,7 +411,7 @@ export async function createInboundRecord(
       productId: data.productId,
       variantId: data.variantId || null,
       batchNumber: data.batchNumber || null,
-      batchSpecificationId, // 关联批次规格参数
+      batchSpecificationId, // 关联批次规格参数（如果有）
       quantity: data.quantity,
       reason: data.reason,
       remarks: cleanRemarks(data.remarks),
