@@ -15,7 +15,7 @@ import { EnhancedExcelExportService } from './enhanced-excel-export-service';
 /**
  * 应付款导出数据类型（扁平化结构）
  */
-export interface PayableExportData {
+export interface PayableExportData extends Record<string, unknown> {
   /** 应付款编号 */
   应付款编号: string;
   /** 供应商名称 */

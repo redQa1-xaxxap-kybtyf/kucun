@@ -125,20 +125,32 @@ async function validateEntities({
         };
     }
 
-    const supplierIds = [...new Set(items.map(i => i.supplierId))];
-    const existingSuppliers = await prisma.supplier.findMany({
-      where: { id: { in: supplierIds } },
-      select: { id: true },
-    });
-    const existingSupplierSet = new Set(existingSuppliers.map(s => s.id));
-    const missingSuppliers = supplierIds.filter(
-      id => !existingSupplierSet.has(id)
+    // 过滤掉未填写的 supplierId，避免 undefined 参与 in 查询导致运行时错误
+    const supplierIds = Array.from(
+      new Set(
+        items
+          .map(i => i.supplierId)
+          .filter(
+            (id): id is string => typeof id === 'string' && id.trim().length > 0
+          )
+      )
     );
-    if (missingSuppliers.length > 0)
-      return {
-        code: 400 as const,
-        message: `供应商不存在: ${missingSuppliers.join(', ')}`,
-      };
+
+    if (supplierIds.length > 0) {
+      const existingSuppliers = await prisma.supplier.findMany({
+        where: { id: { in: supplierIds } },
+        select: { id: true },
+      });
+      const existingSupplierSet = new Set(existingSuppliers.map(s => s.id));
+      const missingSuppliers = supplierIds.filter(
+        id => !existingSupplierSet.has(id)
+      );
+      if (missingSuppliers.length > 0)
+        return {
+          code: 400 as const,
+          message: `供应商不存在: ${missingSuppliers.join(', ')}`,
+        };
+    }
   }
 
   return null;

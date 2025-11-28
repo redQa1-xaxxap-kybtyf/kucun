@@ -21,11 +21,10 @@ import {
 import { queryKeys } from '@/lib/queryKeys';
 import type { ExpenseRelatedType } from '@/lib/types/expense';
 import type { InboundRecord } from '@/lib/types/inbound';
+import type { OutboundRecord } from '@/lib/types/inventory';
 import type { PurchaseOrder } from '@/lib/types/purchase-order';
 import type { SalesOrder } from '@/lib/types/sales-order';
 import { cn } from '@/lib/utils';
-
-import type { OutboundRecord } from '@/lib/types/outbound';
 
 interface RelatedRecordSelectorProps {
   relatedType: ExpenseRelatedType;

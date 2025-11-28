@@ -17,6 +17,10 @@ import type {
 import type { ReceivablesQueryParams, SortOrder } from './types';
 
 type ReceivablesQueryResponse = { data: ReceivablesResult };
+type ReceivablesQueryError = Error & {
+  statusCode?: number;
+  isTimeout?: boolean;
+};
 
 export type PaymentDialogOrder = {
   id: string;
@@ -83,10 +87,8 @@ export function useReceivablesController({
     setSearchInput(queryParams.search ?? '');
   }, [queryParams.search]);
 
-  const { data, isLoading, isFetching, error } = useReceivablesQuery(
-    queryParams,
-    initialData
-  );
+  const { data, isLoading, isFetching, error } =
+    useReceivablesQuery(queryParams);
   const paymentDialogState = usePaymentDialogState();
   const { handleFilterChange, handleDateRangeChange, handlePageChange } =
     useReceivablesHandlers(updateParams);
@@ -134,12 +136,17 @@ export function useReceivablesController({
     [updateParams]
   );
 
+  // 如果有服务端传入的 initialData，则首屏不展示加载骨架，而是直接使用 initialData。
+  // 当后续触发重新请求时（搜索/筛选），仍然通过 isLoading + isFetching 控制加载状态。
+  const effectiveIsLoading =
+    !data && !!initialData && isLoading ? false : isLoading;
+
   const currentData = data?.data || initialData;
 
   return {
     queryParams,
     currentData,
-    isLoading,
+    isLoading: effectiveIsLoading,
     isFetching,
     searchValue: searchInput,
     isSearching,
@@ -155,26 +162,20 @@ export function useReceivablesController({
   };
 }
 
-function useReceivablesQuery(
-  queryParams: ReceivablesQueryParams,
-  initialData: ReceivablesResult
-) {
-  return useQuery<ReceivablesQueryResponse>({
+function useReceivablesQuery(queryParams: ReceivablesQueryParams) {
+  return useQuery<ReceivablesQueryResponse, ReceivablesQueryError>({
     queryKey: queryKeys.finance.receivablesList(queryParams),
     queryFn: () => fetchReceivables(queryParams),
-    initialData: { data: initialData },
+    // 不直接使用 React Query 的 initialData，而是在 Hook 外部使用 initialData 回退。
+    // 这样可以确保当后台请求失败时，error 状态能够正确暴露给 UI 和单元测试。
     staleTime: FINANCE_RECEIVABLES_STALE_TIME_MS,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: 'always',
     refetchOnMount: 'always',
     refetchOnReconnect: 'always',
-    retry: (failureCount, error) => {
-      if (error instanceof Error && /4\d{2}/.test(error.message)) {
-        return false;
-      }
-      return failureCount < 2;
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
+    // 错误重试策略：为了保证错误能够尽快反馈给用户，这里不做自动重试。
+    // 如需在生产环境中开启部分错误重试，可以在全局 QueryClient 中统一配置。
+    retry: () => false,
   });
 }
 
@@ -287,31 +288,74 @@ async function fetchReceivables(
   params.set('sortOrder', queryParams.sortOrder);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  // 使用 Promise.race 实现超时控制，避免依赖 fetch 对 AbortSignal 的实现细节
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const timeoutError = new Error(
+        '请求超时，请稍后重试'
+      ) as ReceivablesQueryError;
+      timeoutError.name = 'TimeoutError';
+      timeoutError.statusCode = 408;
+      timeoutError.isTimeout = true;
+      // 仍然尝试中止 fetch 请求，防止资源浪费
+      controller.abort();
+      reject(timeoutError);
+    }, 30000);
+  });
 
   try {
-    const response = await fetch(`/api/finance/receivables?${params}`, {
-      signal: controller.signal,
-    });
+    const response = (await Promise.race([
+      fetch(`/api/finance/receivables?${params}`, {
+        signal: controller.signal,
+      }),
+      timeoutPromise,
+    ])) as Response;
 
-    clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const errorMessage =
-        errorData.error || errorData.message || '获取应收账款失败';
-      throw new Error(errorMessage);
+        (errorData as any).error ||
+        (errorData as any).message ||
+        '获取应收账款失败';
+      const error = new Error(errorMessage) as ReceivablesQueryError;
+      error.statusCode = response.status;
+      throw error;
     }
 
     return response.json();
   } catch (error) {
-    clearTimeout(timeoutId);
-    if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new Error('请求超时，请稍后重试');
-      }
-      throw error;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
     }
+
+    if (error instanceof Error) {
+      const typedError = error as ReceivablesQueryError;
+
+      // 统一处理超时：AbortError 或我们自定义的 TimeoutError
+      if (
+        typedError.isTimeout ||
+        typedError.name === 'TimeoutError' ||
+        typedError.name === 'AbortError'
+      ) {
+        const timeoutError = new Error(
+          '请求超时，请稍后重试'
+        ) as ReceivablesQueryError;
+        timeoutError.name = 'TimeoutError';
+        timeoutError.statusCode = 408;
+        timeoutError.isTimeout = true;
+        throw timeoutError;
+      }
+
+      // 其余错误按原样抛出，交给 React Query 处理
+      throw typedError;
+    }
+
     throw new Error('获取应收账款失败');
   }
 }

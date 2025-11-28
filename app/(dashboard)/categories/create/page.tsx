@@ -53,7 +53,9 @@ import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import { CreateCategorySchema } from '@/lib/validations/category';
 
-type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
+// 表单层使用 Zod 输入类型（允许 schema 默认值和可选字段），
+// 以便与 standardSchemaResolver 返回的 Resolver 类型完全对齐。
+type CreateCategoryData = z.input<typeof CreateCategorySchema>;
 
 /**
  * 新建分类页面组件

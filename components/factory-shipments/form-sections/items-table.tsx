@@ -78,8 +78,10 @@ export const ItemsTable = React.memo<ItemsTableProps>(
 
     // 计算单个明细的金额
     const calculateItemAmount = (index: number): number => {
-      const quantity = form.watch(`items.${index}.quantity`) || 0;
-      const unitPrice = form.watch(`items.${index}.unitPrice`) || 0;
+      const rawQuantity = form.watch(`items.${index}.quantity`);
+      const rawUnitPrice = form.watch(`items.${index}.unitPrice`);
+      const quantity = Number(rawQuantity) || 0;
+      const unitPrice = Number(rawUnitPrice) || 0;
       return quantity * unitPrice;
     };
 
@@ -89,8 +91,13 @@ export const ItemsTable = React.memo<ItemsTableProps>(
 
       try {
         // 获取当前的产品明细和费用项
-        const items = form.getValues('items');
-        const feeItems = form.getValues('feeItems') || [];
+        const items =
+          (form.getValues('items') as FactoryShipmentOrderFormData['items']) ||
+          [];
+        const feeItems =
+          (form.getValues(
+            'feeItems'
+          ) as FactoryShipmentOrderFormData['feeItems']) || [];
 
         // 验证：至少有一个产品
         if (items.length === 0) {
@@ -103,9 +110,10 @@ export const ItemsTable = React.memo<ItemsTableProps>(
         }
 
         // 验证：所有产品都有进货价
-        const missingCostItems = items.filter(
-          item => !item.unitCost || item.unitCost <= 0
-        );
+        const missingCostItems = items.filter(item => {
+          const unitCost = Number((item as any).unitCost ?? 0);
+          return unitCost <= 0;
+        });
         if (missingCostItems.length > 0) {
           toast({
             title: '无法计算',
@@ -116,41 +124,51 @@ export const ItemsTable = React.memo<ItemsTableProps>(
         }
 
         // 计算总运费（使用 feeAmount 字段）
-        const totalExpenses = feeItems.reduce(
-          (sum, fee) => sum + (fee.feeAmount || 0),
+        const totalExpenses = (feeItems as any[]).reduce(
+          (sum, fee) => sum + (Number(fee.feeAmount ?? 0) || 0),
           0
         );
 
         // 转换为 FactoryShipmentOrderItem 格式
         const itemsForCalculation: FactoryShipmentOrderItem[] = items.map(
-          (item, index) => ({
-            id: `temp-${index}`, // 临时 ID
-            factoryShipmentOrderId: '',
-            productId: item.productId || null,
-            supplierId: item.supplierId || '',
-            productCode: item.productCode || '',
-            batchNumber: item.batchNumber || null,
-            quantity: item.quantity || 0,
-            unitPrice: item.unitPrice || 0,
-            totalPrice: (item.unitPrice || 0) * (item.quantity || 0),
-            ownership: item.ownership || 'customer',
-            displayName: item.displayName || '',
-            specification: item.specification || null,
-            unit: item.unit || '片',
-            piecesPerUnit: item.piecesPerUnit || null,
-            weight: item.weight || null,
-            remarks: item.remarks || null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            unitCost: item.unitCost || null,
-            allocatedExpense: null,
-            profitAmount: null,
-            profitMargin: null,
-            supplier: {
-              id: item.supplierId || '',
-              name: '',
-            },
-          })
+          (item, index) => {
+            const quantity = Number((item as any).quantity ?? 0) || 0;
+            const unitPrice = Number((item as any).unitPrice ?? 0) || 0;
+            const unitCostRaw = (item as any).unitCost;
+            const unitCost =
+              unitCostRaw === null || unitCostRaw === undefined
+                ? null
+                : Number(unitCostRaw);
+
+            return {
+              id: `temp-${index}`, // 临时 ID
+              factoryShipmentOrderId: '',
+              productId: item.productId || null,
+              supplierId: item.supplierId || '',
+              productCode: item.productCode || '',
+              batchNumber: item.batchNumber || null,
+              quantity,
+              unitPrice,
+              totalPrice: unitPrice * quantity,
+              ownership: item.ownership || 'customer',
+              displayName: item.displayName || '',
+              specification: item.specification || null,
+              unit: item.unit || '片',
+              piecesPerUnit: item.piecesPerUnit || null,
+              weight: item.weight || null,
+              remarks: item.remarks || null,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+              unitCost,
+              allocatedExpense: null,
+              profitAmount: null,
+              profitMargin: null,
+              supplier: {
+                id: item.supplierId || '',
+                name: '',
+              },
+            } as FactoryShipmentOrderItem;
+          }
         );
 
         // 计算建议销售价

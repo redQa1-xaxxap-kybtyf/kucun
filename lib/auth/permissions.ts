@@ -76,11 +76,12 @@ export type Permission =
   | 'reports:view' // 查看报表
   | 'reports:export' // 导出报表
   | 'reports:advanced' // 高级报表分析
-  // 仓库发货权限
+  // 仓库发货 / 厂家发货权限
   | 'shipments:view' // 查看仓库发货
   | 'shipments:create' // 创建发货单
   | 'shipments:edit' // 编辑发货单
   | 'shipments:confirm' // 确认发货
+  | 'factory_shipments:export' // 导出厂家发货报表
   // 分类权限
   | 'categories:view' // 查看分类
   | 'categories:create' // 创建分类
@@ -174,11 +175,12 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'reports:view',
     'reports:export',
     'reports:advanced',
-    // 仓库发货
+    // 仓库发货 / 厂家发货
     'shipments:view',
     'shipments:create',
     'shipments:edit',
     'shipments:confirm',
+    'factory_shipments:export',
     // 分类（完整权限）
     'categories:view',
     'categories:create',
@@ -319,6 +321,8 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'reports:view',
     'reports:export',
     'reports:advanced',
+    // 厂家发货导出
+    'factory_shipments:export',
     // 分类（只读）
     'categories:view', // 只需要查看分类，用于财务报表分析
   ],

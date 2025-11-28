@@ -131,6 +131,7 @@ export const updateReturnOrderSchema = z.object({
   returnMode: z.enum(['single_order', 'multi_order']).optional(),
   salesOrderId: z.string().optional(),
   customerId: z.string().optional(),
+  processType: z.enum(['refund', 'exchange']).optional(),
   type: z
     .enum([
       'quality_issue',

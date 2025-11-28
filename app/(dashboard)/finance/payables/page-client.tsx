@@ -564,7 +564,8 @@ export function PayablesPageClient({
   const handleExport = React.useCallback(() => {
     exportData('/api/finance/payables/export', {
       format: 'excel',
-      filters: normalizedInitialParams,
+      // 导出接口期望通用的 Record<string, unknown>，这里将查询参数对象显式转换
+      filters: normalizedInitialParams as unknown as Record<string, unknown>,
     });
   }, [exportData, normalizedInitialParams]);
 

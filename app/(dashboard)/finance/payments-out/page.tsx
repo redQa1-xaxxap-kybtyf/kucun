@@ -21,12 +21,7 @@ const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
   ...PAYMENT_OUT_METHODS,
 ];
 
-const _ALLOWED_PAYMENT_OUT_SORT_FIELDS = [
-  'createdAt',
-  'paymentAmount',
-  'paymentDate',
-] as const;
-type PaymentOutSortField = (typeof ALLOWED_PAYMENT_OUT_SORT_FIELDS)[number];
+type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 
 import { PaymentsOutPageClient } from './page-client';
 
@@ -56,11 +51,11 @@ async function getPaymentsOutData(searchParams: {
   if (!validationResult.success) {
     // 如果校验失败，使用默认值而不是抛出错误
     // 这样可以提供更好的用户体验
-    logger.warn('付款记录查询参数校验失败', {
-      context: {
-        error: validationResult.error.issues[0]?.message,
-        searchParams,
-      },
+    const firstIssue = validationResult.error.issues[0];
+    logger.warn('finance-payments-out', '付款记录查询参数校验失败', {
+      errorMessage: firstIssue?.message,
+      errorPath: firstIssue?.path?.join('.') || undefined,
+      rawSearchParams: JSON.stringify(searchParams),
     });
   }
 

@@ -49,8 +49,8 @@ export const POST = withAuth(
       }
 
       const {
-        page,
-        limit,
+        page = 1,
+        limit = 50000,
         status,
         customerId,
         containerNumber,

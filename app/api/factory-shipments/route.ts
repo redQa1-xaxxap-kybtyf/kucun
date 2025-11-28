@@ -332,7 +332,7 @@ async function createOrderInTransaction(
           piecesPerUnit: item.piecesPerUnit ?? null,
           weight: item.weight,
           remarks: item.remarks,
-        })),
+        })) as Prisma.FactoryShipmentOrderItemUncheckedCreateWithoutFactoryShipmentOrderInput[],
       },
       // ✅ 同步保存费用明细到 factory_shipment_order_fee_items，便于编辑页面恢复
       feeItems:

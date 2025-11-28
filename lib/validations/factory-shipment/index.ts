@@ -338,7 +338,8 @@ export type CreateFactoryShipmentOrderData = z.infer<
 export type UpdateFactoryShipmentOrderData = z.infer<
   typeof updateFactoryShipmentOrderSchema
 >;
-export type FactoryShipmentOrderFormData = z.infer<
+// 表单层使用 Zod 输入类型，以避免 .default()/.optional() 带来的 Resolver 类型差异
+export type FactoryShipmentOrderFormData = z.input<
   typeof factoryShipmentOrderFormSchema
 >;
 

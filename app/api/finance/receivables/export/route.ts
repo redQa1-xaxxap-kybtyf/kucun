@@ -82,7 +82,7 @@ export const POST = withAuth(
           startDate: validationResult.data.startDate,
           endDate: validationResult.data.endDate,
           search: validationResult.data.search,
-          customerName: result.receivables[0]?.customer?.name,
+          customerName: result.receivables[0]?.customerName,
         },
         user.name || user.email.split('@')[0] || '系统'
       );

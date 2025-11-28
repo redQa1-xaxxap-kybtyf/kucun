@@ -7,7 +7,10 @@
  * - 调用通用导出服务
  */
 
-import type { Receivable } from '@prisma/client';
+import type {
+  PaymentStatus,
+  ReceivableItem,
+} from '@/lib/services/receivables-types';
 
 import { CSVExportService } from './csv-export-service';
 import { EnhancedExcelExportService } from './enhanced-excel-export-service';
@@ -15,7 +18,7 @@ import { EnhancedExcelExportService } from './enhanced-excel-export-service';
 /**
  * 应收款导出数据类型（扁平化结构）
  */
-export interface ReceivableExportData {
+export interface ReceivableExportData extends Record<string, unknown> {
   /** 订单编号 */
   订单编号: string;
   /** 客户名称 */
@@ -39,23 +42,13 @@ export interface ReceivableExportData {
 }
 
 /**
- * 扩展的应收款数据（包含关联数据）
- */
-export interface ReceivableWithRelations extends Receivable {
-  customer?: {
-    name: string;
-  } | null;
-}
-
-/**
  * 状态映射
  */
-const STATUS_MAP: Record<string, string> = {
-  draft: '草稿',
-  confirmed: '已确认',
-  shipped: '已发货',
-  completed: '已完成',
-  cancelled: '已取消',
+const PAYMENT_STATUS_MAP: Record<PaymentStatus, string> = {
+  unpaid: '未收款',
+  partial: '部分收款',
+  pending: '待确认',
+  paid: '已收款',
 };
 
 /**
@@ -69,19 +62,20 @@ export class ReceivablesExportService {
    * @returns 导出数据数组
    */
   static prepareExportData(
-    receivables: ReceivableWithRelations[]
+    receivables: ReceivableItem[]
   ): ReceivableExportData[] {
     return receivables.map(item => ({
       订单编号: item.orderNumber || '',
-      客户名称: item.customer?.name || '未知客户',
+      客户名称: item.customerName || '未知客户',
       订单金额: item.totalAmount,
       已付金额: item.paidAmount,
       应收余额: item.remainingAmount,
-      订单状态: STATUS_MAP[item.status] || item.status,
-      创建时间: item.createdAt?.toISOString() || '',
-      确认时间: item.confirmedAt?.toISOString() || '',
-      发货时间: item.shippedAt?.toISOString() || '',
-      备注: item.remarks || '',
+      订单状态:
+        PAYMENT_STATUS_MAP[item.paymentStatus] || item.paymentStatus || '',
+      创建时间: item.orderDate || '',
+      确认时间: item.lastPaymentDate || '',
+      发货时间: '', // 列保留，当前列表数据中无对应字段
+      备注: '', // 列保留，当前列表数据中无对应字段
     }));
   }
 
@@ -91,10 +85,7 @@ export class ReceivablesExportService {
    * @param receivables 应收款数据
    * @param filename 文件名
    */
-  static exportToExcel(
-    receivables: ReceivableWithRelations[],
-    filename: string
-  ): void {
+  static exportToExcel(receivables: ReceivableItem[], filename: string): void {
     const data = this.prepareExportData(receivables);
 
     EnhancedExcelExportService.exportToEnhancedExcel(data, {
@@ -113,10 +104,7 @@ export class ReceivablesExportService {
    * @param receivables 应收款数据
    * @param filename 文件名
    */
-  static exportToCSV(
-    receivables: ReceivableWithRelations[],
-    filename: string
-  ): void {
+  static exportToCSV(receivables: ReceivableItem[], filename: string): void {
     const data = this.prepareExportData(receivables);
 
     CSVExportService.exportToCSV(data, {

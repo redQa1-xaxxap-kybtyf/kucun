@@ -308,11 +308,15 @@ export const POST = withAuth(
               logger.warn(
                 'payments-out',
                 '付款后更新费用状态失败，但不影响付款记录',
-                error,
+                undefined,
                 {
                   paymentNumber,
                   payableRecordId: data.payableRecordId,
                   paymentAmount: data.paymentAmount,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : String(error ?? ''),
                 }
               );
               // 不抛出错误，允许付款继续完成
@@ -342,11 +346,17 @@ export const POST = withAuth(
             },
           });
         } catch (error) {
-          logger.error('payments-out', '记录供应商往来账失败', error, {
-            paymentId: newPayment.id,
-            paymentNumber,
-            supplierId: data.supplierId,
-          });
+          logger.error(
+            'payments-out',
+            '记录供应商往来账失败',
+            error,
+            undefined,
+            {
+              paymentId: newPayment.id,
+              paymentNumber,
+              supplierId: data.supplierId,
+            }
+          );
           // 账本记录失败时回滚整个事务
           throw new Error('记录供应商往来账失败');
         }

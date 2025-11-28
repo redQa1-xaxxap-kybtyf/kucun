@@ -73,6 +73,7 @@ const getPaymentHandler = withAuth(
         'finance-payments-out',
         '获取付款记录详情失败',
         error,
+        undefined,
         paymentId ? { paymentId } : undefined
       );
       return NextResponse.json(
@@ -260,10 +261,14 @@ const putPaymentHandler = withAuth(
                 logger.warn(
                   'payments-out',
                   '付款更新后费用状态更新失败，但不影响付款记录',
-                  error,
+                  undefined,
                   {
                     paymentId: payment.id,
                     payableId: payableRecord.id,
+                    error:
+                      error instanceof Error
+                        ? error.message
+                        : String(error ?? ''),
                   }
                 );
                 // 不抛出错误，允许付款更新继续完成
@@ -285,6 +290,7 @@ const putPaymentHandler = withAuth(
         'finance-payments-out',
         '更新付款记录失败',
         error,
+        undefined,
         paymentId ? { paymentId } : undefined
       );
       return NextResponse.json(
@@ -383,6 +389,7 @@ const deletePaymentHandler = withAuth(
         'finance-payments-out',
         '删除付款记录失败',
         error,
+        undefined,
         paymentId ? { paymentId } : undefined
       );
       return NextResponse.json(

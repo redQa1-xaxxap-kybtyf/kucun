@@ -15,7 +15,7 @@ import { EnhancedExcelExportService } from './enhanced-excel-export-service';
 /**
  * 厂家发货导出数据类型（扁平化结构）
  */
-export interface FactoryShipmentExportData {
+export interface FactoryShipmentExportData extends Record<string, unknown> {
   /** 订单编号 */
   订单编号: string;
   /** 柜号 */

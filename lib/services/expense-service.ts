@@ -267,6 +267,8 @@ export interface CompanyFeeItemLike {
   feeAmount: number;
   paidBy?: 'customer' | 'company';
   remarks?: string | null;
+  // 可选的费用对应供应商，用于订单费用明细等场景
+  supplierId?: string | null;
 }
 
 export interface EnsureCompanyExpensesParams {

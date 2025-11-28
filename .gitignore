@@ -127,6 +127,11 @@ patch.diff
 .playwright-mcp/*.csv
 .playwright-mcp/.playwright-mcp/
 
+# Playwright HTML 报告及部署包产物（仅本地使用，不提交到仓库）
+playwright-report/data/
+deployment-package/
+kucun-deployment-package.tar.gz
+
 # 临时脚本和补丁
 temp-*.py
 temp_*.diff

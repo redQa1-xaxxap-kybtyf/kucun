@@ -21,11 +21,17 @@ const getCurrentMonthRange = () => {
   };
 };
 
+// 统计接口只关心筛选条件的子集，不依赖分页/排序字段
+type PayableStatsQuery = Pick<
+  PayableRecordQuery,
+  'search' | 'supplierId' | 'status' | 'sourceType' | 'startDate' | 'endDate'
+>;
+
 /**
  * 构建筛选条件（与列表查询保持一致）
  */
 const buildWhereConditions = (
-  query: PayableRecordQuery
+  query: PayableStatsQuery
 ): Prisma.PayableRecordWhereInput => {
   const where: Prisma.PayableRecordWhereInput = {};
 
@@ -189,7 +195,7 @@ export const GET = withAuth(async (request: Request) => {
   try {
     // 解析查询参数
     const { searchParams } = new URL(request.url);
-    const queryParams: PayableRecordQuery = {
+    const queryParams: PayableStatsQuery = {
       search: searchParams.get('search') || undefined,
       supplierId: searchParams.get('supplierId') || undefined,
       status:
