@@ -82,7 +82,7 @@ function CategoryFormCardHeader() {
   return (
     <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
       <CardTitle className="flex items-center text-gray-900">
-        <FolderTree className="mr-2 h-5 w-5 text-blue-600" />
+        <FolderTree className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
         分类信息
       </CardTitle>
       <CardDescription>
@@ -94,10 +94,10 @@ function CategoryFormCardHeader() {
 
 function CategoryFormGuidance() {
   return (
-    <div className="border-b bg-blue-50 px-6 py-3">
+    <div className="border-b bg-[hsl(var(--color-info-light))] px-6 py-3">
       <div className="flex items-start gap-2 text-sm">
-        <span className="text-blue-600">ℹ️</span>
-        <div className="flex-1 text-blue-800">
+        <span className="text-[hsl(var(--color-info))]">ℹ️</span>
+        <div className="flex-1 text-[hsl(var(--color-info))]">
           <strong>分类层级规则：</strong>
           <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
             <li>支持最多3级分类（例如：抛光砖 → 系列A → 款式1）</li>
@@ -249,7 +249,7 @@ function CategoryParentField({
               <SelectContent>
                 <SelectItem value="none">
                   <div className="flex items-center gap-2">
-                    <span className="text-blue-600">🏠</span>
+                    <span className="text-[hsl(var(--color-primary))]">🏠</span>
                     <span>无（顶级分类）</span>
                   </div>
                 </SelectItem>
@@ -291,7 +291,7 @@ function CategoryParentField({
           </div>
           <FormDescription>
             选择父级分类以创建层级结构（最多支持3级）
-            <span className="mt-1 block text-xs text-blue-600">
+            <span className="mt-1 block text-xs text-[hsl(var(--color-info))]">
               💡 提示：不同父分类下可以有相同名称的子分类
             </span>
           </FormDescription>

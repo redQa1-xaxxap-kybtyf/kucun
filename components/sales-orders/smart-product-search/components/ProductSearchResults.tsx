@@ -231,7 +231,7 @@ function ProductResultInfo({
           {product.code && (
             <Badge
               variant="outline"
-              className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-800 shadow-sm"
+              className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-2.5 py-0.5 font-mono text-xs font-bold text-[hsl(var(--color-primary))] shadow-sm"
             >
               {highlightedCode}
             </Badge>

@@ -80,7 +80,7 @@ function BalanceInfo({
     <div className="space-y-1">
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">可用预收款余额：</span>
-        <span className="font-semibold text-blue-600">
+        <span className="font-semibold text-[hsl(var(--color-primary))]">
           ￥{formatCurrency(availableBalance)}
         </span>
       </div>
@@ -269,7 +269,7 @@ function PrepaymentDetailsPanel({
   isValid: boolean;
 }) {
   return (
-    <div className="ml-6 space-y-4 rounded border bg-blue-50/30 p-4">
+    <div className="ml-6 space-y-4 rounded border bg-[hsl(var(--color-primary-light))] p-4">
       {/* 余额信息 */}
       <div className="space-y-2">
         <BalanceInfo

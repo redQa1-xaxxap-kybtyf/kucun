@@ -97,7 +97,7 @@ export function DebugPanel() {
       case 'warn':
         return 'text-yellow-600 bg-yellow-50';
       case 'info':
-        return 'text-blue-600 bg-blue-50';
+        return 'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]';
       default:
         return 'text-gray-700 bg-gray-50';
     }

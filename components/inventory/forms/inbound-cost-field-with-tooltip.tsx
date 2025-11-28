@@ -59,7 +59,7 @@ export function InboundCostFieldWithTooltip({
                       如果知道每件成本，请先除以每件片数
                     </p>
                     <div className="border-t border-gray-700 pt-1.5">
-                      <p className="text-xs font-medium text-blue-300">
+                      <p className="text-xs font-medium text-[hsl(var(--color-info))]">
                         示例：
                       </p>
                       <p className="text-xs text-gray-300">

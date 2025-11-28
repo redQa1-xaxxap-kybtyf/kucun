@@ -1,13 +1,13 @@
 'use client';
 
 import {
-    Calendar,
-    CheckCircle,
-    Clock,
-    Eye,
-    MoreHorizontal,
-    Receipt,
-    XCircle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Eye,
+  MoreHorizontal,
+  Receipt,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -18,25 +18,25 @@ import { RelativeTime } from '@/components/common/relative-time';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { PaymentStatus } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils/format';
@@ -185,7 +185,7 @@ function PaymentTableRow({
       <TableCell>
         <Link
           href={`/sales-orders/${payment.salesOrder.id}`}
-          className="font-mono text-sm text-blue-600 hover:underline"
+          className="text-primary font-mono text-sm hover:underline"
         >
           <CopyableText text={payment.salesOrder.orderNumber} />
         </Link>

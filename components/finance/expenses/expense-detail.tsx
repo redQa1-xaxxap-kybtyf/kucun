@@ -3,23 +3,23 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, Edit, FileText, Trash2 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { RelativeTime } from '@/components/common/relative-time';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,10 +29,10 @@ import { useToast } from '@/components/ui/use-toast';
 import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-    EXPENSE_RELATED_TYPE_LABELS,
-    EXPENSE_STATUS_LABELS,
-    EXPENSE_TYPE_LABELS,
-    type ExpenseRecord,
+  EXPENSE_RELATED_TYPE_LABELS,
+  EXPENSE_STATUS_LABELS,
+  EXPENSE_TYPE_LABELS,
+  type ExpenseRecord,
 } from '@/lib/types/expense';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -294,11 +294,11 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
               {expense.relatedNumber && (
                 <div className="space-y-2">
                   <div className="text-muted-foreground text-sm">业务编号</div>
-                  <div className="font-medium flex items-center gap-2">
+                  <div className="flex items-center gap-2 font-medium">
                     {relatedLink ? (
                       <Link
                         href={relatedLink}
-                        className="text-blue-600 hover:underline hover:text-blue-800"
+                        className="text-primary hover:text-primary/80 hover:underline"
                       >
                         <CopyableText text={expense.relatedNumber} />
                       </Link>

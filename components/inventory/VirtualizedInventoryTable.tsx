@@ -42,25 +42,23 @@ const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
   ({ hasFinancePermission }) => (
     <TableHeader className="bg-muted/30 sticky top-0 z-10">
       <TableRow>
-        <TableHead className="text-xs">产品编码</TableHead>
-        <TableHead className="text-xs">产品名称</TableHead>
-        <TableHead className="text-xs">规格</TableHead>
-        <TableHead className="text-xs">包装信息</TableHead>
-        <TableHead className="text-xs">批次号</TableHead>
-        <TableHead className="text-xs">库存数量</TableHead>
-        <TableHead className="text-xs">预留数量</TableHead>
-        <TableHead className="text-xs">可用数量</TableHead>
+        <TableHead>产品编码</TableHead>
+        <TableHead>产品名称</TableHead>
+        <TableHead>规格</TableHead>
+        <TableHead>包装信息</TableHead>
+        <TableHead>批次号</TableHead>
+        <TableHead>库存数量</TableHead>
+        <TableHead>预留数量</TableHead>
+        <TableHead>可用数量</TableHead>
         {hasFinancePermission && (
           <>
-            <TableHead className="text-right text-xs">单位成本（元）</TableHead>
-            <TableHead className="text-right text-xs">
-              库存总成本（元）
-            </TableHead>
+            <TableHead className="text-right">单位成本（元）</TableHead>
+            <TableHead className="text-right">库存总成本（元）</TableHead>
           </>
         )}
-        <TableHead className="text-xs">库存状态</TableHead>
-        <TableHead className="text-xs">最后更新</TableHead>
-        <TableHead className="w-20 text-xs">操作</TableHead>
+        <TableHead>库存状态</TableHead>
+        <TableHead>最后更新</TableHead>
+        <TableHead className="w-20">操作</TableHead>
       </TableRow>
     </TableHeader>
   )

@@ -106,7 +106,7 @@ function resolveStepStatuses({
 function getStepColor(status: AnalysisStep['status']) {
   switch (status) {
     case 'running':
-      return 'text-blue-600 bg-blue-50 border-blue-200';
+      return 'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] border-[hsl(var(--color-info-light))]';
     case 'completed':
       return 'text-green-600 bg-green-50 border-green-200';
     case 'error':
@@ -120,7 +120,9 @@ function getStepIcon(step: AnalysisStep) {
   const { status } = step;
 
   if (status === 'running') {
-    return <Loader2 className="h-4 w-4 animate-spin text-blue-600" />;
+    return (
+      <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--color-info))]" />
+    );
   }
 
   if (status === 'completed') {
@@ -166,7 +168,7 @@ const AnalysisStepItem = ({
       <div className="max-w-20 flex-1">
         <div className="h-1 overflow-hidden rounded-full bg-gray-200">
           <div
-            className="h-full animate-pulse bg-blue-600"
+            className="h-full animate-pulse bg-[hsl(var(--color-info))]"
             style={{ width: '60%' }}
           />
         </div>
@@ -199,7 +201,7 @@ export function AnalysisProgress({
       <div className="flex items-center gap-2">
         {isAnalyzing ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
+            <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--color-info))]" />
             <h3 className="font-medium text-gray-900">正在分析页面...</h3>
           </>
         ) : error ? (
@@ -235,8 +237,8 @@ export function AnalysisProgress({
 
       {/* 分析提示 */}
       {isAnalyzing && (
-        <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-          <p className="text-sm text-blue-800">
+        <div className="mt-3 rounded-lg border border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] p-3">
+          <p className="text-sm text-[hsl(var(--color-info))]">
             💡 正在使用增强智能分析算法识别页面结构，请稍候...
           </p>
         </div>

@@ -19,7 +19,7 @@ export function CategoryPageHeader() {
       <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[var(--shadow-medium)]">
               <FolderTree className="h-6 w-6 text-white" />
             </div>
             <div>

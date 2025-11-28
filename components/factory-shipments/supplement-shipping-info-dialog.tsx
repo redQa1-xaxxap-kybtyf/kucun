@@ -274,12 +274,12 @@ function SupplementShippingInfoDialogView({
         <Form {...form}>
           <form onSubmit={onSubmit} className="space-y-4">
             {/* 显示集装箱号 */}
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertCircle className="h-4 w-4 text-blue-600" />
-              <AlertTitle className="text-sm font-medium text-blue-900">
+            <Alert className="border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))]">
+              <AlertCircle className="h-4 w-4 text-[hsl(var(--color-info))]" />
+              <AlertTitle className="text-sm font-medium text-[hsl(var(--color-info))]">
                 集装箱号
               </AlertTitle>
-              <AlertDescription className="mt-1 text-base font-semibold text-blue-900">
+              <AlertDescription className="mt-1 text-base font-semibold text-[hsl(var(--color-info))]">
                 {containerNumber}
               </AlertDescription>
             </Alert>

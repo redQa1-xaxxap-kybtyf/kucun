@@ -128,17 +128,17 @@ export function ProductCombobox({
           <div className="group border-input ring-offset-background focus-within:ring-ring rounded-md border px-3 py-1.5 text-sm focus-within:ring-1 focus-within:ring-offset-0">
             <div className="flex flex-wrap gap-1">
               {selectedProduct && (
-                <div className="flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5">
-                  <span className="text-xs font-medium text-blue-900">
+                <div className="flex items-center gap-1 rounded bg-[hsl(var(--color-primary-light))] px-2 py-0.5">
+                  <span className="text-xs font-medium text-[hsl(var(--color-primary))]">
                     {selectedProduct.label}
                   </span>
                   {!disabled && (
                     <button
                       type="button"
                       onClick={handleClear}
-                      className="ml-1 rounded hover:bg-blue-200"
+                      className="ml-1 rounded hover:bg-[hsl(var(--color-primary-light))]"
                     >
-                      <X className="h-3 w-3 text-blue-700" />
+                      <X className="h-3 w-3 text-[hsl(var(--color-primary))]" />
                     </button>
                   )}
                 </div>
@@ -173,7 +173,7 @@ export function ProductCombobox({
                       >
                         <Check
                           className={cn(
-                            'mr-2 h-3.5 w-3.5 text-blue-600',
+                            'mr-2 h-3.5 w-3.5 text-[hsl(var(--color-primary))]',
                             value === product.value
                               ? 'opacity-100'
                               : 'opacity-0'
@@ -184,7 +184,7 @@ export function ProductCombobox({
                             <span className="text-sm font-semibold text-gray-900">
                               {product.label}
                             </span>
-                            <span className="text-xs font-medium text-blue-600">
+                            <span className="text-xs font-medium text-[hsl(var(--color-primary))]">
                               {product.code}
                             </span>
                           </div>

@@ -64,7 +64,11 @@ const LOG_LEVEL_CONFIG: Record<
   SystemLogLevel,
   { label: string; className: string }
 > = {
-  info: { label: '信息', className: 'text-blue-600 bg-blue-50' },
+  info: {
+    label: '信息',
+    className:
+      'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]',
+  },
   warning: { label: '警告', className: 'text-yellow-600 bg-yellow-50' },
   error: { label: '错误', className: 'text-red-600 bg-red-50' },
   critical: { label: '严重', className: 'text-red-800 bg-red-100' },

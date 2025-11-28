@@ -88,15 +88,15 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
       </Card>
 
       {/* 总记录数 */}
-      <Card className="border-l-4 border-l-blue-500 shadow-sm">
+      <Card className="border-l-4 border-l-[hsl(var(--color-info))] shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">总记录数</CardTitle>
-          <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/20">
-            <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <div className="rounded-full bg-[hsl(var(--color-info-light))] p-2">
+            <FileText className="h-4 w-4 text-[hsl(var(--color-info))]" />
           </div>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+          <div className="text-2xl font-bold text-[hsl(var(--color-info))]">
             {statistics.totalCount}
           </div>
           <p className="text-muted-foreground mt-1 text-xs">

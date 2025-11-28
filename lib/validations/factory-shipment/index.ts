@@ -327,7 +327,6 @@ export * from './schemas';
 export {
   validateFactoryShipmentItems,
   validateManualProductFields,
-  validateOwnershipFields,
   validateRequiredFieldsByStatus,
   validateStatusFieldRequirements,
 } from './validators';

@@ -111,7 +111,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           {isFetching && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
               <div className="flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-lg">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent" />
                 <span className="text-sm text-gray-600">加载中...</span>
               </div>
             </div>

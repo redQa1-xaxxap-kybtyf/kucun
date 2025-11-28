@@ -97,7 +97,7 @@ const salesOrderColumn: ColumnDef<PaymentRecordDetail> = {
     <Link
       href={`/sales-orders/${payment.salesOrder.id}`}
       prefetch={false}
-      className="text-blue-600 hover:text-blue-800 hover:underline"
+      className="text-primary hover:text-primary/80 hover:underline"
     >
       {payment.salesOrder.orderNumber}
     </Link>
@@ -259,7 +259,7 @@ const renderPaymentMobileCard = (
       value: (
         <Link
           href={`/sales-orders/${payment.salesOrder.id}`}
-          className="text-blue-600 hover:text-blue-800"
+          className="text-primary hover:text-primary/80"
         >
           {payment.salesOrder.orderNumber}
         </Link>

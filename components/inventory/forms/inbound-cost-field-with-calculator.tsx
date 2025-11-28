@@ -87,7 +87,7 @@ export function InboundCostFieldWithCalculator({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 gap-1 px-2 text-xs text-blue-600 hover:text-blue-700"
+                  className="text-primary hover:text-primary/80 h-6 gap-1 px-2 text-xs"
                 >
                   <Calculator className="h-3.5 w-3.5" />
                   辅助计算
@@ -150,12 +150,12 @@ export function InboundCostFieldWithCalculator({
                     </Button>
 
                     {calculatedCost !== null && (
-                      <div className="space-y-2 rounded-md bg-blue-50 p-3">
+                      <div className="space-y-2 rounded-md bg-[hsl(var(--color-primary-light))] p-3">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-gray-700">
                             每片成本：
                           </span>
-                          <span className="text-lg font-bold text-blue-600">
+                          <span className="text-lg font-bold text-[hsl(var(--color-primary))]">
                             ¥{calculatedCost.toFixed(2)}
                           </span>
                         </div>

@@ -238,7 +238,7 @@ export function RecordsFilters({
               variant="outline"
               size="sm"
               onClick={onReset}
-              className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+              className="h-8 gap-1.5 transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
             >
               <RotateCcw className="mr-1 h-3 w-3" />
               重置筛选

@@ -53,7 +53,7 @@ export function ErrorMessage({
             <div className="mt-3">
               <button
                 onClick={onRetry}
-                className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                className="text-primary hover:text-primary/80 text-sm font-medium"
               >
                 重试
               </button>

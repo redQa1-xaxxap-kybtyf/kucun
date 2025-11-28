@@ -164,7 +164,7 @@ const AccountsReceivableComponent = React.forwardRef<
         render: (_value, receivable) => (
           <Link
             href={`/sales-orders/${receivable.salesOrderId}`}
-            className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
+            className="text-primary hover:text-primary/80 font-medium hover:underline"
           >
             {receivable.orderNumber}
           </Link>
@@ -303,7 +303,7 @@ const AccountsReceivableComponent = React.forwardRef<
               <div>
                 <Link
                   href={`/sales-orders/${receivable.salesOrderId}`}
-                  className="font-medium text-blue-600 hover:text-blue-800"
+                  className="text-primary hover:text-primary/80 font-medium"
                 >
                   {receivable.orderNumber}
                 </Link>
@@ -405,7 +405,7 @@ const AccountsReceivableComponent = React.forwardRef<
                     {paymentUtils.formatAmount(statistics.totalReceivable)}
                   </p>
                 </div>
-                <ChineseYuan className="h-8 w-8 text-blue-500" />
+                <ChineseYuan className="h-8 w-8 text-[hsl(var(--color-primary))]" />
               </div>
             </CardContent>
           </Card>

@@ -96,7 +96,7 @@ export function InventoryAdjustFormWithActions({
           <span
             className={`text-2xl font-bold ${
               optimisticQuantity !== inventory.currentQuantity
-                ? 'text-blue-600'
+                ? 'text-[hsl(var(--color-primary))]'
                 : 'text-gray-900'
             }`}
           >

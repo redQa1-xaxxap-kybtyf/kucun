@@ -208,7 +208,7 @@ function SmartProductSearchTriggerContent({
                 {selectedProduct.code && (
                   <Badge
                     variant="outline"
-                    className="border-blue-200 bg-blue-50 px-2 font-mono text-xs font-semibold text-blue-700"
+                    className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-2 font-mono text-xs font-semibold text-[hsl(var(--color-primary))]"
                   >
                     {selectedProduct.code}
                   </Badge>

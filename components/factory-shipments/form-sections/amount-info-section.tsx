@@ -3,11 +3,11 @@ import type { UseFormReturn } from 'react-hook-form';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -45,34 +45,34 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
           {/* 金额统计概览 */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 md:gap-4">
             <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-blue-600 dark:text-blue-400">
+              <p className="text-xs font-medium text-[hsl(var(--color-primary))]">
                 订单总金额
               </p>
-              <p className="mt-1 text-xl font-bold text-blue-700 dark:text-blue-300">
+              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-primary))]">
                 ￥{totalAmount.toFixed(2)}
               </p>
             </div>
             <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-green-600 dark:text-green-400">
+              <p className="text-xs font-medium text-[hsl(var(--color-success))]">
                 应收金额
               </p>
-              <p className="mt-1 text-xl font-bold text-green-700 dark:text-green-300">
+              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-success))]">
                 ￥{grossReceivableAmount.toFixed(2)}
               </p>
             </div>
             <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
+              <p className="text-xs font-medium text-[hsl(var(--color-purple))]">
                 已收定金
               </p>
-              <p className="mt-1 text-xl font-bold text-purple-700 dark:text-purple-300">
+              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-purple))]">
                 ￥{depositAmount.toFixed(2)}
               </p>
             </div>
             <div className="rounded-md border bg-[hsl(var(--color-bg-card))] p-3 sm:p-4">
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+              <p className="text-xs font-medium text-[hsl(var(--color-warning))]">
                 待收余额
               </p>
-              <p className="mt-1 text-xl font-bold text-amber-700 dark:text-amber-300">
+              <p className="mt-1 text-xl font-bold text-[hsl(var(--color-warning))]">
                 ￥{balanceAmount.toFixed(2)}
               </p>
             </div>
@@ -177,7 +177,7 @@ export function AmountInfoSection({ form }: AmountInfoSectionProps) {
             支付信息
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-8">
+        <CardContent className="p-6">
           <div className="space-y-6">
             <FormField
               control={form.control}

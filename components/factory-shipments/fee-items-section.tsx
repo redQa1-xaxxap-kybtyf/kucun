@@ -6,16 +6,16 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    FACTORY_SHIPMENT_FEE_TYPE_LABELS,
-    type FactoryShipmentOrderFeeItem,
+  FACTORY_SHIPMENT_FEE_TYPE_LABELS,
+  type FactoryShipmentOrderFeeItem,
 } from '@/lib/types/factory-shipment';
 import { formatAmount } from '@/lib/utils/factory-shipment-helpers';
 
@@ -152,7 +152,7 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
               <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                 客户承担费用
               </p>
-              <p className="text-base font-bold text-blue-600">
+              <p className="text-base font-bold text-[hsl(var(--color-primary))]">
                 {formatAmount(customerFees)}
               </p>
             </div>

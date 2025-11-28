@@ -95,8 +95,8 @@ export function BasicInfoCard({
           </div>
 
           {selectedCustomer && (
-            <div className="space-y-2.5 rounded-lg border border-blue-200/50 bg-blue-50/50 p-3 md:col-span-2 lg:col-span-2">
-              <div className="text-sm font-medium text-blue-700">
+            <div className="space-y-2.5 rounded-lg border border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-3 md:col-span-2 lg:col-span-2">
+              <div className="text-sm font-medium text-[hsl(var(--color-primary))]">
                 客户详细信息
               </div>
               <div className="grid gap-1.5 text-sm">

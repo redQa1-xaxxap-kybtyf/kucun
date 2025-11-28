@@ -40,7 +40,7 @@ export function OrderSummaryCard({
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="bg-muted/50 rounded-lg p-3 text-center">
             <div className="text-muted-foreground mb-1">产品种类</div>
-            <div className="text-xl font-semibold text-blue-600">
+            <div className="text-xl font-semibold text-[hsl(var(--color-primary))]">
               {itemCount}
             </div>
             <div className="text-muted-foreground text-xs">种</div>

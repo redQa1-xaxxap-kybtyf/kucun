@@ -974,7 +974,7 @@ export function ERPSalesOrderForm({
         <form onSubmit={handleFormSubmit} className="space-y-4">
           {/* ERP标准布局：基本信息区域 */}
           <div className="bg-card rounded-lg border shadow-sm">
-            <div className="border-b bg-gradient-to-r from-blue-50 to-slate-50 px-4 py-2.5">
+            <div className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-bg-secondary))] px-4 py-2.5">
               <h3 className="text-sm font-semibold text-gray-700">基本信息</h3>
             </div>
             <div className="p-4">
@@ -986,7 +986,7 @@ export function ERPSalesOrderForm({
                     订单号
                   </Label>
                   <div className="flex items-center gap-2">
-                    <div className="flex-1 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 font-mono text-sm font-medium text-blue-700">
+                    <div className="flex-1 rounded-md border border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-3 py-1.5 font-mono text-sm font-medium text-[hsl(var(--color-primary))]">
                       {mode === 'edit'
                         ? form.watch('orderNumber') || initialData?.orderNumber
                         : autoOrderNumber || '正在生成...'}
@@ -1278,11 +1278,11 @@ export function ERPSalesOrderForm({
             </div>
             <div className="p-3">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6">
-                <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
+                <div className="flex items-center justify-between rounded border bg-[hsl(var(--color-primary-light))] px-3 py-2">
                   <span className="text-muted-foreground text-xs">
                     产品种类
                   </span>
-                  <span className="text-sm font-semibold text-blue-600">
+                  <span className="text-sm font-semibold text-[hsl(var(--color-primary))]">
                     {fields.length} 种
                   </span>
                 </div>
@@ -1384,11 +1384,11 @@ export function ERPSalesOrderForm({
 
                 {/* 调货销售财务汇总 */}
                 {orderType === 'TRANSFER' && (
-                  <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
+                  <div className="flex items-center justify-between rounded border bg-[hsl(var(--color-primary-light))] px-3 py-2">
                     <span className="text-muted-foreground text-xs">
                       总成本
                     </span>
-                    <span className="text-sm font-semibold text-blue-600">
+                    <span className="text-sm font-semibold text-[hsl(var(--color-primary))]">
                       ￥
                       {formatCurrency(
                         watchedItems.reduce((sum, item) => {

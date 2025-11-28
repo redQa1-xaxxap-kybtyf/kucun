@@ -198,13 +198,15 @@ function InventoryRowView({
 }: InventoryRowViewProps) {
   return (
     <TableRow
-      className={`even:bg-muted/20 text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
+      className={`even:bg-muted/20 text-xs ${className || ''}`}
       style={style}
     >
-      <TableCell className="font-medium text-blue-600">
+      <TableCell className="font-medium text-[hsl(var(--color-primary))]">
         {item.product?.code ? <CopyableText text={item.product.code} /> : '-'}
       </TableCell>
-      <TableCell className="font-medium">{item.product?.name || '-'}</TableCell>
+      <TableCell className="max-w-[260px] truncate font-medium">
+        {item.product?.name || '-'}
+      </TableCell>
       <TableCell>{formattedSpecification}</TableCell>
       <TableCell className="font-medium">
         {packaging > 0 ? (

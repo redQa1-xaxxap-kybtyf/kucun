@@ -37,7 +37,7 @@ export function OrderHeaderBar({
   status,
 }: OrderHeaderBarProps) {
   return (
-    <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2.5 text-white shadow-md">
+    <div className="sticky top-0 z-10 bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary-hover))] px-4 py-2.5 text-white shadow-md">
       <div className="flex items-center justify-between">
         {/* 左侧: 订单号 + 客户 + 订单类型 */}
         <div className="flex items-center gap-4">

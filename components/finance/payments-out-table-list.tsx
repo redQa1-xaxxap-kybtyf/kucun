@@ -175,7 +175,7 @@ function PaymentOutTableRow({
         {payment.payableRecord ? (
           <Link
             href={`/finance/payables/${payment.payableRecord.id}`}
-            className="font-mono text-sm text-blue-600 hover:underline"
+            className="text-primary font-mono text-sm hover:underline"
           >
             <CopyableText text={payment.payableRecord.payableNumber} />
           </Link>

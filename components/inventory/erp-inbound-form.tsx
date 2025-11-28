@@ -232,14 +232,14 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 {/* 2️⃣ 产品与供应商 */}
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                      <Package className="h-4 w-4 text-blue-700" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary-light))]">
+                      <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
                     </div>
                     <h3 className="text-base font-bold text-gray-900">
                       产品与供应商
                     </h3>
                   </div>
-                  <div className="space-y-4 rounded-lg border-2 border-blue-200 bg-blue-50/40 p-4">
+                  <div className="space-y-4 rounded-lg border-2 border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-4">
                     <InboundProductSection
                       form={form}
                       selectedProduct={selectedProduct}

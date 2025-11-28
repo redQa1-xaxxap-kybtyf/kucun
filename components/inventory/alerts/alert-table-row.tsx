@@ -41,9 +41,10 @@ function getAlertSeverity(alert: InventoryAlert): 'high' | 'medium' | 'low' {
 export function AlertTableRow({ alert, onViewProduct }: AlertTableRowProps) {
   const severity = getAlertSeverity(alert);
   const severityColors = {
-    high: 'bg-red-100 text-red-800 border-red-200',
-    medium: 'bg-orange-100 text-orange-800 border-orange-200',
-    low: 'bg-blue-100 text-blue-800 border-blue-200',
+    high: 'bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))] border-[hsl(var(--color-error-light))]',
+    medium:
+      'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))] border-[hsl(var(--color-warning-light))]',
+    low: 'bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))] border-[hsl(var(--color-info-light))]',
   };
 
   return (

@@ -15,19 +15,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import type {
-    RefundListData,
-    RefundListQueryParams,
-    RefundMethod,
-    RefundStatus,
-    RefundType,
+  RefundListData,
+  RefundListQueryParams,
+  RefundMethod,
+  RefundStatus,
+  RefundType,
 } from '@/lib/types/refund';
 import { formatCurrency } from '@/lib/utils';
 
@@ -253,8 +253,12 @@ export function RefundsClient({
                   <TableHead className="w-[150px]">客户信息</TableHead>
                   <TableHead className="w-[200px]">关联订单</TableHead>
                   <TableHead className="w-[100px]">退款方式</TableHead>
-                  <TableHead className="w-[150px] text-right">金额信息</TableHead>
-                  <TableHead className="w-[150px] text-center">时间信息</TableHead>
+                  <TableHead className="w-[150px] text-right">
+                    金额信息
+                  </TableHead>
+                  <TableHead className="w-[150px] text-center">
+                    时间信息
+                  </TableHead>
                   <TableHead className="w-[120px] text-center">操作</TableHead>
                 </TableRow>
               </TableHeader>
@@ -275,7 +279,7 @@ export function RefundsClient({
                   refunds.map(refund => (
                     <TableRow
                       key={refund.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="hover:bg-muted/50 cursor-pointer"
                       onClick={() => {
                         router.push(`/finance/refunds/${refund.id}`);
                       }}
@@ -381,7 +385,7 @@ export function RefundsClient({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 px-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="text-primary hover:text-primary/80 h-8 px-2 hover:bg-[hsl(var(--color-primary-light))]"
                               onClick={event => {
                                 event.stopPropagation();
                                 setSelectedRefundId(refund.id);

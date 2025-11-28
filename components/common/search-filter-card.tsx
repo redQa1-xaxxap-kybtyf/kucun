@@ -221,7 +221,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                 variant="outline"
                 size="sm"
                 onClick={handleClearFilters}
-                className="h-8 gap-1.5 self-end transition-all hover:border-blue-300 hover:bg-blue-50"
+                className="h-8 gap-1.5 self-end transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
               >
                 <RotateCcw className="mr-1 h-3 w-3" />
                 重置筛选

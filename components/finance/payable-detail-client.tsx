@@ -103,7 +103,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             <div className="border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-6 py-4">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-md">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary))] shadow-md">
                     <Receipt className="h-6 w-6 text-white" />
                   </div>
                   <div>
@@ -283,7 +283,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                           <TableCell className="font-medium">
                             <Link
                               href={`/finance/payments-out/${payment.id}`}
-                              className="font-mono text-blue-600 hover:underline"
+                              className="text-primary font-mono hover:underline"
                             >
                               {payment.paymentNumber}
                             </Link>

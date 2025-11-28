@@ -85,8 +85,8 @@ function buildStatCards(
         />
       ),
       description: `${statistics.openingBalance.recordCount} 条期初记录`,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-[hsl(var(--color-primary))]',
+      bgColor: 'bg-[hsl(var(--color-primary-light))]',
     });
   }
 

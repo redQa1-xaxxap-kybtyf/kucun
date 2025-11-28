@@ -183,7 +183,7 @@ function SalesOrderSection({
                   isExpanded ? 'rotate-180' : ''
                 }`}
               />
-              <span className="font-mono font-medium text-blue-600">
+              <span className="font-mono font-medium text-[hsl(var(--color-primary))]">
                 {order.orderNumber}
               </span>
               <span className="text-muted-foreground">

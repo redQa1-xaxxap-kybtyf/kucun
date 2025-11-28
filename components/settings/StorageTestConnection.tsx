@@ -175,12 +175,14 @@ export const StorageTestConnection = ({
             </div>
           )}
 
-          <div className="rounded-lg bg-blue-50 p-3">
+          <div className="rounded-lg bg-[hsl(var(--color-info-light))] p-3">
             <div className="flex items-start">
-              <Info className="mt-0.5 mr-2 h-4 w-4 text-blue-600" />
+              <Info className="mt-0.5 mr-2 h-4 w-4 text-[hsl(var(--color-info))]" />
               <div className="text-sm">
-                <p className="font-medium text-blue-800">配置提示</p>
-                <p className="mt-1 text-blue-700">
+                <p className="font-medium text-[hsl(var(--color-info))]">
+                  配置提示
+                </p>
+                <p className="mt-1 text-[hsl(var(--color-info))]">
                   配置验证成功后，您可以保存配置并开始使用七牛云存储服务。
                   建议定期检查存储空间的使用情况和费用。
                 </p>

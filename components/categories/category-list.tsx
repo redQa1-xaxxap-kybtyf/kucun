@@ -59,9 +59,21 @@ interface CategoryWithLevel extends Category {
 type LevelStyle = { color: string; bg: string; badge: string };
 
 const LEVEL_STYLES: LevelStyle[] = [
-  { color: 'text-gray-900', bg: 'bg-blue-50/30', badge: 'L1' },
-  { color: 'text-blue-700', bg: 'bg-blue-50/50', badge: 'L2' },
-  { color: 'text-purple-600', bg: 'bg-purple-50/50', badge: 'L3' },
+  {
+    color: 'text-[hsl(var(--color-text-primary))]',
+    bg: 'bg-[hsl(var(--color-primary-lighter))]',
+    badge: 'L1',
+  },
+  {
+    color: 'text-[hsl(var(--color-primary))]',
+    bg: 'bg-[hsl(var(--color-primary-light))]',
+    badge: 'L2',
+  },
+  {
+    color: 'text-[hsl(var(--color-purple))]',
+    bg: 'bg-[hsl(var(--color-purple-light))]',
+    badge: 'L3',
+  },
 ];
 
 function buildCategoriesWithLevel(categories: Category[]): CategoryWithLevel[] {
@@ -224,7 +236,7 @@ function CategoryRow({
 
       {/* 产品数量 */}
       <TableCell className="text-center">
-        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700">
+        <span className="inline-flex items-center rounded-full bg-[hsl(var(--color-primary-light))] px-2 py-1 text-xs font-medium text-[hsl(var(--color-primary))]">
           {category.productCount || 0}
         </span>
       </TableCell>
@@ -356,7 +368,7 @@ function CategoryActionCell({
         <Button
           variant="ghost"
           size="sm"
-          className="h-8 px-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+          className="text-primary hover:text-primary/80 h-8 px-2 hover:bg-[hsl(var(--color-primary-light))]"
           onClick={() => onEditCategory(category.id)}
         >
           <Edit className="h-4 w-4" />

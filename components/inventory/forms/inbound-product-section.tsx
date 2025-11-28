@@ -145,7 +145,7 @@ export function InboundProductSection({
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-gray-600">产品编码</span>
-              <span className="font-semibold text-blue-700">
+              <span className="font-semibold text-[hsl(var(--color-primary))]">
                 {selectedProduct.code}
               </span>
             </div>
@@ -210,17 +210,17 @@ export function InboundProductSection({
                         className={cn(
                           'flex items-center gap-2 rounded border px-3 py-1.5 text-left transition',
                           selectedBatchNumber === spec.batchNumber
-                            ? 'border-blue-500 bg-blue-100/80 shadow-sm'
-                            : 'border-blue-200 bg-blue-50 hover:border-blue-300 hover:bg-blue-100'
+                            ? 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] shadow-sm'
+                            : 'border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
                         )}
                       >
-                        <span className="font-mono text-xs font-semibold text-blue-800">
+                        <span className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
                           {spec.batchNumber}
                         </span>
                         <span className="text-gray-400">|</span>
                         <span className="text-xs text-gray-700">
                           每件{' '}
-                          <span className="font-semibold text-blue-700">
+                          <span className="font-semibold text-[hsl(var(--color-primary))]">
                             {spec.piecesPerUnit}
                           </span>{' '}
                           片
@@ -241,7 +241,7 @@ export function InboundProductSection({
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      className="text-xs text-blue-600 hover:text-blue-700"
+                      className="text-primary hover:text-primary/80 text-xs"
                       onClick={handleClearBatchSelection}
                     >
                       清除批次选择

@@ -264,9 +264,9 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       )}
                     </TableCell>
 
-                    {/* 产品名称 */}
+                    {/* 产品名称 - 单行显示，过长时省略号 */}
                     <TableCell
-                      className={`${
+                      className={`max-w-[260px] truncate ${
                         isFirstInGroup
                           ? 'font-medium text-[hsl(var(--color-text-primary))]'
                           : 'text-[hsl(var(--color-text-secondary))]'

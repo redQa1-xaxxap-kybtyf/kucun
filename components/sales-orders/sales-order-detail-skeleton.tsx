@@ -93,7 +93,7 @@ export function SalesOrderDetailSkeleton() {
             <div className="space-y-3">
               {[1, 2].map(i => (
                 <div key={i} className="flex items-center space-x-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-blue-300" />
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-primary))]" />
                   <div className="flex-1 space-y-1">
                     <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
                     <div

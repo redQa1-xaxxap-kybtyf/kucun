@@ -136,7 +136,7 @@ function SelectedProductSummary({ product }: { product: Product }) {
         {product.code && (
           <Badge
             variant="outline"
-            className="border-blue-200 bg-blue-50 font-mono text-xs font-semibold text-blue-700"
+            className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] font-mono text-xs font-semibold text-[hsl(var(--color-primary))]"
           >
             {product.code}
           </Badge>
@@ -370,7 +370,7 @@ function BatchProductSelectorView({
                         {product.code && (
                           <Badge
                             variant="outline"
-                            className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-800 shadow-sm"
+                            className="border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-2.5 py-0.5 font-mono text-xs font-bold text-[hsl(var(--color-primary))] shadow-sm"
                           >
                             {product.code}
                           </Badge>

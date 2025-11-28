@@ -39,9 +39,9 @@ export function ProductBatchList({
                 event.stopPropagation();
                 onSelectBatch(productId, batch.batchNumber);
               }}
-              className="flex items-center gap-1.5 rounded-md border-2 border-blue-200 bg-blue-50 px-3 py-1.5 text-xs whitespace-nowrap transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-md active:scale-95"
+              className="flex items-center gap-1.5 rounded-md border-2 border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-3 py-1.5 text-xs whitespace-nowrap transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:shadow-md active:scale-95"
             >
-              <span className="font-mono font-semibold text-blue-700">
+              <span className="font-mono font-semibold text-[hsl(var(--color-primary))]">
                 {batch.batchNumber}
               </span>
               <span className="text-gray-400">|</span>

@@ -387,7 +387,7 @@ export function FactoryShipmentOrderDetail({
                 <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   应收金额
                 </p>
-                <p className="text-lg font-bold text-blue-700">
+                <p className="text-lg font-bold text-[hsl(var(--color-primary))]">
                   {formatAmount(order.receivableAmount)}
                 </p>
               </div>
@@ -603,14 +603,14 @@ export function FactoryShipmentOrderDetail({
                     </TableRow>
                   ))}
                   {order.items && order.items.length > 0 && (
-                    <TableRow className="border-t border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <TableRow className="border-t border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-indigo-50">
                       <TableCell
                         colSpan={11}
                         className="py-3 text-right text-sm font-semibold text-[hsl(var(--color-text-primary))]"
                       >
                         合计金额：
                       </TableCell>
-                      <TableCell className="py-3 text-right text-base font-bold text-blue-700">
+                      <TableCell className="py-3 text-right text-base font-bold text-[hsl(var(--color-primary))]">
                         {formatAmount(order.totalAmount)}
                       </TableCell>
                       <TableCell

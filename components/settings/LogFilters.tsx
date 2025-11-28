@@ -55,7 +55,11 @@ const LOG_LEVEL_OPTIONS: {
   label: string;
   color: string;
 }[] = [
-  { value: 'info', label: '信息', color: 'text-blue-600' },
+  {
+    value: 'info',
+    label: '信息',
+    color: 'text-[hsl(var(--color-info))]',
+  },
   { value: 'warning', label: '警告', color: 'text-yellow-600' },
   { value: 'error', label: '错误', color: 'text-red-600' },
   { value: 'critical', label: '严重', color: 'text-red-800' },

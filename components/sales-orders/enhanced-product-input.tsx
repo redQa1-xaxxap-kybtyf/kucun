@@ -199,10 +199,10 @@ export function EnhancedProductInput({
             />
 
             {isTransferSale && (
-              <div className="rounded-md bg-blue-50 p-2">
+              <div className="rounded-md bg-[hsl(var(--color-info-light))] p-2">
                 <div className="flex items-center gap-1">
-                  <Package className="h-3 w-3 text-blue-600" />
-                  <span className="text-xs text-blue-700">
+                  <Package className="h-3 w-3 text-[hsl(var(--color-info))]" />
+                  <span className="text-xs text-[hsl(var(--color-info))]">
                     库存选择模式：从现有产品库存中选择
                   </span>
                 </div>

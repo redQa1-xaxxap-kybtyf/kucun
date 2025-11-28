@@ -450,3 +450,30 @@
     margin: 20px auto;
   }
 }
+
+@layer utilities {
+  /* 语义化排版工具类，统一表格和卡片的文字层级 */
+  .text-table-header {
+    font-size: 0.75rem; /* Tailwind text-xs */
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--color-text-secondary));
+  }
+
+  .text-table-cell {
+    font-size: 0.75rem; /* Tailwind text-xs */
+    color: hsl(var(--color-text-primary));
+  }
+
+  .text-card-title {
+    font-size: 1rem; /* Tailwind text-base */
+    font-weight: 600;
+    color: hsl(var(--color-text-primary));
+  }
+
+  .text-card-subtitle {
+    font-size: 0.875rem; /* Tailwind text-sm */
+    color: hsl(var(--color-text-secondary));
+  }
+}

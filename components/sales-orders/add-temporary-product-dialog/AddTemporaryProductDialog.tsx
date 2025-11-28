@@ -44,7 +44,10 @@ export function AddTemporaryProductDialog(
         </DialogHeader>
 
         <div className="space-y-4">
-          <Badge variant="secondary" className="bg-blue-50 text-blue-700">
+          <Badge
+            variant="secondary"
+            className="bg-accent text-accent-foreground"
+          >
             支持快速录入产品规格、单位及每件片数信息
           </Badge>
           <TemporaryProductForm

@@ -163,8 +163,10 @@ function BasicContactInfo({
         <SectionItem
           icon={
             <IconBadge
-              color="bg-blue-100"
-              icon={<User className="h-3.5 w-3.5 text-blue-600" />}
+              color="bg-[hsl(var(--color-primary-light))]"
+              icon={
+                <User className="h-3.5 w-3.5 text-[hsl(var(--color-primary))]" />
+              }
             />
           }
           label="联系人"

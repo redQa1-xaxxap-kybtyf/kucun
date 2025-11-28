@@ -125,7 +125,7 @@ export function BatchSelector({
                             : 'opacity-0'
                         )}
                       />
-                      <span className="font-mono text-sm font-medium text-blue-700">
+                      <span className="font-mono text-sm font-medium text-[hsl(var(--color-primary))]">
                         {batch.batchNumber}
                       </span>
                     </div>

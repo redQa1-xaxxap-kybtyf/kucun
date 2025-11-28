@@ -35,7 +35,7 @@ export function InventoryListToolbar({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {/* 图标容器 */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[var(--shadow-medium)]">
               <Package className="h-6 w-6 text-white" />
             </div>
 
@@ -73,7 +73,7 @@ export function InventoryListToolbar({
             <Button
               onClick={() => router.push('/inventory/inbound/create')}
               size="lg"
-              className="h-11 gap-2 bg-blue-600 shadow-md shadow-blue-600/30 transition-all hover:scale-105 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/40"
+              className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
             >
               <Plus className="h-5 w-5" />
               产品入库
