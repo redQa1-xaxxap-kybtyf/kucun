@@ -444,7 +444,7 @@ async function createOrderInTransaction(
     await tx.supplierProductPrice.createMany({ data: supplierPriceData });
   }
 
-  // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等）
+  // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
   if (env.EXPENSE_AUTO_CREATE && feeItems && feeItems.length > 0) {
     try {
       await ensureCompanyExpenses({
@@ -457,10 +457,17 @@ async function createOrderInTransaction(
         feeItems,
       });
     } catch (e) {
-      logger.warn('factory-shipments', '自动创建费用记录失败(已忽略)', e, {
-        orderId: newOrder.id,
-        orderNumber,
-      });
+      logger.error(
+        'factory-shipments',
+        '自动创建费用记录失败，将回滚厂家发货订单事务',
+        e,
+        {
+          orderId: newOrder.id,
+          orderNumber,
+        }
+      );
+      // 与销售订单保持一致：费用台账写入失败时整体事务回滚，避免利润数据与费用台账脱节
+      throw e;
     }
   }
 

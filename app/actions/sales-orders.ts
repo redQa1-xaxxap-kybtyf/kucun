@@ -169,21 +169,8 @@ export async function createSalesOrder(
         },
       });
 
-      // 如果订单状态为已确认，减少库存
-      if (data.status === 'confirmed') {
-        for (const item of data.items) {
-          if (item.productId && !item.isManualProduct) {
-            await tx.inventory.updateMany({
-              where: { productId: item.productId },
-              data: {
-                quantity: {
-                  decrement: item.quantity,
-                },
-              },
-            });
-          }
-        }
-      }
+      // 注意：库存扣减逻辑已迁移到新的销售订单状态/出库流水处理链路中
+      // 旧版 Server Action 不再直接修改库存，避免绕过 FIFO 队列与批次成本队列
 
       return order;
     });
@@ -296,21 +283,8 @@ export async function updateSalesOrderStatus(
           let inventoryUpdated = false;
           let reservedInventoryReleased = false;
 
-          if (order.status === 'draft' && data.status === 'confirmed') {
-            for (const item of order.items) {
-              if (item.productId && !item.isManualProduct) {
-                await tx.inventory.updateMany({
-                  where: { productId: item.productId },
-                  data: {
-                    quantity: {
-                      decrement: item.quantity,
-                    },
-                  },
-                });
-                inventoryUpdated = true;
-              }
-            }
-          }
+          // 提示：draft -> confirmed 的库存扣减逻辑已迁移到新的订单出库流程
+          // 为避免绕过 FIFO 队列与批次成本队列，这里不再直接修改库存记录
 
           if (order.status === 'confirmed' && data.status === 'cancelled') {
             const cancellationRemarkBase = `销售订单${order.orderNumber}取消回库`;

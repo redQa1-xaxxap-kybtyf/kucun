@@ -2,10 +2,7 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
 import {
-  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
-  type FactoryShipmentItemOwnership,
-  type FactoryShipmentOrder,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
@@ -180,33 +177,6 @@ export const getShippingQueryStatusVariant = (
 };
 
 /**
- * 厂家发货产品归属标签映射
- */
-export const FACTORY_SHIPMENT_OWNERSHIP_LABELS: Record<
-  FactoryShipmentItemOwnership,
-  string
-> = {
-  [FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER]: '客户货',
-  [FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF]: '自用补货',
-};
-
-/**
- * 格式化产品归属状态
- */
-export const formatOwnershipStatus = (
-  item: FactoryShipmentOrder['items'][number]
-): { label: string; variant: 'secondary' | 'info' | 'success' | 'warning' } => {
-  if (item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) {
-    return item.customerDeliveryStatus === 'delivered'
-      ? { label: '已交付', variant: 'success' }
-      : { label: '待交付', variant: 'warning' };
-  }
-  return item.selfInboundStatus === 'received'
-    ? { label: '已入库', variant: 'success' }
-    : { label: '待入库', variant: 'secondary' };
-};
-
-/**
  * 判断是否可以确认发货
  */
 export const canConfirmShipment = (status: FactoryShipmentStatus): boolean => {
@@ -225,22 +195,6 @@ export const canConfirmArrival = (status: FactoryShipmentStatus): boolean => {
   const allowedStatuses: FactoryShipmentStatus[] = [
     FACTORY_SHIPMENT_STATUS.SHIPPED,
     FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
-  ];
-  return allowedStatuses.includes(status);
-};
-
-/**
- * 判断是否可以确认自用货入库
- */
-export const canConfirmInbound = (
-  status: FactoryShipmentStatus,
-  hasPendingSelfInbound: boolean
-): boolean => {
-  if (!hasPendingSelfInbound) {
-    return false;
-  }
-  const allowedStatuses: FactoryShipmentStatus[] = [
-    FACTORY_SHIPMENT_STATUS.ARRIVED,
   ];
   return allowedStatuses.includes(status);
 };

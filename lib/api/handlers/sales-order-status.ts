@@ -379,6 +379,9 @@ async function executeOrderStatusUpdateWithInventory(
     }
 
     // 第二步：更新库存并创建出库记录 - 使用乐观锁 + FIFO成本
+    // 同时收集最新的明细成本, 便于后续回写订单级成本/利润字段
+    const updatedItemCosts = new Map<string, number>();
+
     for (const { item, productId, inventory } of inventoryChecks) {
       // 使用乐观锁更新库存数量和预留量，确保并发安全
       const updatedCount = await tx.inventory.updateMany({
@@ -517,7 +520,23 @@ async function executeOrderStatusUpdateWithInventory(
               : undefined,
         },
       });
+
+      // 记录明细最新成本（含分摊费用），用于聚合到订单级成本
+      const finalCostForItem =
+        totalCostWithExpense !== undefined
+          ? totalCostWithExpense
+          : (baseTotalCost ?? 0);
+      updatedItemCosts.set(item.id, finalCostForItem);
     }
+
+    // 汇总最新成本, 以“明细成本汇总 = 订单成本”的口径回写订单级字段
+    let aggregatedCostAmount = 0;
+    existingOrder.items.forEach(item => {
+      const updatedCost =
+        updatedItemCosts.get(item.id) ?? Number(item.costSubtotal ?? 0) ?? 0;
+      aggregatedCostAmount += updatedCost;
+    });
+    aggregatedCostAmount = roundCurrency(aggregatedCostAmount);
 
     const itemsAmountValue =
       existingOrder.itemsAmount !== undefined &&
@@ -527,18 +546,10 @@ async function executeOrderStatusUpdateWithInventory(
             (sum, item) => sum + Number(item.subtotal ?? 0),
             0
           );
-    const previousCostAmount =
-      existingOrder.costAmount !== undefined &&
-      existingOrder.costAmount !== null
-        ? Number(existingOrder.costAmount)
-        : 0;
     const normalizedExpenseAmount = roundCurrency(companyExpenseAmount);
-    const updatedCostAmount =
-      companyExpenseAmount > 0
-        ? roundCurrency(previousCostAmount + companyExpenseAmount)
-        : previousCostAmount;
+    const updatedCostAmount = aggregatedCostAmount;
     const updatedProfitAmount =
-      companyExpenseAmount > 0
+      itemsAmountValue !== 0
         ? roundCurrency(itemsAmountValue - updatedCostAmount)
         : (existingOrder.profitAmount ?? undefined);
 
@@ -550,10 +561,8 @@ async function executeOrderStatusUpdateWithInventory(
         ...(remarks !== undefined && { remarks }),
         // 如果状态变更为已发货，记录发货时间
         ...(status === 'shipped' && { shippedAt: new Date() }),
-        ...(companyExpenseAmount > 0 && {
-          costAmount: updatedCostAmount,
-          profitAmount: updatedProfitAmount,
-        }),
+        costAmount: updatedCostAmount,
+        profitAmount: updatedProfitAmount,
         expenseAmount: normalizedExpenseAmount,
       },
       select: {

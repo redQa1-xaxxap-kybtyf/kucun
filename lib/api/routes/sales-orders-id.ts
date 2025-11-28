@@ -183,12 +183,9 @@ export const putSalesOrderRoute: ApiHandler = async (
 
   // ✅ P0修复：销售订单状态更新后，失效销售订单和应收款缓存
   invalidateSalesOrderAndReceivables(id).catch(error => {
-    logger.error('销售订单和应收款缓存失效失败', {
-      error,
-      context: {
-        orderId: id,
-        operation: 'cache_invalidation',
-      },
+    logger.error('sales-orders', '销售订单和应收款缓存失效失败', error, {
+      orderId: id,
+      operation: 'cache_invalidation',
     });
   });
 
@@ -196,7 +193,10 @@ export const putSalesOrderRoute: ApiHandler = async (
 };
 
 // PATCH /api/sales-orders/[id] — 更新草稿
-export const patchSalesOrderRoute: ApiHandler = async (request, { params }) => {
+export const patchSalesOrderRoute: ApiHandler = async (
+  request,
+  { user, params }
+) => {
   const id = await resolveId(params);
   const body = await request.json();
 
@@ -246,16 +246,18 @@ export const patchSalesOrderRoute: ApiHandler = async (request, { params }) => {
     );
   }
 
-  const data = await updateSalesOrderDraft(id, parsed.data, existingOrder);
+  const data = await updateSalesOrderDraft(
+    id,
+    parsed.data,
+    existingOrder,
+    user.id
+  );
 
   // ✅ P0修复：销售订单草稿更新后，失效销售订单和应收款缓存
   invalidateSalesOrderAndReceivables(id).catch(error => {
-    logger.error('销售订单和应收款缓存失效失败', {
-      error,
-      context: {
-        orderId: id,
-        operation: 'cache_invalidation_draft',
-      },
+    logger.error('sales-orders', '销售订单和应收款缓存失效失败', error, {
+      orderId: id,
+      operation: 'cache_invalidation_draft',
     });
   });
 
@@ -296,12 +298,9 @@ export const deleteSalesOrderRoute: ApiHandler = async (
 
   // ✅ P0修复：销售订单删除后，失效销售订单和应收款缓存
   invalidateSalesOrderAndReceivables(id).catch(error => {
-    logger.error('销售订单和应收款缓存失效失败', {
-      error,
-      context: {
-        orderId: id,
-        operation: 'cache_invalidation_delete',
-      },
+    logger.error('sales-orders', '销售订单和应收款缓存失效失败', error, {
+      orderId: id,
+      operation: 'cache_invalidation_delete',
     });
   });
 

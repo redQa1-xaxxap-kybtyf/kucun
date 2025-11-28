@@ -2,10 +2,9 @@
  * 厂家发货利润计算服务
  *
  * 功能：
- * - 计算客户货利润（应收金额 - 采购成本 - 分摊费用）
+ * - 计算发货单明细利润（应收金额 - 采购成本 - 分摊费用）
  * - 计算利润率（利润 / 应收金额 × 100%）
  * - 计算订单总利润
- * - 计算自有货成本
  *
  * 设计原则：
  * - KISS: 计算逻辑简单直观
@@ -47,33 +46,30 @@ export function allocateReceivableAmount(
 ): Map<string, number> {
   const allocations = new Map<string, number>();
 
-  // 只处理客户货
-  const customerItems = items.filter(item => item.ownership === 'customer');
-
-  if (customerItems.length === 0) {
+  if (items.length === 0) {
     return allocations;
   }
 
-  // 计算客户货总采购金额
-  const totalCustomerCost = customerItems.reduce(
-    (sum, item) => sum + item.totalPrice,
+  // 统一视为客户货：按 totalPrice 比例分配应收金额
+  const totalValue = items.reduce(
+    (sum, item) => sum + (item.totalPrice || 0),
     0
   );
 
-  // 边界情况：客户货总成本为0，平均分配
-  if (totalCustomerCost === 0) {
+  if (totalValue === 0) {
+    // 边界情况：总金额为0，平均分配
     const averageReceivable = roundToTwoDecimals(
-      totalReceivable / customerItems.length
+      totalReceivable / items.length
     );
-    customerItems.forEach(item => {
+    items.forEach(item => {
       allocations.set(item.id, averageReceivable);
     });
 
     // 调整最后一项以消除误差
-    if (customerItems.length > 0) {
-      const allocated = averageReceivable * customerItems.length;
-      const difference = roundToTwoDecimals(totalReceivable - allocated);
-      const lastItem = customerItems[customerItems.length - 1];
+    const allocated = averageReceivable * items.length;
+    const difference = roundToTwoDecimals(totalReceivable - allocated);
+    if (items.length > 0 && Math.abs(difference) >= 0.01) {
+      const lastItem = items[items.length - 1];
       allocations.set(
         lastItem.id,
         roundToTwoDecimals(averageReceivable + difference)
@@ -83,9 +79,8 @@ export function allocateReceivableAmount(
     return allocations;
   }
 
-  // 按采购金额比例分配应收金额
-  customerItems.forEach(item => {
-    const ratio = item.totalPrice / totalCustomerCost;
+  items.forEach(item => {
+    const ratio = (item.totalPrice || 0) / totalValue;
     const receivable = roundToTwoDecimals(totalReceivable * ratio);
     allocations.set(item.id, receivable);
   });
@@ -97,8 +92,8 @@ export function allocateReceivableAmount(
   );
   const difference = roundToTwoDecimals(totalReceivable - allocatedTotal);
 
-  if (Math.abs(difference) >= 0.01 && customerItems.length > 0) {
-    const lastItem = customerItems[customerItems.length - 1];
+  if (Math.abs(difference) >= 0.01 && items.length > 0) {
+    const lastItem = items[items.length - 1];
     const lastAmount = allocations.get(lastItem.id) || 0;
     allocations.set(lastItem.id, roundToTwoDecimals(lastAmount + difference));
   }
@@ -196,7 +191,7 @@ export function calculateOrderProfit(
   totalReceivable: number,
   expenseAllocations: Map<string, number>
 ): OrderProfitSummary {
-  // 分配应收金额到各客户货明细
+  // 分配应收金额到各明细（统一视为客户货）
   const receivableAllocations = allocateReceivableAmount(
     items,
     totalReceivable
@@ -206,34 +201,22 @@ export function calculateOrderProfit(
   let customerProfit = 0;
   let totalRevenue = 0;
   let totalCost = 0;
-  let selfCostAmount = 0;
 
-  // 计算各明细的利润
+  // 计算各明细的利润（不再区分客户货 / 自有货）
   items.forEach(item => {
     const allocatedExpense = expenseAllocations.get(item.id) || 0;
 
-    if (item.ownership === 'customer') {
-      // 客户货：计算利润
-      const receivable = receivableAllocations.get(item.id) || 0;
-      const profitResult = calculateItemProfit(
-        item,
-        receivable,
-        allocatedExpense
-      );
+    const receivable = receivableAllocations.get(item.id) || 0;
+    const profitResult = calculateItemProfit(
+      item,
+      receivable,
+      allocatedExpense
+    );
 
-      itemResults.push(profitResult);
-      customerProfit += profitResult.profitAmount;
-      totalRevenue += profitResult.revenue;
-      totalCost += profitResult.cost;
-    } else {
-      // 自有货：只计算成本
-      // ✅ 修复：使用 unitCost 作为进货单价
-      // ✅ 修复：考虑单位转换（件 → 片）
-      const actualQuantity = getActualQuantityInPieces(item);
-      const purchaseCost = (item.unitCost || item.unitPrice) * actualQuantity;
-      const itemCost = purchaseCost + allocatedExpense;
-      selfCostAmount += itemCost;
-    }
+    itemResults.push(profitResult);
+    customerProfit += profitResult.profitAmount;
+    totalRevenue += profitResult.revenue;
+    totalCost += profitResult.cost;
   });
 
   // 计算总费用
@@ -250,7 +233,7 @@ export function calculateOrderProfit(
 
   return {
     customerProfit: roundToTwoDecimals(customerProfit),
-    selfCostAmount: roundToTwoDecimals(selfCostAmount),
+    selfCostAmount: 0,
     totalRevenue: roundToTwoDecimals(totalRevenue),
     totalCost: roundToTwoDecimals(totalCost),
     totalExpenses: roundToTwoDecimals(totalExpenses),
@@ -289,25 +272,22 @@ export function extractItemUpdates(
   items.forEach(item => {
     const allocatedExpense = expenseAllocations.get(item.id) || 0;
 
-    if (item.ownership === 'customer') {
-      // 客户货：从利润结果中获取数据
-      const profitResult = profitSummary.itemResults.find(
-        r => r.itemId === item.id
-      );
+    // 不再区分客户货/自有货：统一从利润结果中提取
+    const profitResult = profitSummary.itemResults.find(
+      r => r.itemId === item.id
+    );
 
-      if (profitResult) {
-        updates.push({
-          itemId: item.id,
-          unitCost: profitResult.unitCost,
-          allocatedExpense: profitResult.allocatedExpense,
-          profitAmount: profitResult.profitAmount,
-          profitMargin: profitResult.profitMargin,
-        });
-      }
+    if (profitResult) {
+      updates.push({
+        itemId: item.id,
+        unitCost: profitResult.unitCost,
+        allocatedExpense: profitResult.allocatedExpense,
+        profitAmount: profitResult.profitAmount,
+        profitMargin: profitResult.profitMargin,
+      });
     } else {
-      // 自有货：只更新成本相关字段
+      // 兜底：仅更新费用和单位成本
       const unitCost = calculateSelfItemCost(item, allocatedExpense);
-
       updates.push({
         itemId: item.id,
         unitCost,

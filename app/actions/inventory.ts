@@ -4,8 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
+import { executeAdjustmentTransaction } from '@/app/api/inventory/adjust/route';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
 export type ActionResult<T = unknown> =
@@ -83,83 +83,6 @@ function normalizeAdjustInput(
   };
 }
 
-function generateAdjustmentNumber() {
-  const now = new Date();
-  const timestamp = now
-    .toISOString()
-    .replace(/[-:.TZ]/g, '')
-    .slice(0, 14);
-  const randomSuffix = Math.random().toString(36).slice(-4).toUpperCase();
-  return `ADJ-${timestamp}-${randomSuffix}`;
-}
-
-async function applyInventoryAdjustment(
-  tx: Omit<
-    typeof prisma,
-    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-  >,
-  input: InventoryAdjustInput,
-  operatorId: string
-) {
-  const inventory = await tx.inventory.findFirst({
-    where: {
-      productId: input.productId,
-      variantId: input.variantId,
-      batchNumber: input.batchNumber,
-    },
-  });
-
-  const beforeQuantity = inventory?.quantity ?? 0;
-  const afterQuantity = beforeQuantity + input.adjustQuantity;
-
-  if (afterQuantity < 0) {
-    throw new Error('库存不足，无法扣减');
-  }
-
-  let inventoryId: string;
-
-  if (inventory) {
-    const updated = await tx.inventory.update({
-      where: { id: inventory.id },
-      data: { quantity: afterQuantity },
-    });
-    inventoryId = updated.id;
-  } else {
-    if (input.adjustQuantity < 0) {
-      throw new Error('无法扣减不存在的库存');
-    }
-
-    const created = await tx.inventory.create({
-      data: {
-        productId: input.productId,
-        variantId: input.variantId,
-        batchNumber: input.batchNumber,
-        quantity: afterQuantity,
-        reservedQuantity: 0,
-      },
-    });
-    inventoryId = created.id;
-  }
-
-  await tx.inventoryAdjustment.create({
-    data: {
-      adjustmentNumber: generateAdjustmentNumber(),
-      productId: input.productId,
-      variantId: input.variantId,
-      batchNumber: input.batchNumber,
-      beforeQuantity,
-      adjustQuantity: input.adjustQuantity,
-      afterQuantity,
-      reason: input.reason,
-      notes: input.notes ?? null,
-      operatorId,
-      status: 'completed',
-    },
-  });
-
-  return { id: inventoryId, newQuantity: afterQuantity };
-}
-
 export async function adjustInventory(
   formData: FormData
 ): Promise<ActionResult<{ id: string; newQuantity: number }>> {
@@ -188,14 +111,25 @@ export async function adjustInventory(
 
     const normalizedInput = normalizeAdjustInput(parseResult.data);
 
-    const result = await prisma.$transaction(tx =>
-      applyInventoryAdjustment(tx, normalizedInput, session.user.id)
+    const { inventory } = await executeAdjustmentTransaction(
+      {
+        productId: normalizedInput.productId,
+        adjustQuantity: normalizedInput.adjustQuantity,
+        reason: normalizedInput.reason,
+        batchNumber: normalizedInput.batchNumber ?? undefined,
+        variantId: normalizedInput.variantId ?? undefined,
+        notes: normalizedInput.notes ?? undefined,
+      },
+      session.user.id
     );
 
     revalidatePath('/inventory');
     revalidatePath('/inventory/adjustments');
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: { id: inventory.id, newQuantity: inventory.quantity },
+    };
   } catch (error) {
     logger.error('actions:inventory', '库存调整失败', error, {
       action: 'adjustInventory',
@@ -246,11 +180,19 @@ export async function batchAdjustInventory(
       normalizedInputs.push(normalizeAdjustInput(parseResult.data));
     }
 
-    await prisma.$transaction(async tx => {
-      for (const input of normalizedInputs) {
-        await applyInventoryAdjustment(tx, input, session.user.id);
-      }
-    });
+    for (const input of normalizedInputs) {
+      await executeAdjustmentTransaction(
+        {
+          productId: input.productId,
+          adjustQuantity: input.adjustQuantity,
+          reason: input.reason,
+          batchNumber: input.batchNumber ?? undefined,
+          variantId: input.variantId ?? undefined,
+          notes: input.notes ?? undefined,
+        },
+        session.user.id
+      );
+    }
 
     revalidatePath('/inventory');
     revalidatePath('/inventory/adjustments');

@@ -8,10 +8,7 @@ import { z } from 'zod';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import {
-  allocateExpenses,
-  roundToTwoDecimals,
-} from '@/lib/services/factory-shipment-expense-service';
+import { allocateExpenses } from '@/lib/services/factory-shipment-expense-service';
 import {
   calculateOrderProfit,
   extractItemUpdates,
@@ -105,68 +102,7 @@ export async function createFactoryShipment(
         },
       });
 
-      // 如果订单状态为已到货，处理自有货物入库
-      if (status === FACTORY_SHIPMENT_STATUS.ARRIVED) {
-        for (const item of itemsPayload) {
-          // 只有自有货物才入库（客户货不进入公司库存）
-          if (
-            item.productId &&
-            !item.isManualProduct &&
-            item.ownership === 'self'
-          ) {
-            const quantityDelta = Math.round(item.quantity);
-            // 查找或创建库存记录
-            const existingInventory = await tx.inventory.findFirst({
-              where: { productId: item.productId },
-            });
-
-            // 使用 unitPrice 作为入库成本（创建时还没有费用分摊）
-            const inboundUnitCost = item.unitPrice;
-
-            if (existingInventory) {
-              // 计算加权平均成本
-              const newUnitCost = calculateWeightedAverageCost(
-                existingInventory.quantity,
-                existingInventory.unitCost || 0,
-                quantityDelta,
-                inboundUnitCost
-              );
-
-              await tx.inventory.update({
-                where: { id: existingInventory.id },
-                data: {
-                  quantity: {
-                    increment: quantityDelta,
-                  },
-                  unitCost: newUnitCost,
-                },
-              });
-            } else {
-              await tx.inventory.create({
-                data: {
-                  productId: item.productId,
-                  quantity: quantityDelta,
-                  reservedQuantity: 0,
-                  unitCost: inboundUnitCost,
-                },
-              });
-            }
-          }
-        }
-
-        // 更新自有货入库状态
-        await tx.factoryShipmentOrderItem.updateMany({
-          where: {
-            factoryShipmentOrderId: shipment.id,
-            ownership: 'self',
-            selfInboundStatus: { not: 'received' },
-          },
-          data: {
-            selfInboundStatus: 'received',
-            inboundReceivedAt: new Date(),
-          },
-        });
-      }
+      // 厂家发货业务当前不再区分自有货/客户货，自有货入库逻辑已废弃
 
       // 创建费用记录（如果有费用项）
       if (data.feeItems && data.feeItems.length > 0) {
@@ -255,73 +191,7 @@ export async function updateFactoryShipmentStatus(
         data: { status: data.status },
       });
 
-      // 如果从待发货/运输中变为已到货，处理自有货物入库
-      if (
-        (shipment.status === 'pending_shipment' ||
-          shipment.status === 'in_transit') &&
-        data.status === 'arrived'
-      ) {
-        for (const item of shipment.items) {
-          // 只有自有货物才入库（客户货不进入公司库存）
-          if (
-            item.productId &&
-            !item.isManualProduct &&
-            item.ownership === 'self'
-          ) {
-            const quantityDelta = Math.round(item.quantity);
-            const existingInventory = await tx.inventory.findFirst({
-              where: { productId: item.productId },
-            });
-
-            // 使用明细的 unitCost（包含分摊费用）作为入库成本
-            // 如果 unitCost 为 null，则使用 unitPrice
-            const inboundUnitCost = item.unitCost || item.unitPrice;
-
-            if (existingInventory) {
-              // 计算加权平均成本
-              const newUnitCost = calculateWeightedAverageCost(
-                existingInventory.quantity,
-                existingInventory.unitCost || 0,
-                quantityDelta,
-                inboundUnitCost
-              );
-
-              await tx.inventory.update({
-                where: { id: existingInventory.id },
-                data: {
-                  quantity: {
-                    increment: quantityDelta,
-                  },
-                  unitCost: newUnitCost,
-                },
-              });
-            } else {
-              // 如果库存不存在，创建新的库存记录
-              await tx.inventory.create({
-                data: {
-                  productId: item.productId,
-                  quantity: quantityDelta,
-                  reservedQuantity: 0,
-                  unitCost: inboundUnitCost,
-                },
-              });
-            }
-          }
-        }
-
-        // 更新自有货入库状态
-        await tx.factoryShipmentOrderItem.updateMany({
-          where: {
-            factoryShipmentOrderId: data.shipmentId,
-            ownership: 'self',
-            selfInboundStatus: { not: 'received' },
-          },
-          data: {
-            selfInboundStatus: 'received',
-            inboundReceivedAt: new Date(),
-          },
-        });
-      }
+      // 厂家发货业务当前不再区分自有货/客户货，状态变更时不再自动将“自有货”转入库存
     });
 
     revalidatePath('/factory-shipments');
@@ -572,36 +442,6 @@ export async function updateFactoryShipment(
       error: error instanceof Error ? error.message : '更新厂家发货订单失败',
     };
   }
-}
-
-// ============================================
-// 辅助函数
-// ============================================
-
-/**
- * 计算加权平均成本
- *
- * 公式: 新单位成本 = (原库存金额 + 新入库金额) / (原库存数量 + 新入库数量)
- *
- * @param currentStock - 当前库存数量
- * @param currentUnitCost - 当前单位成本
- * @param inboundQuantity - 入库数量
- * @param inboundUnitCost - 入库单位成本
- * @returns 新的单位成本
- */
-function calculateWeightedAverageCost(
-  currentStock: number,
-  currentUnitCost: number,
-  inboundQuantity: number,
-  inboundUnitCost: number
-): number {
-  const currentValue = currentStock * currentUnitCost;
-  const inboundValue = inboundQuantity * inboundUnitCost;
-  const totalQuantity = currentStock + inboundQuantity;
-
-  return totalQuantity > 0
-    ? roundToTwoDecimals((currentValue + inboundValue) / totalQuantity)
-    : inboundUnitCost;
 }
 
 /**

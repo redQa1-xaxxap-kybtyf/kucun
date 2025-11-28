@@ -16,7 +16,9 @@ export const FACTORY_SHIPMENT_STATUS = {
 export type FactoryShipmentStatus =
   (typeof FACTORY_SHIPMENT_STATUS)[keyof typeof FACTORY_SHIPMENT_STATUS];
 
-// 发货明细归属：客户货 or 自有货（随柜补货）
+// 发货明细归属（历史字段，仅保留向后兼容）
+// 业务上已不再区分“客户货 / 自有货”，统一视为客户货；
+// 该枚举和字段仅用于兼容旧数据和避免大规模迁移。
 export const FACTORY_SHIPMENT_ITEM_OWNERSHIP = {
   CUSTOMER: 'customer',
   SELF: 'self',
@@ -77,7 +79,7 @@ export interface FactoryShipmentOrderItem {
   unitPrice: number;
   totalPrice: number;
 
-  // 归属信息
+  // 归属信息（仅保留字段，当前业务统一视为客户货）
   ownership: FactoryShipmentItemOwnership;
   customerDeliveryStatus?: FactoryShipmentItemDeliveryStatus;
   selfInboundStatus?: FactoryShipmentItemInboundStatus;
@@ -373,10 +375,10 @@ export interface ItemProfitResult {
  * 订单利润汇总
  */
 export interface OrderProfitSummary {
-  customerProfit: number; // 客户货总利润
-  selfCostAmount: number; // 自有货总成本
-  totalRevenue: number; // 客户货总收入
-  totalCost: number; // 客户货总成本（采购价）
+  customerProfit: number; // 总利润（所有明细统一视为客户货）
+  selfCostAmount: number; // 已废弃：保留字段用于兼容，固定为0
+  totalRevenue: number; // 总收入
+  totalCost: number; // 总成本（采购价）
   totalExpenses: number; // 总费用
   averageProfitMargin: number; // 平均利润率（%）
   itemResults: ItemProfitResult[]; // 各明细利润

@@ -3,6 +3,12 @@ import {
   findOrCreateTemporaryProduct,
 } from '@/lib/api/handlers/sales-orders/temporary-products';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import {
+  ensureCompanyExpenses,
+  type CompanyFeeItemLike,
+} from '@/lib/services/expense-service';
 
 // 复用临时产品相关工具
 
@@ -20,7 +26,8 @@ export async function updateSalesOrderDraft(
     orderType: 'NORMAL' | 'TRANSFER' | null;
     transferMode?: 'SUPPLIER_ONLY' | 'MIXED' | null;
     supplierId?: string | null;
-  }
+  },
+  userId: string
 ) {
   const orderType = (updateData.orderType ??
     existingOrder.orderType ??
@@ -84,7 +91,7 @@ export async function updateSalesOrderDraft(
       }
     }
 
-    return await tx.salesOrder.update({
+    const updated = await tx.salesOrder.update({
       where: { id },
       data: {
         customerId: updateData.customerId ?? undefined,
@@ -131,6 +138,67 @@ export async function updateSalesOrderDraft(
       },
       select: selectUpdatedOrder(),
     });
+
+    // 阶段2：自动同步公司承担费用到 ExpenseRecord（幂等，必须成功）
+    // 约束：
+    // - 当客户端提交 feeItems 时，视为对费用的完整覆盖；
+    // - 因此先删除该订单已有关联费用，再根据新的 feeItems 重建公司费用台账；
+    // - 写入失败将导致整个草稿更新事务回滚，避免订单费用与台账脱节。
+    if (env.EXPENSE_AUTO_CREATE && 'feeItems' in updateData) {
+      try {
+        // 删除现有与销售订单关联的费用记录
+        await tx.expenseRecord.deleteMany({
+          where: {
+            relatedType: 'sales_order',
+            relatedId: id,
+          },
+        });
+
+        const feeItemsInput = Array.isArray(updateData.feeItems)
+          ? (updateData.feeItems as any[])
+          : [];
+
+        if (feeItemsInput.length > 0) {
+          const companyFeeItems: CompanyFeeItemLike[] = feeItemsInput.map(
+            fee => ({
+              feeType: fee.feeType,
+              feeName: fee.feeName,
+              feeAmount: Number(fee.feeAmount) || 0,
+              paidBy: (fee.paidBy as 'customer' | 'company') ?? 'customer',
+              remarks: fee.remarks ?? null,
+            })
+          );
+
+          await ensureCompanyExpenses({
+            tx,
+            sourceType: 'sales_order',
+            sourceId: id,
+            sourceNumber: existingOrder.orderNumber,
+            userId,
+            supplierId:
+              orderType === 'TRANSFER'
+                ? updateData.supplierId === undefined
+                  ? (existingOrder.supplierId ?? null)
+                  : (updateData.supplierId ?? null)
+                : null,
+            feeItems: companyFeeItems,
+          });
+        }
+      } catch (e) {
+        logger.error(
+          'sales-orders',
+          '更新草稿订单时自动同步费用台账失败，将回滚事务',
+          e,
+          {
+            orderId: id,
+            orderNumber: existingOrder.orderNumber,
+          }
+        );
+        throw e;
+      }
+    }
+
+    return updated;
   });
 
   const { returnOrders, ...rest } = updatedOrder as any;

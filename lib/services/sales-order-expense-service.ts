@@ -32,7 +32,7 @@ export interface ExpenseAllocationResult {
  */
 export class SalesOrderExpenseService {
   /**
-   * 按销售金额比例分摊费用
+   * 按成本金额比例分摊费用（优先使用成本小计，其次使用单位成本 * 数量，最后回退到销售金额）
    *
    * @param items - 订单明细项列表
    * @param totalExpense - 总费用金额
@@ -45,43 +45,72 @@ export class SalesOrderExpenseService {
    *   { id: '2', subtotal: 2000, costSubtotal: 1200, quantity: 20 },
    * ];
    * const results = service.allocateExpensesByValue(items, 300);
-   * // results[0].allocatedExpense = 100 (1000 / 3000 * 300)
-   * // results[1].allocatedExpense = 200 (2000 / 3000 * 300)
+   * // 600 / (600+1200) = 1/3, 1200 / (600+1200) = 2/3
+   * // results[0].allocatedExpense = 100 (300 * 1/3)
+   * // results[1].allocatedExpense = 200 (300 * 2/3)
    * ```
    */
   allocateExpensesByValue(
     items: OrderItemForExpense[],
     totalExpense: number
   ): ExpenseAllocationResult[] {
-    // 计算总销售金额
-    const totalSalesAmount = items.reduce(
+    // 计算每行的“分摊基数”：优先成本小计，其次单位成本 * 数量，最后回退到销售金额
+    const itemsWithBase = items.map(item => {
+      const costSubtotal =
+        item.costSubtotal !== undefined && item.costSubtotal !== null
+          ? item.costSubtotal
+          : null;
+      const fallbackCost =
+        item.unitCost !== undefined &&
+        item.unitCost !== null &&
+        item.quantity !== undefined
+          ? item.unitCost * item.quantity
+          : null;
+      const baseCost = costSubtotal ?? fallbackCost ?? 0;
+
+      return {
+        ...item,
+        baseCost,
+      };
+    });
+
+    const totalBaseCost = itemsWithBase.reduce(
+      (sum, item) => sum + item.baseCost,
+      0
+    );
+
+    // 备用：总销售金额（当成本为 0 时作为回退基数）
+    const totalSalesAmount = itemsWithBase.reduce(
       (sum, item) => sum + item.subtotal,
       0
     );
 
     // 如果总销售金额为 0，无法分摊
-    if (totalSalesAmount === 0) {
-      return items.map(item => ({
+    if (totalBaseCost === 0 && totalSalesAmount === 0) {
+      // 无成本、无销售金额：无法合理分摊，全部费用为 0
+      return itemsWithBase.map(item => ({
         itemId: item.id,
         allocatedExpense: 0,
-        totalCost: item.costSubtotal ?? 0,
-        profitAmount: item.subtotal - (item.costSubtotal ?? 0),
-        profitMargin: this.calculateProfitMargin(
-          item.subtotal,
-          item.costSubtotal ?? 0
-        ),
+        totalCost: item.baseCost,
+        profitAmount: item.subtotal - item.baseCost,
+        profitMargin: this.calculateProfitMargin(item.subtotal, item.baseCost),
       }));
     }
 
-    // 按比例分摊费用
+    // 按比例分摊费用（优先按成本占比，如果成本为 0 则回退到按销售额占比）
     let allocatedSum = 0;
     const results: ExpenseAllocationResult[] = [];
 
-    items.forEach((item, index) => {
+    itemsWithBase.forEach((item, index) => {
       const isLastItem = index === items.length - 1;
 
       // 计算分摊比例
-      const ratio = item.subtotal / totalSalesAmount;
+      const ratio =
+        totalBaseCost > 0
+          ? item.baseCost / totalBaseCost
+          : totalSalesAmount > 0
+            ? item.subtotal / totalSalesAmount
+            : 0;
 
       // 计算分摊费用（最后一项使用差额，避免精度问题）
       const allocatedExpense = isLastItem
@@ -91,8 +120,8 @@ export class SalesOrderExpenseService {
       allocatedSum += allocatedExpense;
 
       // 计算总成本
-      const costSubtotal = item.costSubtotal ?? 0;
-      const totalCost = costSubtotal + allocatedExpense;
+      const baseCost = item.baseCost;
+      const totalCost = baseCost + allocatedExpense;
 
       // 计算利润
       const profitAmount = item.subtotal - totalCost;

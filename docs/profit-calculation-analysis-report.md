@@ -30,7 +30,7 @@
 ### 关键发现
 
 1. **✅ 优势**: 利润计算公式数学正确，符合业务逻辑
-2. **✅ 优势**: 成本核算采用加权平均成本法，行业标准
+2. **✅ 优势**: 成本核算在仓库层采用 FIFO 成本队列，销售出库成本按先进先出计算
 3. **⚠️ 注意**: 退货场景的利润调整逻辑需要完善
 4. **⚠️ 注意**: 部分边界情况（零数量、负利润）需要增强处理
 
@@ -91,25 +91,7 @@
 - 使用进货金额比例，体现成本分配公平性
 - 支持尾差处理，确保分摊总额等于总费用
 
-### 5. 客户货 vs 自有货区分
-
-| 类型              | 计算内容   | 说明                   |
-| ----------------- | ---------- | ---------------------- |
-| 客户货 (customer) | 计算利润   | 应收金额 - 成本 - 费用 |
-| 自有货 (self)     | 只计算成本 | 用于入库到仓库         |
-
-```typescript
-// 客户货：计算利润
-if (item.ownership === 'customer') {
-  customerProfit += calculateItemProfit(item, receivable, expense).profitAmount;
-}
-// 自有货：只计算成本
-else {
-  selfCostAmount += purchaseCost + allocatedExpense;
-}
-```
-
-### 6. 单位转换处理
+### 5. 单位转换处理
 
 **特别注意**: 系统正确处理了"件→片"的单位转换
 
@@ -133,16 +115,34 @@ function getActualQuantityInPieces(item) {
                        └── 成本 = 采购单价 + 分摊费用/数量
 ```
 
-### 2. 成本计算公式
+### 2. 成本计算公式（采购入库 + 仓库库存）
 
-**入库单位成本** (来源: `lib/services/purchase-order-cost-service.ts`)
+**采购入库单位成本** (来源: `lib/services/purchase-order-cost-service.ts`)
 
 ```typescript
 入库单位成本 = 采购单价 + 分摊费用 / 数量;
-库存单位成本 = 加权平均成本;
 ```
 
-**加权平均成本公式** (来源: `lib/utils/cost-calculation.ts`)
+采购入库时，会将「含费用的入库单位成本」写入入库记录，并通过 `executeMinimalInboundTransaction`：
+
+- 写入 `inboundRecord.unitCost / totalCost`
+- 使用 `addToFIFOQueue(...)` 将本批次加入 FIFO 成本队列
+- 更新 `inventory.quantity`，`inventory.unitCost` 仅作为最近批次成本的缓存
+
+**库存成本核算方式**
+
+- 仓库层面的真实成本结构由 **FIFO 队列** (`inventoryCostQueue`) 维护，每次入库都会追加一个批次（数量 + unitCost）。
+- 发货/出库时，通过 `consumeFIFOQueue` 按先进先出顺序消耗批次，得到本次出库的真实成本：
+
+```typescript
+const fifoCost = await consumeFIFOQueue(productId, variantId, outboundQty, tx);
+出库总成本 = fifoCost.totalCost;
+出库平均单价 = fifoCost.averageUnitCost;
+```
+
+**加权平均成本工具函数** (来源: `lib/utils/cost-calculation.ts`)
+
+`calculateWeightedAverageCost` 仍保留，用于某些统计/辅助场景（例如报表上的平均库存成本），但不再作为销售出库成本的主口径：
 
 ```typescript
 新单位成本 = (原库存金额 + 入库金额) / (原库存数量 + 入库数量)
@@ -150,14 +150,6 @@ function getActualQuantityInPieces(item) {
 原库存金额 = 原库存数量 × 原单位成本
 入库金额 = 入库数量 × 入库单位成本
 ```
-
-**公式正确性验证**: ✅ **数学正确**
-
-| 场景     | 原库存 | 入库   | 计算                  | 结果  |
-| -------- | ------ | ------ | --------------------- | ----- |
-| 初次入库 | 0×0    | 100×10 | (0+1000)/(0+100)      | 10.00 |
-| 二次入库 | 100×10 | 50×12  | (1000+600)/(100+50)   | 10.67 |
-| 同价入库 | 100×10 | 100×10 | (1000+1000)/(100+100) | 10.00 |
 
 ### 3. 费用分摊逻辑
 
@@ -171,12 +163,15 @@ function getActualQuantityInPieces(item) {
 
 **分摊方法对比**:
 
-| 分摊方法   | 厂家发货 | 采购入库 | 说明                   |
-| ---------- | -------- | -------- | ---------------------- |
-| 按金额比例 | ✅ 使用  | -        | 高价值商品承担更多费用 |
-| 按数量比例 | -        | ✅ 使用  | 每件商品均摊费用       |
+| 分摊方法   | 厂家发货 | 采购入库 | 说明                             |
+| ---------- | -------- | -------- | -------------------------------- |
+| 按金额比例 | ✅ 使用  | -        | 高价值商品承担更多费用           |
+| 按数量比例 | -        | ✅ 使用  | 每件商品均摊费用（采购入库费用） |
 
-**合理性**: 两种方式各有适用场景，当前实现合理
+**合理性**:
+
+- 采购入库费用按数量均摊，用于得到「含费用的入库单价」，再进入 FIFO 队列。
+- 销售出库成本不再直接使用“仓库加权平均价”，而是按 FIFO 队列逐批计算。
 
 ### 4. 入库成本确定时机
 
@@ -227,11 +222,11 @@ const inboundUnitCost = resolveInboundUnitCost({
 
 ### 3. 成本来源
 
-| 成本类型     | 来源                    | 优先级 | 说明         |
-| ------------ | ----------------------- | ------ | ------------ |
-| 库存成本     | Inventory.unitCost      | 1      | 加权平均成本 |
-| 订单明细成本 | SalesOrderItem.unitCost | 2      | 创建时指定   |
-| 默认值       | 0                       | 3      | 兜底         |
+| 成本类型     | 来源                    | 优先级 | 说明                                    |
+| ------------ | ----------------------- | ------ | --------------------------------------- |
+| 库存成本     | Inventory.unitCost      | 1      | 最近一批入库成本（缓存，用于展示/参考） |
+| 订单明细成本 | SalesOrderItem.unitCost | 2      | 创建时指定 / 发货时按 FIFO 成本回写     |
+| 默认值       | 0                       | 3      | 兜底                                    |
 
 ```typescript
 const baseUnitCost = item.unitCost ?? inventory.unitCost ?? undefined;
@@ -295,20 +290,40 @@ const allocatedExpense = totalExpense * ratio;
 
 ### 2. 数据传递验证
 
-| 环节      | 上游数据                                    | 下游数据                      | 传递正确性 |
-| --------- | ------------------------------------------- | ----------------------------- | ---------- |
-| 采购→入库 | unitPrice + allocatedExpense                | unitCost                      | ✅         |
-| 入库→库存 | inboundRecord.unitCost                      | inventory.unitCost (加权平均) | ✅         |
-| 库存→出库 | inventory.unitCost                          | outboundRecord.unitCost       | ✅         |
-| 出库→订单 | outboundRecord.totalCost + allocatedExpense | salesOrderItem.costSubtotal   | ✅         |
+| 环节      | 上游数据                                    | 下游数据                         | 传递正确性 |
+| --------- | ------------------------------------------- | -------------------------------- | ---------- |
+| 采购→入库 | unitPrice + allocatedExpense                | inboundRecord.unitCost（含费用） | ✅         |
+| 入库→库存 | inboundRecord.unitCost                      | inventoryCostQueue（FIFO 批次）  | ✅         |
+| 库存→出库 | inventoryCostQueue                          | outboundRecord.unitCost          | ✅         |
+| 出库→订单 | outboundRecord.totalCost + allocatedExpense | salesOrderItem.costSubtotal      | ✅         |
 
 ### 3. 费用分摊一致性
 
-| 业务     | 分摊基准     | 分摊时机    | 更新目标                       |
-| -------- | ------------ | ----------- | ------------------------------ |
-| 厂家发货 | 进货金额比例 | 确认/完成时 | FactoryShipmentOrderItem       |
-| 采购入库 | 数量比例     | 到货确认时  | PurchaseOrderItem              |
-| 销售发货 | 销售金额比例 | 发货时      | SalesOrderItem, OutboundRecord |
+| 业务     | 分摊基准               | 分摊时机    | 更新目标                       |
+| -------- | ---------------------- | ----------- | ------------------------------ |
+| 厂家发货 | 进货金额（按金额比例） | 确认/完成时 | FactoryShipmentOrderItem       |
+| 采购入库 | 数量                   | 到货确认时  | PurchaseOrderItem              |
+| 销售发货 | 成本金额（成本优先）   | 发货时      | SalesOrderItem, OutboundRecord |
+
+### 4. 费用来源与报表口径
+
+当前实现中，「费用」的录入与取数已经统一到以 `expenseRecord` 为台账唯一真源：
+
+| 业务场景 | 录入层字段                              | 台账表 (`expenseRecord.relatedType`) | 报表取数来源                                     | 说明                                            |
+| -------- | --------------------------------------- | ------------------------------------ | ------------------------------------------------ | ----------------------------------------------- |
+| 销售订单 | `SalesOrder.feeItems` + `expenseAmount` | `'sales_order'`                      | 盈亏分析 / 年度报表 / 月度报表 → `expenseRecord` | feeItems 用于录入和订单详情展示，报表不直接汇总 |
+| 厂家直发 | `FactoryShipmentOrder.feeItems`         | `'factory_shipment'`                 | 盈亏分析中的期间费用 → `expenseRecord`           | 厂家利润明细中仍展示订单上的 `expenseAmount`    |
+| 采购入库 | 采购单费用项                            | `'purchase_order'`                   | 费用分析 / 供应商维度 → `expenseRecord`          | 对利润表而言主要计入存货成本，而非当期费用      |
+
+关键约束：
+
+- 所有期间费用类报表（`profit-loss-service.ts`、`annual-report-service.ts`、`monthly-report-service.ts`）只从 `expenseRecord` 读取金额，不再直接汇总 `feeItems` 或 `SalesOrder.expenseAmount`。
+- 销售订单和厂家发货在创建时，通过 `ensureCompanyExpenses` 自动把 `paidBy === 'company'` 的费用写入 `expenseRecord`，确保录入层与台账可对账。
+- 为辅助历史数据排查，新增脚本 `scripts/check-expense-consistency.ts`，用于对比某时间段内：
+  - feeItems 中公司承担费用合计；
+  - `salesOrder.expenseAmount`；
+  - `expenseRecord`（`relatedType = 'sales_order'`）汇总金额；
+    发现差异后可据此修正缺失或多余的费用记录，保证报表口径与业务录入一致。
 
 ---
 
@@ -654,13 +669,13 @@ describe('边界情况', () => {
 
 ### 整体评价
 
-| 维度       | 评分   | 说明                               |
-| ---------- | ------ | ---------------------------------- |
-| 公式正确性 | **A**  | 数学公式正确，符合会计准则         |
-| 成本核算   | **A**  | 采用加权平均成本法，行业标准       |
-| 数据一致性 | **A**  | 发货时完整更新所有相关字段         |
-| 边界处理   | **B+** | 大部分边界正确处理，退货场景需完善 |
-| 代码质量   | **A**  | 服务拆分合理，职责单一             |
+| 维度       | 评分   | 说明                                     |
+| ---------- | ------ | ---------------------------------------- |
+| 公式正确性 | **A**  | 数学公式正确，符合会计准则               |
+| 成本核算   | **A**  | 仓库层使用 FIFO 成本队列，销售按先进先出 |
+| 数据一致性 | **A**  | 发货时完整更新所有相关字段               |
+| 边界处理   | **B+** | 大部分边界正确处理，退货场景需完善       |
+| 代码质量   | **A**  | 服务拆分合理，职责单一                   |
 
 ### 待改进项
 

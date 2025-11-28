@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
@@ -8,6 +9,7 @@ import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishInventoryChange } from '@/lib/events';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
+  addToFIFOQueue,
   consumeFIFOQueue,
   getWeightedAverageCostFromFIFO,
 } from '@/lib/services/fifo-cost-service';
@@ -30,7 +32,7 @@ interface AdjustmentData {
 /**
  * 执行库存调整事务
  */
-async function executeAdjustmentTransaction(
+export async function executeAdjustmentTransaction(
   data: AdjustmentData,
   userId: string
 ) {
@@ -190,6 +192,42 @@ async function executeAdjustmentTransaction(
             throw error;
           }
         }
+      }
+
+      // 3.1 所有正向调整统一补录 FIFO 队列（视为一笔入库），保持 FIFO 队列数量与库存一致
+      if (adjustQuantity > 0 && unitCost !== null) {
+        const inboundRecord = await tx.inboundRecord.create({
+          data: {
+            recordNumber: generateInboundRecordNumber(),
+            productId,
+            variantId: variantId || null,
+            batchNumber: batchNumber || null,
+            batchSpecificationId: null,
+            quantity: adjustQuantity,
+            unitCost,
+            totalCost: roundCurrency(adjustQuantity * unitCost),
+            // 统一使用 surplus 作为入库原因，备注中保留原调整原因
+            reason: 'surplus',
+            remarks: `库存调整自动补录（调整单：${adjustmentNumber}，原因：${reason}）`,
+            userId,
+            purchaseOrderId: null,
+            purchaseOrderItemId: null,
+            supplierId: null,
+          },
+        });
+
+        await addToFIFOQueue(
+          {
+            productId,
+            variantId: variantId || null,
+            batchNumber: batchNumber || null,
+            inboundRecordId: inboundRecord.id,
+            quantity: adjustQuantity,
+            unitCost,
+            inboundDate: new Date(),
+          },
+          tx
+        );
       }
 
       // 4. 创建调整记录（审计追溯）

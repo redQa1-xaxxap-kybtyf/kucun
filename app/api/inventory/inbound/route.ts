@@ -15,6 +15,7 @@ import { upsertBatchSpecification } from '@/lib/api/batch-specification-handlers
 import {
   getInboundRecords,
   parseInboundQueryParams,
+  syncProductSpecificationAsync,
 } from '@/lib/api/inbound-handlers';
 import { withErrorHandling } from '@/lib/api/middleware';
 import {
@@ -255,6 +256,14 @@ const postInboundRecordHandler = withAuth(
             where: { id: inboundRecord.id },
             data: { batchSpecificationId: batchSpec.id },
           });
+
+          // ✅ 同步批次规格到产品主表(仅在成功写入批次规格后执行)
+          // 目的: 保持产品层面的默认 piecesPerUnit/weight 与最新批次规格大体一致
+          await syncProductSpecificationAsync(
+            validatedData.productId,
+            piecesPerUnit,
+            weight
+          );
         } catch {
           // 批次规格更新失败不影响主流程
         }

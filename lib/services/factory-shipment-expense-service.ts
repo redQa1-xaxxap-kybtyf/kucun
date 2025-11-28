@@ -39,11 +39,7 @@ function getActualQuantityInPieces(item: FactoryShipmentOrderItem): number {
  * ✅ 修复：考虑单位转换（件 → 片）
  */
 export function calculateTotalValue(items: FactoryShipmentOrderItem[]): number {
-  return items.reduce((sum, item) => {
-    const purchasePrice = item.unitCost || item.unitPrice;
-    const actualQuantity = getActualQuantityInPieces(item);
-    return sum + purchasePrice * actualQuantity;
-  }, 0);
+  return items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
 }
 
 /**
@@ -210,61 +206,12 @@ export function allocateExpensesByValue(
  * // 客户货分摊: 1000, 自有货分摊: 500
  * ```
  */
+// 按归属分摊（by_ownership）已废弃，保留入口但内部回退到按货值分摊
 export function allocateExpensesByOwnership(
   items: FactoryShipmentOrderItem[],
   totalExpenses: number
 ): Map<string, number> {
-  const allocations = new Map<string, number>();
-
-  // 边界情况
-  if (items.length === 0 || totalExpenses === 0) {
-    items.forEach(item => allocations.set(item.id, 0));
-    return allocations;
-  }
-
-  // 按归属分组
-  const customerItems = items.filter(item => item.ownership === 'customer');
-  const selfItems = items.filter(item => item.ownership === 'self');
-
-  // 计算各组的总金额
-  const customerValue = calculateTotalValue(customerItems);
-  const selfValue = calculateTotalValue(selfItems);
-  const totalValue = customerValue + selfValue;
-
-  // 边界情况：总金额为0
-  if (totalValue === 0) {
-    const averageExpense = roundToTwoDecimals(totalExpenses / items.length);
-    items.forEach(item => allocations.set(item.id, averageExpense));
-    return adjustAllocationForRoundingError(allocations, totalExpenses);
-  }
-
-  // 计算各组应分摊的费用
-  const customerExpense = roundToTwoDecimals(
-    (totalExpenses * customerValue) / totalValue
-  );
-  const selfExpense = roundToTwoDecimals(
-    (totalExpenses * selfValue) / totalValue
-  );
-
-  // 在各组内按货值比例分摊
-  if (customerItems.length > 0 && customerValue > 0) {
-    customerItems.forEach(item => {
-      const ratio = item.totalPrice / customerValue;
-      const allocated = roundToTwoDecimals(customerExpense * ratio);
-      allocations.set(item.id, allocated);
-    });
-  }
-
-  if (selfItems.length > 0 && selfValue > 0) {
-    selfItems.forEach(item => {
-      const ratio = item.totalPrice / selfValue;
-      const allocated = roundToTwoDecimals(selfExpense * ratio);
-      allocations.set(item.id, allocated);
-    });
-  }
-
-  // 调整四舍五入误差
-  return adjustAllocationForRoundingError(allocations, totalExpenses);
+  return allocateExpensesByValue(items, totalExpenses);
 }
 
 /**

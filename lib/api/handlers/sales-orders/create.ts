@@ -195,7 +195,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       select: createSelect,
     });
 
-    // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等）
+    // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
     if (
       env.EXPENSE_AUTO_CREATE &&
       validatedData.feeItems &&
@@ -212,10 +212,17 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
           feeItems: validatedData.feeItems,
         });
       } catch (e) {
-        logger.warn('sales-orders', '自动创建费用记录失败(已忽略)', e, {
-          orderId: salesOrder.id,
-          orderNumber: salesOrder.orderNumber,
-        });
+        logger.error(
+          'sales-orders',
+          '自动创建费用记录失败，将回滚订单事务',
+          e,
+          {
+            orderId: salesOrder.id,
+            orderNumber: salesOrder.orderNumber,
+          }
+        );
+        // 费用台账是利润报表的唯一真源，这里必须失败即回滚，避免订单创建成功但费用缺失
+        throw e;
       }
     }
 

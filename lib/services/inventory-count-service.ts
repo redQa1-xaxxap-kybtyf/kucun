@@ -3,8 +3,10 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import { prisma } from '@/lib/db';
 import {
+  addToFIFOQueue,
   consumeFIFOQueue,
   getWeightedAverageCostFromFIFO,
 } from '@/lib/services/fifo-cost-service';
@@ -455,12 +457,15 @@ export async function getInventoryCountById(
         countedAt: item.countedAt?.toISOString(),
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
-        product: {
-          id: item.product.id,
-          code: item.product.code,
-          name: item.product.name,
-          unit: item.product.unit as 'piece' | 'sheet',
-        },
+        product: item.product
+          ? {
+              id: item.product.id,
+              code: item.product.code,
+              name: item.product.name,
+              unit: item.product.unit as 'piece' | 'sheet',
+              piecesPerUnit: item.product.piecesPerUnit ?? undefined,
+            }
+          : undefined,
         variant: item.variant
           ? {
               id: item.variant.id,
@@ -1083,6 +1088,41 @@ export async function completeCount(
             throw error;
           }
         }
+      }
+
+      // 2.1.4.1 盘盈时补录 FIFO 队列（视为盘盈入库），确保 FIFO 队列可用量与库存一致
+      if (difference > 0 && unitCost !== null) {
+        const inboundRecord = await tx.inboundRecord.create({
+          data: {
+            recordNumber: generateInboundRecordNumber(),
+            productId: item.productId,
+            variantId: item.variantId,
+            batchNumber: item.batchNumber,
+            batchSpecificationId: null,
+            quantity: difference,
+            unitCost,
+            totalCost: roundCurrency(difference * unitCost),
+            reason: 'surplus',
+            remarks: `盘点盘盈自动补录（盘点单：${countId}）`,
+            userId,
+            purchaseOrderId: null,
+            purchaseOrderItemId: null,
+            supplierId: null,
+          },
+        });
+
+        await addToFIFOQueue(
+          {
+            productId: item.productId,
+            variantId: item.variantId,
+            batchNumber: item.batchNumber,
+            inboundRecordId: inboundRecord.id,
+            quantity: difference,
+            unitCost,
+            inboundDate: new Date(),
+          },
+          tx
+        );
       }
 
       // 2.1.4 创建调整记录（包含成本信息）

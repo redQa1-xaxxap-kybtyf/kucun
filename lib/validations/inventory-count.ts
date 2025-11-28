@@ -39,11 +39,11 @@ export const inventoryCountItemSchema = z.object({
     .describe('产品变体ID（可选）'),
 
   batchNumber: z
-    .string()
+    .string({ message: '批次号不能为空' })
+    .min(1, '批次号不能为空')
     .max(100, '批次号不能超过100个字符')
-    .optional()
-    .transform(val => val?.trim() || undefined)
-    .describe('批次号（可选）'),
+    .transform(val => val.trim())
+    .describe('批次号'),
 
   systemQuantity: z
     .number({ message: '系统库存数量必须是数字' })

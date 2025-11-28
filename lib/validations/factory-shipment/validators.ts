@@ -6,7 +6,6 @@
 import { z } from 'zod';
 
 import {
-  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
@@ -131,46 +130,7 @@ export function validateRequiredFieldsByStatus(
   });
 }
 
-/**
- * 验证货物归属相关字段
- * 客户货不应有自用入库状态，自用货不应有客户交付状态
- */
-export function validateOwnershipFields(
-  items: FactoryShipmentOrderItemFormData[],
-  ctx: z.RefinementCtx
-): void {
-  if (!Array.isArray(items) || items.length === 0) {
-    return;
-  }
-
-  items.forEach((item, index) => {
-    const path = ['items', index] as const;
-
-    // 客户货不应设置自用入库状态
-    if (
-      item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER &&
-      item.selfInboundStatus
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [...path, 'selfInboundStatus'],
-        message: '客户货无需设置自用入库状态',
-      });
-    }
-
-    // 自用货不应设置客户交付状态
-    if (
-      item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF &&
-      item.customerDeliveryStatus
-    ) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: [...path, 'customerDeliveryStatus'],
-        message: '自用货无需设置客户交付状态',
-      });
-    }
-  });
-}
+// 归属相关字段的验证已废弃：当前业务不再区分自有货/客户货，保留字段仅为兼容旧数据
 
 /**
  * 需要集装箱号码的状态集合
@@ -239,5 +199,4 @@ export function validateFactoryShipmentItems(
 ): void {
   validateManualProductFields(items, ctx, status);
   validateRequiredFieldsByStatus(items, status, ctx);
-  validateOwnershipFields(items, ctx);
 }
