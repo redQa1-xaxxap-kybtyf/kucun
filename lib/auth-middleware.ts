@@ -187,12 +187,26 @@ export async function authMiddleware(request: NextRequest) {
     requestHeaders.set('x-user-role', token.role || 'user');
     requestHeaders.set('x-user-status', token.status || 'active');
 
-    // 使用新的请求头创建响应
-    return NextResponse.next({
+    // 使用新的请求头创建响应，并确保设置 CSRF Token Cookie（双提交 Cookie 模式）
+    const response = NextResponse.next({
       request: {
         headers: requestHeaders,
       },
     });
+
+    // 如果不存在 csrf_token，则生成并设置一个非 HttpOnly 的 Cookie
+    const existingCsrf = request.cookies.get('csrf_token')?.value;
+    const csrfToken = existingCsrf ?? crypto.randomUUID();
+
+    // 注意：双提交 Cookie 需要客户端可读，因此 httpOnly 必须为 false
+    response.cookies.set('csrf_token', csrfToken, {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: env.NODE_ENV === 'production',
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     logger.error('认证中间件错误', {
       error,

@@ -8,17 +8,17 @@
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
   Category,
-  CategorySummary,
   CategoryQueryParams,
+  CategorySummary,
   CreateCategoryData,
   UpdateCategoryData,
 } from '@/lib/types/category-unified';
-
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 // 重新导出类型以保持向后兼容
 export type {
   Category,
-  CategorySummary,
   CategoryQueryParams,
+  CategorySummary,
   CreateCategoryData,
   UpdateCategoryData,
 };
@@ -120,13 +120,16 @@ export async function createCategory(data: {
   sortOrder?: number;
 }): Promise<ApiResponse<Category>> {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/categories`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await fetch(
+    `${baseUrl}/api/categories`,
+    getCsrfTokenHeader({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+  );
 
   if (!response.ok) {
     throw await createApiError(response);
@@ -149,13 +152,16 @@ export async function updateCategory(data: {
   const { id, ...updateData } = data;
 
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/categories/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(updateData),
-  });
+  const response = await fetch(
+    `${baseUrl}/api/categories/${id}`,
+    getCsrfTokenHeader({
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updateData),
+    })
+  );
 
   if (!response.ok) {
     throw await createApiError(response);
@@ -169,9 +175,12 @@ export async function updateCategory(data: {
  */
 export async function deleteCategory(id: string): Promise<ApiResponse<void>> {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/categories/${id}`, {
-    method: 'DELETE',
-  });
+  const response = await fetch(
+    `${baseUrl}/api/categories/${id}`,
+    getCsrfTokenHeader({
+      method: 'DELETE',
+    })
+  );
 
   if (!response.ok) {
     throw await createApiError(response);
@@ -188,13 +197,16 @@ export async function updateCategoryStatus(
   status: 'active' | 'inactive'
 ): Promise<ApiResponse<Category>> {
   const baseUrl = getApiBaseUrl();
-  const response = await fetch(`${baseUrl}/api/categories/${id}/status`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ status }),
-  });
+  const response = await fetch(
+    `${baseUrl}/api/categories/${id}/status`,
+    getCsrfTokenHeader({
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ status }),
+    })
+  );
 
   if (!response.ok) {
     throw await createApiError(response);

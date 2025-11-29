@@ -65,3 +65,11 @@ export function getCsrfTokenHeader(
     headers,
   };
 }
+
+/**
+ * 包装 fetch，自动附带 CSRF 头
+ * 建议在客户端对所有 API 调用统一使用
+ */
+export function csrfFetch(input: RequestInfo | URL, init: RequestInit = {}) {
+  return fetch(input as any, getCsrfTokenHeader(init));
+}

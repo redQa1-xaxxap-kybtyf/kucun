@@ -196,7 +196,7 @@ export function withAuth(
           request.headers.get('x-csrf-token') ||
           request.headers.get('X-CSRF-Token');
 
-        const cookieStore = cookies();
+        const cookieStore = await cookies();
         const csrfCookie = cookieStore.get('csrf_token')?.value;
 
         if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
