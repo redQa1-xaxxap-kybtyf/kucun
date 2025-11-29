@@ -366,6 +366,8 @@ export async function createInboundRecord(
     remarks?: string;
     piecesPerUnit?: number; // 每单位片数（入库时确定）
     weight?: number; // 产品重量（入库时确定）
+    unitCost?: number; // 单位成本（期初/采购入库）
+    totalCost?: number; // 总成本（冗余，便于报表）
   },
   userId: string,
   tx?: Omit<
@@ -415,6 +417,8 @@ export async function createInboundRecord(
       quantity: data.quantity,
       reason: data.reason,
       remarks: cleanRemarks(data.remarks),
+      unitCost: typeof data.unitCost === 'number' ? data.unitCost : null,
+      totalCost: typeof data.totalCost === 'number' ? data.totalCost : null,
       userId,
     },
     select: INBOUND_RECORD_SELECT,
@@ -522,6 +526,7 @@ export async function updateInventoryQuantity(
   quantity: number,
   options?: {
     variantId?: string;
+    unitCost?: number; // 当创建/首次存在时写入单位成本
   },
   tx?: Omit<
     PrismaClient,
@@ -542,12 +547,20 @@ export async function updateInventoryQuantity(
   if (existingInventory) {
     // 性能优化: 使用原子increment操作,避免竞态条件 (2025-10-21优化)
     // 原子操作确保并发安全,减少数据库往返,提升性能20-30%
+    const updateData: Prisma.InventoryUpdateInput = {
+      quantity: { increment: quantity },
+      updatedAt: new Date(),
+    };
+    if (
+      (existingInventory as { unitCost: number | null }).unitCost === null &&
+      typeof options?.unitCost === 'number'
+    ) {
+      // 仅当之前为空时写入单位成本（避免覆盖已有成本）
+      (updateData as Prisma.InventoryUpdateInput).unitCost = options.unitCost;
+    }
     await prismaClient.inventory.update({
       where: { id: existingInventory.id },
-      data: {
-        quantity: { increment: quantity }, // ← 原子increment,数据库级别保证并发安全
-        updatedAt: new Date(),
-      },
+      data: updateData,
     });
   } else {
     // 创建新库存记录
@@ -558,6 +571,8 @@ export async function updateInventoryQuantity(
         batchNumber,
         quantity,
         reservedQuantity: 0,
+        unitCost:
+          typeof options?.unitCost === 'number' ? options.unitCost : null,
       },
     });
   }

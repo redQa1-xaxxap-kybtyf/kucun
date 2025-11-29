@@ -12,6 +12,7 @@ import { requirePermission } from '@/lib/auth/permissions';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { calculateTotalCost } from '@/lib/types/inventory-operations';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
@@ -80,6 +81,7 @@ async function postInboundRecordHandler(request: NextRequest) {
       piecesPerUnit,
       weight,
       variantId,
+      unitCost,
     } = validatedData;
 
     // 期初库存需要额外权限
@@ -107,6 +109,8 @@ async function postInboundRecordHandler(request: NextRequest) {
               remarks,
               piecesPerUnit,
               weight,
+              unitCost,
+              totalCost: calculateTotalCost(quantity, unitCost),
             },
             user.id,
             tx
@@ -117,7 +121,7 @@ async function postInboundRecordHandler(request: NextRequest) {
             productId,
             batchNumber ?? null,
             quantity,
-            { variantId },
+            { variantId, unitCost },
             tx
           );
 
