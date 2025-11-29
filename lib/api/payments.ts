@@ -19,6 +19,7 @@ import type {
   UpdatePaymentRecordData,
 } from '@/lib/types/payment';
 import { formatCurrency as formatCurrencyValue } from '@/lib/utils';
+import { csrfFetch } from '@/lib/utils/csrf';
 import { formatTimeAgo } from '@/lib/utils/datetime';
 
 // API基础URL
@@ -107,7 +108,7 @@ export const paymentsApi = {
   createPaymentRecord: async (
     data: CreatePaymentRecordData
   ): Promise<PaymentRecord> => {
-    const response = await fetch(API_BASE, {
+    const response = await csrfFetch(API_BASE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -132,7 +133,7 @@ export const paymentsApi = {
     id: string,
     data: UpdatePaymentRecordData
   ): Promise<PaymentRecord> => {
-    const response = await fetch(`${API_BASE}/${id}`, {
+    const response = await csrfFetch(`${API_BASE}/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ export const paymentsApi = {
 
   // 删除收款记录
   deletePaymentRecord: async (id: string): Promise<void> => {
-    const response = await fetch(`${API_BASE}/${id}`, {
+    const response = await csrfFetch(`${API_BASE}/${id}`, {
       method: 'DELETE',
     });
 
@@ -173,7 +174,7 @@ export const paymentsApi = {
     id: string,
     notes?: string
   ): Promise<PaymentRecord> => {
-    const response = await fetch(`${API_BASE}/${id}/confirm`, {
+    const response = await csrfFetch(`${API_BASE}/${id}/confirm`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -195,7 +196,7 @@ export const paymentsApi = {
 
   // 取消收款
   cancelPayment: async (id: string, notes?: string): Promise<PaymentRecord> => {
-    const response = await fetch(`${API_BASE}/${id}/cancel`, {
+    const response = await csrfFetch(`${API_BASE}/${id}/cancel`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

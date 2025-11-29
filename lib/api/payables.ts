@@ -17,6 +17,7 @@ import type {
   UpdatePayableRecordData,
   UpdatePaymentOutRecordData,
 } from '@/lib/types/payable';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 // API基础URL
 const PAYABLES_API_BASE = '/api/finance/payables';
@@ -69,7 +70,7 @@ export const payablesApi = {
   createPayableRecord: async (
     data: CreatePayableRecordData
   ): Promise<PayableRecordDetail> => {
-    const response = await fetch(PAYABLES_API_BASE, {
+    const response = await csrfFetch(PAYABLES_API_BASE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ export const payablesApi = {
     id: string,
     data: UpdatePayableRecordData
   ): Promise<PayableRecordDetail> => {
-    const response = await fetch(`${PAYABLES_API_BASE}/${id}`, {
+    const response = await csrfFetch(`${PAYABLES_API_BASE}/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -116,7 +117,7 @@ export const payablesApi = {
   },
 
   deletePayableRecord: async (id: string): Promise<void> => {
-    const response = await fetch(`${PAYABLES_API_BASE}/${id}`, {
+    const response = await csrfFetch(`${PAYABLES_API_BASE}/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });
@@ -192,7 +193,7 @@ export const payablesApi = {
   createPaymentOutRecord: async (
     data: CreatePaymentOutRecordData
   ): Promise<PaymentOutRecordDetail> => {
-    const response = await fetch(PAYMENTS_OUT_API_BASE, {
+    const response = await csrfFetch(PAYMENTS_OUT_API_BASE, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -217,7 +218,7 @@ export const payablesApi = {
     id: string,
     data: UpdatePaymentOutRecordData
   ): Promise<PaymentOutRecordDetail> => {
-    const response = await fetch(`${PAYMENTS_OUT_API_BASE}/${id}`, {
+    const response = await csrfFetch(`${PAYMENTS_OUT_API_BASE}/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -239,7 +240,7 @@ export const payablesApi = {
   },
 
   deletePaymentOutRecord: async (id: string): Promise<void> => {
-    const response = await fetch(`${PAYMENTS_OUT_API_BASE}/${id}`, {
+    const response = await csrfFetch(`${PAYMENTS_OUT_API_BASE}/${id}`, {
       method: 'DELETE',
       credentials: 'include',
     });

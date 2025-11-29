@@ -17,6 +17,7 @@ import type {
   ProductOption,
   UpdateInboundRequest,
 } from '@/lib/types/inbound';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 // API基础URL
 const API_BASE = '/api/inventory/inbound';
@@ -112,7 +113,7 @@ export function useCreateInboundRecord() {
 
   return useMutation({
     mutationFn: async (data: CreateInboundRequest): Promise<InboundRecord> => {
-      const response = await fetch(API_BASE, {
+      const response = await csrfFetch(API_BASE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,7 +185,7 @@ export function useUpdateInboundRecord() {
       id: string;
       data: UpdateInboundRequest;
     }): Promise<InboundRecord> => {
-      const response = await fetch(`${API_BASE}/${id}`, {
+      const response = await csrfFetch(`${API_BASE}/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -247,7 +248,7 @@ export function useDeleteInboundRecord() {
 
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      const response = await fetch(`${API_BASE}/${id}`, {
+      const response = await csrfFetch(`${API_BASE}/${id}`, {
         method: 'DELETE',
       });
 

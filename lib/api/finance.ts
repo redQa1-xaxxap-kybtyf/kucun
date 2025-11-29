@@ -10,10 +10,10 @@ import type {
 } from '@/lib/types/payment';
 import type {
   CreateRefundRecordData,
+  RefundListData,
   RefundRecord,
   RefundRecordDetail,
   RefundRecordQuery,
-  RefundListData,
   RefundStatistics,
   UpdateRefundRecordData,
 } from '@/lib/types/refund';
@@ -21,10 +21,11 @@ import type {
   AccountStatementDetail,
   AgingAnalysis,
   ReconciliationStatement,
+  StatementListResponse,
   StatementQuery,
   StatementStatistics,
-  StatementListResponse,
 } from '@/lib/types/statement';
+import { csrfFetch } from '@/lib/utils/csrf';
 import type { ProcessRefundInput } from '@/lib/validations/refund';
 
 // 导入统一的类型定义，遵循唯一真理源原则
@@ -164,7 +165,7 @@ export const financeApi = {
   },
 
   createRefund: async (data: CreateRefundRecordData): Promise<RefundRecord> => {
-    const response = await fetch(`${API_BASE}/refunds`, {
+    const response = await csrfFetch(`${API_BASE}/refunds`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -188,7 +189,7 @@ export const financeApi = {
     id: string,
     data: UpdateRefundRecordData
   ): Promise<RefundRecord> => {
-    const response = await fetch(`${API_BASE}/refunds/${id}`, {
+    const response = await csrfFetch(`${API_BASE}/refunds/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -212,7 +213,7 @@ export const financeApi = {
     id: string,
     data: ProcessRefundInput
   ): Promise<RefundRecord> => {
-    const response = await fetch(`${API_BASE}/refunds/${id}/process`, {
+    const response = await csrfFetch(`${API_BASE}/refunds/${id}/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

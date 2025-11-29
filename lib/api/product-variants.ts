@@ -9,6 +9,7 @@ import type {
   ProductVariantCreateInput,
   ProductVariantUpdateInput,
 } from '@/lib/types/product';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 const API_BASE = '/api/product-variants';
 
@@ -74,7 +75,7 @@ export async function createProductVariant(
   productId: string,
   input: ProductVariantCreateInput
 ): Promise<ProductVariant> {
-  const response = await fetch(API_BASE, {
+  const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -104,7 +105,7 @@ export async function createProductVariant(
 export async function updateProductVariant(
   input: ProductVariantUpdateInput
 ): Promise<ProductVariant> {
-  const response = await fetch(`${API_BASE}/${input.id}`, {
+  const response = await csrfFetch(`${API_BASE}/${input.id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -132,7 +133,7 @@ export async function updateProductVariant(
  * 删除产品变体
  */
 export async function deleteProductVariant(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
   });
 
@@ -154,7 +155,7 @@ export async function batchCreateProductVariants(
   productId: string,
   variants: ProductVariantCreateInput[]
 ): Promise<ProductVariant[]> {
-  const response = await fetch(`${API_BASE}/batch`, {
+  const response = await csrfFetch(`${API_BASE}/batch`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -182,7 +183,7 @@ export async function generateSKU(
   productCode: string,
   colorCode: string
 ): Promise<string> {
-  const response = await fetch(`${API_BASE}/generate-sku`, {
+  const response = await csrfFetch(`${API_BASE}/generate-sku`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
