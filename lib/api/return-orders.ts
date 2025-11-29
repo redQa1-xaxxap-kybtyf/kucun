@@ -17,6 +17,7 @@ import type {
   ReturnOrderResponse,
   ReturnOrderStatsResponse,
 } from '@/lib/types/return-order';
+import { csrfFetch } from '@/lib/utils/csrf';
 import type {
   BatchReturnOrderFormData,
   CreateReturnOrderFormData,
@@ -75,7 +76,7 @@ export async function getReturnOrder(id: string): Promise<ReturnOrderResponse> {
 export async function createReturnOrder(
   data: CreateReturnOrderFormData
 ): Promise<ReturnOrderResponse> {
-  const response = await fetch(API_BASE, {
+  const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ export async function updateReturnOrder(
   id: string,
   data: UpdateReturnOrderFormData
 ): Promise<ReturnOrderResponse> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -158,7 +159,7 @@ export async function updateReturnOrderStatus(
     refundAmount,
   };
 
-  const response = await fetch(`${API_BASE}/${id}/status`, {
+  const response = await csrfFetch(`${API_BASE}/${id}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -183,7 +184,7 @@ export async function approveReturnOrder(
   id: string,
   data: ReturnOrderApprovalFormData
 ): Promise<ReturnOrderResponse> {
-  const response = await fetch(`${API_BASE}/${id}/approve`, {
+  const response = await csrfFetch(`${API_BASE}/${id}/approve`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -207,7 +208,7 @@ export async function approveReturnOrder(
 export async function deleteReturnOrder(
   id: string
 ): Promise<{ success: boolean; message?: string }> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
   });
 
@@ -227,7 +228,7 @@ export async function deleteReturnOrder(
 export async function duplicateReturnOrder(
   id: string
 ): Promise<ReturnOrderResponse> {
-  const response = await fetch(`${API_BASE}/${id}/duplicate`, {
+  const response = await csrfFetch(`${API_BASE}/${id}/duplicate`, {
     method: 'POST',
   });
 
@@ -247,7 +248,7 @@ export async function duplicateReturnOrder(
 export async function batchReturnOrderOperation(
   data: BatchReturnOrderFormData
 ): Promise<{ success: boolean; message?: string }> {
-  const response = await fetch(`${API_BASE}/batch`, {
+  const response = await csrfFetch(`${API_BASE}/batch`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

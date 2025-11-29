@@ -1,14 +1,15 @@
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-  Supplier,
-  SupplierCreateInput,
-  SupplierUpdateInput,
-  SupplierQueryParams,
   BatchDeleteSuppliersInput,
   BatchDeleteSuppliersResult,
   BatchUpdateSupplierStatusInput,
   BatchUpdateSupplierStatusResult,
+  Supplier,
+  SupplierCreateInput,
+  SupplierQueryParams,
+  SupplierUpdateInput,
 } from '@/lib/types/supplier';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 const API_BASE = '/api/suppliers';
 
@@ -109,7 +110,7 @@ export async function getSupplier(id: string): Promise<ApiResponse<Supplier>> {
 export async function createSupplier(
   data: SupplierCreateInput
 ): Promise<ApiResponse<Supplier>> {
-  const response = await fetch(API_BASE, {
+  const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -137,7 +138,7 @@ export async function updateSupplier(
   id: string,
   data: SupplierUpdateInput
 ): Promise<ApiResponse<Supplier>> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -161,7 +162,7 @@ export async function updateSupplier(
  * 删除供应商
  */
 export async function deleteSupplier(id: string): Promise<ApiResponse<void>> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
   });
 
@@ -183,7 +184,7 @@ export async function deleteSupplier(id: string): Promise<ApiResponse<void>> {
 export async function batchDeleteSuppliers(
   data: BatchDeleteSuppliersInput
 ): Promise<BatchDeleteSuppliersResult> {
-  const response = await fetch(`${API_BASE}/batch`, {
+  const response = await csrfFetch(`${API_BASE}/batch`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -209,7 +210,7 @@ export async function batchDeleteSuppliers(
 export async function batchUpdateSupplierStatus(
   data: BatchUpdateSupplierStatusInput
 ): Promise<BatchUpdateSupplierStatusResult> {
-  const response = await fetch(`${API_BASE}/batch/status`, {
+  const response = await csrfFetch(`${API_BASE}/batch/status`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

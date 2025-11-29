@@ -23,6 +23,7 @@ import type {
   SalesOrderStatus,
   SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 // API错误类型
 type ApiError = ErrorResponse;
@@ -112,7 +113,7 @@ export async function getSalesOrder(id: string): Promise<SalesOrder> {
 export async function createSalesOrder(
   orderData: SalesOrderCreateInput
 ): Promise<SalesOrder> {
-  const response = await fetch(API_BASE, {
+  const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -142,7 +143,7 @@ export async function updateSalesOrder(
 ): Promise<ApiResponse<SalesOrder>> {
   const { id, ...updateData } = data;
 
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -164,7 +165,7 @@ export async function updateSalesOrder(
 export async function deleteSalesOrder(
   id: string
 ): Promise<ApiResponse<{ id: string }>> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
@@ -189,7 +190,7 @@ export async function updateSalesOrderStatus(payload: {
   idempotencyKey: string;
 }): Promise<ApiResponse<SalesOrder>> {
   const { id, ...body } = payload;
-  const response = await fetch(`${API_BASE}/${id}/status`, {
+  const response = await csrfFetch(`${API_BASE}/${id}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -291,7 +292,7 @@ export async function getCustomerOrders(
 export async function copySalesOrder(
   id: string
 ): Promise<ApiResponse<SalesOrder>> {
-  const response = await fetch(`${API_BASE}/${id}/copy`, {
+  const response = await csrfFetch(`${API_BASE}/${id}/copy`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -314,7 +315,7 @@ export async function batchUpdateSalesOrderStatus(
   status: SalesOrderStatus,
   remarks?: string
 ): Promise<ApiResponse<{ updated: number; failed: string[] }>> {
-  const response = await fetch(`${API_BASE}/batch/status`, {
+  const response = await csrfFetch(`${API_BASE}/batch/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -336,7 +337,7 @@ export async function batchUpdateSalesOrderStatus(
 export async function batchDeleteSalesOrders(
   ids: string[]
 ): Promise<ApiResponse<{ deleted: number; failed: string[] }>> {
-  const response = await fetch(`${API_BASE}/batch`, {
+  const response = await csrfFetch(`${API_BASE}/batch`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
