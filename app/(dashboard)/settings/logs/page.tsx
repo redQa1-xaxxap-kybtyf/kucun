@@ -109,7 +109,7 @@ export default function LogsSettingsPage() {
   // 清空所有日志的mutation
   const clearAllLogsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/settings/logs?clearAll=true', {
+      const response = await csrfFetch('/api/settings/logs?clearAll=true', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
