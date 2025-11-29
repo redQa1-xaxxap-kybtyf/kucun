@@ -10,6 +10,7 @@ import type {
   CustomerQueryParams,
   CustomerUpdateInput,
 } from '@/lib/types/customer';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 /**
  * API基础URL
@@ -98,7 +99,7 @@ export async function getCustomer(id: string): Promise<Customer> {
 export async function createCustomer(
   customerData: CustomerCreateInput
 ): Promise<Customer> {
-  const response = await fetch(API_BASE, {
+  const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -130,7 +131,7 @@ export async function updateCustomer(
   id: string,
   customerData: CustomerUpdateInput
 ): Promise<Customer> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -162,7 +163,7 @@ export async function updateCustomer(
  * 删除客户
  */
 export async function deleteCustomer(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
   });
 
