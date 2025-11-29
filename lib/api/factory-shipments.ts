@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/queryKeys';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+import { csrfFetch } from '@/lib/utils/csrf';
 import type {
   CreateFactoryShipmentOrderData,
   FactoryShipmentOrderListParams,
@@ -160,7 +161,7 @@ export async function getFactoryShipmentOrder(
 export async function createFactoryShipmentOrder(
   data: CreateFactoryShipmentOrderData
 ): Promise<FactoryShipmentOrder> {
-  const response = await fetch('/api/factory-shipments', {
+  const response = await csrfFetch('/api/factory-shipments', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -182,7 +183,7 @@ export async function updateFactoryShipmentOrder(
   id: string,
   data: UpdateFactoryShipmentOrderData
 ): Promise<FactoryShipmentOrder> {
-  const response = await fetch(`/api/factory-shipments/${id}`, {
+  const response = await csrfFetch(`/api/factory-shipments/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -204,7 +205,9 @@ export async function updateFactoryShipmentOrderStatus(
   id: string,
   data: UpdateFactoryShipmentOrderStatusData
 ): Promise<FactoryShipmentOrder> {
-  const response = await fetch(`/api/factory-shipments/${id}/status`, {
+  console.log('[DEBUG] 更新订单状态 - 请求数据:', { id, data });
+
+  const response = await csrfFetch(`/api/factory-shipments/${id}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -214,10 +217,17 @@ export async function updateFactoryShipmentOrderStatus(
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || '更新厂家发货订单状态失败');
+    console.error('[DEBUG] 更新订单状态 - 服务器错误响应:', {
+      status: response.status,
+      statusText: response.statusText,
+      error,
+    });
+    throw new Error(error.error || error.message || '更新厂家发货订单状态失败');
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('[DEBUG] 更新订单状态 - 成功响应:', result);
+  return result;
 }
 
 /**
@@ -227,7 +237,7 @@ export async function updateFactoryShipmentOrderContainerNumber(
   id: string,
   data: { containerNumber: string }
 ): Promise<FactoryShipmentOrder> {
-  const response = await fetch(
+  const response = await csrfFetch(
     `/api/factory-shipments/${id}/container-number`,
     {
       method: 'PATCH',
@@ -250,7 +260,7 @@ export async function updateFactoryShipmentOrderContainerNumber(
  * 删除厂家发货订单
  */
 export async function deleteFactoryShipmentOrder(id: string): Promise<void> {
-  const response = await fetch(`/api/factory-shipments/${id}`, {
+  const response = await csrfFetch(`/api/factory-shipments/${id}`, {
     method: 'DELETE',
   });
 
@@ -264,7 +274,7 @@ export async function deleteFactoryShipmentOrder(id: string): Promise<void> {
  * 取消厂家发货订单
  */
 export async function cancelFactoryShipmentOrder(id: string): Promise<void> {
-  const response = await fetch(`/api/factory-shipments/${id}/cancel`, {
+  const response = await csrfFetch(`/api/factory-shipments/${id}/cancel`, {
     method: 'POST',
   });
 

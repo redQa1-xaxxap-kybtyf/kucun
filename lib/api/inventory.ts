@@ -14,6 +14,7 @@ import type {
   InventoryQueryParams,
   OutboundCreateInput,
 } from '@/lib/types/inventory';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 /**
  * API基础URL
@@ -108,7 +109,7 @@ export async function getInventory(productId: string): Promise<Inventory> {
 export async function createInbound(
   inboundData: InboundCreateInput
 ): Promise<Inventory> {
-  const response = await fetch(`${API_BASE}/inbound`, {
+  const response = await csrfFetch(`${API_BASE}/inbound`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -139,7 +140,7 @@ export async function createInbound(
 export async function createOutbound(
   outboundData: OutboundCreateInput
 ): Promise<Inventory> {
-  const response = await fetch(`${API_BASE}/outbound`, {
+  const response = await csrfFetch(`${API_BASE}/outbound`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -170,7 +171,7 @@ export async function createOutbound(
 export async function adjustInventory(
   adjustData: InventoryAdjustInput
 ): Promise<Inventory> {
-  const response = await fetch(`${API_BASE}/adjust`, {
+  const response = await csrfFetch(`${API_BASE}/adjust`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -232,7 +233,7 @@ export async function checkInventoryAvailability(
   colorCode?: string,
   productionDate?: string
 ): Promise<{ available: boolean; currentStock: number; message?: string }> {
-  const response = await fetch(`${API_BASE}/check-availability`, {
+  const response = await csrfFetch(`${API_BASE}/check-availability`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -308,7 +309,7 @@ export async function checkBatchAvailability(
   availableQuantity: number;
   message?: string;
 }> {
-  const response = await fetch(`${API_BASE}/batch-availability`, {
+  const response = await csrfFetch(`${API_BASE}/batch-availability`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -6,6 +6,7 @@
 import { queryKeys } from '@/lib/queryKeys';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
+import { csrfFetch } from '@/lib/utils/csrf';
 import type {
   ProductCreateFormData,
   ProductUpdateFormData,
@@ -99,7 +100,7 @@ export async function getProduct(id: string): Promise<Product> {
 export async function createProduct(
   productData: ProductCreateFormData
 ): Promise<Product> {
-  const response = await fetch(API_BASE, {
+  const response = await csrfFetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -149,7 +150,7 @@ export async function updateProduct(
   id: string,
   productData: ProductUpdateFormData
 ): Promise<Product> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -200,7 +201,7 @@ export async function updateProduct(
  * 删除产品
  */
 export async function deleteProduct(id: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/${id}`, {
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
