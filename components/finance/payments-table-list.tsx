@@ -291,20 +291,30 @@ function PaymentMethodBadge({ method }: { method: string }) {
       className:
         'border-[hsl(var(--color-success-light))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
     },
-    bank_transfer: {
-      label: '银行转账',
-      className:
-        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
-    },
-    alipay: {
-      label: '支付宝',
-      className:
-        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
-    },
-    wechat: {
-      label: '微信支付',
+    wechat_transfer: {
+      label: '微信转账',
       className:
         'border-[hsl(var(--color-success-light))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+    },
+    abc_qr: {
+      label: '农行码',
+      className:
+        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
+    },
+    icbc_qr: {
+      label: '工行码',
+      className:
+        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
+    },
+    ccb_qr: {
+      label: '建行码',
+      className:
+        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
+    },
+    cib_qr: {
+      label: '兴业码',
+      className:
+        'border-[hsl(var(--color-info-light))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
     },
   };
 

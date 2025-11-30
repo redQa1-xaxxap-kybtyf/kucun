@@ -180,9 +180,9 @@ export const POST = withAuth(
               paymentMethod: updated.paymentMethod,
               paymentType: updated.paymentType,
               salesOrderId: updated.salesOrderId ?? undefined,
-              paymentAmount: updated.paymentAmount,
-              actualPaymentAmount: updated.actualPaymentAmount,
-              roundingAmount: updated.roundingAmount,
+              paymentAmount: Number(updated.paymentAmount),
+              actualPaymentAmount: Number(updated.actualPaymentAmount),
+              roundingAmount: Number(updated.roundingAmount),
               triggeredBy: 'payment:confirm',
             },
           });
@@ -204,15 +204,23 @@ export const POST = withAuth(
         recordType: 'payment',
         recordId: updated.id,
         recordNumber: updated.paymentNumber,
-        amount: updated.paymentAmount,
+        amount: Number(updated.paymentAmount),
         customerId: updated.customerId,
         customerName: updated.customer?.name,
         userId: updated.userId,
       });
 
+      const serializedPayment = {
+        ...updated,
+        paymentAmount: Number(updated.paymentAmount),
+        actualPaymentAmount: Number(updated.actualPaymentAmount),
+        roundingAmount: Number(updated.roundingAmount),
+        appliedAmount: Number(updated.appliedAmount),
+      };
+
       return NextResponse.json({
         success: true,
-        data: updated,
+        data: serializedPayment,
         message: '收款记录已确认',
       });
     } catch (error) {

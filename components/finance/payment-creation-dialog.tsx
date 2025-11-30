@@ -27,6 +27,7 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 import { OrderSummaryCard } from './order-summary-card';
 import { PaymentForm } from './payment-creation-dialog-form';
@@ -190,13 +191,16 @@ export function PaymentCreationDialog({
 
   const createPaymentMutation = useMutation({
     mutationFn: async (data: PaymentFormData) => {
-      const response = await fetch('/api/payments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/payments',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+      );
 
       // ✅ 解析响应体（可能抛出异常）
       let result;

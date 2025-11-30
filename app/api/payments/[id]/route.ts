@@ -60,9 +60,17 @@ export const GET = withAuth(
         );
       }
 
+      const serializedPayment = {
+        ...payment,
+        paymentAmount: Number(payment.paymentAmount),
+        actualPaymentAmount: Number(payment.actualPaymentAmount),
+        roundingAmount: Number(payment.roundingAmount),
+        appliedAmount: Number(payment.appliedAmount),
+      };
+
       return NextResponse.json({
         success: true,
-        data: payment,
+        data: serializedPayment,
       });
     } catch (error) {
       logger.error(
@@ -190,9 +198,17 @@ export const PUT = withAuth(
         },
       });
 
+      const serializedPayment = {
+        ...updatedPayment,
+        paymentAmount: Number(updatedPayment.paymentAmount),
+        actualPaymentAmount: Number(updatedPayment.actualPaymentAmount),
+        roundingAmount: Number(updatedPayment.roundingAmount),
+        appliedAmount: Number(updatedPayment.appliedAmount),
+      };
+
       return NextResponse.json({
         success: true,
-        data: updatedPayment,
+        data: serializedPayment,
         message: '收款记录更新成功',
       });
     } catch (error) {

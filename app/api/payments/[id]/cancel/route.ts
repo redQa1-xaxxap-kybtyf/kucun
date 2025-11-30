@@ -117,15 +117,23 @@ export const POST = withAuth(
         recordType: 'payment',
         recordId: updated.id,
         recordNumber: updated.paymentNumber,
-        amount: updated.paymentAmount,
+        amount: Number(updated.paymentAmount),
         customerId: updated.customerId,
         customerName: updated.customer?.name,
         userId: updated.userId,
       });
 
+      const serializedPayment = {
+        ...updated,
+        paymentAmount: Number(updated.paymentAmount),
+        actualPaymentAmount: Number(updated.actualPaymentAmount),
+        roundingAmount: Number(updated.roundingAmount),
+        appliedAmount: Number(updated.appliedAmount),
+      };
+
       return NextResponse.json({
         success: true,
-        data: updated,
+        data: serializedPayment,
         message: '收款记录已取消',
       });
     } catch (error) {

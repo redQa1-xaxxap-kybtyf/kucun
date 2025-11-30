@@ -167,10 +167,18 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       prisma.paymentRecord.count({ where }),
     ]);
 
+    const serializedPayments = payments.map(payment => ({
+      ...payment,
+      paymentAmount: Number(payment.paymentAmount),
+      actualPaymentAmount: Number(payment.actualPaymentAmount),
+      roundingAmount: Number(payment.roundingAmount),
+      appliedAmount: Number(payment.appliedAmount),
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        payments,
+        payments: serializedPayments,
         pagination: {
           page,
           limit,
@@ -459,9 +467,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             paymentType: payment.paymentType,
             paymentMethod: payment.paymentMethod,
             salesOrderId: payment.salesOrderId ?? undefined,
-            paymentAmount: payment.paymentAmount,
-            actualPaymentAmount: payment.actualPaymentAmount,
-            roundingAmount: payment.roundingAmount,
+            paymentAmount: Number(payment.paymentAmount),
+            actualPaymentAmount: Number(payment.actualPaymentAmount),
+            roundingAmount: Number(payment.roundingAmount),
             triggeredBy: 'payment:create',
           },
         });
@@ -485,7 +493,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         recordType: 'payment',
         recordId: payment.id,
         recordNumber: payment.paymentNumber,
-        amount: payment.paymentAmount,
+        amount: Number(payment.paymentAmount),
         customerId: payment.customerId,
         customerName: payment.customer.name,
         userId,
@@ -502,9 +510,17 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
+    const serializedPayment = {
+      ...payment,
+      paymentAmount: Number(payment.paymentAmount),
+      actualPaymentAmount: Number(payment.actualPaymentAmount),
+      roundingAmount: Number(payment.roundingAmount),
+      appliedAmount: Number(payment.appliedAmount),
+    };
+
     return NextResponse.json({
       success: true,
-      data: payment,
+      data: serializedPayment,
       message: '收款记录创建成功',
     });
   } catch (error) {

@@ -103,8 +103,16 @@ function StatusBadge({ status }: { status: string }) {
  * 收款方式显示组件
  */
 function PaymentMethodDisplay({ method }: { method: string }) {
-  const methodConfig = {
+  const methodConfig: Record<
+    string,
+    { label: string; icon: React.ElementType }
+  > = {
     cash: { label: '现金', icon: ChineseYuan },
+    wechat_transfer: { label: '微信转账', icon: CreditCard },
+    abc_qr: { label: '农行码', icon: CreditCard },
+    icbc_qr: { label: '工行码', icon: CreditCard },
+    ccb_qr: { label: '建行码', icon: CreditCard },
+    cib_qr: { label: '兴业码', icon: CreditCard },
     bank_transfer: { label: '银行转账', icon: CreditCard },
     alipay: { label: '支付宝', icon: CreditCard },
     wechat: { label: '微信支付', icon: CreditCard },
@@ -112,8 +120,7 @@ function PaymentMethodDisplay({ method }: { method: string }) {
     other: { label: '其他', icon: CreditCard },
   };
 
-  const config =
-    methodConfig[method as keyof typeof methodConfig] || methodConfig.other;
+  const config = methodConfig[method] || methodConfig.other;
   const IconComponent = config.icon;
 
   return (

@@ -34,10 +34,11 @@ export interface IdempotencyResult<T> {
 
 // ⚙️ 幂等性控制参数
 // 结合最小化事务 (≈200-500ms) 后, 正常入库应在 < 1秒 完成。
-// 因此将处理中状态的最长寿命降到 3 秒, 并在 5 秒后终止等待。
-const MAX_PROCESSING_DURATION_MS = 3_000; // 单次操作允许的最大处理时长
-const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 5_000; // 并发等待的最大时长
-const PROCESSING_RECORD_TTL_MS = MAX_PROCESSING_DURATION_MS + 2_000; // processing 记录的生命周期 (额外缓冲 2s)
+// ⚠️ 厂家发货状态更新需要创建应收账款和应付账款，可能需要较长时间
+// ⚠️ 尤其是在有多个供应商的情况下，需要为每个供应商生成应付账款记录
+const MAX_PROCESSING_DURATION_MS = 25_000; // 单次操作允许的最大处理时长（增加到25秒）
+const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 30_000; // 并发等待的最大时长（增加到30秒）
+const PROCESSING_RECORD_TTL_MS = MAX_PROCESSING_DURATION_MS + 5_000; // processing 记录的生命周期 (额外缓冲 5s)
 const COMPLETED_RECORD_TTL_MS = 24 * 60 * 60 * 1_000; // completed 保留 24 小时, 支持客户端重放
 const FAILED_RECORD_TTL_MS = 60 * 60 * 1_000; // failed 保留 1 小时, 方便排查
 
@@ -105,11 +106,17 @@ export async function checkIdempotency(
   }
 
   // 如果操作失败,允许重试
+  // ✅ 修复：返回 isNew=false 且带上 operation 状态，便于上层逻辑识别并清理失败记录
   if (operation.status === 'failed') {
     return {
-      isNew: true,
+      isNew: false,
       data: null,
-      operation: null,
+      operation: {
+        id: operation.id,
+        status: operation.status,
+        createdAt: operation.createdAt,
+        expiresAt: operation.expiresAt,
+      },
     };
   }
 
@@ -329,9 +336,16 @@ export async function withIdempotency<T>(
         }
 
         // 情况3：操作失败，允许重试
-        // 直接进入下一轮循环，尝试重新创建记录
+        // ✅ 修复：删除(或重置)失败记录后再重试，否则会因为唯一约束导致一直 P2002
         if (!existing.isNew && existing.operation?.status === 'failed') {
-          // 稍微延迟后重试创建
+          try {
+            await prisma.inventoryOperation.delete({
+              where: { idempotencyKey },
+            });
+          } catch (_cleanupErr) {
+            // 如果删除时发现记录已不存在，忽略即可
+          }
+          // 短暂等待，避免立刻与其他并发再次竞争
           await waitForNextAttempt(retryDelayMs);
           continue;
         }

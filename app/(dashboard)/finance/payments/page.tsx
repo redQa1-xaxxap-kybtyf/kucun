@@ -347,7 +347,8 @@ async function getPaymentsData(searchParams: {
   }
 
   const normalizedPayments = paymentsWithRelations.map(payment => {
-    const totals = paymentTotalsByOrder[payment.salesOrderId] ?? {
+    const salesOrderId = payment.salesOrderId as string;
+    const totals = paymentTotalsByOrder[salesOrderId] ?? {
       confirmedAmount: 0,
       pendingAmount: 0,
     };
