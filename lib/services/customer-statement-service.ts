@@ -3,6 +3,7 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { REFUND_METHOD_LABELS } from '@/lib/config/finance';
 import { prisma } from '@/lib/db';
 import type {
   CustomerStatementDetail,
@@ -12,6 +13,33 @@ import type {
   CustomerStatementSummary,
   CustomerStatementTransaction,
 } from '@/lib/types/customer-statement';
+
+// 对账单中使用的收款/付款方式中文标签映射
+const STATEMENT_PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: '现金',
+  wechat_transfer: '微信转账',
+  abc_qr: '农行码',
+  icbc_qr: '工行码',
+  ccb_qr: '建行码',
+  cib_qr: '兴业码',
+  bank_transfer: '银行转账',
+  alipay: '支付宝',
+  wechat: '微信支付',
+  check: '支票',
+  other: '其他',
+};
+
+function formatStatementPaymentMethod(method?: string | null): string {
+  if (!method) return '';
+  return STATEMENT_PAYMENT_METHOD_LABELS[method] ?? method;
+}
+
+function formatStatementRefundMethod(method?: string | null): string {
+  if (!method) return '';
+  return (
+    REFUND_METHOD_LABELS[method as keyof typeof REFUND_METHOD_LABELS] ?? method
+  );
+}
 
 /**
  * 获取客户对账单列表
@@ -87,7 +115,10 @@ export async function getCustomerStatements(
     dateFilter.gte = new Date(startDate);
   }
   if (endDate) {
-    dateFilter.lte = new Date(endDate);
+    const end = new Date(endDate);
+    // 包含结束当天整日
+    end.setHours(23, 59, 59, 999);
+    dateFilter.lte = end;
   }
   const hasDateFilter = Object.keys(dateFilter).length > 0;
 
@@ -122,7 +153,8 @@ export async function getCustomerStatements(
     by: ['customerId'],
     where: {
       customerId: { in: customerIds },
-      status: { in: ['pending', 'confirmed', 'applied'] },
+      // 只统计已完成/已冲抵的收款，待确认收款不影响应收余额
+      status: { in: ['confirmed', 'applied'] },
       ...(hasDateFilter && { paymentDate: dateFilter }),
     },
     _sum: { paymentAmount: true, appliedAmount: true },
@@ -507,7 +539,10 @@ export async function calculateCustomerStatementSummary(
     dateFilter.gte = new Date(startDate);
   }
   if (endDate) {
-    dateFilter.lte = new Date(endDate);
+    const end = new Date(endDate);
+    // 包含结束当天整日
+    end.setHours(23, 59, 59, 999);
+    dateFilter.lte = end;
   }
 
   // 1. 查询销售订单(应收) - 包含所有有效状态
@@ -549,10 +584,11 @@ export async function calculateCustomerStatementSummary(
 
   // 3. 查询收款记录
   // ✅ 修正: 分别统计订单付款和预收款已冲抵金额
+  // 只统计已完成/已冲抵的收款，待确认收款不减少应收
   const payments = await prisma.paymentRecord.findMany({
     where: {
       customerId,
-      status: { in: ['pending', 'confirmed', 'applied'] }, // ✅ 覆盖部分收款（待确认）和已冲抵记录
+      status: { in: ['confirmed', 'applied'] },
       ...(Object.keys(dateFilter).length > 0 && { paymentDate: dateFilter }),
     },
     select: {
@@ -697,9 +733,14 @@ async function getCustomerTransactions(
   const transactionEntries: Omit<CustomerStatementTransaction, 'balance'>[] =
     [];
 
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  // 结束日期包含当天整日
+  end.setHours(23, 59, 59, 999);
+
   const dateFilter = {
-    gte: new Date(startDate),
-    lte: new Date(endDate),
+    gte: start,
+    lte: end,
   };
 
   // 检查客户是否也作为供应商存在
@@ -756,13 +797,26 @@ async function getCustomerTransactions(
   });
 
   for (const payment of payments) {
+    // 只在对账明细中展示“已完成/已冲抵”的收款
+    // 待确认收款不在对账单中出现，避免给销售造成“已经收款”的错觉
+    const isCompleted =
+      payment.status === 'confirmed' || payment.status === 'applied';
+
+    if (!isCompleted) {
+      continue;
+    }
+
+    const paymentMethodLabel = formatStatementPaymentMethod(
+      payment.paymentMethod
+    );
+
     transactionEntries.push({
       id: payment.id,
       transactionType: 'payment_in',
       transactionDate: payment.paymentDate.toISOString(),
       referenceNumber: payment.paymentNumber,
       referenceId: payment.id,
-      description: `收款 ${payment.paymentNumber} (${payment.paymentMethod})`,
+      description: `收款 ${payment.paymentNumber} (${paymentMethodLabel})`,
       debitAmount: 0,
       creditAmount: Number(payment.paymentAmount),
       status: payment.status,
@@ -848,8 +902,10 @@ async function getCustomerTransactions(
     const { effectiveProcessed, effectiveRemaining } =
       normalizeRefundAmounts(refund);
 
+    const refundMethodLabel = formatStatementRefundMethod(refund.refundMethod);
+
     const descriptionParts = [
-      `退款 ${refund.refundNumber} (${refund.refundMethod})`,
+      `退款 ${refund.refundNumber} (${refundMethodLabel})`,
     ];
 
     if (effectiveRemaining > 0) {
@@ -896,13 +952,17 @@ async function getCustomerTransactions(
         ? prepayment.appliedAmount
         : prepayment.paymentAmount;
 
+    const paymentMethodLabel = formatStatementPaymentMethod(
+      prepayment.paymentMethod
+    );
+
     transactionEntries.push({
       id: prepayment.id,
       transactionType: 'prepayment_in',
       transactionDate: prepayment.paymentDate.toISOString(),
       referenceNumber: prepayment.paymentNumber,
       referenceId: prepayment.id,
-      description: `预收款 ${prepayment.paymentNumber} (${prepayment.paymentMethod})`,
+      description: `预收款 ${prepayment.paymentNumber} (${paymentMethodLabel})`,
       debitAmount: 0,
       creditAmount: Number(appliedAmount), // 减少应收
       status: prepayment.status,
@@ -929,13 +989,17 @@ async function getCustomerTransactions(
     });
 
     for (const payment of supplierPrepayments) {
+      const paymentMethodLabel = formatStatementPaymentMethod(
+        payment.paymentMethod
+      );
+
       transactionEntries.push({
         id: payment.id,
         transactionType: 'prepayment_out',
         transactionDate: payment.paymentDate.toISOString(),
         referenceNumber: payment.paymentNumber,
         referenceId: payment.id,
-        description: `预付款 ${payment.paymentNumber} (${payment.paymentMethod})`,
+        description: `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`,
         debitAmount: Number(payment.paymentAmount), // 增加应付
         creditAmount: 0,
         status: payment.status,
@@ -998,7 +1062,9 @@ async function _getLastTransactionDate(
     dateFilter.gte = new Date(startDate);
   }
   if (endDate) {
-    dateFilter.lte = new Date(endDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter.lte = end;
   }
 
   const [lastSalesOrder, lastPayment, lastReturn, lastRefund] =
@@ -1064,7 +1130,9 @@ async function _getTransactionCount(
     dateFilter.gte = new Date(startDate);
   }
   if (endDate) {
-    dateFilter.lte = new Date(endDate);
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    dateFilter.lte = end;
   }
 
   const [salesCount, paymentCount, returnCount, refundCount] =

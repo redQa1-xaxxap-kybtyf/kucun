@@ -239,6 +239,12 @@ export const navigationItems: NavigationItem[] = [
         icon: Receipt,
       },
       {
+        id: 'finance-customer-statements',
+        title: '客户对账单',
+        href: '/finance/customer-statements',
+        icon: FileText,
+      },
+      {
         id: 'finance-expenses',
         title: '费用记录',
         href: '/finance/expenses',

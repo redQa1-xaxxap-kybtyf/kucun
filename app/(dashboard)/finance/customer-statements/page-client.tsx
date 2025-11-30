@@ -26,6 +26,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
   useCustomerStatementStatistics,
   useCustomerStatements,
 } from '@/lib/api/customer-statements';
@@ -97,6 +103,30 @@ export function CustomerStatementsPageClient({
       totalReturnAmount,
       totalRefundPaid: totalRefundProcessed,
       pendingRefundAmount,
+    };
+  };
+
+  const getReceivableOverview = (summary: CustomerStatementSummary) => {
+    const salesAmount = Number(summary.receivables.salesAmount ?? 0);
+    const salesReturnAmount = Number(
+      summary.receivables.salesReturnAmount ?? 0
+    );
+    const paymentReceived = Number(summary.receivables.paymentReceived ?? 0);
+    const prepaymentReceived = Number(
+      summary.receivables.prepaymentReceived ?? 0
+    );
+    const refundProcessed = Number(
+      summary.receivables.refundProcessed ?? summary.receivables.refundPaid ?? 0
+    );
+
+    const netSales = salesAmount - salesReturnAmount;
+    const totalReceipts = paymentReceived + prepaymentReceived;
+    const netReceipts = totalReceipts - refundProcessed;
+
+    return {
+      netSales,
+      netReceipts,
+      receivableBalance: summary.receivables.receivableBalance,
     };
   };
 
@@ -334,6 +364,23 @@ export function CustomerStatementsPageClient({
                       <TableHead className="text-right">应收余额</TableHead>
                       <TableHead className="text-right">应付余额</TableHead>
                       <TableHead className="text-right">净余额</TableHead>
+                      <TableHead className="text-right">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="cursor-help">
+                                小汇总(净销/净收/应收)
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs">
+                              <p className="text-xs leading-relaxed">
+                                净销 = 销售金额 − 退货金额；净收 = 收款金额 +
+                                预收款 − 已退款；应收余额 = 净销 − 净收
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableHead>
                       <TableHead className="text-right">应退金额</TableHead>
                       <TableHead>交易笔数</TableHead>
                       <TableHead>最后交易</TableHead>
@@ -343,6 +390,9 @@ export function CustomerStatementsPageClient({
                   <TableBody>
                     {statements.map((statement: CustomerStatementListItem) => {
                       const refundMetrics = getRefundMetrics(statement.summary);
+                      const receivableOverview = getReceivableOverview(
+                        statement.summary
+                      );
                       return (
                         <TableRow key={statement.customerId}>
                           <TableCell className="font-medium">
@@ -363,6 +413,24 @@ export function CustomerStatementsPageClient({
                           </TableCell>
                           <TableCell className="text-right">
                             {formatBalance(statement.summary.netBalance)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="space-y-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                              <div>
+                                净销：
+                                {formatCurrency(receivableOverview.netSales)}
+                              </div>
+                              <div>
+                                净收：
+                                {formatCurrency(receivableOverview.netReceipts)}
+                              </div>
+                              <div>
+                                应收：
+                                {formatCurrency(
+                                  receivableOverview.receivableBalance
+                                )}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell className="text-right">
                             {formatCurrency(refundMetrics.pendingRefundAmount)}

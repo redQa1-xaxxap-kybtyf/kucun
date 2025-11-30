@@ -1,5 +1,9 @@
 import { useQuery, type QueryKey } from '@tanstack/react-query';
 
+import {
+  ExportService,
+  type ExcelExportOptions,
+} from '@/lib/services/export-service';
 import type {
   CustomerStatementDetail,
   CustomerStatementListResponse,
@@ -155,8 +159,55 @@ export const customerStatementApi = {
     );
   },
 
-  async exportStatement() {
-    throw new Error('客户对账单导出功能尚未实现');
+  async exportStatementToExcel(
+    detail: CustomerStatementDetail,
+    options?: ExcelExportOptions
+  ) {
+    const { customerName, periodStart, periodEnd, summary, transactions } =
+      detail;
+
+    const filename = options?.filename
+      ? options.filename
+      : `客户对账单-${customerName}-${periodStart}_至_${periodEnd}`;
+
+    // 组织导出数据：先摘要，再明细
+    const summaryRow = {
+      客户名称: customerName,
+      对账期间开始: periodStart,
+      对账期间结束: periodEnd,
+      期初余额: summary.receivables.receivableBalance
+        ? detail.openingBalance
+        : detail.openingBalance,
+      销售金额: summary.receivables.salesAmount,
+      退货金额: summary.receivables.salesReturnAmount,
+      收款金额: summary.receivables.paymentReceived,
+      预收款: summary.receivables.prepaymentReceived,
+      已退款金额: summary.receivables.refundPaid ?? 0,
+      应收余额: summary.receivables.receivableBalance,
+    };
+
+    const detailRows = transactions.map(tx => ({
+      日期: tx.transactionDate,
+      类型: tx.transactionType,
+      单据号: tx.referenceNumber,
+      描述: tx.description,
+      增加应收: tx.debitAmount,
+      减少应收: tx.creditAmount,
+      余额: tx.balance,
+      状态: tx.status,
+    }));
+
+    const data = [
+      summaryRow,
+      { ...summaryRow, 客户名称: '——明细如下——' },
+      ...detailRows,
+    ];
+
+    ExportService.exportToExcel(data, {
+      ...options,
+      filename,
+      sheetName: '客户对账单',
+    });
   },
 };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { format, subDays } from 'date-fns';
-import { ArrowLeft, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Download, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -20,7 +20,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useCustomerStatementDetail } from '@/lib/api/customer-statements';
+import {
+  customerStatementApi,
+  useCustomerStatementDetail,
+} from '@/lib/api/customer-statements';
 import {
   CUSTOMER_STATEMENT_TRANSACTION_TYPES,
   type CustomerStatementTransaction,
@@ -29,6 +32,29 @@ import { formatCurrency } from '@/lib/utils';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 const DEFAULT_RANGE_DAYS = 30;
+
+function formatTransactionStatus(status: string): string {
+  const STATUS_LABELS: Record<string, string> = {
+    // 通用状态
+    pending: '待确认',
+    confirmed: '已确认',
+    cancelled: '已取消',
+    completed: '已完成',
+    processing: '处理中',
+    approved: '已审核',
+    rejected: '已拒绝',
+    draft: '草稿',
+
+    // 订单相关
+    shipped: '已发货',
+    submitted: '已提交',
+
+    // 收款/预收款相关
+    applied: '已冲抵',
+  };
+
+  return STATUS_LABELS[status] ?? status;
+}
 
 export default function CustomerStatementDetailPage() {
   const params = useParams();
@@ -197,23 +223,40 @@ export default function CustomerStatementDetailPage() {
     const receivables = statementDetail?.summary?.receivables;
     if (!receivables) {
       return {
-        totalGenerated: 0,
-        totalReceived: 0,
+        salesAmount: 0,
+        salesReturnAmount: 0,
+        netSales: 0,
+        paymentReceived: 0,
+        prepaymentReceived: 0,
+        totalReceipts: 0,
+        refundProcessed: 0,
+        netReceipts: 0,
       };
     }
 
     const salesAmount = Number(receivables.salesAmount ?? 0);
     const salesReturnAmount = Number(receivables.salesReturnAmount ?? 0);
-    const refundPaid = Number(receivables.refundPaid ?? 0);
     const paymentReceived = Number(receivables.paymentReceived ?? 0);
     const prepaymentReceived = Number(receivables.prepaymentReceived ?? 0);
 
-    const totalGenerated = salesAmount - salesReturnAmount - refundPaid;
-    const totalReceived = paymentReceived + prepaymentReceived;
+    // 已处理的退款金额（包含退货退款 + 补偿退款）
+    const refundProcessed = Number(
+      receivables.refundProcessed ?? receivables.refundPaid ?? 0
+    );
+
+    const netSales = salesAmount - salesReturnAmount;
+    const totalReceipts = paymentReceived + prepaymentReceived;
+    const netReceipts = totalReceipts - refundProcessed;
 
     return {
-      totalGenerated,
-      totalReceived,
+      salesAmount,
+      salesReturnAmount,
+      netSales,
+      paymentReceived,
+      prepaymentReceived,
+      totalReceipts,
+      refundProcessed,
+      netReceipts,
     };
   }, [statementDetail?.summary?.receivables]);
 
@@ -324,6 +367,21 @@ export default function CustomerStatementDetailPage() {
 
   const { summary, transactions } = statementDetail;
 
+  const handleExport = async () => {
+    try {
+      await customerStatementApi.exportStatementToExcel(statementDetail);
+    } catch (exportError) {
+      // 简单的前端提示，避免引入全局toast依赖
+      // 可以后续接入统一的通知系统
+      // eslint-disable-next-line no-alert
+      alert(
+        exportError instanceof Error
+          ? `导出失败：${exportError.message}`
+          : '导出失败'
+      );
+    }
+  };
+
   return (
     <div className="space-y-6 px-4 py-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -344,10 +402,19 @@ export default function CustomerStatementDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-sm">
+        <div className="flex items-center gap-3">
+          <span className="text-muted-foreground hidden text-xs md:inline">
             数据生成于 {formatDateTime(statementDetail.generatedAt)}
           </span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+            onClick={handleExport}
+          >
+            <Download className="h-4 w-4" />
+            导出本期对账单
+          </Button>
         </div>
       </div>
 
@@ -434,20 +501,27 @@ export default function CustomerStatementDetailPage() {
         </Card>
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-sm font-medium">应收余额</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              应收余额（客户欠我们）
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-[hsl(var(--color-success))]">
               {formatCurrency(summary.receivables.receivableBalance)}
             </div>
             <p className="text-muted-foreground mt-1 text-xs">
-              应收合计：{formatCurrency(receivableOverview.totalGenerated)}
-              ，已收：
-              {formatCurrency(receivableOverview.totalReceived)}
+              销售：{formatCurrency(receivableOverview.salesAmount)}，退货：
+              {formatCurrency(receivableOverview.salesReturnAmount)}，净销售：
+              {formatCurrency(receivableOverview.netSales)}
+            </p>
+            <p className="text-muted-foreground mt-1 text-xs">
+              收款：{formatCurrency(receivableOverview.totalReceipts)}，退款：
+              {formatCurrency(receivableOverview.refundProcessed)}，净收款：
+              {formatCurrency(receivableOverview.netReceipts)}
             </p>
             {summary.receivables.prepaymentReceived > 0 && (
               <p className="text-muted-foreground mt-1 text-xs">
-                含预收款：
+                其中预收款：
                 {formatCurrency(summary.receivables.prepaymentReceived)}
               </p>
             )}
@@ -543,13 +617,7 @@ export default function CustomerStatementDetailPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary">
-                            {transaction.status === 'confirmed'
-                              ? '已确认'
-                              : transaction.status === 'pending'
-                                ? '待确认'
-                                : transaction.status === 'cancelled'
-                                  ? '已取消'
-                                  : transaction.status}
+                            {formatTransactionStatus(transaction.status)}
                           </Badge>
                         </TableCell>
                       </TableRow>
