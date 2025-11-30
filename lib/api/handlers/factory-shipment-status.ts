@@ -5,13 +5,14 @@
  */
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
 import {
-  generatePaymentNumber,
   generatePayableNumber,
+  generatePaymentNumber,
 } from '@/lib/utils/payment-number-generator';
 
 /**
@@ -227,7 +228,14 @@ export async function updateFactoryShipmentStatus(
   }
 
   // 执行状态更新
+  const startTime = Date.now();
+  console.log(
+    `[PERF] 开始执行 updateFactoryShipmentStatus, orderId: ${orderId}`
+  );
+
   return await prisma.$transaction(async tx => {
+    console.log(`[PERF] 事务开始, 耗时: ${Date.now() - startTime}ms`);
+
     const existingOrder = await tx.factoryShipmentOrder.findUnique({
       where: { id: orderId },
       select: {
@@ -240,7 +248,17 @@ export async function updateFactoryShipmentStatus(
         receivableAmount: true,
         paidAmount: true,
         depositAmount: true,
-        items: true,
+        // ✅ 优化：只选择items中实际需要的字段，避免加载大量不必要的数据
+        items: {
+          select: {
+            id: true,
+            supplierId: true,
+            quantity: true,
+            unitCost: true,
+            totalPrice: true,
+            ownership: true,
+          },
+        },
         containerNumber: true,
         shippingCompany: true,
         shipmentDate: true,
@@ -250,9 +268,13 @@ export async function updateFactoryShipmentStatus(
       },
     });
 
+    console.log(`[PERF] 订单查询完成, 耗时: ${Date.now() - startTime}ms`);
+
     if (!existingOrder) {
       throw new Error('订单不存在');
     }
+
+    // ... (省略中间代码)
 
     const { items: orderItems, ...orderWithoutItems } = existingOrder;
     type OrderSnapshot = typeof orderWithoutItems;
@@ -346,65 +368,112 @@ export async function updateFactoryShipmentStatus(
       finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED ||
       finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED
     ) {
-      const existingReceivable = await tx.paymentRecord.findFirst({
-        where: {
-          factoryShipmentOrderId: orderId,
-        },
-        select: { id: true },
-      });
-
-      if (!existingReceivable) {
-        const customerTotals = await tx.factoryShipmentOrderItem.aggregate({
-          where: {
-            factoryShipmentOrderId: orderId,
-            ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
-          },
-          _sum: {
-            totalPrice: true,
-          },
+      try {
+        logger.info('factory-shipment-status', '开始创建应收账款', {
+          orderId,
+          orderNumber: order.orderNumber,
+          finalStatus,
         });
 
-        const customerTotal = customerTotals._sum.totalPrice || 0;
-        const outstandingAmount = Math.max(
-          customerTotal - (order.depositAmount || 0) - (order.paidAmount || 0),
-          0
-        );
+        const existingReceivable = await tx.paymentRecord.findFirst({
+          where: {
+            factoryShipmentOrderId: orderId,
+          },
+          select: { id: true },
+        });
 
-        if (outstandingAmount > 0) {
-          const paymentNumber = await generatePaymentNumber(tx);
-          const paymentDate =
-            data.shipmentDate ??
-            order.shipmentDate ??
-            data.arrivalDate ??
-            order.arrivalDate ??
-            data.deliveryDate ??
-            order.deliveryDate ??
-            new Date();
-          const paymentRecord = await tx.paymentRecord.create({
-            data: {
+        if (!existingReceivable) {
+          // ✅ 性能优化：使用已加载的orderItems数据计算，避免额外的数据库查询
+          const customerTotal = orderItems
+            .filter(
+              item =>
+                item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER
+            )
+            .reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+
+          const outstandingAmount = Math.max(
+            customerTotal -
+              (order.depositAmount || 0) -
+              (order.paidAmount || 0),
+            0
+          );
+
+          if (outstandingAmount > 0) {
+            // 确保金额精度为2位小数（Decimal类型要求）
+            const formattedAmount = Number(outstandingAmount.toFixed(2));
+
+            logger.info('factory-shipment-status', '应收账款金额计算完成', {
+              customerTotal,
+              depositAmount: order.depositAmount,
+              paidAmount: order.paidAmount,
+              outstandingAmount: formattedAmount,
+            });
+
+            const paymentNumber = await generatePaymentNumber(tx);
+            const paymentDate =
+              data.shipmentDate ??
+              order.shipmentDate ??
+              data.arrivalDate ??
+              order.arrivalDate ??
+              data.deliveryDate ??
+              order.deliveryDate ??
+              new Date();
+            const paymentRecord = await tx.paymentRecord.create({
+              data: {
+                paymentNumber,
+                salesOrderId: null,
+                factoryShipmentOrderId: orderId,
+                customerId: order.customerId,
+                userId: order.userId,
+                paymentType: 'order_payment',
+                paymentMethod: 'other',
+                paymentAmount: formattedAmount,
+                actualPaymentAmount: formattedAmount,
+                roundingAmount: 0,
+                paymentDate,
+                status: 'pending',
+                remarks: '系统自动生成应收（厂家直发）',
+              },
+              select: {
+                id: true,
+              },
+            });
+
+            paymentRecordId = paymentRecord.id;
+            receivableCreated = true;
+
+            logger.info('factory-shipment-status', '应收账款创建成功', {
+              paymentRecordId,
               paymentNumber,
-              salesOrderId: null,
-              factoryShipmentOrderId: orderId,
-              customerId: order.customerId,
-              userId: order.userId,
-              paymentType: 'order_payment',
-              paymentMethod: 'other',
-              paymentAmount: outstandingAmount,
-              actualPaymentAmount: outstandingAmount,
-              roundingAmount: 0,
-              paymentDate,
-              status: 'pending',
-              remarks: '系统自动生成应收（厂家直发）',
-            },
-            select: {
-              id: true,
-            },
+              amount: formattedAmount,
+            });
+          } else {
+            logger.info(
+              'factory-shipment-status',
+              '无需创建应收账款（金额为0）',
+              {
+                orderId,
+                outstandingAmount,
+              }
+            );
+          }
+        } else {
+          logger.info('factory-shipment-status', '应收账款已存在，跳过创建', {
+            orderId,
+            existingReceivableId: existingReceivable.id,
           });
-
-          paymentRecordId = paymentRecord.id;
-          receivableCreated = true;
         }
+      } catch (error) {
+        logger.error('factory-shipment-status', '创建应收账款失败', error, {
+          orderId,
+          orderNumber: order.orderNumber,
+          customerId: order.customerId,
+        });
+        throw new Error(
+          `创建应收账款失败: ${error instanceof Error ? error.message : '未知错误'}`
+        );
       }
+      console.log(`[PERF] 应收账款处理完成, 耗时: ${Date.now() - startTime}ms`);
     }
 
     const roundCurrency = (value: number): number =>
@@ -414,155 +483,223 @@ export async function updateFactoryShipmentStatus(
       finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED ||
       finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED
     ) {
-      const existingPayableCount = await tx.payableRecord.count({
-        where: {
-          sourceType: 'factory_shipment',
-          sourceId: orderId,
-        },
-      });
+      console.log(`[PERF] 开始处理应付账款, 耗时: ${Date.now() - startTime}ms`);
+      try {
+        logger.info('factory-shipment-status', '开始创建应付账款', {
+          orderId,
+          orderNumber: order.orderNumber,
+          finalStatus,
+        });
 
-      if (existingPayableCount === 0) {
-        const supplierTotalsMap = new Map<string, number>();
-        for (const item of orderItems) {
-          if (!item.supplierId) continue;
-          const quantity = Number(item.quantity ?? 0);
-          const unitCost =
-            typeof item.unitCost === 'number' && !Number.isNaN(item.unitCost)
-              ? item.unitCost
-              : null;
-          const fallbackTotal = Number(item.totalPrice ?? 0);
-          const computedCost =
-            unitCost !== null ? quantity * unitCost : fallbackTotal;
-          const roundedCost = roundCurrency(computedCost);
-          if (roundedCost <= 0) {
-            continue;
-          }
-          supplierTotalsMap.set(
-            item.supplierId,
-            roundCurrency(
-              (supplierTotalsMap.get(item.supplierId) ?? 0) + roundedCost
-            )
-          );
-        }
+        const existingPayableCount = await tx.payableRecord.count({
+          where: {
+            sourceType: 'factory_shipment',
+            sourceId: orderId,
+          },
+        });
 
-        const supplierEntries = Array.from(supplierTotalsMap.entries());
-        if (supplierEntries.length > 0) {
-          const supplierTotalsSum = supplierEntries.reduce(
-            (sum, [, amount]) => sum + Math.max(0, amount),
-            0
-          );
-          const orderCostAmount =
-            typeof order.costAmount === 'number' && order.costAmount > 0
-              ? order.costAmount
-              : undefined;
-          const baseCost = roundCurrency(
-            orderCostAmount !== undefined ? orderCostAmount : supplierTotalsSum
-          );
-
-          if (baseCost > 0) {
-            const payableDateBase =
-              data.shipmentDate ??
-              order.shipmentDate ??
-              data.arrivalDate ??
-              order.arrivalDate ??
-              new Date();
-            const computeDueDate = () => {
-              const dueDate = new Date(payableDateBase);
-              dueDate.setDate(dueDate.getDate() + 30);
-              return dueDate;
-            };
-
-            const creationQueue: Array<{
-              supplierId: string;
-              amount: number;
-            }> = [];
-            let allocatedBase = 0;
-            let allocatedDeposit = 0;
-            const depositAmount = roundCurrency(
-              Math.min(
-                baseCost,
-                Math.max(
-                  0,
-                  typeof order.depositAmount === 'number'
-                    ? order.depositAmount
-                    : 0
-                )
+        if (existingPayableCount === 0) {
+          const supplierTotalsMap = new Map<string, number>();
+          for (const item of orderItems) {
+            if (!item.supplierId) continue;
+            const quantity = Number(item.quantity ?? 0);
+            const unitCost =
+              typeof item.unitCost === 'number' && !Number.isNaN(item.unitCost)
+                ? item.unitCost
+                : null;
+            const fallbackTotal = Number(item.totalPrice ?? 0);
+            const computedCost =
+              unitCost !== null ? quantity * unitCost : fallbackTotal;
+            const roundedCost = roundCurrency(computedCost);
+            if (roundedCost <= 0) {
+              continue;
+            }
+            supplierTotalsMap.set(
+              item.supplierId,
+              roundCurrency(
+                (supplierTotalsMap.get(item.supplierId) ?? 0) + roundedCost
               )
             );
+          }
 
-            supplierEntries.forEach(([supplierId, supplierCost], index) => {
-              const normalizedCost = Math.max(0, supplierCost);
-              const proportion =
-                supplierTotalsSum > 0
-                  ? normalizedCost / supplierTotalsSum
-                  : 1 / supplierEntries.length;
+          const supplierEntries = Array.from(supplierTotalsMap.entries());
+          if (supplierEntries.length > 0) {
+            const supplierTotalsSum = supplierEntries.reduce(
+              (sum, [, amount]) => sum + Math.max(0, amount),
+              0
+            );
+            const orderCostAmount =
+              typeof order.costAmount === 'number' && order.costAmount > 0
+                ? order.costAmount
+                : undefined;
+            const baseCost = roundCurrency(
+              orderCostAmount !== undefined
+                ? orderCostAmount
+                : supplierTotalsSum
+            );
 
-              const grossAmount =
-                index === supplierEntries.length - 1
-                  ? roundCurrency(baseCost - allocatedBase)
-                  : roundCurrency(baseCost * proportion);
-
-              if (grossAmount <= 0) {
-                return;
-              }
-
-              allocatedBase = roundCurrency(allocatedBase + grossAmount);
-
-              let depositShare = 0;
-              if (depositAmount > 0) {
-                depositShare =
-                  index === supplierEntries.length - 1
-                    ? roundCurrency(depositAmount - allocatedDeposit)
-                    : roundCurrency(depositAmount * proportion);
-                allocatedDeposit = roundCurrency(
-                  allocatedDeposit + depositShare
-                );
-              }
-
-              const netAmount = roundCurrency(grossAmount - depositShare);
-
-              if (netAmount <= 0) {
-                return;
-              }
-
-              creationQueue.push({ supplierId, amount: netAmount });
+            logger.info('factory-shipment-status', '应付账款成本计算完成', {
+              supplierCount: supplierEntries.length,
+              baseCost,
+              supplierTotalsSum,
             });
 
-            for (const payable of creationQueue) {
-              const payableNumber = await generatePayableNumber(tx);
-              const description =
-                depositAmount > 0
-                  ? `厂家直发订单 ${order.orderNumber} 自动生成应付款（已扣除定金）`
-                  : `厂家直发订单 ${order.orderNumber} 自动生成应付款`;
-              const createdPayable = await tx.payableRecord.create({
-                data: {
-                  payableNumber,
-                  supplierId: payable.supplierId,
-                  userId: order.userId,
-                  sourceType: 'factory_shipment',
-                  sourceId: orderId,
-                  sourceNumber: order.orderNumber,
-                  payableAmount: payable.amount,
-                  remainingAmount: payable.amount,
-                  dueDate: computeDueDate(),
-                  status: 'pending',
-                  paymentTerms: '30天',
-                  description,
-                  remarks: `关联厂家直发订单：${order.orderNumber}`,
-                },
-                select: {
-                  id: true,
-                },
-              });
-              payableRecordIds.push(createdPayable.id);
-            }
+            if (baseCost > 0) {
+              const payableDateBase =
+                data.shipmentDate ??
+                order.shipmentDate ??
+                data.arrivalDate ??
+                order.arrivalDate ??
+                new Date();
+              const computeDueDate = () => {
+                const dueDate = new Date(payableDateBase);
+                dueDate.setDate(dueDate.getDate() + 30);
+                return dueDate;
+              };
 
-            if (payableRecordIds.length > 0) {
-              payableCreated = true;
+              const creationQueue: Array<{
+                supplierId: string;
+                amount: number;
+              }> = [];
+              let allocatedBase = 0;
+              let allocatedDeposit = 0;
+              const depositAmount = roundCurrency(
+                Math.min(
+                  baseCost,
+                  Math.max(
+                    0,
+                    typeof order.depositAmount === 'number'
+                      ? order.depositAmount
+                      : 0
+                  )
+                )
+              );
+
+              supplierEntries.forEach(([supplierId, supplierCost], index) => {
+                const normalizedCost = Math.max(0, supplierCost);
+                const proportion =
+                  supplierTotalsSum > 0
+                    ? normalizedCost / supplierTotalsSum
+                    : 1 / supplierEntries.length;
+
+                const grossAmount =
+                  index === supplierEntries.length - 1
+                    ? roundCurrency(baseCost - allocatedBase)
+                    : roundCurrency(baseCost * proportion);
+
+                if (grossAmount <= 0) {
+                  return;
+                }
+
+                allocatedBase = roundCurrency(allocatedBase + grossAmount);
+
+                let depositShare = 0;
+                if (depositAmount > 0) {
+                  depositShare =
+                    index === supplierEntries.length - 1
+                      ? roundCurrency(depositAmount - allocatedDeposit)
+                      : roundCurrency(depositAmount * proportion);
+                  allocatedDeposit = roundCurrency(
+                    allocatedDeposit + depositShare
+                  );
+                }
+
+                const netAmount = roundCurrency(grossAmount - depositShare);
+
+                if (netAmount <= 0) {
+                  return;
+                }
+
+                creationQueue.push({ supplierId, amount: netAmount });
+              });
+
+              logger.info('factory-shipment-status', '应付账款分配完成', {
+                queueLength: creationQueue.length,
+                depositAmount,
+              });
+
+              // ✅ 性能优化：批量生成应付款编号，避免在循环中多次查询数据库
+              const payableNumbers: string[] = [];
+              for (let i = 0; i < creationQueue.length; i++) {
+                payableNumbers.push(await generatePayableNumber(tx));
+              }
+
+              console.log(
+                `[PERF] 应付款编号生成完成, 耗时: ${Date.now() - startTime}ms`
+              );
+
+              for (let i = 0; i < creationQueue.length; i++) {
+                const payable = creationQueue[i];
+                const payableNumber = payableNumbers[i];
+                const description =
+                  depositAmount > 0
+                    ? `厂家直发订单 ${order.orderNumber} 自动生成应付款（已扣除定金）`
+                    : `厂家直发订单 ${order.orderNumber} 自动生成应付款`;
+                const createdPayable = await tx.payableRecord.create({
+                  data: {
+                    payableNumber,
+                    supplierId: payable.supplierId,
+                    userId: order.userId,
+                    sourceType: 'factory_shipment',
+                    sourceId: orderId,
+                    sourceNumber: order.orderNumber,
+                    payableAmount: payable.amount,
+                    remainingAmount: payable.amount,
+                    dueDate: computeDueDate(),
+                    status: 'pending',
+                    paymentTerms: '30天',
+                    description,
+                    remarks: `关联厂家直发订单：${order.orderNumber}`,
+                  },
+                  select: {
+                    id: true,
+                  },
+                });
+                payableRecordIds.push(createdPayable.id);
+              }
+
+              if (payableRecordIds.length > 0) {
+                payableCreated = true;
+                logger.info('factory-shipment-status', '应付账款创建成功', {
+                  count: payableRecordIds.length,
+                  payableRecordIds: payableRecordIds.join(', '),
+                });
+              }
+            } else {
+              logger.info(
+                'factory-shipment-status',
+                '无需创建应付账款（成本为0）',
+                {
+                  orderId,
+                  baseCost,
+                }
+              );
             }
+          } else {
+            logger.info(
+              'factory-shipment-status',
+              '无供应商信息，跳过应付账款创建',
+              {
+                orderId,
+              }
+            );
           }
+        } else {
+          logger.info('factory-shipment-status', '应付账款已存在，跳过创建', {
+            orderId,
+            existingPayableCount,
+          });
         }
+      } catch (error) {
+        logger.error('factory-shipment-status', '创建应付账款失败', error, {
+          orderId,
+          orderNumber: order.orderNumber,
+        });
+        throw new Error(
+          `创建应付账款失败: ${error instanceof Error ? error.message : '未知错误'}`
+        );
       }
+      console.log(`[PERF] 应付账款处理完成, 耗时: ${Date.now() - startTime}ms`);
     }
 
     return {

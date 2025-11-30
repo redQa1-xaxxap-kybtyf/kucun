@@ -135,6 +135,8 @@ function useConfirmShipmentDialogState({
   };
 
   const handleSubmit = form.handleSubmit(data => {
+    console.log('[DEBUG] 确认发货 - 表单数据:', data);
+
     const estimatedArrivalIso = data.estimatedArrival
       ? data.estimatedArrival.toISOString()
       : undefined;
@@ -142,21 +144,28 @@ function useConfirmShipmentDialogState({
       ? data.shipmentDate.toISOString()
       : new Date().toISOString();
 
+    const payload = {
+      idempotencyKey: crypto.randomUUID(),
+      status: FACTORY_SHIPMENT_STATUS.SHIPPED,
+      containerNumber: data.containerNumber,
+      shippingCompany: data.shippingCompany,
+      estimatedArrival: estimatedArrivalIso,
+      shipmentDate: shipmentDateIso,
+    };
+
+    console.log('[DEBUG] 确认发货 - 发送到服务器的数据:', payload);
+
     confirmMutation.mutate(
       {
         id: orderId,
-        data: {
-          idempotencyKey: crypto.randomUUID(),
-          status: FACTORY_SHIPMENT_STATUS.SHIPPED,
-          containerNumber: data.containerNumber,
-          shippingCompany: data.shippingCompany,
-          estimatedArrival: estimatedArrivalIso,
-          shipmentDate: shipmentDateIso,
-        },
+        data: payload,
       },
       {
         onSuccess: handleSuccess,
-        onError: handleError,
+        onError: error => {
+          console.error('[DEBUG] 确认发货失败:', error);
+          handleError(error);
+        },
       }
     );
   });

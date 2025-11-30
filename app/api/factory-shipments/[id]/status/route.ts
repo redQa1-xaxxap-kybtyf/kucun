@@ -2,13 +2,13 @@
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
 import { type PrismaClient } from '@prisma/client';
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
 import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
-import { withIdempotency } from '@/lib/utils/idempotency';
+import { withIdempotency } from '@/lib/utils/idempotency-redis';
 import {
   updateFactoryShipmentOrderStatusSchema,
   type UpdateFactoryShipmentOrderStatusData,
@@ -33,22 +33,53 @@ interface RouteParams {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
+  console.log(
+    '[DEBUG] PATCH /api/factory-shipments/[id]/status - 开始处理请求, orderId:',
+    id
+  );
+
   try {
     const userId = await resolveUserId();
+    console.log('[DEBUG] 用户认证结果, userId:', userId);
+
     if (!userId) {
-      return NextResponse.json({ error: '未授权操作' }, { status: 401 });
+      console.log('[DEBUG] 用户未授权');
+      return NextResponse.json(
+        { error: '未授权操作', message: '未授权操作' },
+        { status: 401 }
+      );
     }
 
+    console.log('[DEBUG] 开始验证请求数据');
     const validated = await parseAndValidateRequest(request);
+    console.log(
+      '[DEBUG] 请求数据验证通过, idempotencyKey:',
+      validated.idempotencyKey
+    );
     const prisma = (await import('@/lib/db')).prisma;
+    console.log('[DEBUG] 检查订单是否存在');
     const existingOrder = await ensureOrderExists(prisma, id);
     if (!existingOrder) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      console.log('[DEBUG] 订单不存在, orderId:', id);
+      return NextResponse.json(
+        {
+          error: '订单不存在',
+          message: '订单不存在',
+        },
+        { status: 404 }
+      );
     }
+    console.log('[DEBUG] 订单存在, 当前状态:', existingOrder.status);
 
     const dateFields = convertDateFields(validated);
     const enableSmartTransition =
       validated.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
+
+    console.log('[DEBUG] 准备更新订单状态:', {
+      targetStatus: validated.status,
+      enableSmartTransition,
+      currentStatus: existingOrder.status,
+    });
 
     const result = await applyStatusUpdate({
       id,
@@ -58,7 +89,14 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       payload: dateFields,
     });
 
+    console.log('[DEBUG] 订单状态更新成功, 结果:', {
+      receivableCreated: result.receivableCreated,
+      payableCreated: result.payableCreated,
+    });
+
+    console.log('[DEBUG] 获取更新后的订单详情');
     const updatedOrder = await fetchOrderWithRelations(prisma, id);
+    console.log('[DEBUG] 订单详情获取成功');
 
     return NextResponse.json({
       ...updatedOrder,
@@ -73,18 +111,62 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     });
 
     if (error instanceof Error) {
+      console.error('[DEBUG] 错误详情:', error.message, error.stack);
+
+      if (error.message.includes('数据验证失败')) {
+        return NextResponse.json(
+          {
+            error: error.message,
+            message: error.message,
+          },
+          { status: 422 }
+        );
+      }
       if (error.message.includes('状态流转')) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: error.message,
+            message: error.message,
+          },
+          { status: 400 }
+        );
       }
       if (error.message.includes('集装箱号码')) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: error.message,
+            message: error.message,
+          },
+          { status: 400 }
+        );
       }
       if (error.message.includes('幂等性')) {
-        return NextResponse.json({ error: error.message }, { status: 409 });
+        return NextResponse.json(
+          {
+            error: error.message,
+            message: error.message,
+          },
+          { status: 409 }
+        );
       }
+
+      // 返回通用错误信息
+      return NextResponse.json(
+        {
+          error: error.message,
+          message: error.message,
+        },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ error: '更新订单状态失败' }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: '更新订单状态失败',
+        message: '更新订单状态失败',
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -94,8 +176,27 @@ async function resolveUserId(): Promise<string | null> {
 }
 
 async function parseAndValidateRequest(request: NextRequest) {
-  const body = await request.json();
-  return updateFactoryShipmentOrderStatusSchema.parse(body);
+  try {
+    const body = await request.json();
+    console.log('[DEBUG] 接收到的请求数据:', JSON.stringify(body, null, 2));
+    const validated = updateFactoryShipmentOrderStatusSchema.parse(body);
+    console.log('[DEBUG] 验证通过的数据:', JSON.stringify(validated, null, 2));
+    return validated;
+  } catch (error) {
+    if (error && typeof error === 'object' && 'issues' in error) {
+      const zodError = error as {
+        issues: Array<{ path: (string | number)[]; message: string }>;
+      };
+      console.error(
+        '[DEBUG] Zod 验证失败:',
+        JSON.stringify(zodError.issues, null, 2)
+      );
+      throw new Error(
+        `数据验证失败: ${zodError.issues.map((i: { message: string }) => i.message).join(', ')}`
+      );
+    }
+    throw error;
+  }
 }
 
 type ConvertedStatusPayload = {
