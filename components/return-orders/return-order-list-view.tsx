@@ -1,6 +1,14 @@
 'use client';
 
-import { Edit, Eye, MoreHorizontal, Package, TrendingDown } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  CheckCircle2,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Package,
+  TrendingDown,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -35,6 +43,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { useUpdateReturnOrderStatus } from '@/lib/api/return-orders';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
@@ -186,6 +196,10 @@ function ReturnOrderRow({
   onDeleteRequest,
 }: ReturnOrderRowProps) {
   const router = useRouter();
+  const [isConfirming, setIsConfirming] = React.useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateStatusMutation = useUpdateReturnOrderStatus();
 
   const handleNavigate = React.useCallback(() => {
     if (onOrderSelect) {
@@ -199,16 +213,12 @@ function ReturnOrderRow({
     onDeleteRequest(order);
   }, [onDeleteRequest, order]);
 
-  const formatRefundAmount = React.useCallback((order: ReturnOrder) => {
+  const formatRefundAmount = React.useCallback((o: ReturnOrder) => {
     const actualAmount =
-      typeof order.refundAmount === 'number'
-        ? order.refundAmount
-        : order.totalAmount;
-    const hasAdjustment = Math.abs(actualAmount - order.totalAmount) > 0.005;
+      typeof o.refundAmount === 'number' ? o.refundAmount : o.totalAmount;
+    const hasAdjustment = Math.abs(actualAmount - o.totalAmount) > 0.005;
     const remainingAmount =
-      typeof order.remainingAmount === 'number'
-        ? order.remainingAmount
-        : undefined;
+      typeof o.remainingAmount === 'number' ? o.remainingAmount : undefined;
     const hasRemaining =
       typeof remainingAmount === 'number' && remainingAmount > 0.005;
 
@@ -217,7 +227,7 @@ function ReturnOrderRow({
         <span>{formatCurrency(actualAmount)}</span>
         {hasAdjustment && (
           <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
-            原退货金额 {formatCurrency(order.totalAmount)}
+            原退货金额 {formatCurrency(o.totalAmount)}
           </span>
         )}
         {hasRemaining && (
@@ -228,6 +238,34 @@ function ReturnOrderRow({
       </div>
     );
   }, []);
+
+  const handleConfirm = React.useCallback(() => {
+    setIsConfirming(true);
+    updateStatusMutation.mutate(
+      {
+        id: order.id,
+        // 提交后的“确认”仅将退货单置为已审核(approved)，并自动创建应退货款
+        status: 'approved',
+      },
+      {
+        onSuccess: () => {
+          setIsConfirming(false);
+          // 刷新退货订单相关的列表/统计缓存，而不整页刷新
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.returnOrders.all,
+          });
+        },
+        onError: (error: Error) => {
+          setIsConfirming(false);
+          toast({
+            title: '确认失败',
+            description: error.message,
+            variant: 'destructive',
+          });
+        },
+      }
+    );
+  }, [order.id, updateStatusMutation, toast]);
 
   return (
     <TableRow
@@ -267,12 +305,38 @@ function ReturnOrderRow({
         {formatRefundAmount(order)}
       </TableCell>
       <TableCell>
-        <Badge
-          variant={getReturnOrderStatusBadgeVariant(order.status)}
-          className="text-xs font-medium"
-        >
-          {RETURN_ORDER_STATUS_LABELS[order.status as ReturnOrderStatus]}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={getReturnOrderStatusBadgeVariant(order.status)}
+            className="text-xs font-medium"
+          >
+            {RETURN_ORDER_STATUS_LABELS[order.status as ReturnOrderStatus]}
+          </Badge>
+          {order.status === 'submitted' && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={event => {
+                event.stopPropagation();
+                handleConfirm();
+              }}
+              disabled={isConfirming}
+            >
+              {isConfirming ? (
+                <span className="flex items-center gap-1 text-xs">
+                  <CheckCircle2 className="h-3 w-3 animate-spin" />
+                  确认中...
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-xs">
+                  <CheckCircle2 className="h-3 w-3" />
+                  确认
+                </span>
+              )}
+            </Button>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-[hsl(var(--color-text-secondary))]">
         {formatDateTime(order.createdAt)}
@@ -334,9 +398,8 @@ function ReturnOrderActionMenu({
   }, [order.id, toast]);
 
   const canEdit = ['draft', 'submitted'].includes(order.status);
-  const canCancel = ['draft', 'submitted', 'approved', 'processing'].includes(
-    order.status
-  );
+  // 确认后（approved 及之后）不允许再取消
+  const canCancel = ['draft', 'submitted'].includes(order.status);
 
   return (
     <>

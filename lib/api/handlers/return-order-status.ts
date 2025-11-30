@@ -16,8 +16,10 @@ const roundCurrency = (value: number): number =>
  */
 export const validStatusTransitions: Record<string, string[]> = {
   draft: ['submitted', 'cancelled'],
-  submitted: ['approved', 'rejected', 'cancelled'],
-  approved: ['processing', 'cancelled'],
+  // ✅ 允许从 submitted 直接完成（适配“提交后直接确认并生成应退货款”的业务场景）
+  submitted: ['approved', 'rejected', 'cancelled', 'completed'],
+  // 也允许从已审核直接完成
+  approved: ['processing', 'cancelled', 'completed'],
   rejected: [], // 已拒绝的订单不能再变更状态
   processing: ['completed', 'cancelled'],
   completed: [], // 已完成的订单不能再变更状态
@@ -212,8 +214,13 @@ export async function updateReturnOrderStatus(
 
       let refundCreated = false;
 
-      // 如果状态变更为completed且处理方式为refund,自动创建或纠正退款记录金额
-      if (newStatus === 'completed' && processType === 'refund') {
+      // 如果状态变更为已审核/处理中/已完成且处理方式为退款，自动创建或纠正应退货款记录金额
+      if (
+        (newStatus === 'approved' ||
+          newStatus === 'processing' ||
+          newStatus === 'completed') &&
+        processType === 'refund'
+      ) {
         let computedRefundAmount =
           data.refundAmount ??
           (typeof order.refundAmount === 'number'
@@ -323,8 +330,8 @@ export async function updateReturnOrderStatus(
             refundCreated = true;
           }
 
-          // ✅ 在退货完成时,按退款金额比例回退原销售订单利润
-          if (order.salesOrderId) {
+          // ✅ 只有在退货完成时,按退款金额比例回退原销售订单利润
+          if (newStatus === 'completed' && order.salesOrderId) {
             await adjustSalesOrderProfitOnReturn(tx, {
               salesOrderId: order.salesOrderId,
               refundAmount: computedRefundAmount,

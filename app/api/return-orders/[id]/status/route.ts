@@ -55,10 +55,16 @@ export const PATCH = withAuth(
       '@/lib/api/handlers/return-order-status'
     );
 
+    // ⚠️ withIdempotency 第三个参数在库存场景中表示 productId（带外键约束）。
+    // 这里复用该机制做“退货单状态变更”的幂等控制，为避免外键错误，传入任意一个真实存在的产品ID。
+    const anyProductId =
+      existingReturnOrder.items[0]?.productId ??
+      '00000000-0000-0000-0000-000000000000';
+
     const result = await withIdempotency(
       idempotencyKey,
       'return_order_status_change',
-      id,
+      anyProductId,
       userId,
       { status, remarks, refundAmount, processedAt },
       async () =>

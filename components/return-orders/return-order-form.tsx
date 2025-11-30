@@ -112,7 +112,14 @@ export function ReturnOrderForm({
                 damagedQuantity: item.damagedQuantity || 0,
                 originalQuantity: item.originalQuantity,
                 unitPrice: item.unitPrice,
-                subtotal: item.subtotal,
+                // 兼容历史数据：编辑模式下重新按「退货数量 - 破损数量」计算小计
+                subtotal: calculateReturnItemSubtotal(
+                  Math.max(
+                    item.returnQuantity - (item.damagedQuantity || 0),
+                    0
+                  ),
+                  item.unitPrice
+                ),
                 reason: item.reason,
               })) || [],
           },
@@ -170,8 +177,10 @@ export function ReturnOrderForm({
   // 计算明细小计
   const calculateSubtotal = (index: number) => {
     const quantity = form.watch(`items.${index}.returnQuantity`);
+    const damaged = form.watch(`items.${index}.damagedQuantity`) ?? 0;
     const unitPrice = form.watch(`items.${index}.unitPrice`);
-    const subtotal = calculateReturnItemSubtotal(quantity, unitPrice);
+    const effectiveQuantity = Math.max((quantity ?? 0) - (damaged ?? 0), 0);
+    const subtotal = calculateReturnItemSubtotal(effectiveQuantity, unitPrice);
     form.setValue(`items.${index}.subtotal`, subtotal);
   };
 
@@ -538,6 +547,7 @@ export function ReturnOrderForm({
                                                       e.target.value
                                                     ) || 0
                                                   );
+                                                  calculateSubtotal(index);
                                                 }}
                                               />
                                             </FormControl>
@@ -638,6 +648,7 @@ export function ReturnOrderForm({
                                                       e.target.value
                                                     ) || 0
                                                   );
+                                                  calculateSubtotal(index);
                                                 }}
                                               />
                                             </FormControl>

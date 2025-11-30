@@ -250,12 +250,43 @@ export async function updateReturnOrderStatus(
           let inboundResults: Array<{ productId: string }> = [];
 
           if (data.status === 'completed') {
+            // 为入库准备批次信息：
+            // 1. 退货明细本身当前还没有存 batchNumber 字段
+            // 2. 原始销售明细(SalesOrderItem) 已经保存了 batchNumber
+            // 因此这里根据 salesOrderItemId 反查一次销售明细，把批次号“补”到退货入库逻辑中
+            const salesOrderId = returnOrder.salesOrderId ?? undefined;
+
+            let batchBySalesItemId = new Map<string, string | null>();
+            if (salesOrderId) {
+              const salesOrderItems = await tx.salesOrderItem.findMany({
+                where: {
+                  id: { in: returnOrder.items.map(i => i.salesOrderItemId) },
+                  salesOrderId,
+                },
+                select: {
+                  id: true,
+                  batchNumber: true,
+                },
+              });
+
+              batchBySalesItemId = new Map(
+                salesOrderItems.map(item => [item.id, item.batchNumber ?? null])
+              );
+            }
+
             inboundResults = await applyCompletionEffects(
               tx,
               {
-                salesOrderId: returnOrder.salesOrderId ?? undefined,
+                salesOrderId,
                 returnNumber: returnOrder.returnNumber,
-                items: returnOrder.items,
+                items: returnOrder.items.map(item => ({
+                  productId: item.productId,
+                  returnQuantity: item.returnQuantity,
+                  damagedQuantity: item.damagedQuantity,
+                  // 优先使用原销售明细上的批次号；只有在确实没有批次号时，才视为“无批次”入库
+                  batchNumber:
+                    batchBySalesItemId.get(item.salesOrderItemId) ?? null,
+                })),
               },
               session.user.id
             );

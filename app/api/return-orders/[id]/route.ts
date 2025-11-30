@@ -52,6 +52,7 @@ export const GET = withAuth(
                 unit: true,
                 piecesPerUnit: true,
                 category: true,
+                specification: true,
               },
             },
             salesOrderItem: {
@@ -60,6 +61,11 @@ export const GET = withAuth(
                 quantity: true,
                 unitPrice: true,
                 subtotal: true,
+                displayUnit: true,
+                displayQuantity: true,
+                piecesPerUnit: true,
+                specification: true,
+                batchNumber: true,
               },
             },
           },
@@ -270,9 +276,15 @@ export const PUT = withAuth(
             );
           }
 
-          // 校验小计金额
+          // 校验小计金额：破损不退款
+          // 应计价数量 = 退货数量 - 破损数量（下限为 0）
+          const damagedQuantity = returnItem.damagedQuantity ?? 0;
+          const effectiveQuantity = Math.max(
+            returnItem.returnQuantity - damagedQuantity,
+            0
+          );
           const calculatedSubtotal =
-            returnItem.returnQuantity * returnItem.unitPrice;
+            Math.round(effectiveQuantity * returnItem.unitPrice * 100) / 100;
           if (Math.abs(returnItem.subtotal - calculatedSubtotal) > 0.01) {
             throw new Error(
               `退货明细金额计算错误。产品ID: ${returnItem.productId}, ` +
@@ -303,11 +315,17 @@ export const PUT = withAuth(
           })),
         });
 
-        // 重新计算总金额（使用服务器计算的值）
-        const totalAmount = data.items.reduce(
-          (sum, item) => sum + item.returnQuantity * item.unitPrice,
-          0
-        );
+        // 重新计算总金额（使用服务器计算的值，破损数量不计入退款金额）
+        const totalAmount = data.items.reduce((sum, item) => {
+          const damagedQuantity = item.damagedQuantity ?? 0;
+          const effectiveQuantity = Math.max(
+            item.returnQuantity - damagedQuantity,
+            0
+          );
+          const subtotal =
+            Math.round(effectiveQuantity * item.unitPrice * 100) / 100;
+          return sum + subtotal;
+        }, 0);
         updateData.totalAmount = totalAmount;
         updateData.refundAmount = totalAmount;
       }

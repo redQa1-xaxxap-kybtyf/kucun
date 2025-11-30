@@ -48,8 +48,14 @@ export const returnOrderItemSchema = z
   )
   .refine(
     data => {
-      // 小计应该等于数量乘以单价
-      const expectedSubtotal = data.returnQuantity * data.unitPrice;
+      // 小计应该等于「应退款数量 × 单价」
+      // 应退款数量 = 退货数量 - 破损数量（破损不退款，数量下限为 0）
+      const damaged = data.damagedQuantity ?? 0;
+      const effectiveQuantity = Math.max(data.returnQuantity - damaged, 0);
+      const expectedSubtotal = calculateReturnItemSubtotal(
+        effectiveQuantity,
+        data.unitPrice
+      );
       return Math.abs(data.subtotal - expectedSubtotal) < 0.01;
     },
     {
@@ -86,9 +92,8 @@ export const createReturnOrderSchema = z
         error: '请选择退货类型',
       }
     ),
-    processType: z.enum(['refund', 'exchange'] as const, {
-      error: '请选择处理方式',
-    }),
+    // 处理方式：当前业务固定为退款，不对销售展示选项
+    processType: z.enum(['refund', 'exchange'] as const).default('refund'),
     reason: z.string().max(500, '退货原因不能超过500字符').optional(),
     remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
     items: z
@@ -168,9 +173,8 @@ export const returnOrderFormSchema = z
         error: '请选择退货类型',
       }
     ),
-    processType: z.enum(['refund', 'exchange'] as const, {
-      error: '请选择处理方式',
-    }),
+    // 表单处理方式：默认退款，不强制用户选择
+    processType: z.enum(['refund', 'exchange'] as const).default('refund'),
     reason: z.string().max(500, '退货原因不能超过500字符').optional(),
     remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
     items: z
@@ -446,8 +450,10 @@ export function validateStatusTransition(
 ): boolean {
   const validTransitions: Record<ReturnOrderStatus, ReturnOrderStatus[]> = {
     draft: ['submitted', 'cancelled'],
-    submitted: ['approved', 'rejected', 'cancelled'],
-    approved: ['processing', 'cancelled'],
+    // 允许从 submitted 直接完成（提交后一次性确认）
+    submitted: ['approved', 'rejected', 'cancelled', 'completed'],
+    // 也允许从 approved 直接完成
+    approved: ['processing', 'cancelled', 'completed'],
     rejected: ['cancelled'],
     processing: ['completed', 'cancelled'],
     completed: [],
@@ -459,12 +465,14 @@ export function validateStatusTransition(
 
 /**
  * 计算退货明细小计
+ * quantity 参数为「应计价数量」（退货数量 - 破损数量）
  */
 export function calculateReturnItemSubtotal(
   quantity: number,
   unitPrice: number
 ): number {
-  return Math.round(quantity * unitPrice * 100) / 100;
+  const safeQuantity = Math.max(quantity, 0);
+  return Math.round(safeQuantity * unitPrice * 100) / 100;
 }
 
 /**

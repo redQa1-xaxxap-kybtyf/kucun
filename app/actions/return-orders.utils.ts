@@ -115,6 +115,7 @@ export async function applyCompletionEffects(
       productId: string;
       returnQuantity: number;
       damagedQuantity: number | null | undefined;
+      batchNumber?: string | null;
     }>;
   },
   operatorId: string
@@ -196,14 +197,24 @@ export async function applyCompletionEffects(
         typeof inventory?.unitCost === 'number' ? inventory.unitCost : 0;
     }
 
+    // 严格按批次退回：优先使用退货明细上的批次号
+    const batchNumber = item.batchNumber || '';
+
+    // 如果是“无批次”库存退回，自动在备注中写明
+    const baseRemark = `退货订单${returnOrder.returnNumber}入库`;
+    const finalRemarks =
+      batchNumber && batchNumber.trim().length > 0
+        ? baseRemark
+        : `${baseRemark}（原销售/库存无批次号，自动按“无批次”入库）`;
+
     const inboundRecord = await executeMinimalInboundTransaction(
       {
         productId: item.productId,
         quantity,
         unitCost,
         reason: 'return_inbound',
-        remarks: `退货订单${returnOrder.returnNumber}入库`,
-        batchNumber: '',
+        remarks: finalRemarks,
+        batchNumber,
         userId: operatorId,
       },
       { tx }

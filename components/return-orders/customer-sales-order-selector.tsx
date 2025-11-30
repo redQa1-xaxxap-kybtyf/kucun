@@ -31,6 +31,23 @@ interface Customer {
   phone?: string;
 }
 
+// 销售订单明细中的产品信息
+interface SalesOrderItemProduct {
+  id: string;
+  code: string;
+  name: string;
+  unit: string;
+  specification?: string | null;
+}
+
+// 销售订单明细
+interface SalesOrderItem {
+  id: string;
+  productId: string;
+  batchNumber?: string; // 批次号
+  product?: SalesOrderItemProduct;
+}
+
 interface SalesOrder {
   id: string;
   orderNumber: string;
@@ -39,6 +56,7 @@ interface SalesOrder {
   totalAmount: number;
   status: SalesOrderStatus;
   createdAt: string;
+  items?: SalesOrderItem[]; // 订单明细，用于产品搜索
 }
 
 interface CustomerSalesOrderSelectorProps {
@@ -48,6 +66,7 @@ interface CustomerSalesOrderSelectorProps {
   value?: string; // 选中的销售订单ID
   onCustomerChange?: (customerId: string) => void;
   onValueChange: (salesOrderId: string, salesOrder: SalesOrder) => void;
+  onSearchChange?: (search: string) => void; // 搜索词变化回调（用于后端搜索）
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -58,7 +77,7 @@ interface CustomerSalesOrderSelectorProps {
 /**
  * 客户-销售订单级联选择器
  * 先选择客户，然后显示该客户的销售订单列表
- * 支持快速搜索和筛选
+ * 支持快速搜索和筛选（后端搜索模式）
  */
 export function CustomerSalesOrderSelector({
   customers,
@@ -67,6 +86,7 @@ export function CustomerSalesOrderSelector({
   value,
   onCustomerChange,
   onValueChange,
+  onSearchChange,
   placeholder = '选择客户和销售订单',
   disabled = false,
   className,
@@ -75,9 +95,22 @@ export function CustomerSalesOrderSelector({
 }: CustomerSalesOrderSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [internalCustomerId, setInternalCustomerId] = React.useState<string>(
     selectedCustomerId || ''
   );
+
+  // 防抖处理搜索词（300ms）
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchValue);
+      // 当选择了客户后，通知父组件搜索词变化
+      if (internalCustomerId && onSearchChange) {
+        onSearchChange(searchValue);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchValue, internalCustomerId, onSearchChange]);
 
   // ✅ 修复：监听 selectedCustomerId 变化，同步更新 internalCustomerId
   React.useEffect(() => {
@@ -111,29 +144,101 @@ export function CustomerSalesOrderSelector({
     );
   }, [customers, searchValue, internalCustomerId]);
 
-  // 过滤销售订单列表（已选择客户后）
-  const filteredSalesOrders = React.useMemo(() => {
+  // 处理销售订单列表（已选择客户后）
+  // 后端已经根据搜索词过滤，前端只需要：
+  // 1. 过滤可退货状态的订单
+  // 2. 生成匹配高亮信息
+  const { filteredSalesOrders, matchedProductsByOrder } = React.useMemo(() => {
+    // 匹配信息的类型
+    type MatchedInfo = Array<{ code: string; batchNumber?: string }>;
+
     if (!internalCustomerId) {
-      return [];
+      return {
+        filteredSalesOrders: [],
+        matchedProductsByOrder: new Map<string, MatchedInfo>(),
+      };
     }
 
-    // 过滤: 只显示该客户的订单，且只显示可退货状态的订单
-    // 使用集中化的配置，确保与后端逻辑一致
-    const customerOrders = salesOrders.filter(
-      order =>
-        order.customerId === internalCustomerId &&
-        RETURN_ALLOWED_SALES_ORDER_STATUSES.includes(order.status)
+    // 过滤: 只显示可退货状态的订单（后端已按客户和搜索词过滤）
+    const returnableOrders = salesOrders.filter(order =>
+      RETURN_ALLOWED_SALES_ORDER_STATUSES.includes(order.status)
     );
 
-    if (!searchValue) {
-      return customerOrders;
+    // 如果没有搜索词，直接返回
+    if (!debouncedSearch) {
+      return {
+        filteredSalesOrders: returnableOrders,
+        matchedProductsByOrder: new Map<string, MatchedInfo>(),
+      };
     }
 
-    const search = searchValue.toLowerCase();
-    return customerOrders.filter(order =>
-      order.orderNumber.toLowerCase().includes(search)
-    );
-  }, [salesOrders, internalCustomerId, searchValue]);
+    // 生成匹配高亮信息（不过滤，因为后端已过滤）
+    const search = debouncedSearch.toLowerCase();
+    const matchedProducts = new Map<string, MatchedInfo>();
+
+    returnableOrders.forEach(order => {
+      if (order.items && order.items.length > 0) {
+        const matchingItems = order.items.filter(item => {
+          const code = item.product?.code?.toLowerCase() || '';
+          const name = item.product?.name?.toLowerCase() || '';
+          const batchNumber = item.batchNumber?.toLowerCase() || '';
+          return (
+            code.includes(search) ||
+            name.includes(search) ||
+            batchNumber.includes(search)
+          );
+        });
+
+        if (matchingItems.length > 0) {
+          matchedProducts.set(
+            order.id,
+            matchingItems
+              .map(item => ({
+                code: item.product?.code || '',
+                batchNumber: item.batchNumber,
+              }))
+              .filter(info => info.code)
+          );
+        }
+      }
+    });
+
+    return {
+      filteredSalesOrders: returnableOrders,
+      matchedProductsByOrder: matchedProducts,
+    };
+  }, [salesOrders, internalCustomerId, debouncedSearch]);
+
+  // 获取订单的产品摘要（前3个产品编码和批次号）
+  const getProductSummary = (order: SalesOrder): string => {
+    if (!order.items || order.items.length === 0) {
+      return '';
+    }
+    const summaries = order.items
+      .slice(0, 3)
+      .map(item => {
+        const code = item.product?.code || '';
+        const batch = item.batchNumber ? `(${item.batchNumber})` : '';
+        return code + batch;
+      })
+      .filter(Boolean);
+    const suffix =
+      order.items.length > 3 ? ` +${order.items.length - 3}个` : '';
+    return summaries.join(', ') + suffix;
+  };
+
+  // 格式化匹配信息显示
+  const formatMatchedInfo = (
+    matchedItems: Array<{ code: string; batchNumber?: string }>
+  ): string =>
+    matchedItems
+      .map(item => {
+        if (item.batchNumber) {
+          return `${item.code}(${item.batchNumber})`;
+        }
+        return item.code;
+      })
+      .join(', ');
 
   // 处理客户选择
   const handleSelectCustomer = (customerId: string) => {
@@ -202,7 +307,7 @@ export function CustomerSalesOrderSelector({
           <CommandInput
             placeholder={
               internalCustomerId
-                ? '搜索销售订单号...'
+                ? '搜索订单号、产品编码、批次号...'
                 : '搜索客户名称或手机号...'
             }
             value={searchValue}
@@ -278,45 +383,71 @@ export function CustomerSalesOrderSelector({
                   <div className="flex flex-col items-center gap-2 py-6">
                     <Package className="text-muted-foreground h-8 w-8" />
                     <p className="text-muted-foreground text-sm">
-                      该客户暂无可选的销售订单
+                      {searchValue
+                        ? '未找到匹配的销售订单或产品'
+                        : '该客户暂无可选的销售订单'}
                     </p>
                   </div>
                 ) : (
                   <CommandGroup heading="选择销售订单">
-                    {filteredSalesOrders.map(order => (
-                      <CommandItem
-                        key={order.id}
-                        value={order.id}
-                        onSelect={() => handleSelectOrder(order)}
-                        className="flex items-center gap-3 p-3"
-                      >
-                        <Check
+                    {filteredSalesOrders.map(order => {
+                      const productSummary = getProductSummary(order);
+                      const matchedItems =
+                        matchedProductsByOrder.get(order.id) || [];
+                      const hasMatch = matchedItems.length > 0;
+
+                      return (
+                        <CommandItem
+                          key={order.id}
+                          value={order.id}
+                          onSelect={() => handleSelectOrder(order)}
                           className={cn(
-                            'h-4 w-4 shrink-0',
-                            value === order.id ? 'opacity-100' : 'opacity-0'
+                            'flex items-center gap-3 p-3',
+                            hasMatch && 'bg-yellow-50 dark:bg-yellow-900/20'
                           )}
-                        />
-                        <div className="flex-1 space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">
-                              {order.orderNumber}
-                            </span>
-                            <span className="text-muted-foreground text-xs">
-                              {formatStatus(order.status)}
-                            </span>
+                        >
+                          <Check
+                            className={cn(
+                              'h-4 w-4 shrink-0',
+                              value === order.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <div className="flex-1 space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                {order.orderNumber}
+                              </span>
+                              <span className="text-muted-foreground text-xs">
+                                {formatStatus(order.status)}
+                              </span>
+                            </div>
+                            {/* 产品摘要 */}
+                            {productSummary && (
+                              <div className="text-muted-foreground text-xs">
+                                产品: {productSummary}
+                              </div>
+                            )}
+                            {/* 匹配的产品高亮显示（包含批次号） */}
+                            {hasMatch && (
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className="text-yellow-600 dark:text-yellow-400">
+                                  ✨ 匹配: {formatMatchedInfo(matchedItems)}
+                                </span>
+                              </div>
+                            )}
+                            <Separator className="my-1" />
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                {formatDate(order.createdAt)}
+                              </span>
+                              <span className="font-medium">
+                                {formatCurrency(order.totalAmount)}
+                              </span>
+                            </div>
                           </div>
-                          <Separator className="my-1" />
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-foreground">
-                              {formatDate(order.createdAt)}
-                            </span>
-                            <span className="font-medium">
-                              {formatCurrency(order.totalAmount)}
-                            </span>
-                          </div>
-                        </div>
-                      </CommandItem>
-                    ))}
+                        </CommandItem>
+                      );
+                    })}
                   </CommandGroup>
                 )}
               </>

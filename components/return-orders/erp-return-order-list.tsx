@@ -1,7 +1,14 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Ban, Edit, Eye, MoreHorizontal, TrendingDown } from 'lucide-react';
+import {
+  Ban,
+  CheckCircle2,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  TrendingDown,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -40,7 +47,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { getReturnOrders } from '@/lib/api/return-orders';
+import {
+  getReturnOrders,
+  useUpdateReturnOrderStatus,
+} from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -97,6 +107,28 @@ export function ERPReturnOrderList({
   const [orderToCancel, setOrderToCancel] = React.useState<ReturnOrder | null>(
     null
   );
+  const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
+
+  // 确认退货订单（submitted -> completed），并自动创建应退货款
+  const updateStatusMutation = useUpdateReturnOrderStatus({
+    onSuccess: () => {
+      toast({
+        title: '确认成功',
+        description: '退货订单已确认并完成，后续不允许再编辑或取消',
+        variant: 'success',
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
+      setConfirmingId(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '确认失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setConfirmingId(null);
+    },
+  });
 
   // ✅ 默认查询参数（确保类型正确）
   const queryParams: ReturnOrderQueryParams = {
@@ -565,70 +597,101 @@ export function ERPReturnOrderList({
                     <RelativeTime date={returnOrder.createdAt} />
                   </TableCell>
                   <TableCell className="text-center">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                    <div className="flex items-center justify-center gap-2">
+                      {/* 提交后的确认按钮：submitted 状态显示 */}
+                      {returnOrder.status === 'submitted' && (
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
+                          className="h-8 px-2 text-xs"
                           onClick={e => {
                             e.stopPropagation();
-                            handleViewDetail(returnOrder);
+                            // 提交后的财务确认：将状态置为 approved，并自动创建应退货款
+                            setConfirmingId(returnOrder.id);
+                            updateStatusMutation.mutate({
+                              id: returnOrder.id,
+                              status: 'approved',
+                            });
                           }}
+                          disabled={confirmingId === returnOrder.id}
                         >
-                          <Eye className="mr-2 h-4 w-4" />
-                          查看详情
-                        </DropdownMenuItem>
-                        {['draft', 'submitted'].includes(
-                          returnOrder.status
-                        ) && (
+                          {confirmingId === returnOrder.id ? (
+                            <span className="flex items-center gap-1 text-xs">
+                              <CheckCircle2 className="h-3 w-3 animate-spin" />
+                              确认中...
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs">
+                              <CheckCircle2 className="h-3 w-3" />
+                              确认
+                            </span>
+                          )}
+                        </Button>
+                      )}
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={e => {
                               e.stopPropagation();
-                              handleEdit(returnOrder);
+                              handleViewDetail(returnOrder);
                             }}
                           >
-                            <Edit className="mr-2 h-4 w-4" />
-                            编辑
+                            <Eye className="mr-2 h-4 w-4" />
+                            查看详情
                           </DropdownMenuItem>
-                        )}
-                        {[
-                          'draft',
-                          'submitted',
-                          'approved',
-                          'processing',
-                        ].includes(returnOrder.status) && (
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleCancel(returnOrder);
-                            }}
-                          >
-                            <Ban className="mr-2 h-4 w-4" />
-                            取消退货
-                          </DropdownMenuItem>
-                        )}
-                        {onDelete && (
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleDelete(returnOrder);
-                            }}
-                          >
-                            <TrendingDown className="mr-2 h-4 w-4" />
-                            删除
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {['draft', 'submitted'].includes(
+                            returnOrder.status
+                          ) && (
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleEdit(returnOrder);
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              编辑
+                            </DropdownMenuItem>
+                          )}
+                          {/* 确认后（approved 及以后）不允许再取消 */}
+                          {['draft', 'submitted'].includes(
+                            returnOrder.status
+                          ) && (
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleCancel(returnOrder);
+                              }}
+                            >
+                              <Ban className="mr-2 h-4 w-4" />
+                              取消退货
+                            </DropdownMenuItem>
+                          )}
+                          {onDelete && (
+                            <DropdownMenuItem
+                              className="text-red-600"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDelete(returnOrder);
+                              }}
+                            >
+                              <TrendingDown className="mr-2 h-4 w-4" />
+                              删除
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

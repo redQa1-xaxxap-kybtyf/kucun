@@ -406,9 +406,12 @@ export function useCreateReturnOrder(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess, onError, onSettled, ...restOptions } = options ?? {};
+
   return useMutation({
     mutationFn: createReturnOrder,
-    onSuccess: () => {
+    ...restOptions,
+    onSuccess: (data, variables, context) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建后立即看到新订单
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.lists(),
@@ -429,8 +432,15 @@ export function useCreateReturnOrder(
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboard.all,
       });
+      // 允许调用方追加自定义 onSuccess（例如提示、导航），不会覆盖默认刷新逻辑
+      onSuccess?.(data, variables, context);
     },
-    ...options,
+    onError: (error, variables, context) => {
+      onError?.(error, variables, context);
+    },
+    onSettled: (data, error, variables, context) => {
+      onSettled?.(data, error, variables, context);
+    },
   });
 }
 
@@ -446,9 +456,13 @@ export function useUpdateReturnOrder(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess, onError, onSettled, ...restOptions } = options ?? {};
+
   return useMutation({
     mutationFn: ({ id, data }) => updateReturnOrder(id, data),
-    onSuccess: (_, { id }) => {
+    ...restOptions,
+    onSuccess: (data, variables, context) => {
+      const { id } = variables;
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新后立即看到变化
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.detail(id),
@@ -470,8 +484,14 @@ export function useUpdateReturnOrder(
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboard.all,
       });
+      onSuccess?.(data, variables, context);
     },
-    ...options,
+    onError: (error, variables, context) => {
+      onError?.(error, variables, context);
+    },
+    onSettled: (data, error, variables, context) => {
+      onSettled?.(data, error, variables, context);
+    },
   });
 }
 
@@ -487,10 +507,14 @@ export function useUpdateReturnOrderStatus(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess, onError, onSettled, ...restOptions } = options ?? {};
+
   return useMutation({
     mutationFn: ({ id, status, remarks, refundAmount }) =>
       updateReturnOrderStatus(id, status, remarks, refundAmount),
-    onSuccess: (_, { id }) => {
+    ...restOptions,
+    onSuccess: (data, variables, context) => {
+      const { id } = variables;
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.detail(id),
@@ -521,8 +545,15 @@ export function useUpdateReturnOrderStatus(
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.all,
       });
+      // 允许调用方追加自定义 onSuccess（例如 Toast 提示）
+      onSuccess?.(data, variables, context);
     },
-    ...options,
+    onError: (error, variables, context) => {
+      onError?.(error, variables, context);
+    },
+    onSettled: (data, error, variables, context) => {
+      onSettled?.(data, error, variables, context);
+    },
   });
 }
 
@@ -585,9 +616,12 @@ export function useDeleteReturnOrder(
 ) {
   const queryClient = useQueryClient();
 
+  const { onSuccess, onError, onSettled, ...restOptions } = options ?? {};
+
   return useMutation({
     mutationFn: deleteReturnOrder,
-    onSuccess: () => {
+    ...restOptions,
+    onSuccess: (data, variables, context) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除后立即看到变化
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.lists(),
@@ -608,8 +642,15 @@ export function useDeleteReturnOrder(
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboard.all,
       });
+      // 始终先执行默认刷新逻辑，再附加调用方自定义 onSuccess（例如 Toast 提示）
+      onSuccess?.(data, variables, context);
     },
-    ...options,
+    onError: (error, variables, context) => {
+      onError?.(error, variables, context);
+    },
+    onSettled: (data, error, variables, context) => {
+      onSettled?.(data, error, variables, context);
+    },
   });
 }
 

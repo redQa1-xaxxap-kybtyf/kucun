@@ -5,51 +5,52 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
 import {
-    ReturnItemsSection,
-    type ReturnOrderProductInfo,
-    type ReturnOrderSelectableItem,
+  ReturnItemsSection,
+  type ReturnOrderProductInfo,
+  type ReturnOrderSelectableItem,
 } from '@/components/return-orders/erp-return-order-form/ReturnItemsSection';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
-    useCreateReturnOrder,
-    useSalesOrderReturnableItems,
-    useUpdateReturnOrder,
+  useCreateReturnOrder,
+  useSalesOrderReturnableItems,
+  useUpdateReturnOrder,
+  useUpdateReturnOrderStatus,
 } from '@/lib/api/return-orders';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
-    RETURN_ORDER_MODE_LABELS,
-    RETURN_ORDER_TYPE_LABELS,
-    RETURN_PROCESS_TYPE_LABELS,
-    type ReturnOrder,
+  RETURN_ORDER_MODE_LABELS,
+  RETURN_ORDER_TYPE_LABELS,
+  type ReturnOrder,
 } from '@/lib/types/return-order';
 import {
-    createReturnOrderDefaults,
-    returnOrderFormSchema,
-    type ReturnOrderFormData,
+  calculateReturnItemSubtotal,
+  createReturnOrderDefaults,
+  returnOrderFormSchema,
+  type ReturnOrderFormData,
 } from '@/lib/validations/return-order';
 
 interface ERPReturnOrderFormProps {
@@ -76,9 +77,19 @@ export function ERPReturnOrderForm({
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
     initialData?.customerId || ''
   );
-
-  // ✅ 修复：使用 ref 标记是否为首次加载，避免编辑模式下清空原始明细
-  const isInitialMount = useRef(true);
+  // 单订单模式下：用于展示“原始/已退/可退”数量提示（仅展示，不参与提交）
+  const [returnableInfoMap, setReturnableInfoMap] = useState<
+    Record<
+      string,
+      {
+        originalQuantity: number;
+        returnedQuantity: number;
+        availableQuantity: number;
+      }
+    >
+  >({});
+  // 销售订单搜索词（用于后端搜索）
+  const [salesOrderSearch, setSalesOrderSearch] = useState<string>('');
 
   // ✅ 表单设置 - 使用统一的 returnOrderFormSchema,避免联合类型问题
   const form = useForm<ReturnOrderFormData>({
@@ -103,7 +114,14 @@ export function ERPReturnOrderForm({
                 damagedQuantity: item.damagedQuantity || 0,
                 originalQuantity: item.originalQuantity,
                 unitPrice: item.unitPrice,
-                subtotal: item.subtotal,
+                // 为兼容历史数据，编辑模式下重新按「退货数量 - 破损数量」计算小计
+                subtotal: calculateReturnItemSubtotal(
+                  Math.max(
+                    item.returnQuantity - (item.damagedQuantity || 0),
+                    0
+                  ),
+                  item.unitPrice
+                ),
                 reason: item.reason,
                 condition: item.condition || 'good',
               })) || [],
@@ -121,22 +139,24 @@ export function ERPReturnOrderForm({
     queryFn: () => getCustomers({ page: 1, limit: 100 }),
   });
 
-  // 获取销售订单列表（根据选中的客户筛选）
-  // 注意: 当选择客户后，会自动根据 customerId 过滤订单
+  // 获取销售订单列表（根据选中的客户和搜索词筛选）
+  // 后端搜索模式：支持按订单号、产品编码、产品名称、批次号搜索
   const { data: salesOrdersData, isLoading: isLoadingSalesOrders } = useQuery({
     queryKey: salesOrderQueryKeys.list({
       page: 1,
-      limit: 100,
+      limit: 50, // 减少每次加载数量
       customerId: selectedCustomerId || undefined,
+      search: salesOrderSearch || undefined, // 传递搜索词给后端
     }),
     queryFn: () =>
       getSalesOrders({
         page: 1,
-        limit: 100,
+        limit: 50,
         customerId: selectedCustomerId || undefined,
+        search: salesOrderSearch || undefined,
       }),
-    // 移除 enabled 限制，允许加载所有订单供选择
-    enabled: true,
+    // 只在选择客户后才加载订单
+    enabled: Boolean(selectedCustomerId),
   });
 
   // 确保数据始终是数组类型
@@ -160,26 +180,12 @@ export function ERPReturnOrderForm({
     form.watch('returnMode') ??
     (initialData?.returnMode as 'single_order' | 'multi_order' | undefined) ??
     'single_order';
-  const watchedSalesOrderId = form.watch('salesOrderId');
-  useEffect(() => {
-    // ✅ 修复：编辑模式首次加载时，跳过清空逻辑，保留原始明细
-    if (isInitialMount.current && mode === 'edit' && initialData) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    if (watchedSalesOrderId && watchedSalesOrderId !== selectedSalesOrderId) {
-      setSelectedSalesOrderId(watchedSalesOrderId);
-      // 清空现有明细（仅在用户主动切换订单时）
-      replace([]);
-      setProductInfoMap({});
-    }
-  }, [watchedSalesOrderId, selectedSalesOrderId, replace, mode, initialData]);
 
   // 获取可退货明细
   const { data: returnableItemsData, isLoading: isLoadingItems } =
     useSalesOrderReturnableItems(selectedSalesOrderId, {
-      enabled: !!selectedSalesOrderId,
+      // 仅当用户在单订单模式下主动选择了销售订单时，才加载可退货明细
+      enabled: !!selectedSalesOrderId && returnMode === 'single_order',
     });
 
   // 保存产品信息的状态，用于显示
@@ -187,38 +193,72 @@ export function ERPReturnOrderForm({
     Record<string, ReturnOrderProductInfo>
   >({});
 
-  // 当可退货明细加载完成后，自动填充到表单
+  // 编辑模式：根据初始数据构建产品信息映射，保证编辑时能看到产品名称/编码/规格等
   useEffect(() => {
-    // ✅ 修复：编辑模式首次加载时，跳过自动填充逻辑，保留原始明细
-    if (mode === 'edit' && initialData && isInitialMount.current) {
+    if (mode !== 'edit' || !initialData?.items) {
       return;
     }
 
+    const map: Record<string, ReturnOrderProductInfo> = {};
+    (initialData.items as any[]).forEach(item => {
+      if (!item || !item.salesOrderItemId) return;
+      const product = (item as any).product ?? {};
+      const salesOrderItem = (item as any).salesOrderItem ?? {};
+      map[item.salesOrderItemId] = {
+        name: product.name ?? `产品`,
+        code: product.code ?? '',
+        unit: product.unit ?? '',
+        specification: product.specification ?? null,
+        batchNumber: salesOrderItem.batchNumber ?? null,
+      };
+    });
+
+    setProductInfoMap(map);
+  }, [mode, initialData]);
+
+  // 当可退货明细加载完成后，自动填充到表单
+  useEffect(() => {
     if (
       returnableItemsData?.data?.returnableItems &&
       returnableItemsData.data.returnableItems.length > 0
     ) {
-      // ✅ 修复：使用 salesOrderItemId 作为键，避免同一产品的不同订单被覆盖
+      const items = returnableItemsData.data.returnableItems;
+
+      // ✅ 使用 salesOrderItemId 作为键，避免同一产品的不同订单被覆盖
       const newProductInfoMap: Record<string, ReturnOrderProductInfo> = {};
-      returnableItemsData.data.returnableItems.forEach(item => {
+      const newReturnableInfoMap: typeof returnableInfoMap = {};
+
+      items.forEach(item => {
         newProductInfoMap[item.salesOrderItemId] = {
           name: item.product.name,
           code: item.product.code,
-          unit: item.product.unit,
+          // 单位优先使用销售订单行上的 displayUnit，其次回退到产品单位
+          unit: (item as any).displayUnit ?? item.product.unit,
           specification: item.product.specification ?? null,
+          batchNumber: item.batchNumber ?? null,
+        };
+
+        // 原始 / 已退 / 可退 数量仅用于前端展示，帮助销售识别多次退货
+        newReturnableInfoMap[item.salesOrderItemId] = {
+          originalQuantity: Number(item.originalQuantity ?? 0),
+          returnedQuantity: Number(item.returnedQuantity ?? 0),
+          availableQuantity: Number(item.availableQuantity ?? 0),
         };
       });
+
       setProductInfoMap(newProductInfoMap);
+      setReturnableInfoMap(newReturnableInfoMap);
 
       // 将可退货明细转换为表单格式并填充
-      const formItems = returnableItemsData.data.returnableItems.map(item => ({
+      const formItems = items.map(item => ({
         salesOrderItemId: item.salesOrderItemId,
         productId: item.productId,
         colorCode: item.colorCode || undefined,
         productionDate: item.productionDate || undefined,
         returnQuantity: 0, // 默认退货数量为0，用户需要手动填写
         damagedQuantity: 0,
-        originalQuantity: item.availableQuantity,
+        // ✅ 原始数量始终使用销售订单行的原始数量（例如 80 片），避免因为多次退货而“看起来在变小”
+        originalQuantity: Number(item.originalQuantity ?? 0),
         unitPrice: item.unitPrice,
         subtotal: 0,
         reason: '',
@@ -226,14 +266,32 @@ export function ERPReturnOrderForm({
       }));
 
       replace(formItems);
-      setProductInfoMap(newProductInfoMap);
     } else if (returnableItemsData?.data?.returnableItems?.length === 0) {
       replace([]);
       setProductInfoMap({});
+      setReturnableInfoMap({});
     }
   }, [returnableItemsData, replace, mode, initialData]);
 
-  // Mutations
+  // 状态更新：用于“提交退货订单”（草稿 -> 已提交）
+  const updateStatusMutation = useUpdateReturnOrderStatus({
+    onSuccess: response => {
+      toast({
+        title: '提交成功',
+        description: `退货订单 ${response.data.returnNumber} 已提交审核`,
+        variant: 'success',
+      });
+    },
+    onError: error => {
+      toast({
+        title: '提交失败',
+        description: error.message || '提交退货订单时发生错误',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // 创建 / 更新 Mutations
   const createMutation = useCreateReturnOrder({
     onSuccess: response => {
       toast({
@@ -270,11 +328,13 @@ export function ERPReturnOrderForm({
     },
   });
 
-  // 计算明细小计
+  // 计算明细小计（破损数量不计入应退款金额）
   const calculateSubtotal = (index: number) => {
     const quantity = form.watch(`items.${index}.returnQuantity`);
+    const damaged = form.watch(`items.${index}.damagedQuantity`) ?? 0;
     const unitPrice = form.watch(`items.${index}.unitPrice`);
-    const subtotal = quantity * unitPrice;
+    const effectiveQuantity = Math.max((quantity ?? 0) - (damaged ?? 0), 0);
+    const subtotal = calculateReturnItemSubtotal(effectiveQuantity, unitPrice);
     form.setValue(`items.${index}.subtotal`, subtotal);
   };
 
@@ -311,7 +371,12 @@ export function ERPReturnOrderForm({
         damagedQuantity: item.damagedQuantity ?? 0,
         originalQuantity: item.originalQuantity,
         unitPrice: item.unitPrice,
-        subtotal: item.subtotal ?? item.returnQuantity * item.unitPrice,
+        subtotal:
+          item.subtotal ??
+          calculateReturnItemSubtotal(
+            Math.max(item.returnQuantity - (item.damagedQuantity ?? 0), 0),
+            item.unitPrice
+          ),
         reason: item.reason || '',
         condition: item.condition,
       });
@@ -327,7 +392,7 @@ export function ERPReturnOrderForm({
     [append, setProductInfoMap]
   );
 
-  // ✅ 表单提交 - 使用统一的 ReturnOrderFormData 类型
+  // ✅ 表单提交（仅保存，不改变状态 -> 草稿）
   const onSubmit = (data: ReturnOrderFormData) => {
     if (mode === 'edit' && initialData) {
       const updateData = {
@@ -352,6 +417,45 @@ export function ERPReturnOrderForm({
     }
   };
 
+  // ✅ 提交退货订单：保存后立即将状态改为 submitted
+  const onSubmitAndSubmit = (data: ReturnOrderFormData) => {
+    if (mode === 'edit' && initialData) {
+      const updateData = {
+        id: initialData.id,
+        data: {
+          id: initialData.id,
+          returnMode: data.returnMode,
+          salesOrderId: data.salesOrderId,
+          customerId: data.customerId,
+          type: data.type,
+          processType: data.processType,
+          reason: data.reason,
+          remarks: data.remarks,
+          items: data.items,
+        },
+      };
+
+      updateMutation.mutate(updateData, {
+        onSuccess: response => {
+          updateStatusMutation.mutate({
+            id: response.data.id,
+            status: 'submitted',
+          });
+        },
+      });
+    } else {
+      const { id: _id, ...createData } = data;
+      createMutation.mutate(createData, {
+        onSuccess: response => {
+          updateStatusMutation.mutate({
+            id: response.data.id,
+            status: 'submitted',
+          });
+        },
+      });
+    }
+  };
+
   // 处理取消
   const handleCancel = () => {
     if (onCancel) {
@@ -361,13 +465,16 @@ export function ERPReturnOrderForm({
     }
   };
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    updateStatusMutation.isPending;
   const error = createMutation.error || updateMutation.error;
 
   return (
     <div className="space-y-4">
       {/* 顶部导航栏 */}
-      <div className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 shadow-sm">
+      <div className="bg-card flex items-center justify-between rounded-lg border px-4 py-3 shadow-sm">
         <div className="flex items-center gap-4">
           <Button
             type="button"
@@ -383,7 +490,7 @@ export function ERPReturnOrderForm({
             <h1 className="text-lg font-semibold">
               {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
             </h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {mode === 'create' ? '填写退货信息' : '修改退货信息'}
             </p>
           </div>
@@ -399,6 +506,7 @@ export function ERPReturnOrderForm({
           </Button>
           <Button
             type="button"
+            variant="outline"
             onClick={form.handleSubmit(onSubmit)}
             disabled={isLoading}
           >
@@ -407,20 +515,30 @@ export function ERPReturnOrderForm({
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            {isLoading
-              ? '保存中...'
-              : mode === 'create'
-                ? '创建退货订单'
-                : '保存修改'}
+            {mode === 'create' || initialData?.status === 'draft'
+              ? '保存草稿'
+              : '保存修改'}
           </Button>
+          {(mode === 'create' || initialData?.status === 'draft') && (
+            <Button
+              type="button"
+              onClick={form.handleSubmit(onSubmitAndSubmit)}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              提交退货订单
+            </Button>
+          )}
         </div>
       </div>
 
-
-
       {/* 错误提示 */}
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm">
           {mode === 'create' ? '创建失败' : '更新失败'}: {error.message}
         </div>
       )}
@@ -483,8 +601,9 @@ export function ERPReturnOrderForm({
                         onCustomerChange={customerId => {
                           setSelectedCustomerId(customerId);
                           form.setValue('customerId', customerId);
-                          // 清空之前选择的订单
+                          // 清空之前选择的订单和搜索词
                           form.setValue('salesOrderId', '');
+                          setSalesOrderSearch('');
                           replace([]);
                           setProductInfoMap({});
                         }}
@@ -500,6 +619,9 @@ export function ERPReturnOrderForm({
                             description: `订单号：${salesOrder.orderNumber}`,
                             variant: 'default',
                           });
+                        }}
+                        onSearchChange={search => {
+                          setSalesOrderSearch(search);
                         }}
                         placeholder="选择客户和销售订单"
                         isLoadingCustomers={isLoadingCustomers}
@@ -575,35 +697,6 @@ export function ERPReturnOrderForm({
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="processType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>处理方式 *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="请选择处理方式" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.entries(RETURN_PROCESS_TYPE_LABELS).map(
-                            ([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            )
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
               <div className="mt-6">
                 <FormField
@@ -638,6 +731,7 @@ export function ERPReturnOrderForm({
             selectedCustomerId={selectedCustomerId}
             returnMode={returnMode}
             productInfoMap={productInfoMap}
+            returnableInfoMap={returnableInfoMap}
             calculateSubtotal={calculateSubtotal}
             calculateTotal={calculateTotal}
           />

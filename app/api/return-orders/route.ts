@@ -357,8 +357,15 @@ export const POST = withAuth(
 
       // 服务器端重新计算并验证金额
       const calculatedTotalAmount = data.items.reduce((sum, item) => {
-        // 重新计算每个明细的小计
-        const calculatedSubtotal = item.returnQuantity * item.unitPrice;
+        // 重新计算每个明细的小计：
+        // 应计价数量 = 退货数量 - 破损数量（破损不退款，数量下限为 0）
+        const damagedQuantity = item.damagedQuantity ?? 0;
+        const effectiveQuantity = Math.max(
+          item.returnQuantity - damagedQuantity,
+          0
+        );
+        const calculatedSubtotal =
+          Math.round(effectiveQuantity * item.unitPrice * 100) / 100;
 
         // 验证前端传入的小计是否正确
         if (Math.abs(item.subtotal - calculatedSubtotal) > 0.01) {

@@ -43,11 +43,11 @@ import {
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
-
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 
 interface ReturnOrderDetail {
   id: string;
@@ -97,8 +97,84 @@ interface ReturnOrderDetail {
       name: string;
       unit: string;
       specification?: string;
+      piecesPerUnit?: number;
+    };
+    salesOrderItem?: {
+      id: string;
+      quantity: number;
+      unitPrice: number;
+      subtotal: number;
+      displayUnit?: string | null;
+      displayQuantity?: number | null;
+      piecesPerUnit?: number | null;
+      specification?: string | null;
+      batchNumber?: string | null;
     };
   }>;
+}
+
+// 单位标签规范化：将英文单位转换为中文标签
+function normalizeUnitLabel(unit?: string): string {
+  if (!unit) return '片';
+  const trimmed = unit.trim();
+  if (!trimmed) return '片';
+  if (trimmed === '件' || trimmed === '片') return trimmed;
+
+  const lower = trimmed.toLowerCase();
+  if (['piece', 'pieces', 'sheet', 'sheets', 'pc', 'pcs'].includes(lower)) {
+    return '片';
+  }
+  if (['box', 'boxes', 'pack', 'package', 'unit', 'units'].includes(lower)) {
+    return '件';
+  }
+
+  return trimmed;
+}
+
+type ReturnOrderItemDetail = ReturnOrderDetail['items'][number];
+
+function formatQuantityWithPieces(
+  rawQuantity: number,
+  item: ReturnOrderItemDetail
+): string {
+  const qty = Math.floor(rawQuantity || 0);
+  if (!Number.isFinite(qty) || qty <= 0) {
+    return '0';
+  }
+
+  // 优先使用销售订单明细上的每件片数，其次使用产品上的 piecesPerUnit
+  const ppuFromItem =
+    typeof item.salesOrderItem?.piecesPerUnit === 'number' &&
+    item.salesOrderItem.piecesPerUnit > 0
+      ? item.salesOrderItem.piecesPerUnit
+      : undefined;
+  const ppuFromProduct =
+    typeof item.product.piecesPerUnit === 'number' &&
+    item.product.piecesPerUnit > 0
+      ? item.product.piecesPerUnit
+      : undefined;
+
+  const piecesPerUnit = ppuFromItem ?? ppuFromProduct;
+
+  if (piecesPerUnit && piecesPerUnit > 0) {
+    const { fullUnits, remainingPieces, totalPieces } = calculatePieceDisplay(
+      qty,
+      piecesPerUnit
+    );
+
+    if (fullUnits === 0) {
+      return `${totalPieces}片`;
+    }
+    if (remainingPieces === 0) {
+      return `${fullUnits}件（共${totalPieces}片）`;
+    }
+
+    return `${fullUnits}件${remainingPieces}片（共${totalPieces}片）`;
+  }
+
+  // 没有每件片数时，退回到“数量 + 单位”
+  const unitLabel = normalizeUnitLabel(item.product.unit);
+  return `${qty}${unitLabel}`;
 }
 
 async function fetchReturnOrderDetail(id: string): Promise<ReturnOrderDetail> {
@@ -509,110 +585,74 @@ export function ReturnOrderDetailPageClient({
                         </td>
                         <td className="px-4 py-3">
                           <div className="space-y-1 text-sm">
-                            {item.product.specification && (
-                              <p className="text-[hsl(var(--color-text-secondary))]">
-                                {item.product.specification}
-                              </p>
-                            )}
-                            {item.colorCode && (
-                              <p className="text-[hsl(var(--color-text-secondary))]">
-                                色号：{item.colorCode}
-                              </p>
-                            )}
-                            {item.productionDate && (
-                              <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                                {item.productionDate}
-                              </p>
-                            )}
-                            {!item.product.specification &&
-                              !item.colorCode &&
-                              !item.productionDate && (
-                                <span className="text-[hsl(var(--color-text-tertiary))]">
-                                  -
-                                </span>
-                              )}
+                            {(() => {
+                              const specification =
+                                item.product.specification ||
+                                item.salesOrderItem?.specification ||
+                                '';
+                              const hasSpec = Boolean(specification);
+                              const hasColor = Boolean(item.colorCode);
+                              const hasBatch = Boolean(
+                                item.salesOrderItem?.batchNumber
+                              );
+                              const hasDate = Boolean(item.productionDate);
+
+                              return (
+                                <>
+                                  {hasSpec && (
+                                    <p className="text-[hsl(var(--color-text-secondary))]">
+                                      {specification}
+                                    </p>
+                                  )}
+                                  {hasColor && (
+                                    <p className="text-[hsl(var(--color-text-secondary))]">
+                                      色号：{item.colorCode}
+                                    </p>
+                                  )}
+                                  {hasBatch && (
+                                    <p className="text-[hsl(var(--color-text-secondary))]">
+                                      批次号：{item.salesOrderItem?.batchNumber}
+                                    </p>
+                                  )}
+                                  {hasDate && (
+                                    <p className="text-[hsl(var(--color-text-tertiary))]">
+                                      {item.productionDate}
+                                    </p>
+                                  )}
+                                  {!hasSpec &&
+                                    !hasColor &&
+                                    !hasBatch &&
+                                    !hasDate && (
+                                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                                        -
+                                      </span>
+                                    )}
+                                </>
+                              );
+                            })()}
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-sm text-[hsl(var(--color-text-secondary))]">
-                            {(() => {
-                              const qty = Math.floor(
-                                item.originalQuantity || 0
-                              );
-                              const unit = item.product.unit;
-                              const ppu =
-                                (item.product as any).piecesPerUnit || 0;
-                              if (unit === '件') {
-                                return ppu > 0
-                                  ? `${qty}件（共${qty * ppu}片）`
-                                  : `${qty}件`;
-                              }
-                              if (unit === '片') {
-                                if (ppu > 0) {
-                                  const units = Math.floor(qty / ppu);
-                                  const pieces = qty % ppu;
-                                  if (units === 0) return `${pieces}片`;
-                                  if (pieces === 0)
-                                    return `${units}件（共${qty}片）`;
-                                  return `${units}件${pieces}片（共${qty}片）`;
-                                }
-                                return `${qty}片`;
-                              }
-                              return `${qty}${unit}`;
-                            })()}
+                            {formatQuantityWithPieces(
+                              item.originalQuantity || 0,
+                              item
+                            )}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="text-sm font-semibold text-[hsl(var(--color-error))]">
-                            {(() => {
-                              const qty = Math.floor(item.returnQuantity || 0);
-                              const unit = item.product.unit;
-                              const ppu =
-                                (item.product as any).piecesPerUnit || 0;
-                              if (unit === '件') {
-                                return ppu > 0
-                                  ? `${qty}件（共${qty * ppu}片）`
-                                  : `${qty}件`;
-                              }
-                              if (unit === '片') {
-                                if (ppu > 0) {
-                                  const units = Math.floor(qty / ppu);
-                                  const pieces = qty % ppu;
-                                  if (units === 0) return `${pieces}片`;
-                                  if (pieces === 0)
-                                    return `${units}件（共${qty}片）`;
-                                  return `${units}件${pieces}片（共${qty}片）`;
-                                }
-                                return `${qty}片`;
-                              }
-                              return `${qty}${unit}`;
-                            })()}
+                            {formatQuantityWithPieces(
+                              item.returnQuantity || 0,
+                              item
+                            )}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-                          {(() => {
-                            const qty = Math.floor(item.damagedQuantity || 0);
-                            const unit = item.product.unit;
-                            const ppu =
-                              (item.product as any).piecesPerUnit || 0;
-                            if (unit === '件') {
-                              return ppu > 0
-                                ? `${qty}件（共${qty * ppu}片）`
-                                : `${qty}件`;
-                            }
-                            if (unit === '片') {
-                              if (ppu > 0) {
-                                const units = Math.floor(qty / ppu);
-                                const pieces = qty % ppu;
-                                if (units === 0) return `${pieces}片`;
-                                if (pieces === 0)
-                                  return `${units}件（共${qty}片）`;
-                                return `${units}件${pieces}片（共${qty}片）`;
-                              }
-                              return `${qty}片`;
-                            }
-                            return `${qty}${unit}`;
-                          })()}
+                          {formatQuantityWithPieces(
+                            item.damagedQuantity || 0,
+                            item
+                          )}
                         </td>
                         <td className="px-4 py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
                           {formatCurrency(item.unitPrice)}
