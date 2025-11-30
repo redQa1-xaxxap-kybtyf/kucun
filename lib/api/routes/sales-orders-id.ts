@@ -68,6 +68,11 @@ export const putSalesOrderRoute: ApiHandler = async (
       orderType: true,
       supplierId: true,
       costAmount: true,
+      items: {
+        select: {
+          productId: true,
+        },
+      },
     },
   });
   if (!existingOrder) {
@@ -119,11 +124,16 @@ export const putSalesOrderRoute: ApiHandler = async (
     }
   }
 
+  // 选取一个真实存在的产品ID用于幂等性记录，避免将订单ID误用为产品ID导致外键错误
+  const primaryProductId =
+    existingOrder.items.find(item => item.productId)?.productId ??
+    existingOrder.id;
+
   // 幂等包装状态更新
   const result = await withIdempotency(
     idempotencyKey,
     'sales_order_status_change',
-    id,
+    primaryProductId,
     userId,
     { status, remarks },
     async () =>

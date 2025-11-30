@@ -122,7 +122,21 @@ export async function createSalesOrder(
   });
 
   if (!response.ok) {
-    throw new Error(`创建销售订单失败: ${response.statusText}`);
+    // 优先解析API返回的错误消息，便于定位500错误
+    try {
+      const rawText = await response.text();
+      const json = JSON.parse(rawText);
+      const message =
+        (json?.error && (json.error.message || json.error)) ||
+        response.statusText ||
+        '创建销售订单失败';
+      throw new Error(message);
+    } catch {
+      // 非JSON响应
+      throw new Error(
+        `创建销售订单失败: ${response.status} ${response.statusText}`
+      );
+    }
   }
 
   const data: ApiResponse<SalesOrder> = await response.json();
@@ -190,8 +204,8 @@ export async function updateSalesOrderStatus(payload: {
   idempotencyKey: string;
 }): Promise<ApiResponse<SalesOrder>> {
   const { id, ...body } = payload;
-  const response = await csrfFetch(`${API_BASE}/${id}/status`, {
-    method: 'PATCH',
+  const response = await csrfFetch(`${API_BASE}/${id}`, {
+    method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
@@ -584,8 +598,13 @@ export function useUpdateSalesOrderStatus(
 
   return useMutation({
     mutationFn: updateSalesOrderStatus,
-    onSuccess: (_, { id }) => {
-      // ✅ 立即刷新当前模块缓存
+    // 先应用外部传入的配置（可能包含 onError、retry 等）
+    ...options,
+    // 统一的成功处理：先做内部缓存刷新，再调用外部传入的 onSuccess
+    onSuccess: (data, variables, context) => {
+      const { id } = variables;
+
+      // ✅ 立即刷新当前模块缓存（详情、列表、统计）
       queryClient.refetchQueries({
         queryKey: salesOrderQueryKeys.detail(id),
         type: 'active',
@@ -615,8 +634,11 @@ export function useUpdateSalesOrderStatus(
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.all,
       });
+
+      // 调用外部自定义 onSuccess（如果有）
+      options?.onSuccess?.(data, variables, context);
     },
-    ...options,
+    // 其它配置（onError / onSettled / retry 等）保持由外部传入
   });
 }
 

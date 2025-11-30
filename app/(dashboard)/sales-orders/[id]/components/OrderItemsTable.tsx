@@ -27,15 +27,60 @@ function resolveUnitLabel(item: SalesOrderDetail['items'][number]) {
 }
 
 function formatQuantityDisplay(item: SalesOrderDetail['items'][number]) {
-  // 以片为基准，显示“总片数（约X件+Y片）”格式
-  const qty = (item.displayQuantity ?? item.quantity) || 0;
-  const ppu = item.piecesPerUnit ?? item.product?.piecesPerUnit;
-  if (ppu && Number.isInteger(ppu) && ppu > 0) {
-    // 例如：123片 (约12件+3片)
-    const result = calculatePieceDisplay(Math.floor(qty), ppu);
-    return `${result.totalPieces}片 (约${result.displayText})`;
+  // quantity 始终以“片”存储，displayUnit/displayQuantity 记录销售员使用的录入单位
+  const totalPieces = (item.quantity ?? 0) || 0;
+  const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
+  const displayUnit = item.displayUnit || item.product?.unit;
+
+  if (!displayUnit) {
+    // 回退：只知道总片数
+    if (piecesPerUnit && Number.isInteger(piecesPerUnit) && piecesPerUnit > 0) {
+      const result = calculatePieceDisplay(
+        Math.floor(totalPieces),
+        piecesPerUnit
+      );
+      return `${result.totalPieces}片 (约${result.displayText})`;
+    }
+    return `${formatDecimal(totalPieces)}片`;
   }
-  return `${formatDecimal(qty)}片`;
+
+  // 销售员按“件”录入：主显示用件数，附带总片数
+  if (displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0) {
+    const unitsRaw =
+      typeof item.displayQuantity === 'number'
+        ? item.displayQuantity
+        : totalPieces / piecesPerUnit;
+    const units = Number.isFinite(unitsRaw)
+      ? unitsRaw
+      : totalPieces / piecesPerUnit;
+    return `${formatDecimal(units)}件（共${totalPieces}片）`;
+  }
+
+  // 销售员按“片”录入：主显示用片数，附带近似件数
+  if (displayUnit === '片') {
+    if (piecesPerUnit && Number.isInteger(piecesPerUnit) && piecesPerUnit > 0) {
+      const result = calculatePieceDisplay(
+        Math.floor(totalPieces),
+        piecesPerUnit
+      );
+      return `${result.totalPieces}片 (约${result.displayText})`;
+    }
+    return `${formatDecimal(totalPieces)}片`;
+  }
+
+  // 其他单位（如箱等）：优先显示录入单位 + 总片数
+  if (piecesPerUnit && piecesPerUnit > 0 && totalPieces > 0) {
+    const unitsRaw =
+      typeof item.displayQuantity === 'number'
+        ? item.displayQuantity
+        : totalPieces / piecesPerUnit;
+    const units = Number.isFinite(unitsRaw)
+      ? unitsRaw
+      : totalPieces / piecesPerUnit;
+    return `${formatDecimal(units)}${displayUnit}（共${totalPieces}片）`;
+  }
+
+  return `${formatDecimal(totalPieces)}${displayUnit}`;
 }
 
 function formatPiecesBreakdown(item: SalesOrderDetail['items'][number]) {
@@ -66,6 +111,37 @@ function formatPiecesBreakdown(item: SalesOrderDetail['items'][number]) {
 
   // 其他单位情况，直接显示数量+单位
   return `${formatDecimal(quantity)}${displayUnit}`;
+}
+
+function resolveDisplayUnitPrice(item: SalesOrderDetail['items'][number]) {
+  const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
+  const displayUnit = item.displayUnit || item.product?.unit;
+  const unitPricePiece = item.unitPrice; // 数据库存储的片单价
+
+  // 销售员按“件”录入：优先用小计 ÷ 件数，还原原始“每件单价”
+  if (displayUnit === '件') {
+    const units =
+      typeof item.displayQuantity === 'number' && item.displayQuantity > 0
+        ? item.displayQuantity
+        : piecesPerUnit && piecesPerUnit > 0 && item.quantity
+          ? item.quantity / piecesPerUnit
+          : undefined;
+
+    if (units && item.subtotal) {
+      const perUnit = item.subtotal / units;
+      if (Number.isFinite(perUnit)) {
+        return perUnit;
+      }
+    }
+
+    // 回退：用片价 * 每件片数近似
+    if (piecesPerUnit && piecesPerUnit > 0) {
+      return unitPricePiece * piecesPerUnit;
+    }
+  }
+
+  // 按片或其他单位录入：直接显示片单价
+  return unitPricePiece;
 }
 
 interface Props {
@@ -319,7 +395,7 @@ export function OrderItemsTable({
                     )}
                     <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">
                       <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
-                        {formatCurrency(item.unitPrice)}
+                        {formatCurrency(resolveDisplayUnitPrice(item))}
                       </span>
                     </td>
                     <td className="px-3 py-3.5 text-right align-top whitespace-nowrap">

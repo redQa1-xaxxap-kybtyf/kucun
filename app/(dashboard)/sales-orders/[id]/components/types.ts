@@ -31,6 +31,10 @@ export interface SalesOrderDetail {
   paymentRounding: number;
   paidAmount: number;
   remainingAmount: number;
+  // 订单退款汇总（基于 RefundRecord）
+  totalRefundAmount?: number;
+  refundedAmount?: number;
+  refundPendingAmount?: number;
   remarks?: string;
   shippedAt?: string;
   createdAt: string;
@@ -89,5 +93,6 @@ export interface SalesOrderDetail {
     returnNumber: string;
     status: string;
     createdAt: string;
+    refundAmount?: number;
   }>;
 }

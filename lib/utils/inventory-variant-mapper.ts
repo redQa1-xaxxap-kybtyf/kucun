@@ -76,7 +76,8 @@ export async function buildInventoryWhereCondition(
   productId: string,
   colorCode?: string | null,
   productionDate?: string | null,
-  minQuantity?: number
+  minQuantity?: number,
+  explicitBatchNumber?: string | null
 ): Promise<Prisma.InventoryWhereInput> {
   const where: Prisma.InventoryWhereInput = {
     productId,
@@ -90,8 +91,12 @@ export async function buildInventoryWhereCondition(
     }
   }
 
-  // 映射生产日期到批次号
-  if (productionDate) {
+  // 批次优先级：
+  // 1) 显式指定的批次号（例如销售订单明细上的 batchNumber）
+  // 2) 根据生产日期推导的批次号
+  if (explicitBatchNumber && explicitBatchNumber.trim().length > 0) {
+    where.batchNumber = explicitBatchNumber.trim();
+  } else if (productionDate) {
     const batchNumber = mapProductionDateToBatchNumber(productionDate);
     if (batchNumber) {
       where.batchNumber = batchNumber;
@@ -120,6 +125,7 @@ export async function findAvailableInventory(
   options: {
     colorCode?: string | null;
     productionDate?: string | null;
+    batchNumber?: string | null;
     tx?: Prisma.TransactionClient;
   } = {}
 ): Promise<{
@@ -132,14 +138,15 @@ export async function findAvailableInventory(
   unitCost: number | null;
   location: string | null;
 } | null> {
-  const { colorCode, productionDate, tx } = options;
+  const { colorCode, productionDate, batchNumber, tx } = options;
   const db = tx || prisma;
 
   const where = await buildInventoryWhereCondition(
     productId,
     colorCode,
     productionDate,
-    requiredQuantity
+    requiredQuantity,
+    batchNumber
   );
 
   // 查找第一条满足条件的库存记录（FIFO策略）

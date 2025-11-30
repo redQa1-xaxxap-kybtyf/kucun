@@ -18,6 +18,7 @@ import { FeeItemsCard } from './components/FeeItemsCard';
 import { HeaderCard } from './components/HeaderCard';
 import { OperationHistoryCard } from './components/OperationHistoryCard';
 import { OrderItemsTable } from './components/OrderItemsTable';
+import { OrderReconciliationSummaryCard } from './components/OrderReconciliationSummaryCard';
 import { PaymentsCard } from './components/PaymentsCard';
 import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
 import { SalesOrderPrintTemplate } from './components/SalesOrderPrintTemplate';
@@ -143,12 +144,9 @@ export default function SalesOrderDetailPage() {
   const orderItems = order.items ?? [];
   const userName = order.user?.name ?? '-';
 
+  // 统一以“片”为基准统计总数量：quantity 始终存储为总片数
   const totalDisplayQuantity = orderItems.reduce(
-    (sum, item) =>
-      sum +
-      (typeof item.displayQuantity === 'number'
-        ? item.displayQuantity
-        : item.quantity || 0),
+    (sum, item) => sum + (item.quantity || 0),
     0
   );
   const totalLocalQuantity = orderItems.reduce(
@@ -203,6 +201,8 @@ export default function SalesOrderDetailPage() {
           transferSalesAmount={transferSalesAmount}
           pureTransferProfit={pureTransferProfit}
         />
+
+        <OrderReconciliationSummaryCard order={order} />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="space-y-4 lg:col-span-2">

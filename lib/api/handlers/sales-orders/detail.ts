@@ -45,6 +45,7 @@ const detailInclude = {
       returnNumber: true,
       status: true,
       createdAt: true,
+      refundAmount: true,
     },
     orderBy: {
       createdAt: 'desc',
@@ -68,6 +69,7 @@ const mapReturnOrder = (
   returnNumber: order.returnNumber,
   status: order.status,
   createdAt: order.createdAt.toISOString(),
+  refundAmount: Number(order.refundAmount ?? 0),
 });
 
 const mapDetail = (
@@ -177,6 +179,14 @@ export async function getSalesOrderDetailWithPayments(id: string) {
         },
         orderBy: { paymentDate: 'desc' },
       },
+      refundRecords: {
+        select: {
+          refundAmount: true,
+          processedAmount: true,
+          remainingAmount: true,
+          status: true,
+        },
+      },
     },
   });
 
@@ -212,6 +222,16 @@ export async function getSalesOrderDetailWithPayments(id: string) {
       weight: number | null;
     }
   >(products.map(p => [p.id, p]));
+
+  const refundTotals = order.refundRecords.reduce(
+    (acc, refund) => {
+      acc.totalRefundAmount += Number(refund.refundAmount ?? 0);
+      acc.refundedAmount += Number(refund.processedAmount ?? 0);
+      acc.refundPendingAmount += Number(refund.remainingAmount ?? 0);
+      return acc;
+    },
+    { totalRefundAmount: 0, refundedAmount: 0, refundPendingAmount: 0 }
+  );
 
   const confirmed = order.payments.filter(p => p.status === 'confirmed');
   const actualPaidAmount = confirmed.reduce(
@@ -249,5 +269,8 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     paymentRounding,
     paidAmount,
     remainingAmount,
+    totalRefundAmount: refundTotals.totalRefundAmount,
+    refundedAmount: refundTotals.refundedAmount,
+    refundPendingAmount: refundTotals.refundPendingAmount,
   };
 }

@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
+import { ApiError } from '@/lib/api/errors';
+
 import type { CreateInput, OrderItemInput, Tx } from './types';
 
 type InventoryRecord = Prisma.InventoryGetPayload<{}>;
@@ -42,7 +44,7 @@ const resolveInventory = (
   const inventories = productInventories.get(item.productId) ?? [];
 
   if (inventories.length === 0) {
-    throw new Error(`产品ID ${item.productId} 库存记录不存在`);
+    throw ApiError.notFound(`库存记录`);
   }
 
   const preferredKey = buildInventoryKey(

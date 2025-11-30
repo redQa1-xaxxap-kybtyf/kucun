@@ -62,7 +62,6 @@ import {
   transformFormDataToUpdateInput,
   type SalesOrderFormData,
 } from '@/lib/utils/sales-order-transforms';
-import { convertUnitPrice } from '@/lib/utils/unit-conversion';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -449,12 +448,11 @@ export function ERPSalesOrderForm({
 
   const totalAmount = watchedItems.reduce((sum, item) => {
     // 计算片单价（如果当前显示单位是件，需要转换为片单价）
+    // 修复: 避免在单价换算时提前四舍五入导致的合计误差。
+    // 统一与每行金额相同的计算方式：若显示单位为“件”，用 (片数/每件片数)*件单价；否则用 片数*片单价。
     const piecePriceForCalculation =
       item.displayUnit === '件' && item.unitPrice && item.piecesPerUnit
-        ? convertUnitPrice.unitPriceToPiecePrice(
-            item.unitPrice,
-            item.piecesPerUnit
-          )
+        ? item.unitPrice / item.piecesPerUnit // 不做2位小数的提前舍入
         : item.unitPrice || 0;
 
     // 金额 = 系统数量（片数） × 片单价
@@ -590,6 +588,55 @@ export function ERPSalesOrderForm({
       }, 0),
     [watchedItems, productMap]
   );
+
+  // 是否存在库存不足的产品（用于禁用“提交订单”按钮）
+  const hasInventoryShortage = React.useMemo(() => {
+    const currentOrderType = orderType;
+    const currentTransferMode = transferMode;
+
+    const shouldCheckInventory =
+      currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
+
+    if (!shouldCheckInventory || !watchedItems || watchedItems.length === 0) {
+      return false;
+    }
+
+    const requestedByProduct = new Map<string, number>();
+
+    for (const item of watchedItems) {
+      if (!item || !item.productId || item.isManualProduct) continue;
+
+      const productId = item.productId.toString().trim();
+      if (!productId) continue;
+
+      const effectiveQty =
+        currentOrderType === 'TRANSFER' && currentTransferMode === 'MIXED'
+          ? Number(item.localQuantity ?? 0)
+          : Number(item.quantity ?? 0);
+
+      if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) continue;
+
+      requestedByProduct.set(
+        productId,
+        (requestedByProduct.get(productId) ?? 0) + effectiveQty
+      );
+    }
+
+    for (const [productId, requestedQty] of requestedByProduct.entries()) {
+      const product = productMap.get(productId);
+      const available = product?.inventory?.availableQuantity;
+
+      if (
+        available !== undefined &&
+        Number.isFinite(available) &&
+        available < requestedQty
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [orderType, transferMode, watchedItems, productMap]);
 
   // 添加产品
   const addOrderItem = () => {
@@ -936,6 +983,81 @@ export function ERPSalesOrderForm({
         });
         return;
       }
+
+      // 提交为“已确认”时，先在前端做一次库存充足性快速检查
+      // 目的：在点击提交前就给销售明确提示，减少来回修改的次数
+      if (status === 'confirmed') {
+        const currentOrderType = snapshot.orderType;
+        const currentTransferMode = snapshot.transferMode as
+          | TransferFulfillmentMode
+          | undefined;
+
+        // 与后端库存预留逻辑保持一致：
+        // - 普通销售：检查本地库存
+        // - 调货销售：只在 MIXED 模式下检查本地库存
+        const shouldCheckInventory =
+          currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
+
+        if (shouldCheckInventory && watchedItems.length > 0) {
+          const requestedByProduct = new Map<string, number>();
+
+          for (const item of watchedItems) {
+            if (!item || !item.productId || item.isManualProduct) {
+              continue;
+            }
+
+            const productId = item.productId.toString().trim();
+            if (!productId) continue;
+
+            const effectiveQty =
+              currentOrderType === 'TRANSFER' && currentTransferMode === 'MIXED'
+                ? Number(item.localQuantity ?? 0)
+                : Number(item.quantity ?? 0);
+
+            if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) {
+              continue;
+            }
+
+            requestedByProduct.set(
+              productId,
+              (requestedByProduct.get(productId) ?? 0) + effectiveQty
+            );
+          }
+
+          const shortageMessages: string[] = [];
+
+          requestedByProduct.forEach((requestedQty, productId) => {
+            const product = productMap.get(productId);
+            const available =
+              product?.inventory?.availableQuantity ?? undefined;
+
+            if (
+              available !== undefined &&
+              Number.isFinite(available) &&
+              available < requestedQty
+            ) {
+              const name = product?.name || '未知产品';
+              const code = product?.code || productId;
+              shortageMessages.push(
+                `[${code}] ${name}：可用 ${available} 片，需要 ${requestedQty} 片`
+              );
+            }
+          });
+
+          if (shortageMessages.length > 0) {
+            toast({
+              variant: 'destructive',
+              title: '库存不足，无法提交为已确认',
+              description:
+                shortageMessages.length === 1
+                  ? shortageMessages[0]
+                  : `以下产品库存不足：\n${shortageMessages.join('\n')}`,
+            });
+            return;
+          }
+        }
+      }
+
       // Zod schema 验证会在 handleSubmit 中自动执行
       form.setValue('status', status, {
         shouldDirty: true,
@@ -1458,7 +1580,8 @@ export function ERPSalesOrderForm({
                     createMutation.isPending ||
                     updateMutation.isPending ||
                     fields.length === 0 ||
-                    !form.watch('customerId')
+                    !form.watch('customerId') ||
+                    hasInventoryShortage
                   }
                   className="h-8 text-xs"
                   onClick={() => submitWithStatus('confirmed')}

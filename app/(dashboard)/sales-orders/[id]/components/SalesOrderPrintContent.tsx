@@ -134,14 +134,24 @@ export function SalesOrderPrintContent({
 }: SalesOrderPrintContentProps) {
   // 计算汇总数据
   const summaryData = useMemo(() => {
-    const totalQuantity =
-      order.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
-    const totalAmount =
-      order.items?.reduce(
-        (sum, item) => sum + item.quantity * item.unitPrice,
-        0
-      ) ?? 0;
-    const totalWeight = calculateTotalWeight(order.items);
+    const items = order.items ?? [];
+
+    const totalQuantity = items.reduce(
+      (sum, item) => sum + (item.quantity || 0),
+      0
+    );
+
+    // ✅ 金额优先：优先使用行小计 subtotal，避免 quantity * unitPrice 带来的四舍五入误差
+    const totalAmount = items.reduce(
+      (sum, item) =>
+        sum +
+        (typeof item.subtotal === 'number'
+          ? item.subtotal
+          : (item.quantity || 0) * (item.unitPrice || 0)),
+      0
+    );
+
+    const totalWeight = calculateTotalWeight(items);
     const totalAmountChinese = numberToChinese(totalAmount);
 
     return {
@@ -316,6 +326,39 @@ export function SalesOrderPrintContent({
         </thead>
         <tbody>
           {(order.items ?? []).map((item, index) => {
+            // 显示单位与数量（优先使用销售员录入的显示单位/数量）
+            const displayUnit = item.displayUnit || item.product?.unit || '-';
+            const piecesPerUnit =
+              item.piecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
+            const quantityDisplay =
+              typeof item.displayQuantity === 'number' &&
+              item.displayQuantity > 0
+                ? item.displayQuantity
+                : item.quantity;
+
+            // ✅ 打印单价：与详情页/Excel 导出一致
+            // - 按件销售：单价 = 行小计 ÷ 件数（如果可用），否则用 片价 × 每件片数近似
+            // - 其他情况：直接使用片单价
+            let displayUnitPrice = item.unitPrice;
+            if (displayUnit === '件') {
+              const units =
+                typeof item.displayQuantity === 'number' &&
+                item.displayQuantity > 0
+                  ? item.displayQuantity
+                  : piecesPerUnit > 0 && item.quantity
+                    ? item.quantity / piecesPerUnit
+                    : undefined;
+
+              if (units && item.subtotal) {
+                const perUnit = item.subtotal / units;
+                if (Number.isFinite(perUnit)) {
+                  displayUnitPrice = perUnit;
+                }
+              } else if (piecesPerUnit > 0 && item.unitPrice) {
+                displayUnitPrice = item.unitPrice * piecesPerUnit;
+              }
+            }
+
             // 准备明细数据
             const itemData: Record<string, unknown> = {
               productCode: item.isManualProduct
@@ -326,11 +369,11 @@ export function SalesOrderPrintContent({
                 : item.product?.name || '-',
               specification:
                 item.specification || item.product?.specification || '-',
-              unit: item.displayUnit || item.product?.unit || '-',
-              quantity: item.displayQuantity || item.quantity,
+              unit: displayUnit,
+              quantity: quantityDisplay,
               piecesPerUnit:
                 item.piecesPerUnit || item.product?.piecesPerUnit || '-',
-              unitPrice: item.unitPrice,
+              unitPrice: displayUnitPrice,
               subtotal: item.subtotal,
               remarks: item.remarks || '',
               batchNumber: item.batchNumber || '-',

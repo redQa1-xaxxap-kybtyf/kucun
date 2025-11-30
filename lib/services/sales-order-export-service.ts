@@ -140,24 +140,56 @@ export class SalesOrderExportService {
     const orderItems = order.items ?? [];
 
     return orderItems.map(item => {
-      // 计算毛利率
+      // 片单价 & 成本单价（技术字段）
       const costPrice = item.unitCost || 0;
-      const unitPrice = item.unitPrice || 0;
-      const grossProfit = unitPrice - costPrice;
+      const unitPricePiece = item.unitPrice || 0;
+      const grossProfitPiece = unitPricePiece - costPrice;
       const grossProfitRate =
-        unitPrice > 0 ? (grossProfit / unitPrice) * 100 : 0;
+        unitPricePiece > 0 ? (grossProfitPiece / unitPricePiece) * 100 : 0;
+
+      // 导出时的展示单位与数量（优先使用销售员录入的显示单位/数量）
+      const displayUnit = item.displayUnit || item.product?.unit || '';
+      const piecesPerUnit =
+        item.piecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
+      const quantityDisplay =
+        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
+          ? item.displayQuantity
+          : item.quantity || 0;
+
+      // ✅ 单价导出遵循“金额优先、按销售单位展示”的规则
+      // - 若按件销售：单价 = 行小计 ÷ 件数（还原销售员录入的每件单价）
+      // - 其他情况：单价 = 片单价（保持与界面明细一致）
+      let displayUnitPrice = unitPricePiece;
+      if (displayUnit === '件') {
+        const units =
+          typeof item.displayQuantity === 'number' && item.displayQuantity > 0
+            ? item.displayQuantity
+            : piecesPerUnit > 0 && item.quantity
+              ? item.quantity / piecesPerUnit
+              : undefined;
+
+        if (units && item.subtotal) {
+          const perUnit = item.subtotal / units;
+          if (Number.isFinite(perUnit)) {
+            displayUnitPrice = perUnit;
+          }
+        } else if (piecesPerUnit > 0) {
+          // 兼容旧数据：没有小计/件数时，用片价 × 每件片数近似
+          displayUnitPrice = unitPricePiece * piecesPerUnit;
+        }
+      }
 
       return {
         产品名称: item.product?.name || '',
         产品编号: item.product?.code || item.productCode || '',
         规格: item.product?.specification || item.specification || '',
         品牌: '', // 产品表中没有品牌字段
-        单位: item.product?.unit || item.displayUnit || '',
-        数量: item.displayQuantity || item.quantity || 0,
-        单价: Number(unitPrice.toFixed(2)),
+        单位: displayUnit,
+        数量: quantityDisplay,
+        单价: Number(displayUnitPrice.toFixed(2)),
         小计: Number((item.subtotal || 0).toFixed(2)),
         成本价: Number(costPrice.toFixed(2)),
-        毛利: Number(grossProfit.toFixed(2)),
+        毛利: Number(grossProfitPiece.toFixed(2)),
         '毛利率(%)': Number(grossProfitRate.toFixed(2)),
         备注: item.remarks || '',
       };

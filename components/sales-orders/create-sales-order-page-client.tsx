@@ -19,6 +19,7 @@ export function CreateSalesOrderPageClient({
 
   return (
     <ERPSalesOrderForm
+      key={initialOrderNumber} // 强制以订单号作为key，确保每次新建都完全重置表单状态
       initialOrderNumber={initialOrderNumber}
       onSuccess={() => {
         // 创建成功后返回订单列表

@@ -256,13 +256,44 @@ export function transformFormItemToCreateInput(
   formItem: SalesOrderFormItem
 ): SalesOrderItemCreateInput {
   const quantity = toNumberOrDefault(formItem.quantity, 0);
-  const unitPrice = toNumberOrDefault(formItem.unitPrice, 0);
-  const displayQuantity =
-    toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  const rawUnitPrice = toNumberOrDefault(formItem.unitPrice, 0);
+  const displayUnit = formItem.displayUnit || '片';
   const piecesPerUnit = toOptionalNumber(formItem.piecesPerUnit);
   const unitCost = toOptionalNumber(formItem.unitCost);
   const localQuantity = toOptionalNumber(formItem.localQuantity);
   const transferQuantity = toOptionalNumber(formItem.transferQuantity);
+
+  // 统一单价语义：数据库内部仍按“片单价”存储，但行小计必须与销售员录入的单位/单价严格一致
+  // 1) displayUnit === '件' 时：
+  //    - 销售员录入的是“每件单价”
+  //    - 行小计 = 件数 * 每件单价（严格保留两位小数）
+  //    - 片单价 = 行小计 / 总片数（用于内部成本/统计，允许出现四舍五入差异）
+  // 2) 其他情况：
+  //    - 行小计 = 片数 * 片单价
+  let normalizedUnitPrice = rawUnitPrice;
+  let displayQuantity = toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  let subtotal: number;
+
+  if (displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0) {
+    // 件数：优先使用 displayQuantity，否则从片数反推
+    const units =
+      displayQuantity > 0 ? displayQuantity : quantity / piecesPerUnit;
+    // 行小计按照“每件单价”计算，确保与销售员输入一致
+    subtotal = calculateItemSubtotal(units, rawUnitPrice);
+
+    // 为了兼容后端内部“片单价”逻辑，这里推导一个近似的片单价存入 unitPrice
+    const safeQuantity = quantity > 0 ? quantity : units * piecesPerUnit;
+    const piecePrice =
+      safeQuantity > 0 ? subtotal / safeQuantity : rawUnitPrice;
+    normalizedUnitPrice = Math.round(piecePrice * 100) / 100;
+
+    // 如果 displayQuantity 之前为空，这里补回计算出的件数，便于后续展示
+    displayQuantity = units;
+  } else {
+    // 显示单位为“片”或未知：直接按片单价计算小计
+    subtotal = calculateItemSubtotal(quantity, rawUnitPrice);
+    normalizedUnitPrice = rawUnitPrice;
+  }
 
   // 手动输入产品的情况
   if (formItem.isManualProduct) {
@@ -270,14 +301,14 @@ export function transformFormItemToCreateInput(
       productId: formItem.productId?.trim() || undefined,
       productCode: formItem.productCode?.trim() || undefined,
       quantity,
-      unitPrice,
+      unitPrice: normalizedUnitPrice,
       batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
       unitCost,
       localQuantity,
       transferQuantity,
-      displayUnit: formItem.displayUnit || '片',
+      displayUnit,
       displayQuantity,
       piecesPerUnit,
       specification:
@@ -288,6 +319,7 @@ export function transformFormItemToCreateInput(
       manualSpecification: formItem.manualSpecification?.trim() || undefined,
       manualWeight: toOptionalNumber(formItem.manualWeight),
       manualUnit: formItem.manualUnit?.trim() || undefined,
+      subtotal,
     };
   }
 
@@ -297,19 +329,20 @@ export function transformFormItemToCreateInput(
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
     quantity,
-    unitPrice,
+    unitPrice: normalizedUnitPrice,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
     unitCost,
     localQuantity,
     transferQuantity,
-    displayUnit: formItem.displayUnit || '片',
+    displayUnit,
     displayQuantity,
     piecesPerUnit,
     specification:
       formItem.specification || formItem.product?.specification || undefined,
     remarks: formItem.remarks?.trim() || undefined,
     isManualProduct: false,
+    subtotal,
   };
 }
 
@@ -364,13 +397,33 @@ export function transformFormItemToUpdateInput(
   formItem: SalesOrderFormItem
 ): SalesOrderItemUpdateInput {
   const quantity = toNumberOrDefault(formItem.quantity, 0);
-  const unitPrice = toNumberOrDefault(formItem.unitPrice, 0);
-  const displayQuantity =
-    toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  const rawUnitPrice = toNumberOrDefault(formItem.unitPrice, 0);
+  const displayUnit = formItem.displayUnit || '片';
   const piecesPerUnit = toOptionalNumber(formItem.piecesPerUnit);
   const unitCost = toOptionalNumber(formItem.unitCost);
   const localQuantity = toOptionalNumber(formItem.localQuantity);
   const transferQuantity = toOptionalNumber(formItem.transferQuantity);
+
+  // 与创建逻辑保持一致：保证行小计与销售员录入的单位/单价一致
+  let normalizedUnitPrice = rawUnitPrice;
+  let displayQuantity = toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  let subtotal: number | undefined;
+
+  if (displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0) {
+    const units =
+      displayQuantity > 0 ? displayQuantity : quantity / piecesPerUnit;
+    subtotal = calculateItemSubtotal(units, rawUnitPrice);
+
+    const safeQuantity = quantity > 0 ? quantity : units * piecesPerUnit;
+    const piecePrice =
+      safeQuantity > 0 ? subtotal / safeQuantity : rawUnitPrice;
+    normalizedUnitPrice = Math.round(piecePrice * 100) / 100;
+
+    displayQuantity = units;
+  } else {
+    subtotal = calculateItemSubtotal(quantity, rawUnitPrice);
+    normalizedUnitPrice = rawUnitPrice;
+  }
 
   // 手动输入产品的情况
   if (formItem.isManualProduct) {
@@ -378,14 +431,14 @@ export function transformFormItemToUpdateInput(
       productId: formItem.productId?.trim() || undefined,
       productCode: formItem.productCode?.trim() || undefined,
       quantity,
-      unitPrice,
+      unitPrice: normalizedUnitPrice,
       batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
       unitCost,
       localQuantity,
       transferQuantity,
-      displayUnit: formItem.displayUnit || '片',
+      displayUnit,
       displayQuantity,
       piecesPerUnit,
       specification:
@@ -396,6 +449,7 @@ export function transformFormItemToUpdateInput(
       manualSpecification: formItem.manualSpecification?.trim() || undefined,
       manualWeight: toOptionalNumber(formItem.manualWeight),
       manualUnit: formItem.manualUnit?.trim() || undefined,
+      subtotal,
     };
   }
 
@@ -405,19 +459,20 @@ export function transformFormItemToUpdateInput(
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
     quantity,
-    unitPrice,
+    unitPrice: normalizedUnitPrice,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
     unitCost,
     localQuantity,
     transferQuantity,
-    displayUnit: formItem.displayUnit || '片',
+    displayUnit,
     displayQuantity,
     piecesPerUnit,
     specification:
       formItem.specification || formItem.product?.specification || undefined,
     remarks: formItem.remarks?.trim() || undefined,
     isManualProduct: false,
+    subtotal,
   };
 }
 

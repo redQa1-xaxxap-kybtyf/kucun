@@ -21,6 +21,7 @@ export interface ReturnableItem {
     unit: string;
     specification: string | null;
   };
+  batchNumber?: string | null;
   originalQuantity: number;
   returnedQuantity: number;
   availableQuantity: number;
@@ -28,6 +29,17 @@ export interface ReturnableItem {
   maxReturnAmount: number;
   colorCode: string | null;
   productionDate: string | null;
+  /**
+   * 显示用单位与数量信息（来自销售订单行）
+   * - displayUnit: 销售时选择的单位（件 / 片），优先用于前端展示
+   * - displayQuantity: 销售订单上的显示数量（可能为件或片）
+   * - piecesPerUnit: 每件对应的片数，用于换算“X件+Y片”
+   *
+   * 注意：这些字段仅用于前端展示，不参与库存/金额计算
+   */
+  displayUnit?: string | null;
+  displayQuantity?: number | null;
+  piecesPerUnit?: number | null;
 }
 
 // 可退货明细响应类型
@@ -142,17 +154,36 @@ export async function getReturnableItems(
       return acc;
     }
 
+    // ✅ 金额优先：最大可退金额基于行小计(subtotal)，避免直接用 unitPrice 造成的四舍五入误差
+    const originalQuantity = Number(item.quantity ?? 0);
+    const subtotal = Number(item.subtotal ?? 0);
+    const round2 = (value: number) => Math.round(value * 100) / 100;
+
+    let maxReturnAmount: number;
+    if (subtotal > 0 && originalQuantity > 0) {
+      const perPieceAmount = subtotal / originalQuantity;
+      maxReturnAmount = round2(availableQuantity * perPieceAmount);
+    } else {
+      // 兜底：老数据没有 subtotal 时，退回到 unitPrice 计算
+      maxReturnAmount = round2(availableQuantity * item.unitPrice);
+    }
+
     acc.push({
       salesOrderItemId: item.id,
       productId: item.productId,
       product: item.product,
+      batchNumber: item.batchNumber,
       originalQuantity: item.quantity,
       returnedQuantity,
       availableQuantity,
       unitPrice: item.unitPrice,
-      maxReturnAmount: availableQuantity * item.unitPrice,
+      maxReturnAmount,
       colorCode: item.colorCode,
       productionDate: item.productionDate,
+      // 仅用于前端展示的单位信息（件/片 + 每件片数）
+      displayUnit: (item as any).displayUnit ?? null,
+      displayQuantity: (item as any).displayQuantity ?? null,
+      piecesPerUnit: (item as any).piecesPerUnit ?? null,
     });
 
     return acc;

@@ -1,5 +1,6 @@
 'use client';
 
+import { InventoryStatus } from '@/components/sales-orders/inventory-checker';
 import {
   FormControl,
   FormField,
@@ -41,7 +42,11 @@ export function UnitAndQuantityCells({
         resolvedProduct={resolvedProduct}
         isManualProduct={isManualProduct}
       />
-      <QuantityInputCell form={form} index={index} />
+      <QuantityInputCell
+        form={form}
+        index={index}
+        resolvedProduct={resolvedProduct}
+      />
     </>
   );
 }
@@ -118,11 +123,21 @@ function UnitSelectCell({
 function QuantityInputCell({
   form,
   index,
+  resolvedProduct,
 }: {
   form: OrderFormInstance;
   index: number;
+  resolvedProduct: Product | null;
 }) {
   const displayQuantityPath = `items.${index}.displayQuantity` as const;
+  const quantityPath = `items.${index}.quantity` as const;
+
+  // 使用系统数量（片数）进行库存比较，避免单位换算误差
+  const requestedQuantity = Number(form.watch(quantityPath) ?? 0) || 0;
+  const hasInventoryInfo =
+    resolvedProduct &&
+    resolvedProduct.inventory?.availableQuantity !== undefined;
+
   return (
     <TableCell className={`${baseCellClass} min-w-[100px]`}>
       <FormField
@@ -179,6 +194,15 @@ function QuantityInputCell({
           </FormItem>
         )}
       />
+      {hasInventoryInfo && requestedQuantity > 0 && (
+        <div className="mt-1">
+          <InventoryStatus
+            product={resolvedProduct as Product}
+            requestedQuantity={requestedQuantity}
+            className="text-xs"
+          />
+        </div>
+      )}
     </TableCell>
   );
 }

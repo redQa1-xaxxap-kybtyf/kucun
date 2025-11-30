@@ -1,9 +1,13 @@
+import { ApiError } from '@/lib/api/errors';
+
 import type { CreateInput, OrderItemInput, Tx } from './types';
 
 const isProductItem = (
   item: OrderItemInput
 ): item is OrderItemInput & { productId: string } =>
-  !item.isManualProduct && typeof item.productId === 'string';
+  !item.isManualProduct &&
+  typeof item.productId === 'string' &&
+  item.productId.trim().length > 0;
 
 export const ensureCustomerExists = async (tx: Tx, customerId: string) => {
   const customer = await tx.customer.findUnique({
@@ -12,7 +16,8 @@ export const ensureCustomerExists = async (tx: Tx, customerId: string) => {
   });
 
   if (!customer) {
-    throw new Error('指定的客户不存在');
+    // 返回明确的业务错误，避免 500
+    throw ApiError.notFound('客户');
   }
 };
 
@@ -30,7 +35,7 @@ export const ensureSupplierExists = async (
   });
 
   if (!supplier) {
-    throw new Error('指定的供应商不存在');
+    throw ApiError.notFound('供应商');
   }
 };
 
@@ -54,7 +59,7 @@ export const ensureProductsExist = async (
   const existingIds = new Set(products.map(product => product.id));
   for (const productId of productIds) {
     if (!existingIds.has(productId)) {
-      throw new Error(`产品ID ${productId} 不存在`);
+      throw ApiError.notFound('产品');
     }
   }
 };

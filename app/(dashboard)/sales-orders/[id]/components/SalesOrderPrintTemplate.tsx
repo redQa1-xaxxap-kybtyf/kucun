@@ -16,10 +16,7 @@ export function SalesOrderPrintTemplate({ order }: Props) {
   const totalQuantity =
     order.items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
   const totalAmount =
-    order.items?.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0
-    ) ?? 0;
+    order.items?.reduce((sum, item) => sum + item.subtotal, 0) ?? 0;
 
   // 获取公司名称(从环境变量或使用默认值)
   const companyName = '天津豪星陶瓷';
@@ -137,35 +134,63 @@ export function SalesOrderPrintTemplate({ order }: Props) {
               ? item.productCode || '-'
               : item.product?.code || '-';
 
+            const displayUnit = item.displayUnit || item.product?.unit || '片';
+            const piecesPerUnit =
+              item.piecesPerUnit ?? item.product?.piecesPerUnit;
+
+            // 打印单价：与详情页一致
+            let displayUnitPrice = item.unitPrice;
+            if (displayUnit === '件') {
+              const units =
+                typeof item.displayQuantity === 'number' &&
+                item.displayQuantity > 0
+                  ? item.displayQuantity
+                  : piecesPerUnit && piecesPerUnit > 0 && item.quantity
+                    ? item.quantity / piecesPerUnit
+                    : undefined;
+              if (units && item.subtotal) {
+                const perUnit = item.subtotal / units;
+                if (Number.isFinite(perUnit)) {
+                  displayUnitPrice = perUnit;
+                }
+              } else if (piecesPerUnit && piecesPerUnit > 0) {
+                displayUnitPrice = item.unitPrice * piecesPerUnit;
+              }
+            }
+
             return (
               <tr key={item.id} style={{ height: '35px' }}>
                 <td style={tableCellStyle}>{productCode}</td>
                 <td style={tableCellStyle}>
                   {item.specification || item.product?.specification || '-'}
                 </td>
-                <td style={tableCellStyle}>
-                  {item.displayUnit || item.product?.unit || '-'}
-                </td>
+                <td style={tableCellStyle}>{displayUnit}</td>
                 <td style={tableCellStyle}>
                   {(() => {
-                    const qty = (item.displayQuantity ?? item.quantity) || 0;
-                    const ppu =
-                      item.piecesPerUnit ?? item.product?.piecesPerUnit;
-                    if (typeof ppu === 'number' && ppu > 0) {
-                      const units = Math.floor(qty / ppu);
-                      const pieces = Math.floor(qty % ppu);
-                      const main = `${qty}片`;
+                    const qtyPieces = item.quantity || 0;
+                    if (
+                      typeof piecesPerUnit === 'number' &&
+                      piecesPerUnit > 0
+                    ) {
+                      const units = Math.floor(qtyPieces / piecesPerUnit);
+                      const pieces = Math.floor(qtyPieces % piecesPerUnit);
+                      const main =
+                        displayUnit === '件' ? `${units}件` : `${qtyPieces}片`;
                       const approx =
-                        units > 0 || pieces > 0
-                          ? ` (约${units > 0 ? `${units}件` : ''}${pieces > 0 ? `${pieces}片` : ''})`
-                          : '';
+                        displayUnit === '件'
+                          ? `（共${qtyPieces}片）`
+                          : units > 0 || pieces > 0
+                            ? ` (约${units > 0 ? `${units}件` : ''}${pieces > 0 ? `${pieces}片` : ''})`
+                            : '';
                       return `${main}${approx}`;
                     }
-                    return `${qty}片`;
+                    return `${qtyPieces}片`;
                   })()}
                 </td>
                 <td style={tableCellStyle}>{piecesPerPackage}</td>
-                <td style={tableCellStyle}>{formatCurrency(item.unitPrice)}</td>
+                <td style={tableCellStyle}>
+                  {formatCurrency(displayUnitPrice)}
+                </td>
                 <td style={tableCellStyle}>{formatCurrency(item.subtotal)}</td>
                 <td style={tableCellStyle}>{item.remarks || ''}</td>
               </tr>

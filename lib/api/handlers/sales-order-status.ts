@@ -304,6 +304,9 @@ async function executeOrderStatusUpdateWithInventory(
       // 使用类型安全的库存查找（支持变体和批次映射）
       const inventory = await findAvailableInventory(productId, item.quantity, {
         colorCode: item.colorCode,
+        // 优先按销售订单明细中选择的批次号匹配库存；
+        // 只有在没有批次号时，才退回到按生产日期推导批次
+        batchNumber: item.batchNumber,
         productionDate: item.productionDate,
         tx,
       });
@@ -423,19 +426,24 @@ async function executeOrderStatusUpdateWithInventory(
             ? roundCurrency(fifoCost.totalCost / itemQuantity)
             : fifoCost.averageUnitCost;
       } catch (error) {
-        if (error instanceof Error && !error.message.includes('FIFO队列为空')) {
-          // 非队列为空的错误（例如库存不足）直接抛出
+        const message = error instanceof Error ? error.message : '';
+        const isFifoEmpty = message.includes('FIFO队列为空');
+        const isFifoInsufficient = message.includes('库存不足: 需要');
+
+        if (!isFifoEmpty && !isFifoInsufficient) {
+          // 非队列为空/队列库存不足的错误（例如并发冲突）直接抛出
           throw error;
         }
 
         logger.warn(
           'sales-order-status',
-          'FIFO队列为空, 回退到库存单位成本计算出库成本',
+          'FIFO队列不可用(为空或数量不足), 回退到库存单位成本计算出库成本',
           {
             orderId: existingOrder.id,
             orderNumber: existingOrder.orderNumber,
             salesOrderItemId: item.id,
             productId,
+            fifoError: message,
           }
         );
 
