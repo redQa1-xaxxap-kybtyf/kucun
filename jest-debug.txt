@@ -1,0 +1,68 @@
+
+> kucun@1.0.0 test
+> jest __tests__/unit/inventory/api/inbound-submit-flow.test.tsx
+
+FAIL __tests__/unit/inventory/api/inbound-submit-flow.test.tsx
+  useInboundFormSubmit → useCreateInboundRecord
+    × 应当正确生成入库请求并调用 fetch (19 ms)
+  POST /api/inventory/inbound
+    × 有效请求应返回成功响应 (107 ms)
+    × 缺失字段时应返回校验错误
+
+  ● useInboundFormSubmit → useCreateInboundRecord › 应当正确生成入库请求并调用 fetch
+
+    expect(jest.fn()).toHaveBeenCalledTimes(expected)
+
+    Expected number of calls: 1
+    Received number of calls: 0
+
+      335 |     });
+      336 |
+    > 337 |     expect(fetchMock).toHaveBeenCalledTimes(1);
+          |                       ^
+      338 |     const [, requestInit] = fetchMock.mock.calls[0] as [
+      339 |       RequestInfo,
+      340 |       RequestInit
+
+      at Object.<anonymous> (__tests__/unit/inventory/api/inbound-submit-flow.test.tsx:337:23)
+
+  ● POST /api/inventory/inbound › 有效请求应返回成功响应
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 200
+    Received: 500
+
+      427 |     const response = await POST(request);
+      428 |
+    > 429 |     expect(response.status).toBe(200);
+          |                             ^
+      430 |     const json = await response.json();
+      431 |     expect(json.success).toBe(true);
+      432 |     expect(createInboundRecord).toHaveBeenCalledWith(
+
+      at Object.<anonymous> (__tests__/unit/inventory/api/inbound-submit-flow.test.tsx:429:29)
+
+  ● POST /api/inventory/inbound › 缺失字段时应返回校验错误
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 422
+    Received: 500
+
+      451 |     const response = await POST(request);
+      452 |
+    > 453 |     expect(response.status).toBe(422);
+          |                             ^
+      454 |     const json = await response.json();
+      455 |     expect(json.success).toBe(false);
+      456 |     expect(json.error?.message).toBe('数据验证失败');
+
+      at Object.<anonymous> (__tests__/unit/inventory/api/inbound-submit-flow.test.tsx:453:29)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 3 total
+Snapshots:   0 total
+Time:        1.253 s
+Ran all test suites matching __tests__/unit/inventory/api/inbound-submit-flow.test.tsx.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
