@@ -180,6 +180,8 @@ export async function consumeFIFOQueue(
   outboundQty: number,
   tx: PrismaTransaction
 ): Promise<FIFOCostResult> {
+  const MAX_CONCURRENCY_RETRY_PER_BATCH = 3;
+
   try {
     // 查询FIFO队列
     const queue = await tx.inventoryCostQueue.findMany({
@@ -205,50 +207,93 @@ export async function consumeFIFOQueue(
     for (const batch of queue) {
       if (remainingToConsume <= 0) break;
 
-      const consumeQty = Math.min(remainingToConsume, batch.remainingQty);
-      const batchCost = consumeQty * batch.unitCost;
-      const newRemainingQty = batch.remainingQty - consumeQty;
+      // 针对单个批次增加有限次并发重试，避免高并发下直接失败
+      let currentRemainingQty = batch.remainingQty;
 
-      // 使用乐观并发控制更新队列剩余数量
-      // 通过 remainingQty 条件防止两个事务同时消耗同一批次
-      const updateResult = await tx.inventoryCostQueue.updateMany({
-        where: {
-          id: batch.id,
-          remainingQty: batch.remainingQty,
-        },
-        data: {
-          remainingQty: newRemainingQty,
-        },
-      });
+      for (
+        let attempt = 0;
+        attempt < MAX_CONCURRENCY_RETRY_PER_BATCH;
+        attempt++
+      ) {
+        if (remainingToConsume <= 0 || currentRemainingQty <= 0) {
+          break;
+        }
 
-      // 如果没有任何行被更新，说明在本事务期间有并发修改，触发重试或报错
-      if (updateResult.count === 0) {
-        logger.warn(
-          'fifo-cost-service',
-          'FIFO队列并发冲突，批次已被其他事务修改',
-          {
-            batchId: batch.id,
-            expectedRemainingQty: batch.remainingQty,
+        const consumeQty = Math.min(remainingToConsume, currentRemainingQty);
+        if (consumeQty <= 0) {
+          break;
+        }
+
+        const batchCost = consumeQty * batch.unitCost;
+        const newRemainingQty = currentRemainingQty - consumeQty;
+
+        // 使用乐观并发控制更新队列剩余数量
+        // 通过 remainingQty 条件防止两个事务同时消耗同一批次
+        const updateResult = await tx.inventoryCostQueue.updateMany({
+          where: {
+            id: batch.id,
+            remainingQty: currentRemainingQty,
+          },
+          data: {
+            remainingQty: newRemainingQty,
+          },
+        });
+
+        if (updateResult.count === 0) {
+          // 并发冲突：该批次在本次尝试前已被其他事务修改，重新读取最新剩余数量后再尝试
+          const fresh = await tx.inventoryCostQueue.findUnique({
+            where: { id: batch.id },
+          });
+
+          if (!fresh || fresh.remainingQty <= 0) {
+            logger.warn(
+              'fifo-cost-service',
+              'FIFO批次在并发中被完全消耗或删除，跳过当前批次',
+              {
+                batchId: batch.id,
+                productId,
+                variantId,
+              }
+            );
+            currentRemainingQty = 0;
+            break;
           }
-        );
-        throw new Error('FIFO队列并发冲突，请重试出库操作');
+
+          logger.warn(
+            'fifo-cost-service',
+            'FIFO批次并发冲突，重新读取剩余数量后重试',
+            {
+              batchId: batch.id,
+              previousRemainingQty: currentRemainingQty,
+              freshRemainingQty: fresh.remainingQty,
+            }
+          );
+
+          currentRemainingQty = fresh.remainingQty;
+          continue;
+        }
+
+        // 更新成功，累计成本并继续处理下一批次
+        totalCost += batchCost;
+        batches.push({
+          inboundRecordId: batch.inboundRecordId,
+          qty: consumeQty,
+          unitCost: batch.unitCost,
+          batchCost,
+        });
+
+        remainingToConsume -= consumeQty;
+        currentRemainingQty = newRemainingQty;
+
+        logger.debug('fifo-cost-service', 'FIFO批次消耗', {
+          batchId: batch.id,
+          consumeQty,
+          remainingQty: newRemainingQty,
+        });
+
+        // 当前批次处理完成（无更多可用数量或已满足需求），跳出重试循环
+        break;
       }
-
-      totalCost += batchCost;
-      batches.push({
-        inboundRecordId: batch.inboundRecordId,
-        qty: consumeQty,
-        unitCost: batch.unitCost,
-        batchCost,
-      });
-
-      remainingToConsume -= consumeQty;
-
-      logger.debug('fifo-cost-service', 'FIFO批次消耗', {
-        batchId: batch.id,
-        consumeQty,
-        remainingQty: newRemainingQty,
-      });
     }
 
     if (remainingToConsume > 0) {
