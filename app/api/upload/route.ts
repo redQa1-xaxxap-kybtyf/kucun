@@ -191,30 +191,27 @@ async function prepareUploadBuffer(file: File, type: string): Promise<Buffer> {
 
     switch (type) {
       case 'product':
-        sharpInstance = sharpInstance
-          .resize(1200, 1200, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .jpeg({ quality: 85 });
+        sharpInstance = sharpInstance.resize(1200, 1200, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        });
         break;
       case 'avatar':
-        sharpInstance = sharpInstance
-          .resize(400, 400, {
-            fit: 'cover',
-          })
-          .jpeg({ quality: 90 });
+        sharpInstance = sharpInstance.resize(400, 400, {
+          fit: 'cover',
+        });
         break;
       default:
-        sharpInstance = sharpInstance
-          .resize(1920, 1920, {
-            fit: 'inside',
-            withoutEnlargement: true,
-          })
-          .jpeg({ quality: 80 });
+        sharpInstance = sharpInstance.resize(1920, 1920, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        });
     }
 
-    const optimizedBuffer = await sharpInstance.toBuffer();
+    // 默认统一转为 WebP，以减少带宽占用
+    const optimizedBuffer = await sharpInstance
+      .webp({ quality: 80 })
+      .toBuffer();
     buffer = Buffer.from(optimizedBuffer);
 
     logger.info('upload', '图片优化完成', undefined, {
@@ -271,7 +268,10 @@ async function handleUploadWithFallback(
   type: string,
   userId: string
 ) {
-  const uploadResult = await uploadToQiniu(buffer, file.name, type);
+  // 统一以 WebP 作为目标格式存储到七牛
+  const targetFileName = `${file.name.replace(/\.[^.]+$/, '')}.webp`;
+
+  const uploadResult = await uploadToQiniu(buffer, targetFileName, type);
 
   if (uploadResult.success) {
     return respondWithSuccess({
@@ -301,8 +301,9 @@ async function handleUploadWithFallback(
 
   const fallbackResult = await saveFileLocally(
     buffer,
-    file.name,
-    file.type,
+    // 本地兜底也使用 webp 扩展名
+    targetFileName,
+    'image/webp',
     type
   );
 

@@ -67,19 +67,19 @@ export function ProductImageUploadArea({
         />
 
         {uploading ? (
-          <div className="space-y-4">
-            <Loader2 className="text-primary h-8 w-8 animate-spin" />
+          <div className="w-full space-y-4">
+            <Loader2 className="text-primary mx-auto h-8 w-8 animate-spin" />
             <div className="space-y-2">
               <p className="text-sm font-medium">上传中...</p>
-              <Progress value={uploadProgress} className="w-32" />
-              <p className="text-muted-foreground text-xs">
-                {Math.round(uploadProgress)}%
-              </p>
+              <Progress value={uploadProgress} className="h-2" />
+              <div className="text-muted-foreground flex justify-between text-xs">
+                <span>{Math.round(uploadProgress)}% 完成</span>
+              </div>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <Upload className="text-muted-foreground h-8 w-8" />
+            <Upload className="text-muted-foreground mx-auto h-8 w-8" />
             <div className="space-y-2">
               <p className="text-sm font-medium">{title}</p>
               <p className="text-muted-foreground text-xs">{description}</p>

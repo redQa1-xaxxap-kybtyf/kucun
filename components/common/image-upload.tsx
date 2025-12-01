@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 interface ImageUploadProps {
   value?: string[];
@@ -91,10 +92,13 @@ export function ImageUpload({
         formData.append('file', file);
         formData.append('type', 'product');
 
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
+        const response = await fetch(
+          '/api/upload',
+          getCsrfTokenHeader({
+            method: 'POST',
+            body: formData,
+          })
+        );
 
         if (!response.ok) {
           const errorData = await response.json();

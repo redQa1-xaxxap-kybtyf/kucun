@@ -9,6 +9,8 @@
  * - 可选地将错误报告到服务端
  */
 
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+
 interface ClientErrorPayload {
   module: string;
   message: string;
@@ -146,14 +148,17 @@ export async function logClientError(
   };
 
   try {
-    await fetch('/api/logs/report', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    });
+    await fetch(
+      '/api/logs/report',
+      getCsrfTokenHeader({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      })
+    );
   } catch (requestError) {
     // eslint-disable-next-line no-console
     console.error('Failed to report client error', requestError, payload);

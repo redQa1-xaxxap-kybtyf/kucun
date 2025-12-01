@@ -36,6 +36,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { inventoryConfig, salesOrderConfig, systemConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { BasicSettingsFormSchema } from '@/lib/validations/settings';
 
 import { SettingsSection } from './SettingsLayout';
@@ -83,13 +84,16 @@ const fetchBasicSettings = async (): Promise<BasicSettings> => {
 const updateBasicSettings = async (
   settings: BasicSettingsFormData
 ): Promise<BasicSettings> => {
-  const response = await fetch('/api/settings/basic', {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(settings),
-  });
+  const response = await fetch(
+    '/api/settings/basic',
+    getCsrfTokenHeader({
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    })
+  );
 
   const data: SettingsApiResponse<BasicSettings> | ErrorResponseWithDetails =
     await response.json();

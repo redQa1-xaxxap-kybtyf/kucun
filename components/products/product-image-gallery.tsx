@@ -103,19 +103,18 @@ export function ProductImageGallery({
   return (
     <>
       <div
-        className="overflow-hidden rounded-lg border-2 border-[hsl(var(--color-primary))] bg-gradient-to-br from-[hsl(var(--color-bg-card))] to-[hsl(var(--color-bg-secondary))]"
-        style={{ boxShadow: 'var(--shadow-large)' }}
+        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
       >
-        <div className="border-b-2 border-[hsl(var(--color-primary))] bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-bg-secondary))] px-6 py-4">
-          <h4 className="flex items-center gap-2 text-lg font-bold text-[hsl(var(--color-text-primary))]">
-            <ImageIcon className="h-5 w-5 text-[hsl(var(--color-primary))]" />
+        <div className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
+          <h4 className="flex items-center gap-2 text-base font-semibold text-[hsl(var(--color-text-primary))]">
+            <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
             产品图片
           </h4>
         </div>
         <div className="bg-[hsl(var(--color-bg-card))] p-6">
-          {/* 主图展示 */}
           <div className="mb-4">
-            <div className="group relative aspect-video overflow-hidden rounded-lg border-2 border-[hsl(var(--color-border-primary))] bg-white shadow-lg transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-xl">
+            <div className="group relative aspect-square overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-white shadow-md transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-lg">
               <Image
                 src={allImages[0]}
                 alt={productName}
@@ -137,14 +136,13 @@ export function ProductImageGallery({
             </div>
           </div>
 
-          {/* 缩略图列表 */}
           {allImages.length > 1 && (
-            <div className="grid grid-cols-4 gap-3 sm:grid-cols-6 md:grid-cols-8">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
               {allImages.map((imageUrl, index) => (
                 <button
                   key={index}
                   onClick={() => handleImageClick(index)}
-                  className="group relative aspect-square overflow-hidden rounded-lg border-2 border-[hsl(var(--color-border-primary))] bg-white shadow-md transition-all hover:scale-105 hover:border-[hsl(var(--color-primary))] hover:shadow-lg"
+                  className="group relative aspect-square overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-white shadow-sm transition-all hover:scale-105 hover:border-[hsl(var(--color-primary))] hover:shadow-md"
                 >
                   <Image
                     src={imageUrl}

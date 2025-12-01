@@ -3,7 +3,15 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // 图片优化配置
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'xcx.0595t.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'xcx.0595t.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
     formats: ['image/avif', 'image/webp'],
     minimumCacheTTL: 60,
     // SVG 安全配置

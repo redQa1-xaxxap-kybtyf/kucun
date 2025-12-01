@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import type { ProductImage } from '@/lib/types/product';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface UseImageUploadProps {
@@ -32,15 +33,44 @@ export function useImageUpload({
     return null;
   };
 
+  const validateImageDimensions = async (file: File): Promise<string | null> =>
+    new Promise(resolve => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+
+        if (img.width < 300 || img.height < 300) {
+          resolve('图片分辨率过低，至少需要 300x300 像素');
+        } else if (img.width > 4000 || img.height > 4000) {
+          resolve('图片分辨率过高，不超过 4000x4000 像素');
+        } else {
+          resolve(null);
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve('无效的图片文件');
+      };
+
+      img.src = url;
+    });
+
+  // 单文件上传（带 CSRF 头）
   const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'product');
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    const response = await fetch(
+      '/api/upload',
+      getCsrfTokenHeader({
+        method: 'POST',
+        body: formData,
+      })
+    );
 
     if (!response.ok) {
       const errorData = await response.json();
@@ -55,6 +85,67 @@ export function useImageUpload({
     return data.data.url;
   };
 
+  // 带重试的上传（指数退避，仅对网络/服务器错误重试）
+  const uploadFileWithRetry = async (
+    file: File,
+    maxRetries = 2,
+    baseDelayMs = 500
+  ): Promise<string> => {
+    let attempt = 0;
+    const sleep = (ms: number) =>
+      new Promise(resolve => setTimeout(resolve, ms));
+
+    while (true) {
+      try {
+        return await uploadFile(file);
+      } catch (error) {
+        attempt += 1;
+        const message = getErrorMessage(error);
+        const isServerOrNetworkError =
+          message.includes('上传失败') ||
+          message.includes('NetworkError') ||
+          message.includes('500') ||
+          message.includes('503');
+
+        if (!isServerOrNetworkError || attempt > maxRetries) {
+          throw error;
+        }
+
+        const delay = baseDelayMs * 2 ** (attempt - 1);
+
+        await sleep(delay);
+      }
+    }
+  };
+
+  // 简单并发控制：限制同时上传的文件数量
+  const runWithConcurrency = async <T, R>(
+    items: T[],
+    limit: number,
+    worker: (item: T, index: number) => Promise<R>
+  ): Promise<R[]> => {
+    const results: R[] = new Array(items.length);
+    let nextIndex = 0;
+
+    const runWorker = async () => {
+      while (true) {
+        const currentIndex = nextIndex++;
+        if (currentIndex >= items.length) {
+          return;
+        }
+
+        results[currentIndex] = await worker(items[currentIndex], currentIndex);
+      }
+    };
+
+    const workers = Array.from({ length: Math.min(limit, items.length) }, () =>
+      runWorker()
+    );
+
+    await Promise.all(workers);
+    return results;
+  };
+
   const handleFileUpload = async (
     files: FileList,
     imageType: 'thumbnail' | 'main' | 'effect',
@@ -67,18 +158,28 @@ export function useImageUpload({
     setUploadProgress(0);
 
     try {
-      const uploadPromises = Array.from(files).map(async (file, index) => {
-        const validationError = validateFile(file);
-        if (validationError) {
-          throw new Error(validationError);
+      const fileArray = Array.from(files);
+
+      const uploadedUrls = await runWithConcurrency(
+        fileArray,
+        3, // 同时最多 3 个上传请求
+        async (file, index) => {
+          const validationError = validateFile(file);
+          if (validationError) {
+            throw new Error(validationError);
+          }
+
+          // 验证图片尺寸
+          const dimensionError = await validateImageDimensions(file);
+          if (dimensionError) {
+            throw new Error(dimensionError);
+          }
+
+          const url = await uploadFileWithRetry(file);
+          setUploadProgress(((index + 1) / fileArray.length) * 100);
+          return url;
         }
-
-        const url = await uploadFile(file);
-        setUploadProgress(((index + 1) / files.length) * 100);
-        return url;
-      });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
+      );
 
       if (imageType === 'thumbnail') {
         onThumbnailChange(uploadedUrls[0]);
