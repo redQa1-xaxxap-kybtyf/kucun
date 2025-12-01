@@ -41,6 +41,7 @@ import {
   PAYABLE_STATUS_VARIANTS,
   type PayableRecordDetail,
 } from '@/lib/types/payable';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -416,9 +417,12 @@ export function PayableTableList({
   // ✅ 使用 TanStack Query mutation 实现删除功能
   const deleteMutation = useMutation({
     mutationFn: async (payableId: string) => {
-      const response = await fetch(`/api/finance/payables/${payableId}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/finance/payables/${payableId}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

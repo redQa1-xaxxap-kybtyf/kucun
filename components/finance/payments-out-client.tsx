@@ -7,6 +7,9 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { useToast } from '@/components/ui/use-toast';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+
 import { PaymentsOutTableList } from './payments-out-table-list';
 
 interface PaymentOutRecord {
@@ -127,14 +130,6 @@ function _PaymentMethodBadge({ method }: { method: string }) {
   );
 }
 
-/**
- * 付款记录客户端组件
- */
-import { useToast } from '@/components/ui/use-toast';
-// ... (保留其他 imports)
-
-// ... (保留接口定义)
-
 export function PaymentsOutClient({
   initialData,
   initialParams,
@@ -165,15 +160,18 @@ export function PaymentsOutClient({
     setIsConfirming(true);
     setConfirmingId(paymentId);
     try {
-      const response = await fetch(`/api/finance/payments-out/${paymentId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: 'confirmed',
-        }),
-      });
+      const response = await fetch(
+        `/api/finance/payments-out/${paymentId}`,
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'confirmed',
+          }),
+        })
+      );
 
       const data = await response.json();
 

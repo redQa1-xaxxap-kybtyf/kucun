@@ -2,57 +2,57 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ArrowUpDown,
-    Eye,
-    FileText,
-    Package,
-    Pencil,
-    ShoppingCart,
-    Trash2,
-    Truck,
+  ArrowUpDown,
+  Eye,
+  FileText,
+  Package,
+  Pencil,
+  ShoppingCart,
+  Trash2,
+  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { RelativeTime } from '@/components/common/relative-time';
-
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-    EXPENSE_RELATED_TYPE_LABELS,
-    EXPENSE_STATUS_LABELS,
-    EXPENSE_TYPE_LABELS,
-    type ExpenseQueryParams,
-    type ExpenseRecord,
+  EXPENSE_RELATED_TYPE_LABELS,
+  EXPENSE_STATUS_LABELS,
+  EXPENSE_TYPE_LABELS,
+  type ExpenseQueryParams,
+  type ExpenseRecord,
 } from '@/lib/types/expense';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseListProps {
@@ -111,9 +111,13 @@ export function ExpenseList({
   // 审核费用记录
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/finance/expenses/${id}/approve`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `/api/finance/expenses/${id}/approve`,
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
@@ -136,9 +140,12 @@ export function ExpenseList({
   // 删除费用记录
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/finance/expenses/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/finance/expenses/${id}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

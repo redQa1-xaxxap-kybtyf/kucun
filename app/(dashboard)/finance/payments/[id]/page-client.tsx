@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime, formatPaymentDateTime } from '@/lib/utils/datetime';
 
 interface PaymentRecord {
@@ -151,15 +152,18 @@ export function PaymentDetailClient({
 
     setIsConfirming(true);
     try {
-      const response = await fetch(`/api/payments/${payment.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: 'confirmed',
-        }),
-      });
+      const response = await fetch(
+        `/api/payments/${payment.id}`,
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'confirmed',
+          }),
+        })
+      );
 
       const data = await response.json();
 

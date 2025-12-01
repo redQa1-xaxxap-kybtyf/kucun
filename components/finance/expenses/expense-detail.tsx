@@ -34,6 +34,7 @@ import {
   EXPENSE_TYPE_LABELS,
   type ExpenseRecord,
 } from '@/lib/types/expense';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseDetailClientProps {
@@ -54,9 +55,12 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/finance/expenses/${expense.id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/finance/expenses/${expense.id}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

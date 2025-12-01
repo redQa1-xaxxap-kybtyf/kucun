@@ -42,6 +42,7 @@ import {
   type ExpenseRecord,
 } from '@/lib/types/expense';
 import { cn } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
   expenseFormSchema,
   type ExpenseFormData,
@@ -174,11 +175,14 @@ export function ExpenseForm({
 
   const createMutation = useMutation({
     mutationFn: async (payload: ExpenseRequestPayload) => {
-      const response = await fetch('/api/finance/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        '/api/finance/expenses',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -210,11 +214,14 @@ export function ExpenseForm({
         throw new Error('缺少费用记录ID');
       }
 
-      const response = await fetch(`/api/finance/expenses/${expenseId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      const response = await fetch(
+        `/api/finance/expenses/${expenseId}`,
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

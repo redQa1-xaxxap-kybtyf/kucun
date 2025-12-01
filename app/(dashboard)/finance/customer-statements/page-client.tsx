@@ -340,134 +340,230 @@ export function CustomerStatementsPageClient({
 
         {/* 对账单列表 */}
         <Card>
-          <CardHeader>
-            <CardTitle>对账单列表</CardTitle>
+          <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="text-lg">对账单列表</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             {isLoading ? (
-              <div className="py-8 text-center">加载中...</div>
+              <div className="py-12 text-center text-gray-500">
+                <div className="mb-2">加载中...</div>
+              </div>
             ) : error ? (
-              <div className="py-8 text-center text-[hsl(var(--color-error))]">
-                加载失败: {error.message}
+              <div className="py-12 text-center text-red-600">
+                <div className="mb-2">加载失败</div>
+                <div className="text-sm text-gray-500">{error.message}</div>
               </div>
             ) : statements.length === 0 ? (
-              <div className="text-muted-foreground py-8 text-center">
-                暂无数据
+              <div className="py-12 text-center text-gray-400">
+                <div className="mb-2 text-lg">暂无数据</div>
+                <div className="text-sm">暂无客户对账记录</div>
               </div>
             ) : (
               <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>客户名称</TableHead>
-                      <TableHead>联系电话</TableHead>
-                      <TableHead className="text-right">应收余额</TableHead>
-                      <TableHead className="text-right">应付余额</TableHead>
-                      <TableHead className="text-right">净余额</TableHead>
-                      <TableHead className="text-right">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <span className="cursor-help">
-                                小汇总(净销/净收/应收)
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs">
-                              <p className="text-xs leading-relaxed">
-                                净销 = 销售金额 − 退货金额；净收 = 收款金额 +
-                                预收款 − 已退款；应收余额 = 净销 − 净收
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableHead>
-                      <TableHead className="text-right">应退金额</TableHead>
-                      <TableHead>交易笔数</TableHead>
-                      <TableHead>最后交易</TableHead>
-                      <TableHead className="text-right">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {statements.map((statement: CustomerStatementListItem) => {
-                      const refundMetrics = getRefundMetrics(statement.summary);
-                      const receivableOverview = getReceivableOverview(
-                        statement.summary
-                      );
-                      return (
-                        <TableRow key={statement.customerId}>
-                          <TableCell className="font-medium">
-                            {statement.customerName}
-                          </TableCell>
-                          <TableCell>
-                            {statement.customerPhone || '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(
-                              statement.summary.receivables.receivableBalance
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(
-                              statement.summary.payables.payableBalance
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatBalance(statement.summary.netBalance)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="space-y-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
-                              <div>
-                                净销：
-                                {formatCurrency(receivableOverview.netSales)}
-                              </div>
-                              <div>
-                                净收：
-                                {formatCurrency(receivableOverview.netReceipts)}
-                              </div>
-                              <div>
-                                应收：
-                                {formatCurrency(
-                                  receivableOverview.receivableBalance
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(refundMetrics.pendingRefundAmount)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">
-                              {statement.transactionCount}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {statement.lastTransactionDate
-                              ? formatDate(statement.lastTransactionDate)
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link
-                                href={`/finance/customer-statements/${statement.customerId}`}
-                                className="inline-flex items-center"
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50 hover:bg-gray-50">
+                        <TableHead className="font-semibold text-gray-700">
+                          客户名称
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          联系电话
+                        </TableHead>
+                        <TableHead className="text-right font-semibold text-gray-700">
+                          应收余额
+                        </TableHead>
+                        <TableHead className="text-right font-semibold text-gray-700">
+                          应付余额
+                        </TableHead>
+                        <TableHead className="text-right font-semibold text-gray-700">
+                          净余额
+                        </TableHead>
+                        <TableHead className="text-right font-semibold text-gray-700">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex cursor-help items-center gap-1 border-b border-dashed border-gray-400">
+                                  小汇总(净销/净收/应收)
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="top"
+                                className="max-w-sm border-blue-200 bg-blue-50 text-blue-900"
                               >
-                                <FileText className="mr-2 h-4 w-4" />
-                                查看详情
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                                <div className="space-y-1 text-xs leading-relaxed">
+                                  <div className="font-semibold">
+                                    计算说明：
+                                  </div>
+                                  <div>• 净销 = 销售金额 − 退货金额</div>
+                                  <div>• 净收 = 收款金额 + 预收款 − 已退款</div>
+                                  <div>• 应收余额 = 净销 − 净收</div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </TableHead>
+                        <TableHead className="text-right font-semibold text-gray-700">
+                          应退金额
+                        </TableHead>
+                        <TableHead className="text-center font-semibold text-gray-700">
+                          交易笔数
+                        </TableHead>
+                        <TableHead className="font-semibold text-gray-700">
+                          最后交易
+                        </TableHead>
+                        <TableHead className="text-right font-semibold text-gray-700">
+                          操作
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {statements.map(
+                        (statement: CustomerStatementListItem) => {
+                          const refundMetrics = getRefundMetrics(
+                            statement.summary
+                          );
+                          const receivableOverview = getReceivableOverview(
+                            statement.summary
+                          );
+                          const netBalance = statement.summary.netBalance;
+
+                          return (
+                            <TableRow
+                              key={statement.customerId}
+                              className="group hover:bg-blue-50/50"
+                            >
+                              <TableCell className="font-medium text-gray-900">
+                                {statement.customerName}
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                {statement.customerPhone || (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-semibold text-orange-600">
+                                  {formatCurrency(
+                                    statement.summary.receivables
+                                      .receivableBalance
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="font-semibold text-blue-600">
+                                  {formatCurrency(
+                                    statement.summary.payables.payableBalance
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div
+                                  className={`font-bold ${
+                                    netBalance > 0
+                                      ? 'text-green-600'
+                                      : netBalance < 0
+                                        ? 'text-red-600'
+                                        : 'text-gray-600'
+                                  }`}
+                                >
+                                  {formatBalance(netBalance)}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="inline-flex flex-col items-end gap-0.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1.5 text-xs">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-gray-500">净销</span>
+                                    <span className="font-semibold text-gray-900">
+                                      {formatCurrency(
+                                        receivableOverview.netSales
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3">
+                                    <span className="text-gray-500">净收</span>
+                                    <span className="font-semibold text-gray-900">
+                                      {formatCurrency(
+                                        receivableOverview.netReceipts
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-3 border-t border-gray-300 pt-0.5">
+                                    <span className="text-gray-500">应收</span>
+                                    <span className="font-bold text-orange-600">
+                                      {formatCurrency(
+                                        receivableOverview.receivableBalance
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {refundMetrics.pendingRefundAmount > 0 ? (
+                                  <div className="font-semibold text-red-600">
+                                    {formatCurrency(
+                                      refundMetrics.pendingRefundAmount
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">¥0.00</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-center">
+                                <Badge
+                                  variant="secondary"
+                                  className="bg-blue-100 text-blue-700 hover:bg-blue-200"
+                                >
+                                  {statement.transactionCount}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-gray-600">
+                                {statement.lastTransactionDate ? (
+                                  formatDate(statement.lastTransactionDate)
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="hover:bg-blue-100 hover:text-blue-700"
+                                  asChild
+                                >
+                                  <Link
+                                    href={`/finance/customer-statements/${statement.customerId}`}
+                                    className="inline-flex items-center"
+                                  >
+                                    <FileText className="mr-1.5 h-3.5 w-3.5" />
+                                    查看详情
+                                  </Link>
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
 
                 {/* 分页 */}
                 {pagination && pagination.totalPages > 1 && (
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="text-muted-foreground text-sm">
-                      共 {pagination.total} 条记录，第 {pagination.page} /{' '}
-                      {pagination.totalPages} 页
+                  <div className="flex items-center justify-between border-t bg-gray-50 px-6 py-4">
+                    <div className="text-sm text-gray-600">
+                      共{' '}
+                      <span className="font-semibold text-gray-900">
+                        {pagination.total}
+                      </span>{' '}
+                      条记录， 第{' '}
+                      <span className="font-semibold text-gray-900">
+                        {pagination.page}
+                      </span>{' '}
+                      /{' '}
+                      <span className="font-semibold text-gray-900">
+                        {pagination.totalPages}
+                      </span>{' '}
+                      页
                     </div>
                     <div className="flex gap-2">
                       <Button
@@ -475,6 +571,7 @@ export function CustomerStatementsPageClient({
                         size="sm"
                         disabled={pagination.page === 1}
                         onClick={() => handlePageChange(pagination.page - 1)}
+                        className="disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         上一页
                       </Button>
@@ -483,6 +580,7 @@ export function CustomerStatementsPageClient({
                         size="sm"
                         disabled={pagination.page === pagination.totalPages}
                         onClick={() => handlePageChange(pagination.page + 1)}
+                        className="disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         下一页
                       </Button>

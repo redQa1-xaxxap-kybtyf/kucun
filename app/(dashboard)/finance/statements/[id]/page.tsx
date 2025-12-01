@@ -162,7 +162,7 @@ export default function StatementDetailPage() {
   if (!isRangeValid) {
     return (
       <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="mx-auto w-full max-w-[1600px] space-y-6">
+        <div className="space-y-6">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -222,7 +222,7 @@ export default function StatementDetailPage() {
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="mx-auto w-full max-w-[1600px] space-y-6">
+      <div className="space-y-6">
         {/* 页面头部 */}
         <StatementHeader
           name={statement.entity?.name ?? statement.entityName}

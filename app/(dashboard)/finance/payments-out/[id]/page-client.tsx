@@ -1,18 +1,18 @@
 'use client';
 
 import {
-    ArrowLeft,
-    Building2,
-    Calendar,
-    CheckCircle,
-    Clock,
-    CreditCard,
-    Edit,
-    FileText,
-    Printer,
-    Receipt,
-    User,
-    XCircle
+  ArrowLeft,
+  Building2,
+  Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Edit,
+  FileText,
+  Printer,
+  Receipt,
+  User,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -22,15 +22,11 @@ import { CopyableText } from '@/components/common/copyable-text';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime, formatPaymentDateTime } from '@/lib/utils/datetime';
 
 interface PaymentOutRecord {
@@ -148,15 +144,18 @@ export function PaymentOutDetailClient({
 
     setIsConfirming(true);
     try {
-      const response = await fetch(`/api/finance/payments-out/${payment.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: 'confirmed',
-        }),
-      });
+      const response = await fetch(
+        `/api/finance/payments-out/${payment.id}`,
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: 'confirmed',
+          }),
+        })
+      );
 
       const data = await response.json();
 
@@ -216,7 +215,9 @@ export function PaymentOutDetailClient({
                 variant="outline"
                 size="sm"
                 className="gap-1.5"
-                onClick={() => router.push(`/finance/payments-out/${payment.id}/edit`)}
+                onClick={() =>
+                  router.push(`/finance/payments-out/${payment.id}/edit`)
+                }
               >
                 <Edit className="h-3.5 w-3.5" />
                 编辑
