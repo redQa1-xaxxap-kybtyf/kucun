@@ -160,7 +160,7 @@ function HeaderActions({
           size="lg"
           onClick={onConfirmShipment}
           disabled={isUpdatingStatus}
-          className="bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-dark))]"
+          className="bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))] disabled:bg-[hsl(var(--color-primary))] disabled:text-[hsl(var(--color-text-on-primary))] disabled:opacity-60"
         >
           <Truck className="mr-2 h-4 w-4" />
           {isUpdatingStatus ? '处理中...' : '确认发货'}

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 interface OrderNumberGeneratorProps {
   value?: string;
@@ -46,12 +47,15 @@ export function OrderNumberGenerator({
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/sales-orders/generate-order-number', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        '/api/sales-orders/generate-order-number',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -89,13 +93,16 @@ export function OrderNumberGenerator({
 
     setIsValidating(true);
     try {
-      const response = await fetch('/api/sales-orders/generate-order-number', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ orderNumber }),
-      });
+      const response = await fetch(
+        '/api/sales-orders/generate-order-number',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ orderNumber }),
+        })
+      );
       const data = await response.json();
 
       if (data.success) {
@@ -305,12 +312,15 @@ export function SimpleOrderNumberInput({
   const generateOrderNumber = async () => {
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/sales-orders/generate-order-number', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        '/api/sales-orders/generate-order-number',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
       const data = await response.json();
 
       if (data.success) {

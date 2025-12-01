@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { purchaseOrderQueryKeys } from '@/lib/api/purchase-orders';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 // 集装箱号码编辑表单验证规则
 const editPurchaseOrderContainerNumberSchema = z.object({
@@ -103,15 +104,18 @@ function usePurchaseOrderContainerNumberEditDialogState({
 
   const handleSubmit = form.handleSubmit(data => {
     setIsSubmitting(true);
-    fetch(`/api/purchase-orders/${order.id}/shipping`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        containerNumber: data.containerNumber,
-      }),
-    })
+    fetch(
+      `/api/purchase-orders/${order.id}/shipping`,
+      getCsrfTokenHeader({
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          containerNumber: data.containerNumber,
+        }),
+      })
+    )
       .then(async response => {
         if (!response.ok) {
           const error = await response.json().catch(() => ({}));

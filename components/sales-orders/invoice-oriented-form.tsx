@@ -44,6 +44,7 @@ import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { queryKeys } from '@/lib/queryKeys';
 import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -86,12 +87,12 @@ export function SalesOrderForm({
       try {
         const response = await fetch(
           '/api/sales-orders/generate-order-number',
-          {
+          getCsrfTokenHeader({
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-          }
+          })
         );
         const data = await response.json();
         if (data.success) {

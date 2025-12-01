@@ -65,6 +65,7 @@ import {
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -205,16 +206,19 @@ export function ERPReturnOrderList({
   // 取消退货订单mutation
   const cancelMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      const response = await fetch(`/api/return-orders/${orderId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          status: 'cancelled',
-          idempotencyKey: crypto.randomUUID(),
-          remarks: '从列表取消退货订单',
-        }),
-      });
+      const response = await fetch(
+        `/api/return-orders/${orderId}/status`,
+        getCsrfTokenHeader({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            status: 'cancelled',
+            idempotencyKey: crypto.randomUUID(),
+            remarks: '从列表取消退货订单',
+          }),
+        })
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

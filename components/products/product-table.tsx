@@ -56,6 +56,7 @@ export function ProductTable({
           <TableHead>产品名称</TableHead>
           <TableHead>分类</TableHead>
           <TableHead>规格</TableHead>
+          <TableHead>厚度(mm)</TableHead>
           <TableHead>状态</TableHead>
           <TableHead>创建时间</TableHead>
           <TableHead className="text-right">操作</TableHead>
@@ -78,6 +79,9 @@ export function ProductTable({
               {ProductDataUtils.formatter.formatSpecification(
                 product.specification
               )}
+            </TableCell>
+            <TableCell className="text-[hsl(var(--color-text-secondary))]">
+              {ProductDataUtils.formatter.formatThickness(product.thickness)}
             </TableCell>
             <TableCell>{getStatusBadge(product.status)}</TableCell>
             <TableCell className="text-[hsl(var(--color-text-secondary))]">

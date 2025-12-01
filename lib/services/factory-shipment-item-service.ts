@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { queryKeys } from '@/lib/queryKeys';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 interface UpdateFactoryShipmentItemInboundStatusData {
   itemIds: string[];
@@ -13,13 +14,16 @@ export async function updateFactoryShipmentItemInboundStatus(
   orderId: string,
   data: UpdateFactoryShipmentItemInboundStatusData
 ): Promise<void> {
-  const response = await fetch(`/api/factory-shipments/${orderId}/inbound`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
+  const response = await fetch(
+    `/api/factory-shipments/${orderId}/inbound`,
+    getCsrfTokenHeader({
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+  );
 
   if (!response.ok) {
     const error = await response.json();

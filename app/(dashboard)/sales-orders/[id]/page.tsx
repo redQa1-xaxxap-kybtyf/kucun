@@ -58,6 +58,9 @@ export default function SalesOrderDetailPage() {
   const id = params.id as string;
   const { toast } = useToast();
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [density, setDensity] = useState<'compact' | 'comfortable'>(
+    'comfortable'
+  );
 
   const {
     data: order,
@@ -188,6 +191,8 @@ export default function SalesOrderDetailPage() {
           onShowToast={(title, description, variant = 'default') =>
             toast({ title, description, variant })
           }
+          density={density}
+          onDensityChange={setDensity}
         />
 
         <TransferModeInfoCard order={order} />
@@ -214,6 +219,7 @@ export default function SalesOrderDetailPage() {
               totalLocalQuantity={totalLocalQuantity}
               totalTransferQuantity={totalTransferQuantity}
               productSubtotal={productSubtotal}
+              density={density}
             />
             <FeeItemsCard order={order} productSubtotal={productSubtotal} />
           </div>

@@ -56,6 +56,7 @@ import {
 } from '@/lib/types/sales-order-fee';
 import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
 import {
   transformFormDataToCreateInput,
@@ -795,13 +796,13 @@ export function ERPSalesOrderForm({
         try {
           const response = await fetch(
             '/api/sales-orders/generate-order-number',
-            {
+            getCsrfTokenHeader({
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
               },
               credentials: 'include',
-            }
+            })
           );
           const data = await response.json();
           if (response.ok && data?.success && data.data?.orderNumber) {

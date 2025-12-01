@@ -14,6 +14,7 @@ import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
 import type { SalesOrderCreateFormData as CreateSalesOrderData } from '@/lib/validations/sales-order';
 
@@ -95,12 +96,15 @@ export function useOrderNumber(
 
     const fetchOrderNumber = async () => {
       try {
-        const response = await fetch(ORDER_NUMBER_API, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        const response = await fetch(
+          ORDER_NUMBER_API,
+          getCsrfTokenHeader({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+        );
         const data = await response.json();
 
         if (mounted && data?.success && data.data?.orderNumber) {
@@ -124,12 +128,15 @@ export function useOrderNumber(
 
   const handleGenerateOrderNumber = React.useCallback(async () => {
     try {
-      const response = await fetch(ORDER_NUMBER_API, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        ORDER_NUMBER_API,
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
       const data = await response.json();
 
       if (data?.success && data.data?.orderNumber) {

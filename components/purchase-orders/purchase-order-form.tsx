@@ -36,6 +36,7 @@ import {
   type PurchaseOrderItem,
 } from '@/lib/types/purchase-order';
 import { cn } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
 import {
   createPurchaseOrderSchema,
@@ -144,7 +145,7 @@ export function PurchaseOrderForm({
               }))
             : [],
         }
-       : {
+      : {
           idempotencyKey: generateIdempotencyKey(),
           containerNumber: '',
           shippingCompany: '',
@@ -171,13 +172,16 @@ export function PurchaseOrderForm({
   // 创建采购订单
   const createMutation = useMutation({
     mutationFn: async (data: PurchaseOrderFormData) => {
-      const response = await fetch('/api/purchase-orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/purchase-orders',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -213,13 +217,16 @@ export function PurchaseOrderForm({
         throw new Error('订单ID不能为空');
       }
 
-      const response = await fetch(`/api/purchase-orders/${orderId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        `/api/purchase-orders/${orderId}`,
+        getCsrfTokenHeader({
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

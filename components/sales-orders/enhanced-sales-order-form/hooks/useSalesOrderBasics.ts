@@ -11,6 +11,7 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -62,12 +63,15 @@ export function useSalesOrderBasics(
 
   const handleGenerateOrderNumber = React.useCallback(async () => {
     try {
-      const response = await fetch('/api/sales-orders/generate-order-number', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        '/api/sales-orders/generate-order-number',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
       const data = await response.json();
       if (data.success) {
         form.setValue('orderNumber', data.data.orderNumber);
@@ -131,12 +135,12 @@ function useAutoOrderNumber(
       try {
         const response = await fetch(
           '/api/sales-orders/generate-order-number',
-          {
+          getCsrfTokenHeader({
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-          }
+          })
         );
         const data = await response.json();
         if (isMounted && data.success) {

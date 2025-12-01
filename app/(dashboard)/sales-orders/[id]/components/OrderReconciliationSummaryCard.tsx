@@ -1,7 +1,6 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
 
 import type { SalesOrderDetail } from './types';
@@ -10,84 +9,82 @@ interface OrderReconciliationSummaryCardProps {
   order: SalesOrderDetail;
 }
 
+/**
+ * 退货退款摘要卡片
+ * 只显示退货和退款相关信息，避免与顶部 AmountSummaryCards 重复
+ */
 export function OrderReconciliationSummaryCard({
   order,
 }: OrderReconciliationSummaryCardProps) {
-  const orderAmount = Number(order.totalAmount ?? 0);
-
   // 已退货金额：所有非取消退货单的退款金额之和
   const returnedAmount = (order.returnOrders ?? []).reduce(
     (sum, returnOrder) => sum + Number(returnOrder.refundAmount ?? 0),
     0
   );
 
-  // 已收款（实际到账，不含抹零差额）
-  const receivedAmount = Number(order.actualPaidAmount ?? 0);
-
   // 已退款（根据退款记录汇总的已处理金额）
   const refundedAmount = Number(order.refundedAmount ?? 0);
 
-  // 本单未结 = 后端计算的 remainingAmount（与其他模块保持一致）
-  const remainingAmount = Number(order.remainingAmount ?? 0);
+  // 如果没有退货或退款，不显示此卡片
+  if (returnedAmount === 0 && refundedAmount === 0) {
+    return null;
+  }
 
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
-          本单对账摘要
-        </CardTitle>
-        <p className="text-muted-foreground mt-1 text-xs">
-          帮助你从订单视角快速看清：本单卖了多少、收了多少、退了多少、还差多少。
-        </p>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="space-y-2 text-sm">
-          <SummaryRow label="订单金额" value={formatCurrency(orderAmount)} />
-          <SummaryRow
-            label="已退货金额"
-            value={formatCurrency(returnedAmount)}
-          />
-          <SummaryRow
-            label="已收款金额"
-            value={formatCurrency(receivedAmount)}
-          />
-          <SummaryRow
-            label="已退款金额"
-            value={formatCurrency(refundedAmount)}
-          />
-          <Separator className="my-1" />
-          <SummaryRow
-            label="本单未结金额"
-            value={formatCurrency(remainingAmount)}
-            valueClassName="text-base font-bold text-[hsl(var(--color-warning))]"
-          />
-        </div>
-      </CardContent>
-    </Card>
+    <div className="grid gap-3 md:grid-cols-2">
+      <SummaryCard
+        label="已退货金额"
+        value={formatCurrency(returnedAmount)}
+        description={`${order.returnOrders?.filter(r => r.status !== 'cancelled').length || 0} 个退货单`}
+        variant="warning"
+      />
+      <SummaryCard
+        label="已退款金额"
+        value={formatCurrency(refundedAmount)}
+        description="已处理的退款"
+        variant="error"
+      />
+    </div>
   );
 }
 
-interface SummaryRowProps {
+interface SummaryCardProps {
   label: string;
   value: string;
-  valueClassName?: string;
+  description?: string;
+  variant?: 'default' | 'warning' | 'error';
 }
 
-function SummaryRow({ label, value, valueClassName }: SummaryRowProps) {
+function SummaryCard({
+  label,
+  value,
+  description,
+  variant = 'default',
+}: SummaryCardProps) {
+  const colorClass = {
+    default: 'text-[hsl(var(--color-text-primary))]',
+    warning: 'text-orange-600',
+    error: 'text-red-600',
+  }[variant];
+
+  const bgClass = {
+    default: 'border-[hsl(var(--color-border-primary))]',
+    warning: 'border-orange-200 bg-orange-50/50',
+    error: 'border-red-200 bg-red-50/50',
+  }[variant];
+
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-[hsl(var(--color-text-tertiary))]">{label}</span>
-      <span
-        className={
-          valueClassName ??
-          'font-semibold text-[hsl(var(--color-text-primary))]'
-        }
-      >
-        {value}
-      </span>
-    </div>
+    <Card
+      className={`border ${bgClass}`}
+      style={{ boxShadow: 'var(--shadow-light)' }}
+    >
+      <CardContent className="p-4">
+        <div className="text-xs font-medium text-gray-600">{label}</div>
+        <div className={`mt-2 text-2xl font-bold ${colorClass}`}>{value}</div>
+        {description && (
+          <div className="mt-1 text-xs text-gray-500">{description}</div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

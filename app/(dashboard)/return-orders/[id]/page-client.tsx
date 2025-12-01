@@ -45,6 +45,7 @@ import {
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
@@ -219,16 +220,19 @@ export function ReturnOrderDetailPageClient({
   // 取消退货订单
   const cancelMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/return-orders/${id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          status: 'cancelled',
-          idempotencyKey: crypto.randomUUID(),
-          remarks: '用户取消退货订单',
-        }),
-      });
+      const response = await fetch(
+        `/api/return-orders/${id}/status`,
+        getCsrfTokenHeader({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            status: 'cancelled',
+            idempotencyKey: crypto.randomUUID(),
+            remarks: '用户取消退货订单',
+          }),
+        })
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
