@@ -37,6 +37,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { COUNT_TYPE_OPTIONS } from '@/lib/types/inventory-count';
 import { cn } from '@/lib/utils';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
   inventoryCountFormSchema,
   type InventoryCountFormData,
@@ -75,11 +76,12 @@ export function CountForm({
     },
   });
 
-  const categoryOptions =
-    (Array.isArray(categoriesData?.data) ? categoriesData?.data : []) as {
-      id: string;
-      name: string;
-    }[];
+  const categoryOptions = (
+    Array.isArray(categoriesData?.data) ? categoriesData?.data : []
+  ) as {
+    id: string;
+    name: string;
+  }[];
 
   // ✅ 表单配置 - 使用统一的 InventoryCountFormData 类型
   const form = useForm<InventoryCountFormData>({
@@ -101,11 +103,14 @@ export function CountForm({
   // 创建盘点计划
   const createMutation = useMutation({
     mutationFn: async (data: InventoryCountFormData) => {
-      const response = await fetch('/api/inventory/counts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        '/api/inventory/counts',
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -140,11 +145,14 @@ export function CountForm({
   // 更新盘点计划
   const updateMutation = useMutation({
     mutationFn: async (data: InventoryCountFormData) => {
-      const response = await fetch(`/api/inventory/counts/${countId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await fetch(
+        `/api/inventory/counts/${countId}`,
+        getCsrfTokenHeader({
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

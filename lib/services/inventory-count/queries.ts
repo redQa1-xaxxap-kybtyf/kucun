@@ -1,8 +1,8 @@
+/* eslint-disable func-call-spacing */
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import {
-  type InventoryCount,
   type InventoryCountDetail,
   type InventoryCountListItem,
   type InventoryCountQueryParams,
@@ -13,6 +13,7 @@ import {
   INVENTORY_COUNT_WITH_ITEMS_RELATIONS,
   toInventoryCountListItem,
   toInventoryCountWithItems,
+  type InventoryCountWithItemsEntity,
 } from './utils';
 
 export async function getInventoryCounts(
@@ -74,6 +75,89 @@ export async function getInventoryCounts(
   };
 }
 
+function buildBatchSpecKey(productId: string, batchNumber: string) {
+  return `${productId}::${batchNumber}`;
+}
+
+async function attachBatchPiecesPerUnit(
+  count: InventoryCountWithItemsEntity
+): Promise<InventoryCountWithItemsEntity> {
+  // 收集所有有批次号的产品组合
+  const pairs = count.items
+    .filter(item => item.batchNumber && item.productId)
+    .map(item => ({
+      productId: item.productId,
+      batchNumber: item.batchNumber as string,
+    }));
+
+  if (!pairs.length) {
+    return count;
+  }
+
+  // 去重避免生成过长的 OR 条件
+  const uniqueKeySet = new Set<string>();
+  const uniquePairs: typeof pairs = [];
+  for (const pair of pairs) {
+    const key = buildBatchSpecKey(pair.productId, pair.batchNumber);
+    if (!uniqueKeySet.has(key)) {
+      uniqueKeySet.add(key);
+      uniquePairs.push(pair);
+    }
+  }
+
+  if (!uniquePairs.length) {
+    return count;
+  }
+
+  const batchSpecs = await prisma.batchSpecification.findMany({
+    where: {
+      OR: uniquePairs.map(p => ({
+        productId: p.productId,
+        batchNumber: p.batchNumber,
+      })),
+    },
+    select: {
+      id: true,
+      productId: true,
+      batchNumber: true,
+      piecesPerUnit: true,
+    },
+  });
+
+  if (!batchSpecs.length) {
+    return count;
+  }
+
+  const specMap = new Map<string, (typeof batchSpecs)[number]>();
+  batchSpecs.forEach(spec => {
+    specMap.set(buildBatchSpecKey(spec.productId, spec.batchNumber), spec);
+  });
+
+  return {
+    ...count,
+    items: count.items.map(item => {
+      if (!item.batchNumber || !item.product) {
+        return item;
+      }
+
+      const key = buildBatchSpecKey(item.productId, item.batchNumber);
+      const spec = specMap.get(key);
+      if (!spec) {
+        return item;
+      }
+
+      return {
+        ...item,
+        product: {
+          ...item.product,
+          // ✅ 每件片数优先采用批次规格参数，回退到产品默认值
+          piecesPerUnit: spec.piecesPerUnit ?? item.product.piecesPerUnit,
+        },
+      };
+    }),
+  };
+}
+
 export async function getInventoryCountById(
   id: string
 ): Promise<InventoryCountDetail | null> {
@@ -86,7 +170,8 @@ export async function getInventoryCountById(
     return null;
   }
 
-  return toInventoryCountWithItems(count);
+  const enhanced = await attachBatchPiecesPerUnit(count);
+  return toInventoryCountWithItems(enhanced);
 }
 
 export function buildSearchFilter(params: {

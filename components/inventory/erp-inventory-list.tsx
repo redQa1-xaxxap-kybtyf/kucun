@@ -37,7 +37,11 @@ interface ERPInventoryListProps {
   isLoading?: boolean;
   isFetching?: boolean;
   /** ✅ 新增：搜索状态指示 */
+  /** ✅ 新增：搜索状态指示 */
   isSearching?: boolean;
+  density: 'compact' | 'comfortable';
+  onDensityChange: (density: 'compact' | 'comfortable') => void;
+  onExport: () => void;
 }
 
 /**
@@ -61,6 +65,9 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     isLoading: _isLoading = false,
     isFetching = false,
     isSearching = false,
+    density,
+    onDensityChange,
+    onExport,
   }) => {
     const router = useRouter();
 
@@ -100,6 +107,9 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           onFilter={onFilter}
           onClearFilters={onClearFilters}
           isSearching={isSearching || isFetching}
+          density={density}
+          onDensityChange={onDensityChange}
+          onExport={onExport}
         />
 
         {/* 库存列表 */}
@@ -122,6 +132,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
             onAdjust={handleAdjust}
             useVirtualization={data.data.length > 50}
             searchQuery={queryParams.search}
+            density={density}
           />
 
           {/* 分页器 */}

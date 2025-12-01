@@ -12,6 +12,7 @@ interface InventoryTableProps {
   useVirtualization?: boolean;
   /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
   searchQuery?: string;
+  density: 'compact' | 'comfortable';
 }
 
 function InventoryTableImpl({
@@ -19,6 +20,7 @@ function InventoryTableImpl({
   onAdjust,
   useVirtualization = false,
   searchQuery,
+  density,
 }: InventoryTableProps) {
   // 虚拟化模式（大数据量时使用，不支持合并单元格）
   if (useVirtualization && data.length > 50) {
@@ -27,6 +29,7 @@ function InventoryTableImpl({
         data={data}
         onAdjust={onAdjust}
         searchQuery={searchQuery}
+        density={density}
       />
     );
   }
@@ -37,6 +40,7 @@ function InventoryTableImpl({
       data={data}
       onAdjust={onAdjust}
       searchQuery={searchQuery}
+      density={density}
     />
   );
 }
@@ -49,5 +53,7 @@ export const InventoryTable = memo(
     prev.data === next.data &&
     prev.onAdjust === next.onAdjust &&
     prev.useVirtualization === next.useVirtualization &&
-    prev.searchQuery === next.searchQuery
+    prev.useVirtualization === next.useVirtualization &&
+    prev.searchQuery === next.searchQuery &&
+    prev.density === next.density
 );

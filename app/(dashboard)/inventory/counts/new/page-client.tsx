@@ -22,7 +22,7 @@ export function NewCountPageClient() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 页面标题 */}
       <PageHeader
         title="创建盘点计划"

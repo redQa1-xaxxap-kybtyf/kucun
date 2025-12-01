@@ -33,6 +33,7 @@ interface VirtualizedInventoryTableProps {
   /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
   searchQuery?: string;
   overscan?: number;
+  density: 'compact' | 'comfortable';
 }
 
 /**
@@ -40,16 +41,17 @@ interface VirtualizedInventoryTableProps {
  */
 const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
   ({ hasFinancePermission }) => (
-    <TableHeader className="bg-muted/30 sticky top-0 z-10">
+    <TableHeader className="sticky top-0 z-20 bg-[hsl(var(--color-bg-card))] shadow-sm">
       <TableRow>
         <TableHead>产品编码</TableHead>
         <TableHead>产品名称</TableHead>
         <TableHead>规格</TableHead>
         <TableHead>包装信息</TableHead>
+        <TableHead className="text-right">重量(kg)</TableHead>
         <TableHead>批次号</TableHead>
-        <TableHead>库存数量</TableHead>
-        <TableHead>预留数量</TableHead>
-        <TableHead>可用数量</TableHead>
+        <TableHead className="text-right">库存数量</TableHead>
+        <TableHead className="text-right">预留数量</TableHead>
+        <TableHead className="text-right">可用数量</TableHead>
         {hasFinancePermission && (
           <>
             <TableHead className="text-right">单位成本（元）</TableHead>
@@ -58,7 +60,7 @@ const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
         )}
         <TableHead>库存状态</TableHead>
         <TableHead>最后更新</TableHead>
-        <TableHead className="w-20">操作</TableHead>
+        <TableHead className="w-20 text-right">操作</TableHead>
       </TableRow>
     </TableHeader>
   )
@@ -101,12 +103,16 @@ export const VirtualizedInventoryTable =
     ({
       data,
       onAdjust,
-      itemHeight = 60,
+      itemHeight,
       containerHeight = 400,
       overscan = 5,
+      density,
     }) => {
       const parentRef = React.useRef<HTMLDivElement>(null);
       const { data: session } = useSession();
+
+      // Determine row height based on density if not provided
+      const rowHeight = itemHeight ?? (density === 'compact' ? 40 : 60);
 
       // 检查用户是否有财务查看权限
       const hasFinancePermission = React.useMemo(
@@ -118,7 +124,7 @@ export const VirtualizedInventoryTable =
       const rowVirtualizer = useVirtualizer({
         count: data.length,
         getScrollElement: () => parentRef.current,
-        estimateSize: () => itemHeight, // 使用 estimateSize 而不是固定 size
+        estimateSize: () => rowHeight, // 使用 estimateSize 而不是固定 size
         overscan, // 预渲染行数，提升滚动体验
       });
 
@@ -145,7 +151,13 @@ export const VirtualizedInventoryTable =
                 position: 'relative',
               }}
             >
-              <Table>
+              <Table
+                className={
+                  density === 'compact'
+                    ? '[&_td]:!px-2 [&_td]:!py-2 [&_th]:!px-2 [&_th]:!py-2'
+                    : ''
+                }
+              >
                 {/* 固定表头 */}
                 <TableHeaderComponent
                   hasFinancePermission={hasFinancePermission}

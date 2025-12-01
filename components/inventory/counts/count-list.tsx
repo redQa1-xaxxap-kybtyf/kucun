@@ -35,6 +35,7 @@ import {
   type CountStatus,
   type InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
 
 interface CountListProps {
@@ -83,9 +84,12 @@ export function CountList({ filters }: CountListProps) {
   // 删除盘点计划
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/inventory/counts/${id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/inventory/counts/${id}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -118,9 +122,12 @@ export function CountList({ filters }: CountListProps) {
   // 开始盘点
   const startMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await fetch(`/api/inventory/counts/${id}/start`, {
-        method: 'POST',
-      });
+      const response = await fetch(
+        `/api/inventory/counts/${id}/start`,
+        getCsrfTokenHeader({
+          method: 'POST',
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();

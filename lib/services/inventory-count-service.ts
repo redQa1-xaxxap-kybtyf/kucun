@@ -10,13 +10,13 @@ import {
   consumeFIFOQueue,
   getWeightedAverageCostFromFIFO,
 } from '@/lib/services/fifo-cost-service';
+import { getInventoryCountById as getInventoryCountDetailById } from '@/lib/services/inventory-count/queries';
 import {
   COUNT_STATUS_LABELS,
   COUNT_TYPE_LABELS,
   type CountStatus,
   type CreateInventoryCountRequest,
   type InventoryCount,
-  type InventoryCountItem,
   type InventoryCountListItem,
   type InventoryCountQueryParams,
   type InventoryCountStatistics,
@@ -359,125 +359,9 @@ export async function getInventoryCounts(
 export async function getInventoryCountById(
   id: string
 ): Promise<InventoryCount | null> {
-  const count = await prisma.inventoryCount.findUnique({
-    where: { id },
-    include: {
-      creator: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      operator: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      approver: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-      category: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-      items: {
-        include: {
-          product: true,
-          variant: true,
-          counter: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!count) {
-    return null;
-  }
-
-  // 转换为 InventoryCount 类型
-  return {
-    id: count.id,
-    countNumber: count.countNumber,
-    countName: count.countName,
-    countType: count.countType as InventoryCount['countType'],
-    status: count.status as CountStatus,
-    location: count.location || undefined,
-    categoryId: count.categoryId || undefined,
-    planDate: count.planDate.toISOString(),
-    startDate: count.startDate?.toISOString(),
-    endDate: count.endDate?.toISOString(),
-    totalItems: count.totalItems,
-    completedItems: count.completedItems,
-    differenceItems: count.differenceItems,
-    totalDifference: count.totalDifference,
-    remarks: count.remarks || undefined,
-    attachments: count.attachments || undefined,
-    creatorId: count.creatorId,
-    operatorId: count.operatorId || undefined,
-    approverId: count.approverId || undefined,
-    approvedAt: count.approvedAt?.toISOString(),
-    createdAt: count.createdAt.toISOString(),
-    updatedAt: count.updatedAt.toISOString(),
-    creator: count.creator,
-    operator: count.operator || undefined,
-    approver: count.approver || undefined,
-    category: count.category || undefined,
-    items: count.items.map(
-      (item): InventoryCountItem => ({
-        id: item.id,
-        countId: item.countId,
-        productId: item.productId,
-        variantId: item.variantId || undefined,
-        batchNumber: item.batchNumber || undefined,
-        systemQuantity: item.systemQuantity,
-        actualQuantity: item.actualQuantity || undefined,
-        difference: item.difference,
-        status: item.status as InventoryCountItem['status'],
-        unitCost: item.unitCost || undefined,
-        totalCost: item.totalCost || undefined,
-        location: item.location || undefined,
-        remarks: item.remarks || undefined,
-        countedBy: item.countedBy || undefined,
-        countedAt: item.countedAt?.toISOString(),
-        createdAt: item.createdAt.toISOString(),
-        updatedAt: item.updatedAt.toISOString(),
-        product: item.product
-          ? {
-              id: item.product.id,
-              code: item.product.code,
-              name: item.product.name,
-              unit: item.product.unit as 'piece' | 'sheet',
-              piecesPerUnit: item.product.piecesPerUnit ?? undefined,
-            }
-          : undefined,
-        variant: item.variant
-          ? {
-              id: item.variant.id,
-              colorCode: item.variant.colorCode,
-              colorName: item.variant.colorName || undefined,
-              sku: item.variant.sku,
-            }
-          : undefined,
-        counter: item.counter || undefined,
-      })
-    ),
-  };
+  // ✅ 复用新版查询服务，保证与前端 Query 模块逻辑一致（含批次每件片数处理）
+  const detail = await getInventoryCountDetailById(id);
+  return detail ?? null;
 }
 
 /**

@@ -7,7 +7,7 @@
 
 'use client';
 
-import { AlertTriangle, Package } from 'lucide-react';
+import { AlertTriangle, Download, Package, Rows } from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
@@ -29,6 +29,9 @@ interface InventorySearchToolbarProps {
   onClearFilters?: () => void;
   /** ✅ 搜索状态指示（仅用于显示输入框内的加载图标） */
   isSearching?: boolean;
+  density: 'compact' | 'comfortable';
+  onDensityChange: (density: 'compact' | 'comfortable') => void;
+  onExport: () => void;
 }
 
 /**
@@ -45,6 +48,9 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     onFilter,
     onClearFilters,
     isSearching,
+    density,
+    onDensityChange,
+    onExport,
   }) => {
     const logic = useInventoryToolbarLogic({
       queryParams,
@@ -59,6 +65,9 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
         searchValue={searchValue}
         onSearch={onSearch}
         isSearching={isSearching}
+        density={density}
+        onDensityChange={onDensityChange}
+        onExport={onExport}
         {...logic}
       />
     );
@@ -143,6 +152,9 @@ type InventoryToolbarViewProps = Pick<
   handleDateRangeChange: (range: DateRangeValue) => void;
   handleClearFilters: () => void;
   hasActiveFilters: boolean;
+  density: 'compact' | 'comfortable';
+  onDensityChange: (density: 'compact' | 'comfortable') => void;
+  onExport: () => void;
 };
 
 function InventoryToolbarView({
@@ -157,6 +169,9 @@ function InventoryToolbarView({
   handleDateRangeChange,
   handleClearFilters,
   hasActiveFilters,
+  density,
+  onDensityChange,
+  onExport,
 }: InventoryToolbarViewProps) {
   return (
     <SearchFilterCard
@@ -213,6 +228,24 @@ function InventoryToolbarView({
           icon: <Package className="mr-1 h-3 w-3" />,
           active: !!queryParams.hasStock,
           onClick: handleToggleHasStock,
+        },
+      ]}
+      // 操作按钮
+      actionButtons={[
+        {
+          key: 'density',
+          label: density === 'compact' ? '紧凑' : '舒适',
+          icon: <Rows className="mr-1 h-3 w-3" />,
+          onClick: () =>
+            onDensityChange(density === 'compact' ? 'comfortable' : 'compact'),
+          variant: 'outline',
+        },
+        {
+          key: 'export',
+          label: '导出',
+          icon: <Download className="mr-1 h-3 w-3" />,
+          onClick: onExport,
+          variant: 'outline',
         },
       ]}
       // 清空筛选

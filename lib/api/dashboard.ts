@@ -24,6 +24,7 @@ import type {
   TodoItem,
 } from '@/lib/types/dashboard';
 import { formatCurrency as formatCurrencyValue } from '@/lib/utils';
+import { csrfFetch } from '@/lib/utils/csrf';
 import { formatTimeAgo } from '@/lib/utils/datetime';
 
 // API基础URL
@@ -234,7 +235,7 @@ export const dashboardApi = {
 
   // 忽略库存预警
   dismissAlert: async (alertId: string): Promise<void> => {
-    const response = await fetch(`${API_BASE}/alerts/${alertId}/dismiss`, {
+    const response = await csrfFetch(`${API_BASE}/alerts/${alertId}/dismiss`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

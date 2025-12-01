@@ -153,7 +153,15 @@ export interface InventoryCountItem {
 
   // 关联数据（可选，根据查询需要包含）
   // ✅ 补充每件片数，便于“件/片”统一展示
-  product?: Pick<Product, 'id' | 'code' | 'name' | 'unit' | 'piecesPerUnit'>;
+  product?: Pick<
+    Product,
+    'id' | 'code' | 'name' | 'unit' | 'piecesPerUnit' | 'specification'
+  >;
+  /** 批次规格参数（如果存在），用于覆盖产品级 piecesPerUnit */
+  batchSpecification?: Pick<
+    import('./batch-specification').BatchSpecification,
+    'id' | 'batchNumber' | 'piecesPerUnit' | 'weight' | 'thickness'
+  >;
   variant?: Pick<ProductVariant, 'id' | 'colorCode' | 'colorName' | 'sku'>;
   counter?: Pick<User, 'id' | 'name' | 'email'>;
 }

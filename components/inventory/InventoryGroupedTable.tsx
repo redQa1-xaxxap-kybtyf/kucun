@@ -34,6 +34,7 @@ interface InventoryGroupedTableProps {
   onAdjust: (id: string) => void;
   /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
   searchQuery?: string;
+  density: 'compact' | 'comfortable';
 }
 
 interface ProductGroup {
@@ -125,7 +126,7 @@ function formatSpecification(spec: string | null | undefined): string {
 }
 
 export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
-  ({ data, onAdjust, searchQuery }) => {
+  ({ data, onAdjust, searchQuery, density }) => {
     const groups = React.useMemo(() => groupByProduct(data), [data]);
     const { data: session } = useSession();
 
@@ -140,18 +141,27 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
     const isEmptyState = data.length === 0;
 
     return (
-      <Table>
-        <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+      <Table
+        className={
+          density === 'compact'
+            ? '[&_td]:!px-2 [&_td]:!py-2 [&_th]:!px-2 [&_th]:!py-2'
+            : ''
+        }
+      >
+        <TableHeader
+          className="sticky top-0 z-20 bg-[hsl(var(--color-bg-card))]"
+          style={{ boxShadow: 'var(--shadow-light)' }}
+        >
           <TableRow>
             <TableHead>产品编码</TableHead>
             <TableHead>产品名称</TableHead>
             <TableHead>规格</TableHead>
             <TableHead>包装信息</TableHead>
-            <TableHead>重量(kg)</TableHead>
+            <TableHead className="text-right">重量(kg)</TableHead>
             <TableHead>批次号</TableHead>
-            <TableHead>库存数量</TableHead>
-            <TableHead>预留数量</TableHead>
-            <TableHead>可用数量</TableHead>
+            <TableHead className="text-right">库存数量</TableHead>
+            <TableHead className="text-right">预留数量</TableHead>
+            <TableHead className="text-right">可用数量</TableHead>
             {hasFinancePermission && (
               <>
                 <TableHead className="text-right">单位成本（元）</TableHead>
@@ -233,11 +243,12 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                 return (
                   <TableRow
                     key={item.id}
-                    className={`text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] ${groupBgClass} ${
+                    className={`cursor-pointer text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] ${groupBgClass} ${
                       isLastInGroup
                         ? 'border-b-2 border-[hsl(var(--color-border-primary))]' // 组最后一行加粗下边框
                         : 'border-b-0' // 组内无边框
                     } ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))]' : ''}`}
+                    onDoubleClick={() => onAdjust(item.id)}
                   >
                     {/* 产品编码 */}
                     <TableCell
@@ -322,7 +333,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 重量 */}
                     <TableCell
-                      className={`${
+                      className={`text-right tabular-nums ${
                         isFirstInGroup
                           ? 'font-medium text-[hsl(var(--color-text-primary))]'
                           : 'text-[hsl(var(--color-text-secondary))]'
@@ -352,17 +363,17 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 库存数量 */}
-                    <TableCell className="font-semibold text-[hsl(var(--color-success))]">
+                    <TableCell className="text-right font-semibold text-[hsl(var(--color-success))] tabular-nums">
                       {quantityDisplay}
                     </TableCell>
 
                     {/* 预留数量 */}
-                    <TableCell className="font-medium text-[hsl(var(--color-warning))]">
+                    <TableCell className="text-right font-medium text-[hsl(var(--color-warning))] tabular-nums">
                       {reservedDisplay}
                     </TableCell>
 
                     {/* 可用数量 */}
-                    <TableCell className="font-medium text-[hsl(var(--color-primary))]">
+                    <TableCell className="text-right font-medium text-[hsl(var(--color-primary))] tabular-nums">
                       {availableDisplay}
                     </TableCell>
 
@@ -370,12 +381,12 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     {hasFinancePermission && (
                       <>
                         {/* 单位成本 */}
-                        <TableCell className="text-right font-medium text-[hsl(var(--color-text-primary))]">
+                        <TableCell className="text-right font-medium text-[hsl(var(--color-text-primary))] tabular-nums">
                           {item.unitCost ? formatCurrency(item.unitCost) : '-'}
                         </TableCell>
 
                         {/* 库存总成本 */}
-                        <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))]">
+                        <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))] tabular-nums">
                           {item.unitCost
                             ? formatCurrency(item.quantity * item.unitCost)
                             : '-'}
@@ -409,7 +420,10 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                           variant="ghost"
                           size="sm"
                           className="group h-8 w-8 rounded-md p-0 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                          onClick={() => onAdjust(item.id)}
+                          onClick={e => {
+                            e.stopPropagation();
+                            onAdjust(item.id);
+                          }}
                           title="查看库存变动详情"
                         >
                           <Eye className="h-4 w-4 text-[hsl(var(--color-text-secondary))] transition-colors group-hover:text-[hsl(var(--color-primary))]" />

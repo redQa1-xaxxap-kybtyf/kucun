@@ -62,6 +62,9 @@ const PATH_TITLES: Record<string, string> = {
   '/inventory/adjust': '库存调整',
   '/inventory/adjustments': '调整记录',
   '/inventory/adjustments/create': '新建库存调整',
+  '/inventory/counts': '库存盘点',
+  '/inventory/counts/new': '创建盘点计划',
+  '/inventory/counts/statistics': '盘点统计',
   '/inventory/batch': '批次管理',
   '/inventory/temporary-products': '临时产品库',
   '/products': '产品管理',
@@ -149,9 +152,11 @@ const PATH_TITLES: Record<string, string> = {
   users: '用户',
   history: '变动历史',
   batch: '批次管理',
+  counts: '库存盘点',
   statistics: '统计分析',
   shortcuts: '快捷键',
   notifications: '通知中心',
+  execute: '执行盘点',
 };
 
 const DETAIL_TITLE_MAP: Record<string, string> = {
@@ -174,6 +179,7 @@ const DETAIL_TITLE_MAP: Record<string, string> = {
   调整记录: '库存调整详情',
   库存调整: '库存调整详情',
   批次管理: '批次详情',
+  库存盘点: '盘点计划详情',
 };
 
 const EDIT_TITLE_MAP: Record<string, string> = {
@@ -196,6 +202,7 @@ const EDIT_TITLE_MAP: Record<string, string> = {
   调整记录: '编辑库存调整',
   库存调整: '编辑库存调整',
   批次管理: '编辑批次',
+  库存盘点: '编辑盘点计划',
 };
 
 /**

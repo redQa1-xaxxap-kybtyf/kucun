@@ -44,6 +44,14 @@ export function InventoryPageClient({
   categoryOptions,
 }: InventoryPageClientProps) {
   const ctrl = useInventoryController(initialParams);
+  const [density, setDensity] = React.useState<'compact' | 'comfortable'>(
+    'comfortable'
+  );
+
+  const handleExport = React.useCallback(() => {
+    // TODO: Implement export logic
+    console.log('Exporting...');
+  }, []);
 
   return (
     <InventoryContent
@@ -61,6 +69,9 @@ export function InventoryPageClient({
       isFetching={ctrl.isFetching}
       isSearching={ctrl.isSearching} // ✅ 传递搜索状态
       error={ctrl.error}
+      density={density}
+      onDensityChange={setDensity}
+      onExport={handleExport}
     />
   );
 }
@@ -347,6 +358,9 @@ function InventoryContent(props: {
   isFetching: boolean;
   isSearching: boolean; // ✅ 新增：搜索中状态
   error: unknown;
+  density: 'compact' | 'comfortable';
+  onDensityChange: (density: 'compact' | 'comfortable') => void;
+  onExport: () => void;
 }) {
   const queryClient = useQueryClient();
   const {
@@ -364,6 +378,9 @@ function InventoryContent(props: {
     isFetching,
     isSearching,
     error,
+    density,
+    onDensityChange,
+    onExport,
   } = props;
   // 获取库存统计数据
   const { data: statistics, isLoading: isLoadingStats } =
@@ -425,6 +442,9 @@ function InventoryContent(props: {
               isLoading={isLoading}
               isFetching={isFetching}
               isSearching={isSearching}
+              density={density}
+              onDensityChange={onDensityChange}
+              onExport={onExport}
             />
           )}
         </Suspense>

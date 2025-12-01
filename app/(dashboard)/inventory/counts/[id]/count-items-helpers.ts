@@ -4,6 +4,7 @@
 
 import type { InventoryCountDetail } from '@/lib/types/inventory-count';
 import type { InventoryQueryParams } from '@/lib/types/inventory-queries';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 /**
  * 生成库存记录的唯一键
@@ -108,11 +109,14 @@ export async function addCountItems(
   countId: string,
   items: ReturnType<typeof prepareItemsPayload>
 ): Promise<Response> {
-  return fetch(`/api/inventory/counts/${countId}/items`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
-  });
+  return fetch(
+    `/api/inventory/counts/${countId}/items`,
+    getCsrfTokenHeader({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    })
+  );
 }
 
 /**

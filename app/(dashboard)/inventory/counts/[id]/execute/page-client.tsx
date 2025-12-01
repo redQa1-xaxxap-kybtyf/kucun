@@ -31,7 +31,9 @@ import {
   type InventoryCountDetail,
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
-import { formatPieceSummary } from '@/lib/utils/piece-calculation';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import { ProductDataUtils } from '@/lib/utils/product-data';
 
 interface ExecuteCountPageClientProps {
   countId: string;
@@ -71,11 +73,14 @@ export function ExecuteCountPageClient({
   // 提交盘点数据
   const submitMutation = useMutation({
     mutationFn: async (data: ItemQuantity[]) => {
-      const response = await fetch(`/api/inventory/counts/${countId}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: data }),
-      });
+      const response = await fetch(
+        `/api/inventory/counts/${countId}/submit`,
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: data }),
+        })
+      );
 
       if (!response.ok) {
         const error = await response.json();
@@ -114,9 +119,9 @@ export function ExecuteCountPageClient({
     mutationFn: async () => {
       const response = await fetch(
         `/api/inventory/counts/${countId}/complete`,
-        {
+        getCsrfTokenHeader({
           method: 'POST',
-        }
+        })
       );
 
       if (!response.ok) {
@@ -234,7 +239,7 @@ export function ExecuteCountPageClient({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -324,6 +329,7 @@ export function ExecuteCountPageClient({
                   <TableHead>产品编码</TableHead>
                   <TableHead>产品名称</TableHead>
                   <TableHead>规格型号</TableHead>
+                  <TableHead className="text-right">每件片数</TableHead>
                   <TableHead>批次号</TableHead>
                   <TableHead className="text-right">系统数量</TableHead>
                   <TableHead className="text-right">实际数量</TableHead>
@@ -348,38 +354,64 @@ export function ExecuteCountPageClient({
                         {item.product?.code || '-'}
                       </TableCell>
                       <TableCell>{item.product?.name || '-'}</TableCell>
-                      <TableCell>
-                        {item.variant
-                          ? `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim() ||
-                            '-'
-                          : '-'}
-                      </TableCell>
-                      <TableCell>{item.batchNumber || '-'}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="whitespace-nowrap">
                         {(() => {
-                          const ppu = item.product?.piecesPerUnit ?? 0;
-                          return ppu > 0
-                            ? formatPieceSummary(item.systemQuantity, ppu, {
-                                fallbackUnit: '片',
-                                zeroDisplay: '0片',
-                              })
-                            : `${item.systemQuantity}片`;
+                          const variantLabel =
+                            item.variant &&
+                            `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim();
+
+                          if (variantLabel) {
+                            return variantLabel;
+                          }
+
+                          return ProductDataUtils.formatter.formatSpecification(
+                            item.product?.specification
+                          );
                         })()}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={quantities[item.id] ?? ''}
-                          onChange={e =>
-                            handleQuantityChange(item.id, e.target.value)
+                        {item.product?.piecesPerUnit &&
+                        item.product.piecesPerUnit > 0
+                          ? `${item.product.piecesPerUnit}片/件`
+                          : '-'}
+                      </TableCell>
+                      <TableCell>{item.batchNumber || '-'}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {(() => {
+                          const ppu = item.product?.piecesPerUnit ?? 0;
+                          if (ppu <= 1) {
+                            return `${item.systemQuantity}片`;
                           }
-                          className="w-32 text-right"
-                        />
+                          const result = calculatePieceDisplay(
+                            item.systemQuantity,
+                            ppu
+                          );
+                          return (
+                            <>
+                              <span>{item.systemQuantity}片</span>
+                              <span className="text-muted-foreground ml-1 text-xs">
+                                (约{result.displayText})
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={quantities[item.id] ?? ''}
+                            onChange={e =>
+                              handleQuantityChange(item.id, e.target.value)
+                            }
+                            className="h-8 w-28 text-right"
+                          />
+                        </div>
                       </TableCell>
                       <TableCell
-                        className={`text-right ${
+                        className={`text-right whitespace-nowrap ${
                           diff !== null && diff !== 0
                             ? diff > 0
                               ? 'text-green-600'
@@ -391,15 +423,25 @@ export function ExecuteCountPageClient({
                           if (diff === null) return '-';
                           const ppu = item.product?.piecesPerUnit ?? 0;
                           const abs = Math.abs(diff);
-                          const text =
-                            ppu > 0
-                              ? formatPieceSummary(abs, ppu, {
-                                  fallbackUnit: '片',
-                                  zeroDisplay: '0片',
-                                })
-                              : `${abs}片`;
                           const sign = diff > 0 ? '+' : diff < 0 ? '-' : '';
-                          return sign ? `${sign}${text}` : text;
+                          const mainText = sign
+                            ? `${sign}${abs}片`
+                            : `${abs}片`;
+
+                          if (ppu <= 1) {
+                            return mainText;
+                          }
+
+                          const result = calculatePieceDisplay(abs, ppu);
+                          return (
+                            <>
+                              <span>{mainText}</span>
+                              <span className="text-muted-foreground/80 ml-1 text-xs">
+                                ({sign}
+                                {result.displayText})
+                              </span>
+                            </>
+                          );
                         })()}
                       </TableCell>
                       {hasFinancePermission && (

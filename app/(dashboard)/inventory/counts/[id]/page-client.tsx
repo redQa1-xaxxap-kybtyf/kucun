@@ -27,6 +27,7 @@ import {
   type CountStatus,
   type InventoryCountDetail,
 } from '@/lib/types/inventory-count';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 import { AddProductDialog, DeleteCountDialog } from './count-dialogs';
@@ -127,9 +128,12 @@ function useCountMutations({
 
   const startMutation = useMutation({
     mutationFn: () =>
-      fetch(`/api/inventory/counts/${countId}/start`, { method: 'POST' }).then(
-        handleResponse('开始盘点失败')
-      ),
+      fetch(
+        `/api/inventory/counts/${countId}/start`,
+        getCsrfTokenHeader({
+          method: 'POST',
+        })
+      ).then(handleResponse('开始盘点失败')),
     onSuccess: () => {
       toast({ title: '开始成功', description: '盘点计划已开始' });
       invalidateCount();
@@ -145,9 +149,12 @@ function useCountMutations({
 
   const completeMutation = useMutation({
     mutationFn: () =>
-      fetch(`/api/inventory/counts/${countId}/complete`, {
-        method: 'POST',
-      }).then(handleResponse('完成盘点失败')),
+      fetch(
+        `/api/inventory/counts/${countId}/complete`,
+        getCsrfTokenHeader({
+          method: 'POST',
+        })
+      ).then(handleResponse('完成盘点失败')),
     onSuccess: () => {
       toast({ title: '完成成功', description: '盘点计划已完成' });
       invalidateCount();
@@ -162,9 +169,12 @@ function useCountMutations({
 
   const deleteMutation = useMutation({
     mutationFn: () =>
-      fetch(`/api/inventory/counts/${countId}`, {
-        method: 'DELETE',
-      }).then(handleResponse('删除失败')),
+      fetch(
+        `/api/inventory/counts/${countId}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+        })
+      ).then(handleResponse('删除失败')),
     onSuccess: () => {
       toast({ title: '删除成功', description: '盘点计划已成功删除' });
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除盘点计划后立即看到变化

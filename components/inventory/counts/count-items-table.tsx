@@ -21,6 +21,7 @@ import {
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
+import { ProductDataUtils } from '@/lib/utils/product-data';
 
 interface CountItemsTableProps {
   items: InventoryCountItem[];
@@ -81,6 +82,7 @@ export function CountItemsTable({
             <TableHead>产品编码</TableHead>
             <TableHead>产品名称</TableHead>
             <TableHead>规格型号</TableHead>
+            <TableHead className="text-right">每件片数</TableHead>
             <TableHead>批次号</TableHead>
             <TableHead className="text-right">系统数量</TableHead>
             <TableHead className="text-right">实际数量</TableHead>
@@ -102,17 +104,33 @@ export function CountItemsTable({
                 {item.product?.code || '-'}
               </TableCell>
               <TableCell>{item.product?.name || '-'}</TableCell>
-              <TableCell>
-                {item.variant
-                  ? `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim() ||
-                    '-'
+              <TableCell className="whitespace-nowrap">
+                {(() => {
+                  const variantLabel =
+                    item.variant &&
+                    `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim();
+
+                  if (variantLabel) {
+                    return variantLabel;
+                  }
+
+                  // 回退到产品规格字段
+                  return ProductDataUtils.formatter.formatSpecification(
+                    item.product?.specification
+                  );
+                })()}
+              </TableCell>
+              <TableCell className="text-right">
+                {item.product?.piecesPerUnit && item.product.piecesPerUnit > 0
+                  ? `${item.product.piecesPerUnit}片/件`
                   : '-'}
               </TableCell>
               <TableCell>{item.batchNumber || '-'}</TableCell>
               <TableCell className="text-right">
                 {(() => {
                   const ppu = item.product?.piecesPerUnit ?? 0;
-                  return ppu > 0
+                  // 仅在每件片数>1时进行“约X件”的换算，避免 1 片/件 时产生误导
+                  return ppu > 1
                     ? formatPieceSummary(item.systemQuantity, ppu, {
                         fallbackUnit: '片',
                         zeroDisplay: '0片',
@@ -128,7 +146,7 @@ export function CountItemsTable({
                   )
                     return '—';
                   const ppu = item.product?.piecesPerUnit ?? 0;
-                  return ppu > 0
+                  return ppu > 1
                     ? formatPieceSummary(item.actualQuantity, ppu, {
                         fallbackUnit: '片',
                         zeroDisplay: '0片',
@@ -151,7 +169,7 @@ export function CountItemsTable({
                   const ppu = item.product?.piecesPerUnit ?? 0;
                   const abs = Math.abs(item.difference);
                   const text =
-                    ppu > 0
+                    ppu > 1
                       ? formatPieceSummary(abs, ppu, {
                           fallbackUnit: '片',
                           zeroDisplay: '0片',

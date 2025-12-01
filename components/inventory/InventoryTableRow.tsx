@@ -198,8 +198,9 @@ function InventoryRowView({
 }: InventoryRowViewProps) {
   return (
     <TableRow
-      className={`even:bg-muted/20 text-xs ${className || ''}`}
+      className={`even:bg-muted/20 cursor-pointer text-xs hover:bg-[hsl(var(--color-primary-light))] ${className || ''}`}
       style={style}
+      onDoubleClick={onAdjust}
     >
       <TableCell className="font-medium text-[hsl(var(--color-primary))]">
         {item.product?.code ? <CopyableText text={item.product.code} /> : '-'}
@@ -220,27 +221,39 @@ function InventoryRowView({
           <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
         )}
       </TableCell>
+      <TableCell className="text-right font-medium tabular-nums">
+        {item.weight ? (
+          <>
+            {item.weight.toFixed(2)}
+            <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
+              kg
+            </span>
+          </>
+        ) : (
+          <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+        )}
+      </TableCell>
       <TableCell className="font-mono">
         {item.batchNumber ? <CopyableText text={item.batchNumber} /> : '-'}
       </TableCell>
-      <TableCell className="font-semibold text-[hsl(var(--color-success))]">
+      <TableCell className="text-right font-semibold text-[hsl(var(--color-success))] tabular-nums">
         {quantityDisplay}
       </TableCell>
-      <TableCell className="font-medium text-[hsl(var(--color-warning))]">
+      <TableCell className="text-right font-medium text-[hsl(var(--color-warning))] tabular-nums">
         {reservedDisplay}
       </TableCell>
-      <TableCell className="font-medium text-[hsl(var(--color-primary))]">
+      <TableCell className="text-right font-medium text-[hsl(var(--color-primary))] tabular-nums">
         {availableDisplay}
       </TableCell>
       {/* 成本信息（仅财务权限可见） */}
       {hasFinancePermission && (
         <>
           {/* 单位成本 */}
-          <TableCell className="text-right font-medium">
+          <TableCell className="text-right font-medium tabular-nums">
             {item.unitCost ? formatCurrency(item.unitCost) : '-'}
           </TableCell>
           {/* 库存总成本 */}
-          <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))]">
+          <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))] tabular-nums">
             {item.unitCost
               ? formatCurrency(item.quantity * item.unitCost)
               : '-'}
