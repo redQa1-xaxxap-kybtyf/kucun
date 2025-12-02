@@ -14,6 +14,7 @@ import {
   generatePayableNumber,
   generatePaymentNumber,
 } from '@/lib/utils/payment-number-generator';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 
 /**
  * 状态流转规则
@@ -476,6 +477,55 @@ export async function updateFactoryShipmentStatus(
       console.log(`[PERF] 应收账款处理完成, 耗时: ${Date.now() - startTime}ms`);
     }
 
+    // 记录厂家直发订单的往来账(应收), 保证伙伴账本与利润表口径一致
+    if (
+      order.customerId &&
+      (finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED ||
+        finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED) &&
+      typeof order.receivableAmount === 'number' &&
+      order.receivableAmount > 0
+    ) {
+      try {
+        await recordPartnerTransaction({
+          partnerId: order.customerId,
+          partnerRole: 'customer',
+          entityType: 'customer',
+          transactionType: 'sale',
+          amount: order.receivableAmount,
+          referenceId: order.id,
+          referenceNumber: order.orderNumber,
+          description: `厂家直发订单 ${order.orderNumber} 确认应收`,
+          occurredAt:
+            data.shipmentDate ??
+            order.shipmentDate ??
+            data.arrivalDate ??
+            order.arrivalDate ??
+            new Date(),
+          metadata: {
+            source: 'factory_shipment_order',
+            status: finalStatus,
+          },
+        });
+      } catch (error) {
+        logger.error(
+          'factory-shipment-status',
+          '记录厂家直发往来账失败',
+          error,
+          {
+            orderId,
+            orderNumber: order.orderNumber,
+            customerId: order.customerId,
+          }
+        );
+        // 往来账记录失败视为严重问题, 回滚本次状态更新以避免账实不一致
+        throw new Error(
+          `记录厂家直发往来账失败: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`
+        );
+      }
+    }
+
     const roundCurrency = (value: number): number =>
       Math.round((value + Number.EPSILON) * 100) / 100;
 
@@ -528,15 +578,9 @@ export async function updateFactoryShipmentStatus(
               (sum, [, amount]) => sum + Math.max(0, amount),
               0
             );
-            const orderCostAmount =
-              typeof order.costAmount === 'number' && order.costAmount > 0
-                ? order.costAmount
-                : undefined;
-            const baseCost = roundCurrency(
-              orderCostAmount !== undefined
-                ? orderCostAmount
-                : supplierTotalsSum
-            );
+
+            // 始终使用供应商明细成本之和作为应付分配基数，避免被订单级 costAmount 人为“打折”
+            const baseCost = roundCurrency(supplierTotalsSum);
 
             logger.info('factory-shipment-status', '应付账款成本计算完成', {
               supplierCount: supplierEntries.length,
