@@ -4,7 +4,7 @@
 import { type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { resolveParams } from '@/lib/api/middleware';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import {
   errorResponse,
   successResponse,
@@ -35,7 +35,7 @@ const addCountItemsSchema = z.object({
  * 权限：需要 inventory:manage 权限
  */
 export const POST = withAuth(
-  async (request: NextRequest, context) => {
+  withErrorHandling(async (request: NextRequest, context) => {
     // 解析路径参数
     const { id } = await resolveParams<CountParams>(
       context.params as Promise<CountParams> | CountParams | undefined
@@ -68,6 +68,6 @@ export const POST = withAuth(
     const result = await addCountItems(id, items);
 
     return successResponse(result);
-  },
+  }),
   { permissions: ['inventory:manage'] }
 );
