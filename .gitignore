@@ -131,6 +131,7 @@ patch.diff
 playwright-report/data/
 deployment-package/
 kucun-deployment-package.tar.gz
+deployment-output/
 
 # 临时脚本和补丁
 temp-*.py
