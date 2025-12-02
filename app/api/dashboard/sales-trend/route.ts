@@ -89,13 +89,14 @@ export const GET = withAuth(async (request: NextRequest) => {
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([date, value]) => ({ date, value }));
 
-    const emptySeries: ChartDataPoint[] = [];
-
     const data: SalesTrendData = {
       daily,
-      weekly: emptySeries,
-      monthly: emptySeries,
-      yearly: emptySeries,
+      // 当前版本前端只使用 weekly/monthly/yearly 三个维度展示折线图，
+      // 这里先复用按日聚合的数据，避免图表为空。
+      // 后续如需更精细的按周/月/年聚合，可在此基础上继续扩展。
+      weekly: daily,
+      monthly: daily,
+      yearly: daily,
     };
 
     return NextResponse.json({

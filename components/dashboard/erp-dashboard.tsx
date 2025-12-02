@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 
 import { DashboardTodoBar } from '@/components/dashboard/dashboard-todo-bar';
 import { DashboardTrendChart } from '@/components/dashboard/dashboard-trend-chart';
+import { ProductRanking } from '@/components/dashboard/product-ranking';
 import { StatCardsGrid } from '@/components/dashboard/stat-cards-enhanced';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,11 +16,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useProductRanking } from '@/lib/api/dashboard';
 import { useErpDashboardData } from '@/lib/hooks/useDashboardData';
 import type {
   DashboardData,
   DashboardFactoryShipmentSummary,
   DashboardSalesOrderSummary,
+  TimeRange,
 } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
@@ -68,6 +71,12 @@ export function ERPDashboard({
     initialOrders,
   });
 
+  // 获取产品排名数据
+  const {
+    data: productRankingData,
+    isLoading: isLoadingRanking,
+  } = useProductRanking(selectedPeriod as TimeRange, 10);
+
   if (!dashboardData) {
     return (
       <div className="bg-card rounded border">
@@ -113,6 +122,13 @@ export function ERPDashboard({
 
         {/* 销售趋势图 */}
         {salesTrend && <DashboardTrendChart data={salesTrend} />}
+
+        {/* 产品销售排行 */}
+        <ProductRanking
+          warehouse={productRankingData?.warehouse || []}
+          factory={productRankingData?.factory || []}
+          loading={isLoadingRanking}
+        />
       </div>
     </div>
   );

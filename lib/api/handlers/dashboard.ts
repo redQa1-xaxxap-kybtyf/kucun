@@ -326,9 +326,96 @@ export async function getInventoryTrend(_timeRange: TimeRange = '7d') {
 /**
  * 获取产品排名
  */
-export async function getProductRanking(_timeRange: TimeRange = '7d') {
-  // 简化实现，返回模拟数据
-  return [];
+export async function getProductRanking(
+  timeRange: TimeRange = '7d',
+  limit = 10
+) {
+  const now = new Date();
+  const startDate = getStartDate(now, timeRange);
+
+  // 并行获取仓库发货和厂家发货的产品销售数据
+  const [warehouseSales, factorySales] = await Promise.all([
+    // 仓库发货产品销售统计
+    prisma.$queryRaw<
+      Array<{
+        productId: string;
+        productName: string;
+        productCode: string;
+        totalQuantity: number;
+        totalAmount: number;
+        orderCount: number;
+      }>
+    >`
+      SELECT 
+        p.id as productId,
+        p.name as productName,
+        p.product_code as productCode,
+        SUM(soi.quantity) as totalQuantity,
+        SUM(soi.subtotal) as totalAmount,
+        COUNT(DISTINCT so.id) as orderCount
+      FROM sales_order_items soi
+      INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+      INNER JOIN products p ON soi.product_id = p.id
+      WHERE so.created_at >= ${startDate}
+        AND so.status IN ('confirmed', 'shipped', 'delivered')
+        AND soi.product_id IS NOT NULL
+      GROUP BY p.id, p.name, p.product_code
+      ORDER BY totalAmount DESC
+      LIMIT ${limit}
+    `,
+
+    // 厂家发货产品销售统计
+    prisma.$queryRaw<
+      Array<{
+        productId: string;
+        productName: string;
+        productCode: string;
+        totalQuantity: number;
+        totalAmount: number;
+        orderCount: number;
+      }>
+    >`
+      SELECT 
+        p.id as productId,
+        p.name as productName,
+        p.product_code as productCode,
+        SUM(fsoi.quantity) as totalQuantity,
+        SUM(fsoi.total_price) as totalAmount,
+        COUNT(DISTINCT fso.id) as orderCount
+      FROM factory_shipment_order_items fsoi
+      INNER JOIN factory_shipment_orders fso ON fsoi.factory_shipment_order_id = fso.id
+      INNER JOIN products p ON fsoi.product_id = p.id
+      WHERE fso.created_at >= ${startDate}
+        AND fso.status IN ('confirmed', 'shipped', 'delivered', 'completed')
+        AND fsoi.product_id IS NOT NULL
+      GROUP BY p.id, p.name, p.product_code
+      ORDER BY totalAmount DESC
+      LIMIT ${limit}
+    `,
+  ]);
+
+  return {
+    warehouse: warehouseSales.map((item, index) => ({
+      rank: index + 1,
+      productId: item.productId,
+      productName: item.productName,
+      productCode: item.productCode,
+      totalQuantity: Number(item.totalQuantity),
+      totalAmount: Number(item.totalAmount),
+      orderCount: Number(item.orderCount),
+      source: 'warehouse' as const,
+    })),
+    factory: factorySales.map((item, index) => ({
+      rank: index + 1,
+      productId: item.productId,
+      productName: item.productName,
+      productCode: item.productCode,
+      totalQuantity: Number(item.totalQuantity),
+      totalAmount: Number(item.totalAmount),
+      orderCount: Number(item.orderCount),
+      source: 'factory' as const,
+    })),
+  };
 }
 
 /**

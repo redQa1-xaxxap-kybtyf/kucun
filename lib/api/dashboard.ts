@@ -163,10 +163,11 @@ export const dashboardApi = {
 
   // 获取产品销售排行
   getProductRanking: async (
-    timeRange: TimeRange
-  ): Promise<ProductSalesRanking[]> => {
+    timeRange: TimeRange,
+    limit = 10
+  ): Promise<{ warehouse: ProductSalesRanking[]; factory: ProductSalesRanking[] }> => {
     const response = await fetch(
-      `${API_BASE}/product-ranking?timeRange=${timeRange}`
+      `${API_BASE}/product-ranking?timeRange=${timeRange}&limit=${limit}`
     );
     if (!response.ok) {
       throw new Error(`获取产品排行失败: ${response.statusText}`);
@@ -305,10 +306,10 @@ export const useInventoryTrend = (timeRange: TimeRange) =>
     staleTime: dashboardConfig.staleTime * 2,
   });
 
-export const useProductRanking = (timeRange: TimeRange) =>
+export const useProductRanking = (timeRange: TimeRange, limit = 10) =>
   useQuery({
-    queryKey: dashboardQueryKeys.productRanking(timeRange),
-    queryFn: () => dashboardApi.getProductRanking(timeRange),
+    queryKey: [...dashboardQueryKeys.productRanking(timeRange), limit],
+    queryFn: () => dashboardApi.getProductRanking(timeRange, limit),
     staleTime: dashboardConfig.staleTime * 3, // 排名数据可以缓存更久
   });
 
