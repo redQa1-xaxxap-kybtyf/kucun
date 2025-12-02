@@ -21,6 +21,7 @@ import { OrderItemsTable } from './components/OrderItemsTable';
 import { OrderReconciliationSummaryCard } from './components/OrderReconciliationSummaryCard';
 import { PaymentsCard } from './components/PaymentsCard';
 import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
+import { PrepaymentUsageCard } from './components/PrepaymentUsageCard';
 import { SalesOrderPrintTemplate } from './components/SalesOrderPrintTemplate';
 import { TransferModeInfoCard } from './components/TransferModeInfoCard';
 import type { SalesOrderDetail } from './components/types';
@@ -225,6 +226,7 @@ export default function SalesOrderDetailPage() {
           </div>
           <div className="space-y-4">
             <PaymentsCard order={order} />
+            <PrepaymentUsageCard order={order} />
             <OperationHistoryCard order={order} userName={userName} />
           </div>
         </div>

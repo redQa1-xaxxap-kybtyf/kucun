@@ -126,8 +126,32 @@ export async function handleApiError(
   response: Response,
   defaultMessage: string
 ): Promise<never> {
-  const error = await response.json().catch(() => ({}));
-  throw new Error(error.error || defaultMessage);
+  const error = (await response.json().catch(() => ({}))) as {
+    error?: unknown;
+    message?: unknown;
+  };
+
+  let message: string | undefined;
+
+  // 兼容 { success: false, error: 'xxx' }
+  if (typeof error.error === 'string' && error.error) {
+    message = error.error;
+  }
+
+  // 兼容 { success: false, error: { message: 'xxx' } }
+  if (!message && error.error && typeof error.error === 'object') {
+    const nested = error.error as { message?: unknown };
+    if (typeof nested.message === 'string' && nested.message) {
+      message = nested.message;
+    }
+  }
+
+  // 兼容 { message: 'xxx' }
+  if (!message && typeof error.message === 'string' && error.message) {
+    message = error.message;
+  }
+
+  throw new Error(message || defaultMessage);
 }
 
 /**

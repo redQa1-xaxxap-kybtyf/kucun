@@ -95,4 +95,15 @@ export interface SalesOrderDetail {
     createdAt: string;
     refundAmount?: number;
   }>;
+  prepaymentUsages?: Array<{
+    id: string;
+    paymentRecordId: string;
+    paymentNumber: string;
+    paymentMethod: string;
+    paymentDate: string;
+    paymentStatus: string;
+    appliedAmount: number;
+    createdAt: string;
+  }>;
+  prepaymentTotalApplied?: number;
 }
