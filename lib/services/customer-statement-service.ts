@@ -135,6 +135,20 @@ export async function getCustomerStatements(
     _count: { id: true },
   });
 
+  // ✅ 批量聚合查询：厂家直发订单(按客户汇总应收金额)
+  const factoryAggregates = await prisma.factoryShipmentOrder.groupBy({
+    by: ['customerId'],
+    where: {
+      customerId: { in: customerIds },
+      status: { notIn: ['draft', 'cancelled'] },
+      receivableAmount: { gt: 0 },
+      ...(hasDateFilter && { shipmentDate: dateFilter }),
+    },
+    _sum: { receivableAmount: true },
+    _max: { shipmentDate: true },
+    _count: { id: true },
+  });
+
   // ✅ 批量聚合查询：退货订单
   const returnAggregates = await prisma.returnOrder.groupBy({
     by: ['customerId'],
@@ -183,6 +197,9 @@ export async function getCustomerStatements(
   const statementsWithBalance = customers.map(customer => {
     // 从聚合结果中获取数据
     const salesData = salesAggregates.find(s => s.customerId === customer.id);
+    const factoryData = factoryAggregates.find(
+      f => f.customerId === customer.id
+    );
     const returnData = returnAggregates.find(r => r.customerId === customer.id);
     const paymentData = paymentAggregates.find(
       p => p.customerId === customer.id
@@ -192,7 +209,11 @@ export async function getCustomerStatements(
     );
 
     // 计算汇总数据
-    const salesAmount = Number(salesData?._sum.totalAmount ?? 0);
+    const salesAmountFromOrders = Number(salesData?._sum.totalAmount ?? 0);
+    const salesAmountFromFactory = Number(
+      factoryData?._sum.receivableAmount ?? 0
+    );
+    const salesAmount = salesAmountFromOrders + salesAmountFromFactory;
     const salesReturnAmount = Number(returnData?._sum.refundAmount ?? 0);
     const paymentReceived = Number(paymentData?._sum.paymentAmount ?? 0);
     const prepaymentReceived = Number(paymentData?._sum.appliedAmount ?? 0);
@@ -224,6 +245,7 @@ export async function getCustomerStatements(
 
     const lastTransactionDate = [
       salesData?._max.createdAt,
+      factoryData?._max.shipmentDate,
       returnData?._max.createdAt,
       paymentData?._max.paymentDate,
       lastRefundDate,
@@ -239,6 +261,7 @@ export async function getCustomerStatements(
 
     const transactionCount =
       (salesData?._count.id ?? 0) +
+      (factoryData?._count.id ?? 0) +
       (returnData?._count.id ?? 0) +
       (paymentData?._count.id ?? 0) +
       refundCount;
@@ -561,10 +584,28 @@ export async function calculateCustomerStatementSummary(
     select: { totalAmount: true },
   });
 
-  const salesAmount = salesOrders.reduce(
+  const salesAmountFromOrders = salesOrders.reduce(
     (sum, order) => sum + Number(order.totalAmount),
     0
   );
+
+  // 1.1 查询厂家直发订单(应收) - 视为与销售订单同等口径的应收销售
+  const factoryOrders = await prisma.factoryShipmentOrder.findMany({
+    where: {
+      customerId,
+      status: { notIn: ['draft', 'cancelled'] },
+      receivableAmount: { gt: 0 },
+      ...(Object.keys(dateFilter).length > 0 && { shipmentDate: dateFilter }),
+    },
+    select: { receivableAmount: true },
+  });
+
+  const salesAmountFromFactory = factoryOrders.reduce(
+    (sum, order) => sum + Number(order.receivableAmount ?? 0),
+    0
+  );
+
+  const salesAmount = salesAmountFromOrders + salesAmountFromFactory;
 
   // 2. 查询销售退货(冲减应收) - 只包含有效状态的订单用于计算余额
   // 注意：不包含已取消(cancelled)和已拒绝(rejected)的订单
@@ -772,6 +813,43 @@ async function getCustomerTransactions(
       referenceId: order.id,
       description: `销售订单 ${order.orderNumber}`,
       debitAmount: Number(order.totalAmount),
+      creditAmount: 0,
+      status: order.status,
+    });
+  }
+
+  // 1.1 获取厂家直发订单 - 视为同样的“销售订单”, 使用应收金额作为记账金额
+  const factoryOrders = await prisma.factoryShipmentOrder.findMany({
+    where: {
+      customerId,
+      status: { notIn: ['draft', 'cancelled'] },
+      receivableAmount: { gt: 0 },
+      shipmentDate: dateFilter,
+    },
+    select: {
+      id: true,
+      orderNumber: true,
+      receivableAmount: true,
+      shipmentDate: true,
+      status: true,
+    },
+    orderBy: { shipmentDate: 'asc' },
+  });
+
+  for (const order of factoryOrders) {
+    const shipmentDate =
+      order.shipmentDate instanceof Date
+        ? order.shipmentDate
+        : new Date(order.shipmentDate as unknown as string);
+
+    transactionEntries.push({
+      id: order.id,
+      transactionType: 'sales_order',
+      transactionDate: shipmentDate.toISOString(),
+      referenceNumber: order.orderNumber,
+      referenceId: order.id,
+      description: `厂家直发 ${order.orderNumber}`,
+      debitAmount: Number(order.receivableAmount ?? 0),
       creditAmount: 0,
       status: order.status,
     });
