@@ -133,6 +133,9 @@ deployment-package/
 kucun-deployment-package.tar.gz
 deployment-output/
 
+# 本地部署包解压目录（仅用于上传，不参与版本控制）
+bushu/
+
 # 临时脚本和补丁
 temp-*.py
 temp_*.diff
