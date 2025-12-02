@@ -29,9 +29,11 @@ interface PaymentRecord {
   paymentAmount: number;
   actualPaymentAmount: number;
   roundingAmount: number;
+  appliedAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
+  paymentType: string;
   remarks?: string;
   receiptNumber?: string;
   bankInfo?: string;
@@ -41,7 +43,7 @@ interface PaymentRecord {
     phone?: string;
     address?: string;
   };
-  salesOrder: {
+  salesOrder?: {
     id: string;
     orderNumber: string;
     totalAmount: number;
@@ -49,11 +51,20 @@ interface PaymentRecord {
     remainingAmount: number;
     status: string;
     createdAt: string;
-  };
+  } | null;
   user: {
     id: string;
     name: string;
   };
+  prepaymentUsages?: Array<{
+    id: string;
+    salesOrderId?: string;
+    orderNumber?: string;
+    orderStatus?: string;
+    orderCreatedAt?: string;
+    appliedAmount: number;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -345,78 +356,99 @@ export function PaymentDetailClient({
 
         {/* 关联信息 - 两列布局 */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {/* 关联订单信息 */}
-          <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-md">
-            <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] pb-2.5">
-              <CardTitle className="flex items-center gap-1.5 text-sm">
-                <Package className="h-4 w-4 text-blue-600" />
-                关联订单
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2.5 p-3">
-              <div className="rounded-lg border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-3 shadow-sm">
-                <div className="mb-2.5 flex items-center justify-between">
-                  <div>
-                    <p className="mb-0.5 text-xs font-medium text-gray-500">
-                      订单号
-                    </p>
-                    <p className="font-mono text-sm font-semibold text-blue-600">
-                      {payment.salesOrder.orderNumber}
+          {/* 关联订单信息 / 预收款说明 */}
+          {payment.salesOrder ? (
+            <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-md">
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] pb-2.5">
+                <CardTitle className="flex items-center gap-1.5 text-sm">
+                  <Package className="h-4 w-4 text-blue-600" />
+                  关联订单
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5 p-3">
+                <div className="rounded-lg border border-blue-100 bg-gradient-to-br from-blue-50 to-white p-3 shadow-sm">
+                  <div className="mb-2.5 flex items-center justify-between">
+                    <div>
+                      <p className="mb-0.5 text-xs font-medium text-gray-500">
+                        订单号
+                      </p>
+                      <p className="font-mono text-sm font-semibold text-blue-600">
+                        {payment.salesOrder.orderNumber}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      asChild
+                      className="h-7 border-blue-200 text-xs hover:bg-blue-50"
+                    >
+                      <Link href={`/sales-orders/${payment.salesOrder.id}`}>
+                        查看详情
+                      </Link>
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="rounded-lg bg-white p-2.5 shadow-sm">
+                      <p className="mb-0.5 text-xs text-gray-500">订单金额</p>
+                      <p className="text-base font-bold text-blue-600">
+                        {formatCurrency(payment.salesOrder.totalAmount)}
+                      </p>
+                    </div>
+                    <div className="rounded-lg bg-white p-2.5 shadow-sm">
+                      <p className="mb-0.5 text-xs text-gray-500">已收金额</p>
+                      <p className="text-base font-bold text-green-600">
+                        {formatCurrency(payment.salesOrder.paidAmount)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2.5 rounded-lg border-t border-blue-100 bg-white/50 pt-2.5">
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <p className="text-xs font-medium text-gray-500">
+                        待收金额
+                      </p>
+                      <p className="text-xs font-medium">
+                        {payment.salesOrder.remainingAmount <= 0 ? (
+                          <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-700">
+                            ✓ 已收款
+                          </span>
+                        ) : payment.salesOrder.paidAmount > 0 ? (
+                          <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700">
+                            部分收款
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-orange-100 px-2 py-0.5 text-orange-700">
+                            未收款
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <p className="text-lg font-bold text-orange-600">
+                      {formatCurrency(payment.salesOrder.remainingAmount)}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    asChild
-                    className="h-7 border-blue-200 text-xs hover:bg-blue-50"
-                  >
-                    <Link href={`/sales-orders/${payment.salesOrder.id}`}>
-                      查看详情
-                    </Link>
-                  </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="rounded-lg bg-white p-2.5 shadow-sm">
-                    <p className="mb-0.5 text-xs text-gray-500">订单金额</p>
-                    <p className="text-base font-bold text-blue-600">
-                      {formatCurrency(payment.salesOrder.totalAmount)}
-                    </p>
-                  </div>
-                  <div className="rounded-lg bg-white p-2.5 shadow-sm">
-                    <p className="mb-0.5 text-xs text-gray-500">已收金额</p>
-                    <p className="text-base font-bold text-green-600">
-                      {formatCurrency(payment.salesOrder.paidAmount)}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2.5 rounded-lg border-t border-blue-100 bg-white/50 pt-2.5">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <p className="text-xs font-medium text-gray-500">
-                      待收金额
-                    </p>
-                    <p className="text-xs font-medium">
-                      {payment.salesOrder.remainingAmount <= 0 ? (
-                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-green-700">
-                          ✓ 已收款
-                        </span>
-                      ) : payment.salesOrder.paidAmount > 0 ? (
-                        <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-yellow-700">
-                          部分收款
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-orange-100 px-2 py-0.5 text-orange-700">
-                          未收款
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <p className="text-lg font-bold text-orange-600">
-                    {formatCurrency(payment.salesOrder.remainingAmount)}
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-md">
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] pb-2.5">
+                <CardTitle className="flex items-center gap-1.5 text-sm">
+                  <Package className="h-4 w-4 text-amber-600" />
+                  预收款信息
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2.5 p-3">
+                <div className="rounded-lg border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-3 shadow-sm">
+                  <p className="text-sm text-gray-700">
+                    该收款记录未直接关联销售订单，通常为客户预收款（定金）。
+                  </p>
+                  <p className="mt-2 text-xs text-amber-700">
+                    如下方存在“预收款使用明细”，表示该预收款已被一部分销售订单冲抵。
                   </p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {/* 客户信息 */}
           <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-md">
@@ -468,6 +500,86 @@ export function PaymentDetailClient({
             </CardContent>
           </Card>
         </div>
+
+        {/* 预收款使用明细（仅预收款类型展示） */}
+        {payment.paymentType === 'prepayment' &&
+          (payment.prepaymentUsages?.length ?? 0) > 0 && (
+            <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-md">
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] pb-2.5">
+                <CardTitle className="flex items-center gap-1.5 text-sm">
+                  <Package className="h-4 w-4 text-amber-600" />
+                  预收款使用明细
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 p-3">
+                <div className="rounded-lg bg-amber-50/80 p-3 text-xs text-amber-800 sm:text-sm">
+                  本笔预收款总额{' '}
+                  <span className="font-semibold">
+                    {formatCurrency(payment.paymentAmount)}
+                  </span>
+                  ，已冲抵{' '}
+                  <span className="font-semibold">
+                    {formatCurrency(payment.appliedAmount)}
+                  </span>
+                  ，剩余可用{' '}
+                  <span className="font-semibold">
+                    {formatCurrency(
+                      payment.paymentAmount - payment.appliedAmount
+                    )}
+                  </span>
+                  。
+                </div>
+
+                <div className="space-y-3">
+                  {payment.prepaymentUsages?.map(usage => (
+                    <div
+                      key={usage.id}
+                      className="border-border/60 bg-card/40 flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-gray-800">
+                          订单{' '}
+                          {usage.orderNumber ? (
+                            <Link
+                              href={`/sales-orders/${usage.salesOrderId}`}
+                              className="font-mono text-blue-600 hover:underline"
+                            >
+                              {usage.orderNumber}
+                            </Link>
+                          ) : (
+                            <span className="font-mono text-gray-500">
+                              未知订单
+                            </span>
+                          )}
+                        </p>
+                        {usage.orderStatus && (
+                          <p className="text-xs text-gray-500">
+                            订单状态：{usage.orderStatus}
+                          </p>
+                        )}
+                        {usage.orderCreatedAt && (
+                          <p className="text-xs text-gray-500">
+                            订单创建时间：{formatDateTime(usage.orderCreatedAt)}
+                          </p>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          冲抵记录创建时间：{formatDateTime(usage.createdAt)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">
+                          冲抵金额
+                        </p>
+                        <p className="text-base font-semibold text-emerald-600">
+                          -{formatCurrency(usage.appliedAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
         {/* 备注和其他信息 */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

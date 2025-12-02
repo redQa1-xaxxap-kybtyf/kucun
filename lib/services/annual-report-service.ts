@@ -31,14 +31,19 @@ import {
 // ==================== 数据查询函数 ====================
 
 /**
- * 获取年度汇总数据
+ * 获取年度汇总数据(仅仓库销售部分)
+ *
+ * 注意:
+ * - 这里只统计 SalesOrder + 全部费用, 不包含厂家直发收入/成本
+ * - 厂家直发部分在 getAnnualFactoryShipmentProfit 中单独统计,
+ *   并在 getAnnualReport 中统一合并, 保持与盈亏分析一致
  */
 async function getAnnualSummary(year: number): Promise<AnnualSummary> {
   const { startDate, endDate } = getYearDateRange(year);
   const salesWhere = buildSalesOrderWhere(startDate, endDate);
   const expenseWhere = buildExpenseWhere(startDate, endDate);
 
-  // 聚合年度数据
+  // 聚合年度数据(仅销售订单收入/成本 + 全部费用)
   const [salesStats, expenseStats] = await Promise.all([
     prisma.salesOrder.aggregate({
       where: salesWhere,
@@ -78,6 +83,53 @@ async function getAnnualSummary(year: number): Promise<AnnualSummary> {
     totalProfit,
     profitMargin,
     orderCount,
+    averageMonthlyRevenue,
+  };
+}
+
+/**
+ * 将厂家直发年度利润合并到年度汇总中
+ *
+ * 逻辑与盈亏分析一致:
+ * - annualSummary.totalExpenses 已包含厂家费用
+ * - AnnualFactoryShipmentProfit 中:
+ *   - customerProfit = 收入 - 成本 - 厂家费用
+ *   - totalExpenses = 厂家费用
+ * - 合并时通过 + customerProfit + totalExpenses 将厂家部分还原为「收入-成本」,
+ *   避免在费用口径上重复扣减厂家费用。
+ */
+function mergeAnnualSummaryWithFactoryShipment(
+  summary: AnnualSummary,
+  factory: AnnualFactoryShipmentProfit
+): AnnualSummary {
+  const factoryRevenue = factory.totalRevenue || 0;
+  const factoryCost = factory.selfCostAmount || 0;
+  const factoryExpenses = factory.totalExpenses || 0;
+  const factoryNetProfit = factory.customerProfit || 0;
+
+  // 合并后的总收入 = 仓库销售 + 厂家直发应收
+  const totalRevenue = summary.totalRevenue + factoryRevenue;
+
+  // 合并后的总成本 = 仓库销售成本 + 厂家直发成本
+  const totalCost = summary.totalCost + factoryCost;
+
+  // 费用总额保持不变(已包含厂家费用)
+  const totalExpenses = summary.totalExpenses;
+
+  // 合并后的总利润 = 原利润 + (厂家收入 - 厂家成本)
+  // = 原利润 + customerProfit + totalExpenses(factory)
+  const totalProfit = summary.totalProfit + factoryNetProfit + factoryExpenses;
+
+  const profitMargin = calculateProfitMargin(totalProfit, totalRevenue);
+  const averageMonthlyRevenue = totalRevenue / 12;
+
+  return {
+    totalRevenue,
+    totalExpenses,
+    totalCost,
+    totalProfit,
+    profitMargin,
+    orderCount: summary.orderCount + factory.totalOrders,
     averageMonthlyRevenue,
   };
 }
@@ -354,7 +406,13 @@ export async function getAnnualReport(
     getAnnualFactoryShipmentProfit(year),
   ]);
 
-  // 计算库存周转率
+  // 合并仓库销售 + 厂家直发后的年度汇总(用于报表 summary 展示)
+  const combinedSummary = mergeAnnualSummaryWithFactoryShipment(
+    summary,
+    factoryShipmentProfit
+  );
+
+  // 计算库存周转率(只基于仓库销售成本, 厂家直发不占用库存)
   const inventoryTurnover = await getAnnualInventoryTurnover(
     year,
     summary.totalCost
@@ -366,18 +424,21 @@ export async function getAnnualReport(
   // 生成预警
   const alerts = [
     ...generateProfitAlerts(
-      summary.totalProfit,
-      summary.profitMargin,
-      summary.totalRevenue
+      combinedSummary.totalProfit,
+      combinedSummary.profitMargin,
+      combinedSummary.totalRevenue
     ),
-    ...generateExpenseAlerts(summary.totalExpenses, summary.totalRevenue),
+    ...generateExpenseAlerts(
+      combinedSummary.totalExpenses,
+      combinedSummary.totalRevenue
+    ),
   ];
 
   // 构建基础报表
   const report: AnnualReport = {
     year,
     period,
-    summary,
+    summary: combinedSummary,
     monthlyTrend,
     quarterlyData,
     expenseDistribution,
@@ -389,16 +450,26 @@ export async function getAnnualReport(
   // 如果需要同比数据
   if (includeYearOverYear) {
     const prevYear = year - 1;
-    const prevSummary = await getAnnualSummary(prevYear);
+    const [prevSummaryCore, prevFactoryShipment] = await Promise.all([
+      getAnnualSummary(prevYear),
+      getAnnualFactoryShipmentProfit(prevYear),
+    ]);
+    const prevSummary = mergeAnnualSummaryWithFactoryShipment(
+      prevSummaryCore,
+      prevFactoryShipment
+    );
 
     report.yearOverYear = {
       revenue: calculateComparison(
-        summary.totalRevenue,
+        combinedSummary.totalRevenue,
         prevSummary.totalRevenue
       ),
-      profit: calculateComparison(summary.totalProfit, prevSummary.totalProfit),
+      profit: calculateComparison(
+        combinedSummary.totalProfit,
+        prevSummary.totalProfit
+      ),
       expenses: calculateComparison(
-        summary.totalExpenses,
+        combinedSummary.totalExpenses,
         prevSummary.totalExpenses
       ),
     };

@@ -410,6 +410,43 @@ function calculateMonthlyProfit(
   };
 }
 
+/**
+ * 将厂家直发利润合并到月度利润中
+ *
+ * 设计与盈亏分析保持一致:
+ * - 月度费用中已经包含了厂家直发费用
+ * - 厂家直发利润块包含:
+ *   - customerProfit = 收入 - 成本 - 厂家费用
+ *   - totalExpenses = 厂家费用
+ * - 为避免厂家费用被扣两次, 需要加回一次厂家费用:
+ *   factoryContribution = customerProfit + totalExpenses = 收入 - 成本
+ */
+function mergeFactoryShipmentIntoMonthlyProfit(
+  baseProfit: MonthlyProfit,
+  revenue: MonthlyRevenue,
+  factoryShipmentProfit: MonthlyFactoryShipmentProfit
+): MonthlyProfit {
+  const factoryNetProfit = factoryShipmentProfit.customerProfit || 0;
+  const factoryExpenses = factoryShipmentProfit.totalExpenses || 0;
+  const factoryContribution = factoryNetProfit + factoryExpenses;
+
+  // 合并后的收入: 仓库销售 + 厂家直发应收
+  const totalRevenue =
+    revenue.salesRevenue + (factoryShipmentProfit.totalRevenue || 0);
+
+  const grossProfit = baseProfit.grossProfit + factoryContribution;
+  const operatingProfit = baseProfit.operatingProfit + factoryContribution;
+  const netProfit = baseProfit.netProfit + factoryContribution;
+
+  return {
+    grossProfit,
+    operatingProfit,
+    netProfit,
+    grossProfitMargin: calculateProfitMargin(grossProfit, totalRevenue),
+    profitMargin: calculateProfitMargin(netProfit, totalRevenue),
+  };
+}
+
 // ==================== 主服务函数 ====================
 
 /**
@@ -430,8 +467,13 @@ export async function getMonthlyReport(
       getMonthlyFactoryShipmentProfit(year, month),
     ]);
 
-  // 计算利润
-  const profit = calculateMonthlyProfit(revenue, costs, expenses);
+  // 先计算主营业务的基础利润(仅仓库销售), 再合并厂家直发利润
+  const baseProfit = calculateMonthlyProfit(revenue, costs, expenses);
+  const profit = mergeFactoryShipmentIntoMonthlyProfit(
+    baseProfit,
+    revenue,
+    factoryShipmentProfit
+  );
 
   // 计算库存周转率
   const inventoryTurnover = await getInventoryTurnover(
@@ -469,16 +511,23 @@ export async function getMonthlyReport(
   // 如果需要环比数据
   if (includeComparison) {
     const { year: prevYear, month: prevMonth } = getPreviousMonth(year, month);
-    const [prevRevenue, prevExpenses, prevCosts] = await Promise.all([
+    const [prevRevenue, prevExpenses, prevCosts, prevFactoryShipmentProfit] =
+      await Promise.all([
       getMonthlyRevenue(prevYear, prevMonth),
       getMonthlyExpenses(prevYear, prevMonth),
       getMonthlyCosts(prevYear, prevMonth),
+      getMonthlyFactoryShipmentProfit(prevYear, prevMonth),
     ]);
 
-    const prevProfit = calculateMonthlyProfit(
+    const prevBaseProfit = calculateMonthlyProfit(
       prevRevenue,
       prevCosts,
       prevExpenses
+    );
+    const prevProfit = mergeFactoryShipmentIntoMonthlyProfit(
+      prevBaseProfit,
+      prevRevenue,
+      prevFactoryShipmentProfit
     );
 
     report.comparison = {

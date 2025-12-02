@@ -110,6 +110,13 @@ export function buildExpenseWhere(
       gte: startDate,
       lte: endDate,
     },
+    // 费用口径说明：
+    // - 仅统计直接计入当期损益的费用
+    // - 排除采购订单费用（relatedType = 'purchase_order'），这些费用已通过
+    //   FIFO / 采购成本分摊计入库存与销售成本，避免在利润表中重复扣减
+    relatedType: {
+      not: 'purchase_order',
+    },
   };
 }
 

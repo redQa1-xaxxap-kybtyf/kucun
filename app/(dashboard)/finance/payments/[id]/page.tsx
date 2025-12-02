@@ -33,9 +33,11 @@ interface PaymentRecord {
   paymentAmount: number;
   actualPaymentAmount: number;
   roundingAmount: number;
+  appliedAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
+  paymentType: string;
   remarks?: string;
   receiptNumber?: string;
   bankInfo?: string;
@@ -46,7 +48,7 @@ interface PaymentRecord {
     email?: string;
     address?: string;
   };
-  salesOrder: {
+  salesOrder?: {
     id: string;
     orderNumber: string;
     totalAmount: number;
@@ -54,11 +56,20 @@ interface PaymentRecord {
     remainingAmount: number;
     status: string;
     createdAt: string;
-  };
+  } | null;
   user: {
     id: string;
     name: string;
   };
+  prepaymentUsages?: Array<{
+    id: string;
+    salesOrderId?: string;
+    orderNumber?: string;
+    orderStatus?: string;
+    orderCreatedAt?: string;
+    appliedAmount: number;
+    createdAt: string;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -94,30 +105,62 @@ async function getPaymentDetail(id: string): Promise<PaymentRecord | null> {
             name: true,
           },
         },
+        prepaymentUsages: {
+          include: {
+            salesOrder: {
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                createdAt: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 
-    if (!payment || !payment.customer || !payment.salesOrder || !payment.user) {
+    if (!payment || !payment.customer || !payment.user) {
       return null;
     }
 
-    // 动态计算该订单的已收款金额(所有已确认的收款记录)
-    const confirmedPayments = await prisma.paymentRecord.findMany({
-      where: {
-        salesOrderId: payment.salesOrderId,
-        status: 'confirmed',
-      },
-      select: {
-        paymentAmount: true,
-      },
-    });
+    let orderPaidAmount = 0;
+    let orderTotalAmount = 0;
+    let orderRemainingAmount = 0;
 
-    const orderPaidAmount = confirmedPayments.reduce(
-      (sum, p) => sum + Number(p.paymentAmount),
-      0
-    );
-    const orderTotalAmount = Number(payment.salesOrder.totalAmount);
-    const orderRemainingAmount = orderTotalAmount - orderPaidAmount;
+    if (payment.salesOrderId && payment.salesOrder) {
+      // 动态计算该订单的已收款金额(所有已确认的收款记录)
+      const confirmedPayments = await prisma.paymentRecord.findMany({
+        where: {
+          salesOrderId: payment.salesOrderId,
+          status: 'confirmed',
+        },
+        select: {
+          paymentAmount: true,
+        },
+      });
+
+      orderPaidAmount = confirmedPayments.reduce(
+        (sum, p) => sum + Number(p.paymentAmount),
+        0
+      );
+      orderTotalAmount = Number(payment.salesOrder.totalAmount);
+      orderRemainingAmount = orderTotalAmount - orderPaidAmount;
+    }
+
+    const prepaymentUsages =
+      payment.prepaymentUsages?.map(usage => ({
+        id: usage.id,
+        salesOrderId: usage.salesOrder?.id ?? undefined,
+        orderNumber: usage.salesOrder?.orderNumber ?? undefined,
+        orderStatus: usage.salesOrder?.status ?? undefined,
+        orderCreatedAt: usage.salesOrder?.createdAt
+          ? usage.salesOrder.createdAt.toISOString()
+          : undefined,
+        appliedAmount: Number(usage.appliedAmount ?? 0),
+        createdAt: usage.createdAt.toISOString(),
+      })) ?? [];
 
     return {
       id: payment.id,
@@ -127,9 +170,11 @@ async function getPaymentDetail(id: string): Promise<PaymentRecord | null> {
         payment.actualPaymentAmount ?? payment.paymentAmount
       ),
       roundingAmount: Number(payment.roundingAmount ?? 0),
+      appliedAmount: Number(payment.appliedAmount ?? 0),
       paymentMethod: payment.paymentMethod,
       paymentDate: payment.paymentDate.toISOString(),
       status: payment.status,
+      paymentType: payment.paymentType,
       remarks: payment.remarks ?? undefined,
       receiptNumber: payment.receiptNumber ?? undefined,
       bankInfo: payment.bankInfo ?? undefined,
@@ -140,18 +185,21 @@ async function getPaymentDetail(id: string): Promise<PaymentRecord | null> {
         address: payment.customer.address ?? undefined,
       },
       salesOrder: {
-        id: payment.salesOrder.id,
-        orderNumber: payment.salesOrder.orderNumber,
+        id: payment.salesOrder?.id ?? '',
+        orderNumber: payment.salesOrder?.orderNumber ?? '',
         totalAmount: orderTotalAmount,
         paidAmount: orderPaidAmount,
         remainingAmount: orderRemainingAmount,
-        status: payment.salesOrder.status,
-        createdAt: payment.salesOrder.createdAt.toISOString(),
-      },
+        status: payment.salesOrder?.status ?? '',
+        createdAt: payment.salesOrder?.createdAt
+          ? payment.salesOrder.createdAt.toISOString()
+          : '',
+      } as PaymentRecord['salesOrder'],
       user: {
         id: payment.user.id,
         name: payment.user.name,
       },
+      prepaymentUsages,
       createdAt: payment.createdAt.toISOString(),
       updatedAt: payment.updatedAt.toISOString(),
     };
