@@ -15,7 +15,7 @@ import { logger } from '@/lib/logger';
  */
 export interface ExportAuditInfo {
   /** 导出模块 */
-  module: 'receivables' | 'payables' | 'factory-shipments' | 'other';
+  module: 'receivables' | 'payables' | 'factory-shipments' | 'customer-statements' | 'other';
   /** 导出格式 */
   format: 'excel' | 'csv';
   /** 数据量 */
@@ -122,6 +122,7 @@ export class ExportAuditService {
       receivables: '应收账款',
       payables: '应付账款',
       'factory-shipments': '厂家发货',
+      'customer-statements': '客户对账单',
       other: '其他',
     };
     return moduleNames[module] || module;

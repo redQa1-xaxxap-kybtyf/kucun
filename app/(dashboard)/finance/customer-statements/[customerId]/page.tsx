@@ -20,10 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  customerStatementApi,
-  useCustomerStatementDetail,
-} from '@/lib/api/customer-statements';
+import { useCustomerStatementDetail } from '@/lib/api/customer-statements';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
   CUSTOMER_STATEMENT_TRANSACTION_TYPES,
   type CustomerStatementTransaction,
@@ -147,6 +145,8 @@ export default function CustomerStatementDetailPage() {
       ),
     []
   );
+
+  const { exportData, isExporting } = useFinanceExport();
 
   const {
     data: statementDetail,
@@ -368,17 +368,19 @@ export default function CustomerStatementDetailPage() {
   const { summary, transactions } = statementDetail;
 
   const handleExport = async () => {
+    if (!statementDetail) return;
+
     try {
-      await customerStatementApi.exportStatementToExcel(statementDetail);
-    } catch (exportError) {
-      // 简单的前端提示，避免引入全局toast依赖
-      // 可以后续接入统一的通知系统
-      // eslint-disable-next-line no-alert
-      alert(
-        exportError instanceof Error
-          ? `导出失败：${exportError.message}`
-          : '导出失败'
-      );
+      await exportData('/api/finance/customer-statements/export', {
+        format: 'excel',
+        filters: {
+          customerId: statementDetail.customerId,
+          startDate: statementDetail.periodStart,
+          endDate: statementDetail.periodEnd,
+        },
+      });
+    } catch {
+      // 错误已在 useFinanceExport 中统一处理
     }
   };
 
@@ -411,9 +413,10 @@ export default function CustomerStatementDetailPage() {
             size="sm"
             className="flex items-center gap-2"
             onClick={handleExport}
+            disabled={isExporting}
           >
             <Download className="h-4 w-4" />
-            导出本期对账单
+            {isExporting ? '导出中...' : '导出本期对账单'}
           </Button>
         </div>
       </div>
