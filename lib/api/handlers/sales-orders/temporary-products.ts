@@ -116,20 +116,18 @@ export function buildTemporaryProductDataFromOrderItem(
   supplierId: string,
   userId: string
 ): TemporaryProductData | null {
-  // 只有手动输入产品且有产品编码和产品名称时才创建临时产品记录
-  if (
-    !item.isManualProduct ||
-    !item.productCode ||
-    !item.manualProductName ||
-    item.manualProductName.trim() === ''
-  ) {
+  if (!item.isManualProduct || !item.productCode) {
     return null;
   }
+
+  // 产品名称优先使用用户填写的名称；如果为空则退回到产品编码，保证临时产品记录可用
+  const trimmedName = (item.manualProductName ?? '').trim();
+  const safeName = trimmedName || item.productCode;
 
   return {
     supplierId,
     code: item.productCode,
-    name: item.manualProductName, // 产品名称现在是必填字段
+    name: safeName,
     specification: item.manualSpecification || null,
     weight: item.manualWeight || null,
     unit: item.manualUnit || '片',

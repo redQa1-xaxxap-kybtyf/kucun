@@ -147,6 +147,17 @@ export function OrderItemsSection({
       // 使用 setTimeout 确保新行已经添加到 DOM
       setTimeout(() => {
         // 填充临时产品信息
+        // 标记为手动产品，并清空库存产品选择
+        form.setValue(`items.${newIndex}.productId`, undefined, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+        form.setValue(`items.${newIndex}.isManualProduct`, true, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+
+        // 手动产品专用字段
         form.setValue(`items.${newIndex}.manualProductName`, product.name);
         form.setValue(
           `items.${newIndex}.manualSpecification`,
@@ -155,6 +166,14 @@ export function OrderItemsSection({
         form.setValue(`items.${newIndex}.manualUnit`, product.unit);
         form.setValue(`items.${newIndex}.piecesPerUnit`, product.piecesPerUnit);
         form.setValue(`items.${newIndex}.productCode`, product.code);
+
+        // 通用显示字段（规格/单位）与手动字段保持一致，确保行内能看到信息
+        form.setValue(
+          `items.${newIndex}.specification`,
+          product.specification || ''
+        );
+        form.setValue(`items.${newIndex}.unit`, product.unit);
+
         form.setValue(`items.${newIndex}.displayUnit`, '片');
         form.setValue(`items.${newIndex}.displayQuantity`, 1);
         form.setValue(`items.${newIndex}.quantity`, 1);

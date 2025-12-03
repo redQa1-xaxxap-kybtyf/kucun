@@ -846,6 +846,17 @@ export function ERPSalesOrderForm({
   );
 
   const handleSupplierCreated = (supplier: Supplier) => {
+    // ✅ 确保新建供应商后，订单仍保持在“调货销售”模式
+    // 在正常流程里，只有 orderType === 'TRANSFER' 时才会渲染供应商选择器并允许快速新增。
+    // 这里做一次兜底：如果因为某些原因被重置为 NORMAL，则强制切回 TRANSFER，避免用户状态被悄悄改变。
+    const currentOrderType = form.getValues('orderType');
+    if (currentOrderType !== 'TRANSFER') {
+      form.setValue('orderType', 'TRANSFER', {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    }
+
     queryClient.setQueryData<SuppliersResponse | undefined>(
       suppliersQueryKey,
       (previous: SuppliersResponse | undefined) => {

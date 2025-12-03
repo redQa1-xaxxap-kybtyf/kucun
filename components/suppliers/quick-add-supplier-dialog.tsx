@@ -101,9 +101,13 @@ export function QuickAddSupplierDialog({
     },
   });
 
-  const handleSubmit = form.handleSubmit(values => {
-    createMutation.mutate(values);
-  });
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    void form.handleSubmit(values => {
+      createMutation.mutate(values);
+    })(event);
+  };
 
   const handleCancel = () => {
     form.reset(supplierCreateDefaults);

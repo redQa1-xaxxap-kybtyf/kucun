@@ -35,9 +35,15 @@ export function TemporaryProductForm({
   onCancel,
   requirements,
 }: TemporaryProductFormProps) {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    void form.handleSubmit(onSubmit)(event);
+  };
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <ProductCodeField form={form} requirements={requirements} />
         <NameField form={form} requirements={requirements} />
         <SpecificationWeightFields form={form} />
