@@ -218,7 +218,8 @@ export function withAuth(
       const user = requireAuth(request);
 
       // 2. 管理员权限检查
-      if (options.requireAdmin && user.role !== 'admin') {
+      const isAdmin = user.role === 'admin';
+      if (options.requireAdmin && !isAdmin) {
         return NextResponse.json(
           { success: false, error: '权限不足：需要管理员权限' },
           { status: 403 }
@@ -226,7 +227,8 @@ export function withAuth(
       }
 
       // 3. 权限检查（单个权限）
-      if (options.permissions) {
+      // 管理员默认拥有所有权限, 不再逐项检查
+      if (options.permissions && !isAdmin) {
         for (const permission of options.permissions) {
           if (!can(user, permission)) {
             return NextResponse.json(
@@ -238,7 +240,7 @@ export function withAuth(
       }
 
       // 4. 权限检查（任一权限）
-      if (options.anyPermissions) {
+      if (options.anyPermissions && !isAdmin) {
         const hasAnyPermission = options.anyPermissions.some(permission =>
           can(user, permission)
         );
@@ -254,7 +256,7 @@ export function withAuth(
       }
 
       // 5. 权限检查（全部权限）
-      if (options.allPermissions) {
+      if (options.allPermissions && !isAdmin) {
         const hasAllPermissions = options.allPermissions.every(permission =>
           can(user, permission)
         );

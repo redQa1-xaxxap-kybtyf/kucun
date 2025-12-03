@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import type { DashboardData, TimeRange } from '@/lib/types/dashboard';
 
 /**
@@ -333,89 +334,102 @@ export async function getProductRanking(
   const now = new Date();
   const startDate = getStartDate(now, timeRange);
 
-  // 并行获取仓库发货和厂家发货的产品销售数据
-  const [warehouseSales, factorySales] = await Promise.all([
-    // 仓库发货产品销售统计
-    prisma.$queryRaw<
-      Array<{
-        productId: string;
-        productName: string;
-        productCode: string;
-        totalQuantity: number;
-        totalAmount: number;
-        orderCount: number;
-      }>
-    >`
-      SELECT 
-        p.id as productId,
-        p.name as productName,
-        p.product_code as productCode,
-        SUM(soi.quantity) as totalQuantity,
-        SUM(soi.subtotal) as totalAmount,
-        COUNT(DISTINCT so.id) as orderCount
-      FROM sales_order_items soi
-      INNER JOIN sales_orders so ON soi.sales_order_id = so.id
-      INNER JOIN products p ON soi.product_id = p.id
-      WHERE so.created_at >= ${startDate}
-        AND so.status IN ('confirmed', 'shipped', 'delivered')
-        AND soi.product_id IS NOT NULL
-      GROUP BY p.id, p.name, p.product_code
-      ORDER BY totalAmount DESC
-      LIMIT ${limit}
-    `,
+  try {
+    // 并行获取仓库发货和厂家发货的产品销售数据
+    const [warehouseSales, factorySales] = await Promise.all([
+      // 仓库发货产品销售统计
+      prisma.$queryRaw<
+        Array<{
+          productId: string;
+          productName: string;
+          productCode: string;
+          totalQuantity: number;
+          totalAmount: number;
+          orderCount: number;
+        }>
+      >`
+        SELECT 
+          p.id as productId,
+          p.name as productName,
+          p.product_code as productCode,
+          SUM(soi.quantity) as totalQuantity,
+          SUM(soi.subtotal) as totalAmount,
+          COUNT(DISTINCT so.id) as orderCount
+        FROM sales_order_items soi
+        INNER JOIN sales_orders so ON soi.sales_order_id = so.id
+        INNER JOIN products p ON soi.product_id = p.id
+        WHERE so.created_at >= ${startDate}
+          AND so.status IN ('confirmed', 'shipped', 'delivered')
+          AND soi.product_id IS NOT NULL
+        GROUP BY p.id, p.name, p.product_code
+        ORDER BY totalAmount DESC
+        LIMIT ${limit}
+      `,
 
-    // 厂家发货产品销售统计
-    prisma.$queryRaw<
-      Array<{
-        productId: string;
-        productName: string;
-        productCode: string;
-        totalQuantity: number;
-        totalAmount: number;
-        orderCount: number;
-      }>
-    >`
-      SELECT 
-        p.id as productId,
-        p.name as productName,
-        p.product_code as productCode,
-        SUM(fsoi.quantity) as totalQuantity,
-        SUM(fsoi.total_price) as totalAmount,
-        COUNT(DISTINCT fso.id) as orderCount
-      FROM factory_shipment_order_items fsoi
-      INNER JOIN factory_shipment_orders fso ON fsoi.factory_shipment_order_id = fso.id
-      INNER JOIN products p ON fsoi.product_id = p.id
-      WHERE fso.created_at >= ${startDate}
-        AND fso.status IN ('confirmed', 'shipped', 'delivered', 'completed')
-        AND fsoi.product_id IS NOT NULL
-      GROUP BY p.id, p.name, p.product_code
-      ORDER BY totalAmount DESC
-      LIMIT ${limit}
-    `,
-  ]);
+      // 厂家发货产品销售统计
+      prisma.$queryRaw<
+        Array<{
+          productId: string;
+          productName: string;
+          productCode: string;
+          totalQuantity: number;
+          totalAmount: number;
+          orderCount: number;
+        }>
+      >`
+        SELECT 
+          p.id as productId,
+          p.name as productName,
+          p.product_code as productCode,
+          SUM(fsoi.quantity) as totalQuantity,
+          SUM(fsoi.total_price) as totalAmount,
+          COUNT(DISTINCT fso.id) as orderCount
+        FROM factory_shipment_order_items fsoi
+        INNER JOIN factory_shipment_orders fso ON fsoi.factory_shipment_order_id = fso.id
+        INNER JOIN products p ON fsoi.product_id = p.id
+        WHERE fso.created_at >= ${startDate}
+          AND fso.status IN ('confirmed', 'shipped', 'delivered', 'completed')
+          AND fsoi.product_id IS NOT NULL
+        GROUP BY p.id, p.name, p.product_code
+        ORDER BY totalAmount DESC
+        LIMIT ${limit}
+      `,
+    ]);
 
-  return {
-    warehouse: warehouseSales.map((item, index) => ({
-      rank: index + 1,
-      productId: item.productId,
-      productName: item.productName,
-      productCode: item.productCode,
-      totalQuantity: Number(item.totalQuantity),
-      totalAmount: Number(item.totalAmount),
-      orderCount: Number(item.orderCount),
-      source: 'warehouse' as const,
-    })),
-    factory: factorySales.map((item, index) => ({
-      rank: index + 1,
-      productId: item.productId,
-      productName: item.productName,
-      productCode: item.productCode,
-      totalQuantity: Number(item.totalQuantity),
-      totalAmount: Number(item.totalAmount),
-      orderCount: Number(item.orderCount),
-      source: 'factory' as const,
-    })),
-  };
+    return {
+      warehouse: warehouseSales.map((item, index) => ({
+        rank: index + 1,
+        productId: item.productId,
+        productName: item.productName,
+        productCode: item.productCode,
+        totalQuantity: Number(item.totalQuantity),
+        totalAmount: Number(item.totalAmount),
+        orderCount: Number(item.orderCount),
+        source: 'warehouse' as const,
+      })),
+      factory: factorySales.map((item, index) => ({
+        rank: index + 1,
+        productId: item.productId,
+        productName: item.productName,
+        productCode: item.productCode,
+        totalQuantity: Number(item.totalQuantity),
+        totalAmount: Number(item.totalAmount),
+        orderCount: Number(item.orderCount),
+        source: 'factory' as const,
+      })),
+    };
+  } catch (error) {
+    // 避免仪表盘因为 SQL/数据问题直接 500，记录日志并返回空排名
+    logger.error('dashboard', '获取产品销售排名失败，已返回空结果', error, {
+      timeRange,
+      limit,
+    });
+
+    return {
+      warehouse: [],
+      factory: [],
+    };
+  }
 }
 
 /**
