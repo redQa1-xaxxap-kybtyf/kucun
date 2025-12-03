@@ -10,10 +10,13 @@ import {
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountUp } from '@/components/ui/count-up';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import { can } from '@/lib/auth/permissions';
+import { ExportService } from '@/lib/services/export-service';
 import type { InventoryStatistics } from '@/lib/types/inventory-statistics';
 
 interface InventoryStatisticsCardsProps {
@@ -156,12 +159,65 @@ export function InventoryStatisticsCards({
   isLoading = false,
 }: InventoryStatisticsCardsProps) {
   const { data: session } = useSession();
+  const { toast } = useToast();
 
   // 检查用户是否有财务查看权限
   const hasFinancePermission = React.useMemo(
     () => can(session?.user ?? null, 'finance:view'),
     [session?.user]
   );
+
+  const handleExportExcel = React.useCallback(() => {
+    if (!statistics) {
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: '暂无可导出的库存统计数据',
+      });
+      return;
+    }
+
+    try {
+      // 按业务字段输出固定列，列顺序与页面含义保持一致
+      const row: Record<string, unknown> = {};
+
+      // 仅财务权限可见的字段
+      if (hasFinancePermission && typeof statistics.totalValue === 'number') {
+        row['库存总金额（元）'] = statistics.totalValue;
+      }
+
+      if (hasFinancePermission && statistics.openingBalance) {
+        row['期初库存金额（元）'] = statistics.openingBalance.totalCost;
+        row['期初库存数量（片）'] = statistics.openingBalance.totalQuantity;
+        row['期初记录数'] = statistics.openingBalance.recordCount;
+      }
+
+      // 所有人可见字段
+      row['库存产品数（SKU）'] = statistics.totalProducts;
+      row['库存总数量（片）'] = statistics.totalQuantity;
+      row['低库存产品数'] = statistics.lowStockCount;
+      row['库存健康度（%）'] = statistics.stockHealthPercentage;
+
+      ExportService.exportToExcel([row], {
+        filename: '库存统计概览',
+        sheetName: '库存统计',
+        includeHeaders: true,
+      });
+
+      toast({
+        title: '导出成功',
+        description: '库存统计 Excel 已生成并下载',
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '导出库存统计失败';
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: message,
+      });
+    }
+  }, [statistics, hasFinancePermission, toast]);
 
   if (isLoading) {
     return (
@@ -179,25 +235,39 @@ export function InventoryStatisticsCards({
   const gridColsClass = getGridColsClass(cards.length);
 
   return (
-    <div className={`grid gap-4 md:grid-cols-2 ${gridColsClass}`}>
-      {cards.map(
-        ({ id, title, icon: Icon, value, description, color, bgColor }) => (
-          <Card key={id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{title}</CardTitle>
-              <div className={`rounded-lg p-2 ${bgColor}`}>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${color}`}>{value}</div>
-              <p className="text-muted-foreground mt-1 text-xs">
-                {description}
-              </p>
-            </CardContent>
-          </Card>
-        )
-      )}
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="text-muted-foreground text-sm">库存统计概览</div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleExportExcel}
+          disabled={!statistics}
+        >
+          导出统计 Excel
+        </Button>
+      </div>
+
+      <div className={`grid gap-4 md:grid-cols-2 ${gridColsClass}`}>
+        {cards.map(
+          ({ id, title, icon: Icon, value, description, color, bgColor }) => (
+            <Card key={id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <div className={`rounded-lg p-2 ${bgColor}`}>
+                  <Icon className={`h-4 w-4 ${color}`} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-bold ${color}`}>{value}</div>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  {description}
+                </p>
+              </CardContent>
+            </Card>
+          )
+        )}
+      </div>
     </div>
   );
 }

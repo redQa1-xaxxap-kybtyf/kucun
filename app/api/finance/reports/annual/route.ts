@@ -24,6 +24,9 @@ export const GET = withAuth(async (request: NextRequest) => {
     // 解析 URL 查询参数
     const searchParams = request.nextUrl.searchParams;
     const params = parseAnnualReportParams(searchParams);
+    const forceRefresh =
+      searchParams.get('forceRefresh') === 'true' ||
+      searchParams.get('regenerate') === 'true';
 
     // 验证参数
     const validationResult = safeValidateAnnualReportParams(params);
@@ -41,21 +44,28 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     const { year, includeYearOverYear } = validationResult.data;
 
-    // 使用缓存包装查询
-    const cacheKey = buildCacheKey('finance:reports:annual', {
-      year,
-      includeYearOverYear,
-    });
+    let report;
 
-    const report = await getOrSetJSON(
-      cacheKey,
-      async () => getAnnualReport(year, includeYearOverYear),
-      FINANCE_CACHE_TTL_SECONDS * 2, // 年度报表缓存时间更长
-      {
-        enableRandomTTL: true,
-        enableNullCache: false,
-      }
-    );
+    if (forceRefresh) {
+      // 手动“生成报表”时强制重新计算，绕过缓存
+      report = await getAnnualReport(year, includeYearOverYear);
+    } else {
+      // 使用缓存包装查询
+      const cacheKey = buildCacheKey('finance:reports:annual', {
+        year,
+        includeYearOverYear,
+      });
+
+      report = await getOrSetJSON(
+        cacheKey,
+        async () => getAnnualReport(year, includeYearOverYear),
+        FINANCE_CACHE_TTL_SECONDS * 2, // 年度报表缓存时间更长
+        {
+          enableRandomTTL: true,
+          enableNullCache: false,
+        }
+      );
+    }
 
     return NextResponse.json({
       success: true,

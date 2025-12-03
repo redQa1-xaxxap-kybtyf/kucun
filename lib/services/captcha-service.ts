@@ -11,17 +11,18 @@
 import crypto from 'crypto';
 
 import { getRandomTTL } from '@/lib/cache/cache';
+import { captchaConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
-// 验证码配置
+// 验证码配置（长度/过期时间/最大尝试次数从环境变量读取，其他保持常量）
 export const CAPTCHA_CONFIG = {
   width: 120,
   height: 40,
-  length: 4,
+  length: captchaConfig.length,
   fontSize: 24,
-  expireMinutes: 5, // 5分钟过期
-  maxAttempts: 5, // 最大尝试次数
+  expireMinutes: captchaConfig.expireMinutes, // 分钟
+  maxAttempts: captchaConfig.maxAttempts, // 最大尝试次数
   redisKeyPrefix: 'captcha:', // Redis 键前缀
 } as const;
 
@@ -281,21 +282,13 @@ export async function verifyCaptcha(
     });
   }
 
-  // 🔒 安全加固：测试绕过仅在测试环境且显式启用时生效
-  // 生产和开发环境不允许绕过验证码验证
-  const isTestBypass =
-    process.env.NODE_ENV === 'test' &&
-    process.env.TEST_CAPTCHA_BYPASS === 'true' &&
-    captcha.toUpperCase() === (process.env.TEST_CAPTCHA_CODE || 'TEST1234');
-
   // 验证验证码
-  const isValid = isTestBypass || captcha.toUpperCase() === session.captchaText;
+  const isValid = captcha.toUpperCase() === session.captchaText;
   logger.debug('captcha-service', '验证码比较结果', undefined, {
     sessionId,
     input: captcha.toUpperCase(),
     expected: session.captchaText,
     matched: isValid,
-    testBypass: isTestBypass,
     nodeEnv: process.env.NODE_ENV,
   });
 

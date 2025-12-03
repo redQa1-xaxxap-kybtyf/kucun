@@ -128,6 +128,35 @@ const envSchema = z.object({
     .default(5)
     .describe('Redis 最大重试次数'),
 
+  // 验证码配置
+  CAPTCHA_LENGTH: z
+    .string()
+    .regex(/^\d+$/, 'CAPTCHA_LENGTH 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 3 && val <= 8, {
+      message: 'CAPTCHA_LENGTH 必须在 3-8 之间',
+    })
+    .default(4)
+    .describe('验证码长度（字符数）'),
+  CAPTCHA_EXPIRE_MINUTES: z
+    .string()
+    .regex(/^\d+$/, 'CAPTCHA_EXPIRE_MINUTES 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 1 && val <= 30, {
+      message: 'CAPTCHA_EXPIRE_MINUTES 必须在 1-30 之间',
+    })
+    .default(5)
+    .describe('验证码过期时间（分钟）'),
+  CAPTCHA_MAX_ATTEMPTS: z
+    .string()
+    .regex(/^\d+$/, 'CAPTCHA_MAX_ATTEMPTS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 1 && val <= 10, {
+      message: 'CAPTCHA_MAX_ATTEMPTS 必须在 1-10 之间',
+    })
+    .default(5)
+    .describe('单个验证码允许的最大尝试次数'),
+
   // WebSocket 配置
   WS_PORT: z
     .string()
@@ -1133,6 +1162,15 @@ export const monitoringConfig = {
   enableMemoryMonitor: env.ENABLE_MEMORY_MONITOR,
   token: env.MONITORING_TOKEN,
   prismaSlowQueryThresholdMs: env.PRISMA_SLOW_QUERY_THRESHOLD_MS,
+} as const;
+
+/**
+ * 验证码配置对象
+ */
+export const captchaConfig = {
+  length: env.CAPTCHA_LENGTH,
+  expireMinutes: env.CAPTCHA_EXPIRE_MINUTES,
+  maxAttempts: env.CAPTCHA_MAX_ATTEMPTS,
 } as const;
 
 /**

@@ -50,6 +50,7 @@ export default function SignInPage() {
   const [captchaSessionId, setCaptchaSessionId] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const { toast } = useToast();
 
@@ -60,7 +61,7 @@ export default function SignInPage() {
   );
 
   // 表单配置
-  const form = useForm<UserLoginInput>({
+  const form = useForm<UserLoginInput & { rememberMe?: boolean }>({
     resolver: standardSchemaResolver(userValidations.login),
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
@@ -68,6 +69,7 @@ export default function SignInPage() {
       username: '',
       password: '',
       captcha: '',
+      rememberMe: false,
     },
   });
 
@@ -101,7 +103,7 @@ export default function SignInPage() {
       ACCOUNT_DISABLED: '用户名或密码错误，请检查后重试',
 
       // 验证码相关错误
-      CAPTCHA_SESSION_MISSING: '验证码会话已过期，请刷新验证码',
+      CAPTCHA_SESSION_MISSING: '验证码已失效，请重新获取',
       CAPTCHA_VERIFY_FAILED: '验证码验证失败，请重试',
       CAPTCHA_INCORRECT: '验证码错误，请重新输入',
 
@@ -249,7 +251,9 @@ export default function SignInPage() {
     [errorMessages, form, loadCaptcha, toast]
   );
 
-  const handleSubmit = async (data: UserLoginInput) => {
+  const handleSubmit = async (
+    data: UserLoginInput & { rememberMe?: boolean }
+  ) => {
     setIsLoading(true);
     setFormError('');
     setIsSuccess(false);
@@ -260,6 +264,8 @@ export default function SignInPage() {
         password: data.password,
         captcha: data.captcha,
         captchaSessionId,
+        // 通过 options 传递 rememberMe 标记，后端可以据此调整会话时长
+        rememberMe: data.rememberMe ?? false,
         redirect: false,
       });
 
@@ -364,6 +370,7 @@ export default function SignInPage() {
                           {...field}
                           type="text"
                           autoComplete="username"
+                          autoFocus
                           placeholder="请输入用户名"
                           disabled={isLoading}
                         />
@@ -415,7 +422,7 @@ export default function SignInPage() {
                             placeholder="请输入验证码"
                             disabled={isLoading}
                             className="flex-1"
-                            maxLength={6}
+                            maxLength={4}
                             autoComplete="off"
                           />
                         </FormControl>
@@ -464,6 +471,20 @@ export default function SignInPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* 记住我 */}
+                <div className="flex items-center justify-between">
+                  <label className="flex cursor-pointer items-center gap-2 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={rememberMe}
+                      onChange={e => setRememberMe(e.target.checked)}
+                      disabled={isLoading}
+                    />
+                    <span>记住我（延长登录有效期）</span>
+                  </label>
+                </div>
 
                 <Button
                   type="submit"

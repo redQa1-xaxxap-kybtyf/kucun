@@ -277,18 +277,33 @@ export async function getRecentLoginLogs(
   username: string,
   limit = 10
 ): Promise<LoginLog[]> {
-  // TODO: 从数据库查询
-  // return await prisma.loginLog.findMany({
-  //   where: { username },
-  //   orderBy: { timestamp: 'desc' },
-  //   take: limit,
-  // });
+  try {
+    const { prisma } = await import('@/lib/db');
 
-  logger.info('login-log-service', '查询最近登录记录', {
-    username,
-    limit,
-  });
-  return [];
+    const records = await prisma.loginLog.findMany({
+      where: { username },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return records.map(record => ({
+      userId: record.userId ?? undefined,
+      username: record.username,
+      type: record.type as LoginLogType,
+      failureReason: (record.failureReason ?? undefined) as
+        | LoginFailureReason
+        | undefined,
+      clientIp: record.clientIp,
+      userAgent: record.userAgent ?? undefined,
+      timestamp: record.createdAt,
+    }));
+  } catch (error) {
+    logger.error('login-log-service', '查询最近登录记录失败', error, {
+      username,
+      limit,
+    });
+    return [];
+  }
 }
 
 /**

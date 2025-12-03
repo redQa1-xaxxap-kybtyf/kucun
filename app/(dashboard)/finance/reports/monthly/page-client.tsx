@@ -1,15 +1,16 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ArrowDownIcon,
-    ArrowUpIcon,
-    Calendar,
-    MinusIcon,
-    Package,
-    RefreshCw,
-    TrendingDown,
-    TrendingUp
+  ArrowDownIcon,
+  ArrowUpIcon,
+  Calendar,
+  MinusIcon,
+  Package,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+  Receipt,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -17,14 +18,16 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
+import { ExportService } from '@/lib/services/export-service';
 import type { MonthlyReport } from '@/lib/types/report';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -32,8 +35,13 @@ export function MonthlyReportClient() {
   const currentDate = new Date();
   const [year, setYear] = React.useState(currentDate.getFullYear());
   const [month, setMonth] = React.useState(currentDate.getMonth() + 1);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const exportRef = React.useRef<HTMLDivElement | null>(null);
 
-  // 获取月度报表数据
+  // 获取月度报表数据（默认查看模式，使用缓存）
   const { data: report, isLoading } = useQuery({
     queryKey: queryKeys.finance.monthlyReport({ year, month }),
     queryFn: async () => {
@@ -67,6 +75,108 @@ export function MonthlyReportClient() {
 
   // 生成月份选项
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  // 手动生成报表（强制刷新，绕过缓存）
+  const handleGenerateReport = React.useCallback(async () => {
+    try {
+      setIsGenerating(true);
+
+      const params = new URLSearchParams({
+        year: year.toString(),
+        month: month.toString(),
+        includeComparison: 'true',
+        forceRefresh: 'true',
+      });
+
+      const response = await fetch(
+        `/api/finance/reports/monthly?${params.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error('生成月度报表失败');
+      }
+
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: MonthlyReport;
+        error?: string;
+      };
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || '生成月度报表失败');
+      }
+
+      // 更新 React Query 缓存中的报表数据
+      queryClient.setQueryData(
+        queryKeys.finance.monthlyReport({ year, month }),
+        result.data
+      );
+
+      toast({
+        title: '报表已生成',
+        description: `${year} 年 ${month} 月的月度报表数据已重新计算并刷新`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '生成月度报表图片失败';
+      toast({
+        variant: 'destructive',
+        title: '生成失败',
+        description: message,
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [month, queryClient, toast, year]);
+
+  // 导出报表为图片（只导出报表预览区域，而不是整个页面）
+  const handleExportImage = React.useCallback(async () => {
+    if (!report) {
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: '当前没有可导出的报表数据',
+      });
+      return;
+    }
+
+    if (!exportRef.current) {
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: '找不到报表预览区域，请刷新页面后重试',
+      });
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+
+      const filename = `月度报表-${year}-${String(month).padStart(2, '0')}`;
+
+      await ExportService.exportToImage(exportRef.current, {
+        filename,
+        format: 'png',
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+
+      toast({
+        title: '导出成功',
+        description: `报表图片已生成并下载 (${filename}.png)`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '导出报表图片失败';
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: message,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [month, report, toast, year]);
 
   if (isLoading) {
     return (
@@ -107,6 +217,28 @@ export function MonthlyReportClient() {
                     查看月度收入、支出、利润等财务数据统计
                   </p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  {isGenerating ? '生成中...' : '生成报表'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleExportImage}
+                  disabled={isExporting}
+                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  {isExporting ? '导出中...' : '导出报表图片'}
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -391,6 +523,198 @@ export function MonthlyReportClient() {
             </CardContent>
           </Card>
         )}
+
+        {/* 报表导出区域（专用于图片导出，格式化为单页报表） */}
+        <Card
+          ref={exportRef}
+          className="border border-[hsl(var(--color-border-primary))] bg-white shadow-[var(--shadow-light)]"
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between text-lg font-semibold">
+              <span>
+                {year} 年 {month} 月度财务报表
+              </span>
+              <span className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
+                统计区间：{report.period.startDate} ~ {report.period.endDate}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-[13px] text-[hsl(var(--color-text-primary))]">
+              {/* 核心汇总 */}
+              <div className="grid gap-3 md:grid-cols-4">
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    销售收入
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.revenue.salesRevenue)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    总成本
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.costs.totalCost)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    总费用
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.expenses.totalExpenses)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    净利润 / 利润率
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.profit.netProfit)} （
+                    {report.profit.profitMargin.toFixed(2)}%）
+                  </div>
+                </div>
+              </div>
+
+              {/* 收入与订单 */}
+              <div className="mt-2 grid gap-3 md:grid-cols-3">
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    订单数量
+                  </div>
+                  <div className="text-base">
+                    {report.revenue.orderCount.toLocaleString()} 单
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    平均订单金额
+                  </div>
+                  <div className="text-base">
+                    {formatCurrency(report.revenue.averageOrderValue)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    完成 / 待处理订单
+                  </div>
+                  <div className="text-base">
+                    {report.revenue.completedOrders} /{' '}
+                    {report.revenue.pendingOrders}
+                  </div>
+                </div>
+              </div>
+
+              {/* 应收应付简表 */}
+              <div className="mt-4">
+                <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                  应收 / 应付概览
+                </div>
+                <div className="grid gap-3 md:grid-cols-3">
+                  <div>
+                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                      应收总额
+                    </div>
+                    <div className="text-base">
+                      {formatCurrency(report.receivables.totalReceivable)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                      应付总额
+                    </div>
+                    <div className="text-base">
+                      {formatCurrency(report.receivables.totalPayable)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                      应收余额 / 应付余额
+                    </div>
+                    <div className="text-base">
+                      {formatCurrency(report.receivables.receivableBalance)} /{' '}
+                      {formatCurrency(report.receivables.payableBalance)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 厂家直发与库存（简要） */}
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                <div>
+                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    厂家直发汇总
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs">
+                      <span>直发订单数</span>
+                      <span>
+                        {report.factoryShipmentProfit.totalOrders.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>直发收入</span>
+                      <span>
+                        {formatCurrency(
+                          report.factoryShipmentProfit.totalRevenue
+                        )}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs">
+                      <span>平均利润率</span>
+                      <span>
+                        {report.factoryShipmentProfit.averageProfitMargin.toFixed(
+                          2
+                        )}
+                        %
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {report.inventoryTurnover && (
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                      库存周转概览
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs">
+                        <span>周转率</span>
+                        <span>
+                          {report.inventoryTurnover.turnoverRate.toFixed(2)} 次
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span>周转天数</span>
+                        <span>
+                          {report.inventoryTurnover.turnoverDays.toFixed(0)} 天
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 简要预警列表 */}
+              {report.alerts && report.alerts.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    预警摘要
+                  </div>
+                  <ul className="space-y-1 text-xs">
+                    {report.alerts.slice(0, 4).map((alert, index) => (
+                      <li key={index} className="leading-snug">
+                        {index + 1}. {alert.title}：{alert.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

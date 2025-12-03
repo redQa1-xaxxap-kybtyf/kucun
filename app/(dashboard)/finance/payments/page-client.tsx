@@ -12,6 +12,7 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { PaymentStatus } from '@/lib/types/payment';
 
 interface PaymentRecord {
@@ -92,6 +93,7 @@ export function PaymentsPageClient({
 }: PaymentsPageClientProps) {
   const router = useRouter();
   const [, startTransition] = React.useTransition();
+  const { exportData, isExporting } = useFinanceExport();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -113,6 +115,36 @@ export function PaymentsPageClient({
   const [endDate, setEndDate] = React.useState<string | undefined>(
     initialParams.endDate
   );
+
+  const handleExport = React.useCallback(() => {
+    // 导出使用当前筛选条件，但一次性导出最多 50,000 条记录
+    const filters: PaymentsQueryParams = {
+      page: 1,
+      limit: 50000,
+      search: search || undefined,
+      status,
+      paymentMethod,
+      sortBy: sortBy || 'createdAt',
+      sortOrder,
+      startDate,
+      endDate,
+    };
+
+    exportData('/api/finance/payments/export', {
+      format: 'excel',
+      // 导出接口接收通用的 Record<string, unknown>，这里显式转换类型
+      filters: filters as unknown as Record<string, unknown>,
+    });
+  }, [
+    exportData,
+    search,
+    status,
+    paymentMethod,
+    sortBy,
+    sortOrder,
+    startDate,
+    endDate,
+  ]);
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -386,13 +418,12 @@ export function PaymentsPageClient({
                 <Button
                   variant="outline"
                   size="lg"
-                  asChild
+                  onClick={handleExport}
+                  disabled={isExporting}
                   className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
-                  <Link href="/finance/payments/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
+                  <Download className="mr-2 h-4 w-4" />
+                  {isExporting ? '导出中...' : '导出'}
                 </Button>
                 <Button
                   size="lg"

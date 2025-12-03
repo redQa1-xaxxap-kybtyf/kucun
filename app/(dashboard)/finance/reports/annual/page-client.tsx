@@ -1,36 +1,44 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { ArrowDownIcon, ArrowUpIcon, Calendar, Package } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  Calendar,
+  Package,
+  Receipt,
+} from 'lucide-react';
 import * as React from 'react';
 import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Legend,
-    Line,
-    LineChart,
-    Pie,
-    PieChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
+import { ExportService } from '@/lib/services/export-service';
 import type { AnnualReport } from '@/lib/types/report';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -58,8 +66,13 @@ const PIE_COLORS = [
 export function AnnualReportClient() {
   const currentYear = new Date().getFullYear();
   const [year, setYear] = React.useState(currentYear);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [isExporting, setIsExporting] = React.useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const exportRef = React.useRef<HTMLDivElement | null>(null);
 
-  // 获取年度报表数据
+  // 获取年度报表数据（默认查看模式，使用缓存）
   const { data: report, isLoading } = useQuery({
     queryKey: queryKeys.finance.annualReport({ year }),
     queryFn: async () => {
@@ -89,6 +102,107 @@ export function AnnualReportClient() {
     }
     return years;
   }, [currentYear]);
+
+  // 手动生成年度报表（强制刷新，绕过缓存）
+  const handleGenerateReport = React.useCallback(async () => {
+    try {
+      setIsGenerating(true);
+
+      const params = new URLSearchParams({
+        year: year.toString(),
+        includeYearOverYear: 'true',
+        forceRefresh: 'true',
+      });
+
+      const response = await fetch(
+        `/api/finance/reports/annual?${params.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error('生成年度报表失败');
+      }
+
+      const result = (await response.json()) as {
+        success: boolean;
+        data?: AnnualReport;
+        error?: string;
+      };
+
+      if (!result.success || !result.data) {
+        throw new Error(result.error || '生成年度报表失败');
+      }
+
+      // 更新 React Query 缓存中的报表数据
+      queryClient.setQueryData(
+        queryKeys.finance.annualReport({ year }),
+        result.data
+      );
+
+      toast({
+        title: '报表已生成',
+        description: `${year} 年度报表数据已重新计算并刷新`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '生成年度报表失败';
+      toast({
+        variant: 'destructive',
+        title: '生成失败',
+        description: message,
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [queryClient, toast, year]);
+
+  // 导出报表图片（仅导出报表主体区域）
+  const handleExportImage = React.useCallback(async () => {
+    if (!report) {
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: '当前没有可导出的报表数据',
+      });
+      return;
+    }
+
+    if (!exportRef.current) {
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: '找不到报表区域，请刷新页面后重试',
+      });
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+
+      const filename = `年度报表-${year}`;
+
+      await ExportService.exportToImage(exportRef.current, {
+        filename,
+        format: 'png',
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+
+      toast({
+        title: '导出成功',
+        description: `报表图片已生成并下载 (${filename}.png)`,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : '导出年度报表图片失败';
+      toast({
+        variant: 'destructive',
+        title: '导出失败',
+        description: message,
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [report, toast, year]);
 
   if (isLoading) {
     return (
@@ -129,6 +243,28 @@ export function AnnualReportClient() {
                     查看年度收入、支出、利润趋势及费用分布
                   </p>
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleGenerateReport}
+                  disabled={isGenerating}
+                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  {isGenerating ? '生成中...' : '生成报表'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleExportImage}
+                  disabled={isExporting}
+                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  {isExporting ? '导出中...' : '导出报表图片'}
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -434,6 +570,148 @@ export function AnnualReportClient() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 报表导出区域（专用于图片导出，格式化为单页年度报表） */}
+        <Card
+          ref={exportRef}
+          className="border border-[hsl(var(--color-border-primary))] bg-white shadow-[var(--shadow-light)]"
+        >
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between text-lg font-semibold">
+              <span>{year} 年度财务报表</span>
+              <span className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
+                统计区间：{report.period.startDate} ~ {report.period.endDate}
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4 text-[13px] text-[hsl(var(--color-text-primary))]">
+              {/* 年度核心汇总 */}
+              <div className="grid gap-3 md:grid-cols-4">
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    年度总收入
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.summary.totalRevenue)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    年度总成本
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.summary.totalCost)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    年度总费用
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.summary.totalExpenses)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    净利润 / 利润率
+                  </div>
+                  <div className="text-base font-semibold">
+                    {formatCurrency(report.summary.totalProfit)} （
+                    {report.summary.profitMargin.toFixed(2)}%）
+                  </div>
+                </div>
+              </div>
+
+              {/* 订单与收入概览 */}
+              <div className="mt-2 grid gap-3 md:grid-cols-3">
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    订单总数
+                  </div>
+                  <div className="text-base">
+                    {report.summary.orderCount.toLocaleString()} 单
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    月均收入
+                  </div>
+                  <div className="text-base">
+                    {formatCurrency(report.summary.averageMonthlyRevenue)}
+                  </div>
+                </div>
+                {report.inventoryTurnover && (
+                  <div>
+                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                      库存周转率 / 周转天数
+                    </div>
+                    <div className="text-base">
+                      {report.inventoryTurnover.turnoverRate.toFixed(2)} 次 /{' '}
+                      {report.inventoryTurnover.turnoverDays.toFixed(0)} 天
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 厂家发货汇总（如有） */}
+              {report.factoryShipmentProfit && (
+                <div className="mt-4">
+                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    厂家发货概览
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3">
+                    <div>
+                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        直发订单数
+                      </div>
+                      <div className="text-base">
+                        {report.factoryShipmentProfit.totalOrders.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        客户货利润
+                      </div>
+                      <div className="text-base">
+                        {formatCurrency(
+                          report.factoryShipmentProfit.customerProfit
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        平均利润率
+                      </div>
+                      <div className="text-base">
+                        {report.factoryShipmentProfit.averageProfitMargin.toFixed(
+                          2
+                        )}
+                        %
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 简要预警列表 */}
+              {report.alerts && report.alerts.length > 0 && (
+                <div className="mt-4">
+                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    预警摘要
+                  </div>
+                  <ul className="space-y-1 text-xs">
+                    {report.alerts.slice(0, 4).map((alert, index) => (
+                      <li key={index} className="leading-snug">
+                        {index + 1}. {alert.title}：{alert.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

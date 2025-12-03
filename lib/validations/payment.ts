@@ -209,7 +209,9 @@ export const updatePaymentRecordSchema = z
 export const paymentRecordQuerySchema = z
   .object({
     page: z.number().int().positive().optional().default(1),
-    limit: z.number().int().positive().max(100).optional().default(10),
+    // 列表查询默认每页数量较小，但为了导出场景支持最多 50,000 条记录，
+    // 这里放宽上限到 50000（实际页面查询仍然使用较小的 limit）
+    limit: z.number().int().positive().max(50000).optional().default(10),
     search: z.string().optional(),
     customerId: z.string().optional(),
     factoryShipmentOrderId: z.string().optional(),

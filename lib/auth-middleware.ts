@@ -20,6 +20,7 @@ const protectedPaths = [
   '/purchase-orders', // 采购订单页面
   '/settings',
   '/help',
+  '/profile', // 个人资料页面
 
   // API 路径
   '/api/settings',
@@ -45,6 +46,7 @@ const protectedPaths = [
   '/api/seed-test-data',
   '/api/notifications', // 通知 API
   '/api/price-history', // 价格历史 API
+  '/api/profile', // 个人资料 API
 ];
 
 // 需要管理员权限的路径

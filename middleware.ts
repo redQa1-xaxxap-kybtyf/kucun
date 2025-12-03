@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authMiddleware } from './lib/auth-middleware';
 
@@ -8,16 +8,39 @@ import { authMiddleware } from './lib/auth-middleware';
  * 2. 添加安全响应头
  */
 export async function middleware(request: NextRequest) {
-  // 1. 执行身份验证中间件
-  const authResponse = await authMiddleware(request);
+  const url = request.nextUrl;
+  const pathname = url.pathname;
 
-  // 如果身份验证失败或需要重定向，直接返回
-  if (authResponse.status !== 200) {
-    return authResponse;
+  const isAuthApi = pathname.startsWith('/api/auth');
+  const isAuthPage = pathname.startsWith('/auth/');
+
+  // 生产环境下，对认证相关路由强制要求 HTTPS
+  if (process.env.NODE_ENV === 'production') {
+    const proto =
+      request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
+
+    if ((isAuthApi || isAuthPage) && proto !== 'https') {
+      return new Response('HTTPS Required', { status: 403 });
+    }
   }
 
-  // 2. 在认证响应上追加安全头
-  const response = authResponse;
+  // 1. 执行身份验证中间件
+  let response: Response;
+
+  if (isAuthApi) {
+    // 对 NextAuth API 不做登录检查，只追加安全头
+    response = NextResponse.next();
+  } else {
+    const authResponse = await authMiddleware(request);
+
+    // 如果身份验证失败或需要重定向，直接返回
+    if (authResponse.status !== 200) {
+      return authResponse;
+    }
+
+    // 2. 在认证响应上追加安全头
+    response = authResponse;
+  }
 
   // 生成 nonce 用于 CSP（Edge 环境下使用 Web API）
   const nonce = btoa(crypto.randomUUID());
@@ -75,5 +98,7 @@ export const config = {
         { type: 'header', key: 'purpose', value: 'prefetch' },
       ],
     },
+    // 额外匹配认证 API 路由，用于强制 HTTPS 校验和安全头
+    '/api/auth/:path*',
   ],
 };

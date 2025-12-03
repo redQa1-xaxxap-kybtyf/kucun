@@ -7,36 +7,45 @@ const prisma = new PrismaClient();
 
 async function createCorrectAdmin() {
   try {
-    console.log('🔧 创建正确的管理员用户...');
+    console.log('🔧 创建/修正管理员用户...');
 
-    // 首先删除现有的错误admin用户
+    // 先查是否已有用户名为 admin 的用户（避免破坏外键，改为更新而不是删除）
     const existingAdmin = await prisma.user.findUnique({
       where: { username: 'admin' },
     });
 
-    if (existingAdmin) {
-      console.log('🗑️ 删除现有的错误admin用户...');
-      await prisma.user.delete({
-        where: { username: 'admin' },
-      });
-      console.log('✅ 删除成功');
-    }
-
-    // 创建正确的管理员用户
-    console.log('👤 创建新的管理员用户...');
-
     const passwordHash = await bcrypt.hash('admin123456', 10);
 
-    const adminUser = await prisma.user.create({
-      data: {
-        email: 'admin@inventory.com',
-        username: 'admin',
-        name: '系统管理员',
-        passwordHash,
-        role: 'admin',
-        status: 'active',
-      },
-    });
+    let adminUser;
+
+    if (existingAdmin) {
+      console.log('🛠️ 检测到现有 admin 用户，执行修正更新...');
+      adminUser = await prisma.user.update({
+        where: { id: existingAdmin.id },
+        data: {
+          email: 'admin@inventory.com',
+          username: 'admin',
+          name: '系统管理员',
+          passwordHash,
+          role: 'admin',
+          status: 'active',
+        },
+      });
+      console.log('✅ 已更新现有 admin 用户为标准配置');
+    } else {
+      console.log('👤 未找到 admin 用户，创建新的管理员...');
+      adminUser = await prisma.user.create({
+        data: {
+          email: 'admin@inventory.com',
+          username: 'admin',
+          name: '系统管理员',
+          passwordHash,
+          role: 'admin',
+          status: 'active',
+        },
+      });
+      console.log('✅ 创建新的 admin 用户成功');
+    }
 
     console.log(`✅ 创建管理员用户成功:`);
     console.log(`   用户名: ${adminUser.username}`);

@@ -3,7 +3,7 @@
  *
  * 严格遵循全栈项目统一约定规范：
  * - 客户端代码使用客户端 logger，避免导入服务端依赖
- * - 使用动态导入加载大型库（html2canvas）
+ * - 使用动态导入加载大型库（html2canvas），不依赖外网 CDN
  */
 
 import { saveAs } from 'file-saver';
@@ -84,58 +84,29 @@ export class ExportService {
       throw new Error('html2canvas 只能在浏览器环境使用');
     }
 
+    // 已经挂在全局，直接复用
     if (typeof window.html2canvas === 'function') {
       return window.html2canvas;
     }
 
+    // 首次动态导入本地依赖（不走外网 CDN）
     if (!this.html2canvasPromise) {
-      const HTML2CANVAS_CDN =
-        'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
-
-      const loadPromise = new Promise<Html2CanvasFunction>(
-        (resolve, reject) => {
-          // 检查是否已有脚本标签
-          const existingScript = document.querySelector<HTMLScriptElement>(
-            'script[data-lib="html2canvas"]'
-          );
-
-          if (existingScript) {
-            existingScript.addEventListener('load', () => {
-              if (typeof window.html2canvas === 'function') {
-                resolve(window.html2canvas);
-              } else {
-                reject(new Error('html2canvas 脚本加载失败'));
-              }
-            });
-            existingScript.addEventListener('error', () =>
-              reject(new Error('html2canvas 脚本加载失败'))
-            );
-            return;
+      this.html2canvasPromise = import('html2canvas')
+        .then(mod => {
+          const html2canvas = (
+            mod as unknown as { default: Html2CanvasFunction }
+          ).default;
+          if (typeof html2canvas !== 'function') {
+            throw new Error('html2canvas 模块加载失败');
           }
-
-          const script = document.createElement('script');
-          script.src = HTML2CANVAS_CDN;
-          script.async = true;
-          script.dataset.lib = 'html2canvas';
-          script.onload = () => {
-            if (typeof window.html2canvas === 'function') {
-              resolve(window.html2canvas);
-            } else {
-              reject(new Error('html2canvas 未正确加载'));
-            }
-          };
-          script.onerror = () => {
-            script.remove();
-            reject(new Error('html2canvas 脚本加载失败'));
-          };
-          document.head.appendChild(script);
-        }
-      );
-
-      this.html2canvasPromise = loadPromise.catch(error => {
-        this.html2canvasPromise = null;
-        throw error;
-      });
+          // 缓存到全局，便于其他模块复用
+          window.html2canvas = html2canvas;
+          return html2canvas;
+        })
+        .catch(error => {
+          this.html2canvasPromise = null;
+          throw error;
+        });
     }
 
     return this.html2canvasPromise;

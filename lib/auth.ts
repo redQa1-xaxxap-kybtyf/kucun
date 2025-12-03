@@ -13,6 +13,7 @@ import {
   logLoginSuccess,
 } from './services/login-log-service';
 import { userValidations } from './validations/base';
+import { validatePassword } from './validations/user';
 
 // 扩展 NextAuth 类型定义
 declare module 'next-auth' {
@@ -25,6 +26,7 @@ declare module 'next-auth' {
       role: string;
       status: string;
       avatar?: string;
+      rememberMe?: boolean;
     };
   }
 
@@ -35,6 +37,7 @@ declare module 'next-auth' {
     name: string;
     role: string;
     status: string;
+    rememberMe?: boolean;
   }
 }
 
@@ -44,6 +47,8 @@ declare module 'next-auth/jwt' {
     username: string;
     role: string;
     status: string;
+    rememberMe?: boolean;
+    exp?: number;
   }
 }
 
@@ -62,13 +67,40 @@ function getRequestInfo(req: unknown): {
   };
 
   const rawForwarded = request.headers?.get?.('x-forwarded-for');
-  const primaryForwardedIp = rawForwarded
-    ?.split(',')
-    ?.map(value => value.trim())
-    ?.find(Boolean);
+
+  // 从 X-Forwarded-For 中提取客户端 IP
+  // 按建议：从右往左查找第一个非空且看起来像公网 IP
+  let forwardedIp: string | undefined;
+  if (rawForwarded) {
+    const forwardedIps = rawForwarded
+      .split(',')
+      .map(value => value.trim())
+      .filter(Boolean);
+
+    // 简单的“内网IP”判定：10.x.x.x / 172.16-31.x.x / 192.168.x.x / 127.0.0.1
+    const isPrivateIp = (ip: string) =>
+      /^10\./.test(ip) ||
+      /^192\.168\./.test(ip) ||
+      /^127\./.test(ip) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(ip);
+
+    for (let i = forwardedIps.length - 1; i >= 0; i--) {
+      const ip = forwardedIps[i];
+      if (!isPrivateIp(ip)) {
+        forwardedIp = ip;
+        break;
+      }
+    }
+
+    // 如果没有找到公网 IP，则退回到链中的最后一个
+    if (!forwardedIp && forwardedIps.length > 0) {
+      forwardedIp = forwardedIps[forwardedIps.length - 1];
+    }
+  }
+
   const fallbackIp = request.headers?.get?.('x-real-ip');
   const requestIp = request.ip;
-  const clientIp = primaryForwardedIp || fallbackIp || requestIp || '127.0.0.1';
+  const clientIp = forwardedIp || fallbackIp || requestIp || '127.0.0.1';
 
   const userAgent = request.headers?.get?.('user-agent') || undefined;
 
@@ -83,7 +115,7 @@ async function validateLoginCredentials(
   clientIp: string,
   userAgent: string | undefined
 ): Promise<void> {
-  // 检查必填字段
+  // 1. 检查必填字段
   if (
     !credentials?.username ||
     !credentials?.password ||
@@ -92,7 +124,7 @@ async function validateLoginCredentials(
     throw new Error('MISSING_FIELDS');
   }
 
-  // 验证输入格式
+  // 2. 验证输入格式
   const validationResult = userValidations.login.safeParse({
     username: credentials.username,
     password: credentials.password,
@@ -103,18 +135,7 @@ async function validateLoginCredentials(
     throw new Error('INVALID_FORMAT');
   }
 
-  // 检查登录限制(失败次数过多)
-  const limitCheck = await checkLoginLimit(
-    credentials.username as string,
-    clientIp
-  );
-  if (!limitCheck.allowed) {
-    // 记录被阻止的登录尝试
-    await logLoginBlocked(credentials.username as string, clientIp, userAgent);
-    throw new Error('TOO_MANY_ATTEMPTS');
-  }
-
-  // 验证验证码
+  // 3. 验证验证码（先校验验证码，再检查登录限制，避免无效验证码占用尝试次数配额）
   const captchaSessionId = (credentials as { captchaSessionId?: string })
     .captchaSessionId;
   if (!captchaSessionId) {
@@ -140,6 +161,17 @@ async function validateLoginCredentials(
       userAgent
     );
     throw new Error('CAPTCHA_INCORRECT');
+  }
+
+  // 4. 验证码通过后再检查登录限制(失败次数过多)
+  const limitCheck = await checkLoginLimit(
+    credentials.username as string,
+    clientIp
+  );
+  if (!limitCheck.allowed) {
+    // 记录被阻止的登录尝试
+    await logLoginBlocked(credentials.username as string, clientIp, userAgent);
+    throw new Error('TOO_MANY_ATTEMPTS');
   }
 }
 
@@ -170,6 +202,7 @@ async function authenticateUser(
       passwordHash: true,
       role: true,
       status: true,
+      lastLoginAt: true,
     },
   });
 
@@ -182,8 +215,8 @@ async function authenticateUser(
 
   // 检查用户状态
   if (user.status !== 'active') {
-    // 记录登录失败(账户被禁用)
-    await logLoginFailure(username, clientIp, 'account_disabled', userAgent);
+    // 记录登录失败(账户被禁用) - 为避免在日志中暴露账户状态,统一记录为 invalid_credentials
+    await logLoginFailure(username, clientIp, 'invalid_credentials', userAgent);
     throw new Error('INVALID_CREDENTIALS');
   }
 
@@ -199,6 +232,20 @@ async function authenticateUser(
 
   // 登录成功 - 记录日志并重置失败次数
   await logLoginSuccess(user.id, user.username, clientIp, userAgent);
+
+  // 更新最后登录时间（不影响主流程，失败时仅记录日志）
+  try {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+      select: { id: true },
+    });
+  } catch (error) {
+    logger.error('auth', '更新 lastLoginAt 失败', error, {
+      userId: user.id,
+      username: user.username,
+    });
+  }
 
   // 返回用户信息（不包含密码）
   return {
@@ -235,15 +282,28 @@ export const authOptions: NextAuthOptions = {
             username: string;
             password: string;
             captcha: string;
+            rememberMe?: unknown;
           };
 
+          const rememberMeRaw = validCredentials.rememberMe;
+          const rememberMe =
+            rememberMeRaw === true ||
+            rememberMeRaw === 'true' ||
+            rememberMeRaw === '1';
+
           // 验证用户并返回用户信息
-          return await authenticateUser(
+          const baseUser = await authenticateUser(
             validCredentials.username,
             validCredentials.password,
             clientIp,
             userAgent
           );
+
+          // 将 rememberMe 标记附加到用户对象，供 JWT 回调使用
+          return {
+            ...baseUser,
+            rememberMe,
+          };
         } catch (error) {
           logger.error('security', '认证错误', error, {
             username: credentials?.username,
@@ -273,10 +333,11 @@ export const authOptions: NextAuthOptions = {
   ],
   session: {
     strategy: 'jwt',
-    maxAge: 24 * 60 * 60, // 24 小时
+    // 使用最长的会话时间（用于“记住我”），短会话通过 token.exp 控制
+    maxAge: 30 * 24 * 60 * 60, // 30 天
   },
   jwt: {
-    maxAge: 24 * 60 * 60, // 24 小时
+    maxAge: 30 * 24 * 60 * 60, // 30 天
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -286,6 +347,14 @@ export const authOptions: NextAuthOptions = {
         token.username = user.username;
         token.role = user.role;
         token.status = user.status;
+        // 根据 rememberMe 设置自定义过期时间
+        const rememberMe = (user as { rememberMe?: boolean }).rememberMe;
+        token.rememberMe = rememberMe ?? false;
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const maxAgeSeconds = token.rememberMe
+          ? 30 * 24 * 60 * 60 // 30 天
+          : 24 * 60 * 60; // 24 小时
+        token.exp = nowInSeconds + maxAgeSeconds;
       }
       return token;
     },
@@ -296,6 +365,7 @@ export const authOptions: NextAuthOptions = {
         session.user.username = token.username;
         session.user.role = token.role;
         session.user.status = token.status;
+        session.user.rememberMe = token.rememberMe;
       }
       return session;
     },
@@ -395,9 +465,11 @@ export async function createUser(data: {
 
 // 密码更新函数
 export async function updatePassword(userId: string, newPassword: string) {
-  // 验证密码强度
-  if (newPassword.length < 6) {
-    throw new Error('密码至少需要6个字符');
+  // 验证密码强度（统一使用 user 验证规则）
+  const validation = validatePassword(newPassword);
+  if (!validation.valid) {
+    // 抛出第一条错误信息，调用方负责展示给用户
+    throw new Error(validation.errors[0] || '密码不符合安全要求');
   }
 
   // 加密新密码 - 使用环境配置的 salt rounds

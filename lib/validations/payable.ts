@@ -127,7 +127,9 @@ export const payableRecordQuerySchema = z.object({
     .string()
     .optional()
     .transform(val => (val ? parseInt(val, 10) : 20))
-    .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+    // 普通列表查询建议 1-100，但导出接口会显式传入较大的 limit（最多 50,000），
+    // 因此这里放宽上限以兼容导出场景
+    .refine(val => val > 0 && val <= 50000, '每页数量必须在1-50000之间'),
   search: z.string().optional(),
   supplierId: z.string().optional(),
   status: payableStatusSchema.optional(),
@@ -157,7 +159,8 @@ export const paymentOutRecordQuerySchema = z.object({
     .string()
     .optional()
     .transform(val => (val ? parseInt(val, 10) : 20))
-    .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+    // 与应付款查询保持一致，导出场景允许更大的 limit（最多 50,000）
+    .refine(val => val > 0 && val <= 50000, '每页数量必须在1-50000之间'),
   search: z.string().optional(),
   payableRecordId: z.string().optional(),
   supplierId: z.string().optional(),

@@ -24,6 +24,9 @@ export const GET = withAuth(async (request: NextRequest) => {
     // 解析 URL 查询参数
     const searchParams = request.nextUrl.searchParams;
     const params = parseMonthlyReportParams(searchParams);
+    const forceRefresh =
+      searchParams.get('forceRefresh') === 'true' ||
+      searchParams.get('regenerate') === 'true';
 
     // 验证参数
     const validationResult = safeValidateMonthlyReportParams(params);
@@ -41,22 +44,29 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     const { year, month, includeComparison } = validationResult.data;
 
-    // 使用缓存包装查询
-    const cacheKey = buildCacheKey('finance:reports:monthly', {
-      year,
-      month,
-      includeComparison,
-    });
+    let report;
 
-    const report = await getOrSetJSON(
-      cacheKey,
-      async () => getMonthlyReport(year, month, includeComparison),
-      FINANCE_CACHE_TTL_SECONDS,
-      {
-        enableRandomTTL: true,
-        enableNullCache: false, // 报表数据不缓存空值
-      }
-    );
+    if (forceRefresh) {
+      // 手动“生成报表”时强制重新计算，绕过缓存
+      report = await getMonthlyReport(year, month, includeComparison);
+    } else {
+      // 使用缓存包装查询
+      const cacheKey = buildCacheKey('finance:reports:monthly', {
+        year,
+        month,
+        includeComparison,
+      });
+
+      report = await getOrSetJSON(
+        cacheKey,
+        async () => getMonthlyReport(year, month, includeComparison),
+        FINANCE_CACHE_TTL_SECONDS,
+        {
+          enableRandomTTL: true,
+          enableNullCache: false, // 报表数据不缓存空值
+        }
+      );
+    }
 
     return NextResponse.json({
       success: true,

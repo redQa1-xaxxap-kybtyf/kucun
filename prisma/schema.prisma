@@ -17,6 +17,7 @@ model User {
   status       String   @default("active") @db.VarChar(32)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+  lastLoginAt  DateTime? @map("last_login_at")
 
   salesOrders              SalesOrder[]
   returnOrders             ReturnOrder[]
