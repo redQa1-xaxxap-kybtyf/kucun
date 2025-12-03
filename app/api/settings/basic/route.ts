@@ -24,7 +24,6 @@ const DEFAULT_BASIC_SETTINGS: BasicSettings = {
   companyEmail: '',
   companyWebsite: '',
   systemName: systemConfig.companyName,
-  systemVersion: '1.0.0',
   systemDescription: '专业的库存管理解决方案',
   defaultLanguage: systemConfig.defaultLanguage,
   lowStockThreshold: inventoryConfig.defaultMinQuantity,
@@ -54,6 +53,8 @@ export const GET = withAuth(
       // 构建设置对象
       const basicSettings: Partial<BasicSettings> = {
         ...DEFAULT_BASIC_SETTINGS,
+        // 系统版本由应用自身版本自动提供，不再通过表单手工维护
+        systemVersion: process.env.npm_package_version || '1.0.0',
       };
 
       settings.forEach(setting => {

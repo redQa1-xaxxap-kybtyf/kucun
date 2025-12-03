@@ -183,7 +183,6 @@ export function BasicSettingsForm() {
       companyEmail: '',
       companyWebsite: '',
       systemName: systemConfig.companyName,
-      systemVersion: '',
       systemDescription: '',
       defaultLanguage: systemConfig.defaultLanguage,
       lowStockThreshold: inventoryConfig.defaultMinQuantity,
@@ -301,19 +300,7 @@ export function BasicSettingsForm() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="systemVersion"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>系统版本</FormLabel>
-                  <FormControl>
-                    <Input placeholder="1.0.0" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* 系统版本不再由用户手工填写，只在其他位置展示 */}
           </div>
 
           <FormField

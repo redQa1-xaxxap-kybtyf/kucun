@@ -70,7 +70,6 @@ export const BasicSettingsSchema = z.object({
     .string()
     .min(1, '系统名称不能为空')
     .max(50, '系统名称不能超过50个字符'),
-  systemVersion: z.string().max(20, '系统版本不能超过20个字符').optional(),
   systemDescription: z
     .string()
     .max(500, '系统描述不能超过500个字符')
@@ -306,7 +305,6 @@ export const BasicSettingsFormSchema = z.object({
     .min(1, '系统名称不能为空')
     .max(50, '系统名称不能超过50个字符')
     .optional(),
-  systemVersion: z.string().max(20, '系统版本不能超过20个字符').optional(),
   systemDescription: z
     .string()
     .max(500, '系统描述不能超过500个字符')
