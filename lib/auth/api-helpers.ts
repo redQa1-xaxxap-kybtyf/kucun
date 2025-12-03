@@ -199,14 +199,18 @@ export function withAuth(
         const cookieStore = await cookies();
         const csrfCookie = cookieStore.get('csrf_token')?.value;
 
-        if (!csrfHeader || !csrfCookie || csrfHeader !== csrfCookie) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: 'CSRF 校验失败，请刷新页面后重试',
-            },
-            { status: 403 }
-          );
+        // 只有在服务器已下发 csrf_token Cookie 的情况下才严格执行双提交校验
+        // 避免首次请求时「边设置 Cookie 边校验」导致的误报
+        if (csrfCookie) {
+          if (!csrfHeader || csrfHeader !== csrfCookie) {
+            return NextResponse.json(
+              {
+                success: false,
+                error: 'CSRF 校验失败，请刷新页面后重试',
+              },
+              { status: 403 }
+            );
+          }
         }
       }
 
