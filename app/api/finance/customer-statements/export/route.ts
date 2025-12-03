@@ -72,10 +72,45 @@ function normalizeRange(
   return getDefaultDateRange();
 }
 
-function buildExportRows(detail: CustomerStatementDetail) {
-  const { customerName, periodStart, periodEnd, summary, openingBalance, transactions } = detail;
+// 对账单摘要导出字段（单行）
+interface CustomerStatementSummaryExportRow {
+  客户名称: string;
+  对账期间开始: string;
+  对账期间结束: string;
+  期初余额: number;
+  销售金额: number;
+  退货金额: number;
+  收款金额: number;
+  预收款: number;
+  已退款金额: number;
+  应收余额: number;
+  采购金额: number;
+  采购退货金额: number;
+  已付金额: number;
+  预付款: number;
+  应付余额: number;
+  净余额: number;
+}
 
-  const summaryRow = {
+// 交易明细导出字段（多行）
+interface CustomerStatementDetailExportRow {
+  日期: string;
+  类型: string;
+  单据号: string;
+  描述: string;
+  增加应收金额: number;
+  减少应收金额: number;
+  余额: number;
+  状态: string;
+}
+
+function buildSummaryExportRow(
+  detail: CustomerStatementDetail
+): CustomerStatementSummaryExportRow {
+  const { customerName, periodStart, periodEnd, summary, openingBalance } =
+    detail;
+
+  return {
     客户名称: customerName,
     对账期间开始: periodStart,
     对账期间结束: periodEnd,
@@ -86,29 +121,28 @@ function buildExportRows(detail: CustomerStatementDetail) {
     预收款: summary.receivables.prepaymentReceived,
     已退款金额: summary.receivables.refundPaid ?? 0,
     应收余额: summary.receivables.receivableBalance,
+    采购金额: summary.payables.purchaseAmount,
+    采购退货金额: summary.payables.purchaseReturnAmount,
+    已付金额: summary.payables.paymentPaid,
+    预付款: summary.payables.prepaymentPaid,
+    应付余额: summary.payables.payableBalance,
+    净余额: summary.netBalance,
   };
+}
 
-  const detailRows = transactions.map(tx => ({
+function buildDetailExportRows(
+  detail: CustomerStatementDetail
+): CustomerStatementDetailExportRow[] {
+  return detail.transactions.map(tx => ({
     日期: tx.transactionDate,
     类型: tx.transactionType,
     单据号: tx.referenceNumber,
     描述: tx.description,
-    增加应收: tx.debitAmount,
-    减少应收: tx.creditAmount,
+    增加应收金额: tx.debitAmount,
+    减少应收金额: tx.creditAmount,
     余额: tx.balance,
     状态: tx.status,
   }));
-
-  const rows = [
-    summaryRow,
-    { ...summaryRow, 客户名称: '——明细如下——' },
-    ...detailRows,
-  ];
-
-  return {
-    rows,
-    recordCount: detailRows.length,
-  };
 }
 
 /**
@@ -152,14 +186,19 @@ export const POST = withAuth(
         return errorResponse('该时间段内暂无对账记录，无法导出', 404);
       }
 
-      const { rows, recordCount } = buildExportRows(detail);
+      const summaryRow = buildSummaryExportRow(detail);
+      const detailRows = buildDetailExportRows(detail);
+      const recordCount = detailRows.length;
 
       // 使用服务端 XLSX 生成Excel文件
       const XLSX = await import('xlsx');
 
-      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const summarySheet = XLSX.utils.json_to_sheet([summaryRow]);
+      const detailSheet = XLSX.utils.json_to_sheet(detailRows);
+
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, '客户对账单');
+      XLSX.utils.book_append_sheet(workbook, summarySheet, '对账摘要');
+      XLSX.utils.book_append_sheet(workbook, detailSheet, '交易明细');
 
       const buffer = XLSX.write(workbook, {
         type: 'buffer',
