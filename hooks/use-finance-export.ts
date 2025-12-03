@@ -13,6 +13,7 @@ import { useCallback, useState } from 'react';
 
 import { useToast } from '@/components/ui/use-toast';
 import { clientLogger as logger } from '@/lib/logger/client';
+import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 /**
  * 导出选项
@@ -57,17 +58,20 @@ export function useFinanceExport(): UseFinanceExportResult {
           filters,
         });
 
-        // 发送导出请求
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...filters,
-            format,
-          }),
-        });
+        // 发送导出请求（附带 CSRF 头）
+        const response = await fetch(
+          endpoint,
+          getCsrfTokenHeader({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              ...filters,
+              format,
+            }),
+          })
+        );
 
         if (!response.ok) {
           // 尝试解析错误信息
