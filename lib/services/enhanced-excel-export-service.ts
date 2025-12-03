@@ -74,39 +74,6 @@ function calculateStringWidth(str: string): number {
 }
 
 /**
- * 智能计算列宽
- */
-function calculateColumnWidths<T extends Record<string, unknown>>(
-  data: T[],
-  fields: (keyof T)[],
-  headerMapping: Record<string, string>
-): number[] {
-  const widths: number[] = [];
-
-  fields.forEach((field, index) => {
-    // 表头宽度
-    const headerName = headerMapping[field as string] || String(field);
-    let maxWidth = calculateStringWidth(headerName);
-
-    // 数据宽度（采样前100行）
-    const sampleSize = Math.min(100, data.length);
-    for (let i = 0; i < sampleSize; i++) {
-      const value = data[i]?.[field];
-      if (value !== null && value !== undefined) {
-        const strValue = String(value);
-        const width = calculateStringWidth(strValue);
-        maxWidth = Math.max(maxWidth, width);
-      }
-    }
-
-    // 添加padding，限制最大宽度
-    widths[index] = Math.min(Math.max(maxWidth + 2, 8), 50);
-  });
-
-  return widths;
-}
-
-/**
  * 格式化日期值（Asia/Shanghai时区）
  */
 function formatDateValue(
@@ -172,11 +139,18 @@ export class EnhancedExcelExportService {
         headerMapping[field as string] || String(field);
     });
 
-    // 处理数据
-    const processedData = data.map(row => {
+    // 预计算每列的最大宽度（包含表头），只采样前100行数据，避免在大数据集上重复遍历
+    const sampleSize = Math.min(100, data.length);
+    const maxWidths: number[] = fields.map(field => {
+      const headerName = headers[field as string] || String(field);
+      return calculateStringWidth(headerName);
+    });
+
+    // 处理数据，同时在采样范围内更新列宽
+    const processedData = data.map((row, rowIndex) => {
       const processedRow: Record<string, unknown> = {};
 
-      fields.forEach(field => {
+      fields.forEach((field, colIndex) => {
         let value = row[field];
 
         // 自定义转换器优先
@@ -202,6 +176,15 @@ export class EnhancedExcelExportService {
         else {
           processedRow[field as string] = value ?? '';
         }
+
+        // 在采样范围内更新列宽（避免对完整数据集做二次遍历）
+        if (rowIndex < sampleSize) {
+          const cellValue = processedRow[field as string];
+          if (cellValue !== null && cellValue !== undefined) {
+            const width = calculateStringWidth(String(cellValue));
+            maxWidths[colIndex] = Math.max(maxWidths[colIndex], width);
+          }
+        }
       });
 
       return processedRow;
@@ -216,7 +199,10 @@ export class EnhancedExcelExportService {
     // 设置列宽
     const colWidths =
       columnWidths ||
-      calculateColumnWidths(processedData, fields, headerMapping);
+      maxWidths.map(maxWidth =>
+        // 添加 padding，限制最小/最大列宽
+        Math.min(Math.max(maxWidth + 2, 8), 50)
+      );
     worksheet['!cols'] = colWidths.map(width => ({ width }));
 
     // 设置数据类型和格式
