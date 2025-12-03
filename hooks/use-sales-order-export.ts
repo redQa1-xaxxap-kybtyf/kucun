@@ -8,9 +8,9 @@ import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/compo
 import { useToast } from '@/components/ui/use-toast';
 import {
   SalesOrderExportService,
-  type SalesOrderExcelExportOptions,
   type SalesOrderImageExportOptions,
 } from '@/lib/services/sales-order-export-service';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 
 /**
  * 销售订单导出Hook结果
@@ -22,15 +22,9 @@ export interface UseSalesOrderExportResult {
     options?: SalesOrderImageExportOptions
   ) => Promise<void>;
   /** 导出为Excel */
-  exportToExcel: (
-    order: SalesOrderDetail,
-    options?: SalesOrderExcelExportOptions
-  ) => void;
+  exportToExcel: (order: SalesOrderDetail) => Promise<void>;
   /** 导出为完整Excel（包含摘要和明细） */
-  exportToCompleteExcel: (
-    order: SalesOrderDetail,
-    options?: SalesOrderExcelExportOptions
-  ) => void;
+  exportToCompleteExcel: (order: SalesOrderDetail) => Promise<void>;
   /** 是否正在导出图片 */
   isExportingImage: boolean;
   /** 是否正在导出Excel */
@@ -48,10 +42,6 @@ export interface UseSalesOrderExportResult {
  * @returns 导出功能和状态
  */
 type ToastFn = ReturnType<typeof useToast>['toast'];
-type ExcelExporter = (
-  order: SalesOrderDetail,
-  options: SalesOrderExcelExportOptions
-) => void;
 
 function useImageExport(toast: ToastFn) {
   const [isExportingImage, setIsExportingImage] = useState(false);
@@ -107,79 +97,42 @@ function useImageExport(toast: ToastFn) {
   };
 }
 
-function useExcelExport(toast: ToastFn) {
-  const [isExportingExcel, setIsExportingExcel] = useState(false);
-  const [excelError, setExcelError] = useState<Error | null>(null);
-
-  const clearExcelError = useCallback(() => {
-    setExcelError(null);
-  }, []);
-
-  const runExcelExport = useCallback(
-    (
-      order: SalesOrderDetail,
-      options: SalesOrderExcelExportOptions | undefined,
-      exporter: ExcelExporter,
-      successDescription: string
-    ) => {
-      const exportOptions: SalesOrderExcelExportOptions = {
-        orderId: order.id,
-        orderNumber: order.orderNumber || '',
-        ...options,
-      };
-
-      setIsExportingExcel(true);
-      setExcelError(null);
-
-      try {
-        exporter(order, exportOptions);
-        toast({
-          title: '导出成功',
-          description: successDescription,
-        });
-      } catch (error) {
-        const err = error instanceof Error ? error : new Error('导出Excel失败');
-        setExcelError(err);
-        toast({
-          title: '导出失败',
-          description: err.message,
-          variant: 'destructive',
-        });
-        throw err;
-      } finally {
-        setIsExportingExcel(false);
-      }
-    },
-    [toast]
-  );
+function useExcelExport() {
+  const { exportData, isExporting, error } = useFinanceExport();
 
   const exportToExcel = useCallback(
-    (order: SalesOrderDetail, options?: SalesOrderExcelExportOptions) =>
-      runExcelExport(
-        order,
-        options,
-        SalesOrderExportService.exportOrderToExcel,
-        '销售订单Excel文件已生成并下载'
-      ),
-    [runExcelExport]
+    async (order: SalesOrderDetail) => {
+      await exportData(`/api/sales-orders/${order.id}/export`, {
+        format: 'excel',
+        filters: {
+          mode: 'details',
+        },
+      });
+    },
+    [exportData]
   );
 
   const exportToCompleteExcel = useCallback(
-    (order: SalesOrderDetail, options?: SalesOrderExcelExportOptions) =>
-      runExcelExport(
-        order,
-        options,
-        SalesOrderExportService.exportOrderToCompleteExcel,
-        '销售订单完整Excel文件已生成并下载'
-      ),
-    [runExcelExport]
+    async (order: SalesOrderDetail) => {
+      await exportData(`/api/sales-orders/${order.id}/export`, {
+        format: 'excel',
+        filters: {
+          mode: 'complete',
+        },
+      });
+    },
+    [exportData]
   );
+
+  const clearExcelError = useCallback(() => {
+    // 错误已在 useFinanceExport 内部通过 toast 处理，这里仅保留签名
+  }, []);
 
   return {
     exportToExcel,
     exportToCompleteExcel,
-    isExportingExcel,
-    excelError,
+    isExportingExcel: isExporting,
+    excelError: error,
     clearExcelError,
   };
 }
