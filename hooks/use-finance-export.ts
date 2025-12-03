@@ -137,7 +137,8 @@ export function useFinanceExport(): UseFinanceExportResult {
         });
       } catch (err) {
         const error = err instanceof Error ? err : new Error('导出失败');
-        logger.error('finance-export', '导出失败', error);
+        // 导出失败属于业务级错误，使用 warn 避免在控制台制造“红色报错”压力
+        logger.warn('finance-export', `导出失败：${error.message}`);
         setError(error);
 
         toast({
@@ -146,7 +147,6 @@ export function useFinanceExport(): UseFinanceExportResult {
           description: error.message,
         });
 
-        throw error;
       } finally {
         setIsExporting(false);
       }
