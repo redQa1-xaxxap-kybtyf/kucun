@@ -284,7 +284,9 @@ export const POST = withAuth(
       return errorResponse(errorMessage, 500);
     }
   },
-  { permissions: ['finance:export'] }
+  // 放宽为「拥有 finance:export 或 finance:view 任一权限」即可导出，
+  // 与「能查看详情的用户就可以导出」的业务预期保持一致
+  { anyPermissions: ['finance:export', 'finance:view'] }
 );
 
 
