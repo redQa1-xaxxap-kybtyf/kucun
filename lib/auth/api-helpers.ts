@@ -12,6 +12,7 @@ import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
 import { getApiAuthContext, type AuthUser } from './context';
@@ -177,11 +178,25 @@ export function withAuth(
       );
 
       if (isStateChanging) {
-        // 0.1 同源检查：Origin 必须与当前站点一致（如果存在 Origin）
+        // 0.1 同源检查：Origin 必须在允许列表中（如果存在 Origin）
         const origin = request.headers.get('origin');
-        const requestOrigin = request.nextUrl.origin;
 
-        if (origin && origin !== requestOrigin) {
+        // 当前应用内部看到的 Origin（通常是 http://127.0.0.1:3000）
+        const internalOrigin = request.nextUrl.origin;
+
+        // 根据 NEXTAUTH_URL 推导出的「外部访问域名」
+        const externalOrigin = env.NEXTAUTH_URL
+          ? new URL(env.NEXTAUTH_URL).origin
+          : null;
+
+        // 允许的 Origin 列表：内部 Origin + 外部 Origin（如配置）
+        const allowedOrigins = new Set<string>();
+        allowedOrigins.add(internalOrigin);
+        if (externalOrigin) {
+          allowedOrigins.add(externalOrigin);
+        }
+
+        if (origin && !allowedOrigins.has(origin)) {
           return NextResponse.json(
             {
               success: false,
