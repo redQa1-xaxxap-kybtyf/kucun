@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -26,6 +26,10 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  loadFieldSelection,
+  saveFieldSelection,
+} from '@/lib/services/field-selection-storage';
 import { PrintService } from '@/lib/services/print-service';
 import { PrintTemplateService } from '@/lib/services/print-template-service';
 import {
@@ -115,10 +119,16 @@ export function PrintPreviewDialog({
       createDefaultStyleConfig(documentType)
   );
 
-  // 字段选择状态
-  const [fieldSelection, setFieldSelection] = useState<FieldSelection>(() =>
-    getDefaultSelectedKeys(printConfig)
-  );
+  // 字段选择状态 - 从localStorage加载或使用默认值
+  const [fieldSelection, setFieldSelection] = useState<FieldSelection>(() => {
+    const saved = loadFieldSelection(documentType);
+    return saved || getDefaultSelectedKeys(printConfig);
+  });
+
+  // 自动保存字段选择
+  useEffect(() => {
+    saveFieldSelection(documentType, fieldSelection);
+  }, [documentType, fieldSelection]);
 
   // 样式编辑器开关
   const [showStyleEditor, setShowStyleEditor] = useState(false);
@@ -181,6 +191,17 @@ export function PrintPreviewDialog({
     setStyleConfig(newStyle);
     setShowStyleEditor(false);
   }, []);
+
+  // 重置字段选择
+  const handleResetFields = useCallback(() => {
+    const defaultSelection = getDefaultSelectedKeys(printConfig);
+    setFieldSelection(defaultSelection);
+    toast({
+      title: '已重置',
+      description: '字段选择已恢复为默认值',
+      variant: 'success',
+    });
+  }, [printConfig, toast]);
 
   return (
     <>
@@ -254,11 +275,25 @@ export function PrintPreviewDialog({
                 </TabsContent>
 
                 <TabsContent value="fields" className="p-0">
-                  <FieldSelector
-                    config={printConfig}
-                    selectedFields={fieldSelection}
-                    onSelectionChange={setFieldSelection}
-                  />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b p-4">
+                      <span className="text-sm font-medium">
+                        字段选择会自动保存
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleResetFields}
+                      >
+                        重置为默认
+                      </Button>
+                    </div>
+                    <FieldSelector
+                      config={printConfig}
+                      selectedFields={fieldSelection}
+                      onSelectionChange={setFieldSelection}
+                    />
+                  </div>
                 </TabsContent>
               </Tabs>
             </div>

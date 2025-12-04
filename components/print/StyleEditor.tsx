@@ -251,6 +251,8 @@ export function StyleEditor({
         size={config.page.size}
         orientation={config.page.orientation}
         margin={config.page.margin}
+        borderColor={config.page.borderColor}
+        borderWidth={config.page.borderWidth}
       >
         {/* 表头 */}
         <div
@@ -258,7 +260,7 @@ export function StyleEditor({
           style={{
             textAlign: config.header.alignment,
             borderBottom: config.header.showBorder
-              ? `1px solid ${config.header.borderColor}`
+              ? `${config.header.borderWidth ?? 1}px solid ${config.header.borderColor}`
               : 'none',
             backgroundColor: config.header.backgroundColor,
             padding: `${config.header.padding}px`,
@@ -578,6 +580,7 @@ export function StyleEditor({
                 <SelectItem value="classic">经典样式</SelectItem>
                 <SelectItem value="modern">现代样式</SelectItem>
                 <SelectItem value="compact">紧凑样式</SelectItem>
+                <SelectItem value="tianjin-haoxing">天津豪星发货单</SelectItem>
               </SelectContent>
             </Select>
           </div>

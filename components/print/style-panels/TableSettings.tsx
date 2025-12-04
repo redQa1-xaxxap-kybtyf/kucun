@@ -246,6 +246,38 @@ export function TableSettings({ value, onChange }: TableSettingsProps) {
                 step={1}
               />
             </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="header-border-width">表头底线宽度 (px)</Label>
+                <NumberInput
+                  id="header-border-width"
+                  value={value.headerBottomBorderWidth ?? value.borderWidth}
+                  onChange={headerBottomBorderWidth =>
+                    onChange({ headerBottomBorderWidth })
+                  }
+                  min={1}
+                  max={8}
+                  step={1}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="last-row-border-width">
+                  最后一行底线宽度 (px)
+                </Label>
+                <NumberInput
+                  id="last-row-border-width"
+                  value={value.lastRowBottomBorderWidth ?? value.borderWidth}
+                  onChange={lastRowBottomBorderWidth =>
+                    onChange({ lastRowBottomBorderWidth })
+                  }
+                  min={1}
+                  max={8}
+                  step={1}
+                />
+              </div>
+            </div>
           </div>
         )}
       </div>

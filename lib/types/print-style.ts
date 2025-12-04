@@ -65,6 +65,47 @@ export interface PageSettings {
    * 页边距
    */
   margin: PageMargin;
+
+  /**
+   * 页面外边框颜色（可选）
+   * 不设置或边框宽度为 0 时不显示外边框
+   */
+  borderColor?: string;
+
+  /**
+   * 页面外边框宽度（px，可选）
+   */
+  borderWidth?: number;
+}
+
+/**
+ * 订单编号配置
+ */
+export interface OrderNumberConfig {
+  /**
+   * 是否显示订单编号
+   */
+  show: boolean;
+
+  /**
+   * 订单编号位置
+   */
+  position: 'top-right' | 'top-left' | 'inline';
+
+  /**
+   * 订单编号标签
+   */
+  label: string;
+
+  /**
+   * 字体大小（px）
+   */
+  fontSize: number;
+
+  /**
+   * 字重
+   */
+  fontWeight: FontWeight;
 }
 
 /**
@@ -127,6 +168,11 @@ export interface HeaderSettings {
   borderColor?: string;
 
   /**
+   * 边框宽度（px，可选）
+   */
+  borderWidth?: number;
+
+  /**
    * 背景颜色
    */
   backgroundColor?: string;
@@ -135,6 +181,11 @@ export interface HeaderSettings {
    * 内边距（px）
    */
   padding?: number;
+
+  /**
+   * 订单编号配置
+   */
+  orderNumber?: OrderNumberConfig;
 }
 
 /**
@@ -227,6 +278,18 @@ export interface TableSettings {
   borderWidth: number;
 
   /**
+   * 表头底部边框宽度（px，可选）
+   * 未设置时使用 borderWidth
+   */
+  headerBottomBorderWidth?: number;
+
+  /**
+   * 最后一行底部边框宽度（px，可选）
+   * 未设置时使用 borderWidth
+   */
+  lastRowBottomBorderWidth?: number;
+
+  /**
    * 是否显示斑马纹
    */
   stripedRows: boolean;
@@ -280,6 +343,28 @@ export interface SummarySettings {
    * 内边距（px）
    */
   padding?: number;
+
+  /**
+   * 字段颜色配置
+   * 键为字段key,值为颜色(支持hex/rgb/颜色名称)
+   * @example { totalAmount: '#ff0000', totalWeight: '#00ff00' }
+   */
+  fieldColors?: Record<string, string>;
+
+  /**
+   * 是否显示汇总区域外边框
+   */
+  showBorder?: boolean;
+
+  /**
+   * 汇总区域外边框颜色
+   */
+  borderColor?: string;
+
+  /**
+   * 汇总区域外边框宽度（px）
+   */
+  borderWidth?: number;
 }
 
 /**
@@ -428,7 +513,11 @@ export interface PrintStyleConfig {
 /**
  * 预设样式类型
  */
-export type PresetStyleType = 'classic' | 'modern' | 'compact';
+export type PresetStyleType =
+  | 'classic'
+  | 'modern'
+  | 'compact'
+  | 'tianjin-haoxing';
 
 /**
  * 预设样式配置（部分配置）
@@ -506,6 +595,9 @@ export function createDefaultStyleConfig(
         bottom: 10,
         left: 10,
       },
+      // 默认不绘制页面外边框，由各预设或用户在样式编辑器中自行配置
+      borderColor: '#000000',
+      borderWidth: 0,
     },
     header: {
       showLogo: false,
@@ -549,6 +641,9 @@ export function createDefaultStyleConfig(
       highlightTotal: true,
       highlightColor: '#fef3c7',
       padding: 16,
+      showBorder: false,
+      borderColor: '#000000',
+      borderWidth: 0,
     },
     footer: {
       show: true,
@@ -681,6 +776,94 @@ export function createCompactStylePreset(
 }
 
 /**
+ * 预设样式：天津豪星陶瓷样式
+ */
+export function createTianjinHaoxingStylePreset(
+  documentType: DocumentType,
+  companyName: string = '天津豪星陶瓷'
+): PrintStyleConfig {
+  const base = createDefaultStyleConfig(documentType, companyName);
+  return {
+    ...base,
+    name: '天津豪星陶瓷样式',
+    page: {
+      ...base.page,
+      // 整页红色粗边框，接近天津豪星发货单效果
+      borderColor: '#ff0000',
+      borderWidth: 3,
+    },
+    header: {
+      ...base.header,
+      showLogo: false,
+      companyName: `${companyName}发货单`,
+      companyNameFontSize: 24,
+      subtitleFontSize: 0, // 不显示副标题
+      alignment: 'center',
+      showBorder: true,
+      borderColor: '#ff0000', // 红色边框
+      borderWidth: 2,
+      backgroundColor: '#ffffff',
+      padding: 12,
+      orderNumber: {
+        show: true,
+        position: 'top-right',
+        label: '编号',
+        fontSize: 12,
+        fontWeight: 'normal',
+      },
+    },
+    infoSection: {
+      ...base.infoSection,
+      layout: 'single-column', // 单行布局
+      labelFontSize: 12,
+      valueFontSize: 12,
+      labelColor: '#000000',
+      valueColor: '#000000',
+      rowSpacing: 6,
+    },
+    table: {
+      ...base.table,
+      headerBgColor: '#f5f5f5',
+      headerTextColor: '#000000',
+      headerFontSize: 12,
+      headerFontWeight: 'bold',
+      rowFontSize: 11,
+      rowHeight: 30,
+      borderStyle: 'solid',
+      borderColor: '#ff0000', // 红色边框
+      borderWidth: 2,
+      stripedRows: false, // 不要斑马纹
+      cellPadding: 6,
+    },
+    summary: {
+      ...base.summary,
+      alignment: 'left',
+      fontSize: 12,
+      fontWeight: 'bold',
+      showChineseAmount: true,
+      highlightTotal: false, // 不要整体高亮
+      highlightColor: '#ffffff',
+      padding: 12,
+      showBorder: true,
+      borderColor: '#ff0000',
+      borderWidth: 2,
+      fieldColors: {
+        totalAmount: '#ff0000', // 红色
+        totalWeight: '#00aa00', // 绿色
+      },
+    },
+    footer: {
+      ...base.footer,
+      show: false, // 不显示页脚
+    },
+    signature: {
+      ...base.signature,
+      show: false, // 不显示签名区
+    },
+  };
+}
+
+/**
  * 获取预设样式
  */
 export function getPresetStyle(
@@ -695,6 +878,8 @@ export function getPresetStyle(
       return createModernStylePreset(documentType, companyName);
     case 'compact':
       return createCompactStylePreset(documentType, companyName);
+    case 'tianjin-haoxing':
+      return createTianjinHaoxingStylePreset(documentType, companyName);
     default:
       return createDefaultStyleConfig(documentType, companyName);
   }

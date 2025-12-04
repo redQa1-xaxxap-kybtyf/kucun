@@ -65,6 +65,16 @@ export interface PrintLayoutProps {
   margin?: Partial<PageMargin>;
 
   /**
+   * 页面外边框颜色（可选）
+   */
+  borderColor?: string;
+
+  /**
+   * 页面外边框宽度（px，可选）
+   */
+  borderWidth?: number;
+
+  /**
    * 子元素
    */
   children: ReactNode;
@@ -95,6 +105,8 @@ export function PrintLayout({
   size = 'A4',
   orientation = 'landscape',
   margin: customMargin,
+  borderColor,
+  borderWidth,
   children,
   className,
   id = 'print-container',
@@ -109,6 +121,11 @@ export function PrintLayout({
   // 计算内容区域尺寸
   const contentWidth = width - margin.left - margin.right;
   const contentHeight = height - margin.top - margin.bottom;
+
+  const pageBorder =
+    borderColor && borderWidth && borderWidth > 0
+      ? `${borderWidth}px solid ${borderColor}`
+      : 'none';
 
   return (
     <div
@@ -136,6 +153,7 @@ export function PrintLayout({
           padding: `${margin.top}mm ${margin.right}mm ${margin.bottom}mm ${margin.left}mm`,
           margin: '0 auto',
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+          border: pageBorder,
         }}
       >
         {children}

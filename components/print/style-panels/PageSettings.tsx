@@ -15,6 +15,7 @@
 
 import React from 'react';
 
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NumberInput } from '@/components/ui/number-input';
 import {
@@ -183,6 +184,55 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
         <p className="text-muted-foreground text-xs">
           调整页边距可控制内容区域大小，建议5-15mm之间
         </p>
+      </div>
+
+      {/* 页面外边框 */}
+      <div className="space-y-4">
+        <Label>页面外边框</Label>
+        <p className="text-muted-foreground text-xs">
+          可选设置整张单据的外边框颜色和粗细，适合中国ERP发货单那种红色粗边框效果。
+        </p>
+        <div className="space-y-2">
+          <Label htmlFor="page-border-color">边框颜色</Label>
+          <div className="flex gap-2">
+            <Input
+              id="page-border-color"
+              type="color"
+              value={value.borderColor || '#000000'}
+              onChange={e =>
+                onChange({ borderColor: e.target.value || undefined })
+              }
+              className="h-10 w-20"
+            />
+            <Input
+              value={value.borderColor || '#000000'}
+              onChange={e =>
+                onChange({ borderColor: e.target.value || undefined })
+              }
+              placeholder="#000000"
+              className="flex-1"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="page-border-width">边框宽度 (px)</Label>
+          <NumberInput
+            id="page-border-width"
+            value={value.borderWidth ?? 0}
+            onChange={borderWidth =>
+              onChange({
+                borderWidth: borderWidth ?? 0,
+              })
+            }
+            min={0}
+            max={10}
+            step={1}
+          />
+          <p className="text-muted-foreground text-xs">
+            0 表示不显示外边框，3px 左右适合粗红框发货单。
+          </p>
+        </div>
       </div>
 
       {/* 预览尺寸信息 */}

@@ -205,6 +205,21 @@ export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
                 className="flex-1"
               />
             </div>
+
+            <div className="mt-3 space-y-2">
+              <Label htmlFor="header-border-width">边框宽度 (px)</Label>
+              <NumberInput
+                id="header-border-width"
+                value={value.borderWidth ?? 2}
+                onChange={borderWidth => onChange({ borderWidth })}
+                min={1}
+                max={6}
+                step={1}
+              />
+              <p className="text-muted-foreground text-xs">
+                控制标题下方横线粗细，2-3px 适合中国ERP发货单样式。
+              </p>
+            </div>
           </div>
         )}
       </div>

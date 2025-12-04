@@ -226,6 +226,50 @@ export function OtherSettings({
           )}
         </div>
 
+        {/* 汇总区边框 */}
+        <div className="space-y-2">
+          <Label htmlFor="summary-border-width">外边框宽度 (px)</Label>
+          <NumberInput
+            id="summary-border-width"
+            value={summary.borderWidth ?? 0}
+            onChange={borderWidth =>
+              onSummaryChange({
+                borderWidth: borderWidth ?? 0,
+                showBorder: (borderWidth ?? 0) > 0,
+              })
+            }
+            min={0}
+            max={5}
+            step={1}
+          />
+          <p className="text-muted-foreground text-xs">
+            0 表示不显示汇总区域外边框，2px 左右常用于ERP单据中的粗线汇总栏。
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="summary-border-color">外边框颜色</Label>
+          <div className="flex gap-2">
+            <Input
+              id="summary-border-color"
+              type="color"
+              value={summary.borderColor || '#000000'}
+              onChange={e =>
+                onSummaryChange({ borderColor: e.target.value || '#000000' })
+              }
+              className="h-10 w-20"
+            />
+            <Input
+              value={summary.borderColor || '#000000'}
+              onChange={e =>
+                onSummaryChange({ borderColor: e.target.value || '#000000' })
+              }
+              placeholder="#000000"
+              className="flex-1"
+            />
+          </div>
+        </div>
+
         {/* 内边距 */}
         <div className="space-y-2">
           <Label htmlFor="summary-padding">内边距 (px)</Label>

@@ -193,7 +193,8 @@
       "Bash(git rm:*)",
       "Bash(do if grep -q \"searchParams\" \"$file\")",
       "Bash(then if ! grep -q \"searchParams: Promise\" \"$file\")",
-      "Bash(then echo \"$file\")"
+      "Bash(then echo \"$file\")",
+      "WebFetch(domain:www.npmjs.com)"
     ],
     "deny": [],
     "ask": []
