@@ -56,6 +56,7 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
 
   const requireManualCode = true;
   const requireManualName = false;
+  const isTransferOrder = _orderType === 'TRANSFER';
 
   const allProducts = React.useMemo(() => {
     const map = new Map<string, Product>();
@@ -389,10 +390,10 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
               isSearching={isSearchingProducts}
               placeholder={placeholder ?? '搜索产品或添加临时产品'}
               className="h-8 text-xs"
-              allowTemporaryProducts={true}
+              allowTemporaryProducts={isTransferOrder}
               temporaryProductRequirements={{
-                requireCode: requireManualCode,
-                requireName: requireManualName,
+                requireCode: isTransferOrder ? requireManualCode : false,
+                requireName: isTransferOrder ? requireManualName : false,
               }}
               simple={true}
               onBlur={field.onBlur}

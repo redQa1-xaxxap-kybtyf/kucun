@@ -1,12 +1,19 @@
 'use client';
 
-import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, Package } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import { useSystemVersion } from '@/hooks/use-system-version';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
@@ -38,6 +45,7 @@ export function SidebarClient({
 }: SidebarClientProps) {
   const pathname = usePathname();
   const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([]);
+  const { version, systemName } = useSystemVersion();
 
   const totalItems =
     accessibleNavItems.length + accessibleBottomNavItems.length;
@@ -77,6 +85,40 @@ export function SidebarClient({
           pathname={pathname}
         />
       </ScrollArea>
+
+      {/* 系统版本信息 */}
+      <div
+        className={cn('border-t px-4 py-3', state.isCollapsed && 'px-2 py-2')}
+      >
+        <TooltipProvider>
+          <div
+            className={cn(
+              'text-muted-foreground text-xs',
+              state.isCollapsed
+                ? 'flex justify-center'
+                : 'flex items-center justify-between'
+            )}
+          >
+            {!state.isCollapsed ? (
+              <>
+                <span className="font-medium">{systemName}</span>
+                <span className="font-mono font-semibold">v{version}</span>
+              </>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs">
+                    {systemName} v{version}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
+      </div>
     </div>
   );
 }

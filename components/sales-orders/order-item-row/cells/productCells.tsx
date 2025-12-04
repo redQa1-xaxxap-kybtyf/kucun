@@ -25,22 +25,50 @@ export function ProductCodeCell({
   products,
   onProductChange,
   orderType,
+  isManualProduct,
 }: {
   form: OrderFormInstance;
   index: number;
   products: Product[];
   onProductChange: (product: Product | null) => void;
   orderType: 'NORMAL' | 'TRANSFER';
+  isManualProduct: boolean;
 }) {
+  const productCodePath = `items.${index}.productCode` as const;
+
   return (
     <TableCell className={`${baseCellClass} min-w-[200px]`}>
-      <IntelligentProductInput
-        form={form}
-        index={index}
-        products={products}
-        onProductChange={onProductChange}
-        orderType={orderType}
-      />
+      {isManualProduct ? (
+        <FormField
+          control={form.control}
+          name={productCodePath}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  className="h-8 font-mono text-xs"
+                  placeholder="产品编码"
+                  onChange={event => {
+                    const value = event.target.value;
+                    field.onChange(value === '' ? undefined : value.trim());
+                  }}
+                />
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
+      ) : (
+        <IntelligentProductInput
+          form={form}
+          index={index}
+          products={products}
+          onProductChange={onProductChange}
+          orderType={orderType}
+        />
+      )}
     </TableCell>
   );
 }

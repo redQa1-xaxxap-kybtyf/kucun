@@ -10,16 +10,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 import type { TemporaryProductRequirements } from '../../smart-product-search/types';
-import { UNIT_OPTIONS } from '../types';
 import type { TemporaryProductData } from '../validation';
 
 interface TemporaryProductFormProps {
@@ -47,7 +39,6 @@ export function TemporaryProductForm({
         <ProductCodeField form={form} requirements={requirements} />
         <NameField form={form} requirements={requirements} />
         <SpecificationWeightFields form={form} />
-        <UnitField form={form} />
         <PiecesPerUnitField form={form} />
         <FormActions onCancel={onCancel} />
       </form>
@@ -167,35 +158,6 @@ function SpecificationWeightFields({
         )}
       />
     </div>
-  );
-}
-
-function UnitField({ form }: { form: UseFormReturn<TemporaryProductData> }) {
-  return (
-    <FormField
-      control={form.control}
-      name="unit"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>单位</FormLabel>
-          <Select onValueChange={field.onChange} value={field.value || ''}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="选择单位" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {UNIT_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
   );
 }
 

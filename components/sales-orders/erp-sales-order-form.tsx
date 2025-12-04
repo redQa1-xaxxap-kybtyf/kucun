@@ -94,6 +94,9 @@ const UNIT_MAPPING: Record<string, string> = {
   ml: '毫升',
 };
 
+// 记住“新建销售订单”页面最近一次选择的订单类型，避免刷新/重载后总是回到 NORMAL
+const ORDER_TYPE_STORAGE_KEY = 'salesOrders.create.defaultOrderType';
+
 // 客户数据查询已移至 CustomerSelector 组件内部
 type SuppliersResponse = Awaited<ReturnType<typeof getSuppliers>>;
 
@@ -268,6 +271,28 @@ export function ERPSalesOrderForm({
     []
   );
 
+  // 挂载时从 sessionStorage 恢复最近一次选择的订单类型，防止刷新/重载后总是变回 NORMAL
+  React.useEffect(() => {
+    if (mode !== 'create') {
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const stored = window.sessionStorage.getItem(ORDER_TYPE_STORAGE_KEY);
+    if (stored === 'NORMAL' || stored === 'TRANSFER') {
+      const current = form.getValues('orderType');
+      if (current !== stored) {
+        form.setValue('orderType', stored as 'NORMAL' | 'TRANSFER', {
+          shouldDirty: false,
+          shouldValidate: false,
+        });
+      }
+    }
+  }, [form, mode]);
+
   // 监听客户ID变化
   const selectedCustomerId = form.watch('customerId');
   const orderType = form.watch('orderType');
@@ -424,6 +449,22 @@ export function ERPSalesOrderForm({
       }
     }
   }, [form, orderType]);
+
+  // 兜底逻辑：在“新建订单”时，只要已经选择了供应商，就强制保持为“调货销售”
+  // 目的：防止某些重置/校验流程把 orderType 意外改回 NORMAL，导致你看到模式跳变
+  React.useEffect(() => {
+    if (mode !== 'create') {
+      return;
+    }
+    const currentSupplierId = (supplierId ?? '').toString().trim();
+    const currentOrderType = form.getValues('orderType');
+    if (currentSupplierId && currentOrderType !== 'TRANSFER') {
+      form.setValue('orderType', 'TRANSFER', {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    }
+  }, [form, mode, supplierId]);
 
   const coerceNumeric = (value: unknown): number => {
     const parsed = Number(value);
@@ -1184,7 +1225,16 @@ export function ERPSalesOrderForm({
                       <FormControl>
                         <RadioGroup
                           value={field.value}
-                          onValueChange={field.onChange}
+                          onValueChange={value => {
+                            field.onChange(value);
+                            // 把最近一次的选择记到 sessionStorage，防止刷新/重载后丢失
+                            if (typeof window !== 'undefined') {
+                              window.sessionStorage.setItem(
+                                ORDER_TYPE_STORAGE_KEY,
+                                value
+                              );
+                            }
+                          }}
                           className="flex flex-row space-x-8 pt-1.5"
                         >
                           <div className="flex items-center space-x-2">
@@ -1333,7 +1383,19 @@ export function ERPSalesOrderForm({
                             <SupplierSelector
                               suppliers={suppliersData?.data || []}
                               value={field.value}
-                              onValueChange={field.onChange}
+                              onValueChange={value => {
+                                // ✅ 先确保订单类型是"调货销售"，再设置供应商ID
+                                // 这样可以避免field.onChange触发的副作用导致orderType被重置
+                                if (
+                                  form.getValues('orderType') !== 'TRANSFER'
+                                ) {
+                                  form.setValue('orderType', 'TRANSFER', {
+                                    shouldDirty: true,
+                                    shouldValidate: false,
+                                  });
+                                }
+                                field.onChange(value);
+                              }}
                               placeholder="搜索并选择供应商"
                               disabled={suppliersLoading}
                               isLoading={suppliersLoading}

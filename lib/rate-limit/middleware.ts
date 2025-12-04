@@ -70,6 +70,15 @@ export async function checkRateLimit(
     return { limited: false };
   }
 
+  // 对认证类限流做方法级细化控制：
+  // - AUTH: 只限制非 GET/HEAD 请求（登录、注册等），避免 /api/auth/session 这类轮询把额度耗光
+  if (type === RateLimitType.AUTH) {
+    const method = request.method.toUpperCase();
+    if (method === 'GET' || method === 'HEAD') {
+      return { limited: false };
+    }
+  }
+
   try {
     // 获取速率限制器
     const limiter = getRateLimiter(type);
@@ -128,17 +137,51 @@ function createRateLimitResponse(
 
   const message = messages[type] || '请求过于频繁，请稍后再试';
 
-  // 构造 NextAuth 兼容的错误跳转地址，确保前端能解析 error 参数
-  const errorUrl = new URL('/auth/error', request.nextUrl.origin);
-  errorUrl.searchParams.set('error', 'RATE_LIMIT_EXCEEDED');
-  errorUrl.searchParams.set('type', type);
+  // === 针对认证接口的特殊处理 ===
+  // 对于 /api/auth/[...nextauth] 路由，我们需要返回 NextAuth 兼容格式，
+  // 这样前端的 signIn({ redirect: false }) 才能拿到 error 字段，
+  // 在登录页用友好的文案提示，而不是发生跳转或直接展示 JSON 源码。
+  const pathname = request.nextUrl.pathname;
+  const isNextAuthRoute =
+    type === RateLimitType.AUTH && pathname.startsWith('/api/auth/');
+
+  if (isNextAuthRoute) {
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        status: 429,
+        // NextAuth 客户端会读取 error 字段作为错误代码
+        error: 'RATE_LIMIT_EXCEEDED',
+        // 不再提供跳转 URL，避免自动跳到错误页面或直接展示 JSON
+        url: null,
+        // 额外附带详细信息，便于调试
+        details: {
+          message,
+          limit: result.limit,
+          remaining: result.remaining,
+          resetAt: result.resetAt.toISOString(),
+          type,
+        },
+      }),
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(retryAfter),
+          'X-RateLimit-Limit': String(result.limit),
+          'X-RateLimit-Remaining': String(result.remaining),
+          'X-RateLimit-Reset': result.resetAt.toISOString(),
+        },
+      }
+    );
+  }
 
   return new Response(
     JSON.stringify({
       success: false,
       error: {
         type: 'RATE_LIMIT_EXCEEDED',
-        message,
+        message, // 简洁错误信息，给通用业务接口使用
         retryAfter: result.resetAt.toISOString(),
         details: {
           limit: result.limit,
@@ -146,7 +189,6 @@ function createRateLimitResponse(
           resetAt: result.resetAt.toISOString(),
         },
       },
-      url: errorUrl.toString(),
     }),
     {
       status: 429,

@@ -250,17 +250,6 @@ export function validateManualProductFields(
 
   items.forEach((item, index) => {
     if (item.isManualProduct) {
-      const hasName =
-        typeof item.manualProductName === 'string' &&
-        item.manualProductName.trim() !== '';
-
-      if (!hasName) {
-        reportIssue(
-          ['items', index, 'manualProductName'],
-          '手动输入产品必须填写产品名称'
-        );
-      }
-
       if (shouldRequireManualCode) {
         const hasCode =
           typeof item.productCode === 'string' &&

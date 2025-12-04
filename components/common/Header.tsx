@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
+import { useSystemVersion } from '@/hooks/use-system-version';
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
@@ -68,6 +69,9 @@ function HeaderComponent({
 
   // 直接使用传递的用户信息，避免重复的会话请求
   const currentUser = user;
+
+  // 系统版本信息
+  const { version } = useSystemVersion();
 
   // 通知系统（轮询方式 - 更简单可靠）
   // 注意：必须在所有条件语句之前调用 Hooks
@@ -406,6 +410,17 @@ function HeaderComponent({
               <DropdownMenuItem onClick={() => router.push('/help')}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 帮助中心
+              </DropdownMenuItem>
+
+              {/* 关于系统 */}
+              <DropdownMenuItem disabled>
+                <Monitor className="mr-2 h-4 w-4" />
+                <div className="flex flex-1 items-center justify-between">
+                  <span>关于</span>
+                  <span className="text-muted-foreground ml-2 text-xs">
+                    v{version}
+                  </span>
+                </div>
               </DropdownMenuItem>
 
               <DropdownMenuSeparator />

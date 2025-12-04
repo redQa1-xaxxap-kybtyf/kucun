@@ -112,6 +112,7 @@ function OrderItemRowView({
         products={products}
         onProductChange={onProductOverride}
         orderType={orderType}
+        isManualProduct={isManualProduct}
       />
       <ProductNameCell
         form={form}
