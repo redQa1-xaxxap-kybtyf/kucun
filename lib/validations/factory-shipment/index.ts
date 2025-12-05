@@ -209,6 +209,26 @@ const factoryShipmentOrderItemFormSchema = z.object({
     .max(200, '归属备注不能超过200个字符')
     .optional()
     .or(z.literal('')),
+  // 手动输入产品信息（临时产品）—— 与后端Schema保持一致，避免被误判为库存产品
+  isManualProduct: z.boolean().optional(),
+  manualProductName: z
+    .string()
+    .max(100, '产品名称不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+  manualSpecification: z
+    .string()
+    .max(200, '规格不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
+  manualWeight: z
+    .preprocess(coerceNumber, z.number().min(0, '重量不能为负数'))
+    .optional(),
+  manualUnit: z
+    .string()
+    .max(20, '单位不能超过20个字符')
+    .optional()
+    .or(z.literal('')),
   displayName: z
     .string()
     .max(200, '产品名称不能超过200个字符')

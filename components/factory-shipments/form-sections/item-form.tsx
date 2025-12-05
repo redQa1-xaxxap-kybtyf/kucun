@@ -176,6 +176,8 @@ export const ItemForm = React.memo<ItemFormProps>(
                     }
                   }
                 }}
+                // 客户直发：允许直接添加临时产品
+                enableTemporaryProducts
               />
             </div>
 

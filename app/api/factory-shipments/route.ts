@@ -4,6 +4,10 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import {
+  buildTemporaryProductDataFromOrderItem,
+  findOrCreateTemporaryProduct,
+} from '@/lib/api/handlers/sales-orders/temporary-products';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env, paginationConfig } from '@/lib/env';
@@ -288,6 +292,37 @@ async function createOrderInTransaction(
     supplierId,
   } = args;
 
+  // 与调货销售保持一致：为手动输入的产品创建/复用临时产品记录
+  const temporaryProductIds = new Map<number, string>();
+
+  if (supplierId) {
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      const tempProductData = buildTemporaryProductDataFromOrderItem(
+        {
+          isManualProduct: item.isManualProduct,
+          productCode: item.productCode,
+          manualProductName: item.manualProductName,
+          manualSpecification: item.manualSpecification,
+          manualWeight: item.manualWeight,
+          manualUnit: item.manualUnit,
+          piecesPerUnit: item.piecesPerUnit,
+        },
+        supplierId,
+        userId
+      );
+
+      if (tempProductData) {
+        const tempProduct = await findOrCreateTemporaryProduct(
+          // 该 helper 只依赖 PrismaClient 公开方法，这里直接传入事务客户端
+          tx as unknown as any,
+          tempProductData
+        );
+        temporaryProductIds.set(index, tempProduct.id);
+      }
+    }
+  }
+
   const newOrder = await tx.factoryShipmentOrder.create({
     data: {
       orderNumber,
@@ -300,7 +335,7 @@ async function createOrderInTransaction(
       depositAmount: depositAmount || 0,
       remarks,
       items: {
-        create: items.map(item => ({
+        create: items.map((item, index) => ({
           productId: item.isManualProduct ? null : item.productId,
           supplierId: item.supplierId,
           productCode: ensureProductCode(item.productCode),
@@ -332,6 +367,8 @@ async function createOrderInTransaction(
           piecesPerUnit: item.piecesPerUnit ?? null,
           weight: item.weight,
           remarks: item.remarks,
+          // 为手动产品记录临时产品关联，便于后续复用和诊断
+          temporaryProductId: temporaryProductIds.get(index) ?? null,
         })) as Prisma.FactoryShipmentOrderItemUncheckedCreateWithoutFactoryShipmentOrderInput[],
       },
       // ✅ 同步保存费用明细到 factory_shipment_order_fee_items，便于编辑页面恢复

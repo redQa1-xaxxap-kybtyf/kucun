@@ -136,14 +136,22 @@ export async function getCustomerStatements(
   });
 
   // ✅ 批量聚合查询：厂家直发订单(按客户汇总应收金额)
+  // 业务规则：只有“已发货及之后”的客户直发才计入对账；未发货的确认单先不计入应收
+  const factoryWhere: Prisma.FactoryShipmentOrderWhereInput = {
+    customerId: { in: customerIds },
+    status: { notIn: ['draft', 'cancelled'] },
+    receivableAmount: { gt: 0 },
+  };
+  if (hasDateFilter) {
+    factoryWhere.shipmentDate = dateFilter;
+  } else {
+    // 没有时间筛选时，依然只统计已发货的单据
+    factoryWhere.shipmentDate = { not: null };
+  }
+
   const factoryAggregates = await prisma.factoryShipmentOrder.groupBy({
     by: ['customerId'],
-    where: {
-      customerId: { in: customerIds },
-      status: { notIn: ['draft', 'cancelled'] },
-      receivableAmount: { gt: 0 },
-      ...(hasDateFilter && { shipmentDate: dateFilter }),
-    },
+    where: factoryWhere,
     _sum: { receivableAmount: true },
     _max: { shipmentDate: true },
     _count: { id: true },
@@ -608,6 +616,8 @@ export async function calculateCustomerStatementSummary(
     dateFilter.lte = end;
   }
 
+  const hasDateFilter = Object.keys(dateFilter).length > 0;
+
   // 1. 查询销售订单(应收) - 包含所有有效状态
   // pending: 待处理（订单已提交，客户已承诺购买）
   // confirmed: 已确认
@@ -619,7 +629,7 @@ export async function calculateCustomerStatementSummary(
     where: {
       customerId,
       status: { in: ['confirmed', 'shipped', 'completed'] },
-      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+      ...(hasDateFilter && { createdAt: dateFilter }),
     },
     select: { totalAmount: true },
   });
@@ -630,13 +640,20 @@ export async function calculateCustomerStatementSummary(
   );
 
   // 1.1 查询厂家直发订单(应收) - 视为与销售订单同等口径的应收销售
+  const factoryWhere: Prisma.FactoryShipmentOrderWhereInput = {
+    customerId,
+    status: { notIn: ['draft', 'cancelled'] },
+    receivableAmount: { gt: 0 },
+  };
+  if (hasDateFilter) {
+    factoryWhere.shipmentDate = dateFilter;
+  } else {
+    // 统一口径：只有已发货的客户直发订单才计入对账
+    factoryWhere.shipmentDate = { not: null };
+  }
+
   const factoryOrders = await prisma.factoryShipmentOrder.findMany({
-    where: {
-      customerId,
-      status: { notIn: ['draft', 'cancelled'] },
-      receivableAmount: { gt: 0 },
-      ...(Object.keys(dateFilter).length > 0 && { shipmentDate: dateFilter }),
-    },
+    where: factoryWhere,
     select: { receivableAmount: true },
   });
 
@@ -653,7 +670,7 @@ export async function calculateCustomerStatementSummary(
     where: {
       customerId,
       status: { in: ['submitted', 'approved', 'processing', 'completed'] },
-      ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
+      ...(hasDateFilter && { createdAt: dateFilter }),
     },
     select: { refundAmount: true },
   });
@@ -670,7 +687,7 @@ export async function calculateCustomerStatementSummary(
     where: {
       customerId,
       status: { in: ['confirmed', 'applied'] },
-      ...(Object.keys(dateFilter).length > 0 && { paymentDate: dateFilter }),
+      ...(hasDateFilter && { paymentDate: dateFilter }),
     },
     select: {
       paymentType: true, // ✅ 新增: 用于区分类型
@@ -698,7 +715,7 @@ export async function calculateCustomerStatementSummary(
     where: {
       customerId,
       status: { in: ['pending', 'processing', 'completed'] },
-      ...(Object.keys(dateFilter).length > 0 && { refundDate: dateFilter }),
+      ...(hasDateFilter && { refundDate: dateFilter }),
     },
     select: {
       refundAmount: true,
@@ -752,7 +769,7 @@ export async function calculateCustomerStatementSummary(
       where: {
         supplierId: customerAsSupplier.id,
         status: { in: ['confirmed'] },
-        ...(Object.keys(dateFilter).length > 0 && { paymentDate: dateFilter }),
+        ...(hasDateFilter && { paymentDate: dateFilter }),
       },
       select: { paymentAmount: true },
     });

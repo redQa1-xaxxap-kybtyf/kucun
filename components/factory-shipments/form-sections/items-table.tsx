@@ -374,7 +374,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                       {index + 1}
                     </TableCell>
 
-                    {/* 产品信息（合并编码和名称） */}
+                    {/* 产品信息（产品编码 + 名称） */}
                     <TableCell className="border-r px-3 py-3">
                       <div className="flex flex-col gap-2">
                         <IntelligentProductInput
@@ -383,7 +383,28 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                           products={products}
                           onProductChange={handleProductChange(index)}
                           placeholder="搜索产品或添加临时产品"
+                          // 客户直发：允许直接添加临时产品
+                          enableTemporaryProducts
                         />
+                        {/* 产品编码 */}
+                        <FormField
+                          control={form.control}
+                          name={`items.${index}.productCode`}
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  value={field.value || ''}
+                                  placeholder="产品编码"
+                                  className="h-8 font-mono text-[11px] text-[hsl(var(--color-text-secondary))]"
+                                />
+                              </FormControl>
+                              <FormMessage className="text-xs" />
+                            </FormItem>
+                          )}
+                        />
+                        {/* 产品名称 */}
                         <FormField
                           control={form.control}
                           name={`items.${index}.displayName`}

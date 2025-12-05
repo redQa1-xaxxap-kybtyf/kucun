@@ -24,6 +24,10 @@ interface IntelligentProductInputProps<T extends FieldValues = FieldValues> {
   onBatchSelect?: (productId: string, batchNumber: string) => void;
   orderType?: 'NORMAL' | 'TRANSFER';
   placeholder?: string;
+  /**
+   * 强制开启“临时产品”模式（用于客户直发等没有订单类型的场景）
+   */
+  enableTemporaryProducts?: boolean;
 }
 
 /**
@@ -49,14 +53,19 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
   onBatchSelect,
   orderType: _orderType,
   placeholder,
+  enableTemporaryProducts,
 }: IntelligentProductInputProps<T>) {
   const searchAbortControllerRef = React.useRef<AbortController | null>(null);
   const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
   const [isSearchingProducts, setIsSearchingProducts] = React.useState(false);
 
-  const requireManualCode = true;
+  // 调货销售：要求临时产品必须有编码
+  // 其他场景（如客户直发）：编码可选
+  const requireManualCode = _orderType === 'TRANSFER';
   const requireManualName = false;
-  const isTransferOrder = _orderType === 'TRANSFER';
+  // 是否允许添加临时产品
+  const allowTemporaryProducts =
+    _orderType === 'TRANSFER' || enableTemporaryProducts;
 
   const allProducts = React.useMemo(() => {
     const map = new Map<string, Product>();
@@ -208,7 +217,9 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
       // 设置临时产品标识和信息
       setFormValue(`items.${index}.isManualProduct`, true);
       const manualName = productData.name?.trim() ?? '';
-      const manualCode = productData.productCode?.trim() ?? '';
+      const manualCodeInput = productData.productCode?.trim() ?? '';
+      // 如果没有单独填写编码，则默认使用产品名称作为编码，避免出现“有名称无编码”的情况
+      const manualCode = manualCodeInput || manualName;
       setFormValue(
         `items.${index}.manualProductName`,
         manualName === '' ? undefined : manualName
@@ -223,6 +234,12 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
       setFormValue(`items.${index}.productCode`, manualCode || undefined);
 
       // 自动填充到表单的通用字段（用于显示）
+      // 产品名称：同步到 displayName，兼容客户直发等依赖 displayName 的表单
+      setFormValue(
+        `items.${index}.displayName`,
+        manualName === '' ? undefined : manualName
+      );
+
       setFormValue(
         `items.${index}.specification`,
         productData.specification || ''
@@ -390,10 +407,10 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
               isSearching={isSearchingProducts}
               placeholder={placeholder ?? '搜索产品或添加临时产品'}
               className="h-8 text-xs"
-              allowTemporaryProducts={isTransferOrder}
+              allowTemporaryProducts={allowTemporaryProducts}
               temporaryProductRequirements={{
-                requireCode: isTransferOrder ? requireManualCode : false,
-                requireName: isTransferOrder ? requireManualName : false,
+                requireCode: allowTemporaryProducts ? requireManualCode : false,
+                requireName: allowTemporaryProducts ? requireManualName : false,
               }}
               simple={true}
               onBlur={field.onBlur}
