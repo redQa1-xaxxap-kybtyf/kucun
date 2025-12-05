@@ -58,17 +58,24 @@ export function ProductCombobox({
   }, [value, products]);
 
   // 处理搜索输入（防抖）
-  const handleSearchChange = React.useCallback((query: string) => {
-    // 清除之前的定时器
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+  const handleSearchChange = React.useCallback(
+    (query: string) => {
+      // 清除之前的定时器
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
 
-    // 设置新的定时器，防抖处理
-    searchTimeoutRef.current = setTimeout(() => {
-      setSearchQuery(query);
-    }, 300);
-  }, []);
+      // 设置新的定时器，防抖处理
+      searchTimeoutRef.current = setTimeout(() => {
+        setSearchQuery(query);
+        // 输入时自动打开下拉，避免需要额外再点一次
+        if (query && query.trim().length > 0) {
+          setOpen(true);
+        }
+      }, 300);
+    },
+    [setOpen]
+  );
 
   // 处理产品选择
   const handleSelect = React.useCallback(

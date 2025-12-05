@@ -215,6 +215,12 @@ export function UnitPriceCell({
   index: number;
 }) {
   const unitPricePath = `items.${index}.unitPrice` as const;
+  const unitCostPath = `items.${index}.unitCost` as const;
+
+  // 仅在调货销售模式下做“售价 vs 成本”提示，不做强校验
+  const orderType = form.watch('orderType');
+  const watchedUnitCost = form.watch(unitCostPath);
+
   return (
     <TableCell className={`${baseCellClass} min-w-[100px]`}>
       <FormField
@@ -272,6 +278,33 @@ export function UnitPriceCell({
               />
             </FormControl>
             <FormMessage className="text-xs" />
+            {/* 调货销售模式：非阻断式提醒“售价低于成本” */}
+            {(() => {
+              const numericPrice = Number(field.value ?? 0);
+              const numericCost =
+                typeof watchedUnitCost === 'string'
+                  ? Number(watchedUnitCost)
+                  : Number(watchedUnitCost ?? 0);
+
+              const showBelowCostWarning =
+                orderType === 'TRANSFER' &&
+                Number.isFinite(numericPrice) &&
+                Number.isFinite(numericCost) &&
+                numericPrice > 0 &&
+                numericCost > 0 &&
+                numericPrice < numericCost;
+
+              if (!showBelowCostWarning) {
+                return null;
+              }
+
+              return (
+                <p className="mt-1 text-[11px] text-amber-600">
+                  销售单价低于成本（成本单价约为 {numericCost.toFixed(2)}
+                  ），请确认是否合理
+                </p>
+              );
+            })()}
           </FormItem>
         )}
       />
