@@ -200,10 +200,7 @@ export function RecordsFilters({
     !!values.search || !!values.type || !!values.startDate || !!values.endDate;
 
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
+    <Card className="card-shadow-light border border-[hsl(var(--color-border-primary))]">
       <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
         <div className="mb-3 flex items-center gap-2 text-[hsl(var(--color-text-secondary))]">
           <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />

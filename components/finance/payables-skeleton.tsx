@@ -14,8 +14,7 @@ export function PayablesSkeleton() {
         {[1, 2, 3, 4].map(i => (
           <div
             key={i}
-            className="rounded-lg border border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-6"
-            style={{ animationDelay: `${i * 50}ms` }}
+            className={`rounded-lg border border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-6 skel-delay-${Math.min(i, 10)}`}
           >
             <div className="space-y-3">
               <div className="h-4 w-20 animate-pulse rounded bg-[hsl(var(--color-primary-light))]" />
@@ -42,8 +41,7 @@ export function PayablesSkeleton() {
             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
               <div
                 key={i}
-                className="h-4 animate-pulse rounded bg-[hsl(var(--color-border-primary))]"
-                style={{ animationDelay: `${i * 30}ms` }}
+                className={`h-4 animate-pulse rounded bg-[hsl(var(--color-border-primary))] skel-delay-${Math.min(i, 10)}`}
               />
             ))}
           </div>
@@ -56,13 +54,16 @@ export function PayablesSkeleton() {
             className="border-b p-4 last:border-b-0 hover:bg-[hsl(var(--color-bg-secondary))]"
           >
             <div className="grid grid-cols-8 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(col => (
-                <div
-                  key={col}
-                  className="h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
-                  style={{ animationDelay: `${(row * 8 + col) * 20}ms` }}
-                />
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(col => {
+                const idx = row * 8 + col;
+                const delayIndex = Math.min(idx, 10);
+                return (
+                  <div
+                    key={col}
+                    className={`h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))] skel-delay-${delayIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}

@@ -67,9 +67,8 @@ export function InboundRecordsToolbar({
           {hasInboundPermission && (
             <Button
               size="lg"
-              className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
+              className="card-shadow-light h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
               onClick={onCreateNew}
-              style={{ boxShadow: 'var(--shadow-light)' }}
             >
               <Plus className="h-4 w-4" />
               新建入库

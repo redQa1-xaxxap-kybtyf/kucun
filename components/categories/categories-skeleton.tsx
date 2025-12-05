@@ -24,8 +24,7 @@ export function CategoriesSkeleton() {
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div
                 key={i}
-                className="h-4 animate-pulse rounded bg-teal-300"
-                style={{ animationDelay: `${i * 30}ms` }}
+                className={`h-4 animate-pulse rounded bg-teal-300 skel-delay-${Math.min(i, 10)}`}
               />
             ))}
           </div>
@@ -38,13 +37,16 @@ export function CategoriesSkeleton() {
             className="border-b p-4 last:border-b-0 hover:bg-gray-50"
           >
             <div className="grid grid-cols-6 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(col => (
-                <div
-                  key={col}
-                  className="h-4 animate-pulse rounded bg-teal-200"
-                  style={{ animationDelay: `${(row * 6 + col) * 20}ms` }}
-                />
-              ))}
+              {[1, 2, 3, 4, 5, 6].map(col => {
+                const idx = row * 6 + col;
+                const delayIndex = Math.min(idx, 10);
+                return (
+                  <div
+                    key={col}
+                    className={`h-4 animate-pulse rounded bg-teal-200 skel-delay-${delayIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}

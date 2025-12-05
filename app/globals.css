@@ -476,4 +476,65 @@
     font-size: 0.875rem; /* Tailwind text-sm */
     color: hsl(var(--color-text-secondary));
   }
+
+  /* 统一卡片阴影工具类，替代 inline style boxShadow 写法 */
+  .card-shadow-medium {
+    box-shadow: var(--shadow-medium);
+  }
+
+  .card-shadow-light {
+    box-shadow: var(--shadow-light);
+  }
+
+  /* Skeleton 动画延迟工具类，替代 inline style animationDelay 写法 */
+  .skel-delay-1 {
+    animation-delay: 30ms;
+  }
+  .skel-delay-2 {
+    animation-delay: 60ms;
+  }
+  .skel-delay-3 {
+    animation-delay: 90ms;
+  }
+  .skel-delay-4 {
+    animation-delay: 120ms;
+  }
+  .skel-delay-5 {
+    animation-delay: 150ms;
+  }
+  .skel-delay-6 {
+    animation-delay: 180ms;
+  }
+  .skel-delay-7 {
+    animation-delay: 210ms;
+  }
+  .skel-delay-8 {
+    animation-delay: 240ms;
+  }
+  .skel-delay-9 {
+    animation-delay: 270ms;
+  }
+  .skel-delay-10 {
+    animation-delay: 300ms;
+  }
+
+  /* 仪表盘卡片淡入延迟（稍慢一点） */
+  .fade-delay-1 {
+    animation-delay: 100ms;
+  }
+  .fade-delay-2 {
+    animation-delay: 200ms;
+  }
+  .fade-delay-3 {
+    animation-delay: 300ms;
+  }
+  .fade-delay-4 {
+    animation-delay: 400ms;
+  }
+  .fade-delay-5 {
+    animation-delay: 500ms;
+  }
+  .fade-delay-6 {
+    animation-delay: 600ms;
+  }
 }

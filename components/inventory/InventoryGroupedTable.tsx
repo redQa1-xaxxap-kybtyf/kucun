@@ -148,29 +148,38 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             : ''
         }
       >
-        <TableHeader
-          className="sticky top-0 z-20 bg-[hsl(var(--color-bg-card))]"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <TableHeader className="card-shadow-light sticky top-0 z-20 bg-[hsl(var(--color-bg-card))]">
           <TableRow>
-            <TableHead>产品编码</TableHead>
-            <TableHead>产品名称</TableHead>
-            <TableHead>规格</TableHead>
-            <TableHead>包装信息</TableHead>
-            <TableHead className="text-right">重量(kg)</TableHead>
-            <TableHead>批次号</TableHead>
-            <TableHead className="text-right">库存数量</TableHead>
-            <TableHead className="text-right">预留数量</TableHead>
-            <TableHead className="text-right">可用数量</TableHead>
+            <TableHead className="whitespace-nowrap">产品编码</TableHead>
+            <TableHead className="whitespace-nowrap">产品名称</TableHead>
+            <TableHead className="whitespace-nowrap">规格</TableHead>
+            <TableHead className="whitespace-nowrap">包装信息</TableHead>
+            <TableHead className="text-right whitespace-nowrap">
+              重量(kg)
+            </TableHead>
+            <TableHead className="whitespace-nowrap">批次号</TableHead>
+            <TableHead className="text-right whitespace-nowrap">
+              库存数量
+            </TableHead>
+            <TableHead className="text-right whitespace-nowrap">
+              预留数量
+            </TableHead>
+            <TableHead className="text-right whitespace-nowrap">
+              可用数量
+            </TableHead>
             {hasFinancePermission && (
               <>
-                <TableHead className="text-right">单位成本（元）</TableHead>
-                <TableHead className="text-right">库存总成本（元）</TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  单位成本（元）
+                </TableHead>
+                <TableHead className="text-right whitespace-nowrap">
+                  库存总成本（元）
+                </TableHead>
               </>
             )}
-            <TableHead>库存状态</TableHead>
-            <TableHead>最后更新</TableHead>
-            <TableHead className="text-right">操作</TableHead>
+            <TableHead className="whitespace-nowrap">库存状态</TableHead>
+            <TableHead className="whitespace-nowrap">最后更新</TableHead>
+            <TableHead className="text-right whitespace-nowrap">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -363,17 +372,17 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 库存数量 */}
-                    <TableCell className="text-right font-semibold text-[hsl(var(--color-success))] tabular-nums">
+                    <TableCell className="text-right font-semibold whitespace-nowrap text-[hsl(var(--color-success))] tabular-nums">
                       {quantityDisplay}
                     </TableCell>
 
                     {/* 预留数量 */}
-                    <TableCell className="text-right font-medium text-[hsl(var(--color-warning))] tabular-nums">
+                    <TableCell className="text-right font-medium whitespace-nowrap text-[hsl(var(--color-warning))] tabular-nums">
                       {reservedDisplay}
                     </TableCell>
 
                     {/* 可用数量 */}
-                    <TableCell className="text-right font-medium text-[hsl(var(--color-primary))] tabular-nums">
+                    <TableCell className="text-right font-medium whitespace-nowrap text-[hsl(var(--color-primary))] tabular-nums">
                       {availableDisplay}
                     </TableCell>
 
@@ -398,7 +407,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell>
                       <Badge
                         variant={variant}
-                        className={`text-xs font-medium ${
+                        className={`px-3 text-xs font-medium whitespace-nowrap ${
                           variant === 'destructive' || variant === 'warning'
                             ? 'animate-breathe'
                             : ''

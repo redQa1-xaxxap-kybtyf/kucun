@@ -14,8 +14,7 @@ export function FinanceListSkeleton() {
         {[1, 2, 3, 4].map(i => (
           <div
             key={i}
-            className="bg-card rounded-lg border p-6"
-            style={{ animationDelay: `${i * 50}ms` }}
+            className={`bg-card rounded-lg border p-6 skel-delay-${Math.min(i, 10)}`}
           >
             <div className="space-y-2">
               <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
@@ -40,8 +39,7 @@ export function FinanceListSkeleton() {
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div
                 key={i}
-                className="h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
-                style={{ animationDelay: `${i * 30}ms` }}
+                className={`h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))] skel-delay-${Math.min(i, 10)}`}
               />
             ))}
           </div>
@@ -51,13 +49,16 @@ export function FinanceListSkeleton() {
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(row => (
           <div key={row} className="border-b p-4 last:border-b-0">
             <div className="grid grid-cols-6 gap-4">
-              {[1, 2, 3, 4, 5, 6].map(col => (
-                <div
-                  key={col}
-                  className="h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
-                  style={{ animationDelay: `${(row * 6 + col) * 30}ms` }}
-                />
-              ))}
+              {[1, 2, 3, 4, 5, 6].map(col => {
+                const idx = row * 6 + col;
+                const delayIndex = Math.min(idx, 10);
+                return (
+                  <div
+                    key={col}
+                    className={`h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))] skel-delay-${delayIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}

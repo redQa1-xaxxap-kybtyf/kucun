@@ -50,7 +50,7 @@ export function ProductTable({
 
   return (
     <Table>
-      <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+      <TableHeader className="card-shadow-light">
         <TableRow>
           <TableHead>产品编码</TableHead>
           <TableHead>产品名称</TableHead>

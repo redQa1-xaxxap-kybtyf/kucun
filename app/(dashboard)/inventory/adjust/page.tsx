@@ -83,10 +83,7 @@ export default function InventoryAdjustPage() {
         </Dialog>
 
         {/* 当前库存列表 */}
-        <div
-          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
           <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
             <h2 className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
               当前库存状态

@@ -32,8 +32,7 @@ export function SupplierDetailSkeleton() {
                 <div key={i} className="space-y-2">
                   <div className="h-4 w-20 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                   <div
-                    className="h-5 w-32 animate-pulse rounded bg-[hsl(var(--color-primary-light))]"
-                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`h-5 w-32 animate-pulse rounded bg-[hsl(var(--color-primary-light))] skel-delay-${Math.min(i, 10)}`}
                   />
                 </div>
               ))}
@@ -48,8 +47,7 @@ export function SupplierDetailSkeleton() {
                 <div key={i} className="flex justify-between">
                   <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                   <div
-                    className="h-4 w-32 animate-pulse rounded bg-[hsl(var(--color-primary-light))]"
-                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`h-4 w-32 animate-pulse rounded bg-[hsl(var(--color-primary-light))] skel-delay-${Math.min(i, 10)}`}
                   />
                 </div>
               ))}
@@ -70,8 +68,7 @@ export function SupplierDetailSkeleton() {
                     <div className="h-4 w-20 animate-pulse rounded bg-[hsl(var(--color-primary-light))]" />
                   </div>
                   <div
-                    className="h-3 w-40 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
-                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`h-3 w-40 animate-pulse rounded bg-[hsl(var(--color-border-secondary))] skel-delay-${Math.min(i, 10)}`}
                   />
                 </div>
               ))}
@@ -89,8 +86,7 @@ export function SupplierDetailSkeleton() {
                 <div key={i} className="space-y-2">
                   <div className="h-4 w-20 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                   <div
-                    className="h-8 w-24 animate-pulse rounded bg-[hsl(var(--color-primary-light))]"
-                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`h-8 w-24 animate-pulse rounded bg-[hsl(var(--color-primary-light))] skel-delay-${Math.min(i, 10)}`}
                   />
                 </div>
               ))}
@@ -107,8 +103,7 @@ export function SupplierDetailSkeleton() {
                   <div className="flex-1 space-y-1">
                     <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                     <div
-                      className="h-3 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
-                      style={{ animationDelay: `${i * 30}ms` }}
+                      className={`h-3 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))] skel-delay-${Math.min(i, 10)}`}
                     />
                   </div>
                 </div>
@@ -126,8 +121,7 @@ export function SupplierDetailSkeleton() {
                   <div className="flex-1 space-y-1">
                     <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                     <div
-                      className="h-3 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
-                      style={{ animationDelay: `${i * 30}ms` }}
+                      className={`h-3 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))] skel-delay-${Math.min(i, 10)}`}
                     />
                   </div>
                 </div>

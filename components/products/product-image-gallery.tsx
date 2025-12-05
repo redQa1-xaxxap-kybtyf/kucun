@@ -76,10 +76,7 @@ export function ProductImageGallery({
   // 如果没有图片，显示占位图
   if (allImages.length === 0) {
     return (
-      <div
-        className="overflow-hidden rounded-lg border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <div className="card-shadow-medium overflow-hidden rounded-lg border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
         <div className="border-b-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
           <h4 className="flex items-center gap-2 font-semibold text-[hsl(var(--color-text-primary))]">
             <ImageIcon className="h-5 w-5 text-[hsl(var(--color-text-tertiary))]" />
@@ -102,10 +99,7 @@ export function ProductImageGallery({
 
   return (
     <>
-      <div
-        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
         <div className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
           <h4 className="flex items-center gap-2 text-base font-semibold text-[hsl(var(--color-text-primary))]">
             <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />

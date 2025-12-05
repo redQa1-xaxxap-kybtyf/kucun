@@ -136,10 +136,7 @@ export function AdjustmentRecordsTable({
   }
 
   return (
-    <div
-      className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <div className="card-shadow-medium rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -151,7 +148,7 @@ export function AdjustmentRecordsTable({
 
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+          <TableHeader className="card-shadow-light">
             <TableRow>
               <TableHead>产品编码</TableHead>
               <TableHead>产品名称</TableHead>

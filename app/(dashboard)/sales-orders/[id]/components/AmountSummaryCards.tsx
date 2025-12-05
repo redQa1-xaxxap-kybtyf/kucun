@@ -29,10 +29,7 @@ export function AmountSummaryCards({
 
   return (
     <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-5 xl:grid-cols-6`}>
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-[hsl(var(--color-border-primary))]">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
             订单总金额
@@ -44,10 +41,7 @@ export function AmountSummaryCards({
       </Card>
 
       {order.roundingAdjustment !== 0 && (
-        <Card
-          className="border border-orange-200 bg-orange-50/50"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <Card className="card-shadow-light border border-orange-200 bg-orange-50/50">
           <CardContent className="p-4">
             <div className="text-xs font-medium text-gray-600">订单抹零</div>
             <div className="mt-2 text-2xl font-bold text-orange-600">
@@ -61,10 +55,7 @@ export function AmountSummaryCards({
       )}
 
       {order.paymentRounding !== 0 && (
-        <Card
-          className="border border-purple-200 bg-purple-50/50"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <Card className="card-shadow-light border border-purple-200 bg-purple-50/50">
           <CardContent className="p-4">
             <div className="text-xs font-medium text-gray-600">收款差额</div>
             <div className="mt-2 text-2xl font-bold text-purple-600">
@@ -78,10 +69,7 @@ export function AmountSummaryCards({
         </Card>
       )}
 
-      <Card
-        className="border border-green-200 bg-green-50/50"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-green-200 bg-green-50/50">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-gray-600">已收金额</div>
           <div className="mt-2 text-2xl font-bold text-green-600">
@@ -95,10 +83,7 @@ export function AmountSummaryCards({
         </CardContent>
       </Card>
 
-      <Card
-        className="border border-orange-200 bg-orange-50/50"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-orange-200 bg-orange-50/50">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-gray-600">待收金额</div>
           <div className="mt-2 text-2xl font-bold text-orange-600">
@@ -111,10 +96,7 @@ export function AmountSummaryCards({
       </Card>
 
       {customerFees > 0 && (
-        <Card
-          className="border border-amber-200 bg-amber-50/60"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <Card className="card-shadow-light border border-amber-200 bg-amber-50/60">
           <CardContent className="p-4">
             <div className="text-xs font-medium text-amber-800">
               客户承担费用
@@ -130,10 +112,7 @@ export function AmountSummaryCards({
       )}
 
       {companyFees > 0 && (
-        <Card
-          className="border border-slate-200 bg-slate-50"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <Card className="card-shadow-light border border-slate-200 bg-slate-50">
           <CardContent className="p-4">
             <div className="text-xs font-medium text-slate-700">
               公司承担费用
@@ -149,10 +128,7 @@ export function AmountSummaryCards({
       )}
 
       {order.orderType === 'TRANSFER' && (
-        <Card
-          className="border border-[hsl(var(--color-border-primary))]"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <Card className="card-shadow-light border border-[hsl(var(--color-border-primary))]">
           <CardContent className="p-4">
             <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
               调货毛利

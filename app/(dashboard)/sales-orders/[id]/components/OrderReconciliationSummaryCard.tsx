@@ -74,10 +74,7 @@ function SummaryCard({
   }[variant];
 
   return (
-    <Card
-      className={`border ${bgClass}`}
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
+    <Card className={`border ${bgClass} card-shadow-light`}>
       <CardContent className="p-4">
         <div className="text-xs font-medium text-gray-600">{label}</div>
         <div className={`mt-2 text-2xl font-bold ${colorClass}`}>{value}</div>

@@ -113,10 +113,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         />
 
         {/* 库存列表 */}
-        <div
-          className="relative overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <div className="card-shadow-medium relative overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
           {/* ✅ 加载中提示 */}
           {isFetching && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">

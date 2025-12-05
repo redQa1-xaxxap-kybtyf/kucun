@@ -30,17 +30,11 @@ export default function CreateFactoryShipmentPage() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card
-          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
           <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
-                  style={{ boxShadow: 'var(--shadow-light)' }}
-                >
+                <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
                   <Truck className="h-6 w-6" />
                 </div>
                 <div>

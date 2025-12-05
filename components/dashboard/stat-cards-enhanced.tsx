@@ -4,15 +4,15 @@
 'use client';
 
 import {
-    AlertTriangle,
-    BadgeJapaneseYen,
-    Minus,
-    Package,
-    RotateCcw,
-    ShoppingCart,
-    TrendingDown,
-    TrendingUp,
-    Users,
+  AlertTriangle,
+  BadgeJapaneseYen,
+  Minus,
+  Package,
+  RotateCcw,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -307,8 +307,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
         {statCards.map((card, index) => (
           <div
             key={index}
-            className="animate-in fade-in-50 slide-in-from-bottom-4"
-            style={{ animationDelay: `${index * 100}ms` }}
+            className={`animate-in fade-in-50 slide-in-from-bottom-4 fade-delay-${Math.min(index + 1, 6)}`}
           >
             <StatCard {...card} />
           </div>
@@ -321,4 +320,3 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
 StatCardsGrid.displayName = 'StatCardsGrid';
 
 export { StatCard, StatCardsGrid };
-

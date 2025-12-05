@@ -9,10 +9,7 @@ interface ErrorStateCardProps {
 
 export function ErrorStateCard({ onRetry }: ErrorStateCardProps) {
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-light)' }}
-    >
+    <Card className="card-shadow-light overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardContent className="space-y-4 bg-[hsl(var(--color-error-light))] py-8 text-center">
         <div className="text-[hsl(var(--color-error))]">
           加载厂家发货订单失败，请稍后重试

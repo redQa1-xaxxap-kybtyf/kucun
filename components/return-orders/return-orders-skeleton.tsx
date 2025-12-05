@@ -25,8 +25,7 @@ export function ReturnOrdersSkeleton() {
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
               <div
                 key={i}
-                className="h-4 animate-pulse rounded bg-orange-300"
-                style={{ animationDelay: `${i * 30}ms` }}
+                className={`h-4 animate-pulse rounded bg-orange-300 skel-delay-${Math.min(i, 10)}`}
               />
             ))}
           </div>
@@ -39,13 +38,16 @@ export function ReturnOrdersSkeleton() {
             className="border-b p-4 last:border-b-0 hover:bg-gray-50"
           >
             <div className="grid grid-cols-9 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(col => (
-                <div
-                  key={col}
-                  className="h-4 animate-pulse rounded bg-orange-200"
-                  style={{ animationDelay: `${(row * 9 + col) * 20}ms` }}
-                />
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(col => {
+                const idx = row * 9 + col;
+                const delayIndex = Math.min(idx, 10);
+                return (
+                  <div
+                    key={col}
+                    className={`h-4 animate-pulse rounded bg-orange-200 skel-delay-${delayIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}

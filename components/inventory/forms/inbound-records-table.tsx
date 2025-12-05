@@ -152,10 +152,7 @@ export function InboundRecordsTable({
   }
 
   return (
-    <div
-      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <TableHeading count={records.length} />
       <div className="overflow-x-auto">
         <RecordsTable records={records} />
@@ -193,7 +190,7 @@ function TableHeading({ count }: { count: number }) {
 function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
   return (
     <Table>
-      <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+      <TableHeader className="card-shadow-light">
         <TableRow>
           <TableHead>产品编码</TableHead>
           <TableHead>产品名称</TableHead>

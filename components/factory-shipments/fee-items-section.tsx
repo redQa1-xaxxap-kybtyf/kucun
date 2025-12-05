@@ -36,10 +36,7 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
   // 如果没有费用项，显示空状态
   if (!feeItems || feeItems.length === 0) {
     return (
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
             <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -67,10 +64,7 @@ export function FeeItemsSection({ feeItems }: FeeItemsSectionProps) {
   const totalFees = customerFees + companyFees;
 
   return (
-    <Card
-      className="border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">

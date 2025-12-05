@@ -636,10 +636,7 @@ export function ERPSalesOrderList({
       />
 
       {/* 数据表格 */}
-      <div
-        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
         <Table>
           <TableHeader>
             <TableRow>

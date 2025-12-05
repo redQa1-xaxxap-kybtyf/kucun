@@ -187,10 +187,7 @@ function BatchHeader({
   filteredInventoryId?: string;
 }) {
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -296,8 +293,7 @@ function SummaryCard({
 }) {
   return (
     <Card
-      className={`border border-[hsl(var(--color-border-primary))] ${containerClassName ?? ''}`}
-      style={{ boxShadow: 'var(--shadow-light)' }}
+      className={`card-shadow-light border border-[hsl(var(--color-border-primary))] ${containerClassName ?? ''}`}
     >
       <CardContent className="p-4">
         <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
@@ -359,10 +355,7 @@ function ProductInfoCard({
     : '—';
 
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
           <ActivitySquare className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -398,10 +391,7 @@ function InfoField({ label, value }: { label: string; value: string }) {
 
 function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
@@ -450,10 +440,7 @@ function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
   return (
     <div className="overflow-x-auto">
       <Table>
-        <TableHeader
-          className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
+        <TableHeader className="card-shadow-light border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
           <TableRow className="text-xs text-[hsl(var(--color-text-secondary))]">
             <TableHead className="px-4 py-3 text-left font-medium">
               时间

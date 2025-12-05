@@ -18,20 +18,18 @@ export function InventoryAdjustHeader({
 }: InventoryAdjustHeaderProps) {
   return (
     <div
-      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] p-6"
+      className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] p-6"
       style={{
         background:
           'linear-gradient(to right, hsl(var(--color-success-light)), hsl(var(--color-success-light) / 0.5))',
-        boxShadow: 'var(--shadow-medium)',
       }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <div
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-white"
+            className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl text-white"
             style={{
               backgroundColor: 'hsl(var(--color-success))',
-              boxShadow: 'var(--shadow-light)',
             }}
           >
             <PackagePlus className="h-6 w-6" />

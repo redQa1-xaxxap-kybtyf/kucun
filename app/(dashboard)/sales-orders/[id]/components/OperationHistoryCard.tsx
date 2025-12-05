@@ -15,10 +15,7 @@ export function OperationHistoryCard({
   userName: string;
 }) {
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
         <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
           <ShoppingCart className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />

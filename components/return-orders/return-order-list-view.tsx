@@ -139,10 +139,7 @@ function ReturnOrderTable({
 }: ReturnOrderTableProps) {
   if (orders.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <div className="card-shadow-medium flex flex-col items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10">
         <Package className="h-12 w-12 text-[hsl(var(--color-text-tertiary))]" />
         <h3 className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
           暂无退货订单
@@ -152,12 +149,9 @@ function ReturnOrderTable({
   }
 
   return (
-    <div
-      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <Table>
-        <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+        <TableHeader className="card-shadow-light">
           <TableRow>
             <TableHead>退货单号</TableHead>
             <TableHead>关联销售单</TableHead>

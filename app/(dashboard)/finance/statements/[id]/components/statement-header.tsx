@@ -40,10 +40,7 @@ export function StatementHeader({
   const statusInfo = STATUS_BADGE_MAP[status] ?? STATUS_BADGE_MAP.active;
 
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

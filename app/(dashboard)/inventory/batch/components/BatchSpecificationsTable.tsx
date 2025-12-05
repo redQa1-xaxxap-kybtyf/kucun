@@ -61,10 +61,7 @@ export function BatchSpecificationsTable({
     format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   return (
-    <div
-      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -84,7 +81,7 @@ export function BatchSpecificationsTable({
       <div className="p-0">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+            <TableHeader className="card-shadow-light">
               <TableRow>
                 <TableHead>批次号</TableHead>
                 <TableHead>产品编码</TableHead>

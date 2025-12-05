@@ -177,10 +177,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
       </div>
 
       {/* 基本信息卡片 */}
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
         <CardHeader className="bg-[hsl(var(--color-bg-secondary))]">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-bold text-[hsl(var(--color-text-primary))]">

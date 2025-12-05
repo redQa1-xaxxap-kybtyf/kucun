@@ -130,17 +130,11 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card
-          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
           <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
-                  style={{ boxShadow: 'var(--shadow-light)' }}
-                >
+                <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
                   <Edit className="h-6 w-6" />
                 </div>
                 <div>
@@ -167,8 +161,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
                   variant="default"
                   size="lg"
                   onClick={() => router.push(`/products/${product.id}/edit`)}
-                  className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
-                  style={{ boxShadow: 'var(--shadow-light)' }}
+                  className="card-shadow-light h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
                 >
                   <Edit className="h-4 w-4" />
                   编辑
@@ -189,10 +182,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         </Card>
 
         {/* 基本信息区域 */}
-        <div
-          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
           <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
             <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
               基本信息

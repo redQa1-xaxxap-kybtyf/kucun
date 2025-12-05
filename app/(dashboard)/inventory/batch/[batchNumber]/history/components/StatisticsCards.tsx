@@ -23,10 +23,7 @@ export function StatisticsCards({
 }: StatisticsCardsProps) {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-[hsl(var(--color-border-primary))]">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
             期初库存
@@ -40,10 +37,7 @@ export function StatisticsCards({
         </CardContent>
       </Card>
 
-      <Card
-        className="border border-green-200 bg-green-50/50"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-green-200 bg-green-50/50">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-gray-600">当前库存</div>
           <div className="mt-2 text-2xl font-bold text-green-600">
@@ -55,10 +49,7 @@ export function StatisticsCards({
         </CardContent>
       </Card>
 
-      <Card
-        className="border border-blue-200 bg-blue-50/50"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-blue-200 bg-blue-50/50">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-gray-600">净变动</div>
           <div className="mt-2 text-2xl font-bold text-blue-600">
@@ -68,10 +59,7 @@ export function StatisticsCards({
         </CardContent>
       </Card>
 
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light border border-[hsl(var(--color-border-primary))]">
         <CardContent className="p-4">
           <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
             变动汇总

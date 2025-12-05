@@ -29,8 +29,7 @@ export function ProductListToolbar() {
           <Button
             onClick={() => router.push('/products/create')}
             size="lg"
-            className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
-            style={{ boxShadow: 'var(--shadow-light)' }}
+            className="card-shadow-light h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
           >
             <Plus className="h-5 w-5" />
             新增产品

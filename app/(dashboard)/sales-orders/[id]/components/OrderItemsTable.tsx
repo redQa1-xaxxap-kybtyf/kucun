@@ -113,6 +113,98 @@ function formatPiecesBreakdown(item: SalesOrderDetail['items'][number]) {
   return `${formatDecimal(quantity)}${displayUnit}`;
 }
 
+/**
+ * 计算单行明细的总重量（kg）
+ *
+ * 规则与新建/编辑销售订单表单中的重量计算保持一致：
+ * - 手动产品：manualWeight 根据 displayUnit 判断是“每件”还是“每片”
+ * - 库存产品：product.weight 存储的是“每件重量(kg)”，不是每片
+ */
+function calculateItemWeightKg(
+  item: SalesOrderDetail['items'][number]
+): number | null {
+  const quantityPieces =
+    typeof item.quantity === 'number' && item.quantity > 0 ? item.quantity : 0;
+
+  if (!quantityPieces) return null;
+
+  const displayUnit = item.displayUnit || item.product?.unit || '片';
+  const piecesPerUnit =
+    item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined;
+
+  let weightKg: number | undefined;
+
+  if (item.isManualProduct) {
+    const manualWeight =
+      typeof item.manualWeight === 'number' && item.manualWeight > 0
+        ? item.manualWeight
+        : 0;
+
+    if (!manualWeight) return null;
+
+    if (displayUnit === '件') {
+      // 用户输入的是每件重量：总重量 = 每件重量 × 件数
+      const displayQty =
+        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
+          ? item.displayQuantity
+          : 0;
+      if (!displayQty) return null;
+      weightKg = manualWeight * displayQty;
+    } else {
+      // 用户输入的是每片重量：总重量 = 每片重量 × 片数
+      weightKg = manualWeight * quantityPieces;
+    }
+  } else {
+    // 库存产品：weight 字段存储的是每件的重量(kg)，不是每片
+    const weightPerUnit =
+      typeof item.product?.weight === 'number' && item.product.weight > 0
+        ? item.product.weight
+        : undefined;
+
+    if (!weightPerUnit) return null;
+
+    if (displayUnit === '件') {
+      // 销售单位是"件"：总重量 = 每件重量 × 件数
+      const displayQty =
+        typeof item.displayQuantity === 'number' && item.displayQuantity > 0
+          ? item.displayQuantity
+          : 0;
+      if (!displayQty) return null;
+      weightKg = weightPerUnit * displayQty;
+    } else {
+      // 销售单位是"片"：总重量 = (每件重量 / 每件片数) × 片数
+      const effectivePiecesPerUnit =
+        typeof piecesPerUnit === 'number' && piecesPerUnit > 0
+          ? piecesPerUnit
+          : undefined;
+
+      if (effectivePiecesPerUnit) {
+        const weightPerPiece = weightPerUnit / effectivePiecesPerUnit;
+        weightKg = weightPerPiece * quantityPieces;
+      } else {
+        // 兜底：当缺少每件片数时，按“每片重量 = weightPerUnit”近似处理
+        weightKg = weightPerUnit * quantityPieces;
+      }
+    }
+  }
+
+  if (!weightKg || !Number.isFinite(weightKg) || weightKg <= 0) {
+    return null;
+  }
+
+  return weightKg;
+}
+
+function formatItemWeightKg(weightKg: number | null): string {
+  if (!weightKg || !Number.isFinite(weightKg) || weightKg <= 0) {
+    return '-';
+  }
+
+  // 保留最多 3 位小数，去掉多余的 0
+  const rounded = Math.round(weightKg * 1000) / 1000;
+  return `${formatDecimal(rounded)}kg`;
+}
+
 function resolveDisplayUnitPrice(item: SalesOrderDetail['items'][number]) {
   const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
   const displayUnit = item.displayUnit || item.product?.unit;
@@ -150,6 +242,7 @@ interface Props {
   totalLocalQuantity: number;
   totalTransferQuantity: number;
   productSubtotal: number;
+  density?: 'compact' | 'comfortable';
 }
 
 export function OrderItemsTable({
@@ -160,12 +253,13 @@ export function OrderItemsTable({
   productSubtotal,
 }: Props) {
   const orderItems = order.items ?? [];
+  const totalWeightKg = orderItems.reduce((sum, item) => {
+    const weightKg = calculateItemWeightKg(item);
+    return sum + (weightKg ?? 0);
+  }, 0);
 
   return (
-    <Card
-      className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-blue-50 to-indigo-50 py-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base font-semibold text-[hsl(var(--color-text-primary))]">
@@ -242,6 +336,9 @@ export function OrderItemsTable({
                 <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
                   数量
                 </th>
+                <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
+                  重量(kg)
+                </th>
                 {order.orderType === 'TRANSFER' && (
                   <>
                     <th className="px-3 py-2.5 text-right font-medium whitespace-nowrap">
@@ -308,6 +405,7 @@ export function OrderItemsTable({
                 const transferQuantityDisplay = formatDecimal(
                   item.transferQuantity ?? 0
                 );
+                const itemWeightKg = calculateItemWeightKg(item);
 
                 return (
                   <tr
@@ -376,6 +474,11 @@ export function OrderItemsTable({
                     <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
                       <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                         {quantityDisplay}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
+                      <span className="text-sm text-gray-700">
+                        {formatItemWeightKg(itemWeightKg)}
                       </span>
                     </td>
                     {order.orderType === 'TRANSFER' && (
@@ -459,6 +562,13 @@ export function OrderItemsTable({
                 <td className="px-3 py-3 text-right whitespace-nowrap">
                   <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
                     {formatDecimal(totalDisplayQuantity)}
+                  </span>
+                </td>
+                <td className="px-3 py-3 text-right whitespace-nowrap">
+                  <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    {totalWeightKg > 0
+                      ? `${formatDecimal(totalWeightKg)}kg`
+                      : '-'}
                   </span>
                 </td>
                 {order.orderType === 'TRANSFER' && (

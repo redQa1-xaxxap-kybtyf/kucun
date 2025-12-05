@@ -24,8 +24,7 @@ export function SuppliersSkeleton() {
             {[1, 2, 3, 4, 5, 6, 7].map(i => (
               <div
                 key={i}
-                className="h-4 animate-pulse rounded bg-[hsl(var(--color-primary-light))]"
-                style={{ animationDelay: `${i * 30}ms` }}
+                className={`h-4 animate-pulse rounded bg-[hsl(var(--color-primary-light))] skel-delay-${Math.min(i, 10)}`}
               />
             ))}
           </div>
@@ -38,13 +37,16 @@ export function SuppliersSkeleton() {
             className="border-b p-4 last:border-b-0 hover:bg-[hsl(var(--color-primary-light))]"
           >
             <div className="grid grid-cols-7 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7].map(col => (
-                <div
-                  key={col}
-                  className="h-4 animate-pulse rounded bg-[hsl(var(--color-primary-lighter))]"
-                  style={{ animationDelay: `${(row * 7 + col) * 20}ms` }}
-                />
-              ))}
+              {[1, 2, 3, 4, 5, 6, 7].map(col => {
+                const idx = row * 7 + col;
+                const delayIndex = Math.min(idx, 10);
+                return (
+                  <div
+                    key={col}
+                    className={`h-4 animate-pulse rounded bg-[hsl(var(--color-primary-lighter))] skel-delay-${delayIndex}`}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}

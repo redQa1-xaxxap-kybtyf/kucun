@@ -99,10 +99,7 @@ export function FactoryShipmentOrderDetail({
 
   if (error || !order) {
     return (
-      <Card
-        className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <Card className="card-shadow-light overflow-hidden border border-[hsl(var(--color-border-primary))]">
         <CardContent className="bg-[hsl(var(--color-error-light))] pt-6">
           <div className="text-center text-[hsl(var(--color-error))]">
             {error ? '加载订单详情失败' : '订单不存在'}
@@ -235,10 +232,7 @@ export function FactoryShipmentOrderDetail({
       {/* 合并基本信息和客户信息 */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* 基本信息 */}
-        <Card
-          className="border border-[hsl(var(--color-border-primary))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
           <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <Truck className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -316,10 +310,7 @@ export function FactoryShipmentOrderDetail({
         </Card>
 
         {/* 客户信息 */}
-        <Card
-          className="border border-[hsl(var(--color-border-primary))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
+        <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
           <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">
               <User className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -361,10 +352,7 @@ export function FactoryShipmentOrderDetail({
       <FeeItemsSection feeItems={order.feeItems} />
 
       {/* 金额信息 */}
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <CardTitle className="flex items-center gap-2 text-sm font-medium">
             <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
@@ -468,10 +456,7 @@ export function FactoryShipmentOrderDetail({
       </Card>
 
       {/* 产品明细 */}
-      <Card
-        className="border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
+      <Card className="card-shadow-medium border border-[hsl(var(--color-border-primary))]">
         <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] py-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-sm font-medium">

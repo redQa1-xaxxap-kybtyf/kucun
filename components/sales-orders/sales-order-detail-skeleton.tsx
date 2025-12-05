@@ -35,8 +35,7 @@ export function SalesOrderDetailSkeleton() {
                 <div key={i} className="space-y-2">
                   <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
                   <div
-                    className="h-5 w-32 animate-pulse rounded bg-gray-300"
-                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`h-5 w-32 animate-pulse rounded bg-gray-300 skel-delay-${Math.min(i, 10)}`}
                   />
                 </div>
               ))}
@@ -79,8 +78,7 @@ export function SalesOrderDetailSkeleton() {
                 <div key={i} className="flex justify-between">
                   <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
                   <div
-                    className="h-4 w-32 animate-pulse rounded bg-gray-300"
-                    style={{ animationDelay: `${i * 30}ms` }}
+                    className={`h-4 w-32 animate-pulse rounded bg-gray-300 skel-delay-${Math.min(i, 10)}`}
                   />
                 </div>
               ))}
@@ -97,8 +95,7 @@ export function SalesOrderDetailSkeleton() {
                   <div className="flex-1 space-y-1">
                     <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
                     <div
-                      className="h-3 w-32 animate-pulse rounded bg-gray-200"
-                      style={{ animationDelay: `${i * 30}ms` }}
+                      className={`h-3 w-32 animate-pulse rounded bg-gray-200 skel-delay-${Math.min(i, 10)}`}
                     />
                   </div>
                 </div>

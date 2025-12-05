@@ -19,16 +19,10 @@ export function AdjustmentRecordsToolbar({
   onAdjust,
 }: AdjustmentRecordsToolbarProps) {
   return (
-    <div
-      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-6"
-      style={{ boxShadow: 'var(--shadow-medium)' }}
-    >
+    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div
-            className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
-            style={{ boxShadow: 'var(--shadow-light)' }}
-          >
+          <div className="card-shadow-light flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]">
             <FileText className="h-6 w-6" />
           </div>
           <div>
@@ -55,9 +49,8 @@ export function AdjustmentRecordsToolbar({
           {onAdjust && (
             <Button
               size="lg"
-              className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
+              className="card-shadow-light h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
               onClick={onAdjust}
-              style={{ boxShadow: 'var(--shadow-light)' }}
             >
               <Edit className="h-4 w-4" />
               新建调整

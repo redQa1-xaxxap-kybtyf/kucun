@@ -87,10 +87,7 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
 
   if (error) {
     return (
-      <div
-        className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center"
-        style={{ boxShadow: 'var(--shadow-light)' }}
-      >
+      <div className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center">
         <div className="text-sm text-[hsl(var(--color-error))]">
           加载入库记录失败，请稍后重试
         </div>

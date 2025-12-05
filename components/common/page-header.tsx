@@ -67,13 +67,12 @@ export function PageHeader({
   return (
     <Card
       className={cn(
-        'overflow-hidden',
+        'card-shadow-medium overflow-hidden',
         showBorder
           ? 'border border-[hsl(var(--color-border-primary))]'
           : 'border-none',
         className
       )}
-      style={{ boxShadow: 'var(--shadow-medium)' }}
     >
       <CardContent
         className={cn(
@@ -90,11 +89,10 @@ export function PageHeader({
               className={cn(
                 'flex h-12 w-12 flex-shrink-0',
                 'items-center justify-center',
-                'rounded-xl text-white'
+                'card-shadow-light rounded-xl text-white'
               )}
               style={{
                 backgroundColor: iconBgColor,
-                boxShadow: 'var(--shadow-light)',
               }}
             >
               {icon}
