@@ -1183,8 +1183,19 @@ export const shippingQuerySchedulerConfig = {
   enabled: env.SHIPPING_QUERY_AUTO_ENABLED,
 } as const;
 
-// 在开发环境下打印配置信息（不包含敏感信息）
-if (isDevelopment) {
+/**
+ * 是否打印环境配置日志
+ *
+ * 说明：
+ * - 默认关闭，避免在浏览器控制台或服务器日志中产生噪音
+ * - 本地开发如需调试，可在 .env.local 中设置 SHOW_ENV_CONFIG_LOGS=true
+ * - 生产环境即使误把 NODE_ENV 配成 development，也不会打印这些调试信息
+ */
+const shouldLogEnvConfig =
+  isDevelopment && process.env.SHOW_ENV_CONFIG_LOGS === 'true';
+
+// 仅在需要时打印配置信息（不包含敏感信息）
+if (shouldLogEnvConfig) {
   // eslint-disable-next-line no-console
   console.log('🔧 环境配置已加载:');
   // eslint-disable-next-line no-console

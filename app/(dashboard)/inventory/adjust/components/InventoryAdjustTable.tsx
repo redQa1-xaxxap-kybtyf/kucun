@@ -14,8 +14,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
+import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { getStockDisplayData } from '@/lib/utils/inventory-status';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryAdjustTableProps {
   inventoryRecords: Inventory[];
@@ -38,19 +40,45 @@ export function InventoryAdjustTable({
   const renderStockDisplay = (record: Inventory) => {
     const stockData = getStockDisplayData(record);
 
+    // 与库存总览页保持一致的件/片显示逻辑
+    const unitLabel = record.product?.unit
+      ? PRODUCT_UNIT_LABELS[
+          record.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+        ] || record.product.unit
+      : '件';
+
+    const packaging =
+      record.batchPiecesPerUnit ?? record.product?.piecesPerUnit ?? 0;
+
+    const totalDisplay =
+      packaging > 0
+        ? formatPieceSummary(record.quantity, packaging, {
+            prefix: '总计',
+            fallbackUnit: unitLabel,
+          })
+        : `${record.quantity}${unitLabel}`;
+
+    const availableQuantity = record.quantity - (record.reservedQuantity || 0);
+
+    const availableDisplay =
+      availableQuantity > 0
+        ? formatPieceSummary(availableQuantity, packaging, {
+            fallbackUnit: unitLabel,
+            zeroDisplay: '0',
+          })
+        : '0';
+
     return (
       <div className="flex flex-col">
         <div className="flex items-center space-x-2">
-          <span className="font-medium">{stockData.formattedQuantity}</span>
+          <span className="font-medium">{totalDisplay}</span>
           <Badge variant={stockData.statusColor} className="text-xs">
             {stockData.statusLabel}
           </Badge>
         </div>
-        {stockData.reservedQuantity > 0 && (
-          <div className="text-muted-foreground text-sm">
-            可用: {stockData.formattedAvailable}
-          </div>
-        )}
+        <div className="text-muted-foreground text-sm">
+          可用: {availableDisplay}
+        </div>
       </div>
     );
   };

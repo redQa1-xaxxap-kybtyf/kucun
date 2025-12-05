@@ -47,18 +47,27 @@ export async function middleware(request: NextRequest) {
   const isDev = process.env.NODE_ENV === 'development';
 
   // Content Security Policy
-  const cspHeader = `
-    default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ''};
-    style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`};
-    img-src 'self' blob: data: https:;
-    font-src 'self' data:;
-    object-src 'none';
-    base-uri 'self';
-    form-action 'self';
-    frame-ancestors 'none';
-    upgrade-insecure-requests;
-  `
+  // 说明（仅注释，不会出现在 Header 中）：
+  // - script-src 使用 nonce + strict-dynamic 严格限制脚本来源
+  // - style-src 只使用 'unsafe-inline'，不再同时配置 nonce
+  //   （浏览器规范：一旦同时存在 nonce/hash，会忽略 unsafe-inline）
+  const cspDirectives = [
+    "default-src 'self';",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${
+      isDev ? "'unsafe-eval'" : ''
+    };`,
+    "style-src 'self' 'unsafe-inline';",
+    "img-src 'self' blob: data: https:;",
+    "font-src 'self' data:;",
+    "object-src 'none';",
+    "base-uri 'self';",
+    "form-action 'self';",
+    "frame-ancestors 'none';",
+    'upgrade-insecure-requests;',
+  ];
+
+  const cspHeader = cspDirectives
+    .join(' ')
     .replace(/\s{2,}/g, ' ')
     .trim();
 

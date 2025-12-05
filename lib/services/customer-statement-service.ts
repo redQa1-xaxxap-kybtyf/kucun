@@ -193,6 +193,15 @@ export async function getCustomerStatements(
     _count: { id: true },
   });
 
+  // 3.1 额外查询：用于判断“是否有历史交易”（不受当前筛选条件限制）
+  // 只要客户历史上有任何一笔交易，就应该能在对账单列表中找到对应客户
+  const historyTransactionCounts = await Promise.all(
+    customers.map(c => _getTransactionCount(c.id))
+  );
+  const historyTransactionCountMap = new Map(
+    customers.map((c, index) => [c.id, historyTransactionCounts[index]])
+  );
+
   // 4. 构建客户对账单数据（使用聚合结果，避免逐个查询）
   const statementsWithBalance = customers.map(customer => {
     // 从聚合结果中获取数据
@@ -297,8 +306,39 @@ export async function getCustomerStatements(
   // ✅ 注意：由于已在 SQL 层分页，这里不需要再次分页
   // 但如果需要按余额等计算字段排序或筛选，需要在内存中处理
 
-  // 根据余额类型筛选（如果需要）
-  let filteredStatements = statementsWithBalance;
+  // 第一步：过滤掉「从来没有任何交易」的客户，避免一进系统就看到一堆 0 元对账单
+  // 规则：
+  // - 如果客户在历史上没有任何交易记录(historyTransactionCount === 0)，并且
+  //   当前筛选区间内交易笔数为 0 & 应收/应付余额都为 0，则不显示
+  // - 如果客户历史上有交易，即使本期没有交易、余额为 0，也保留在列表中，方便查历史
+  let filteredStatements = statementsWithBalance.filter(statement => {
+    const historyTransactionCount =
+      historyTransactionCountMap.get(statement.customerId) ??
+      statement.transactionCount ??
+      0;
+
+    const receivableBalance =
+      statement.summary.receivables.receivableBalance || 0;
+    const payableBalance = statement.summary.payables.payableBalance || 0;
+
+    const hasNonZeroBalance =
+      Math.abs(receivableBalance) > 0 || Math.abs(payableBalance) > 0;
+
+    const hasAnyHistory = historyTransactionCount > 0;
+
+    // 从未发生过任何往来：且当前区间内也没有交易、余额都为 0 → 隐藏
+    if (
+      !hasAnyHistory &&
+      statement.transactionCount === 0 &&
+      !hasNonZeroBalance
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // 第二步：根据余额类型筛选（如果需要）
 
   if (balanceType === 'receivable') {
     filteredStatements = filteredStatements.filter(
