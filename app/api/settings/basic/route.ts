@@ -15,6 +15,17 @@ import {
   BasicSettingsFormSchema,
   BasicSettingsSchema,
 } from '@/lib/validations/settings';
+import packageJson from '@/package.json';
+
+// 应用版本号 - 优先使用环境变量，其次使用 package.json，最后回退到 1.0.0
+// 说明：
+// - 在生产环境通过 APP_VERSION 注入更可靠
+// - 在开发环境则直接从 package.json 读取
+const APP_VERSION =
+  process.env.APP_VERSION ||
+  process.env.npm_package_version ||
+  packageJson.version ||
+  '1.0.0';
 
 // 默认基本设置 - 使用环境配置
 const DEFAULT_BASIC_SETTINGS: BasicSettings = {
@@ -54,7 +65,7 @@ export const GET = withAuth(
       const basicSettings: Partial<BasicSettings> = {
         ...DEFAULT_BASIC_SETTINGS,
         // 系统版本由应用自身版本自动提供，不再通过表单手工维护
-        systemVersion: process.env.npm_package_version || '1.0.0',
+        systemVersion: APP_VERSION,
       };
 
       settings.forEach(setting => {
