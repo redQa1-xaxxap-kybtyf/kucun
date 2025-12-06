@@ -52,6 +52,18 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     onDensityChange,
     onExport,
   }) => {
+    const [isMobile, setIsMobile] = React.useState(false);
+
+    React.useEffect(() => {
+      const update = () => {
+        if (typeof window === 'undefined') return;
+        setIsMobile(window.innerWidth < 640);
+      };
+      update();
+      window.addEventListener('resize', update);
+      return () => window.removeEventListener('resize', update);
+    }, []);
+
     const logic = useInventoryToolbarLogic({
       queryParams,
       onFilter,
@@ -65,6 +77,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
         searchValue={searchValue}
         onSearch={onSearch}
         isSearching={isSearching}
+        isMobile={isMobile}
         density={density}
         onDensityChange={onDensityChange}
         onExport={onExport}
@@ -152,6 +165,7 @@ type InventoryToolbarViewProps = Pick<
   handleDateRangeChange: (range: DateRangeValue) => void;
   handleClearFilters: () => void;
   hasActiveFilters: boolean;
+  isMobile: boolean;
   density: 'compact' | 'comfortable';
   onDensityChange: (density: 'compact' | 'comfortable') => void;
   onExport: () => void;
@@ -169,10 +183,94 @@ function InventoryToolbarView({
   handleDateRangeChange,
   handleClearFilters,
   hasActiveFilters,
+  isMobile,
   density,
   onDensityChange,
   onExport,
 }: InventoryToolbarViewProps) {
+  const filters = React.useMemo(
+    () =>
+      isMobile
+        ? []
+        : [
+            {
+              key: 'categoryId',
+              label: '分类',
+              options: categoryOptions.map(cat => ({
+                label: cat.name,
+                value: cat.id,
+              })),
+              width: 'w-[140px]',
+            },
+            {
+              key: 'sortBy',
+              label: '排序',
+              options: INVENTORY_FILTER_CONFIG.filters[1].options || [],
+              width: 'w-[140px]',
+            },
+          ],
+    [isMobile, categoryOptions]
+  );
+
+  const filterValues = React.useMemo(
+    () =>
+      isMobile
+        ? {}
+        : {
+            categoryId: queryParams.categoryId || 'all',
+            sortBy: queryParams.sortBy || 'updatedAt',
+          },
+    [isMobile, queryParams.categoryId, queryParams.sortBy]
+  );
+
+  const dateRangeFilter = React.useMemo(
+    () =>
+      isMobile
+        ? undefined
+        : {
+            key: 'dateRange',
+            label: INVENTORY_FILTER_CONFIG.dateRangeLabel,
+            value: {
+              startDate: queryParams.startDate,
+              endDate: queryParams.endDate,
+            },
+            onChange: handleDateRangeChange,
+            placeholder: INVENTORY_FILTER_CONFIG.dateRangePlaceholder,
+          },
+    [
+      isMobile,
+      queryParams.startDate,
+      queryParams.endDate,
+      handleDateRangeChange,
+    ]
+  );
+
+  const actionButtons = React.useMemo(
+    () =>
+      isMobile
+        ? []
+        : [
+            {
+              key: 'density',
+              label: density === 'compact' ? '紧凑' : '舒适',
+              icon: <Rows className="mr-1 h-3 w-3" />,
+              onClick: () =>
+                onDensityChange(
+                  density === 'compact' ? 'comfortable' : 'compact'
+                ),
+              variant: 'outline',
+            },
+            {
+              key: 'export',
+              label: '导出',
+              icon: <Download className="mr-1 h-3 w-3" />,
+              onClick: onExport,
+              variant: 'outline',
+            },
+          ],
+    [isMobile, density, onDensityChange, onExport]
+  );
+
   return (
     <SearchFilterCard
       searchValue={searchValue ?? (queryParams.search || '')}
@@ -180,39 +278,11 @@ function InventoryToolbarView({
       searchPlaceholder={INVENTORY_FILTER_CONFIG.searchPlaceholder}
       isSearching={isSearching}
       // 筛选器配置
-      filters={[
-        {
-          key: 'categoryId',
-          label: '分类',
-          options: categoryOptions.map(cat => ({
-            label: cat.name,
-            value: cat.id,
-          })),
-          width: 'w-[140px]',
-        },
-        {
-          key: 'sortBy',
-          label: '排序',
-          options: INVENTORY_FILTER_CONFIG.filters[1].options || [],
-          width: 'w-[140px]',
-        },
-      ]}
-      filterValues={{
-        categoryId: queryParams.categoryId || 'all',
-        sortBy: queryParams.sortBy || 'updatedAt',
-      }}
+      filters={filters}
+      filterValues={filterValues}
       onFilterChange={handleFilterChange}
       // 日期范围筛选
-      dateRangeFilter={{
-        key: 'dateRange',
-        label: INVENTORY_FILTER_CONFIG.dateRangeLabel,
-        value: {
-          startDate: queryParams.startDate,
-          endDate: queryParams.endDate,
-        },
-        onChange: handleDateRangeChange,
-        placeholder: INVENTORY_FILTER_CONFIG.dateRangePlaceholder,
-      }}
+      dateRangeFilter={dateRangeFilter}
       // Toggle 按钮
       toggleButtons={[
         {
@@ -231,23 +301,7 @@ function InventoryToolbarView({
         },
       ]}
       // 操作按钮
-      actionButtons={[
-        {
-          key: 'density',
-          label: density === 'compact' ? '紧凑' : '舒适',
-          icon: <Rows className="mr-1 h-3 w-3" />,
-          onClick: () =>
-            onDensityChange(density === 'compact' ? 'comfortable' : 'compact'),
-          variant: 'outline',
-        },
-        {
-          key: 'export',
-          label: '导出',
-          icon: <Download className="mr-1 h-3 w-3" />,
-          onClick: onExport,
-          variant: 'outline',
-        },
-      ]}
+      actionButtons={actionButtons}
       // 清空筛选
       onClearFilters={handleClearFilters}
       hasActiveFilters={hasActiveFilters}

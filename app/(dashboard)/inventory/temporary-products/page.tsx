@@ -27,7 +27,7 @@ export const metadata = {
 export default function TemporaryProductsPage() {
   return (
     // 与库存总览、库存调整等页面保持一致的布局容器
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-6">
         <PageHeader
           title="外调产品库"

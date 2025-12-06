@@ -1,12 +1,14 @@
 'use client';
 
 import { Package, User } from 'lucide-react';
+import Link from 'next/link';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
@@ -210,7 +212,13 @@ function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
             <TableCell colSpan={10} className="p-8">
               <EmptyState
                 title="暂无入库记录"
+                description="还没有任何入库流水，您可以先创建一条入库记录。"
                 icon={<Package className="text-muted-foreground h-6 w-6" />}
+                action={
+                  <Button size="sm" asChild>
+                    <Link href="/inventory/inbound/create">去新增入库</Link>
+                  </Button>
+                }
                 compact
               />
             </TableCell>

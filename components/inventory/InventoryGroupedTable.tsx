@@ -6,6 +6,7 @@
 'use client';
 
 import { Eye, Package } from 'lucide-react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
@@ -190,9 +191,33 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                 className="p-8"
               >
                 <EmptyState
-                  title={hasSearchQuery ? undefined : '暂无库存数据'}
-                  description={undefined}
+                  title={
+                    hasSearchQuery ? '未找到匹配的库存记录' : '暂无库存数据'
+                  }
+                  description={
+                    hasSearchQuery
+                      ? '请尝试调整搜索条件或清空筛选后再试。'
+                      : '还没有任何库存记录，您可以先进行产品入库。'
+                  }
                   icon={<Package className="text-muted-foreground h-6 w-6" />}
+                  action={
+                    hasSearchQuery ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // 简单方案：跳转到库存总览根路径，清空所有筛选
+                          window.location.href = '/inventory';
+                        }}
+                      >
+                        清空筛选
+                      </Button>
+                    ) : (
+                      <Button size="sm" asChild>
+                        <Link href="/inventory/inbound/create">去入库</Link>
+                      </Button>
+                    )
+                  }
                   compact
                 />
               </TableCell>

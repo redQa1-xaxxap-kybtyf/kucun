@@ -1,7 +1,13 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import { Package, Plus } from 'lucide-react';
+import {
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  Package,
+  Plus,
+} from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 import { Suspense } from 'react';
@@ -387,67 +393,116 @@ function InventoryContent(props: {
     useInventoryStatistics({
       categoryId: currentQueryParams.categoryId,
     });
+  const [showMobileStats, setShowMobileStats] = React.useState(false);
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        <PageHeader
-          title="库存管理"
-          description="实时监控库存水平和库存变动"
-          icon={<Package className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-primary))"
-          actions={
-            <Button
-              size="lg"
-              asChild
-              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="flex flex-col gap-6">
+        {/* 统一标题区域，所有端都在最上方 */}
+        <div className="order-1">
+          <PageHeader
+            title="库存管理"
+            description="实时监控库存水平和库存变动"
+            icon={<Package className="h-6 w-6 text-white" />}
+            iconBgColor="hsl(var(--color-primary))"
+            actions={
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/inventory/adjust">
+                  <Plus className="mr-2 h-4 w-4" />
+                  库存调整
+                </Link>
+              </Button>
+            }
+          />
+        </div>
+
+        {/* 统计概览：PC 端紧跟标题，移动端排在列表之后 */}
+        <div className="order-3 md:order-2">
+          {/* PC 端：始终展示统计卡片 */}
+          <div className="hidden md:block">
+            <InventoryStatisticsCards
+              statistics={statistics ?? null}
+              isLoading={isLoadingStats}
+            />
+          </div>
+
+          {/* 移动端：折叠展示统计概览，默认收起 */}
+          <div className="space-y-2 md:hidden">
+            <button
+              type="button"
+              onClick={() => setShowMobileStats(prev => !prev)}
+              className="flex w-full items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-3 py-2"
             >
-              <Link href="/inventory/adjust">
-                <Plus className="mr-2 h-4 w-4" />
-                库存调整
-              </Link>
-            </Button>
-          }
-        />
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary-light))]">
+                  <BarChart3 className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    库存统计概览
+                  </span>
+                  <span className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    查看库存总金额、总数量等统计数据
+                  </span>
+                </div>
+              </div>
+              {showMobileStats ? (
+                <ChevronDown className="h-4 w-4 text-[hsl(var(--color-text-secondary))]" />
+              ) : (
+                <ChevronRight className="h-4 w-4 text-[hsl(var(--color-text-secondary))]" />
+              )}
+            </button>
 
-        {/* 库存统计卡片 */}
-        <InventoryStatisticsCards
-          statistics={statistics ?? null}
-          isLoading={isLoadingStats}
-        />
+            {showMobileStats && (
+              <div>
+                <InventoryStatisticsCards
+                  statistics={statistics ?? null}
+                  isLoading={isLoadingStats}
+                />
+              </div>
+            )}
+          </div>
+        </div>
 
-        <Suspense fallback={<InventoryListSkeleton />}>
-          {error ? (
-            <ErrorBoundaryFallback
-              error={error}
-              onRetry={() => {
-                queryClient.refetchQueries({
-                  queryKey: queryKeys.inventory.lists(),
-                });
-              }}
-              onClearFilters={onClearFilters}
-            />
-          ) : (
-            <ERPInventoryList
-              data={listData}
-              categoryOptions={categoryOptions}
-              queryParams={currentQueryParams}
-              searchValue={searchValue}
-              onSearch={onSearch}
-              onFilter={onFilter}
-              onClearFilters={onClearFilters}
-              onPageChange={onPageChange}
-              onNextPageHover={onNextPageHover}
-              onPrevPageHover={onPrevPageHover}
-              isLoading={isLoading}
-              isFetching={isFetching}
-              isSearching={isSearching}
-              density={density}
-              onDensityChange={onDensityChange}
-              onExport={onExport}
-            />
-          )}
-        </Suspense>
+        {/* 搜索 + 列表：移动端在统计前，PC 端在统计后 */}
+        <div className="order-2 md:order-3">
+          <Suspense fallback={<InventoryListSkeleton />}>
+            {error ? (
+              <ErrorBoundaryFallback
+                error={error}
+                onRetry={() => {
+                  queryClient.refetchQueries({
+                    queryKey: queryKeys.inventory.lists(),
+                  });
+                }}
+                onClearFilters={onClearFilters}
+              />
+            ) : (
+              <ERPInventoryList
+                data={listData}
+                categoryOptions={categoryOptions}
+                queryParams={currentQueryParams}
+                searchValue={searchValue}
+                onSearch={onSearch}
+                onFilter={onFilter}
+                onClearFilters={onClearFilters}
+                onPageChange={onPageChange}
+                onNextPageHover={onNextPageHover}
+                onPrevPageHover={onPrevPageHover}
+                isLoading={isLoading}
+                isFetching={isFetching}
+                isSearching={isSearching}
+                density={density}
+                onDensityChange={onDensityChange}
+                onExport={onExport}
+              />
+            )}
+          </Suspense>
+        </div>
       </div>
     </div>
   );

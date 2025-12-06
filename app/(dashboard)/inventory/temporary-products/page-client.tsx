@@ -263,88 +263,156 @@ export function TemporaryProductsClient() {
             </div>
           ) : (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="h-9 text-xs">供应商</TableHead>
-                    <TableHead className="h-9 text-xs">编码</TableHead>
-                    <TableHead className="h-9 text-xs">名称</TableHead>
-                    <TableHead className="h-9 text-xs">规格</TableHead>
-                    <TableHead className="h-9 text-center text-xs">
-                      单位
-                    </TableHead>
-                    <TableHead className="h-9 text-center text-xs">
-                      每件片数
-                    </TableHead>
-                    <TableHead className="h-9 text-center text-xs">
-                      使用次数
-                    </TableHead>
-                    <TableHead className="h-9 text-xs">最后使用</TableHead>
-                    <TableHead className="h-9 text-xs">创建人</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product: TemporaryProduct) => (
-                    <TableRow key={product.id} className="h-12">
-                      <TableCell className="py-2">
-                        <div>
-                          <div className="text-sm font-medium">
-                            {product.supplierName}
-                          </div>
-                          {product.supplierCode && (
-                            <div className="text-muted-foreground text-xs">
-                              {product.supplierCode}
+              {/* 桌面端表格视图 */}
+              <div className="hidden overflow-x-auto md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="h-9 text-xs">供应商</TableHead>
+                      <TableHead className="h-9 text-xs">编码</TableHead>
+                      <TableHead className="h-9 text-xs">名称</TableHead>
+                      <TableHead className="h-9 text-xs">规格</TableHead>
+                      <TableHead className="h-9 text-center text-xs">
+                        单位
+                      </TableHead>
+                      <TableHead className="h-9 text-center text-xs">
+                        每件片数
+                      </TableHead>
+                      <TableHead className="h-9 text-center text-xs">
+                        使用次数
+                      </TableHead>
+                      <TableHead className="h-9 text-xs">最后使用</TableHead>
+                      <TableHead className="h-9 text-xs">创建人</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((product: TemporaryProduct) => (
+                      <TableRow key={product.id} className="h-12">
+                        <TableCell className="py-2">
+                          <div>
+                            <div className="text-sm font-medium">
+                              {product.supplierName}
                             </div>
+                            {product.supplierCode && (
+                              <div className="text-muted-foreground text-xs">
+                                {product.supplierCode}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-2 font-mono text-sm">
+                          {product.code}
+                        </TableCell>
+                        <TableCell className="py-2 text-sm">
+                          {product.name}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground py-2 text-sm">
+                          {product.specification || '-'}
+                        </TableCell>
+                        <TableCell className="py-2 text-center text-sm">
+                          {product.unit}
+                        </TableCell>
+                        <TableCell className="py-2 text-center text-sm">
+                          {product.piecesPerUnit}
+                        </TableCell>
+                        <TableCell className="py-2 text-center">
+                          <div>
+                            <div className="text-sm font-medium">
+                              {product.usageCount}
+                            </div>
+                            <div className="text-muted-foreground text-xs">
+                              销售:{product.salesOrderCount} / 厂发:
+                              {product.factoryShipmentCount}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-2">
+                          {product.lastUsedAt ? (
+                            <div className="flex items-center gap-1 text-xs">
+                              <Calendar className="h-3 w-3" />
+                              <span className="text-muted-foreground">
+                                {formatDateTime(new Date(product.lastUsedAt))}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">
+                              -
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground py-2 text-sm">
+                          {product.creatorName || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 移动端卡片视图 */}
+              <div className="space-y-3 px-4 py-3 md:hidden">
+                {products.map((product: TemporaryProduct) => (
+                  <div
+                    key={product.id}
+                    className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                          {product.supplierName}
+                        </div>
+                        {product.supplierCode && (
+                          <div className="text-muted-foreground text-xs">
+                            {product.supplierCode}
+                          </div>
+                        )}
+                        <div className="mt-1 font-mono text-sm font-semibold">
+                          {product.code}
+                        </div>
+                        <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                          {product.name}
+                        </div>
+                        {product.specification && (
+                          <div className="mt-1 line-clamp-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                            {product.specification}
+                          </div>
+                        )}
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                          <span>单位：{product.unit}</span>
+                          <span>每件：{product.piecesPerUnit}片</span>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                        <div className="flex items-center justify-end gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                            {product.usageCount}
+                          </span>
+                        </div>
+                        <div className="mt-1 text-[hsl(var(--color-text-secondary))]">
+                          销售:{product.salesOrderCount} / 厂发:
+                          {product.factoryShipmentCount}
+                        </div>
+                        <div className="mt-2">
+                          {product.lastUsedAt ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <Calendar className="h-3 w-3" />
+                              <span>
+                                {formatDateTime(new Date(product.lastUsedAt))}
+                              </span>
+                            </div>
+                          ) : (
+                            <span>暂无使用记录</span>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell className="py-2 font-mono text-sm">
-                        {product.code}
-                      </TableCell>
-                      <TableCell className="py-2 text-sm">
-                        {product.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground py-2 text-sm">
-                        {product.specification || '-'}
-                      </TableCell>
-                      <TableCell className="py-2 text-center text-sm">
-                        {product.unit}
-                      </TableCell>
-                      <TableCell className="py-2 text-center text-sm">
-                        {product.piecesPerUnit}
-                      </TableCell>
-                      <TableCell className="py-2 text-center">
-                        <div>
-                          <div className="text-sm font-medium">
-                            {product.usageCount}
-                          </div>
-                          <div className="text-muted-foreground text-xs">
-                            销售:{product.salesOrderCount} / 厂发:
-                            {product.factoryShipmentCount}
-                          </div>
+                        <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+                          创建人：{product.creatorName || '-'}
                         </div>
-                      </TableCell>
-                      <TableCell className="py-2">
-                        {product.lastUsedAt ? (
-                          <div className="flex items-center gap-1 text-xs">
-                            <Calendar className="h-3 w-3" />
-                            <span className="text-muted-foreground">
-                              {formatDateTime(new Date(product.lastUsedAt))}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">
-                            -
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground py-2 text-sm">
-                        {product.creatorName || '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {/* 分页 */}
               {pagination && pagination.totalPages > 1 && (

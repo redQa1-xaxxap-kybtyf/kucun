@@ -265,9 +265,12 @@ export type CreateProductData = ProductCreateInput;
 
 // 产品单位显示名称映射
 // 瓷砖行业专用：只使用"件"和"片"两种单位
+// 兼容后端可能返回的复数形式（pieces/sheets），统一映射为中文
 export const PRODUCT_UNIT_LABELS: Record<string, string> = {
   piece: '件',
+  pieces: '件',
   sheet: '片',
+  sheets: '片',
 };
 
 // 产品单位选项（用于表单）

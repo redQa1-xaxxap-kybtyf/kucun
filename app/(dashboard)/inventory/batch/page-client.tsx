@@ -289,7 +289,7 @@ export function BatchSpecificationPageClient({
 
   if (error) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <div className="space-y-6">
           <PageHeader
             title="批次管理"
@@ -317,7 +317,7 @@ export function BatchSpecificationPageClient({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-6">
         <PageHeader
           title="批次管理"

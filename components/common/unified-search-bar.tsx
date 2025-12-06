@@ -154,7 +154,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
   searchValue,
   showClearButton,
 }) => (
-  <div className="relative w-[280px] min-w-[200px] sm:w-[320px]">
+  <div className="relative w-full min-w-[200px] sm:w-[320px]">
     {isSearching ? (
       <Loader2
         className={cn(

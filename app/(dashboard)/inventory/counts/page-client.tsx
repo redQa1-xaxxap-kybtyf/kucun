@@ -132,7 +132,7 @@ export function CountsPageClient({ initialParams }: CountsPageClientProps) {
 
   return (
     // 与库存总览等页面保持一致的布局容器，统一滚动和边距
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-6">
         {/* 页面标题 */}
         <PageHeader

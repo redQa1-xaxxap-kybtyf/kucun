@@ -37,7 +37,7 @@ export default function InventoryAdjustPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-6">
         {/* 页面标题 */}
         <PageHeader

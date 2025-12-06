@@ -192,13 +192,21 @@ export function CountList({ filters }: CountListProps) {
 
   if (counts.length === 0) {
     return (
-      <div className="text-muted-foreground py-8 text-center">暂无盘点计划</div>
+      <div className="text-muted-foreground flex flex-col items-center justify-center gap-3 py-10 text-sm">
+        <span>暂无盘点计划</span>
+        {hasManagePermission && (
+          <Button size="sm" asChild>
+            <Link href="/inventory/counts/new">新建盘点计划</Link>
+          </Button>
+        )}
+      </div>
     );
   }
 
   return (
     <>
-      <div className="rounded-md border">
+      {/* 桌面端表格视图 */}
+      <div className="hidden overflow-x-auto rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -280,6 +288,91 @@ export function CountList({ filters }: CountListProps) {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端卡片视图 */}
+      <div className="space-y-3 md:hidden">
+        {counts.map(
+          (count: {
+            id: string;
+            countNumber: string;
+            countName: string;
+            countType: 'full' | 'partial' | 'cycle';
+            status: CountStatus;
+            planDate: string;
+            totalItems: number;
+            completedItems: number;
+          }) => (
+            <div
+              key={count.id}
+              className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    盘点编号
+                  </div>
+                  <div className="font-mono text-sm font-semibold">
+                    {count.countNumber}
+                  </div>
+                </div>
+                <Badge variant={getStatusBadgeVariant(count.status)}>
+                  {COUNT_STATUS_LABELS[count.status]}
+                </Badge>
+              </div>
+              <div className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                {count.countName}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                <span>类型：{COUNT_TYPE_LABELS[count.countType]}</span>
+                <span>计划：{formatDate(count.planDate)}</span>
+                <span>
+                  进度：
+                  {count.totalItems > 0
+                    ? `${count.completedItems}/${count.totalItems}`
+                    : '-'}
+                </span>
+              </div>
+              <div className="mt-3 flex justify-end gap-2">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href={`/inventory/counts/${count.id}`}>
+                    <Eye className="mr-1 h-3 w-3" />
+                    详情
+                  </Link>
+                </Button>
+
+                {hasManagePermission && count.status === 'draft' && (
+                  <>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/inventory/counts/${count.id}/edit`}>
+                        <Pencil className="mr-1 h-3 w-3" />
+                        编辑
+                      </Link>
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleStart(count.id)}
+                    >
+                      <Play className="mr-1 h-3 w-3" />
+                      开始
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(count.id)}
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      删除
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

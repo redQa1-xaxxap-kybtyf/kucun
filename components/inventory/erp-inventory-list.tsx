@@ -113,7 +113,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         />
 
         {/* 库存列表 */}
-        <div className="card-shadow-medium relative overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+        <div className="card-shadow-medium relative rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
           {/* ✅ 加载中提示 */}
           {isFetching && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50">
@@ -124,13 +124,15 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
             </div>
           )}
 
-          <InventoryTable
-            data={data.data}
-            onAdjust={handleAdjust}
-            useVirtualization={data.data.length > 50}
-            searchQuery={queryParams.search}
-            density={density}
-          />
+          <div className="overflow-x-auto">
+            <InventoryTable
+              data={data.data}
+              onAdjust={handleAdjust}
+              useVirtualization={data.data.length > 50}
+              searchQuery={queryParams.search}
+              density={density}
+            />
+          </div>
 
           {/* 分页器 */}
           {data.pagination && (

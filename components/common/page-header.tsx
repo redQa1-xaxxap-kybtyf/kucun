@@ -76,18 +76,18 @@ export function PageHeader({
     >
       <CardContent
         className={cn(
-          'p-6',
+          'p-4 sm:p-6',
           variant === 'gradient' &&
             'bg-gradient-to-r from-[hsl(var(--color-primary-light))] via-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]',
           variant === 'solid' && 'bg-[hsl(var(--color-bg-secondary))]'
         )}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* 图标容器 */}
             <div
               className={cn(
-                'flex h-12 w-12 flex-shrink-0',
+                'flex h-10 w-10 flex-shrink-0 sm:h-12 sm:w-12',
                 'items-center justify-center',
                 'card-shadow-light rounded-xl text-white'
               )}
@@ -100,17 +100,21 @@ export function PageHeader({
 
             {/* 标题和描述 */}
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+              <h1 className="text-xl font-bold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl">
                 {title}
               </h1>
-              <div className="text-sm text-[hsl(var(--color-text-secondary))]">
+              <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
                 {description}
               </div>
             </div>
           </div>
 
           {/* 操作按钮区域 */}
-          {actions && <div className="flex items-center gap-2">{actions}</div>}
+          {actions && (
+            <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:justify-end">
+              {actions}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

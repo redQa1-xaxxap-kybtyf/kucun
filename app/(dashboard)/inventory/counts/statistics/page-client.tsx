@@ -132,7 +132,7 @@ export function CountStatisticsPageClient({
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 sm:p-6">
       {/* 页面标题 */}
       <PageHeader
         title="盘点统计"
