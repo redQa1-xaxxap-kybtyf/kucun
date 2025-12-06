@@ -54,27 +54,31 @@ export default async function FinancePage() {
   const todayLabel = new Intl.DateTimeFormat('zh-CN').format(new Date());
 
   return (
-    <div className="space-y-6">
-      <FinancePageHeader dateLabel={todayLabel} />
-      <FinanceOverviewCards overview={overview} />
-      <FinanceModuleGrid modules={modules} />
-      <FinanceQuickActions summary={overview.summary} />
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
+        <FinancePageHeader dateLabel={todayLabel} />
+        <FinanceOverviewCards overview={overview} />
+        <FinanceModuleGrid modules={modules} />
+        <FinanceQuickActions summary={overview.summary} />
+      </div>
     </div>
   );
 }
 
 function FinancePageHeader({ dateLabel }: { dateLabel: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">财务管理</h1>
-        <p className="text-muted-foreground">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold tracking-tight sm:text-3xl sm:font-bold">
+          财务管理
+        </h1>
+        <p className="text-muted-foreground text-sm sm:text-base">
           管理应收账款、退款处理、费用记录和往来账单
         </p>
       </div>
-      <div className="flex items-center gap-2">
-        <Calendar className="text-muted-foreground h-4 w-4" />
-        <span className="text-muted-foreground text-sm">{dateLabel}</span>
+      <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+        <Calendar className="h-4 w-4" />
+        <span>{dateLabel}</span>
       </div>
     </div>
   );

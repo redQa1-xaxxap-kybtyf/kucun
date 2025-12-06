@@ -106,10 +106,10 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
         <Truck className="h-6 w-6 text-white" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+        <h1 className="text-lg font-bold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl">
           销售订单详情
         </h1>
-        <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
           <span className="font-medium">订单号：{order.orderNumber}</span>
           <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
             {SALES_ORDER_STATUS_LABELS[
@@ -140,29 +140,35 @@ function HeaderActions({
   onExportCompleteExcel,
 }: HeaderActionsProps) {
   return (
-    <div className="flex items-center gap-2">
-      <Button variant="outline" size="lg" onClick={onBack} className="h-11">
-        <ArrowLeft className="mr-2 h-4 w-4" />
+    <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onBack}
+        className="h-8 px-3 text-xs sm:h-9 sm:px-4"
+      >
+        <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
         返回
       </Button>
       <Button
         variant="outline"
-        size="lg"
+        size="sm"
         onClick={onEdit}
         disabled={!canEditOrder}
+        className="h-8 px-3 text-xs sm:h-9 sm:px-4"
       >
-        <Edit className="mr-2 h-4 w-4" />
+        <Edit className="mr-1.5 h-3.5 w-3.5" />
         编辑
       </Button>
       {isConfirmed && (
         <Button
           variant="default"
-          size="lg"
+          size="sm"
           onClick={onConfirmShipment}
           disabled={isUpdatingStatus}
-          className="bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))] disabled:bg-[hsl(var(--color-primary))] disabled:text-[hsl(var(--color-text-on-primary))] disabled:opacity-60"
+          className="h-8 px-3 text-xs bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))] disabled:bg-[hsl(var(--color-primary))] disabled:text-[hsl(var(--color-text-on-primary))] disabled:opacity-60 sm:h-9 sm:px-4"
         >
-          <Truck className="mr-2 h-4 w-4" />
+          <Truck className="mr-1.5 h-3.5 w-3.5" />
           {isUpdatingStatus ? '处理中...' : '确认发货'}
         </Button>
       )}
@@ -170,8 +176,9 @@ function HeaderActions({
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            size="lg"
+            size="sm"
             disabled={isExportingImage || isExportingExcel}
+            className="h-8 px-2 sm:h-9"
           >
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -263,8 +270,8 @@ export function HeaderCard({
 
   return (
     <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-        <div className="flex items-center justify-between">
+      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <SalesOrderMeta order={order} />
           <HeaderActions
             canEditOrder={canEditOrder}

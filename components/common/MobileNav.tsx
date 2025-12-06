@@ -165,7 +165,8 @@ const MobileNavSheetContent = ({
 }: MobileNavSheetContentProps) => (
   <SheetContent
     side="left"
-    className={cn('w-80 p-0', className)}
+    // 使用 flex 布局 + h-full，让内部 ScrollArea 真正可滚动
+    className={cn('flex h-full min-h-0 w-80 flex-col p-0', className)}
     {...swipeHandlers}
   >
     <SheetHeader className="border-b px-6 py-4">

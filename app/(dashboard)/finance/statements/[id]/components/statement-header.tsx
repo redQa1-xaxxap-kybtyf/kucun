@@ -41,8 +41,8 @@ export function StatementHeader({
 
   return (
     <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-        <div className="flex items-center justify-between">
+      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-lg">
               <FileText className="h-6 w-6 text-white" />
@@ -77,7 +77,7 @@ export function StatementHeader({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Button
               variant="outline"
               size="lg"

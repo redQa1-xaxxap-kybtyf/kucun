@@ -291,7 +291,7 @@ function CountHeader({
   isDeleting,
 }: CountHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <Button variant="ghost" size="sm" asChild className="gap-2">
         <Link href="/inventory/counts">
           <ArrowLeft className="h-4 w-4" />
@@ -300,7 +300,7 @@ function CountHeader({
       </Button>
 
       {hasManagePermission && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end">
           <Button
             variant="outline"
             size="sm"

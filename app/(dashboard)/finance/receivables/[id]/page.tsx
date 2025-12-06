@@ -90,13 +90,13 @@ function ReceivableHeaderActions({
   receivable: ReceivableDetail;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-2">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-2 sm:space-x-2">
         <span className="text-muted-foreground">
           应收款单号：{receivable.receivableNumber}
         </span>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
         <Button variant="outline" size="sm">
           <Edit className="mr-2 h-4 w-4" />
           编辑
@@ -447,7 +447,7 @@ export default function ReceivableDetailPage() {
       : 0;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 sm:space-y-6 sm:p-6">
       <ReceivableHeaderActions receivable={receivable} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">

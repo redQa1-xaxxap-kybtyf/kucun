@@ -142,27 +142,27 @@ export default async function RefundDetailPage({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <ChineseYuan className="h-6 w-6" />
+          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+            <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                    <ChineseYuan className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                      应退货款详情
+                    </h1>
+                    <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                      退款编号：{refund.refundNumber}
+                    </p>
+                  </div>
+                  <StatusBadge status={refund.status} />
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    应退货款详情
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    退款编号：{refund.refundNumber}
-                  </p>
-                </div>
-                <StatusBadge status={refund.status} />
-              </div>
-              <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                 {refund.status === 'pending' && (
                   <Button
                     size="lg"

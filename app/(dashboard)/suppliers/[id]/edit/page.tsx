@@ -59,8 +59,8 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
 
   const HeaderCard = ({ subtitle }: { subtitle: ReactNode }) => (
     <Card className="overflow-hidden">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-        <div className="flex items-center justify-between">
+      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
               <Building2 className="h-6 w-6 text-white" />
@@ -74,17 +74,19 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
               </div>
             </div>
           </div>
-          <Button
-            variant="outline"
-            size="lg"
-            asChild
-            className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
-          >
-            <Link href="/suppliers">
-              <ArrowLeft className="h-4 w-4" />
-              返回
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              size="lg"
+              asChild
+              className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+            >
+              <Link href="/suppliers">
+                <ArrowLeft className="h-4 w-4" />
+                返回
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

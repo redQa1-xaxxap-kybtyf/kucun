@@ -261,26 +261,22 @@ export function OrderItemsTable({
   return (
     <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-blue-50 to-indigo-50 py-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base font-semibold text-[hsl(var(--color-text-primary))]">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-sm">
               <ShoppingCart className="h-4 w-4 text-white" />
             </div>
             订单明细
           </CardTitle>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-[hsl(var(--color-text-tertiary))]">
-              产品种类
-            </span>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--color-text-tertiary))] sm:justify-end sm:text-sm">
+            <span>产品种类</span>
             <span className="font-bold text-[hsl(var(--color-text-primary))]">
               {orderItems.length}
             </span>
             <span className="mx-1 text-[hsl(var(--color-text-tertiary))]">
               |
             </span>
-            <span className="text-[hsl(var(--color-text-tertiary))]">
-              总数量
-            </span>
+            <span>总数量</span>
             <span className="font-bold text-[hsl(var(--color-text-primary))]">
               {(() => {
                 const items = order.items ?? [];
@@ -309,7 +305,8 @@ export function OrderItemsTable({
         </div>
       </CardHeader>
       <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
-        <div className="overflow-x-auto rounded-b-xl border-t border-[hsl(var(--color-border-secondary))]">
+        {/* 桌面端：表格视图 */}
+        <div className="hidden overflow-x-auto rounded-b-xl border-t border-[hsl(var(--color-border-secondary))] md:block">
           <table className="w-full text-sm text-[hsl(var(--color-text-secondary))]">
             <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-600">
               <tr>
@@ -616,6 +613,177 @@ export function OrderItemsTable({
               </tr>
             </tfoot>
           </table>
+        </div>
+
+        {/* 移动端：卡片视图 */}
+        <div className="border-t border-[hsl(var(--color-border-secondary))] bg-white p-3 space-y-3 md:hidden">
+          {orderItems.map((item, index) => {
+            const unitLabel = resolveUnitLabel(item);
+            const quantityDisplay = formatQuantityDisplay(item);
+            const piecesPerUnitDisplay =
+              item.piecesPerUnit ?? item.product?.piecesPerUnit;
+            const piecesBreakdown = formatPiecesBreakdown(item);
+            const specificationText = item.isManualProduct
+              ? item.manualSpecification || item.specification || '-'
+              : item.specification || item.product?.specification || '-';
+            const manualName =
+              typeof item.manualProductName === 'string'
+                ? item.manualProductName.trim()
+                : '';
+            const manualCode =
+              typeof item.productCode === 'string'
+                ? item.productCode.trim()
+                : '';
+            const displayProductName = item.isManualProduct
+              ? manualName || manualCode || '临时产品'
+              : item.product?.name || '-';
+            const displayProductCode = item.isManualProduct
+              ? manualCode || '-'
+              : item.product?.code || '-';
+            const localQuantityDisplay = formatDecimal(
+              item.localQuantity ?? 0
+            );
+            const transferQuantityDisplay = formatDecimal(
+              item.transferQuantity ?? 0
+            );
+            const itemWeightKg = calculateItemWeightKg(item);
+
+            return (
+              <div
+                key={item.id}
+                className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white p-3 shadow-[var(--shadow-light)]"
+              >
+                {/* 顶部：名称 + 编码 */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                      <span className="inline-flex h-5 w-5 items-center justify-center rounded bg-gray-100 text-[11px] font-medium text-gray-700">
+                        {index + 1}
+                      </span>
+                      <span className="font-mono text-[12px] text-[hsl(var(--color-text-primary))]">
+                        {displayProductCode}
+                      </span>
+                      {item.isManualProduct && (
+                        <span className="rounded border border-orange-300 bg-orange-50 px-1 py-0.5 text-[10px] font-semibold text-orange-700">
+                          临时
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                      {displayProductName}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1 text-[11px] text-gray-600">
+                      <span>{specificationText}</span>
+                      {item.colorCode && (
+                        <span className="inline-flex items-center gap-1 rounded bg-orange-50 px-1.5 py-0.5 text-[10px] text-orange-700">
+                          <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+                          {item.colorCode}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {/* 单价 + 小计 */}
+                  <div className="text-right text-[11px] text-gray-500 space-y-1">
+                    <div>单价</div>
+                    <div className="font-mono text-[13px] font-semibold text-[hsl(var(--color-primary))]">
+                      {item.unitPrice != null
+                        ? formatCurrency(item.unitPrice)
+                        : '-'}
+                    </div>
+                    <div className="text-[10px] text-gray-500">小计</div>
+                    <div className="font-mono text-[13px] font-bold text-[hsl(var(--color-primary))]">
+                      {item.subtotal != null
+                        ? formatCurrency(item.subtotal)
+                        : '-'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 数量 / 单位 / 重量等 */}
+                <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-gray-600">
+                  <div className="space-y-0.5">
+                    <div className="text-[10px] text-gray-500">出货数量</div>
+                    <div className="font-medium text-[hsl(var(--color-text-primary))]">
+                      {piecesBreakdown || quantityDisplay}
+                    </div>
+                    <div className="text-[10px] text-gray-500">
+                      总片数：
+                      <span className="font-semibold">
+                        {formatDecimal(item.quantity ?? 0)}片
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-0.5 text-right">
+                    <div className="text-[10px] text-gray-500">单位 / 每件片数</div>
+                    <div>
+                      <span className="mr-1">{unitLabel}</span>
+                      {piecesPerUnitDisplay != null && (
+                        <span className="text-gray-500">
+                          · {formatDecimal(piecesPerUnitDisplay)}片/件
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-gray-500">
+                      重量(kg)：
+                      <span className="font-mono text-[12px] text-[hsl(var(--color-text-primary))]">
+                        {itemWeightKg != null
+                          ? `${formatDecimal(itemWeightKg)}kg`
+                          : '-'}
+                      </span>
+                    </div>
+                  </div>
+                  {order.orderType === 'TRANSFER' && (
+                    <div className="col-span-2 space-y-0.5">
+                      <div className="text-[10px] text-gray-500">
+                        本地 / 调货
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-700">
+                        <span>本地 {localQuantityDisplay}</span>
+                        <span>调货 {transferQuantityDisplay}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 备注：仅在有备注时展示 */}
+                {item.remark && item.remark.trim().length > 0 && (
+                  <div className="mt-2 rounded border border-dashed border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-600">
+                    备注：{item.remark}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* 小结 */}
+          <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-3 text-[11px] text-[hsl(var(--color-text-secondary))]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <span className="mr-1 font-medium text-[hsl(var(--color-text-primary))]">
+                  产品小计
+                </span>
+                <span className="font-mono text-[13px] font-bold text-[hsl(var(--color-primary))]">
+                  {formatCurrency(productSubtotal)}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <span>
+                  总数量：
+                  <span className="font-semibold">
+                    {formatDecimal(totalDisplayQuantity)}片
+                  </span>
+                </span>
+                {totalWeightKg > 0 && (
+                  <span>
+                    总重量：
+                    <span className="font-semibold">
+                      {formatDecimal(totalWeightKg)}kg
+                    </span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

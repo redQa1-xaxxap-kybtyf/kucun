@@ -223,17 +223,19 @@ export function CustomerStatementsPageClient({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 页面标题 */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">客户对账单</h1>
-            <p className="text-muted-foreground mt-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h1 className="text-lg font-semibold tracking-tight sm:text-3xl sm:font-bold">
+              客户对账单
+            </h1>
+            <p className="text-muted-foreground text-sm sm:text-base">
               管理与客户之间的完整财务往来记录
             </p>
           </div>
-          <Button>
+          <Button className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm">
             <Download className="mr-2 h-4 w-4" />
             批量导出
           </Button>
@@ -241,16 +243,14 @@ export function CustomerStatementsPageClient({
 
         {/* 筛选栏 */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="搜索客户名称..."
-                  value={queryParams.customerName || ''}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="max-w-sm"
-                />
-              </div>
+          <CardContent className="pt-4 sm:pt-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <Input
+                placeholder="搜索客户名称..."
+                value={queryParams.customerName || ''}
+                onChange={e => handleSearch(e.target.value)}
+                className="w-full sm:max-w-sm"
+              />
               <Select
                 value={queryParams.balanceType || 'all'}
                 onValueChange={value =>
@@ -259,7 +259,7 @@ export function CustomerStatementsPageClient({
                   )
                 }
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full sm:w-[180px]">
                   <SelectValue placeholder="余额类型" />
                 </SelectTrigger>
                 <SelectContent>
@@ -360,7 +360,8 @@ export function CustomerStatementsPageClient({
               </div>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                {/* 桌面端：表格视图 */}
+                <div className="hidden overflow-x-auto md:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50 hover:bg-gray-50">
@@ -547,9 +548,130 @@ export function CustomerStatementsPageClient({
                   </Table>
                 </div>
 
+                {/* 移动端：卡片列表视图 */}
+                <div className="space-y-3 p-4 md:hidden">
+                  {statements.map((statement: CustomerStatementListItem) => {
+                    const refundMetrics = getRefundMetrics(statement.summary);
+                    const receivableOverview = getReceivableOverview(
+                      statement.summary
+                    );
+                    const netBalance = statement.summary.netBalance;
+
+                    return (
+                      <div
+                        key={statement.customerId}
+                        className="rounded-lg border bg-card p-3 shadow-[var(--shadow-light)]"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {statement.customerName}
+                            </div>
+                            {statement.customerPhone && (
+                              <div className="text-xs text-gray-500">
+                                {statement.customerPhone}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right text-xs">
+                            <div className="text-gray-500">应收余额</div>
+                            <div className="font-semibold text-orange-600">
+                              {formatCurrency(
+                                statement.summary.receivables.receivableBalance
+                              )}
+                            </div>
+                            <div className="mt-1 text-[10px] text-gray-500">
+                              净余额：{formatBalance(netBalance)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                          <div className="space-y-1">
+                            <div className="text-gray-500">
+                              本年累计净销 / 净收
+                            </div>
+                            <div className="text-xs">
+                              <span className="text-gray-500">
+                                本年累计净销：
+                              </span>
+                              <span className="font-medium text-gray-900">
+                                {formatCurrency(receivableOverview.netSales)}
+                              </span>
+                            </div>
+                            <div className="text-xs">
+                              <span className="text-gray-500">净收：</span>
+                              <span className="font-medium text-gray-900">
+                                {formatCurrency(receivableOverview.netReceipts)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-right">
+                            <div className="text-gray-500">应付余额</div>
+                            <div className="font-semibold text-blue-600">
+                              {formatCurrency(
+                                statement.summary.payables.payableBalance
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-600">
+                          <div className="flex items-center gap-2">
+                            <span className="text-gray-500">应退金额</span>
+                            <span
+                              className={
+                                refundMetrics.pendingRefundAmount > 0
+                                  ? 'font-semibold text-red-600'
+                                  : 'text-gray-400'
+                              }
+                            >
+                              {refundMetrics.pendingRefundAmount > 0
+                                ? formatCurrency(
+                                    refundMetrics.pendingRefundAmount
+                                  )
+                                : '¥0.00'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200">
+                              {statement.transactionCount} 笔交易
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                          <div>
+                            最后交易：{' '}
+                            {statement.lastTransactionDate ? (
+                              formatDate(statement.lastTransactionDate)
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3 text-xs"
+                            asChild
+                          >
+                            <Link
+                              href={`/finance/customer-statements/${statement.customerId}`}
+                              className="inline-flex items-center"
+                            >
+                              <FileText className="mr-1.5 h-3.5 w-3.5" />
+                              查看详情
+                            </Link>
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
                 {/* 分页 */}
                 {pagination && pagination.totalPages > 1 && (
-                  <div className="flex items-center justify-between border-t bg-gray-50 px-6 py-4">
+                  <div className="flex flex-col gap-3 border-t bg-gray-50 px-4 py-3 text-xs sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 sm:text-sm">
                     <div className="text-sm text-gray-600">
                       共{' '}
                       <span className="font-semibold text-gray-900">

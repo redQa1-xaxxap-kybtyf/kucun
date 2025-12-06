@@ -161,9 +161,9 @@ export default function StatementDetailPage() {
   // 日期范围无效
   if (!isRangeValid) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+        <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
             <Button
               variant="ghost"
               size="sm"

@@ -55,6 +55,44 @@ import {
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
 
+// 顶层工具函数：表格视图和移动端卡片公用，避免作用域问题导致运行时错误
+const getExpenseTypeBadgeVariant = (type: string) => {
+  const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
+    shipping: 'default',
+    storage: 'secondary',
+    labor: 'outline',
+    travel: 'default',
+    living: 'secondary',
+    loading_unloading: 'outline',
+    other: 'secondary',
+  };
+  return variants[type] || 'default';
+};
+
+const getStatusBadgeVariant = (status: string) => {
+  const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
+    draft: 'secondary',
+    approved: 'default', // 使用默认深色表示已审核/生效
+    cancelled: 'destructive',
+  };
+  return variants[status] || 'secondary';
+};
+
+const getRelatedTypeIcon = (type: string) => {
+  switch (type) {
+    case 'sales_order':
+      return <ShoppingCart className="h-3 w-3" />;
+    case 'purchase_order':
+      return <ShoppingCart className="h-3 w-3" />;
+    case 'inbound':
+      return <Package className="h-3 w-3" />;
+    case 'outbound':
+      return <Truck className="h-3 w-3" />;
+    default:
+      return <FileText className="h-3 w-3" />;
+  }
+};
+
 interface ExpenseListProps {
   filters: ExpenseQueryParams;
   onPageChange: (page: number) => void;
@@ -182,46 +220,6 @@ export function ExpenseList({
     [filters.sortBy, filters.sortOrder, onSortChange]
   );
 
-  // 获取费用类型标签颜色
-  const getExpenseTypeBadgeVariant = (type: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-      shipping: 'default',
-      storage: 'secondary',
-      labor: 'outline',
-      travel: 'default',
-      living: 'secondary',
-      loading_unloading: 'outline',
-      other: 'secondary',
-    };
-    return variants[type] || 'default';
-  };
-
-  // 获取状态标签样式
-  const getStatusBadgeVariant = (status: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-      draft: 'secondary',
-      approved: 'default', // 使用默认深色表示已审核/生效
-      cancelled: 'destructive',
-    };
-    return variants[status] || 'secondary';
-  };
-
-  // 获取关联业务图标
-  const getRelatedTypeIcon = (type: string) => {
-    switch (type) {
-      case 'sales_order':
-        return <ShoppingCart className="h-3 w-3" />;
-      case 'purchase_order':
-        return <ShoppingCart className="h-3 w-3" />;
-      case 'inbound':
-        return <Package className="h-3 w-3" />;
-      case 'outbound':
-        return <Truck className="h-3 w-3" />;
-      default:
-        return <FileText className="h-3 w-3" />;
-    }
-  };
-
   if (isLoading) {
     return (
       <Card>
@@ -276,7 +274,8 @@ export function ExpenseList({
             </div>
           ) : (
             <>
-              <div className="rounded-md border">
+              {/* 桌面端：表格视图 */}
+              <div className="hidden overflow-x-auto rounded-md border md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -450,6 +449,19 @@ export function ExpenseList({
                 </Table>
               </div>
 
+              {/* 移动端：卡片列表视图 */}
+              <div className="mt-4 space-y-3 md:hidden">
+                {records.map((expense: ExpenseRecord) => (
+                  <ExpenseCard
+                    key={expense.id}
+                    expense={expense}
+                    hasManagePermission={hasManagePermission}
+                    onDelete={handleDelete}
+                    onApprove={exp => setApproveTarget(exp)}
+                  />
+                ))}
+              </div>
+
               {/* 分页 */}
               {pagination && pagination.totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
@@ -552,5 +564,167 @@ export function ExpenseList({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+function ExpenseCard({
+  expense,
+  hasManagePermission,
+  onDelete,
+  onApprove,
+}: {
+  expense: ExpenseRecord;
+  hasManagePermission: boolean;
+  onDelete: (expense: ExpenseRecord) => void;
+  onApprove: (expense: ExpenseRecord) => void;
+}) {
+  return (
+    <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-light)] sm:p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>费用编号</span>
+            <span className="font-mono">
+              <CopyableText text={expense.expenseNumber} />
+            </span>
+          </div>
+          <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+            {expense.expenseName}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2 text-xs">
+          <Badge variant={getExpenseTypeBadgeVariant(expense.expenseType)}>
+            {EXPENSE_TYPE_LABELS[expense.expenseType]}
+          </Badge>
+          <Badge
+            variant={getStatusBadgeVariant(expense.status)}
+            className={
+              expense.status === 'approved'
+                ? 'bg-green-600 hover:bg-green-700'
+                : ''
+            }
+          >
+            {EXPENSE_STATUS_LABELS[expense.status]}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:text-sm">
+        <div className="space-y-1">
+          <div className="text-muted-foreground">费用金额</div>
+          <div className="font-mono text-base font-bold">
+            {formatCurrency(expense.expenseAmount)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">费用日期</div>
+          <div className="flex items-center gap-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
+            <RelativeTime date={expense.expenseDate} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2 text-xs sm:text-sm">
+        <div className="text-muted-foreground">关联业务</div>
+        {expense.relatedType && expense.relatedNumber ? (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-1.5 font-medium">
+              {getRelatedTypeIcon(expense.relatedType)}
+              <CopyableText text={expense.relatedNumber} />
+            </div>
+            <div className="text-muted-foreground text-xs">
+              {
+                EXPENSE_RELATED_TYPE_LABELS[
+                  expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS
+                ]
+              }
+              {expense.expenseType === 'shipping' &&
+                expense.containerNumber && (
+                  <span className="ml-1">
+                    (柜号:
+                    <CopyableText
+                      text={expense.containerNumber}
+                      className="ml-0.5 inline-flex"
+                      iconSize="sm"
+                    />
+                    )
+                  </span>
+                )}
+            </div>
+          </div>
+        ) : (
+          <div className="text-muted-foreground">—</div>
+        )}
+      </div>
+
+      <div className="mt-3 space-y-1 text-xs sm:text-sm">
+        <div className="text-muted-foreground">备注</div>
+        {expense.remarks && expense.remarks.trim().length > 0 ? (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="max-w-full truncate">{expense.remarks}</div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-[300px] break-words">{expense.remarks}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ) : (
+          <div className="text-muted-foreground">—</div>
+        )}
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs"
+          >
+            <Link href={`/finance/expenses/${expense.id}`}>
+              <Eye className="mr-1 h-3.5 w-3.5" />
+              查看详情
+            </Link>
+          </Button>
+          {hasManagePermission && (
+            <>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs"
+              >
+                <Link href={`/finance/expenses/${expense.id}/edit`}>
+                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                  编辑
+                </Link>
+              </Button>
+              {expense.status === 'draft' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={() => onApprove(expense)}
+                >
+                  审核
+                </Button>
+              )}
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8 px-3 text-xs"
+                onClick={() => onDelete(expense)}
+                disabled={expense.status === 'approved'}
+              >
+                <Trash2 className="mr-1 h-3.5 w-3.5" />
+                删除
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

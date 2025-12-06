@@ -206,7 +206,7 @@ export function AnnualReportClient() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <AnnualReportSkeleton />
       </div>
     );
@@ -214,7 +214,7 @@ export function AnnualReportClient() {
 
   if (!report) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center">
             暂无数据
@@ -225,26 +225,26 @@ export function AnnualReportClient() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <Calendar className="h-6 w-6 text-white" />
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
+                  <Calendar className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                  <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
                     年度报表
                   </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                  <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
                     查看年度收入、支出、利润趋势及费用分布
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap gap-2 sm:items-center sm:justify-end">
                 <Button
                   variant="outline"
                   size="lg"
@@ -303,24 +303,19 @@ export function AnnualReportClient() {
           </CardContent>
         </Card>
 
-        {/* 年度汇总 */}
+        {/* 年度汇总（精简版） */}
         <div>
-          <h2 className="mb-4 text-xl font-semibold">年度汇总</h2>
-          <div className="grid gap-4 md:grid-cols-4">
+          <h2 className="mb-3 text-base font-semibold sm:mb-4 sm:text-xl">
+            年度汇总
+          </h2>
+          <div className="grid gap-3 md:grid-cols-3">
             <SummaryCard
               title="总收入"
               value={report.summary.totalRevenue}
-              comparison={report.yearOverYear?.revenue}
-            />
-            <SummaryCard
-              title="总支出"
-              value={report.summary.totalExpenses}
-              comparison={report.yearOverYear?.expenses}
             />
             <SummaryCard
               title="总利润"
               value={report.summary.totalProfit}
-              comparison={report.yearOverYear?.profit}
             />
             <SummaryCard
               title="利润率"
@@ -331,11 +326,13 @@ export function AnnualReportClient() {
           </div>
         </div>
 
-        {/* 库存周转率 */}
+        {/* 库存周转率（精简版） */}
         {report.inventoryTurnover && (
           <div>
-            <h2 className="mb-4 text-xl font-semibold">库存周转率</h2>
-            <div className="grid gap-4 md:grid-cols-3">
+            <h2 className="mb-3 text-base font-semibold sm:mb-4 sm:text-xl">
+              库存周转率
+            </h2>
+            <div className="grid gap-3 md:grid-cols-2">
               <SummaryCard
                 title="周转率（年度）"
                 value={report.inventoryTurnover.turnoverRate}
@@ -347,10 +344,6 @@ export function AnnualReportClient() {
                 value={report.inventoryTurnover.turnoverDays}
                 isCurrency={false}
                 suffix=" 天"
-              />
-              <SummaryCard
-                title="平均库存价值"
-                value={report.inventoryTurnover.averageInventoryValue}
               />
             </div>
           </div>
@@ -430,7 +423,7 @@ export function AnnualReportClient() {
             {/* 厂家发货利润汇总 */}
             <div>
               <h2 className="mb-4 text-xl font-semibold">厂家发货利润</h2>
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-3 md:grid-cols-3">
                 <SummaryCard
                   title="订单总数"
                   value={report.factoryShipmentProfit.totalOrders}
@@ -737,42 +730,20 @@ function SummaryCard({
   value,
   isCurrency = true,
   suffix = '',
-  comparison,
 }: SummaryCardProps) {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <ChineseYuan className="text-muted-foreground h-4 w-4" />
+        <CardTitle className="text-xs font-medium sm:text-sm">
+          {title}
+        </CardTitle>
+        <ChineseYuan className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">
+        <div className="text-xl font-bold sm:text-2xl">
           {isCurrency ? formatCurrency(value) : value.toFixed(2)}
           {suffix}
         </div>
-        {comparison && (
-          <div className="mt-2 flex items-center gap-1 text-xs">
-            {comparison.trend === 'up' && (
-              <ArrowUpIcon className="h-3 w-3 text-[hsl(var(--color-success))]" />
-            )}
-            {comparison.trend === 'down' && (
-              <ArrowDownIcon className="h-3 w-3 text-[hsl(var(--color-error))]" />
-            )}
-            <span
-              className={
-                comparison.trend === 'up'
-                  ? 'text-[hsl(var(--color-success))]'
-                  : comparison.trend === 'down'
-                    ? 'text-[hsl(var(--color-error))]'
-                    : 'text-[hsl(var(--color-text-secondary))]'
-              }
-            >
-              {comparison.changeRate > 0 ? '+' : ''}
-              {comparison.changeRate.toFixed(2)}%
-            </span>
-            <span className="text-muted-foreground">同比</span>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

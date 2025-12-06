@@ -54,8 +54,8 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
           基本信息
         </CardTitle>
       </CardHeader>
-      <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+      <CardContent className="bg-[hsl(var(--color-bg-card))] p-4 sm:p-6">
+        <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
               客户名称

@@ -68,8 +68,8 @@ export default function ExpenseDetailPage() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-hidden p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 统一的页面标题 */}
         <PageHeader
           title={expense.expenseName}

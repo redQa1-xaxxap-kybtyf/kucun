@@ -241,7 +241,7 @@ export function ExecuteCountPageClient({
   return (
     <div className="space-y-6 p-4 sm:p-6">
       {/* 页面标题 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
             <Link href={`/inventory/counts/${countId}`}>
@@ -253,7 +253,7 @@ export function ExecuteCountPageClient({
             <p className="text-muted-foreground">{initialData.countNumber}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 sm:justify-end">
           <Button variant="outline" onClick={handleSubmit}>
             <Save className="mr-2 h-4 w-4" />
             保存数据
@@ -301,9 +301,9 @@ export function ExecuteCountPageClient({
       {/* 盘点明细 */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>盘点明细</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:justify-end">
               <Button
                 variant="outline"
                 size="sm"

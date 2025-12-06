@@ -117,7 +117,7 @@ export function ProfitLossClient() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <ProfitLossSkeleton />
       </div>
     );
@@ -125,7 +125,7 @@ export function ProfitLossClient() {
 
   if (!analysis) {
     return (
-      <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center">
             暂无数据
@@ -136,21 +136,21 @@ export function ProfitLossClient() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <TrendingUp className="h-6 w-6 text-white" />
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
+                  <TrendingUp className="h-5 w-5 text-white sm:h-6 sm:w-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                  <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
                     盈亏分析
                   </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                  <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
                     实时分析盈亏状态,查看收入、成本、费用明细及趋势
                   </p>
                 </div>

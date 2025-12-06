@@ -140,11 +140,11 @@ export function SupplierDetailPageClient({
   });
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4">
-      <div className="space-y-4">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 顶部操作栏 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link href="/suppliers">
                 <ArrowLeft className="h-3.5 w-3.5" />
@@ -156,7 +156,7 @@ export function SupplierDetailPageClient({
               供应商详情
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             <Button
               variant="outline"
               size="sm"
