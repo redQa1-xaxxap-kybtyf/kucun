@@ -294,8 +294,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应退货款管理"
           description="管理退货订单产生的应退账款，跟踪退款处理状态"

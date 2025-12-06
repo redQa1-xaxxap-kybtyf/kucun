@@ -109,7 +109,8 @@ export function OutboundRecordsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* 桌面端表格视图 */}
+      <div className="hidden overflow-x-auto md:block">
         <Table>
           <TableHeader className="card-shadow-light">
             <TableRow>
@@ -195,6 +196,69 @@ export function OutboundRecordsTable({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端卡片视图 */}
+      <div className="space-y-3 p-3 md:hidden">
+        {records.length === 0 ? (
+          <EmptyState
+            title="暂无出库记录"
+            icon={<Package className="text-muted-foreground h-6 w-6" />}
+            compact
+          />
+        ) : (
+          records.map(record => (
+            <div
+              key={record.id}
+              className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {record.productCode || '-'}
+                  </div>
+                  <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    {record.productName || '未知产品'}
+                  </div>
+                  <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                    规格：
+                    {formatSpecification(record.productSpecification) || '-'}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                    <span>批次：{record.batchNumber || '-'}</span>
+                    <span>每件：{record.piecesPerUnit || '-'}片</span>
+                  </div>
+                </div>
+                <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                  <Badge
+                    variant={OUTBOUND_TYPE_VARIANTS[record.type] || 'default'}
+                    className="mb-1 text-xs font-medium"
+                  >
+                    {OUTBOUND_TYPE_LABELS[record.type] || '未知'}
+                  </Badge>
+                  <div className="text-[hsl(var(--color-text-secondary))]">
+                    {record.reason
+                      ? (OUTBOUND_REASON_LABELS[record.reason] ?? record.reason)
+                      : (OUTBOUND_REASON_LABELS[record.type] ??
+                        OUTBOUND_TYPE_LABELS[record.type] ??
+                        '-')}
+                  </div>
+                  <div className="mt-2 flex items-center justify-end gap-1">
+                    <User className="h-3 w-3" />
+                    <RelativeTime date={record.createdAt} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                出库数量：
+                <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                  {formatQuantity(record.quantity, record.piecesPerUnit)}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* 分页器 */}

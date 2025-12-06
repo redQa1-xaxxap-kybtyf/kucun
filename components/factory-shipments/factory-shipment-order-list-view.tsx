@@ -154,60 +154,206 @@ function FactoryShipmentOrderTable({
 
   return (
     <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader className="card-shadow-light">
-            <TableRow>
-              <TableHead className="w-[130px] min-w-[130px]">
-                订单编号
-              </TableHead>
-              <TableHead className="min-w-[120px]">客户</TableHead>
-              <TableHead className="hidden min-w-[220px] md:table-cell">
-                客户地址
-              </TableHead>
-              <TableHead className="w-[140px] min-w-[140px]">
-                集装箱号码
-              </TableHead>
-              <TableHead className="min-w-[120px]">船运公司</TableHead>
-              <TableHead className="w-[130px] min-w-[130px]">
-                运输状态
-              </TableHead>
-              <TableHead className="w-[140px] min-w-[140px]">状态</TableHead>
-              <TableHead className="w-[110px] min-w-[110px] text-right">
-                订单金额
-              </TableHead>
-              <TableHead className="w-[110px] min-w-[110px] text-right">
-                应收金额
-              </TableHead>
-              <TableHead className="w-[110px] min-w-[110px] text-right">
-                应付金额
-              </TableHead>
-              <TableHead className="hidden w-[110px] min-w-[110px] lg:table-cell">
-                发货时间
-              </TableHead>
-              <TableHead className="hidden w-[110px] min-w-[110px] xl:table-cell">
-                预计到达
-              </TableHead>
-              <TableHead className="hidden w-[110px] min-w-[110px] md:table-cell">
-                创建时间
-              </TableHead>
-              <TableHead className="w-[80px] min-w-[80px] text-center">
-                操作
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {orders.map(order => (
-              <FactoryShipmentOrderRow
-                key={order.id}
-                order={order}
-                onOrderSelect={onOrderSelect}
-                onCancelRequest={onCancelRequest}
-                onDeleteRequest={onDeleteRequest}
-              />
-            ))}
-          </TableBody>
-        </Table>
+      {/* 桌面端：表格视图，支持横向滚动 */}
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="card-shadow-light">
+              <TableRow>
+                <TableHead className="w-[130px] min-w-[130px]">
+                  订单编号
+                </TableHead>
+                <TableHead className="min-w-[120px]">客户</TableHead>
+                <TableHead className="hidden min-w-[220px] md:table-cell">
+                  客户地址
+                </TableHead>
+                <TableHead className="w-[140px] min-w-[140px]">
+                  集装箱号码
+                </TableHead>
+                <TableHead className="min-w-[120px]">船运公司</TableHead>
+                <TableHead className="w-[130px] min-w-[130px]">
+                  运输状态
+                </TableHead>
+                <TableHead className="w-[140px] min-w-[140px]">状态</TableHead>
+                <TableHead className="w-[110px] min-w-[110px] text-right">
+                  订单金额
+                </TableHead>
+                <TableHead className="w-[110px] min-w-[110px] text-right">
+                  应收金额
+                </TableHead>
+                <TableHead className="w-[110px] min-w-[110px] text-right">
+                  应付金额
+                </TableHead>
+                <TableHead className="hidden w-[110px] min-w-[110px] lg:table-cell">
+                  发货时间
+                </TableHead>
+                <TableHead className="hidden w-[110px] min-w-[110px] xl:table-cell">
+                  预计到达
+                </TableHead>
+                <TableHead className="hidden w-[110px] min-w-[110px] md:table-cell">
+                  创建时间
+                </TableHead>
+                <TableHead className="w-[80px] min-w-[80px] text-center">
+                  操作
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map(order => (
+                <FactoryShipmentOrderRow
+                  key={order.id}
+                  order={order}
+                  onOrderSelect={onOrderSelect}
+                  onCancelRequest={onCancelRequest}
+                  onDeleteRequest={onDeleteRequest}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* 移动端：卡片视图 */}
+      <div className="space-y-3 px-3 py-3 md:hidden">
+        {orders.map(order => {
+          const handleCardClick = () => {
+            if (onOrderSelect) {
+              onOrderSelect(order);
+              return;
+            }
+            window.location.href = `/factory-shipments/${order.id}`;
+          };
+
+          return (
+            <div
+              key={order.id}
+              className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              onClick={handleCardClick}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleCardClick();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
+                    {order.orderNumber}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                    客户：{order.customer?.name || '-'}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                    地址：{order.customer?.address || '未填写'}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-[hsl(var(--color-text-secondary))]">
+                    <span>集装箱：{order.containerNumber || '未填写'}</span>
+                    {order.shippingCompany && (
+                      <span>船运公司：{order.shippingCompany}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                  <div className="font-semibold text-[hsl(var(--color-success))]">
+                    订单：{formatAmount(order.totalAmount ?? 0)}
+                  </div>
+                  <div className="mt-0.5 text-[hsl(var(--color-text-primary))]">
+                    应收：{formatAmount(order.receivableAmount ?? 0)}
+                  </div>
+                  <div className="mt-0.5 text-[hsl(var(--color-text-primary))]">
+                    应付：{formatAmount(order.costAmount ?? 0)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-start justify-between text-[11px] text-[hsl(var(--color-text-secondary))]">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[hsl(var(--color-text-tertiary))]">
+                      运输：
+                    </span>
+                    <Badge
+                      variant={getShippingQueryStatusVariant(order)}
+                      className="text-[10px]"
+                    >
+                      {order.latestShippingStatus || '未查询'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[hsl(var(--color-text-tertiary))]">
+                      状态：
+                    </span>
+                    <Badge
+                      variant={getFactoryShipmentStatusBadgeVariant(
+                        order.status as FactoryShipmentStatus
+                      )}
+                      className="text-[10px]"
+                    >
+                      {
+                        FACTORY_SHIPMENT_STATUS_LABELS[
+                          order.status as FactoryShipmentStatus
+                        ]
+                      }
+                    </Badge>
+                  </div>
+                  <div className="text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                    创建时间：{formatDate(order.createdAt)}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-[10px]">
+                  {order.shipmentDate ? (
+                    <div className="flex items-center gap-1">
+                      <Truck className="h-3 w-3" />
+                      <span>发货：{formatDateTime(order.shipmentDate)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[hsl(var(--color-text-tertiary))]">
+                      未发货
+                    </span>
+                  )}
+                  {order.estimatedArrival && (
+                    <div className="flex items-center gap-1">
+                      <Anchor className="h-3 w-3" />
+                      <span>
+                        到港：{formatDateTime(order.estimatedArrival)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-end gap-2 text-[11px]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={event => {
+                    event.stopPropagation();
+                    handleCardClick();
+                  }}
+                >
+                  <Eye className="mr-1 h-3 w-3" />
+                  查看
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={event => {
+                    event.stopPropagation();
+                    onCancelRequest(order);
+                  }}
+                  disabled={!canCancelOrder(order.status)}
+                >
+                  取消
+                </Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

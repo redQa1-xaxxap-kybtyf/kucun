@@ -121,6 +121,140 @@ export function RefundsClient({
     return methodConfig[method] || '其他';
   };
 
+  const renderRefundCard = (refund: RefundListData['refunds'][number]) => {
+    const showProcessButton =
+      refund.status === 'pending' ||
+      refund.status === 'processing' ||
+      refund.remainingAmount > 0;
+
+    return (
+      <div
+        key={refund.id}
+        className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4"
+        role="button"
+        tabIndex={0}
+        onClick={() => router.push(`/finance/refunds/${refund.id}`)}
+        onKeyDown={event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            router.push(`/finance/refunds/${refund.id}`);
+          }
+        }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1">
+            <div className="text-muted-foreground flex items-center gap-2 text-xs">
+              <span>退款单号</span>
+              <span className="font-mono font-medium">
+                <CopyableText text={refund.refundNumber} />
+              </span>
+            </div>
+            <div className="text-sm font-medium">
+              {refund.customer?.name || '未知客户'}
+            </div>
+            {refund.customer?.phone && (
+              <div className="text-muted-foreground text-xs">
+                {refund.customer.phone}
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col items-end gap-2 text-xs">
+            {getStatusBadge(refund.status)}
+            <Badge variant="outline" className="w-fit text-xs">
+              {getTypeLabel(refund.refundType)}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="mt-3 space-y-2 text-xs sm:text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-muted-foreground">关联订单：</span>
+            <div className="flex flex-wrap items-center gap-2">
+              {refund.salesOrder?.orderNumber && (
+                <span className="flex items-center gap-1">
+                  <span className="text-muted-foreground text-[11px]">销</span>
+                  <CopyableText
+                    text={refund.salesOrder.orderNumber}
+                    className="font-mono"
+                  />
+                </span>
+              )}
+              {refund.returnOrder?.orderNumber && (
+                <span className="flex items-center gap-1">
+                  <span className="text-muted-foreground text-[11px]">退</span>
+                  <CopyableText
+                    text={refund.returnOrder.orderNumber}
+                    className="font-mono"
+                  />
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">退款方式：</span>
+            <span>{getMethodLabel(refund.refundMethod)}</span>
+          </div>
+        </div>
+
+        <div className="mt-3 grid grid-cols-3 gap-3 text-xs sm:text-sm">
+          <div className="space-y-1">
+            <div className="text-muted-foreground">应退金额</div>
+            <div className="font-mono font-bold text-[hsl(var(--color-warning))]">
+              {formatCurrency(refund.refundAmount)}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-muted-foreground">已退金额</div>
+            <div className="font-mono text-xs text-[hsl(var(--color-success))] sm:text-sm">
+              {formatCurrency(refund.processedAmount)}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-muted-foreground">待退金额</div>
+            <div className="text-muted-foreground font-mono text-xs sm:text-sm">
+              {formatCurrency(
+                refund.remainingAmount ??
+                  refund.refundAmount - refund.processedAmount
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3.5 w-3.5" />
+            <span>申请：</span>
+            <RelativeTime date={refund.refundDate} />
+          </div>
+          {refund.processedDate && (
+            <div className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>处理：</span>
+              <RelativeTime date={refund.processedDate} />
+            </div>
+          )}
+        </div>
+
+        {showProcessButton && (
+          <div className="mt-3 flex justify-end">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-primary h-8 px-3 text-xs hover:bg-[hsl(var(--color-primary-light))]"
+              onClick={event => {
+                event.stopPropagation();
+                setSelectedRefundId(refund.id);
+                setProcessDialogOpen(true);
+              }}
+            >
+              处理
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
@@ -244,7 +378,8 @@ export function RefundsClient({
             </div>
           )}
 
-          <div className="mt-6 rounded-md border">
+          {/* 桌面端：表格视图 */}
+          <div className="mt-6 hidden overflow-x-auto rounded-md border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -402,6 +537,19 @@ export function RefundsClient({
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* 移动端：卡片列表视图 */}
+          <div className="mt-4 space-y-3 md:hidden">
+            {isLoading && refunds.length === 0 ? (
+              <div className="text-muted-foreground flex items-center justify-center rounded-md border bg-[hsl(var(--color-bg-muted))] p-6 text-sm">
+                加载中...
+              </div>
+            ) : refunds.length === 0 ? (
+              <EmptyState title="暂无退款记录" compact />
+            ) : (
+              refunds.map(refund => renderRefundCard(refund))
+            )}
           </div>
 
           {/* 分页 */}

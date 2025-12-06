@@ -49,8 +49,8 @@ export function ReceivablesPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应收货款管理"
           description="管理销售订单产生的应收账款，跟踪收款状态"

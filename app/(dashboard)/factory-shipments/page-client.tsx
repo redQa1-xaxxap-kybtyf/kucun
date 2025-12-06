@@ -265,8 +265,8 @@ export function FactoryShipmentsPageClient({
   }, [exportData, status, search, startDate, endDate]);
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="mb-6 flex-shrink-0">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="mb-4 flex-shrink-0 sm:mb-6">
         {/* 页面标题 */}
         <PageHeader
           title="厂家发货管理"

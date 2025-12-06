@@ -146,7 +146,8 @@ export function AdjustmentRecordsTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* 桌面端表格视图 */}
+      <div className="hidden overflow-x-auto md:block">
         <Table>
           <TableHeader className="card-shadow-light">
             <TableRow>
@@ -239,6 +240,88 @@ export function AdjustmentRecordsTable({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端卡片视图 */}
+      <div className="space-y-3 p-3 md:hidden">
+        {adjustments.length === 0 ? (
+          <div className="text-muted-foreground flex flex-col items-center gap-2 py-6 text-sm">
+            <Package className="h-8 w-8" />
+            <span>暂无调整记录</span>
+          </div>
+        ) : (
+          adjustments.map(adjustment => {
+            const ppu = adjustment.product?.piecesPerUnit ?? 0;
+            const beforeText = formatQuantity(
+              adjustment.beforeQuantity,
+              adjustment.product?.piecesPerUnit
+            );
+            const afterText = formatQuantity(
+              adjustment.afterQuantity,
+              adjustment.product?.piecesPerUnit
+            );
+
+            return (
+              <div
+                key={adjustment.id}
+                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                      {adjustment.product?.code || '-'}
+                    </div>
+                    <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                      {adjustment.product?.name || '未知产品'}
+                    </div>
+                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                      规格：
+                      {formatSpecification(adjustment.product?.specification) ||
+                        '-'}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <span>批次：{adjustment.batchNumber || '-'}</span>
+                      <span>
+                        每件：
+                        {ppu > 0 ? `${ppu}片/件` : '-'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                    <Badge variant="info" className="mb-1 text-xs font-medium">
+                      {getAdjustmentReasonLabel(adjustment.reason)}
+                    </Badge>
+                    <div className="flex items-center justify-end gap-1">
+                      <User className="h-3 w-3" />
+                      {formatDate(adjustment.createdAt)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                  调整数量：{formatAdjustQuantity(adjustment.adjustQuantity)}
+                  <span className="ml-1 text-[hsl(var(--color-text-secondary))]">
+                    {beforeText} → {afterText}
+                  </span>
+                </div>
+
+                {onViewDetail && (
+                  <div className="mt-2 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onViewDetail(adjustment)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Eye className="mr-1 h-3 w-3" />
+                      查看详情
+                    </Button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* 分页器 */}

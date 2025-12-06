@@ -256,8 +256,8 @@ export function SuppliersPageClient({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* 页面标题 */}
         <SupplierPageHeader />
 
@@ -297,87 +297,167 @@ export function SuppliersPageClient({
           </div>
         )}
 
-        {/* 供应商列表表格 */}
+        {/* 供应商列表 - 桌面表格 + 移动卡片 */}
         <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>供应商名称</TableHead>
-                <TableHead>联系电话</TableHead>
-                <TableHead>地址</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>创建时间</TableHead>
-                <TableHead className="w-20">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          {/* 桌面端表格 */}
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="py-8 text-center text-sm">
-                    正在加载供应商数据...
-                  </TableCell>
+                  <TableHead>供应商名称</TableHead>
+                  <TableHead>联系电话</TableHead>
+                  <TableHead>地址</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead>创建时间</TableHead>
+                  <TableHead className="w-20">操作</TableHead>
                 </TableRow>
-              ) : suppliers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="p-8">
-                    <EmptyState title="暂无供应商数据" compact />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                suppliers.map((supplier: Supplier) => (
-                  <TableRow
-                    key={supplier.id}
-                    className="cursor-pointer transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                    onClick={() => router.push(`/suppliers/${supplier.id}`)}
-                  >
-                    <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
-                      {supplier.name}
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-sm">
+                      正在加载供应商数据...
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {supplier.phone || '-'}
+                  </TableRow>
+                ) : suppliers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="p-8">
+                      <EmptyState title="暂无供应商数据" compact />
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {supplier.address || '-'}
-                    </TableCell>
-                    <TableCell>
+                  </TableRow>
+                ) : (
+                  suppliers.map((supplier: Supplier) => (
+                    <TableRow
+                      key={supplier.id}
+                      className="cursor-pointer transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                      onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                    >
+                      <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
+                        {supplier.name}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {supplier.phone || '-'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {supplier.address || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={getCommonStatusBadgeVariant(supplier.status)}
+                        >
+                          {formatSupplierStatus(supplier.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatDate(supplier.createdAt)}
+                      </TableCell>
+                      <TableCell onClick={e => e.stopPropagation()}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/suppliers/${supplier.id}/edit`}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                编辑
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(supplier)}
+                              className="text-[hsl(var(--color-error))] focus:bg-[hsl(var(--color-error-light))] focus:text-[hsl(var(--color-error))]"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              删除
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* 移动端卡片列表 */}
+          <div className="space-y-3 px-3 py-3 md:hidden">
+            {isLoading ? (
+              <div className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 text-center text-sm text-[hsl(var(--color-text-secondary))]">
+                正在加载供应商数据...
+              </div>
+            ) : suppliers.length === 0 ? (
+              <EmptyState title="暂无供应商数据" compact />
+            ) : (
+              suppliers.map((supplier: Supplier) => (
+                <div
+                  key={supplier.id}
+                  className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+                  onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      router.push(`/suppliers/${supplier.id}`);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        {supplier.name}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                        电话：{supplier.phone || '-'}
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                        地址：{supplier.address || '-'}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right text-[10px] text-[hsl(var(--color-text-secondary))]">
                       <Badge
                         variant={getCommonStatusBadgeVariant(supplier.status)}
+                        className="mb-1 text-[10px]"
                       >
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(supplier.createdAt)}
-                    </TableCell>
-                    <TableCell onClick={e => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/suppliers/${supplier.id}/edit`}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              编辑
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(supplier)}
-                            className="text-[hsl(var(--color-error))] focus:bg-[hsl(var(--color-error-light))] focus:text-[hsl(var(--color-error))]"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                      <div>创建时间：{formatDate(supplier.createdAt)}</div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-end gap-2 text-[11px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2"
+                      onClick={event => {
+                        event.stopPropagation();
+                        router.push(`/suppliers/${supplier.id}/edit`);
+                      }}
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      编辑
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[hsl(var(--color-error))]"
+                      onClick={event => {
+                        event.stopPropagation();
+                        handleDelete(supplier);
+                      }}
+                    >
+                      <Trash2 className="mr-1 h-3 w-3" />
+                      删除
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           {/* 分页组件 */}
           {pagination && pagination.total > 0 && (

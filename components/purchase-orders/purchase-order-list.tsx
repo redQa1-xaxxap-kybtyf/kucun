@@ -140,7 +140,8 @@ export function PurchaseOrderList({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto rounded-lg border">
+      {/* 桌面端：表格视图，支持横向滚动 */}
+      <div className="hidden overflow-x-auto rounded-lg border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -269,6 +270,105 @@ export function PurchaseOrderList({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端：卡片视图 */}
+      <div className="space-y-3 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3 md:hidden">
+        {orders.map(order => {
+          const handleCardClick = () => {
+            window.location.href = `/purchase-orders/${order.id}`;
+          };
+
+          return (
+            <div
+              key={order.id}
+              className="card-shadow-light cursor-pointer rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              onClick={handleCardClick}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleCardClick();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
+                    {order.orderNumber}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                    供应商：{formatPurchaseOrderSuppliers(order.items || [])}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                    集装箱：{order.containerNumber || '未填写'}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                    船运公司：{order.shippingCompany || '未填写'}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                  <div className="font-semibold text-[hsl(var(--color-success))]">
+                    产品：{formatCurrency(order.totalAmount)}
+                  </div>
+                  <div className="mt-0.5">
+                    费用：{formatCurrency(order.expenseAmount)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-[11px] text-[hsl(var(--color-text-secondary))]">
+                <div className="flex items-center gap-2">
+                  <Badge
+                    variant={
+                      STATUS_VARIANTS[order.status as PurchaseOrderStatus]
+                    }
+                    className="text-[10px]"
+                  >
+                    {
+                      PURCHASE_ORDER_STATUS_LABELS[
+                        order.status as PurchaseOrderStatus
+                      ]
+                    }
+                  </Badge>
+                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                    创建：
+                    <RelativeTime date={order.createdAt} />
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-[11px]"
+                    onClick={event => {
+                      event.stopPropagation();
+                      handleCardClick();
+                    }}
+                  >
+                    <Eye className="mr-1 h-3 w-3" />
+                    查看
+                  </Button>
+                  {order.status === PURCHASE_ORDER_STATUS.DRAFT && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-[11px]"
+                      onClick={event => {
+                        event.stopPropagation();
+                        window.location.href = `/purchase-orders/${order.id}/edit`;
+                      }}
+                    >
+                      <Edit className="mr-1 h-3 w-3" />
+                      编辑
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {editingContainerOrder && (

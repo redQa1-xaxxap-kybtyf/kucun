@@ -206,8 +206,8 @@ export function PurchaseOrdersPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="mb-6 flex-shrink-0">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="mb-4 flex-shrink-0 sm:mb-6">
         <PageHeader
           title="仓库进货"
           description="管理采购订单与到货进度，实时掌握仓库补货情况"

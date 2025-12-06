@@ -109,8 +109,8 @@ export function ERPCustomerList({
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* 表格区域 */}
-      <div className="flex-1 overflow-auto">
+      {/* 表格区域 - 桌面端 */}
+      <div className="hidden flex-1 overflow-auto md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -255,6 +255,94 @@ export function ERPCustomerList({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端：卡片列表 */}
+      <div className="space-y-3 md:hidden">
+        {customers.length === 0 ? (
+          <div className="card-shadow-medium rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-6 text-center text-sm">
+            {isLoading ? '正在加载客户数据...' : '暂无客户记录'}
+          </div>
+        ) : (
+          customers.map(customer => (
+            <div
+              key={customer.id}
+              className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              onClick={() => handleViewDetail(customer)}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleViewDetail(customer);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    {customer.name}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                    电话：{customer.phone || '-'}
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                    地址：{customer.address || '-'}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right text-[10px] text-[hsl(var(--color-text-secondary))]">
+                  <div>交易：{customer.transactionCount || 0}次</div>
+                  <div className="mt-0.5">
+                    合作：
+                    {customer.cooperationDays !== undefined
+                      ? `${customer.cooperationDays}天`
+                      : '未下单'}
+                  </div>
+                  <div className="mt-0.5">
+                    退货：{customer.returnOrderCount || 0}次
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-between text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                <span>
+                  最近下单：
+                  {customer.lastOrderDate
+                    ? formatDateTime(customer.lastOrderDate)
+                    : '-'}
+                </span>
+                <span>创建：{formatDateTime(customer.createdAt)}</span>
+              </div>
+
+              <div className="mt-2 flex items-center justify-end gap-2 text-[11px]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={event => {
+                    event.stopPropagation();
+                    handleViewDetail(customer);
+                  }}
+                >
+                  <Eye className="mr-1 h-3 w-3" />
+                  查看
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={event => {
+                    event.stopPropagation();
+                    handleEdit(customer);
+                  }}
+                >
+                  <Edit className="mr-1 h-3 w-3" />
+                  编辑
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* 分页组件 */}

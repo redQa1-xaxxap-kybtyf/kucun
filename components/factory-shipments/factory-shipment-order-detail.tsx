@@ -120,12 +120,12 @@ export function FactoryShipmentOrderDetail({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 sm:space-y-6">
       {/* 页面标题和操作 */}
       <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-        <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
+        <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3 sm:gap-4">
               <Button
                 variant="ghost"
                 size="sm"
@@ -137,11 +137,11 @@ export function FactoryShipmentOrderDetail({
               </Button>
               <Separator orientation="vertical" className="h-8" />
               <div>
-                <h1 className="text-xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                <h1 className="text-lg font-bold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-xl">
                   厂家发货订单详情
                 </h1>
                 <div className="mt-1 flex items-center gap-2">
-                  <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  <p className="text-[10px] text-[hsl(var(--color-text-secondary))] sm:text-xs">
                     订单编号：{order.orderNumber}
                   </p>
                   <Badge
@@ -153,7 +153,7 @@ export function FactoryShipmentOrderDetail({
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap justify-start gap-2 sm:justify-end">
               {canConfirmShipment(order.status) && (
                 <Button
                   variant="default"

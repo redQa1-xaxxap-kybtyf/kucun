@@ -150,30 +150,133 @@ function ReturnOrderTable({
 
   return (
     <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-      <Table>
-        <TableHeader className="card-shadow-light">
-          <TableRow>
-            <TableHead>退货单号</TableHead>
-            <TableHead>关联销售单</TableHead>
-            <TableHead>客户</TableHead>
-            <TableHead>退货类型</TableHead>
-            <TableHead className="text-right">实际退款金额</TableHead>
-            <TableHead>状态</TableHead>
-            <TableHead>创建时间</TableHead>
-            <TableHead>操作</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {orders.map(order => (
-            <ReturnOrderRow
+      {/* 桌面端：表格视图，支持横向滚动 */}
+      <div className="hidden md:block">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="card-shadow-light">
+              <TableRow>
+                <TableHead>退货单号</TableHead>
+                <TableHead>关联销售单</TableHead>
+                <TableHead>客户</TableHead>
+                <TableHead>退货类型</TableHead>
+                <TableHead className="text-right">实际退款金额</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>创建时间</TableHead>
+                <TableHead>操作</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {orders.map(order => (
+                <ReturnOrderRow
+                  key={order.id}
+                  order={order}
+                  onOrderSelect={onOrderSelect}
+                  onDeleteRequest={onDeleteRequest}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* 移动端：卡片视图 */}
+      <div className="space-y-3 px-3 py-3 md:hidden">
+        {orders.map(order => {
+          const handleCardClick = () => {
+            if (onOrderSelect) {
+              onOrderSelect(order);
+              return;
+            }
+            window.location.href = `/return-orders/${order.id}`;
+          };
+
+          return (
+            <div
               key={order.id}
-              order={order}
-              onOrderSelect={onOrderSelect}
-              onDeleteRequest={onDeleteRequest}
-            />
-          ))}
-        </TableBody>
-      </Table>
+              className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              onClick={handleCardClick}
+              onKeyDown={event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleCardClick();
+                }
+              }}
+              role="button"
+              tabIndex={0}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
+                    {order.returnNumber}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                    销售订单：{order.salesOrder?.orderNumber || '无关联'}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                    客户：{order.customer?.name || '-'}
+                  </div>
+                  <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                    退货类型：{RETURN_ORDER_TYPE_LABELS[order.type]}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                  <div className="font-semibold text-[hsl(var(--color-success))]">
+                    退款：
+                    {formatCurrency(
+                      typeof order.refundAmount === 'number'
+                        ? order.refundAmount
+                        : order.totalAmount
+                    )}
+                  </div>
+                  <div className="mt-1 flex justify-end">
+                    <Badge
+                      variant={getReturnOrderStatusBadgeVariant(order.status)}
+                      className="text-[10px] font-medium"
+                    >
+                      {
+                        RETURN_ORDER_STATUS_LABELS[
+                          order.status as ReturnOrderStatus
+                        ]
+                      }
+                    </Badge>
+                  </div>
+                  <div className="mt-1 text-[hsl(var(--color-text-tertiary))]">
+                    创建时间：{formatDateTime(order.createdAt)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-2 flex items-center justify-end gap-2 text-[11px]">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={event => {
+                    event.stopPropagation();
+                    handleCardClick();
+                  }}
+                >
+                  <Eye className="mr-1 h-3 w-3" />
+                  查看
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={event => {
+                    event.stopPropagation();
+                    onDeleteRequest(order);
+                  }}
+                >
+                  <TrendingDown className="mr-1 h-3 w-3" />
+                  删除
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

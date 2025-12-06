@@ -160,9 +160,9 @@ export function CustomersPageClient({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       {/* 页面标题 */}
-      <div className="mb-6 flex-shrink-0">
+      <div className="mb-4 flex-shrink-0 sm:mb-6">
         <PageHeader
           title="客户管理"
           description="管理客户信息，跟踪客户订单和交易记录"
@@ -197,7 +197,7 @@ export function CustomersPageClient({
       </div>
 
       {/* 搜索和筛选 - 固定在顶部 */}
-      <div className="mb-6 flex-shrink-0">
+      <div className="mb-4 flex-shrink-0 sm:mb-6">
         <SearchFilterCard
           searchValue={search}
           onSearchChange={handleSearch}

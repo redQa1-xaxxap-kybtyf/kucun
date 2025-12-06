@@ -106,7 +106,8 @@ export function PaymentsOutTableList({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      {/* 桌面端：宽表格 + 横向滚动 */}
+      <div className="hidden overflow-x-auto rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -132,6 +133,19 @@ export function PaymentsOutTableList({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端：卡片列表 */}
+      <div className="space-y-3 md:hidden">
+        {payments.map(payment => (
+          <PaymentOutCard
+            key={payment.id}
+            payment={payment}
+            onConfirm={onConfirm}
+            confirmingId={confirmingId}
+            isConfirming={isConfirming}
+          />
+        ))}
       </div>
 
       {pagination && onPageChange && (
@@ -226,6 +240,169 @@ function PaymentOutTableRow({
         />
       </TableCell>
     </TableRow>
+  );
+}
+
+function PaymentOutCard({
+  payment,
+  onConfirm,
+  confirmingId,
+  isConfirming,
+}: {
+  payment: PaymentOutRecord;
+  onConfirm?: (paymentId: string) => void;
+  confirmingId?: string | null;
+  isConfirming?: boolean;
+}) {
+  const isThisConfirming = isConfirming && confirmingId === payment.id;
+
+  return (
+    <div className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <span>付款单号</span>
+            <span className="font-mono">
+              <CopyableText text={payment.paymentNumber} />
+            </span>
+          </div>
+          <div className="text-sm font-medium">{payment.supplier.name}</div>
+          {payment.supplier.phone && (
+            <div className="text-muted-foreground text-xs">
+              {payment.supplier.phone}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-2 text-xs">
+          <StatusBadge status={payment.status} />
+          <PaymentMethodBadge method={payment.paymentMethod} />
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2 text-xs sm:text-sm">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground">关联应付款：</span>
+          {payment.payableRecord ? (
+            <Link
+              href={`/finance/payables/${payment.payableRecord.id}`}
+              className="text-primary font-mono hover:underline"
+            >
+              <CopyableText text={payment.payableRecord.payableNumber} />
+            </Link>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:text-sm">
+        <div className="space-y-1">
+          <div className="text-muted-foreground">付款金额</div>
+          <div className="font-medium text-[hsl(var(--color-primary))]">
+            {formatCurrency(payment.paymentAmount)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">经办人</div>
+          <div>{payment.user.name}</div>
+        </div>
+      </div>
+
+      <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5" />
+          <span>付款：</span>
+          <RelativeTime date={payment.paymentDate} />
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          <span>创建：</span>
+          <RelativeTime date={payment.createdAt} />
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {payment.status === 'pending' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                className="h-8 px-3 text-xs"
+              >
+                <Link href={`/finance/payments-out/${payment.id}/edit`}>
+                  <Pencil className="mr-1 h-3.5 w-3.5" />
+                  编辑
+                </Link>
+              </Button>
+              {onConfirm && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onConfirm(payment.id)}
+                  disabled={isConfirming}
+                  className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
+                >
+                  {isThisConfirming ? '确认中...' : '确认付款'}
+                </Button>
+              )}
+            </>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-8 px-3 text-xs"
+          >
+            <Link href={`/finance/payments-out/${payment.id}`}>
+              <Eye className="mr-1 h-3.5 w-3.5" />
+              查看详情
+            </Link>
+          </Button>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/finance/payments-out/${payment.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                查看详情
+              </Link>
+            </DropdownMenuItem>
+            {payment.status === 'pending' && (
+              <>
+                <DropdownMenuItem asChild>
+                  <Link href={`/finance/payments-out/${payment.id}/edit`}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    编辑
+                  </Link>
+                </DropdownMenuItem>
+                {onConfirm && (
+                  <DropdownMenuItem
+                    onClick={() => onConfirm(payment.id)}
+                    disabled={isConfirming}
+                    className="text-green-600 focus:text-green-700"
+                  >
+                    {isThisConfirming ? (
+                      <Clock className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                    )}
+                    确认付款
+                  </DropdownMenuItem>
+                )}
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 }
 

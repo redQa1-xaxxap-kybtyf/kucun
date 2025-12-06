@@ -23,7 +23,6 @@ import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-to
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
 import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -62,7 +61,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingFormData, setPendingFormData] =
     useState<InboundFormData | null>(null);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
   const searchParams = useSearchParams();
 
   // 检测是否为期初入库操作
@@ -189,160 +187,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       form.setValue('quantity', undefined); // ✅ 修改：设置为 undefined 而不是 0
     }
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
-
-  const handleNextStep = () => {
-    setStep(prev => (prev < 3 ? ((prev + 1) as 2 | 3) : prev));
-  };
-
-  const handlePrevStep = () => {
-    setStep(prev => (prev > 1 ? ((prev - 1) as 1 | 2) : prev));
-  };
-
-  const renderStepContent = () => {
-    switch (step) {
-      case 1:
-        return (
-          <>
-            {/* 1️⃣ 入库原因 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100">
-                  <ClipboardList className="h-4 w-4 text-indigo-700" />
-                </div>
-                <h3 className="text-base font-bold text-gray-900">入库原因</h3>
-              </div>
-              <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/40 p-4">
-                <InboundReasonField form={form} />
-              </div>
-            </div>
-
-            {/* 2️⃣ 产品与供应商 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary-light))]">
-                  <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-                </div>
-                <h3 className="text-base font-bold text-gray-900">
-                  产品与供应商
-                </h3>
-              </div>
-              <div className="space-y-4 rounded-lg border-2 border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-4">
-                <InboundProductSection
-                  form={form}
-                  selectedProduct={selectedProduct}
-                  onProductSelect={handleProductSelectWithPrompt}
-                  showProductPrompt={showProductPrompt}
-                />
-                <InboundSupplierField form={form} />
-              </div>
-            </div>
-          </>
-        );
-      case 2:
-        return (
-          <>
-            {/* 3️⃣ 数量规格与批次 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
-                  <BarChart3 className="h-4 w-4 text-green-700" />
-                </div>
-                <h3 className="text-base font-bold text-gray-900">
-                  数量规格与批次
-                </h3>
-              </div>
-              <div className="space-y-4 rounded-lg border-2 border-green-200 bg-green-50/40 p-4">
-                {/* 批次号 */}
-                <FormField
-                  control={form.control}
-                  name="batchNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-semibold text-gray-900">
-                        批次号/色号 *
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="请输入批次号或色号"
-                          className="h-9"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription className="text-xs text-gray-500">
-                        瓷砖行业要求：同一项目必须使用相同批次/色号
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 入库数量、单位、最终片数 */}
-                <InboundQuantityFields form={form} />
-
-                {/* 每件片数、每件重量 */}
-                <InboundSpecificationFields form={form} />
-              </div>
-            </div>
-          </>
-        );
-      case 3:
-      default:
-        return (
-          <>
-            {/* 4️⃣ 成本信息 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
-                  <DollarSign className="h-4 w-4 text-amber-700" />
-                </div>
-                <h3 className="text-base font-bold text-gray-900">成本信息</h3>
-              </div>
-              <div className="rounded-lg border-2 border-amber-200 bg-amber-50/40 p-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <InboundCostField form={form} />
-                  <InboundTotalCostField form={form} />
-                </div>
-              </div>
-            </div>
-
-            {/* 5️⃣ 备注 */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
-                  <FileText className="h-4 w-4 text-gray-700" />
-                </div>
-                <h3 className="text-base font-bold text-gray-900">备注</h3>
-              </div>
-              <div className="rounded-lg border-2 border-gray-200 bg-gray-50/40 p-4">
-                <FormField
-                  control={form.control}
-                  name="remarks"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-900">
-                        备注信息
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="请输入备注信息（可选）"
-                          className="min-h-[80px] resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-          </>
-        );
-    }
-  };
-
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
-      <div className="space-y-4 pb-24 sm:pb-0">
+      <div className="space-y-4">
         {/* 页面标题卡片 */}
         <InboundFormToolbar
           isSubmitting={isSubmitting}
@@ -366,36 +213,135 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
           <div className="p-6">
             <Form {...form}>
               <form onSubmit={handleFormSubmit} className="space-y-6">
-                {renderStepContent()}
+                {/* 1️⃣ 入库原因 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100">
+                      <ClipboardList className="h-4 w-4 text-indigo-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      入库原因
+                    </h3>
+                  </div>
+                  <div className="rounded-lg border-2 border-indigo-200 bg-indigo-50/40 p-4">
+                    <InboundReasonField form={form} />
+                  </div>
+                </div>
+
+                {/* 2️⃣ 产品与供应商 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary-light))]">
+                      <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      产品与供应商
+                    </h3>
+                  </div>
+                  <div className="space-y-4 rounded-lg border-2 border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] p-4">
+                    <InboundProductSection
+                      form={form}
+                      selectedProduct={selectedProduct}
+                      onProductSelect={handleProductSelectWithPrompt}
+                      showProductPrompt={showProductPrompt}
+                    />
+                    <InboundSupplierField form={form} />
+                  </div>
+                </div>
+
+                {/* 3️⃣ 数量规格与批次 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
+                      <BarChart3 className="h-4 w-4 text-green-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      数量规格与批次
+                    </h3>
+                  </div>
+                  <div className="space-y-4 rounded-lg border-2 border-green-200 bg-green-50/40 p-4">
+                    {/* 批次号 */}
+                    <FormField
+                      control={form.control}
+                      name="batchNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-semibold text-gray-900">
+                            批次号/色号 *
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="请输入批次号或色号"
+                              className="h-9"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormDescription className="text-xs text-gray-500">
+                            瓷砖行业要求：同一项目必须使用相同批次/色号
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 入库数量、单位、最终片数 */}
+                    <InboundQuantityFields form={form} />
+
+                    {/* 每件片数、每件重量 */}
+                    <InboundSpecificationFields form={form} />
+                  </div>
+                </div>
+
+                {/* 4️⃣ 成本信息 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100">
+                      <DollarSign className="h-4 w-4 text-amber-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">
+                      成本信息
+                    </h3>
+                  </div>
+                  <div className="rounded-lg border-2 border-amber-200 bg-amber-50/40 p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <InboundCostField form={form} />
+                      <InboundTotalCostField form={form} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5️⃣ 备注 */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100">
+                      <FileText className="h-4 w-4 text-gray-700" />
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900">备注</h3>
+                  </div>
+                  <div className="rounded-lg border-2 border-gray-200 bg-gray-50/40 p-4">
+                    <FormField
+                      control={form.control}
+                      name="remarks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium text-gray-900">
+                            备注信息
+                          </FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="请输入备注信息（可选）"
+                              className="min-h-[80px] resize-none"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </form>
             </Form>
-          </div>
-        </div>
-      </div>
-
-      {/* 移动端底部固定操作条 */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-white/95 px-4 py-3 shadow-[0_-4px_10px_rgba(15,23,42,0.12)] sm:hidden">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3">
-          <div className="text-xs text-gray-500">第 {step} 步，共 3 步</div>
-          <div className="flex flex-1 justify-end gap-2">
-            {step > 1 && (
-              <Button variant="outline" size="sm" onClick={handlePrevStep}>
-                上一步
-              </Button>
-            )}
-            {step < 3 ? (
-              <Button size="sm" onClick={handleNextStep}>
-                下一步
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleToolbarSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? '提交中...' : '提交入库'}
-              </Button>
-            )}
           </div>
         </div>
       </div>

@@ -366,6 +366,168 @@ function PayableRow({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
   );
 }
 
+function PayableCard({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
+  const isOverdue =
+    payable.dueDate &&
+    new Date(payable.dueDate) < new Date() &&
+    (payable.remainingAmount ?? 0) > 0;
+
+  return (
+    <div
+      className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4"
+      role="button"
+      tabIndex={0}
+      onClick={() => onView(payable.id)}
+      onKeyDown={event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onView(payable.id);
+        }
+      }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <span>应付单号</span>
+            <span className="font-mono font-semibold text-[hsl(var(--color-primary))]">
+              <CopyableText text={payable.payableNumber} />
+            </span>
+          </div>
+          {payable.sourceNumber && (
+            <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+              来源：
+              <CopyableText text={payable.sourceNumber} />
+            </div>
+          )}
+          <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+            {payable.supplier?.name || '未知供应商'}
+          </div>
+          {payable.supplier?.phone && (
+            <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+              {payable.supplier.phone}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-2 text-xs">
+          {getStatusBadge(payable.status)}
+          <span className="text-[hsl(var(--color-text-secondary))]">
+            {payable.sourceType
+              ? PAYABLE_SOURCE_TYPE_LABELS[payable.sourceType]
+              : '其他来源'}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-3 text-xs sm:text-sm">
+        <div className="space-y-1">
+          <div className="text-muted-foreground">应付金额</div>
+          <div className="font-semibold text-[hsl(var(--color-text-primary))]">
+            {formatCurrency(payable.payableAmount ?? 0)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">已付金额</div>
+          <div className="font-medium text-green-600">
+            {formatCurrency(payable.paidAmount ?? 0)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">待付金额</div>
+          <div className="font-medium text-amber-600">
+            {formatCurrency(payable.remainingAmount ?? 0)}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+        <div className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          <span>到期：</span>
+          {payable.dueDate ? (
+            <span
+              className={isOverdue ? 'font-medium text-red-600' : 'font-medium'}
+            >
+              {formatDateTime(payable.dueDate, 'yyyy-MM-dd')}
+            </span>
+          ) : (
+            <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          <span>创建：</span>
+          <RelativeTime date={payable.createdAt} />
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 px-3 text-xs"
+            onClick={event => {
+              event.stopPropagation();
+              onView(payable.id);
+            }}
+          >
+            <Eye className="mr-1 h-3.5 w-3.5" />
+            查看详情
+          </Button>
+
+          {payable.remainingAmount > 0 && payable.status !== 'cancelled' && (
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 bg-orange-600 px-3 text-xs text-white hover:bg-orange-700"
+              onClick={event => {
+                event.stopPropagation();
+                onPayNow(payable.id);
+              }}
+            >
+              立即付款
+            </Button>
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={event => event.stopPropagation()}
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuItem
+              onClick={event => {
+                event.stopPropagation();
+                onView(payable.id);
+              }}
+              className="text-xs"
+            >
+              <Eye className="mr-1 h-3 w-3" />
+              查看详情
+            </DropdownMenuItem>
+            {payable.status === 'cancelled' && (
+              <DropdownMenuItem
+                onClick={event => onDelete(payable, event)}
+                className="text-xs text-[hsl(var(--color-error))]"
+              >
+                <Trash2 className="mr-1 h-3 w-3" />
+                删除
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
+  );
+}
+
 interface PayableDeleteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -489,7 +651,8 @@ export function PayableTableList({
 
   return (
     <>
-      <div className="rounded-md border">
+      {/* 桌面端：宽表格 + 横向滚动 */}
+      <div className="hidden overflow-x-auto rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -521,6 +684,19 @@ export function PayableTableList({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端：卡片列表 */}
+      <div className="space-y-3 md:hidden">
+        {items.map(payable => (
+          <PayableCard
+            key={payable.id}
+            payable={payable}
+            onView={onView}
+            onPayNow={onPayNow}
+            onDelete={handleDeletePayableClick}
+          />
+        ))}
       </div>
 
       <PayableDeleteDialog

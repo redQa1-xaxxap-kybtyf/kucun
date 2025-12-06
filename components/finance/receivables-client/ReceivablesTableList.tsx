@@ -8,30 +8,30 @@ import { RelativeTime } from '@/components/common/relative-time';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type {
-    PaymentStatus,
-    ReceivableItem,
-    ReceivablesResult,
+  PaymentStatus,
+  ReceivableItem,
+  ReceivablesResult,
 } from '@/lib/services/receivables-service';
 import { formatCurrency } from '@/lib/utils';
 
@@ -97,7 +97,8 @@ export function ReceivablesTableList({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      {/* 桌面端：宽表格 + 横向滚动 */}
+      <div className="hidden overflow-x-auto rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -124,6 +125,18 @@ export function ReceivablesTableList({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端：卡片视图 */}
+      <div className="space-y-3 md:hidden">
+        {receivables.map(receivable => (
+          <ReceivableCard
+            key={receivable.id}
+            receivable={receivable}
+            onOpenPaymentDialog={onOpenPaymentDialog}
+            onViewOrder={onViewOrder}
+          />
+        ))}
       </div>
 
       {pagination && (
@@ -324,6 +337,149 @@ function ReceivableTableRow({
         </div>
       </TableCell>
     </TableRow>
+  );
+}
+
+function ReceivableCard({
+  receivable,
+  onOpenPaymentDialog,
+  onViewOrder,
+}: ReceivableTableRowProps) {
+  const amounts = getReceivableAmounts(receivable);
+
+  return (
+    <div className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <span>订单号</span>
+            <span className="font-mono">
+              <CopyableText text={receivable.orderNumber} />
+            </span>
+          </div>
+          <div
+            className="max-w-[220px] truncate text-sm font-medium"
+            title={receivable.customerName}
+          >
+            {receivable.customerName}
+          </div>
+        </div>
+        <ReceivableStatusBadge status={receivable.paymentStatus} />
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:text-sm">
+        <div className="space-y-1">
+          <div className="text-muted-foreground">订单金额</div>
+          <div className="font-medium">
+            {formatCurrency(amounts.orderActualAmount)}
+          </div>
+        </div>
+        <div className="space-y-1 text-right">
+          <div className="text-muted-foreground">应收金额</div>
+          <div className="font-medium text-orange-600">
+            {formatCurrency(amounts.receivableAmount)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">已收金额</div>
+          <div className="font-medium text-green-600">
+            {formatCurrency(amounts.paidActual)}
+          </div>
+        </div>
+        <div className="space-y-1 text-right">
+          <div className="text-muted-foreground">剩余金额</div>
+          <div
+            className={`font-medium ${
+              amounts.actualRemaining > 0 ? 'text-orange-600' : 'text-green-600'
+            }`}
+          >
+            {formatCurrency(amounts.actualRemaining)}
+          </div>
+        </div>
+      </div>
+
+      <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5" />
+          <span>订单：</span>
+          <RelativeTime date={receivable.orderDate} />
+        </div>
+        <div className="flex items-center gap-1">
+          {receivable.lastPaymentDate ? (
+            <>
+              <Calendar className="h-3.5 w-3.5 text-green-600" />
+              <span>最后收款：</span>
+              <RelativeTime date={receivable.lastPaymentDate} />
+            </>
+          ) : (
+            <>
+              <Clock className="h-3.5 w-3.5" />
+              <span>暂无收款</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewOrder(receivable.id)}
+            className="h-8 px-3 text-xs"
+          >
+            <Eye className="mr-1 h-3.5 w-3.5" />
+            查看订单
+          </Button>
+
+          {receivable.paymentStatus === 'pending' ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className="h-8 cursor-not-allowed border-gray-300 bg-gray-50 px-3 text-xs text-gray-500"
+            >
+              待确认收款
+            </Button>
+          ) : (
+            amounts.actualRemaining > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => onOpenPaymentDialog(receivable)}
+                className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
+              >
+                立即收款
+              </Button>
+            )
+          )}
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onViewOrder(receivable.id)}>
+              <Eye className="mr-2 h-4 w-4" />
+              查看详情
+            </DropdownMenuItem>
+            {amounts.actualRemaining > 0 &&
+              receivable.paymentStatus !== 'pending' && (
+                <DropdownMenuItem
+                  onClick={() => onOpenPaymentDialog(receivable)}
+                  className="text-green-600"
+                >
+                  <DollarSign className="mr-2 h-4 w-4" />
+                  立即收款
+                </DropdownMenuItem>
+              )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 }
 

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table';
 import { useDebouncedCallback } from '@/hooks/use-debounced-search';
 import { useSuppliers } from '@/hooks/use-suppliers';
+import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import type { Supplier } from '@/lib/types/supplier';
 import { formatDateTime } from '@/lib/utils/datetime';
 
@@ -64,6 +65,12 @@ interface TemporaryProductsResponse {
     };
   };
 }
+
+// 统一外调产品的单位展示为中文"件/片"
+const getUnitLabel = (unit: string | null | undefined) => {
+  if (!unit) return '-';
+  return PRODUCT_UNIT_LABELS[unit] ?? unit;
+};
 
 // eslint-disable-next-line max-lines-per-function
 export function TemporaryProductsClient() {
@@ -310,7 +317,7 @@ export function TemporaryProductsClient() {
                           {product.specification || '-'}
                         </TableCell>
                         <TableCell className="py-2 text-center text-sm">
-                          {product.unit}
+                          {getUnitLabel(product.unit)}
                         </TableCell>
                         <TableCell className="py-2 text-center text-sm">
                           {product.piecesPerUnit}
@@ -378,7 +385,7 @@ export function TemporaryProductsClient() {
                           </div>
                         )}
                         <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                          <span>单位：{product.unit}</span>
+                          <span>单位：{getUnitLabel(product.unit)}</span>
                           <span>每件：{product.piecesPerUnit}片</span>
                         </div>
                       </div>

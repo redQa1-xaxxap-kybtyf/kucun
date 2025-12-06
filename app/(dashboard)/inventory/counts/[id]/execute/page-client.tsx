@@ -322,7 +322,8 @@ export function ExecuteCountPageClient({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
+          {/* 桌面端表格 */}
+          <div className="hidden rounded-md border md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -472,6 +473,130 @@ export function ExecuteCountPageClient({
                 })}
               </TableBody>
             </Table>
+          </div>
+
+          {/* 移动端卡片列表 */}
+          <div className="space-y-3 md:hidden">
+            {initialData.items?.map(item => {
+              const diff = calculateDifference(item);
+              const totalCost = calculateTotalCost(item);
+              const ppu = item.product?.piecesPerUnit ?? 0;
+              const systemText = (() => {
+                if (ppu <= 1) return `${item.systemQuantity}片`;
+                const result = calculatePieceDisplay(item.systemQuantity, ppu);
+                return `${item.systemQuantity}片 (约${result.displayText})`;
+              })();
+
+              let diffText = '-';
+              let diffClass = '';
+              if (diff !== null) {
+                const abs = Math.abs(diff);
+                const sign = diff > 0 ? '+' : diff < 0 ? '-' : '';
+                if (ppu <= 1) {
+                  diffText = `${sign}${abs}片`;
+                } else {
+                  const result = calculatePieceDisplay(abs, ppu);
+                  diffText = `${sign}${abs}片 (约${sign}${result.displayText})`;
+                }
+                if (diff > 0) diffClass = 'text-green-600';
+                else if (diff < 0) diffClass = 'text-red-600';
+              }
+
+              return (
+                <div
+                  key={item.id}
+                  className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        {item.product?.code || '-'}
+                      </div>
+                      <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        {item.product?.name || '未知产品'}
+                      </div>
+                      <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                        规格：
+                        {(() => {
+                          const variantLabel =
+                            item.variant &&
+                            `${item.variant.colorName || ''} ${item.variant.sku || ''}`.trim();
+
+                          if (variantLabel) {
+                            return variantLabel;
+                          }
+
+                          return ProductDataUtils.formatter.formatSpecification(
+                            item.product?.specification
+                          );
+                        })() || '-'}
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                        <span>批次：{item.batchNumber || '-'}</span>
+                        <span>
+                          每件：
+                          {ppu > 0 ? `${ppu}片/件` : '-'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                      <Badge variant={getStatusBadgeVariant(item.status)}>
+                        {COUNT_ITEM_STATUS_LABELS[item.status]}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div>
+                      <div>系统数量</div>
+                      <div className="mt-0.5 font-medium text-[hsl(var(--color-text-primary))]">
+                        {systemText}
+                      </div>
+                    </div>
+                    <div>
+                      <div>实际数量</div>
+                      <div className="mt-0.5">
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={quantities[item.id] ?? ''}
+                          onChange={e =>
+                            handleQuantityChange(item.id, e.target.value)
+                          }
+                          className="h-8 text-right text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div>
+                      <div>差异数量</div>
+                      <div className={`mt-0.5 font-medium ${diffClass}`}>
+                        {diffText}
+                      </div>
+                    </div>
+                    {hasFinancePermission && (
+                      <div>
+                        <div>差异金额</div>
+                        <div
+                          className={`mt-0.5 font-medium ${
+                            totalCost && totalCost !== 0
+                              ? totalCost > 0
+                                ? 'text-green-600'
+                                : 'text-red-600'
+                              : ''
+                          }`}
+                        >
+                          {formatNumber(totalCost)}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

@@ -558,7 +558,7 @@ export function ERPSalesOrderList({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 搜索筛选卡片 */}
       <SearchFilterCard
         searchValue={searchValue ?? initialParams?.search ?? ''}
@@ -637,118 +637,405 @@ export function ERPSalesOrderList({
 
       {/* 数据表格 */}
       <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>订单号</TableHead>
-              <TableHead>客户名称</TableHead>
-              <TableHead>客户地址</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead className="text-right">订单金额</TableHead>
-              <TableHead>收款状态</TableHead>
-              <TableHead>发货时间</TableHead>
-              <TableHead>创建时间</TableHead>
-              <TableHead>更新时间</TableHead>
-              <TableHead className="w-24">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isInitialLoading ? (
-              // 首次加载状态：显示骨架屏
-              Array.from({ length: 10 }).map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell className="h-8 text-xs">加载中...</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
-                  <TableCell className="h-8 text-xs">-</TableCell>
+        {/* 桌面端：表格视图，支持横向滚动 */}
+        <div className="hidden md:block">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>订单号</TableHead>
+                  <TableHead>客户名称</TableHead>
+                  <TableHead>客户地址</TableHead>
+                  <TableHead>状态</TableHead>
+                  <TableHead className="text-right">订单金额</TableHead>
+                  <TableHead>收款状态</TableHead>
+                  <TableHead>发货时间</TableHead>
+                  <TableHead>创建时间</TableHead>
+                  <TableHead>更新时间</TableHead>
+                  <TableHead className="w-24">操作</TableHead>
                 </TableRow>
-              ))
-            ) : data?.data && data.data.length > 0 ? (
-              data.data.map(order => (
-                <TableRow
+              </TableHeader>
+              <TableBody>
+                {isInitialLoading ? (
+                  // 首次加载状态：显示骨架屏
+                  Array.from({ length: 10 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="h-8 text-xs">加载中...</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                      <TableCell className="h-8 text-xs">-</TableCell>
+                    </TableRow>
+                  ))
+                ) : data?.data && data.data.length > 0 ? (
+                  data.data.map(order => (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                      onClick={() => {
+                        if (onOrderSelect) {
+                          onOrderSelect(order);
+                          return;
+                        }
+                        router.push(`/sales-orders/${order.id}`);
+                      }}
+                      onKeyDown={event => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          if (onOrderSelect) {
+                            onOrderSelect(order);
+                          } else {
+                            router.push(`/sales-orders/${order.id}`);
+                          }
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <TableCell className="h-8 text-xs">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-mono font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
+                            <CopyableText text={order.orderNumber} />
+                          </span>
+                          {order.orderType === 'TRANSFER' && (
+                            <div className="flex flex-wrap gap-1">
+                              <Badge variant="info">调货销售</Badge>
+                              <Badge variant="warning">
+                                {TRANSFER_MODE_LABELS[order.transferMode] ??
+                                  order.transferMode}
+                              </Badge>
+                              {!order.supplierId && (
+                                <Badge variant="destructive" className="w-fit">
+                                  缺少供应商
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          {order.hasReturnOrder && (
+                            <Badge variant="destructive" className="w-fit">
+                              已发生退货
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="h-8 text-xs">
+                        <div className="flex flex-col gap-1">
+                          <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                            {order.customer?.name || '-'}
+                          </span>
+                          <span className="text-[hsl(var(--color-text-tertiary))]">
+                            {order.customer?.phone || '-'}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                        {order.customer?.address ? (
+                          <span>{order.customer?.address}</span>
+                        ) : (
+                          <span className="text-[hsl(var(--color-text-tertiary))]">
+                            -
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="h-8 text-xs">
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(order.status)}
+                          {order.status === 'confirmed' && (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={e => handleConfirmShipment(order, e)}
+                              disabled={updatingOrderId === order.id}
+                              className="h-6 bg-[hsl(var(--color-primary))] px-2 text-xs text-white shadow-sm hover:bg-[hsl(var(--color-primary-dark))]"
+                            >
+                              <Truck className="mr-1 h-3 w-3" />
+                              {updatingOrderId === order.id
+                                ? '处理中...'
+                                : '确认发货'}
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="h-8 text-right text-xs font-semibold text-[hsl(var(--color-success))]">
+                        {formatAmount(order.totalAmount)}
+                      </TableCell>
+                      <TableCell className="h-8 text-xs">
+                        {getPaymentStatusBadge(order)}
+                      </TableCell>
+                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                        {order.shippedAt ? (
+                          <span className="font-medium text-[hsl(var(--color-primary))]">
+                            {formatDateTime(order.shippedAt)}
+                          </span>
+                        ) : (
+                          <span className="text-[hsl(var(--color-text-tertiary))]">
+                            -
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                        <RelativeTime date={order.createdAt} />
+                      </TableCell>
+                      <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                        <RelativeTime date={order.updatedAt} />
+                      </TableCell>
+                      <TableCell className="h-8 text-xs">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                router.push(`/sales-orders/${order.id}`);
+                              }}
+                              className="text-xs"
+                            >
+                              <Eye className="mr-1 h-3 w-3" />
+                              查看
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={e => {
+                                e.stopPropagation();
+                                if (order.status === 'draft') {
+                                  router.push(`/sales-orders/${order.id}/edit`);
+                                } else {
+                                  setSelectedOrder(order);
+                                  setShowEditWarning(true);
+                                }
+                              }}
+                              className="text-xs"
+                            >
+                              <Edit className="mr-1 h-3 w-3" />
+                              编辑
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async e => {
+                                e.stopPropagation();
+                                // 列表页导出图片：直接请求详情接口并渲染隐藏模板
+                                try {
+                                  const response = await fetch(
+                                    `/api/sales-orders/${order.id}`,
+                                    { credentials: 'include' }
+                                  );
+                                  const result = await response.json();
+                                  if (!response.ok || !result.success) {
+                                    throw new Error(
+                                      result.error || '获取订单详情失败'
+                                    );
+                                  }
+
+                                  // 动态创建隐藏容器，使用与详情页相同的打印模板
+                                  const container =
+                                    document.createElement('div');
+                                  container.style.position = 'absolute';
+                                  container.style.left = '-9999px';
+                                  container.style.top = '0';
+                                  container.id = `sales-order-print-list-${order.id}`;
+                                  document.body.appendChild(container);
+
+                                  // 懒加载打印模板组件
+                                  const { SalesOrderPrintTemplate } =
+                                    await import(
+                                      '@/app/(dashboard)/sales-orders/[id]/components/SalesOrderPrintTemplate'
+                                    );
+                                  const { createRoot } = await import(
+                                    'react-dom/client'
+                                  );
+
+                                  const root = createRoot(container);
+                                  root.render(
+                                    <SalesOrderPrintTemplate
+                                      order={result.data}
+                                    />
+                                  );
+
+                                  // 等待一帧让浏览器完成渲染
+                                  await new Promise(resolve =>
+                                    requestAnimationFrame(() => resolve(null))
+                                  );
+
+                                  await exportToImage(container, {
+                                    orderId: order.id,
+                                    orderNumber: order.orderNumber || '',
+                                    backgroundColor: '#ffffff',
+                                    scale: 2,
+                                  });
+
+                                  root.unmount();
+                                  document.body.removeChild(container);
+                                } catch (err) {
+                                  toast({
+                                    title: '导出失败',
+                                    description:
+                                      err instanceof Error
+                                        ? err.message
+                                        : '导出图片失败',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                              disabled={isExportingImage}
+                              className="text-xs"
+                            >
+                              <Download className="mr-1 h-3 w-3" />
+                              {isExportingImage ? '生成图片中...' : '导出图片'}
+                            </DropdownMenuItem>
+                            {isOrderCancelable(order.status) && (
+                              <DropdownMenuItem
+                                onClick={event =>
+                                  handleCancelOrderClick(order, event)
+                                }
+                                className="text-xs text-[hsl(var(--color-error))]"
+                              >
+                                <Ban className="mr-1 h-3 w-3" />
+                                取消
+                              </DropdownMenuItem>
+                            )}
+                            {order.status === 'cancelled' && (
+                              <DropdownMenuItem
+                                onClick={event =>
+                                  handleDeleteOrderClick(order, event)
+                                }
+                                className="text-xs text-[hsl(var(--color-error))]"
+                              >
+                                <Trash2 className="mr-1 h-3 w-3" />
+                                删除
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={10} className="p-8">
+                      <EmptyState title="暂无销售订单数据" compact />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+
+        {/* 移动端：卡片视图 */}
+        <div className="space-y-3 px-3 py-3 md:hidden">
+          {isInitialLoading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <div
+                key={`sales-order-card-skeleton-${index}`}
+                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="h-3 w-28 rounded bg-[hsl(var(--color-bg-tertiary))]" />
+                    <div className="h-3 w-24 rounded bg-[hsl(var(--color-bg-tertiary))]" />
+                    <div className="h-3 w-40 rounded bg-[hsl(var(--color-bg-tertiary))]" />
+                  </div>
+                  <div className="space-y-2 text-right">
+                    <div className="h-3 w-20 rounded bg-[hsl(var(--color-bg-tertiary))]" />
+                    <div className="h-3 w-16 rounded bg-[hsl(var(--color-bg-tertiary))]" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : data?.data && data.data.length > 0 ? (
+            data.data.map(order => {
+              const handleCardClick = () => {
+                if (onOrderSelect) {
+                  onOrderSelect(order);
+                  return;
+                }
+                router.push(`/sales-orders/${order.id}`);
+              };
+
+              return (
+                <div
                   key={order.id}
-                  className="cursor-pointer"
-                  onClick={() => {
-                    if (onOrderSelect) {
-                      onOrderSelect(order);
-                      return;
-                    }
-                    router.push(`/sales-orders/${order.id}`);
-                  }}
+                  className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+                  onClick={handleCardClick}
                   onKeyDown={event => {
                     if (event.key === 'Enter' || event.key === ' ') {
                       event.preventDefault();
-                      if (onOrderSelect) {
-                        onOrderSelect(order);
-                      } else {
-                        router.push(`/sales-orders/${order.id}`);
-                      }
+                      handleCardClick();
                     }
                   }}
                   role="button"
                   tabIndex={0}
                 >
-                  <TableCell className="h-8 text-xs">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-mono font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
-                        <CopyableText text={order.orderNumber} />
-                      </span>
-                      {order.orderType === 'TRANSFER' && (
-                        <div className="flex flex-wrap gap-1">
-                          <Badge variant="info">调货销售</Badge>
-                          <Badge variant="warning">
-                            {TRANSFER_MODE_LABELS[order.transferMode] ??
-                              order.transferMode}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
+                        {order.orderNumber}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
+                        客户：{order.customer?.name || '-'}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        电话：{order.customer?.phone || '-'}
+                      </div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        地址：{order.customer?.address || '暂无客户地址'}
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {order.orderType === 'TRANSFER' && (
+                          <Badge variant="info" className="text-[10px]">
+                            调货销售
                           </Badge>
-                          {!order.supplierId && (
-                            <Badge variant="destructive" className="w-fit">
-                              缺少供应商
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                      {order.hasReturnOrder && (
-                        <Badge variant="destructive" className="w-fit">
-                          已发生退货
-                        </Badge>
-                      )}
+                        )}
+                        {order.hasReturnOrder && (
+                          <Badge variant="destructive" className="text-[10px]">
+                            已发生退货
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="h-8 text-xs">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-medium text-[hsl(var(--color-text-primary))]">
-                        {order.customer?.name || '-'}
-                      </span>
-                      <span className="text-[hsl(var(--color-text-tertiary))]">
-                        {order.customer?.phone || '-'}
-                      </span>
+                    <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                      <div className="font-semibold text-[hsl(var(--color-success))]">
+                        金额：{formatAmount(order.totalAmount)}
+                      </div>
+                      <div className="mt-1 flex justify-end">
+                        {getPaymentStatusBadge(order)}
+                      </div>
+                      <div className="mt-1 text-[hsl(var(--color-text-tertiary))]">
+                        创建时间：{formatDateTime(order.createdAt)}
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                    {order.customer?.address ? (
-                      <span>{order.customer?.address}</span>
-                    ) : (
-                      <span className="text-[hsl(var(--color-text-tertiary))]">
-                        -
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="h-8 text-xs">
+                  </div>
+
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-[hsl(var(--color-text-secondary))]">
                     <div className="flex items-center gap-2">
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        状态：
+                      </span>
                       {getStatusBadge(order.status)}
+                    </div>
+                    <div className="flex items-center gap-2">
                       {order.status === 'confirmed' && (
                         <Button
                           variant="default"
                           size="sm"
-                          onClick={e => handleConfirmShipment(order, e)}
+                          className="h-7 px-2 text-[11px]"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleConfirmShipment(order, e);
+                          }}
                           disabled={updatingOrderId === order.id}
-                          className="h-6 bg-[hsl(var(--color-primary))] px-2 text-xs text-white shadow-sm hover:bg-[hsl(var(--color-primary-dark))]"
                         >
                           <Truck className="mr-1 h-3 w-3" />
                           {updatingOrderId === order.id
@@ -756,173 +1043,27 @@ export function ERPSalesOrderList({
                             : '确认发货'}
                         </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-1 text-[11px]"
+                        onClick={e => {
+                          e.stopPropagation();
+                          router.push(`/sales-orders/${order.id}`);
+                        }}
+                      >
+                        <Eye className="mr-1 h-3 w-3" />
+                        查看
+                      </Button>
                     </div>
-                  </TableCell>
-                  <TableCell className="h-8 text-right text-xs font-semibold text-[hsl(var(--color-success))]">
-                    {formatAmount(order.totalAmount)}
-                  </TableCell>
-                  <TableCell className="h-8 text-xs">
-                    {getPaymentStatusBadge(order)}
-                  </TableCell>
-                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                    {order.shippedAt ? (
-                      <span className="font-medium text-[hsl(var(--color-primary))]">
-                        {formatDateTime(order.shippedAt)}
-                      </span>
-                    ) : (
-                      <span className="text-[hsl(var(--color-text-tertiary))]">
-                        -
-                      </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                    <RelativeTime date={order.createdAt} />
-                  </TableCell>
-                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
-                    <RelativeTime date={order.updatedAt} />
-                  </TableCell>
-                  <TableCell className="h-8 text-xs">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            router.push(`/sales-orders/${order.id}`);
-                          }}
-                          className="text-xs"
-                        >
-                          <Eye className="mr-1 h-3 w-3" />
-                          查看
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            if (order.status === 'draft') {
-                              router.push(`/sales-orders/${order.id}/edit`);
-                            } else {
-                              setSelectedOrder(order);
-                              setShowEditWarning(true);
-                            }
-                          }}
-                          className="text-xs"
-                        >
-                          <Edit className="mr-1 h-3 w-3" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={async e => {
-                            e.stopPropagation();
-                            // 列表页导出图片：直接请求详情接口并渲染隐藏模板
-                            try {
-                              const response = await fetch(
-                                `/api/sales-orders/${order.id}`,
-                                { credentials: 'include' }
-                              );
-                              const result = await response.json();
-                              if (!response.ok || !result.success) {
-                                throw new Error(
-                                  result.error || '获取订单详情失败'
-                                );
-                              }
-
-                              // 动态创建隐藏容器，使用与详情页相同的打印模板
-                              const container = document.createElement('div');
-                              container.style.position = 'absolute';
-                              container.style.left = '-9999px';
-                              container.style.top = '0';
-                              container.id = `sales-order-print-list-${order.id}`;
-                              document.body.appendChild(container);
-
-                              // 懒加载打印模板组件
-                              const { SalesOrderPrintTemplate } = await import(
-                                '@/app/(dashboard)/sales-orders/[id]/components/SalesOrderPrintTemplate'
-                              );
-                              const { createRoot } = await import(
-                                'react-dom/client'
-                              );
-
-                              const root = createRoot(container);
-                              root.render(
-                                <SalesOrderPrintTemplate order={result.data} />
-                              );
-
-                              // 等待一帧让浏览器完成渲染
-                              await new Promise(resolve =>
-                                requestAnimationFrame(() => resolve(null))
-                              );
-
-                              await exportToImage(container, {
-                                orderId: order.id,
-                                orderNumber: order.orderNumber || '',
-                                backgroundColor: '#ffffff',
-                                scale: 2,
-                              });
-
-                              root.unmount();
-                              document.body.removeChild(container);
-                            } catch (err) {
-                              toast({
-                                title: '导出失败',
-                                description:
-                                  err instanceof Error
-                                    ? err.message
-                                    : '导出图片失败',
-                                variant: 'destructive',
-                              });
-                            }
-                          }}
-                          disabled={isExportingImage}
-                          className="text-xs"
-                        >
-                          <Download className="mr-1 h-3 w-3" />
-                          {isExportingImage ? '生成图片中...' : '导出图片'}
-                        </DropdownMenuItem>
-                        {isOrderCancelable(order.status) && (
-                          <DropdownMenuItem
-                            onClick={event =>
-                              handleCancelOrderClick(order, event)
-                            }
-                            className="text-xs text-[hsl(var(--color-error))]"
-                          >
-                            <Ban className="mr-1 h-3 w-3" />
-                            取消
-                          </DropdownMenuItem>
-                        )}
-                        {order.status === 'cancelled' && (
-                          <DropdownMenuItem
-                            onClick={event =>
-                              handleDeleteOrderClick(order, event)
-                            }
-                            className="text-xs text-[hsl(var(--color-error))]"
-                          >
-                            <Trash2 className="mr-1 h-3 w-3" />
-                            删除
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={10} className="p-8">
-                  <EmptyState title="暂无销售订单数据" compact />
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <EmptyState title="暂无销售订单数据" compact />
+          )}
+        </div>
 
         {/* 分页组件 */}
         {data?.pagination && (

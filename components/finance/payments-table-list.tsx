@@ -112,7 +112,8 @@ export function PaymentsTableList({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      {/* 桌面端：宽表格 + 横向滚动 */}
+      <div className="hidden overflow-x-auto rounded-md border md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -141,6 +142,19 @@ export function PaymentsTableList({
             ))}
           </TableBody>
         </Table>
+      </div>
+
+      {/* 移动端：卡片列表 */}
+      <div className="space-y-3 md:hidden">
+        {payments.map(payment => (
+          <PaymentCard
+            key={payment.id}
+            payment={payment}
+            onConfirm={onConfirm}
+            confirmingId={confirmingId}
+            isConfirming={isConfirming}
+          />
+        ))}
       </div>
 
       {pagination && onPageChange && (
@@ -252,6 +266,129 @@ function PaymentTableRow({
         />
       </TableCell>
     </TableRow>
+  );
+}
+
+function PaymentCard({
+  payment,
+  onConfirm,
+  confirmingId,
+  isConfirming,
+}: PaymentTableRowProps) {
+  return (
+    <div className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
+            <span>收款单号</span>
+            <span className="font-mono">
+              <CopyableText text={payment.paymentNumber} />
+            </span>
+          </div>
+          <div className="text-sm font-medium">{payment.customer.name}</div>
+          {payment.customer.phone && (
+            <div className="text-muted-foreground text-xs">
+              {payment.customer.phone}
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col items-end gap-2 text-xs">
+          <StatusBadge status={payment.status} />
+          <PaymentMethodBadge method={payment.paymentMethod} />
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+        <span className="text-muted-foreground">关联订单：</span>
+        <Link
+          href={`/sales-orders/${payment.salesOrder.id}`}
+          className="text-primary font-mono hover:underline"
+        >
+          <CopyableText text={payment.salesOrder.orderNumber} />
+        </Link>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-3 text-xs sm:text-sm">
+        <div className="space-y-1">
+          <div className="text-muted-foreground">应收金额</div>
+          <div className="font-medium text-orange-600">
+            {formatCurrency(payment.paymentAmount)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">实际到账</div>
+          <div className="font-medium text-green-600">
+            {formatCurrency(payment.actualPaymentAmount)}
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">收款差额</div>
+          <RoundingAmountDisplay amount={payment.roundingAmount} />
+        </div>
+      </div>
+
+      <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div className="flex items-center gap-1">
+          <Calendar className="h-3.5 w-3.5" />
+          <span>收款：</span>
+          <RelativeTime date={payment.paymentDate} />
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />
+          <span>创建：</span>
+          <RelativeTime date={payment.createdAt} />
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          {payment.status === 'pending' && onConfirm && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => onConfirm(payment.id)}
+              disabled={confirmingId === payment.id || isConfirming}
+              className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
+            >
+              {confirmingId === payment.id ? '确认中...' : '确认收款'}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            asChild
+            className="h-8 px-3 text-xs"
+          >
+            <Link href={`/finance/payments/${payment.id}`}>
+              <Eye className="mr-1 h-3.5 w-3.5" />
+              查看详情
+            </Link>
+          </Button>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href={`/finance/payments/${payment.id}`}>
+                <Eye className="mr-2 h-4 w-4" />
+                查看详情
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/sales-orders/${payment.salesOrder.id}`}>
+                <Receipt className="mr-2 h-4 w-4" />
+                查看订单
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 }
 

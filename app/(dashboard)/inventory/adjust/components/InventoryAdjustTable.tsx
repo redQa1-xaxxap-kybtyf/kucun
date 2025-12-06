@@ -94,78 +94,147 @@ export function InventoryAdjustTable({
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>产品信息</TableHead>
-          <TableHead>批次号</TableHead>
-          <TableHead>当前库存</TableHead>
-          <TableHead>最后更新</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <>
+      {/* 桌面端表格视图 */}
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>产品信息</TableHead>
+              <TableHead>批次号</TableHead>
+              <TableHead>当前库存</TableHead>
+              <TableHead>最后更新</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {inventoryRecords.map(record => (
+              <TableRow key={record.id}>
+                <TableCell>
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {record.product?.name || '未知产品'}
+                    </span>
+                    {record.product?.code && (
+                      <span className="text-muted-foreground text-sm">
+                        编码: {record.product.code}
+                      </span>
+                    )}
+                    {record.product?.specification && (
+                      <span className="text-muted-foreground text-sm">
+                        规格:{' '}
+                        {(() => {
+                          const spec = record.product.specification;
+                          // 如果是JSON字符串，尝试解析并提取关键信息
+                          if (spec.startsWith('{') && spec.endsWith('}')) {
+                            try {
+                              const parsed = JSON.parse(spec);
+                              // 提取尺寸信息作为主要显示内容
+                              if (parsed.size) {
+                                return parsed.size.length > 11
+                                  ? `${parsed.size.slice(0, 11)}...`
+                                  : parsed.size;
+                              }
+                              // 如果没有尺寸，显示简化的规格信息
+                              return '规格详情...';
+                            } catch {
+                              // JSON解析失败，截断显示
+                              return spec.length > 11
+                                ? `${spec.slice(0, 11)}...`
+                                : spec;
+                            }
+                          }
+                          // 普通字符串，直接截断
+                          return spec.length > 11
+                            ? `${spec.slice(0, 11)}...`
+                            : spec;
+                        })()}
+                      </span>
+                    )}
+                    {record.variant?.sku && (
+                      <span className="text-muted-foreground text-sm">
+                        SKU: {record.variant.sku}
+                      </span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {record.batchNumber || (
+                    <span className="text-muted-foreground">无批次</span>
+                  )}
+                </TableCell>
+                <TableCell>{renderStockDisplay(record)}</TableCell>
+                <TableCell>
+                  <div className="text-sm">{formatDate(record.updatedAt)}</div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* 移动端卡片视图 */}
+      <div className="space-y-3 md:hidden">
         {inventoryRecords.map(record => (
-          <TableRow key={record.id}>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-medium">
+          <div
+            key={record.id}
+            className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  {record.product?.code || '-'}
+                </div>
+                <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
                   {record.product?.name || '未知产品'}
-                </span>
-                {record.product?.code && (
-                  <span className="text-muted-foreground text-sm">
-                    编码: {record.product.code}
-                  </span>
-                )}
+                </div>
                 {record.product?.specification && (
-                  <span className="text-muted-foreground text-sm">
-                    规格:{' '}
+                  <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                    规格：
                     {(() => {
-                      const spec = record.product.specification;
-                      // 如果是JSON字符串，尝试解析并提取关键信息
+                      const spec = record.product!.specification!;
                       if (spec.startsWith('{') && spec.endsWith('}')) {
                         try {
                           const parsed = JSON.parse(spec);
-                          // 提取尺寸信息作为主要显示内容
                           if (parsed.size) {
                             return parsed.size.length > 11
                               ? `${parsed.size.slice(0, 11)}...`
                               : parsed.size;
                           }
-                          // 如果没有尺寸，显示简化的规格信息
                           return '规格详情...';
                         } catch {
-                          // JSON解析失败，截断显示
                           return spec.length > 11
                             ? `${spec.slice(0, 11)}...`
                             : spec;
                         }
                       }
-                      // 普通字符串，直接截断
                       return spec.length > 11
                         ? `${spec.slice(0, 11)}...`
                         : spec;
                     })()}
-                  </span>
+                  </div>
                 )}
                 {record.variant?.sku && (
-                  <span className="text-muted-foreground text-sm">
+                  <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
                     SKU: {record.variant.sku}
-                  </span>
+                  </div>
                 )}
+                <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                  批次：{record.batchNumber || '无批次'}
+                </div>
               </div>
-            </TableCell>
-            <TableCell>
-              {record.batchNumber || (
-                <span className="text-muted-foreground">无批次</span>
-              )}
-            </TableCell>
-            <TableCell>{renderStockDisplay(record)}</TableCell>
-            <TableCell>
-              <div className="text-sm">{formatDate(record.updatedAt)}</div>
-            </TableCell>
-          </TableRow>
+              <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                <div className="text-[hsl(var(--color-text-secondary))]">
+                  {formatDate(record.updatedAt)}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
+              当前库存：{renderStockDisplay(record)}
+            </div>
+          </div>
         ))}
-      </TableBody>
-    </Table>
+      </div>
+    </>
   );
 }

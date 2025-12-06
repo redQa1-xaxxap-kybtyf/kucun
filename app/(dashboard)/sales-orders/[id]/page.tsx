@@ -20,8 +20,8 @@ import { OperationHistoryCard } from './components/OperationHistoryCard';
 import { OrderItemsTable } from './components/OrderItemsTable';
 import { OrderReconciliationSummaryCard } from './components/OrderReconciliationSummaryCard';
 import { PaymentsCard } from './components/PaymentsCard';
-import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
 import { PrepaymentUsageCard } from './components/PrepaymentUsageCard';
+import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
 import { SalesOrderPrintTemplate } from './components/SalesOrderPrintTemplate';
 import { TransferModeInfoCard } from './components/TransferModeInfoCard';
 import type { SalesOrderDetail } from './components/types';
@@ -181,8 +181,8 @@ export default function SalesOrderDetailPage() {
   const canEditOrder = order.status === 'draft';
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div id="sales-order-export-content" className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div id="sales-order-export-content" className="space-y-4 sm:space-y-6">
         <HeaderCard
           order={order}
           id={id}
@@ -210,7 +210,7 @@ export default function SalesOrderDetailPage() {
 
         <OrderReconciliationSummaryCard order={order} />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
           <div className="space-y-4 lg:col-span-2">
             <BasicInfoCard order={order} />
             <RelatedReturnOrdersCard order={order} />

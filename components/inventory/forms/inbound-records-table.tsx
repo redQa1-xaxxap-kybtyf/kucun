@@ -156,8 +156,80 @@ export function InboundRecordsTable({
   return (
     <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <TableHeading count={records.length} />
-      <div className="overflow-x-auto">
+      {/* 桌面端表格视图 */}
+      <div className="hidden overflow-x-auto md:block">
         <RecordsTable records={records} />
+      </div>
+
+      {/* 移动端卡片视图 */}
+      <div className="space-y-3 p-3 md:hidden">
+        {records.length === 0 ? (
+          <EmptyState
+            title="暂无入库记录"
+            description="还没有任何入库流水，您可以先创建一条入库记录。"
+            icon={<Package className="text-muted-foreground h-6 w-6" />}
+            action={
+              <Button size="sm" asChild>
+                <Link href="/inventory/inbound/create">去新增入库</Link>
+              </Button>
+            }
+            compact
+          />
+        ) : (
+          records.map(record => {
+            const piecesPerUnit = getActualPiecesPerUnit(record);
+            return (
+              <div
+                key={record.id}
+                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                      {record.product?.code || record.productId}
+                    </div>
+                    <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                      {record.product?.name || '未知产品'}
+                    </div>
+                    <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                      规格：
+                      {formatSpecification(record.product?.specification) ||
+                        '-'}
+                    </div>
+                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <span>批次：{record.batchNumber || '-'}</span>
+                      <span>每件：{piecesPerUnit || '-'}片</span>
+                      <span>重量：{getActualWeight(record)}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                    <Badge
+                      variant={getOperationTypeVariant(record.reason)}
+                      className="mb-1 text-xs font-medium"
+                    >
+                      {getOperationTypeLabel(record.reason)}
+                    </Badge>
+                    <div className="flex items-center justify-end gap-1">
+                      <User className="h-3 w-3" />
+                      <RelativeTime date={record.createdAt} />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                  入库数量：
+                  <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                    {formatQuantity(record.quantity, piecesPerUnit)}
+                  </span>
+                </div>
+
+                <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                  备注：{record.remarks || '-'}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
       {/* 分页器 */}

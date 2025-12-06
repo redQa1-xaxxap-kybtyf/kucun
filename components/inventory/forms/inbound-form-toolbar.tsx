@@ -32,27 +32,27 @@ export function InboundFormToolbar({
 
   return (
     <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[var(--shadow-medium)]">
-              <PackageCheck className="h-6 w-6 text-white" />
+      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[var(--shadow-medium)] sm:h-12 sm:w-12">
+              <PackageCheck className="h-5 w-5 text-white sm:h-6 sm:w-6" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            <div className="min-w-0">
+              <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
                 产品入库
               </h1>
-              <p className="text-sm text-gray-600">
+              <p className="mt-1 text-xs text-gray-600 sm:text-sm">
                 填写产品入库信息，增加库存数量
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center justify-start gap-2 sm:w-auto sm:justify-end">
             <Button
               type="button"
               variant="outline"
               size="lg"
-              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+              className="h-10 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md sm:h-11"
               onClick={() => router.back()}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -64,7 +64,7 @@ export function InboundFormToolbar({
               size="lg"
               onClick={onReset}
               disabled={isSubmitting}
-              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+              className="h-10 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md sm:h-11"
             >
               <RotateCcw className="h-4 w-4" />
               重置
@@ -74,7 +74,7 @@ export function InboundFormToolbar({
               size="lg"
               disabled={isSubmitting}
               onClick={onSubmit}
-              className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              className="h-10 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg sm:h-11"
             >
               {isSubmitting ? (
                 <>
