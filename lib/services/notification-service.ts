@@ -3,6 +3,7 @@
  * 统一管理所有 Pub/Sub 通知和用户通知
  */
 
+import { logger } from '@/lib/logger';
 import { psubscribe, publish, subscribe } from '@/lib/redis/redis-pubsub';
 
 /**
@@ -188,12 +189,9 @@ export async function subscribeUserNotifications(
       const notification = JSON.parse(message) as Notification;
       callback(notification);
     } catch (error) {
-      logger.error('解析用户通知失败', {
-        error,
-        context: {
-          userId,
-          message,
-        },
+      logger.error('notifications', '解析用户通知失败', error, {
+        userId,
+        message,
       });
     }
   });
@@ -211,11 +209,8 @@ export async function subscribeSystemBroadcast(
       const notification = JSON.parse(message) as Notification;
       callback(notification);
     } catch (error) {
-      logger.error('解析系统广播失败', {
-        error,
-        context: {
-          message,
-        },
+      logger.error('notifications', '解析系统广播失败', error, {
+        message,
       });
     }
   });
@@ -234,12 +229,9 @@ export async function subscribeOrderUpdates(
       const event = JSON.parse(message);
       callback(orderId, event);
     } catch (error) {
-      logger.error('解析订单更新失败', {
-        error,
-        context: {
-          channel,
-          message,
-        },
+      logger.error('notifications', '解析订单更新失败', error, {
+        channel,
+        message,
       });
     }
   });
@@ -260,12 +252,9 @@ export async function subscribeInventoryUpdates(
         const event = JSON.parse(message);
         callback(productId, event);
       } catch (error) {
-        logger.error('解析库存更新失败', {
-          error,
-          context: {
-            channel,
-            message,
-          },
+        logger.error('notifications', '解析库存更新失败', error, {
+          channel,
+          message,
         });
       }
     }
@@ -283,11 +272,8 @@ export async function subscribePaymentNotifications(
       const event = JSON.parse(message);
       callback(event);
     } catch (error) {
-      logger.error('解析付款通知失败', {
-        error,
-        context: {
-          message,
-        },
+      logger.error('notifications', '解析付款通知失败', error, {
+        message,
       });
     }
   });
@@ -304,11 +290,8 @@ export async function subscribeLowStockAlerts(
       const alert = JSON.parse(message);
       callback(alert);
     } catch (error) {
-      logger.error('解析低库存警报失败', {
-        error,
-        context: {
-          message,
-        },
+      logger.error('notifications', '解析低库存警报失败', error, {
+        message,
       });
     }
   });

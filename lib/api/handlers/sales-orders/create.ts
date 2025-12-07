@@ -285,6 +285,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       const prepaymentResult = await applyPrepaymentToOrder(
         tx,
         validatedData.customerId,
+        salesOrder.id,
         financials.totalAmount,
         validatedData.prepaymentAmount ?? undefined
       );

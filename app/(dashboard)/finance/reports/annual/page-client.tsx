@@ -1,13 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  Calendar,
-  Package,
-  Receipt,
-} from 'lucide-react';
+import { Calendar, Package, Receipt } from 'lucide-react';
 import * as React from 'react';
 import {
   Bar,

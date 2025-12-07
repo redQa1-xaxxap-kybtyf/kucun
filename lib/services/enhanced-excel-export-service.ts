@@ -151,7 +151,7 @@ export class EnhancedExcelExportService {
       const processedRow: Record<string, unknown> = {};
 
       fields.forEach((field, colIndex) => {
-        let value = row[field];
+        let value: unknown = row[field];
 
         // 自定义转换器优先
         if (dataTransformer) {

@@ -403,25 +403,24 @@ export async function getFinanceStatistics(
     _count: { id: true },
   });
 
+  const totalSalesAmount = salesOrderStats._sum.totalAmount || 0;
+  const totalPaymentAmount = Number(paymentStats._sum.paymentAmount ?? 0);
+
   const statisticsData: FinanceStatistics = {
     period: { startDate, endDate },
     sales: {
-      totalAmount: salesOrderStats._sum.totalAmount || 0,
+      totalAmount: totalSalesAmount,
       orderCount: salesOrderStats._count.id || 0,
     },
     payments: {
-      totalAmount: paymentStats._sum.paymentAmount || 0,
+      totalAmount: totalPaymentAmount,
       paymentCount: paymentStats._count.id || 0,
     },
     receivables: {
-      totalAmount:
-        (salesOrderStats._sum.totalAmount || 0) -
-        (paymentStats._sum.paymentAmount || 0),
+      totalAmount: totalSalesAmount - totalPaymentAmount,
       paymentRate:
-        salesOrderStats._sum.totalAmount && salesOrderStats._sum.totalAmount > 0
-          ? ((paymentStats._sum.paymentAmount || 0) /
-              salesOrderStats._sum.totalAmount) *
-            100
+        totalSalesAmount && totalSalesAmount > 0
+          ? (totalPaymentAmount / totalSalesAmount) * 100
           : 0,
     },
   };
@@ -444,7 +443,7 @@ export async function getFinanceStatistics(
     });
 
     statisticsData.refunds = {
-      totalAmount: refundStats._sum.refundAmount || 0,
+      totalAmount: Number(refundStats._sum.refundAmount ?? 0),
       refundCount: refundStats._count.id || 0,
     };
   }

@@ -6,7 +6,11 @@ import {
 
 import { getReturnOrdersServer } from '@/lib/api/return-orders-server';
 import { queryKeys } from '@/lib/queryKeys';
-import type { ReturnOrderStatus } from '@/lib/types/return-order';
+import type {
+  ReturnOrderStatus,
+  ReturnOrderType,
+  ReturnProcessType,
+} from '@/lib/types/return-order';
 
 import { ReturnOrdersPageClient } from './page-client';
 
@@ -20,12 +24,28 @@ const RETURN_ORDER_STATUS_VALUES: ReturnOrderStatus[] = [
   'cancelled',
 ] as const;
 
+const RETURN_ORDER_TYPE_VALUES: ReturnOrderType[] = [
+  'quality_issue',
+  'wrong_product',
+  'customer_change',
+  'damage_in_transit',
+  'remaining_return',
+  'other',
+] as const;
+
+const RETURN_PROCESS_TYPE_VALUES: ReturnProcessType[] = [
+  'refund',
+  'exchange',
+] as const;
+
 interface PageProps {
   searchParams?: Promise<{
     page?: string;
     limit?: string;
     search?: string;
     status?: string;
+    type?: string;
+    processType?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
     startDate?: string;
@@ -60,11 +80,23 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
   const isReturnOrderStatus = (value?: string): value is ReturnOrderStatus =>
     typeof value === 'string' &&
     (RETURN_ORDER_STATUS_VALUES as readonly string[]).includes(value);
+  const isReturnOrderType = (value?: string): value is ReturnOrderType =>
+    typeof value === 'string' &&
+    (RETURN_ORDER_TYPE_VALUES as readonly string[]).includes(value);
+  const isReturnProcessType = (
+    value?: string
+  ): value is ReturnProcessType =>
+    typeof value === 'string' &&
+    (RETURN_PROCESS_TYPE_VALUES as readonly string[]).includes(value);
   const initialParams = {
     page: params?.page ? parseInt(params.page, 10) : 1,
     limit: params?.limit ? parseInt(params.limit, 10) : 20,
     search: params?.search || '',
     status: isReturnOrderStatus(params?.status) ? params?.status : undefined,
+    type: isReturnOrderType(params?.type) ? params?.type : undefined,
+    processType: isReturnProcessType(params?.processType)
+      ? params?.processType
+      : undefined,
     sortBy: params?.sortBy || 'createdAt',
     sortOrder: (params?.sortOrder as 'asc' | 'desc') || 'desc',
     startDate: params?.startDate || undefined,

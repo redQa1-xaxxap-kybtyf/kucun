@@ -135,10 +135,10 @@ export const POST = withAuth(
               _sum: { paymentAmount: true, roundingAmount: true },
             });
 
-            // ✅ P0修复: 计算实际收款总额（包含抹零）
+            // ✅ P0修复: 计算实际收款总额（包含抹零，Prisma Decimal -> number）
             const totalPaid =
-              (confirmedSum._sum.paymentAmount ?? 0) +
-              (confirmedSum._sum.roundingAmount ?? 0);
+              Number(confirmedSum._sum.paymentAmount ?? 0) +
+              Number(confirmedSum._sum.roundingAmount ?? 0);
 
             // ✅ P0修复: 计算订单应收总额（包含订单抹零）
             const orderDue =

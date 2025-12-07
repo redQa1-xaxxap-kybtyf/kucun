@@ -20,7 +20,7 @@ const REDIS_CHANNEL_PREFIX = 'ws:';
 export async function publishEvent(
   channel: EventChannel,
   event: BusinessEvent
-): Promise<void> {
+  ): Promise<void> {
   try {
     const redisChannel = `${REDIS_CHANNEL_PREFIX}${channel}`;
     const payload = JSON.stringify({
@@ -30,12 +30,9 @@ export async function publishEvent(
 
     await redis.getClient().publish(redisChannel, payload);
   } catch (error) {
-    logger.error('事件发布失败', {
-      error,
-      context: {
-        channel,
-        eventType: event.type,
-      },
+    logger.error('events:publisher', '事件发布失败', error, {
+      channel,
+      eventType: event.type,
     });
     // 不抛出错误，避免阻塞业务逻辑
   }

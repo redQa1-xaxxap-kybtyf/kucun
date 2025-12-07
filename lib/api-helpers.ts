@@ -137,12 +137,15 @@ export function successResponse<T>(
  * 统一的 API 错误处理
  */
 export function handleApiError(error: unknown): NextResponse {
-  logger.error('API错误', {
+  logger.error(
+    'api-helpers',
+    'API 错误',
     error,
-    context: {
-      errorType: error instanceof Error ? error.constructor.name : typeof error,
-    },
-  });
+    {
+      errorType:
+        error instanceof Error ? error.constructor.name : typeof error,
+    }
+  );
 
   if (error instanceof Error) {
     return errorResponse(error.message, 500);

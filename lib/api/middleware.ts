@@ -96,13 +96,15 @@ export function withAuth<
       return await handler(request, context, session);
     } catch (error) {
       // 使用日志库记录错误
-      logger.error('认证中间件错误', {
+      logger.error(
+        'api:middleware',
+        '认证中间件错误',
         error,
-        context: {
+        {
           url: request.url,
           method: request.method,
-        },
-      });
+        }
+      );
       return unauthorizedResponse('认证失败');
     }
   };
@@ -141,13 +143,15 @@ export function withValidation<
 
       return await handler(request, context, validatedData);
     } catch (error) {
-      logger.error('验证中间件错误', {
+      logger.error(
+        'api:middleware',
+        '验证中间件错误',
         error,
-        context: {
+        {
           url: request.url,
           method: request.method,
-        },
-      });
+        }
+      );
       return badRequestResponse('数据验证失败');
     }
   };
@@ -175,12 +179,9 @@ export function withAuthAndValidation<
 
       return await handler(request, context, session, validatedData);
     } catch (error) {
-      logger.error('验证错误', {
-        error,
-        context: {
-          url: request.url,
-          method: request.method,
-        },
+      logger.error('api:middleware', '验证错误', error, {
+        url: request.url,
+        method: request.method,
       });
       return badRequestResponse('数据验证失败');
     }
@@ -348,10 +349,20 @@ function logError(
   };
 
   // 使用统一日志系统记录错误
-  logger.error('API错误', {
+  logger.error(
+    'api:middleware',
+    'API 错误',
     error,
-    context: errorInfo,
-  });
+    {
+      errorId: errorInfo.errorId,
+      timestamp: errorInfo.timestamp,
+      url: errorInfo.url,
+      method: errorInfo.method,
+    },
+    {
+      error: errorInfo.error,
+    }
+  );
 
   // TODO: 写入数据库或发送到错误监控服务
   // if (env.NODE_ENV === 'production') {

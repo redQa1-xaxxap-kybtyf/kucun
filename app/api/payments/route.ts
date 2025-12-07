@@ -13,7 +13,9 @@ import {
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
 
-const toMinorUnits = (amount: number | null | undefined): number => {
+const toMinorUnits = (
+  amount: number | { toString(): string } | null | undefined
+): number => {
   const parsed = Number(amount ?? 0);
   if (!Number.isFinite(parsed)) {
     return 0;

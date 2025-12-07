@@ -98,7 +98,7 @@ async function verifySeedData() {
     const paymentRecords = await prisma.paymentRecord.findMany();
     console.log(`   总收款记录: ${paymentRecords.length}`);
     const totalPayment = paymentRecords.reduce(
-      (sum, p) => sum + p.paymentAmount,
+      (sum, p) => sum + Number(p.paymentAmount ?? 0),
       0
     );
     console.log(`   收款总金额: ￥${totalPayment.toFixed(2)}`);
@@ -114,11 +114,14 @@ async function verifySeedData() {
     const payableRecords = await prisma.payableRecord.findMany();
     console.log(`   总应付款记录: ${payableRecords.length}`);
     const totalPayable = payableRecords.reduce(
-      (sum, p) => sum + p.payableAmount,
+      (sum, p) => sum + Number(p.payableAmount ?? 0),
       0
     );
     console.log(`   应付款总金额: ￥${totalPayable.toFixed(2)}`);
-    const totalPaid = payableRecords.reduce((sum, p) => sum + p.paidAmount, 0);
+    const totalPaid = payableRecords.reduce(
+      (sum, p) => sum + Number(p.paidAmount ?? 0),
+      0
+    );
     console.log(`   已付款金额: ￥${totalPaid.toFixed(2)}`);
     console.log(
       `   待付款: ${payableRecords.filter(p => p.status === 'pending').length}`
@@ -135,7 +138,7 @@ async function verifySeedData() {
     const paymentOutRecords = await prisma.paymentOutRecord.findMany();
     console.log(`   总付款记录: ${paymentOutRecords.length}`);
     const totalPaymentOut = paymentOutRecords.reduce(
-      (sum, p) => sum + p.paymentAmount,
+      (sum, p) => sum + Number(p.paymentAmount ?? 0),
       0
     );
     console.log(`   付款总金额: ￥${totalPaymentOut.toFixed(2)}`);

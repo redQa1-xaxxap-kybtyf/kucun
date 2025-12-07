@@ -319,7 +319,6 @@ export function transformFormItemToCreateInput(
       manualSpecification: formItem.manualSpecification?.trim() || undefined,
       manualWeight: toOptionalNumber(formItem.manualWeight),
       manualUnit: formItem.manualUnit?.trim() || undefined,
-      subtotal,
     };
   }
 
@@ -342,7 +341,6 @@ export function transformFormItemToCreateInput(
       formItem.specification || formItem.product?.specification || undefined,
     remarks: formItem.remarks?.trim() || undefined,
     isManualProduct: false,
-    subtotal,
   };
 }
 
@@ -449,7 +447,6 @@ export function transformFormItemToUpdateInput(
       manualSpecification: formItem.manualSpecification?.trim() || undefined,
       manualWeight: toOptionalNumber(formItem.manualWeight),
       manualUnit: formItem.manualUnit?.trim() || undefined,
-      subtotal,
     };
   }
 
@@ -472,7 +469,6 @@ export function transformFormItemToUpdateInput(
       formItem.specification || formItem.product?.specification || undefined,
     remarks: formItem.remarks?.trim() || undefined,
     isManualProduct: false,
-    subtotal,
   };
 }
 

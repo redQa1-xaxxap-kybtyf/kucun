@@ -398,7 +398,7 @@ export default function ProfilePage() {
                       {displayUser && (
                         <>
                           <Separator orientation="vertical" className="h-3" />
-                          <Badge variant="outline-solid" className="text-xs">
+                          <Badge variant="outline" className="text-xs">
                             {getUserRoleLabel(displayUser.role)}
                           </Badge>
                           <Badge variant="outline" className="text-xs">

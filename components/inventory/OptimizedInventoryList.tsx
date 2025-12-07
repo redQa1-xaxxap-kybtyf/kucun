@@ -57,6 +57,15 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
       handleAdjust,
     } = useOptimizedInventoryList(initialParams);
 
+    const [density, setDensity] = React.useState<'compact' | 'comfortable'>(
+      'comfortable'
+    );
+
+    const handleExport = React.useCallback(() => {
+      // 预留导出入口，后续可接入实际导出逻辑
+      // 当前为占位实现，避免按钮无绑定导致报错
+    }, []);
+
     // 错误状态处理
     if (isError) {
       return (
@@ -79,6 +88,9 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
           categoryOptions={categoryOptions}
           onSearch={handleSearch}
           onFilter={handleFilter}
+          density={density}
+          onDensityChange={setDensity}
+          onExport={handleExport}
         />
 
         {/* 操作栏 */}
@@ -102,6 +114,7 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
           itemHeight={virtualizationConfig.itemHeight}
           containerHeight={virtualizationConfig.containerHeight}
           overscan={virtualizationConfig.overscan}
+          density={density}
         />
       </div>
     );

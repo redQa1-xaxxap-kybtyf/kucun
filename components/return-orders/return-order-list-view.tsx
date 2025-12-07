@@ -62,11 +62,13 @@ export function ReturnOrderListView({
   searchValue,
   statusFilter,
   typeFilter,
+  processTypeFilter,
   dateRange,
   isSearching,
   onSearch,
   onStatusChange,
   onTypeChange,
+  onProcessTypeChange,
   onDateRangeChange,
   onClearFilters,
   orders,
@@ -92,11 +94,13 @@ export function ReturnOrderListView({
         searchValue={searchValue}
         statusFilter={statusFilter}
         typeFilter={typeFilter}
+        processTypeFilter={processTypeFilter}
         dateRange={dateRange}
         isSearching={isSearching}
         onSearch={onSearch}
         onStatusChange={onStatusChange}
         onTypeChange={onTypeChange}
+        onProcessTypeChange={onProcessTypeChange}
         onDateRangeChange={onDateRangeChange}
         onClearFilters={onClearFilters}
       />

@@ -164,6 +164,9 @@ function useSearchLifecycle({
       clearSearch();
       onSearchChange?.('');
     }
+
+    // 显式返回 undefined，满足 noImplicitReturns 要求
+    return undefined;
   }, [
     open,
     previousOpen,

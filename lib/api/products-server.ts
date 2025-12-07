@@ -18,6 +18,7 @@ import {
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
 import { paginationConfig, productConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product } from '@/lib/types/product';
 
@@ -139,8 +140,10 @@ export const getProductsForServer = cache(
     // 性能监控：记录慢查询
     const queryDuration = Date.now() - queryStartTime;
     if (queryDuration > 1000) {
-      logger.warn('产品列表查询性能慢', {
-        context: {
+      logger.warn(
+        'api:products-server',
+        '产品列表查询性能慢',
+        {
           operation: 'getProductsServer',
           duration: queryDuration,
           cacheKey,
@@ -150,8 +153,8 @@ export const getProductsForServer = cache(
           search,
           page,
           limit,
-        },
-      });
+        }
+      );
     }
 
     // 返回类型转换，确保类型安全

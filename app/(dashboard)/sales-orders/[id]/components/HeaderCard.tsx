@@ -43,6 +43,8 @@ interface Props {
     description: string,
     variant?: 'destructive' | 'default'
   ) => void;
+  density: 'compact' | 'comfortable';
+  onDensityChange: (value: 'compact' | 'comfortable') => void;
 }
 
 interface HeaderActionsProps {

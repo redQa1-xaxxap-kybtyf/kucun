@@ -139,12 +139,9 @@ export async function validateUserLogin(params: {
       },
     };
   } catch (error) {
-    logger.error('验证用户登录失败', {
-      error,
-      context: {
-        username: params.username,
-        ip: params.ip,
-      },
+    logger.error('auth', '验证用户登录失败', error, {
+      username,
+      ip: ipAddress,
     });
     return {
       success: false,

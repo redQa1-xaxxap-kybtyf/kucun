@@ -163,7 +163,7 @@ function reviewPendingPayments(order: OrderWithPayments, stats: PaymentStats) {
 }
 
 async function fetchOrder(): Promise<OrderWithPayments | null> {
-  return prisma.salesOrder.findFirst({
+  const order = await prisma.salesOrder.findFirst({
     where: {
       orderNumber: ORDER_NUMBER,
     },
@@ -190,6 +190,29 @@ async function fetchOrder(): Promise<OrderWithPayments | null> {
       },
     },
   });
+
+  if (!order) {
+    return null;
+  }
+
+  return {
+    orderNumber: order.orderNumber,
+    totalAmount: Number(order.totalAmount ?? 0),
+    roundingAdjustment: Number(order.roundingAdjustment ?? 0),
+    customer: {
+      name: order.customer?.name ?? '未知客户',
+    },
+    payments: order.payments.map(payment => ({
+      paymentNumber: payment.paymentNumber,
+      paymentAmount:
+        payment.paymentAmount !== null && payment.paymentAmount !== undefined
+          ? Number(payment.paymentAmount)
+          : null,
+      status: payment.status as PaymentRecord['status'],
+      paymentDate: payment.paymentDate,
+      createdAt: payment.createdAt,
+    })),
+  };
 }
 
 async function checkPaymentRecords() {

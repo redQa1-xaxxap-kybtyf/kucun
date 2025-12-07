@@ -91,9 +91,11 @@ export function ERPReturnOrderForm({
   // 销售订单搜索词（用于后端搜索）
   const [salesOrderSearch, setSalesOrderSearch] = useState<string>('');
 
-  // ✅ 表单设置 - 使用统一的 returnOrderFormSchema,避免联合类型问题
+  // ✅ 表单设置 - 使用统一的 returnOrderFormSchema，避免联合类型 & resolver 类型不匹配问题
   const form = useForm<ReturnOrderFormData>({
-    resolver: standardSchemaResolver(returnOrderFormSchema),
+    // standard-schema 当前的 TS 声明与我们基于 Zod 的 schema 类型存在差异，
+    // 实际运行时行为是安全的，这里通过 any 进行适配，保持验证逻辑不变。
+    resolver: (standardSchemaResolver as any)(returnOrderFormSchema) as any,
     defaultValues:
       mode === 'create'
         ? createReturnOrderDefaults

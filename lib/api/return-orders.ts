@@ -401,7 +401,8 @@ export function useCreateReturnOrder(
   options?: UseMutationOptions<
     ReturnOrderResponse,
     Error,
-    CreateReturnOrderFormData
+    CreateReturnOrderFormData,
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -411,7 +412,7 @@ export function useCreateReturnOrder(
   return useMutation({
     mutationFn: createReturnOrder,
     ...restOptions,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建后立即看到新订单
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.lists(),
@@ -433,13 +434,13 @@ export function useCreateReturnOrder(
         queryKey: queryKeys.dashboard.all,
       });
       // 允许调用方追加自定义 onSuccess（例如提示、导航），不会覆盖默认刷新逻辑
-      onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error, variables, context) => {
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      onError?.(error, variables, onMutateResult, context);
     },
-    onSettled: (data, error, variables, context) => {
-      onSettled?.(data, error, variables, context);
+    onSettled: (data, error, variables, onMutateResult, context) => {
+      onSettled?.(data, error, variables, onMutateResult, context);
     },
   });
 }
@@ -451,7 +452,8 @@ export function useUpdateReturnOrder(
   options?: UseMutationOptions<
     ReturnOrderResponse,
     Error,
-    { id: string; data: UpdateReturnOrderFormData }
+    { id: string; data: UpdateReturnOrderFormData },
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -461,7 +463,7 @@ export function useUpdateReturnOrder(
   return useMutation({
     mutationFn: ({ id, data }) => updateReturnOrder(id, data),
     ...restOptions,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       const { id } = variables;
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新后立即看到变化
       queryClient.refetchQueries({
@@ -484,13 +486,13 @@ export function useUpdateReturnOrder(
       queryClient.invalidateQueries({
         queryKey: queryKeys.dashboard.all,
       });
-      onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error, variables, context) => {
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      onError?.(error, variables, onMutateResult, context);
     },
-    onSettled: (data, error, variables, context) => {
-      onSettled?.(data, error, variables, context);
+    onSettled: (data, error, variables, onMutateResult, context) => {
+      onSettled?.(data, error, variables, onMutateResult, context);
     },
   });
 }
@@ -502,7 +504,8 @@ export function useUpdateReturnOrderStatus(
   options?: UseMutationOptions<
     ReturnOrderResponse,
     Error,
-    { id: string; status: string; remarks?: string; refundAmount?: number }
+    { id: string; status: string; remarks?: string; refundAmount?: number },
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -513,7 +516,7 @@ export function useUpdateReturnOrderStatus(
     mutationFn: ({ id, status, remarks, refundAmount }) =>
       updateReturnOrderStatus(id, status, remarks, refundAmount),
     ...restOptions,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       const { id } = variables;
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
       queryClient.refetchQueries({
@@ -546,13 +549,13 @@ export function useUpdateReturnOrderStatus(
         queryKey: queryKeys.finance.all,
       });
       // 允许调用方追加自定义 onSuccess（例如 Toast 提示）
-      onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error, variables, context) => {
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      onError?.(error, variables, onMutateResult, context);
     },
-    onSettled: (data, error, variables, context) => {
-      onSettled?.(data, error, variables, context);
+    onSettled: (data, error, variables, onMutateResult, context) => {
+      onSettled?.(data, error, variables, onMutateResult, context);
     },
   });
 }
@@ -564,7 +567,8 @@ export function useApproveReturnOrder(
   options?: UseMutationOptions<
     ReturnOrderResponse,
     Error,
-    { id: string; data: ReturnOrderApprovalFormData }
+    { id: string; data: ReturnOrderApprovalFormData },
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -611,7 +615,8 @@ export function useDeleteReturnOrder(
   options?: UseMutationOptions<
     { success: boolean; message?: string },
     Error,
-    string
+    string,
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -621,7 +626,7 @@ export function useDeleteReturnOrder(
   return useMutation({
     mutationFn: deleteReturnOrder,
     ...restOptions,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户删除后立即看到变化
       queryClient.refetchQueries({
         queryKey: returnOrderQueryKeys.lists(),
@@ -643,13 +648,13 @@ export function useDeleteReturnOrder(
         queryKey: queryKeys.dashboard.all,
       });
       // 始终先执行默认刷新逻辑，再附加调用方自定义 onSuccess（例如 Toast 提示）
-      onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, onMutateResult, context);
     },
-    onError: (error, variables, context) => {
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      onError?.(error, variables, onMutateResult, context);
     },
-    onSettled: (data, error, variables, context) => {
-      onSettled?.(data, error, variables, context);
+    onSettled: (data, error, variables, onMutateResult, context) => {
+      onSettled?.(data, error, variables, onMutateResult, context);
     },
   });
 }
@@ -661,7 +666,8 @@ export function useBatchReturnOrderOperation(
   options?: UseMutationOptions<
     { success: boolean; message?: string },
     Error,
-    BatchReturnOrderFormData
+    BatchReturnOrderFormData,
+    unknown
   >
 ) {
   const queryClient = useQueryClient();

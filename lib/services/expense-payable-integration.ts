@@ -102,7 +102,6 @@ async function mergeStrategy(
     expenseAmount,
     supplierId,
     sourceType,
-    sourceId,
     sourceNumber,
     userId,
   } = params;
@@ -242,7 +241,6 @@ async function standaloneStrategy(
     expenseAmount,
     supplierId,
     sourceType,
-    _sourceId,
     sourceNumber,
     userId,
   } = params;
@@ -343,7 +341,7 @@ export async function createOrMergePayableFromExpense(
     } else if (strategy === 'standalone') {
       return await standaloneStrategy(params, db);
     } else {
-      throw ApiError.internal(`未知的应付款创建策略: ${strategy}`);
+      throw ApiError.internalError(`未知的应付款创建策略: ${strategy}`);
     }
   } catch (error) {
     logger.error('expense-payable', '创建/合并应付款失败', error, {

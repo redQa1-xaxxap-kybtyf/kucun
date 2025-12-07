@@ -97,7 +97,7 @@ function useImageExport(toast: ToastFn) {
   };
 }
 
-function useExcelExport() {
+function useExcelExport(_toast?: ToastFn) {
   const { exportData, isExporting, error } = useFinanceExport();
 
   const exportToExcel = useCallback(

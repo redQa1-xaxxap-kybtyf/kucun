@@ -29,7 +29,7 @@ export function InboundPageHeader() {
       actions={
         <div className="flex items-center gap-3">
           {/* 期初入库按钮 - 仅对有权限的用户显示 */}
-          {can(user, 'inventory:opening_balance') && (
+          {can(user ?? null, 'inventory:opening_balance') && (
             <Button
               variant="secondary"
               size="lg"

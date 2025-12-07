@@ -103,14 +103,16 @@ export function PurchaseOrderList({
     refetchOnMount: 'always',
   });
 
-  const [editingContainerOrder, setEditingContainerOrder] = React.useState<Pick<
-    PurchaseOrder,
-    'id' | 'orderNumber' | 'containerNumber'
-  > | null>(null);
-  const [editingOrder, setEditingOrder] = React.useState<Pick<
-    PurchaseOrder,
-    'id' | 'orderNumber' | 'shippingCompany'
-  > | null>(null);
+  const [editingContainerOrder, setEditingContainerOrder] = React.useState<{
+    id: string;
+    orderNumber: string;
+    containerNumber: string | null;
+  } | null>(null);
+  const [editingOrder, setEditingOrder] = React.useState<{
+    id: string;
+    orderNumber: string;
+    shippingCompany: string | null;
+  } | null>(null);
 
   if (isLoading) {
     return <ContentLoading text="加载采购订单列表中..." />;
@@ -209,7 +211,7 @@ export function PurchaseOrderList({
                       setEditingOrder({
                         id: order.id,
                         orderNumber: order.orderNumber,
-                        shippingCompany: order.shippingCompany,
+                        shippingCompany: order.shippingCompany ?? null,
                       })
                     }
                     title={

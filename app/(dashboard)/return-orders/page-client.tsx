@@ -18,6 +18,7 @@ import type {
   ReturnOrderQueryParams,
   ReturnOrderStatus,
   ReturnOrderType,
+  ReturnProcessType,
 } from '@/lib/types/return-order';
 
 interface ReturnOrdersPageClientProps {
@@ -41,6 +42,7 @@ export function ReturnOrdersPageClient({
     search: initialParams?.search,
     status: initialParams?.status,
     type: initialParams?.type,
+    processType: initialParams?.processType,
     sortBy: initialParams?.sortBy || 'createdAt',
     sortOrder: initialParams?.sortOrder || 'desc',
     startDate: initialParams?.startDate,
@@ -125,6 +127,20 @@ export function ReturnOrdersPageClient({
     [router]
   );
 
+  const handleProcessTypeChange = React.useCallback(
+    (value: ReturnProcessType | 'all') => {
+      const params = new URLSearchParams(window.location.search);
+      if (value && value !== 'all') {
+        params.set('processType', value);
+      } else {
+        params.delete('processType');
+      }
+      params.delete('page');
+      router.push(`/return-orders?${params.toString()}`);
+    },
+    [router]
+  );
+
   const handleDateRangeChange = React.useCallback(
     (range: { startDate?: string; endDate?: string }) => {
       const params = new URLSearchParams(window.location.search);
@@ -148,6 +164,7 @@ export function ReturnOrdersPageClient({
     const params = new URLSearchParams(window.location.search);
     params.delete('status');
     params.delete('type');
+    params.delete('processType');
     params.delete('startDate');
     params.delete('endDate');
     params.delete('page');
@@ -213,6 +230,7 @@ export function ReturnOrdersPageClient({
             searchValue={initialParams?.search || ''}
             statusFilter={initialParams?.status || 'all'}
             typeFilter={initialParams?.type || 'all'}
+            processTypeFilter={initialParams?.processType || 'all'}
             dateRange={{
               startDate: initialParams?.startDate,
               endDate: initialParams?.endDate,
@@ -221,6 +239,7 @@ export function ReturnOrdersPageClient({
             onSearch={handleSearch}
             onStatusChange={handleStatusChange}
             onTypeChange={handleTypeChange}
+            onProcessTypeChange={handleProcessTypeChange}
             onDateRangeChange={handleDateRangeChange}
             onClearFilters={handleClearFilters}
             orders={orders}

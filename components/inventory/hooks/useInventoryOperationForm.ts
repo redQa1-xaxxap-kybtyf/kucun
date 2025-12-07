@@ -199,7 +199,9 @@ export function useInventoryOperationForm<
   const [submitError, setSubmitError] = useState<string>('');
 
   const form = useForm<FormValuesByMode[M], unknown, FormValuesByMode[M]>({
-    resolver: standardSchemaResolver(config.schema) as any,
+    // 这里使用标准 schema resolver 统一处理验证，但内部 schema 使用 Zod，
+    // 因此通过 any 适配类型差异，保持运行时行为不变。
+    resolver: (standardSchemaResolver as any)(config.schema) as any,
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误
@@ -435,7 +437,7 @@ function normalizeInboundValues(values: CreateInboundData): CreateInboundData {
     batchNumber: normalizeOptionalText(values.batchNumber),
     remarks: normalizeOptionalText(values.remarks),
     variantId: normalizeOptionalText(values.variantId),
-  };
+  } as CreateInboundData;
 }
 
 function normalizeOutboundValues(

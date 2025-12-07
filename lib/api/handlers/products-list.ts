@@ -241,12 +241,14 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
   // ✅ 防御性过滤：移除任何可能的孤儿记录
   const validBatchSpecs = batchSpecs.filter(spec => {
     if (!spec.productId || !productIds.includes(spec.productId)) {
-      logger.warn('批次规格的产品不在查询范围内', {
-        context: {
+      logger.warn(
+        'api:products-list',
+        '批次规格的产品不在查询范围内',
+        {
           batchNumber: spec.batchNumber,
-          productId: spec.productId,
-        },
-      });
+          productId: spec.productId ?? undefined,
+        }
+      );
       return false;
     }
     return true;
@@ -287,12 +289,14 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
 
     if (!batchSpec) {
       // 批次规格缺失，跳过该批次（防止显示错误的每件片数）
-      logger.warn('批次没有批次规格记录', {
-        context: {
+      logger.warn(
+        'api:products-list',
+        '批次没有批次规格记录',
+        {
           batchNumber: inv.batchNumber,
           productId: inv.productId,
-        },
-      });
+        }
+      );
       return;
     }
 

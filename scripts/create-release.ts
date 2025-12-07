@@ -21,7 +21,7 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 
-import tar from 'tar';
+import * as tar from 'tar';
 
 async function main() {
   const rootDir = process.cwd();

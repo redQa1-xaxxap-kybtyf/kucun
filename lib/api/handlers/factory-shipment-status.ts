@@ -6,6 +6,7 @@
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
@@ -14,7 +15,6 @@ import {
   generatePayableNumber,
   generatePaymentNumber,
 } from '@/lib/utils/payment-number-generator';
-import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 
 /**
  * 状态流转规则

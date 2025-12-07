@@ -199,9 +199,9 @@ async function getMonthlyCosts(
   ]);
 
   const inventoryCostChange =
-    (inboundCost._sum.totalCost || 0) -
-    (outboundCost._sum.totalCost || 0) +
-    (adjustmentCost._sum.totalCost || 0);
+    Number(inboundCost._sum.totalCost ?? 0) -
+    Number(outboundCost._sum.totalCost ?? 0) +
+    Number(adjustmentCost._sum.totalCost ?? 0);
   const totalCost = salesCost + Math.abs(inventoryCostChange);
 
   return {
@@ -282,13 +282,18 @@ async function getMonthlyReceivables(
     },
   });
 
+  const totalPayable = payableStats._sum.payableAmount || 0;
+  const receivedAmount = Number(receivedStats._sum.actualPaymentAmount ?? 0);
+  const paidAmount = paidStats._sum.paymentAmount || 0;
+  const payableBalance = payableStats._sum.remainingAmount || 0;
+
   return {
     totalReceivable,
-    totalPayable: payableStats._sum.payableAmount || 0,
-    receivedAmount: receivedStats._sum.actualPaymentAmount || 0,
-    paidAmount: paidStats._sum.paymentAmount || 0,
+    totalPayable,
+    receivedAmount,
+    paidAmount,
     receivableBalance: totalReceivable,
-    payableBalance: payableStats._sum.remainingAmount || 0,
+    payableBalance,
   };
 }
 

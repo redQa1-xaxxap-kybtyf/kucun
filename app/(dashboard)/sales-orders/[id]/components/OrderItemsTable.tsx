@@ -686,13 +686,13 @@ export function OrderItemsTable({
                   <div className="text-right text-[11px] text-gray-500 space-y-1">
                     <div>单价</div>
                     <div className="font-mono text-[13px] font-semibold text-[hsl(var(--color-primary))]">
-                      {item.unitPrice != null
+                      {typeof item.unitPrice === 'number'
                         ? formatCurrency(item.unitPrice)
                         : '-'}
                     </div>
                     <div className="text-[10px] text-gray-500">小计</div>
                     <div className="font-mono text-[13px] font-bold text-[hsl(var(--color-primary))]">
-                      {item.subtotal != null
+                      {typeof item.subtotal === 'number'
                         ? formatCurrency(item.subtotal)
                         : '-'}
                     </div>
@@ -717,7 +717,7 @@ export function OrderItemsTable({
                     <div className="text-[10px] text-gray-500">单位 / 每件片数</div>
                     <div>
                       <span className="mr-1">{unitLabel}</span>
-                      {piecesPerUnitDisplay != null && (
+                      {typeof piecesPerUnitDisplay === 'number' && (
                         <span className="text-gray-500">
                           · {formatDecimal(piecesPerUnitDisplay)}片/件
                         </span>
@@ -726,7 +726,7 @@ export function OrderItemsTable({
                     <div className="text-[10px] text-gray-500">
                       重量(kg)：
                       <span className="font-mono text-[12px] text-[hsl(var(--color-text-primary))]">
-                        {itemWeightKg != null
+                        {typeof itemWeightKg === 'number'
                           ? `${formatDecimal(itemWeightKg)}kg`
                           : '-'}
                       </span>
@@ -746,9 +746,9 @@ export function OrderItemsTable({
                 </div>
 
                 {/* 备注：仅在有备注时展示 */}
-                {item.remark && item.remark.trim().length > 0 && (
+                {item.remarks && item.remarks.trim().length > 0 && (
                   <div className="mt-2 rounded border border-dashed border-gray-200 bg-gray-50 px-2 py-1 text-[11px] text-gray-600">
-                    备注：{item.remark}
+                    备注：{item.remarks}
                   </div>
                 )}
               </div>

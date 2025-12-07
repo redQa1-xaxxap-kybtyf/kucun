@@ -21,7 +21,8 @@ export function useTemporaryProductDialog({
   );
 
   const form = useForm<TemporaryProductData>({
-    resolver: standardSchemaResolver(schema),
+    // 标准 schema resolver 的类型定义与我们动态生成的 schema 存在差异，运行时是安全的，这里用 any 适配。
+    resolver: (standardSchemaResolver as any)(schema) as any,
     defaultValues: {
       productCode: '',
       name: '',

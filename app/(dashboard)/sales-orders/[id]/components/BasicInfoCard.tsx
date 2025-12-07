@@ -54,29 +54,29 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
           基本信息
         </CardTitle>
       </CardHeader>
-      <CardContent className="bg-[hsl(var(--color-bg-card))] p-4 sm:p-6">
-        <div className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
+      <CardContent className="bg-[hsl(var(--color-bg-card))] p-3 sm:p-6">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
           <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               客户名称
             </div>
-            <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
+            <div className="mt-1 text-sm font-medium text-[hsl(var(--color-text-primary))]">
               {customerName}
             </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               客户电话
             </div>
-            <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+            <div className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
               {customerPhone}
             </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               订单状态
             </div>
-            <div className="mt-2">
+            <div className="mt-1">
               <Badge
                 variant={getSalesOrderStatusBadgeVariant(order.status)}
                 className="text-xs"
@@ -88,10 +88,10 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
             </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               订单类型
             </div>
-            <div className="mt-2 space-y-1">
+            <div className="mt-1 space-y-1">
               {getOrderTypeBadge(order.orderType)}
               {order.orderType === 'TRANSFER' && (
                 <div>{getTransferModeBadge(order.transferMode)}</div>
@@ -100,51 +100,52 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
           </div>
           {order.supplier && (
             <div>
-              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+              <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
                 供应商
               </div>
-              <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+              <div className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
                 {order.supplier.name}
               </div>
             </div>
           )}
           <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               创建人
             </div>
-            <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+            <div className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
               {userName}
             </div>
           </div>
           <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               创建时间
             </div>
-            <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+            <div className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
               {formatDateTime(order.createdAt)}
             </div>
           </div>
           {order.shippedAt && (
             <div>
-              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+              <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
                 发货时间
               </div>
-              <div className="mt-2 text-sm font-medium text-[hsl(var(--color-primary))]">
+              <div className="mt-1 text-sm font-medium text-[hsl(var(--color-primary))]">
                 {formatDateTime(order.shippedAt)}
               </div>
             </div>
           )}
-          <div>
-            <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+          {/* 更新时间：移动端隐藏，仅在平板及以上展示 */}
+          <div className="hidden sm:block">
+            <div className="text-[11px] font-medium text-[hsl(var(--color-text-tertiary))]">
               更新时间
             </div>
-            <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+            <div className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
               {formatDateTime(order.updatedAt)}
             </div>
           </div>
         </div>
         {order.remarks && (
-          <div className="mt-4 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-4">
+          <div className="mt-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-4">
             <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
               备注信息
             </div>

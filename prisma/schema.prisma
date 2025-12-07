@@ -39,6 +39,7 @@ model User {
   approvedInventoryCounts  InventoryCount[]       @relation("InventoryCountApprover")
   countedInventoryItems    InventoryCountItem[]   @relation("InventoryCountItemCounter")
   operatedOutboundRecords  OutboundRecord[]       @relation("OutboundRecordOperator")
+  inventoryOperations       InventoryOperation[]  @relation("InventoryOperationOperator")
   loginLogs                LoginLog[]
 
   @@index([email])
@@ -95,6 +96,7 @@ model Supplier {
   inboundRecords            InboundRecord[]
   payableRecords            PayableRecord[]
   paymentOutRecords         PaymentOutRecord[]
+  expenseRecords            ExpenseRecord[]
 
   @@index([name])
   @@index([phone])
@@ -266,6 +268,7 @@ model SalesOrder {
   outboundRecords OutboundRecord[]
   refundRecords   RefundRecord[]
   purchaseOrders  PurchaseOrder[]
+  prepaymentUsages PrepaymentUsage[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
@@ -561,7 +564,8 @@ model InventoryOperation {
   expiresAt      DateTime  @map("expires_at")
 
   // 关系定义
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  product  Product @relation(fields: [productId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  operator User    @relation("InventoryOperationOperator", fields: [operatorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([idempotencyKey], map: "idx_operation_idempotency")
   @@index([operatorId], map: "idx_operation_operator")
@@ -633,6 +637,7 @@ model PaymentRecord {
   factoryShipmentOrder FactoryShipmentOrder? @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   customer             Customer              @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  prepaymentUsages     PrepaymentUsage[]
 
   @@index([salesOrderId], map: "idx_payment_records_order")
   @@index([factoryShipmentOrderId], map: "idx_payment_records_factory_shipment")
@@ -645,6 +650,21 @@ model PaymentRecord {
   @@index([customerId, paymentType, status], map: "idx_payment_records_customer_type_status")
   @@index([salesOrderId, status], map: "idx_payment_records_order_status")
   @@map("payment_records")
+}
+
+model PrepaymentUsage {
+  id              String   @id @default(uuid()) @db.Char(36)
+  paymentRecordId String   @map("payment_record_id") @db.Char(36)
+  salesOrderId    String   @map("sales_order_id") @db.Char(36)
+  appliedAmount   Decimal  @map("applied_amount") @db.Decimal(14, 2)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  paymentRecord PaymentRecord @relation(fields: [paymentRecordId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  salesOrder    SalesOrder    @relation(fields: [salesOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([paymentRecordId], map: "idx_prepayment_usages_payment")
+  @@index([salesOrderId], map: "idx_prepayment_usages_order")
+  @@map("prepayment_usages")
 }
 
 model FactoryShipmentOrder {
@@ -684,6 +704,7 @@ model FactoryShipmentOrder {
   payments        PaymentRecord[]
   shippingQueries ShippingQuery[]
   feeItems        FactoryShipmentOrderFeeItem[]
+  preferredSite   ShippingSite?                 @relation(fields: [preferredSiteId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([orderNumber])
   @@index([containerNumber])
@@ -873,6 +894,9 @@ model AccountStatement {
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
+  // 关系定义
+  transactions StatementTransaction[]
+
   @@index([entityType], map: "idx_account_statements_type")
   @@index([status], map: "idx_account_statements_status")
   @@index([overdueAmount], map: "idx_account_statements_overdue")
@@ -898,6 +922,9 @@ model StatementTransaction {
   status          String    @default("pending") @db.VarChar(32)
   metadata        String?   @map("metadata")
   createdAt       DateTime  @default(now()) @map("created_at")
+
+  // 关系定义
+  statement AccountStatement @relation(fields: [statementId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
   @@index([statementId], map: "idx_statement_transactions_statement")
   @@index([transactionType], map: "idx_statement_transactions_type")
@@ -1088,6 +1115,9 @@ model ShippingSite {
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
+  // 关系定义
+  factoryShipmentOrders FactoryShipmentOrder[]
+
   @@index([status])
   @@map("shipping_sites")
 }
@@ -1148,7 +1178,8 @@ model ExpenseRecord {
   payable    PayableRecord? @relation(fields: [payableId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   // 可选：直接冗余存储供应商ID，便于筛选与统计（来源为销售订单/厂家直发）
-  supplierId String? @map("supplier_id") @db.Char(36)
+  supplierId String?  @map("supplier_id") @db.Char(36)
+  supplier   Supplier? @relation(fields: [supplierId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   @@index([expenseType], map: "idx_expense_records_type")
   @@index([expenseDate], map: "idx_expense_records_date")

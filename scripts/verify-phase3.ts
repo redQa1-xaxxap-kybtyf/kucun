@@ -226,10 +226,8 @@ console.log('\n【验证 7】与费用分摊服务集成');
     }),
   ];
 
-  // 使用 Phase 2 的费用分摊服务
-  const expenseAllocation = allocateExpenses(items, 1500, {
-    method: 'by_value',
-  });
+  // 使用 Phase 2 的费用分摊服务（按成交金额分摊）
+  const expenseAllocation = allocateExpenses(items, 1500, 'by_value');
 
   verify(expenseAllocation.results.length === 2, '费用分摊结果数量正确');
   verifyClose(expenseAllocation.allocatedTotal, 1500, '费用分摊总额正确');

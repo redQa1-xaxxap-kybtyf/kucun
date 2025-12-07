@@ -84,13 +84,13 @@ export class RateLimiter {
         limit: this.config.maxRequests,
       };
     } catch (error) {
-      logger.error('速率限制检查错误', {
+      logger.error(
+        'rate-limit',
+        '速率限制检查错误',
         error,
-        context: {
-          key,
-          config: this.config,
-        },
-      });
+        { key },
+        { config: this.config }
+      );
 
       // 发生错误时，为了系统可用性，允许请求通过
       // 但记录错误日志便于排查问题
@@ -118,11 +118,8 @@ export class RateLimiter {
       // 清理所有请求记录
       await this.storage.cleanup(key, now + this.config.windowMs);
     } catch (error) {
-      logger.error('速率限制重置错误', {
-        error,
-        context: {
-          key,
-        },
+      logger.error('rate-limit', '速率限制重置错误', error, {
+        key,
       });
     }
   }
@@ -157,11 +154,8 @@ export class RateLimiter {
         limit: this.config.maxRequests,
       };
     } catch (error) {
-      logger.error('速率限制状态获取错误', {
-        error,
-        context: {
-          key,
-        },
+      logger.error('rate-limit', '速率限制状态获取错误', error, {
+        key,
       });
 
       return {

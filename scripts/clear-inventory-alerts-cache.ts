@@ -121,11 +121,16 @@ async function clearInventoryAlertsCache() {
     console.log(`   ✅ 成功删除 ${deletedCount} 个缓存键\n`);
 
     // 6. 记录日志
-    logger.info('cache', '清除库存预警缓存', {
-      totalKeys: allKeys.length,
-      deletedKeys: deletedCount,
-      patterns,
-    });
+    logger.info(
+      'cache',
+      '清除库存预警缓存',
+      undefined,
+      {
+        totalKeys: allKeys.length,
+        deletedKeys: deletedCount,
+        patterns,
+      }
+    );
 
     console.log('=== 缓存清除完成 ===');
     console.log('');

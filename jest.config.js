@@ -60,8 +60,13 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/coverage/',
+    '<rootDir>/bushu/',
+    '<rootDir>/tests/e2e/',
     '<rootDir>/tests/cache-behavior-test.spec.ts',
   ],
+
+  // 忽略的模块路径（避免 bushu 目录中的 __mocks__ 与主工程重复）
+  modulePathIgnorePatterns: ['<rootDir>/bushu/'],
 
   // Transform忽略模式 - 需要转换faker-js和其他ES模块
   transformIgnorePatterns: ['/node_modules/(?!@faker-js)'],

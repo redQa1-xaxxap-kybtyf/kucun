@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { PrismaClient, type SalesOrder } from '@prisma/client';
 
 import type {

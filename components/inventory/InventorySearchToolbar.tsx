@@ -11,6 +11,7 @@ import { AlertTriangle, Download, Package, Rows } from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
+import type { ActionButton } from '@/components/common/unified-search-bar';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { INVENTORY_FILTER_CONFIG } from '@/lib/configs/filter-configs';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
@@ -245,7 +246,7 @@ function InventoryToolbarView({
     ]
   );
 
-  const actionButtons = React.useMemo(
+  const actionButtons = React.useMemo<ActionButton[]>(
     () =>
       isMobile
         ? []

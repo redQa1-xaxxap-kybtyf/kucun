@@ -20,27 +20,27 @@ export const initialStockRowSchema = z.object({
     .string({
       required_error: '产品编码不能为空',
       invalid_type_error: '产品编码必须为文本',
-    })
+    } as any)
     .trim()
     .min(1, '产品编码不能为空'),
   产品名称: z
     .string({
       invalid_type_error: '产品名称必须为文本',
-    })
+    } as any)
     .trim()
     .optional()
     .or(z.literal('')),
   规格: z
     .string({
       invalid_type_error: '规格必须为文本',
-    })
+    } as any)
     .trim()
     .optional()
     .or(z.literal('')),
   色号: z
     .string({
       invalid_type_error: '色号必须为文本',
-    })
+    } as any)
     .trim()
     .optional()
     .or(z.literal('')),
@@ -48,12 +48,12 @@ export const initialStockRowSchema = z.object({
     .string({
       required_error: '批次号不能为空',
       invalid_type_error: '批次号必须为文本',
-    })
+    } as any)
     .trim()
     .min(1, '批次号不能为空'),
   数量: z
     .union([
-      z.number({ invalid_type_error: '数量必须为数字' }),
+      z.number({ invalid_type_error: '数量必须为数字' } as any),
       z
         .string()
         .trim()
@@ -63,7 +63,7 @@ export const initialStockRowSchema = z.object({
     .refine(val => val > 0, '数量必须大于0'),
   单位成本: z
     .union([
-      z.number({ invalid_type_error: '单位成本必须为数字' }),
+      z.number({ invalid_type_error: '单位成本必须为数字' } as any),
       z
         .string()
         .trim()
@@ -74,21 +74,21 @@ export const initialStockRowSchema = z.object({
   成本来源: z
     .string({
       invalid_type_error: '成本来源必须为文本',
-    })
+    } as any)
     .trim()
     .optional()
     .or(z.literal('')),
   库位: z
     .string({
       invalid_type_error: '库位必须为文本',
-    })
+    } as any)
     .trim()
     .optional()
     .or(z.literal('')),
   备注: z
     .string({
       invalid_type_error: '备注必须为文本',
-    })
+    } as any)
     .trim()
     .optional()
     .or(z.literal('')),

@@ -13,19 +13,23 @@ import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
+  RETURN_PROCESS_TYPE_LABELS,
   type ReturnOrderStatus,
   type ReturnOrderType,
+  type ReturnProcessType,
 } from '@/lib/types/return-order';
 
 interface ReturnOrderSearchToolbarProps {
   searchValue: string;
   statusFilter: ReturnOrderStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
+  processTypeFilter: ReturnProcessType | 'all';
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
   onStatusChange: (value: ReturnOrderStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
+  onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
   onDateRangeChange: (range: DateRangeValue) => void;
   onClearFilters: () => void;
 }
@@ -36,20 +40,24 @@ export const ReturnOrderSearchToolbar =
       searchValue,
       statusFilter,
       typeFilter,
+      processTypeFilter,
       dateRange,
       isSearching,
       onSearch,
       onStatusChange,
       onTypeChange,
+      onProcessTypeChange,
       onDateRangeChange,
       onClearFilters,
     }) => {
       const logic = useReturnOrderToolbarLogic({
         statusFilter,
         typeFilter,
+        processTypeFilter,
         dateRange,
         onStatusChange,
         onTypeChange,
+        onProcessTypeChange,
         onDateRangeChange,
         onClearFilters,
       });
@@ -59,6 +67,7 @@ export const ReturnOrderSearchToolbar =
           searchValue={searchValue}
           statusFilter={statusFilter}
           typeFilter={typeFilter}
+          processTypeFilter={processTypeFilter}
           isSearching={isSearching}
           dateRange={dateRange}
           onSearch={onSearch}
@@ -73,18 +82,22 @@ ReturnOrderSearchToolbar.displayName = 'ReturnOrderSearchToolbar';
 function useReturnOrderToolbarLogic({
   statusFilter,
   typeFilter,
+  processTypeFilter,
   dateRange,
   onStatusChange,
   onTypeChange,
+  onProcessTypeChange,
   onDateRangeChange,
   onClearFilters,
 }: Pick<
   ReturnOrderSearchToolbarProps,
   | 'statusFilter'
   | 'typeFilter'
+  | 'processTypeFilter'
   | 'dateRange'
   | 'onStatusChange'
   | 'onTypeChange'
+  | 'onProcessTypeChange'
   | 'onDateRangeChange'
   | 'onClearFilters'
 >) {
@@ -98,9 +111,13 @@ function useReturnOrderToolbarLogic({
         onTypeChange(
           value && value !== 'all' ? (value as ReturnOrderType) : 'all'
         );
+      } else if (key === 'processType') {
+        onProcessTypeChange(
+          value && value !== 'all' ? (value as ReturnProcessType) : 'all'
+        );
       }
     },
-    [onStatusChange, onTypeChange]
+    [onStatusChange, onTypeChange, onProcessTypeChange]
   );
 
   const toggleStatus = React.useCallback(
@@ -124,6 +141,7 @@ function useReturnOrderToolbarLogic({
   const hasActiveFilters =
     statusFilter !== 'all' ||
     typeFilter !== 'all' ||
+    processTypeFilter !== 'all' ||
     !!dateRange.startDate ||
     !!dateRange.endDate;
 
@@ -140,6 +158,7 @@ type ReturnOrderToolbarViewProps = {
   searchValue: string;
   statusFilter: ReturnOrderStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
+  processTypeFilter: ReturnProcessType | 'all';
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
@@ -154,6 +173,7 @@ function ReturnOrderToolbarView({
   searchValue,
   statusFilter,
   typeFilter,
+  processTypeFilter,
   dateRange,
   isSearching,
   onSearch,
@@ -210,10 +230,23 @@ function ReturnOrderToolbarView({
           ),
           width: 'w-full sm:w-40',
         },
+        {
+          key: 'processType',
+          label: '处理方式',
+          options: Object.entries(RETURN_PROCESS_TYPE_LABELS).map(
+            ([value, label]) => ({
+              label,
+              value,
+            })
+          ),
+          width: 'w-full sm:w-40',
+        },
       ]}
       filterValues={{
         status: statusFilter === 'all' ? 'all' : statusFilter,
         type: typeFilter === 'all' ? 'all' : typeFilter,
+        processType:
+          processTypeFilter === 'all' ? 'all' : processTypeFilter,
       }}
       onFilterChange={handleFilterChange}
       // 日期范围筛选

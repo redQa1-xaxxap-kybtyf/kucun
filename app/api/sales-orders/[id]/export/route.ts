@@ -15,10 +15,10 @@
 
 import { type NextRequest } from 'next/server';
 
+import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/components/types';
 import { getSalesOrderDetailWithPayments } from '@/lib/api/handlers/sales-orders/detail';
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
-import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/components/types';
 
 type ExportMode = 'details' | 'complete';
 
@@ -131,7 +131,7 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
 }
 
 export const POST = withAuth(
-  async (request: NextRequest, { user, params }) => {
+  async (request: NextRequest, { params }) => {
     try {
       const bag = params ? await Promise.resolve(params) : ({ } as any);
       const id = (bag as Record<string, string>).id;
@@ -203,9 +203,6 @@ export const POST = withAuth(
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
       const fileExtension = 'xlsx';
 
-      const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const filenameBase = `销售订单-${detail.orderNumber || id}-${datePart}`;
-
       const timestamp = new Date()
         .toISOString()
         .replace(/[:.]/g, '-')
@@ -233,4 +230,3 @@ export const POST = withAuth(
   },
   { permissions: ['sales:view'] }
 );
-

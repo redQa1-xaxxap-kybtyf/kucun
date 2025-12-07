@@ -289,4 +289,3 @@ export const POST = withAuth(
   { anyPermissions: ['finance:export', 'finance:view'] }
 );
 
-

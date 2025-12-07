@@ -185,13 +185,14 @@ export async function executeInvalidation(
           deferredPatterns.map(pattern => invalidateNamespace(pattern))
         );
       } catch (error) {
-        logger.error('缓存延迟失效执行失败', {
+        logger.error(
+          'cache:invalidation',
+          '缓存延迟失效执行失败',
           error,
-          context: {
-            strategy: strategy.name,
-            patterns: strategy.deferred,
-          },
-        });
+          {
+            deferredPatternCount: strategy.deferred.length,
+          }
+        );
         // 不抛出错误，避免影响后台任务
       }
     }, deferredDelay);
@@ -228,11 +229,8 @@ export async function warmupCache<T>(
       await getOrSetJSON(cacheKey, () => Promise.resolve(data), ttl);
     }
   } catch (error) {
-    logger.error('缓存预热失败', {
-      error,
-      context: {
-        cacheKey,
-      },
+    logger.error('cache:invalidation', '缓存预热失败', error, {
+      cacheKey,
     });
     // 不抛出错误，预热失败不影响业务
   }
@@ -281,12 +279,17 @@ export function createInvalidationWithWarmup<_T>(
         try {
           await warmupFn(options);
         } catch (error) {
-          logger.error('缓存预热执行失败', {
+          logger.error(
+            'cache:invalidation',
+            '缓存预热执行失败',
             error,
-            context: {
-              strategy: strategy.name,
-            },
-          });
+            {
+              // 记录当前失效策略的模式集合，便于排查问题
+              immediatePatternCount: invalidationStrategy.immediate.length,
+              deferredPatternCount: invalidationStrategy.deferred.length,
+              optionalPatternCount: invalidationStrategy.optional.length,
+            }
+          );
         }
       }, 100); // 延迟100ms执行预热
     }

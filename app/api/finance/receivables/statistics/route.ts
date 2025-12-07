@@ -61,9 +61,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       }),
     ]);
 
-    // 计算基础统计数据
-    const totalReceivable = salesOrderStats._sum.totalAmount || 0;
-    const totalReceived = paymentStats._sum.paymentAmount || 0;
+    // 计算基础统计数据（注意 Prisma Decimal 类型统一转为 number）
+    const totalReceivable = Number(salesOrderStats._sum.totalAmount ?? 0);
+    const totalReceived = Number(paymentStats._sum.paymentAmount ?? 0);
     const totalPending = totalReceivable - totalReceived;
     const receivableCount = salesOrderStats._count.id || 0;
     const receivedCount = paymentStats._count.id || 0;
@@ -90,10 +90,10 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     overdueOrders.forEach(order => {
       const paidAmount = order.payments.reduce(
-        (sum, payment) => sum + payment.paymentAmount,
+        (sum, payment) => sum + Number(payment.paymentAmount ?? 0),
         0
       );
-      const remainingAmount = order.totalAmount - paidAmount;
+      const remainingAmount = Number(order.totalAmount ?? 0) - paidAmount;
       if (remainingAmount > 0) {
         totalOverdue += remainingAmount;
         overdueCount++;
@@ -157,17 +157,20 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     // 解析结果构建趋势数据
     const monthlyTrends = monthRanges.map((range, index) => {
-      const salesResult = monthlyResults[index * 2] as {
-        _sum: { totalAmount: number | null };
+      const salesAggregate = monthlyResults[index * 2] as {
+        _sum: { totalAmount: unknown };
       };
-      const paymentResult = monthlyResults[index * 2 + 1] as {
-        _sum: { paymentAmount: number | null };
+      const paymentAggregate = monthlyResults[index * 2 + 1] as {
+        _sum: { paymentAmount: unknown };
       };
+
+      const salesAmount = Number(salesAggregate._sum.totalAmount ?? 0);
+      const receivedAmount = Number(paymentAggregate._sum.paymentAmount ?? 0);
 
       return {
         month: range.month,
-        salesAmount: salesResult._sum.totalAmount || 0,
-        receivedAmount: paymentResult._sum.paymentAmount || 0,
+        salesAmount,
+        receivedAmount,
       };
     });
 
@@ -193,18 +196,17 @@ export const GET = withAuth(async (request: NextRequest) => {
     const customerPaymentStats = customerStats
       .map(customer => {
         const totalAmount = customer.salesOrders.reduce(
-          (sum, order) => sum + order.totalAmount,
+          (sum, order) => sum + Number(order.totalAmount ?? 0),
           0
         );
-        const paidAmount = customer.salesOrders.reduce(
-          (sum, order) =>
-            sum +
-            order.payments.reduce(
-              (paySum, payment) => paySum + payment.paymentAmount,
-              0
-            ),
-          0
-        );
+
+        const paidAmount = customer.salesOrders.reduce((sum, order) => {
+          const orderPaid = order.payments.reduce(
+            (paySum, payment) => paySum + Number(payment.paymentAmount ?? 0),
+            0
+          );
+          return sum + orderPaid;
+        }, 0);
         const pendingAmount = totalAmount - paidAmount;
 
         return {

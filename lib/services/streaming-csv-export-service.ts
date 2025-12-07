@@ -72,7 +72,7 @@ export class CSVTransformStream<
     this.fieldOrder = options.fieldOrder;
   }
 
-  _transform(
+  override _transform(
     chunk: T | T[],
     encoding: string,
     callback: (error?: Error | null, data?: string) => void

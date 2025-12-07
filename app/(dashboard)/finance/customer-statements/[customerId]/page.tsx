@@ -20,8 +20,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useCustomerStatementDetail } from '@/lib/api/customer-statements';
 import { useFinanceExport } from '@/hooks/use-finance-export';
+import { useCustomerStatementDetail } from '@/lib/api/customer-statements';
 import {
   CUSTOMER_STATEMENT_TRANSACTION_TYPES,
   type CustomerStatementTransaction,

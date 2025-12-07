@@ -187,6 +187,25 @@ export async function getSalesOrderDetailWithPayments(id: string) {
           status: true,
         },
       },
+      prepaymentUsages: {
+        select: {
+          id: true,
+          paymentRecordId: true,
+          appliedAmount: true,
+          createdAt: true,
+          paymentRecord: {
+            select: {
+              paymentNumber: true,
+              paymentMethod: true,
+              paymentDate: true,
+              status: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'asc',
+        },
+      },
     },
   });
 
@@ -258,6 +277,23 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     productsMap
   );
 
+  const prepaymentUsages =
+    order.prepaymentUsages?.map(usage => ({
+      id: usage.id,
+      paymentRecordId: usage.paymentRecordId,
+      paymentNumber: usage.paymentRecord.paymentNumber,
+      paymentMethod: usage.paymentRecord.paymentMethod,
+      paymentDate: usage.paymentRecord.paymentDate.toISOString(),
+      paymentStatus: usage.paymentRecord.status,
+      appliedAmount: Number(usage.appliedAmount ?? 0),
+      createdAt: usage.createdAt.toISOString(),
+    })) ?? [];
+
+  const prepaymentTotalApplied = prepaymentUsages.reduce(
+    (sum, u) => sum + u.appliedAmount,
+    0
+  );
+
   return {
     ...mapped,
     paymentRecords: order.payments.map(p => ({
@@ -272,5 +308,7 @@ export async function getSalesOrderDetailWithPayments(id: string) {
     totalRefundAmount: refundTotals.totalRefundAmount,
     refundedAmount: refundTotals.refundedAmount,
     refundPendingAmount: refundTotals.refundPendingAmount,
+    prepaymentUsages,
+    prepaymentTotalApplied,
   };
 }

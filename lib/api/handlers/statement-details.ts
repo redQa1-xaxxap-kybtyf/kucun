@@ -76,7 +76,7 @@ type SupplierWithOrders = Supplier & {
 export async function fetchCustomerWithOrders(
   id: string
 ): Promise<CustomerWithOrders | null> {
-  return (await prisma.customer.findUnique({
+  const customer = await prisma.customer.findUnique({
     where: { id },
     include: {
       salesOrders: {
@@ -124,7 +124,28 @@ export async function fetchCustomerWithOrders(
         },
       },
     },
-  })) as CustomerWithOrders | null;
+  });
+
+  if (!customer) {
+    return null;
+  }
+
+  const mapped: CustomerWithOrders = {
+    ...customer,
+    salesOrders: customer.salesOrders.map(order => ({
+      ...order,
+      payments: order.payments.map(payment => ({
+        ...payment,
+        paymentAmount: Number(payment.paymentAmount ?? 0),
+      })),
+      refundRecords: order.refundRecords.map(refund => ({
+        ...refund,
+        refundAmount: Number(refund.refundAmount ?? 0),
+      })),
+    })),
+  };
+
+  return mapped;
 }
 
 /**
@@ -133,7 +154,7 @@ export async function fetchCustomerWithOrders(
 export async function fetchSupplierWithOrders(
   id: string
 ): Promise<SupplierWithOrders | null> {
-  return await prisma.supplier.findUnique({
+  const supplier = await prisma.supplier.findUnique({
     where: { id },
     include: {
       salesOrders: {
@@ -186,6 +207,31 @@ export async function fetchSupplierWithOrders(
       },
     },
   });
+
+  if (!supplier) {
+    return null;
+  }
+
+  const mapped: SupplierWithOrders = {
+    ...supplier,
+    salesOrders: supplier.salesOrders.map(order => ({
+      ...order,
+      payments: order.payments.map(payment => ({
+        ...payment,
+        paymentAmount: Number(payment.paymentAmount ?? 0),
+      })),
+    })),
+    factoryShipmentOrderItems: supplier.factoryShipmentOrderItems.map(item => ({
+      ...item,
+      totalPrice: Number(item.totalPrice ?? 0),
+      factoryShipmentOrder: {
+        ...item.factoryShipmentOrder,
+        paidAmount: Number(item.factoryShipmentOrder.paidAmount ?? 0),
+      },
+    })),
+  };
+
+  return mapped;
 }
 
 /**

@@ -256,8 +256,8 @@ export function buildOrderBy(
       // 订单更新日期
       updatedAt: { updatedAt: sortOrder },
 
-      // 到期日期
-      dueDate: { dueDate: sortOrder },
+      // 到期日期（目前订单模型没有独立到期日字段，使用创建时间近似排序）
+      dueDate: { createdAt: sortOrder },
 
       // 订单编号
       orderNumber: { orderNumber: sortOrder },
@@ -529,7 +529,7 @@ export function paginateReceivableIds(
 
 export async function fetchReceivableDetails(orderIds: string[]) {
   if (!orderIds.length) return [];
-  return prisma.salesOrder.findMany({
+  const orders = await prisma.salesOrder.findMany({
     where: { id: { in: orderIds } },
     select: {
       id: true,
@@ -551,6 +551,20 @@ export async function fetchReceivableDetails(orderIds: string[]) {
       },
     },
   });
+
+  // 将 Decimal 类型金额转换为 number，便于后续计算
+  return orders.map(order => ({
+    ...order,
+    payments: order.payments.map(payment => ({
+      ...payment,
+      actualPaymentAmount: Number(payment.actualPaymentAmount ?? 0),
+      roundingAmount:
+        payment.roundingAmount === null ||
+        payment.roundingAmount === undefined
+          ? null
+          : Number(payment.roundingAmount),
+    })),
+  }));
 }
 
 export function mapOrdersById<T extends { id: string }>(

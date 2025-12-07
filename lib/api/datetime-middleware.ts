@@ -84,13 +84,15 @@ export function withDateTimeTransform(
       });
     } catch (error) {
       // 如果转换失败，返回原始响应
-      logger.error('时间格式转换中间件错误', {
+      logger.error(
+        'api:datetime-middleware',
+        '时间格式转换中间件错误',
         error,
-        context: {
+        {
           url: request.url,
           method: request.method,
-        },
-      });
+        }
+      );
       return handler(request, ...args);
     }
   };

@@ -1,5 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import {
+  calculateOrderTotal,
+  updatePurchaseOrderInternal,
+} from '@/app/actions/purchase-orders.utils';
 import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
@@ -9,10 +13,6 @@ import {
   updatePurchaseOrderSchema,
   type UpdatePurchaseOrderFormData,
 } from '@/lib/validations/purchase-order-form';
-import {
-  calculateOrderTotal,
-  updatePurchaseOrderInternal,
-} from '@/app/actions/purchase-orders.utils';
 
 type PurchaseOrderParams = { id: string };
 

@@ -148,10 +148,12 @@ export interface ProductSalesRanking {
   productName: string;
   productCode: string;
   colorCode?: string;
-  salesQuantity: number;
-  salesValue: number;
+  totalQuantity: number;
+  totalAmount: number;
+  orderCount: number;
   rank: number;
-  growth: number; // 增长率
+  source?: 'warehouse' | 'factory';
+  growth?: number; // 增长率（可选，后续可扩展）
 }
 
 // 客户销售排行

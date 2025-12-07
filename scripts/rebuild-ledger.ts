@@ -133,7 +133,10 @@ async function collectPaymentRecordEvents(): Promise<LedgerEvent[]> {
   });
 
   return payments
-    .filter(payment => payment.customerId && payment.paymentAmount > 0)
+    .filter(
+      payment =>
+        payment.customerId && Number(payment.paymentAmount ?? 0) > 0
+    )
     .map(payment => ({
       partnerId: payment.customerId,
       partnerRole: 'customer' as PartnerRole,
@@ -142,7 +145,7 @@ async function collectPaymentRecordEvents(): Promise<LedgerEvent[]> {
         payment.paymentType === 'prepayment'
           ? ('prepayment_in' as TransactionType)
           : ('payment_in' as TransactionType),
-      amount: payment.paymentAmount,
+      amount: Number(payment.paymentAmount ?? 0),
       referenceId: payment.id,
       referenceNumber: payment.paymentNumber,
       description: payment.paymentType === 'prepayment' ? '预收款' : '订单收款',
@@ -172,13 +175,16 @@ async function collectRefundRecordEvents(): Promise<LedgerEvent[]> {
   });
 
   return refunds
-    .filter(refund => refund.customerId && refund.refundAmount > 0)
+    .filter(
+      refund =>
+        refund.customerId && Number(refund.refundAmount ?? 0) > 0
+    )
     .map(refund => ({
       partnerId: refund.customerId,
       partnerRole: 'customer' as PartnerRole,
       entityType: 'customer' as StatementType,
       transactionType: 'refund' as TransactionType,
-      amount: refund.refundAmount,
+      amount: Number(refund.refundAmount ?? 0),
       referenceId: refund.id,
       referenceNumber: refund.refundNumber,
       description: `退款 - ${refund.reason ?? '销售退款'}`,
@@ -219,7 +225,7 @@ async function collectPayableRecordEvents(): Promise<LedgerEvent[]> {
     partnerRole: 'supplier' as PartnerRole,
     entityType: 'supplier' as StatementType,
     transactionType: 'purchase' as TransactionType,
-    amount: payable.payableAmount,
+    amount: Number(payable.payableAmount ?? 0),
     referenceId: payable.id,
     referenceNumber: payable.payableNumber ?? payable.sourceNumber ?? undefined,
     description: `采购账款 - ${payable.sourceType ?? '其他'}`,
@@ -250,13 +256,16 @@ async function collectPaymentOutRecordEvents(): Promise<LedgerEvent[]> {
   });
 
   return payments
-    .filter(payment => payment.supplierId && payment.paymentAmount > 0)
+    .filter(
+      payment =>
+        payment.supplierId && Number(payment.paymentAmount ?? 0) > 0
+    )
     .map(payment => ({
       partnerId: payment.supplierId,
       partnerRole: 'supplier' as PartnerRole,
       entityType: 'supplier' as StatementType,
       transactionType: 'payment_out' as TransactionType,
-      amount: payment.paymentAmount,
+      amount: Number(payment.paymentAmount ?? 0),
       referenceId: payment.id,
       referenceNumber: payment.paymentNumber,
       description: '供应商付款',

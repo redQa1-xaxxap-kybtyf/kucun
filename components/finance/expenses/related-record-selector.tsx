@@ -179,7 +179,8 @@ function getQueryKey(
     case 'sales_order':
       return queryKeys.salesOrders.list(baseParams);
     default:
-      return ['related-records', relatedType, searchTerm] as const;
+      // 理论上不会走到这里，兜底使用财务费用列表的前缀，避免 QueryKey 类型不匹配
+      return ['finance', 'related-records', relatedType, searchTerm] as const;
   }
 }
 

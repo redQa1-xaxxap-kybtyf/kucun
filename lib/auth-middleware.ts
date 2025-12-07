@@ -210,12 +210,12 @@ export async function authMiddleware(request: NextRequest) {
 
     return response;
   } catch (error) {
-    logger.error('认证中间件错误', {
+    // 在 Edge Runtime 中避免引入 Prisma 等 Node 专用依赖，这里仅做简单日志输出
+    // eslint-disable-next-line no-console
+    console.error('auth-middleware error', {
       error,
-      context: {
-        url: request.url,
-        method: request.method,
-      },
+      url: request.url,
+      method: request.method,
     });
 
     // 认证错误时重定向到登录页

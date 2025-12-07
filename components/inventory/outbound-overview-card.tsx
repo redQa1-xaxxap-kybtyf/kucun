@@ -99,9 +99,7 @@ export function OutboundOverviewCard({
       label: '出库数量',
       value: (() => {
         const ppu =
-          record.batchSpecification?.piecesPerUnit ??
-          record.product?.piecesPerUnit ??
-          0;
+          record.piecesPerUnit ?? record.product?.piecesPerUnit ?? 0;
         return ppu > 0
           ? formatPieceSummary(record.quantity, ppu, { fallbackUnit: '片' })
           : `${formatNumber(record.quantity)}片`;
@@ -130,9 +128,7 @@ export function OutboundOverviewCard({
       value: (() => {
         if (record.inventoryBalance === undefined) return '—';
         const ppu =
-          record.batchSpecification?.piecesPerUnit ??
-          record.product?.piecesPerUnit ??
-          0;
+          record.piecesPerUnit ?? record.product?.piecesPerUnit ?? 0;
         return ppu > 0
           ? formatPieceSummary(record.inventoryBalance, ppu, {
               fallbackUnit: '片',

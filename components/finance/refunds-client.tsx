@@ -179,11 +179,11 @@ export function RefundsClient({
                   />
                 </span>
               )}
-              {refund.returnOrder?.orderNumber && (
+              {refund.returnOrder?.returnOrderNumber && (
                 <span className="flex items-center gap-1">
                   <span className="text-muted-foreground text-[11px]">退</span>
                   <CopyableText
-                    text={refund.returnOrder.orderNumber}
+                    text={refund.returnOrder.returnOrderNumber}
                     className="font-mono"
                   />
                 </span>

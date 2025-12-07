@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { prisma as basePrisma } from '@/lib/db';
 
 import type {

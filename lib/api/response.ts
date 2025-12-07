@@ -46,13 +46,13 @@ export function errorResponse(
   };
 
   if (details) {
-    logger.error('API错误响应', {
+    logger.error(
+      'api:response',
+      'API错误响应',
       error,
-      context: {
-        details,
-        status,
-      },
-    });
+      { status },
+      { details }
+    );
   }
 
   return NextResponse.json(response, { status });

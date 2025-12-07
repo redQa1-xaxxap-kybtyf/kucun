@@ -42,6 +42,7 @@ import type {
   SystemLogFilters,
   SystemLogListResponse,
 } from '@/lib/types/settings';
+import { csrfFetch } from '@/lib/utils/csrf';
 
 export default function LogsSettingsPage() {
   const router = useRouter();

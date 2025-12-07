@@ -24,7 +24,8 @@ export function useInboundForm(options?: UseInboundFormOptions) {
 
   // 表单配置
   const form = useForm<InboundFormData, any, InboundFormData>({
-    resolver: standardSchemaResolver(inboundFormSchema),
+    // standard-schema 的 TS 类型与我们基于 Zod 的 schema 定义存在差异，这里通过 any 适配。
+    resolver: (standardSchemaResolver as any)(inboundFormSchema) as any,
     mode: 'onBlur', // ✅ 用户离开字段时验证
     reValidateMode: 'onChange', // ✅ 提交后实时验证
     criteriaMode: 'all', // ✅ 显示所有错误

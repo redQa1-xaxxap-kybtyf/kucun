@@ -219,7 +219,8 @@ function serializeRefundRecords(
     processedAmount: Number(refund.processedAmount),
     remainingAmount: Number(refund.remainingAmount),
     // ✅ P1修复: 统一日期格式为 YYYY-MM-DD
-    refundDate: formatDate(refund.refundDate),
+    // refundDate 在列表类型中是必填字符串, 无日期时使用空字符串占位
+    refundDate: formatDate(refund.refundDate) ?? '',
     processedDate: formatDate(refund.processedDate),
     status: refund.status as RefundStatus,
     reason: refund.reason ?? null,

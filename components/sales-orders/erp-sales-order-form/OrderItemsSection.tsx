@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { ToastProps } from '@/components/ui/toast';
+import type { Toast } from '@/components/ui/use-toast';
 import {
   getLatestPrice,
   type CustomerProductPrice,
@@ -45,7 +45,8 @@ interface OrderItemsSectionProps {
   supplierId?: string | null;
   priceHistory?: CustomerProductPrice[];
   priceType: PriceType;
-  toast: (props: ToastProps) => void;
+  // 与 useToast().toast 保持一致的参数类型（支持 title / description 等）
+  toast: (props: Toast) => void;
 }
 
 function populateProductSelection({
@@ -65,7 +66,7 @@ function populateProductSelection({
   selectedCustomerId?: string | null;
   priceHistory?: CustomerProductPrice[];
   priceType: PriceType;
-  toast: (props: ToastProps) => void;
+  toast: (props: Toast) => void;
 }) {
   form.setValue(`items.${index}.specification`, product.specification || '');
   form.setValue(

@@ -23,7 +23,7 @@ import type {
   SystemLogLevel,
   SystemLogType,
 } from '@/lib/types/settings';
-import { cn } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 
 interface SystemLogsTableProps {
   /** 日志列表 */

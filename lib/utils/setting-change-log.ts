@@ -39,13 +39,15 @@ export async function logSettingChange(
       },
     });
   } catch (error) {
-    logger.error('记录设置变更日志失败', {
+    logger.error(
+      'settings:change-log',
+      '记录设置变更日志失败',
       error,
-      context: {
+      {
         settingKey,
         changedBy,
-      },
-    });
+      }
+    );
     // 不抛出错误,避免影响主流程
   }
 }
@@ -81,13 +83,15 @@ export async function logSettingChanges(
       })),
     });
   } catch (error) {
-    logger.error('批量记录设置变更日志失败', {
+    logger.error(
+      'settings:change-log',
+      '批量记录设置变更日志失败',
       error,
-      context: {
+      {
         changeCount: changes.length,
         changedBy,
-      },
-    });
+      }
+    );
     // 不抛出错误,避免影响主流程
   }
 }

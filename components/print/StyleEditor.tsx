@@ -114,7 +114,7 @@ export function StyleEditor({
   documentType,
   initialConfig,
   onSave,
-  _previewData,
+  previewData: _previewData,
 }: StyleEditorProps) {
   // 当前配置状态
   const [config, setConfig] = useState<PrintStyleConfig>(

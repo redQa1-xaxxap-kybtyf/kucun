@@ -2,16 +2,15 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 import { RelativeTime } from '@/components/common/relative-time';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils/format';
 
 import {
-    STATUS_LABEL_MAP,
-    TYPE_LABEL_MAP,
-    type AccountStatementItem,
+  STATUS_LABEL_MAP,
+  TYPE_LABEL_MAP,
+  type AccountStatementItem,
 } from './statements-types';
 
 type StatementCardItemProps = {

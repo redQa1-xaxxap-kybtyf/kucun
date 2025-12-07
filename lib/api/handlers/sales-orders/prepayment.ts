@@ -10,9 +10,11 @@ const fetchAvailablePrepayments = async (tx: Tx, customerId: string) => {
     orderBy: { paymentDate: 'asc' },
   });
 
-  return records.filter(
-    record => record.paymentAmount - record.appliedAmount > 0
-  );
+  return records.filter(record => {
+    const paymentAmount = Number(record.paymentAmount ?? 0);
+    const appliedAmount = Number(record.appliedAmount ?? 0);
+    return paymentAmount - appliedAmount > 0;
+  });
 };
 
 /**
@@ -35,7 +37,8 @@ const fetchAvailablePrepayments = async (tx: Tx, customerId: string) => {
 const allocatePrepayments = async (
   tx: Tx,
   prepayments: Awaited<ReturnType<typeof fetchAvailablePrepayments>>,
-  targetAmount: number
+  targetAmount: number,
+  salesOrderId: string
 ) => {
   // ========================================
   // 第一阶段: 计算分配方案 (纯内存计算,无数据库操作)
@@ -55,19 +58,22 @@ const allocatePrepayments = async (
       break;
     }
 
-    const availableAmount = prepayment.paymentAmount - prepayment.appliedAmount;
+    const paymentAmount = Number(prepayment.paymentAmount ?? 0);
+    const appliedAmount = Number(prepayment.appliedAmount ?? 0);
+
+    const availableAmount = paymentAmount - appliedAmount;
     const applyAmount = Math.min(availableAmount, remainingAmount);
-    const newAppliedAmount = prepayment.appliedAmount + applyAmount;
+    const newAppliedAmount = appliedAmount + applyAmount;
     const newStatus =
-      newAppliedAmount >= prepayment.paymentAmount ? 'applied' : 'confirmed';
+      newAppliedAmount >= paymentAmount ? 'applied' : 'confirmed';
 
     allocationPlan.push({
       id: prepayment.id,
-      currentAppliedAmount: prepayment.appliedAmount,
+      currentAppliedAmount: appliedAmount,
       applyAmount,
       newAppliedAmount,
       newStatus,
-      paymentAmount: prepayment.paymentAmount,
+      paymentAmount,
     });
 
     remainingAmount -= applyAmount;
@@ -115,6 +121,15 @@ const allocatePrepayments = async (
       data: { status: plan.newStatus },
     });
 
+    // 步骤3: 记录本次预收款在当前订单上的冲抵明细
+    await tx.prepaymentUsage.create({
+      data: {
+        paymentRecordId: plan.id,
+        salesOrderId,
+        appliedAmount: plan.applyAmount,
+      },
+    });
+
     return {
       id: plan.id,
       amount: plan.applyAmount,
@@ -133,6 +148,7 @@ const allocatePrepayments = async (
 export const applyPrepaymentToOrder = async (
   tx: Tx,
   customerId: string,
+  salesOrderId: string,
   orderTotal: number,
   specifiedAmount?: number
 ) => {
@@ -155,5 +171,5 @@ export const applyPrepaymentToOrder = async (
     };
   }
 
-  return allocatePrepayments(tx, prepayments, targetAmount);
+  return allocatePrepayments(tx, prepayments, targetAmount, salesOrderId);
 };

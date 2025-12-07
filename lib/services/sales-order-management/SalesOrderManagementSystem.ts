@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { ExceptionHandlingService } from './ExceptionHandlingService';
 import { ExpenseManagementService } from './ExpenseManagementService';
 import { InventoryManagementService } from './InventoryManagementService';

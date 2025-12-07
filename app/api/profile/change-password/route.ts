@@ -58,6 +58,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     return errorResponse('用户不存在', 404);
   }
 
+  if (!body) {
+    return errorResponse('请求体为空', 400);
+  }
+
   // 3. 校验当前密码
   const isCurrentPasswordValid = await bcrypt.compare(
     body.currentPassword,

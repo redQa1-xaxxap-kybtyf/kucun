@@ -10,6 +10,7 @@ import type { Prisma } from '@prisma/client';
 import { ApiError, handlePrismaError, isPrismaError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { createOrMergePayableFromExpense } from '@/lib/services/expense-payable-integration';
 import {
   EXPENSE_TYPE_LABELS,
@@ -489,7 +490,7 @@ export async function approveExpenseRecord(
           tx,
         });
       } catch (error) {
-        logger.warn(
+        logger.error(
           'expense-service',
           '审批后创建应付款失败，但不影响审批结果',
           error,

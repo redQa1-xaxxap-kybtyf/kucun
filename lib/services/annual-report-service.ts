@@ -10,10 +10,14 @@ import type {
   AnnualReport,
   AnnualSummary,
   ExpenseDistribution,
+  InventoryTurnover,
   MonthlyTrendData,
   QuarterlyData,
 } from '@/lib/types/report';
-import { getExpenseTypeName } from '@/lib/utils/expense-type-helpers';
+import {
+  getExpenseTypeName,
+  isValidExpenseType,
+} from '@/lib/utils/expense-type-helpers';
 
 import {
   buildExpenseWhere,
@@ -285,9 +289,13 @@ async function getExpenseDistribution(
     const amount = item._sum.expenseAmount || 0;
     const percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
 
+    const expenseType = isValidExpenseType(item.expenseType)
+      ? item.expenseType
+      : 'other';
+
     return {
-      type: item.expenseType,
-      typeName: getExpenseTypeName(item.expenseType),
+      type: expenseType,
+      typeName: getExpenseTypeName(expenseType),
       amount,
       percentage,
       count: item._count.id,

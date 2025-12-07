@@ -34,21 +34,6 @@ type CustomerWithSalesOrders = Prisma.CustomerGetPayload<{
   };
 }>;
 
-// 定义SalesOrder查询返回的类型(包含payments和refundRecords关系)
-type SalesOrderWithPaymentsAndRefunds = Prisma.SalesOrderGetPayload<{
-  select: {
-    customerId: true;
-    totalAmount: true;
-    createdAt: true;
-    payments: {
-      select: { paymentAmount: true };
-    };
-    refundRecords: {
-      select: { refundAmount: true };
-    };
-  };
-}>;
-
 /**
  * 客户对账单汇总信息
  */
@@ -122,7 +107,19 @@ export async function generateCustomerStatementsOptimized(
 
   // 聚合统计
   return customers.map(customer => {
-    const orders = customer.salesOrders as SalesOrderWithRelations[];
+    const orders: SalesOrderWithRelations[] = customer.salesOrders.map(
+      order => ({
+        id: order.id,
+        totalAmount: Number(order.totalAmount ?? 0),
+        createdAt: order.createdAt,
+        payments: order.payments.map(p => ({
+          paymentAmount: Number(p.paymentAmount ?? 0),
+        })),
+        refundRecords: order.refundRecords.map(r => ({
+          refundAmount: Number(r.refundAmount ?? 0),
+        })),
+      })
+    );
 
     const totalOrders = orders.length;
     const totalAmount = orders.reduce<number>(
@@ -207,7 +204,7 @@ async function batchCalculateOverdue(
 
   if (entityType === 'customer') {
     // 批量查询所有客户的逾期订单
-    const overdueOrders = (await prisma.salesOrder.findMany({
+    const overdueOrders = await prisma.salesOrder.findMany({
       where: {
         customerId: { in: entityIds },
         status: { in: ['confirmed', 'shipped', 'completed'] },
@@ -225,21 +222,21 @@ async function batchCalculateOverdue(
           select: { refundAmount: true },
         },
       },
-    })) as SalesOrderWithPaymentsAndRefunds[];
+    });
 
     // 按客户分组计算逾期金额
     for (const order of overdueOrders) {
       const paidAmount = order.payments.reduce(
-        (sum: number, p: { paymentAmount: number }) => sum + p.paymentAmount,
+        (sum, p) => sum + Number(p.paymentAmount ?? 0),
         0
       );
       const refundAmount = order.refundRecords.reduce(
-        (sum: number, r: { refundAmount: number }) => sum + r.refundAmount,
+        (sum, r) => sum + Number(r.refundAmount ?? 0),
         0
       );
       const overdue = Math.max(
         0,
-        order.totalAmount - paidAmount - refundAmount
+        Number(order.totalAmount ?? 0) - paidAmount - refundAmount
       );
 
       const currentOverdue = overdueMap.get(order.customerId) || 0;
@@ -325,7 +322,11 @@ export async function generateSupplierStatementsOptimized(
     );
     const transferPaid = transferOrders.reduce(
       (sum, o) =>
-        sum + o.payments.reduce((pSum, p) => pSum + p.paymentAmount, 0),
+        sum +
+        o.payments.reduce(
+          (pSum, p) => pSum + Number(p.paymentAmount ?? 0),
+          0
+        ),
       0
     );
 
@@ -404,8 +405,8 @@ export async function getFinancialOverviewOptimized(): Promise<{
   };
 }> {
   // 并发查询应收和应付
-  const [receivablesData, payablesData] = await Promise.all([
-    // 应收账款
+  const [receivablesRaw, payablesData] = await Promise.all([
+    // 应收账款（原始数据，包含 Decimal）
     prisma.salesOrder.findMany({
       where: {
         status: { in: ['confirmed', 'shipped', 'completed'] },
@@ -422,7 +423,7 @@ export async function getFinancialOverviewOptimized(): Promise<{
           select: { refundAmount: true },
         },
       },
-    }) as Promise<SalesOrderWithPaymentsAndRefunds[]>,
+    }),
 
     // 应付账款
     prisma.payableRecord.findMany({
@@ -436,6 +437,24 @@ export async function getFinancialOverviewOptimized(): Promise<{
       },
     }),
   ]);
+
+  type ReceivableOrder = {
+    totalAmount: number;
+    createdAt: Date;
+    payments: { paymentAmount: number }[];
+    refundRecords: { refundAmount: number }[];
+  };
+
+  const receivablesData: ReceivableOrder[] = receivablesRaw.map(order => ({
+    totalAmount: Number(order.totalAmount ?? 0),
+    createdAt: order.createdAt,
+    payments: order.payments.map(p => ({
+      paymentAmount: Number(p.paymentAmount ?? 0),
+    })),
+    refundRecords: order.refundRecords.map(r => ({
+      refundAmount: Number(r.refundAmount ?? 0),
+    })),
+  }));
 
   // 计算应收
   const overdueDate = new Date();

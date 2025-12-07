@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import { getServerSession } from 'next-auth';
 import { Inter } from 'next/font/google';
+import { getServerSession } from 'next-auth';
 
 import ChunkLoadRecovery from '@/components/providers/chunkload-recovery';
 import QueryProvider from '@/components/providers/query-provider';

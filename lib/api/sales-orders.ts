@@ -444,7 +444,12 @@ export async function getSalesOrderPrintData(id: string): Promise<
  * 创建销售订单 Mutation Hook
  */
 export function useCreateSalesOrder(
-  options?: UseMutationOptions<SalesOrder, Error, SalesOrderCreateInput>
+  options?: UseMutationOptions<
+    SalesOrder,
+    Error,
+    SalesOrderCreateInput,
+    unknown
+  >
 ) {
   const queryClient = useQueryClient();
 
@@ -489,7 +494,8 @@ export function useUpdateSalesOrder(
   options?: UseMutationOptions<
     ApiResponse<SalesOrder>,
     Error,
-    SalesOrderUpdateInput
+    SalesOrderUpdateInput,
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -536,7 +542,12 @@ export function useUpdateSalesOrder(
  * 删除销售订单 Mutation Hook
  */
 export function useDeleteSalesOrder(
-  options?: UseMutationOptions<ApiResponse<{ id: string }>, Error, string>
+  options?: UseMutationOptions<
+    ApiResponse<{ id: string }>,
+    Error,
+    string,
+    unknown
+  >
 ) {
   const queryClient = useQueryClient();
 
@@ -591,7 +602,8 @@ export function useUpdateSalesOrderStatus(
       status: SalesOrderStatus;
       remarks?: string;
       idempotencyKey: string;
-    }
+    },
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -601,7 +613,7 @@ export function useUpdateSalesOrderStatus(
     // 先应用外部传入的配置（可能包含 onError、retry 等）
     ...options,
     // 统一的成功处理：先做内部缓存刷新，再调用外部传入的 onSuccess
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       const { id } = variables;
 
       // ✅ 立即刷新当前模块缓存（详情、列表、统计）
@@ -636,7 +648,7 @@ export function useUpdateSalesOrderStatus(
       });
 
       // 调用外部自定义 onSuccess（如果有）
-      options?.onSuccess?.(data, variables, context);
+      options?.onSuccess?.(data, variables, onMutateResult, context);
     },
     // 其它配置（onError / onSettled / retry 等）保持由外部传入
   });
@@ -646,7 +658,12 @@ export function useUpdateSalesOrderStatus(
  * 复制销售订单 Mutation Hook
  */
 export function useCopySalesOrder(
-  options?: UseMutationOptions<ApiResponse<SalesOrder>, Error, string>
+  options?: UseMutationOptions<
+    ApiResponse<SalesOrder>,
+    Error,
+    string,
+    unknown
+  >
 ) {
   const queryClient = useQueryClient();
 
@@ -691,7 +708,8 @@ export function useBatchUpdateSalesOrderStatus(
   options?: UseMutationOptions<
     ApiResponse<{ updated: number; failed: string[] }>,
     Error,
-    { ids: string[]; status: SalesOrderStatus; remarks?: string }
+    { ids: string[]; status: SalesOrderStatus; remarks?: string },
+    unknown
   >
 ) {
   const queryClient = useQueryClient();
@@ -738,7 +756,8 @@ export function useBatchDeleteSalesOrders(
   options?: UseMutationOptions<
     ApiResponse<{ deleted: number; failed: string[] }>,
     Error,
-    string[]
+    string[],
+    unknown
   >
 ) {
   const queryClient = useQueryClient();

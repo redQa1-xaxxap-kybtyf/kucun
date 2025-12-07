@@ -63,13 +63,16 @@ export class RefundProcessLock {
       this.acquired = true;
       return true;
     } catch (error) {
-      logger.error('获取退款处理锁失败', {
+      logger.error(
+        'idempotency:refund',
+        '获取退款处理锁失败',
         error,
-        context: {
-          key: this.key,
-          ttl: this.ttl,
-        },
-      });
+        {
+          refundId: this.refundId,
+          operatorId: this.operatorId,
+          lockKey: this.lockKey,
+        }
+      );
       return false;
     }
   }

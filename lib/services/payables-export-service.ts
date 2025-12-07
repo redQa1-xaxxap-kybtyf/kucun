@@ -7,7 +7,7 @@
  * - 调用通用导出服务
  */
 
-import type { Payable } from '@prisma/client';
+import type { PayableRecord } from '@prisma/client';
 
 import { CSVExportService } from './csv-export-service';
 import { EnhancedExcelExportService } from './enhanced-excel-export-service';
@@ -43,7 +43,7 @@ export interface PayableExportData extends Record<string, unknown> {
 /**
  * 扩展的应付款数据（包含关联数据）
  */
-export interface PayableWithRelations extends Payable {
+export interface PayableWithRelations extends PayableRecord {
   supplier?: {
     name: string;
   } | null;
@@ -91,7 +91,7 @@ export class PayablesExportService {
       剩余金额: item.remainingAmount,
       付款状态: STATUS_MAP[item.status] || item.status,
       来源类型: SOURCE_TYPE_MAP[item.sourceType] || item.sourceType,
-      来源单号: item.sourceOrderNumber || '',
+      来源单号: item.sourceNumber || '',
       到期日期: item.dueDate?.toISOString() || '',
       创建时间: item.createdAt?.toISOString() || '',
       备注: item.remarks || '',

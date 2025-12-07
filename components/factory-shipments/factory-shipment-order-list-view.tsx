@@ -276,7 +276,9 @@ function FactoryShipmentOrderTable({
                       运输：
                     </span>
                     <Badge
-                      variant={getShippingQueryStatusVariant(order)}
+                      variant={getShippingQueryStatusVariant(
+                        order.latestShippingStatus || ''
+                      )}
                       className="text-[10px]"
                     >
                       {order.latestShippingStatus || '未查询'}

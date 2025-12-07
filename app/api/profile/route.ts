@@ -88,7 +88,7 @@ export const PUT = withAuth(async (request: NextRequest, { user }) => {
   } catch (error) {
     const message =
       error instanceof z.ZodError
-        ? error.errors[0]?.message || '输入数据格式不正确'
+        ? error.issues[0]?.message || '输入数据格式不正确'
         : '输入数据格式不正确';
     return errorResponse(message, 400);
   }
