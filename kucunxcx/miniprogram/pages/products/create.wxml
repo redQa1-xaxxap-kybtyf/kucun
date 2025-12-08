@@ -1,0 +1,185 @@
+<!-- 产品创建页 -->
+<view class="container">
+  <view class="form-card">
+    <!-- 缩略图（列表封面） -->
+    <view class="form-item">
+      <text class="label">缩略图</text>
+      <view class="thumb-row">
+        <image
+          wx:if="{{ thumbnailUrl }}"
+          class="thumb-image"
+          src="{{ thumbnailUrl }}"
+          mode="aspectFill"
+          bindtap="onPreviewThumbnail"
+        />
+        <view
+          wx:else
+          class="thumb-placeholder"
+          bindtap="onChooseThumbnail"
+        >
+          <text class="thumb-plus">＋</text>
+          <text class="thumb-text">上传缩略图</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 主图（多张，用于产品轮播） -->
+    <view class="form-item">
+      <text class="label">主图（可多张）</text>
+      <view class="image-grid">
+        <view
+          class="image-item"
+          wx:for="{{ mainImages }}"
+          wx:key="*this"
+          wx:for-item="url"
+          wx:for-index="index"
+        >
+          <image
+            class="image-thumb"
+            src="{{ url }}"
+            mode="aspectFill"
+            bindtap="onPreviewMainImage"
+            data-index="{{ index }}"
+          />
+          <view
+            class="image-remove"
+            bindtap="onRemoveMainImage"
+            data-index="{{ index }}"
+          >
+            ×
+          </view>
+        </view>
+
+        <!-- 添加主图按钮 -->
+        <view class="image-add" bindtap="onAddMainImage">
+          <text class="thumb-plus">＋</text>
+          <text class="thumb-text">添加主图</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 详情图（效果图，多张） -->
+    <view class="form-item">
+      <text class="label">详情图</text>
+      <view class="image-grid">
+        <view
+          class="image-item"
+          wx:for="{{ effectImages }}"
+          wx:key="*this"
+          wx:for-item="url"
+          wx:for-index="index"
+        >
+          <image
+            class="image-thumb"
+            src="{{ url }}"
+            mode="aspectFill"
+            bindtap="onPreviewEffectImage"
+            data-index="{{ index }}"
+          />
+          <view
+            class="image-remove"
+            bindtap="onRemoveEffectImage"
+            data-index="{{ index }}"
+          >
+            ×
+          </view>
+        </view>
+
+        <!-- 添加详情图按钮 -->
+        <view class="image-add" bindtap="onAddEffectImage">
+          <text class="thumb-plus">＋</text>
+          <text class="thumb-text">添加详情图</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 产品编码 -->
+    <view class="form-item">
+      <text class="label">产品编码</text>
+      <input
+        class="input"
+        placeholder="请输入产品编码（仅字母、数字、-、_）"
+        placeholder-class="input-placeholder"
+        value="{{ code }}"
+        bindinput="onCodeInput"
+      />
+    </view>
+
+    <!-- 产品名称 -->
+    <view class="form-item">
+      <text class="label">产品名称</text>
+      <input
+        class="input"
+        placeholder="请输入产品名称"
+        placeholder-class="input-placeholder"
+        value="{{ name }}"
+        bindinput="onNameInput"
+      />
+    </view>
+
+    <!-- 规格 -->
+    <view class="form-item">
+      <text class="label">规格</text>
+      <input
+        class="input"
+        placeholder="例如：800x800，300x600 等"
+        placeholder-class="input-placeholder"
+        value="{{ specification }}"
+        bindinput="onSpecInput"
+      />
+    </view>
+
+    <!-- 分类选择 -->
+    <view class="form-item">
+      <text class="label">分类</text>
+      <picker
+        mode="selector"
+        range="{{ categories }}"
+        range-key="name"
+        bindchange="onCategoryChange"
+      >
+        <view class="picker-value">
+          {{ categoryName || '请选择产品分类' }}
+        </view>
+      </picker>
+    </view>
+
+    <!-- 厚度 -->
+    <view class="form-item">
+      <text class="label">厚度 (mm)</text>
+      <input
+        class="input"
+        type="digit"
+        placeholder="可选，例如：9.5"
+        placeholder-class="input-placeholder"
+        value="{{ thickness }}"
+        bindinput="onThicknessInput"
+      />
+    </view>
+
+    <!-- 描述 -->
+    <view class="form-item">
+      <text class="label">产品描述</text>
+      <textarea
+        class="textarea"
+        placeholder="可选，用于补充说明（最多1000字）"
+        placeholder-class="input-placeholder"
+        value="{{ description }}"
+        bindinput="onDescInput"
+      />
+    </view>
+  </view>
+
+  <!-- 提交按钮 -->
+  <view class="submit-bar">
+    <button
+      class="submit-btn"
+      type="primary"
+      loading="{{ submitting }}"
+      disabled="{{ submitting }}"
+      bindtap="onSubmit"
+    >
+      保存产品
+    </button>
+  </view>
+</view>

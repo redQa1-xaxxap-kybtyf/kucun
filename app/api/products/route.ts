@@ -55,34 +55,52 @@ function parseProductQueryParams(
 }
 
 /**
- * 获取产品列表 API
- * 复用 products-server.ts 逻辑，避免代码重复
- * 遵循 Context 7 规范：函数不超过 50 行
+ * 实际处理产品列表查询的函数（不做认证）
  */
-export const GET = withAuth(
-  async (request: NextRequest) => {
-    try {
-      // 解析查询参数
-      const params = parseProductQueryParams(request.nextUrl.searchParams);
+async function handleGetProducts(request: NextRequest) {
+  try {
+    // 解析查询参数
+    const params = parseProductQueryParams(request.nextUrl.searchParams);
 
-      // 调用服务器端函数（复用缓存和逻辑）
-      const data = await getProductsForServer(params);
+    // 调用服务器端函数（复用缓存和逻辑）
+    const data = await getProductsForServer(params);
 
-      // 返回成功响应
-      return successResponse(data);
-    } catch (error) {
-      logger.error('products', '产品列表查询失败', error);
-      return NextResponse.json(
-        {
-          success: false,
-          error: error instanceof Error ? error.message : '获取产品列表失败',
-        },
-        { status: 500 }
-      );
-    }
-  },
-  { permissions: ['products:view'] }
-);
+    // 返回成功响应
+    return successResponse(data);
+  } catch (error) {
+    logger.error('products', '产品列表查询失败', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '获取产品列表失败',
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * 获取产品列表 API
+ *
+ * - 小程序游客（请求头带 x-client-from=mini-program）直接放行，不需要登录
+ * - 其他客户端依然通过 withAuth 做权限校验
+ */
+export const GET = async (request: NextRequest) => {
+  const clientFrom = request.headers.get('x-client-from');
+
+  // 小程序游客访问：跳过认证，直接返回数据
+  if (clientFrom === 'mini-program') {
+    return handleGetProducts(request);
+  }
+
+  // 其他客户端：保持原有权限校验逻辑
+  const authedGet = withAuth(
+    async (req: NextRequest) => handleGetProducts(req),
+    { permissions: ['products:view'] }
+  );
+
+  return authedGet(request);
+};
 
 // 创建产品
 export const POST = withAuth(

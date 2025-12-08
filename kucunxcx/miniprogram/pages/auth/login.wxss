@@ -1,0 +1,143 @@
+/* 登录页面样式 - 2025 Hyper Minimal */
+.login-container {
+  min-height: 100vh;
+  background-color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 0 64rpx;
+  justify-content: center;
+  padding-bottom: 240rpx; /* Push content up slightly for visual center */
+}
+
+/* 头部 Header */
+.header {
+  margin-bottom: 80rpx;
+}
+
+.title {
+  font-size: 64rpx;
+  font-weight: 800;
+  color: #1d1d1f;
+  margin-bottom: 16rpx;
+  display: block;
+  letter-spacing: -2rpx;
+  text-align: left;
+}
+
+.subtitle {
+  font-size: 32rpx;
+  color: #86868b;
+  font-weight: 500;
+  text-align: left;
+}
+
+/* 表单容器 */
+.form-container {
+  width: 100%;
+}
+
+.input-group {
+  margin-bottom: 32rpx;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #F7F8FA;
+  border-radius: 36rpx;
+  padding: 0 40rpx;
+  height: 112rpx;
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  border: 4rpx solid transparent; /* Visual weight for focus state */
+}
+
+.input-wrapper:focus-within {
+  background: #FFFFFF;
+  border-color: #0071E3;
+  box-shadow: 0 8rpx 24rpx rgba(0, 113, 227, 0.12);
+}
+
+.input-field {
+  flex: 1;
+  height: 100%;
+  font-size: 32rpx; /* Comfortable reading size */
+  color: #1d1d1f;
+  background: transparent;
+  font-weight: 500;
+}
+
+.input-field::placeholder {
+  color: #A1A1A6;
+  font-weight: 400;
+}
+
+/* 显隐密码图标 */
+.toggle-password {
+  font-size: 44rpx;
+  color: #86868b;
+  padding: 16rpx;
+  margin-right: -16rpx; /* Optical optical alignment */
+}
+
+/* 忘记密码 */
+.forgot-password {
+  text-align: right;
+  margin-top: 24rpx;
+  margin-bottom: 48rpx;
+}
+
+.link-text {
+  font-size: 28rpx;
+  color: #0071E3;
+  font-weight: 500;
+}
+
+/* 按钮 */
+.login-button {
+  width: 100%;
+  height: 112rpx;
+  background: #0071E3;
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 600;
+  border-radius: 56rpx;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12rpx 36rpx rgba(0, 113, 227, 0.35);
+  transition: all 0.3s;
+}
+
+.login-button:active:not(.loading) {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.login-button.loading {
+  opacity: 0.7;
+}
+
+/* 底部辅助区域 */
+.test-account-hint {
+  text-align: center;
+  margin-top: 48rpx;
+}
+
+.hint-text {
+  font-size: 26rpx;
+  color: #86868b;
+}
+
+.footer {
+  position: absolute;
+  bottom: 60rpx;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+.footer-text {
+  font-size: 20rpx;
+  color: #D1D1D6;
+}

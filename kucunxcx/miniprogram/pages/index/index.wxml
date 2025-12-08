@@ -1,0 +1,142 @@
+<!-- 首页 - 2025 Redesign -->
+<wxs src="../../utils/format.wxs" module="fmt" />
+<view class="page-container">
+  
+  <!-- 顶部导航栏 (Sticky Header) -->
+  <view class="sticky-header" style="padding-top: {{statusBarHeight}}px;">
+    <view class="nav-bar-content" style="height: {{navBarHeight}}px; padding-right: {{menuButtonWidth + 24}}px;">
+      <text class="nav-title">豪星陶瓷</text>
+      <!-- 搜索框 -->
+      <view class="search-box" style="height: {{menuButtonHeight}}px;">
+        <van-icon name="search" size="16px" color="#86868b" />
+        <input 
+          class="search-input" 
+          placeholder="搜索产品名称/编码" 
+          placeholder-class="search-placeholder"
+          bindinput="onSearchInput"
+          bindconfirm="onSearch"
+        />
+      </view>
+    </view>
+  </view>
+
+  <!-- 内容滚动区域 -->
+  <scroll-view class="main-scroll" scroll-y show-scrollbar="{{false}}" enhanced="{{true}}">
+    <view class="scroll-content">
+      
+
+      <!-- 2. 营销 Banner (Modern Card) -->
+      <view class="section-banner">
+        <swiper 
+          class="modern-swiper" 
+          circular 
+          autoplay 
+          interval="5000"
+          previous-margin="0"
+          next-margin="0"
+        >
+          <swiper-item wx:for="{{ banners }}" wx:key="id">
+            <view class="modern-banner-card" style="background: {{ item.bgColor }}">
+              <view class="banner-txt">
+                <text class="b-title">{{ item.title }}</text>
+                <text class="b-sub">{{ item.subtitle }}</text>
+                <view class="b-btn">查看详情</view>
+              </view>
+              <view class="banner-visual"></view> <!-- Abstract shape -->
+            </view>
+          </swiper-item>
+        </swiper>
+      </view>
+
+      <!-- 3. 分类导航 (Horizontal Scroll) -->
+      <view class="section-categories">
+        <view class="section-title-row">
+          <text class="section-h1">分类浏览</text>
+          <text class="section-link" bindtap="navigateToCategories">全部</text>
+        </view>
+        <scroll-view scroll-x class="cat-scroll" show-scrollbar="{{false}}">
+          <view class="cat-list">
+            <view 
+              class="cat-chip {{ selectedCategoryId === item.id ? 'active' : '' }}" 
+              wx:for="{{ categories }}" 
+              wx:key="id"
+              bindtap="onCategoryTap"
+              data-id="{{ item.id }}"
+              data-name="{{ item.name }}"
+            >
+              <text>{{ item.name }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
+      <!-- 4. 热门推荐 (Masonry/Grid) -->
+      <view class="section-hot">
+        <text class="section-h1">近期热门</text>
+        <view class="hot-grid">
+      <view 
+        class="hot-card" 
+        wx:for="{{ hotProducts }}" 
+        wx:key="id" 
+        bindtap="navigateToProductDetail"
+        data-id="{{ item.id }}"
+      >
+            <view class="card-img-box">
+              <image src="{{ item.thumbnailUrl || 'https://img.yzcdn.cn/vant/cat.jpeg' }}" mode="aspectFill" />
+              <view 
+                class="stock-tag" 
+                wx:if="{{ item.inventory && item.inventory.availableQuantity <= 10 }}"
+              >
+                {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
+              </view>
+            </view>
+            <view class="card-info">
+              <text class="card-title">{{ item.name }}</text>
+              <text class="card-code">{{ item.code }}</text>
+              <text 
+                class="card-stock" 
+                wx:if="{{ item.inventory }}"
+              >
+                <!-- 销售/管理员显示数字，访客只显示有货/缺货 -->
+                <block wx:if="{{ canViewNumericInventory }}">
+                  库存：{{ fmt.formatQuantity(item.inventory.availableQuantity, item.unit, item.piecesPerUnit) }}
+                </block>
+                <block wx:else>
+                  {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
+                </block>
+              </text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- Safe Area Spacer -->
+      <view style="height: 180rpx;"></view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部导航 (Floating Dock) -->
+  <view class="floating-dock">
+    <view class="dock-item" bindtap="navigateToProducts">
+      <van-icon name="apps-o" size="22px" />
+      <text>产品</text>
+    </view>
+    <view class="dock-item" bindtap="navigateToInventory">
+      <van-icon name="search" size="22px" />
+      <text>查询</text>
+    </view>
+    <view class="dock-main" bindtap="navigateToCreateProduct">
+      <view class="dock-circle {{ canCreateProduct ? 'dock-circle-enabled' : 'dock-circle-disabled' }}">
+        <van-icon name="plus" size="24px" color="#fff" />
+      </view>
+    </view>
+    <view class="dock-item" bindtap="navigateToCategories">
+      <van-icon name="bar-chart-o" size="22px" />
+      <text>统计</text>
+    </view>
+    <view class="dock-item" bindtap="navigateToUser">
+      <van-icon name="user-o" size="22px" />
+      <text>我的</text>
+    </view>
+  </view>
+</view>

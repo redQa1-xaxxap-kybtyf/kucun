@@ -28,6 +28,8 @@ export default [
       'coverage/',
       '.eslintcache',
       'prisma/migrations/',
+      // 忽略微信小程序的编译产物 JS，只校验 TypeScript 源码
+      'kucunxcx/miniprogram/**/*.js',
     ],
   },
   ...compat.extends('next/core-web-vitals', 'prettier'),
@@ -171,6 +173,8 @@ export default [
     files: ['app/api/**/*.ts'],
     rules: {
       'no-console': 'off',
+      // 允许在 API 路由中为同一个模块同时使用 type import 和 value import
+      'no-duplicate-imports': 'off',
     },
   },
   {

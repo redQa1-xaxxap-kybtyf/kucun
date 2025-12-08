@@ -39,13 +39,30 @@ model User {
   approvedInventoryCounts  InventoryCount[]       @relation("InventoryCountApprover")
   countedInventoryItems    InventoryCountItem[]   @relation("InventoryCountItemCounter")
   operatedOutboundRecords  OutboundRecord[]       @relation("OutboundRecordOperator")
-  inventoryOperations       InventoryOperation[]  @relation("InventoryOperationOperator")
+  inventoryOperations      InventoryOperation[]   @relation("InventoryOperationOperator")
   loginLogs                LoginLog[]
+  sessions                 Session[]
+  productFavorites         ProductFavorite[]
+  productViewHistory       ProductViewHistory[]
 
   @@index([email])
   @@index([username])
   @@index([role])
   @@map("users")
+}
+
+model Session {
+  id           String   @id @default(uuid()) @db.Char(36)
+  sessionToken String   @unique @map("session_token") @db.VarChar(128)
+  userId       String   @map("user_id") @db.Char(36)
+  expires      DateTime
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+  @@map("sessions")
 }
 
 model Customer {
@@ -194,6 +211,8 @@ model Product {
   inventoryCountItems       InventoryCountItem[]
   batchSpecifications       BatchSpecification[]
   InventoryCostQueue        InventoryCostQueue[]
+  favorites                 ProductFavorite[]
+  viewHistory               ProductViewHistory[]
 
   @@index([code])
   @@index([name])
@@ -1401,4 +1420,36 @@ model LoginLog {
   // 组合索引: username(100*4) + type(32*4) + createdAt(8) = 536字节 < 767字节限制
   @@index([username, type, createdAt], map: "idx_login_logs_username_type_created")
   @@map("login_logs")
+}
+
+// 产品收藏表 - 记录用户收藏的产品
+model ProductFavorite {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  productId String   @map("product_id") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, productId], map: "uk_product_favorites_user_product")
+  @@index([userId], map: "idx_product_favorites_user")
+  @@index([productId], map: "idx_product_favorites_product")
+  @@map("product_favorites")
+}
+
+// 产品浏览历史表 - 记录用户最近浏览的产品
+model ProductViewHistory {
+  id        String   @id @default(uuid()) @db.Char(36)
+  userId    String   @map("user_id") @db.Char(36)
+  productId String   @map("product_id") @db.Char(36)
+  viewedAt  DateTime @default(now()) @map("viewed_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId, productId], map: "uk_product_view_history_user_product")
+  @@index([userId, viewedAt], map: "idx_product_view_history_user_time")
+  @@index([productId], map: "idx_product_view_history_product")
+  @@map("product_view_history")
 }

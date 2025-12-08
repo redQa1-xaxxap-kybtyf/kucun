@@ -1,0 +1,129 @@
+<!-- 产品列表页 -->
+<wxs src="../../utils/format.wxs" module="fmt" />
+
+<view class="container">
+  <!-- 搜索栏和筛选 -->
+  <view class="search-section">
+    <van-search
+      value="{{ searchValue }}"
+      placeholder="搜索产品名称/编码"
+      bind:search="onSearch"
+      bind:change="onSearchChange"
+      bind:clear="onClearSearch"
+      shape="round"
+      background="transparent"
+      use-action-slot
+    >
+      <view slot="action" class="action-buttons">
+        <view bind:tap="toggleFilter" class="icon-btn">
+          <text class="filter-text">筛选</text>
+          <van-icon name="filter-o" size="16px" color="#1d1d1f" />
+        </view>
+      </view>
+    </van-search>
+  </view>
+
+  <!-- 筛选栏 - 整合筛选和布局切换 -->
+  <view class="filter-bar" wx:if="{{ showFilter }}">
+    <van-dropdown-menu class="filter-dropdown" active-color="#1d1d1f">
+      <van-dropdown-item value="{{ filterCategory }}" options="{{ categoryOptions }}" bind:change="onCategoryChange" />
+      <van-dropdown-item value="{{ filterStatus }}" options="{{ statusOptions }}" bind:change="onStatusChange" />
+      <van-dropdown-item value="{{ filterSort }}" options="{{ sortOptions }}" bind:change="onSortChange" />
+    </van-dropdown-menu>
+
+    <!-- 布局切换按钮组 -->
+    <view class="layout-switcher">
+      <view
+        class="layout-btn {{ layoutMode === 'list' ? 'active' : '' }}"
+        bind:tap="switchToLayout"
+        data-mode="list"
+      >
+        <van-icon name="bars" size="18px" />
+      </view>
+      <view
+        class="layout-btn {{ layoutMode === 'grid-2' ? 'active' : '' }}"
+        bind:tap="switchToLayout"
+        data-mode="grid-2"
+      >
+        <van-icon name="apps-o" size="18px" />
+      </view>
+      <view
+        class="layout-btn {{ layoutMode === 'grid-3' ? 'active' : '' }}"
+        bind:tap="switchToLayout"
+        data-mode="grid-3"
+      >
+        <van-icon name="grid-o" size="18px" />
+      </view>
+    </view>
+  </view>
+
+  <!-- 产品列表 - 使用scroll-view -->
+  <scroll-view
+    class="scroll-container"
+    scroll-y
+    bindscrolltolower="onLoadMore"
+    lower-threshold="100"
+  >
+    <view class="product-list-wrapper layout-{{ layoutMode }}">
+      <view
+        wx:for="{{ products }}"
+        wx:key="id"
+        class="ios-product-card"
+        bindtap="navigateToDetail"
+        data-id="{{ item.id }}"
+      >
+        <image 
+          class="product-thumb" 
+          src="{{ item.thumbnailUrl || 'https://img.yzcdn.cn/vant/cat.jpeg' }}" 
+          mode="aspectFill"
+        />
+        
+        <view class="product-content">
+          <view class="product-header">
+            <text class="product-name">{{ item.name }}</text>
+            <van-tag
+              type="{{ item.inventory.availableQuantity > 0 ? 'success' : 'danger' }}"
+              size="{{ layoutMode === 'list' ? 'medium' : 'mini' }}"
+              custom-class="status-tag"
+              wx:if="{{ layoutMode !== 'grid-3' }}"
+            >
+              {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
+            </van-tag>
+          </view>
+          
+          <text class="product-code" wx:if="{{ layoutMode !== 'grid-3' }}">编码: {{ item.code }}</text>
+          
+          <view class="product-footer">
+            <text class="product-spec" wx:if="{{ layoutMode === 'list' }}">{{ item.specification || '默认规格' }}</text>
+            <text class="product-stock {{ item.inventory.availableQuantity > 0 ? '' : 'text-danger' }}">
+              <!-- 销售/管理员显示数字，访客只显示有货/缺货 -->
+              <block wx:if="{{ canViewNumericInventory }}">
+                {{ fmt.formatQuantity(item.inventory.availableQuantity, item.unit, item.piecesPerUnit) }}
+              </block>
+              <block wx:else>
+                {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
+              </block>
+            </text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载状态 -->
+    <view class="loading-footer" wx:if="{{ loading }}">
+      <van-loading type="spinner" size="24px" color="#8E8E93">加载中...</van-loading>
+    </view>
+
+    <!-- 完成状态 -->
+    <view class="finished-footer" wx:if="{{ finished && !loading && products.length > 0 }}">
+      <text class="finished-text">没有更多了</text>
+    </view>
+
+    <!-- 空状态 -->
+    <van-empty
+      wx:if="{{ !loading && products.length === 0 }}"
+      description="暂无产品"
+      image="search"
+    />
+  </scroll-view>
+</view>

@@ -1,0 +1,87 @@
+<!-- 产品详情页 -->
+<wxs src="../../utils/format.wxs" module="fmt" />
+
+<view class="container">
+  <!-- 图片轮播 - 使用微信原生swiper -->
+  <swiper
+    class="product-swiper"
+    indicator-dots
+    autoplay
+    interval="3000"
+    duration="500"
+    indicator-color="rgba(255, 255, 255, 0.5)"
+    indicator-active-color="#007aff"
+  >
+    <swiper-item wx:for="{{ product.images }}" wx:key="index">
+      <image
+        src="{{ item }}"
+        mode="aspectFill"
+        class="swiper-image"
+        bindtap="previewImage"
+        data-url="{{ item }}"
+      />
+    </swiper-item>
+  </swiper>
+
+  <!-- 产品信息 -->
+  <view class="info-card">
+    <view class="product-header">
+      <text class="product-name">{{ product.name }}</text>
+      <van-tag type="{{ product.inventory.availableQuantity > 0 ? 'success' : 'danger' }}" size="large" color="{{ product.inventory.availableQuantity > 0 ? '#34c759' : '#ff3b30' }}">
+        {{ product.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
+      </van-tag>
+    </view>
+
+    <van-cell-group border="{{ false }}">
+      <van-cell title="产品编码" value="{{ product.code }}" />
+      <van-cell title="规格" value="{{ product.specification || '默认规格' }}" />
+      <van-cell title="单位" value="{{ fmt.formatUnit(product.unit) }}" />
+      <van-cell title="分类" value="{{ product.category ? product.category.name : '未分类' }}" />
+    </van-cell-group>
+  </view>
+
+  <!-- 库存信息 -->
+  <view class="info-card">
+    <view class="card-title">库存信息</view>
+    <van-cell-group border="{{ false }}">
+      <van-cell
+        title="总库存"
+        value="{{ canViewNumericInventory ? fmt.formatQuantity(product.inventory.totalQuantity, product.unit, product.piecesPerUnit) : (product.inventory.availableQuantity > 0 ? '有货' : '缺货') }}"
+      />
+      <van-cell
+        title="可用库存"
+        value="{{ canViewNumericInventory ? fmt.formatQuantity(product.inventory.availableQuantity, product.unit, product.piecesPerUnit) : (product.inventory.availableQuantity > 0 ? '有货' : '缺货') }}"
+      />
+      <van-cell
+        title="预留库存"
+        value="{{ canViewNumericInventory ? fmt.formatQuantity(product.inventory.reservedQuantity, product.unit, product.piecesPerUnit) : (product.inventory.availableQuantity > 0 ? '有货' : '缺货') }}"
+      />
+      <van-cell title="最后更新" value="{{ product.updatedAt }}" />
+    </van-cell-group>
+  </view>
+
+  <!-- 产品描述 -->
+  <view class="info-card" wx:if="{{ product.description }}">
+    <view class="card-title">产品描述</view>
+    <view class="product-description">{{ product.description }}</view>
+  </view>
+
+  <!-- 底部操作栏 -->
+  <van-goods-action>
+    <van-goods-action-icon
+      icon="chat-o"
+      text="客服"
+      bind:click="onContactService"
+    />
+    <van-goods-action-icon
+      icon="star-o"
+      text="收藏"
+      bind:click="onFavorite"
+    />
+    <van-goods-action-button
+      color="#007aff"
+      text="查看库存详情"
+      bind:click="navigateToInventory"
+    />
+  </van-goods-action>
+</view>

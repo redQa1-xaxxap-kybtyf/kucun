@@ -1,0 +1,94 @@
+<!-- 用户中心页 -->
+<view class="container">
+  <!-- 大标题 -->
+  <view class="page-title">我的</view>
+
+  <!-- 用户信息卡片 -->
+  <view class="user-profile-card" bindtap="navigateToUserInfo">
+    <image
+      class="user-avatar"
+      src="{{ isLoggedIn && userInfo && userInfo.avatar ? userInfo.avatar : 'https://img.yzcdn.cn/vant/user-active.png' }}"
+      mode="aspectFill"
+    />
+    <view class="user-info">
+      <!-- 已登录时显示姓名/用户名，未登录时显示“点击登录” -->
+      <text class="user-name">
+        {{ isLoggedIn ? (userInfo.name || userInfo.username || '已登录') : '点击登录' }}
+      </text>
+      <!-- 已登录时显示角色，未登录时显示“访客身份” -->
+      <text class="user-role">
+        {{ isLoggedIn ? (userInfo.role || '普通用户') : '访客身份' }}
+      </text>
+    </view>
+    <van-icon name="arrow" color="#C7C7CC" size="20px" />
+  </view>
+
+  <!-- 功能菜单 1 -->
+  <view class="ios-list-group">
+    <van-cell-group border="{{ false }}">
+      <van-cell
+        title="个人信息"
+        is-link
+        size="large"
+        bind:click="navigateToUserInfo"
+      >
+        <van-icon slot="icon" name="user-o" class="icon-blue" size="22px" style="margin-right: 12px;"/>
+      </van-cell>
+      <van-cell
+        title="我的收藏"
+        is-link
+        size="large"
+        bind:click="navigateToFavorites"
+      >
+        <van-icon slot="icon" name="star-o" class="icon-yellow" size="22px" style="margin-right: 12px;"/>
+      </van-cell>
+      <van-cell
+        title="浏览历史"
+        is-link
+        size="large"
+        bind:click="navigateToHistory"
+      >
+        <van-icon slot="icon" name="clock-o" class="icon-purple" size="22px" style="margin-right: 12px;"/>
+      </van-cell>
+    </van-cell-group>
+  </view>
+
+  <!-- 功能菜单 2 -->
+  <view class="ios-list-group">
+    <van-cell-group border="{{ false }}">
+      <van-cell
+        title="设置"
+        is-link
+        size="large"
+        bind:click="navigateToSettings"
+      >
+        <van-icon slot="icon" name="setting-o" class="icon-grey" size="22px" style="margin-right: 12px; color: #8E8E93;"/>
+      </van-cell>
+      <van-cell
+        title="关于我们"
+        is-link
+        size="large"
+        bind:click="navigateToAbout"
+      >
+        <van-icon slot="icon" name="info-o" class="icon-blue" size="22px" style="margin-right: 12px;"/>
+      </van-cell>
+      <van-cell
+        title="帮助中心"
+        is-link
+        size="large"
+        bind:click="navigateToHelp"
+      >
+        <van-icon slot="icon" name="question-o" class="icon-green" size="22px" style="margin-right: 12px;"/>
+      </van-cell>
+    </van-cell-group>
+  </view>
+
+  <!-- 退出登录按钮 -->
+  <view class="logout-section" wx:if="{{ isLoggedIn }}">
+    <button class="ios-btn ios-btn-danger" bindtap="onLogout">退出登录</button>
+  </view>
+  
+  <view class="logout-section" wx:else>
+    <button class="ios-btn" bindtap="onLogin">立即登录</button>
+  </view>
+</view>

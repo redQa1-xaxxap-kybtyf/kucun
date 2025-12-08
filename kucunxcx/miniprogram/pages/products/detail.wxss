@@ -1,0 +1,69 @@
+/* 产品详情页样式 - Apple Style */
+
+.container {
+  min-height: 100vh;
+  background-color: var(--ios-bg);
+  padding-bottom: 120rpx; /* Space for action bar */
+}
+
+/* 图片轮播 */
+.product-swiper {
+  width: 100%;
+  height: 750rpx; /* Square aspect ratio usually looks modern, or 4:3 */
+  background-color: #fff;
+}
+
+.swiper-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 信息卡片 */
+.info-card {
+  background-color: var(--ios-card-bg);
+  margin: 32rpx; /* inset margin */
+  border-radius: var(--ios-radius);
+  overflow: hidden;
+  box-shadow: var(--ios-shadow);
+}
+
+/* 产品标题 */
+.product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 32rpx;
+  border-bottom: 1rpx solid rgba(0,0,0,0.05); /* very light separator */
+}
+
+.product-name {
+  font-size: 40rpx; /* Large title */
+  font-weight: 700;
+  color: var(--ios-text-primary);
+  flex: 1;
+  margin-right: 24rpx;
+  line-height: 1.2;
+}
+
+/* 卡片标题 */
+.card-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ios-text-primary);
+  padding: 24rpx 32rpx;
+  background-color: rgba(242, 242, 247, 0.5); /* Slight contrast header */
+  /* border-bottom: 1rpx solid rgba(0,0,0,0.05); Remove border for cleaner look */
+}
+
+/* 产品描述 */
+.product-description {
+  padding: 32rpx;
+  font-size: 30rpx;
+  line-height: 1.6;
+  color: var(--ios-text-secondary);
+}
+
+/* Override Vant Cell Styles if needed */
+.van-cell {
+  background-color: transparent !important; /* Let card bg show */
+}

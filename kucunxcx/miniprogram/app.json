@@ -1,0 +1,25 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/auth/login",
+    "pages/products/list",
+    "pages/products/detail",
+    "pages/products/create",
+    "pages/categories/list",
+    "pages/inventory/list",
+    "pages/inventory/detail",
+    "pages/user/profile",
+    "pages/user/user-info",
+    "pages/user/favorites",
+    "pages/user/history",
+    "pages/logs/logs"
+  ],
+  "window": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "豪星陶瓷",
+    "navigationBarBackgroundColor": "#ffffff"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents"
+}

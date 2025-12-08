@@ -194,7 +194,18 @@
       "Bash(do if grep -q \"searchParams\" \"$file\")",
       "Bash(then if ! grep -q \"searchParams: Promise\" \"$file\")",
       "Bash(then echo \"$file\")",
-      "WebFetch(domain:www.npmjs.com)"
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(if [ -d \"E:/kucun/kucunxcx\" ])",
+      "Bash(then echo \"目录已存在\")",
+      "Bash(else echo \"目录不存在,需要创建\")",
+      "WebFetch(domain:vant-ui.github.io)",
+      "WebFetch(domain:vant-contrib.gitee.io)",
+      "Bash(do if ls E:/kucun/kucunxcx/miniprogram/miniprogram_npm/@vant/weapp/$comp)",
+      "Bash(then echo '✅ $comp')",
+      "Bash(else echo '❌ $comp')",
+      "Bash(then echo '✅ van-$comp')",
+      "Bash(else echo '❌ van-$comp')",
+      "Bash(python -m json.tool:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,24 @@
+{
+  "name": "kucun-miniprogram",
+  "version": "1.0.0",
+  "description": "库存管理小程序",
+  "scripts": {
+    "dev": "echo 'Development mode'",
+    "build": "echo 'Building...'",
+    "tsc": "tsc"
+  },
+  "keywords": [
+    "miniprogram",
+    "inventory",
+    "management"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@vant/weapp": "^1.11.6"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^3.12.2",
+    "typescript": "^5.3.3"
+  }
+}

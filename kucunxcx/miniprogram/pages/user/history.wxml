@@ -1,0 +1,35 @@
+<!-- 浏览历史 -->
+<view class="container">
+  <view wx:if="{{ loading }}" class="loading">
+    <text>加载中...</text>
+  </view>
+
+  <view wx:elif="{{ history.length === 0 }}" class="empty">
+    <text class="empty-text">暂无浏览记录</text>
+  </view>
+
+  <scroll-view wx:else scroll-y class="list">
+    <view
+      class="item"
+      wx:for="{{ history }}"
+      wx:key="id"
+      bindtap="onItemTap"
+      data-id="{{ item.id }}"
+    >
+      <image
+        class="thumb"
+        src="{{ item.thumbnailUrl || 'https://img.yzcdn.cn/vant/cat.jpeg' }}"
+        mode="aspectFill"
+      />
+      <view class="info">
+        <text class="name">{{ item.name }}</text>
+        <text class="code">编码：{{ item.code }}</text>
+        <text class="time">最近浏览：{{ item.viewedAtText }}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="footer" wx:if="{{ history.length > 0 }}">
+    <button class="btn-clear" bindtap="onClear">清空历史</button>
+  </view>
+</view>

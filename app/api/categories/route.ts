@@ -21,42 +21,58 @@ import {
 } from '@/lib/validations/category';
 
 /**
- * GET /api/categories - 获取分类列表
+ * 实际处理分类列表查询的函数（不做认证）
  */
-export const GET = withAuth(
-  async (request: NextRequest) =>
-    withErrorHandling(async request => {
-      const { searchParams } = request.nextUrl;
+async function handleGetCategories(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
 
-      // 1. 解析查询参数
-      const queryParams = {
-        page: parseInt(searchParams.get('page') || '1'),
-        limit: parseInt(
-          searchParams.get('limit') ||
-            paginationConfig.defaultPageSize.toString()
-        ),
-        search: searchParams.get('search') || '',
-        sortBy: searchParams.get('sortBy') || 'createdAt',
-        sortOrder: searchParams.get('sortOrder') || 'desc',
-        parentId: searchParams.get('parentId') || undefined,
-        status: searchParams.get('status') || undefined,
-      };
+  // 1. 解析查询参数
+  const queryParams = {
+    page: parseInt(searchParams.get('page') || '1'),
+    limit: parseInt(
+      searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
+    ),
+    search: searchParams.get('search') || '',
+    sortBy: searchParams.get('sortBy') || 'createdAt',
+    sortOrder: searchParams.get('sortOrder') || 'desc',
+    parentId: searchParams.get('parentId') || undefined,
+    status: searchParams.get('status') || undefined,
+  };
 
-      // 2. 验证查询参数（Zod 错误会自动处理）
-      const validatedParams = CategoryQuerySchema.parse(queryParams);
+  // 2. 验证查询参数（Zod 错误会自动处理）
+  const validatedParams = CategoryQuerySchema.parse(queryParams);
 
-      // 3. 调用服务层
-      const result = await getCategories(validatedParams);
+  // 3. 调用服务层
+  const result = await getCategories(validatedParams);
 
-      // 4. 返回响应
-      return NextResponse.json({
-        success: true,
-        data: result.categories,
-        pagination: result.pagination,
-      });
-    })(request, {}),
-  { permissions: ['categories:view'] }
-);
+  // 4. 返回响应
+  return NextResponse.json({
+    success: true,
+    data: result.categories,
+    pagination: result.pagination,
+  });
+}
+
+/**
+ * GET /api/categories - 获取分类列表
+ *
+ * - 小程序游客（x-client-from=mini-program）直接访问
+ * - 其他客户端仍需 categories:view 权限
+ */
+export const GET = async (request: NextRequest) => {
+  const clientFrom = request.headers.get('x-client-from');
+
+  if (clientFrom === 'mini-program') {
+    return withErrorHandling(handleGetCategories)(request, {});
+  }
+
+  const authedGet = withAuth(
+    async (req: NextRequest) => withErrorHandling(handleGetCategories)(req, {}),
+    { permissions: ['categories:view'] }
+  );
+
+  return authedGet(request);
+};
 
 /**
  * POST /api/categories - 创建分类

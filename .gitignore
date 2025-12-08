@@ -147,3 +147,8 @@ temp_*.diff
 # Augment 自动生成的报告文件
 .augment/reports/
 type-check-result.txt
+
+# 微信小程序依赖目录（仅本地安装使用，不提交到仓库）
+/kucunxcx/node_modules/
+/kucunxcx/miniprogram/node_modules/
+/kucunxcx/miniprogram/miniprogram_npm/
