@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
@@ -38,10 +39,14 @@ const serializeError = (error: unknown) =>
 export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
     // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
+    const { searchParams } = request.nextUrl;
+    const { page: parsedPage, limit: parsedLimit } = parseOffsetPagination(
+      searchParams,
+      { defaultLimit: 10, maxLimit: 50000 }
+    );
     const queryResult = paymentRecordQuerySchema.safeParse({
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      page: parsedPage,
+      limit: parsedLimit,
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       paymentMethod: searchParams.get('paymentMethod') || undefined,
@@ -135,6 +140,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     };
     const orderBy = orderByMap[sortBy] ?? { paymentDate: 'desc' };
 
+    const skip = (page - 1) * limit;
+
     // 查询数据
     const [payments, total] = await Promise.all([
       prisma.paymentRecord.findMany({
@@ -162,8 +169,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
             },
           },
         },
-        orderBy,
-        skip: (page - 1) * limit,
+        orderBy: [orderBy, { id: 'desc' }],
+        skip,
         take: limit,
       }),
       prisma.paymentRecord.count({ where }),
@@ -181,12 +188,12 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       success: true,
       data: {
         payments: serializedPayments,
-        pagination: {
+        pagination: buildOffsetPaginationMeta({
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit),
-        },
+          hasMore: skip + serializedPayments.length < total,
+        }),
       },
     });
   } catch (error) {

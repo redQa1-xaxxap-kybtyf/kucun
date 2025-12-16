@@ -16,6 +16,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
@@ -107,15 +108,14 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || '';
     const sortBy = searchParams.get('sortBy') || 'usageCount';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+    const { page, limit, skip } = parseOffsetPagination(searchParams);
 
     // 查询条件与排序
     const where = buildWhere(supplierId, search);
-    const orderBy = getOrderBy(sortBy, sortOrder);
-
-    // 分页参数
-    const skip = (page - 1) * limit;
+    const orderBy: Prisma.TemporaryProductOrderByWithRelationInput[] = [
+      getOrderBy(sortBy, sortOrder),
+      { id: 'desc' },
+    ];
 
     // 并行查询数据和总数
     const [items, total] = await Promise.all([
@@ -156,12 +156,12 @@ export async function GET(request: Request) {
       success: true,
       data: {
         items: formattedItems,
-        pagination: {
-          total,
+        pagination: buildOffsetPaginationMeta({
           page,
           limit,
-          totalPages: Math.ceil(total / limit),
-        },
+          total,
+          hasMore: skip + formattedItems.length < total,
+        }),
       },
     });
   } catch (error) {
