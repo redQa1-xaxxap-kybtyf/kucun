@@ -1,9 +1,10 @@
 <!-- 登录页面 -->
 <view class="login-container">
-  <!-- 标题区域 -->
+  <!-- Logo和标题 -->
   <view class="header">
-    <text class="title">登录</text>
-    <text class="subtitle">欢迎回到库存管理系统</text>
+    <text class="title">库存管理系统</text>
+    <text class="subtitle">欢迎登录</text>
+    <text class="helper-text">首次使用请联系管理员开通账号</text>
   </view>
 
   <!-- 登录表单 -->
@@ -11,10 +12,11 @@
     <!-- 用户名输入 -->
     <view class="input-group">
       <view class="input-wrapper">
+        <van-icon name="user-o" class="input-icon" />
         <input
           class="input-field"
           type="text"
-          placeholder="请输入用户名/手机号"
+          placeholder="请输入用户名"
           value="{{ username }}"
           bindinput="onUsernameInput"
           maxlength="50"
@@ -25,6 +27,7 @@
     <!-- 密码输入 -->
     <view class="input-group">
       <view class="input-wrapper">
+        <van-icon name="lock" class="input-icon" />
         <input
           class="input-field"
           password="{{ !showPassword }}"
@@ -56,11 +59,6 @@
       <text wx:else>登录</text>
     </button>
 
-    <!-- 测试账号提示 -->
-    <view class="test-account-hint">
-      <text class="hint-text" bindtap="showTestAccount">使用测试账号登录</text>
-    </view>
-
     <!-- 注册链接（暂时隐藏） -->
     <!-- <view class="register-link">
       <text class="normal-text">还没有账号？</text>
@@ -70,7 +68,31 @@
 
   <!-- 底部信息 -->
   <view class="footer">
-    <text class="footer-text">瓷砖行业库存管理系统</text>
-    <text class="footer-text">Version 1.0.0</text>
+    <text class="footer-text">豪星陶瓷</text>
+  </view>
+
+  <!-- 隐私授权弹窗 -->
+  <view wx:if="{{ needPrivacyAuth }}" class="privacy-mask">
+    <view class="privacy-dialog">
+      <view class="privacy-title">用户隐私保护提示</view>
+      <view class="privacy-content">
+        使用本小程序前，请先阅读
+        <text class="link-text" bindtap="openPrivacyContract">《隐私保护指引》</text>。
+        点击「同意并继续」表示你已阅读并同意该指引；
+        如你暂不同意，可以先以访客身份浏览库存信息。
+      </view>
+      <view class="privacy-buttons">
+        <button class="btn-cancel" bindtap="onPrivacyRefuse">暂不同意</button>
+        <!-- 官方同意按钮，用于同步隐私授权状态 -->
+        <button
+          class="btn-ok"
+          id="privacy-agree-btn"
+          open-type="agreePrivacyAuthorization"
+          bindagreeprivacyauthorization="onPrivacyAgree"
+        >
+          同意并继续
+        </button>
+      </view>
+    </view>
   </view>
 </view>
