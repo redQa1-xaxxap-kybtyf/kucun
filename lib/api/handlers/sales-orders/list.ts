@@ -131,7 +131,7 @@ const buildOrderBy = (params: SalesOrderQueryParams) => {
 
   orderBy[field] = params.sortOrder ?? DEFAULT_SORT_ORDER;
 
-  return orderBy;
+  return [orderBy, { id: 'desc' }] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
 };
 
 const mapListOrder = (

@@ -113,9 +113,7 @@ export async function getSuppliers(
       where,
       skip,
       take: limit,
-      orderBy: {
-        [sortBy]: sortOrder,
-      },
+      orderBy: [{ [sortBy]: sortOrder }, { id: 'desc' }],
       select: {
         id: true,
         name: true,

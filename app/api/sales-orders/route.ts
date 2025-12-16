@@ -18,7 +18,7 @@ import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 const getSalesOrdersHandler = withErrorHandling(
   withAuth(
     async request => {
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = request.nextUrl;
       const rawParams = {
         page: searchParams.get('page'),
         limit: searchParams.get('limit'),

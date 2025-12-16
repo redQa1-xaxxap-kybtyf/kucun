@@ -25,7 +25,7 @@ import {
 export const GET = withAuth(
   withErrorHandling(async (request: NextRequest) => {
     // 解析查询参数
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const queryParams = Object.fromEntries(searchParams.entries());
 
     // 验证参数

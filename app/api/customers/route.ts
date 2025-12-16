@@ -12,7 +12,7 @@ import { customerCreateSchema } from '@/lib/validations/customer';
 export const GET = withAuth(
   async (request: NextRequest) =>
     withErrorHandling(async request => {
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = request.nextUrl;
 
       // 验证分页参数
       const { page, limit } = paginationValidations.query.parse({

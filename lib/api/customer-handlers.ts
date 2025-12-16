@@ -57,18 +57,20 @@ function normalizeSortOrder(sortOrder: string): Prisma.SortOrder {
 function buildCustomerOrderBy(
   sortBy: string,
   sortOrder: Prisma.SortOrder
-): Prisma.CustomerOrderByWithRelationInput {
+): Prisma.CustomerOrderByWithRelationInput[] {
+  const stableSuffix: Prisma.CustomerOrderByWithRelationInput = { id: 'desc' };
   if (
     DIRECT_CUSTOMER_SORT_FIELDS.has(
       sortBy as keyof Prisma.CustomerOrderByWithRelationInput
     )
   ) {
-    return {
-      [sortBy]: sortOrder,
-    } as Prisma.CustomerOrderByWithRelationInput;
+    return [
+      { [sortBy]: sortOrder } as Prisma.CustomerOrderByWithRelationInput,
+      stableSuffix,
+    ];
   }
 
-  return { createdAt: sortOrder };
+  return [{ createdAt: sortOrder }, stableSuffix];
 }
 
 function sortCustomersInMemory(
