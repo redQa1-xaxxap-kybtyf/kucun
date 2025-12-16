@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig, returnRefundConfig } from '@/lib/env';
@@ -17,12 +18,12 @@ import {
 export const GET = withAuth(async (request: NextRequest) => {
   try {
     // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
+    const { searchParams } = request.nextUrl;
+    const { page: parsedPage, limit: parsedLimit } =
+      parseOffsetPagination(searchParams);
     const queryResult = refundQuerySchema.safeParse({
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(
-        searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
-      ),
+      page: parsedPage,
+      limit: parsedLimit,
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       refundType: searchParams.get('refundType') || undefined,
@@ -102,6 +103,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     }
 
     // 查询数据
+    const skip = (page - 1) * limit;
     const [refunds, total] = await Promise.all([
       prisma.refundRecord.findMany({
         where,
@@ -128,10 +130,8 @@ export const GET = withAuth(async (request: NextRequest) => {
             },
           },
         },
-        orderBy: {
-          refundDate: 'desc',
-        },
-        skip: (page - 1) * limit,
+        orderBy: [{ refundDate: 'desc' }, { id: 'desc' }],
+        skip,
         take: limit,
       }),
       prisma.refundRecord.count({ where }),
@@ -141,12 +141,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       success: true,
       data: {
         refunds,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+        pagination: buildOffsetPaginationMeta({ page, limit, total }),
       },
     });
   } catch (error) {

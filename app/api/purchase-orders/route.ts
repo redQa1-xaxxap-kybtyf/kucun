@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
@@ -31,17 +32,11 @@ type ListParams = {
 };
 
 function parseAndValidateListParams(request: NextRequest): ListParams {
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = request.nextUrl;
+  const { page, limit } = parseOffsetPagination(searchParams);
   const raw = {
-    page: searchParams.get('page')
-      ? parseInt(searchParams.get('page') || '1')
-      : 1,
-    limit: searchParams.get('limit')
-      ? parseInt(
-          searchParams.get('limit') ||
-            paginationConfig.defaultPageSize.toString()
-        )
-      : paginationConfig.defaultPageSize,
+    page,
+    limit,
     search: searchParams.get('search') || undefined,
     status: searchParams.get('status') || undefined,
     supplierId: searchParams.get('supplierId') || undefined,
@@ -210,7 +205,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
         where,
         skip,
         take: params.limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: orderListSelect,
       }),
       prisma.purchaseOrder.count({ where }),

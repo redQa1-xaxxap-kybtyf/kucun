@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError, ApiErrorType } from '@/lib/api/errors';
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
@@ -169,11 +170,13 @@ function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
 const getInventoryAdjustmentsHandler = withErrorHandling(
   async (request: NextRequest) => {
     // 解析查询参数
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
+    const { page: parsedPage, limit: parsedLimit } =
+      parseOffsetPagination(searchParams);
 
     const rawParams = {
-      page: searchParams.get('page'),
-      limit: searchParams.get('limit'),
+      page: parsedPage,
+      limit: parsedLimit,
       search: searchParams.get('search'),
       productId: searchParams.get('productId'),
       variantId: searchParams.get('variantId'),
@@ -210,6 +213,9 @@ const getInventoryAdjustmentsHandler = withErrorHandling(
     // 构建查询条件和排序
     const where = buildAdjustmentWhereClause(filters);
     const orderBy = buildAdjustmentOrderBy(sortBy, sortOrder);
+    const stableOrderBy = [orderBy, { id: 'desc' }] as Array<
+      Record<string, 'asc' | 'desc'>
+    >;
 
     // 查询数据
     const [adjustments, total] = await Promise.all([
@@ -249,7 +255,8 @@ const getInventoryAdjustmentsHandler = withErrorHandling(
             },
           },
         },
-        orderBy,
+        // Prisma 支持 orderBy 数组，追加 id 作为稳定排序
+        orderBy: stableOrderBy as any,
         skip: offset,
         take: limit,
       }),
@@ -258,18 +265,13 @@ const getInventoryAdjustmentsHandler = withErrorHandling(
 
     // 格式化数据
     const formattedAdjustments = adjustments.map(formatAdjustmentData);
-    const totalPages = Math.ceil(total / limit);
+    const pagination = buildOffsetPaginationMeta({ page, limit, total });
 
     return NextResponse.json({
       success: true,
       data: {
         adjustments: formattedAdjustments,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
-        },
+        pagination,
       },
     });
   }

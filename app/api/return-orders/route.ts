@@ -4,6 +4,7 @@
 import { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
@@ -35,8 +36,14 @@ type SalesOrderItemWithProduct = SalesOrderWithItems['items'][number];
 export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析查询参数
-    const { searchParams } = new URL(request.url);
-    const queryParams = Object.fromEntries(searchParams.entries());
+    const { searchParams } = request.nextUrl;
+    const { page: parsedPage, limit: parsedLimit } =
+      parseOffsetPagination(searchParams);
+    const queryParams = {
+      ...Object.fromEntries(searchParams.entries()),
+      page: parsedPage,
+      limit: parsedLimit,
+    };
 
     const validationResult = returnOrderQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
@@ -124,6 +131,14 @@ export const GET = withAuth(
     }
 
     // 查询数据
+    const skip = (page - 1) * limit;
+    const primaryOrderBy = {
+      [sortBy]: sortOrder,
+    } as Prisma.ReturnOrderOrderByWithRelationInput;
+    const orderBy: Prisma.ReturnOrderOrderByWithRelationInput[] = [
+      primaryOrderBy,
+      { id: 'desc' },
+    ];
     const [returnOrders, total] = await Promise.all([
       prisma.returnOrder.findMany({
         where,
@@ -151,10 +166,8 @@ export const GET = withAuth(
             },
           },
         },
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
-        skip: (page - 1) * limit,
+        orderBy,
+        skip,
         take: limit,
       }),
       prisma.returnOrder.count({ where }),
@@ -192,12 +205,7 @@ export const GET = withAuth(
       success: true,
       data: {
         returnOrders: enrichedReturnOrders,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
-        },
+        pagination: buildOffsetPaginationMeta({ page, limit, total }),
       },
     });
   },

@@ -8,6 +8,7 @@ import {
   buildTemporaryProductDataFromOrderItem,
   findOrCreateTemporaryProduct,
 } from '@/lib/api/handlers/sales-orders/temporary-products';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env, paginationConfig } from '@/lib/env';
@@ -43,17 +44,11 @@ type ListParams = {
 };
 
 function parseAndValidateListParams(request: NextRequest): ListParams {
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = request.nextUrl;
+  const { page, limit } = parseOffsetPagination(searchParams);
   const raw = {
-    page: searchParams.get('page')
-      ? parseInt(searchParams.get('page') || '1')
-      : 1,
-    limit: searchParams.get('limit')
-      ? parseInt(
-          searchParams.get('limit') ||
-            paginationConfig.defaultPageSize.toString()
-        )
-      : paginationConfig.defaultPageSize,
+    page,
+    limit,
     status: searchParams.get('status') || undefined,
     customerId: searchParams.get('customerId') || undefined,
     containerNumber: searchParams.get('containerNumber') || undefined,
@@ -559,17 +554,12 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     const _wherePreview = buildWhere(_paramsPreview);
     void _wherePreview;
     // 解析查询参数
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
+    const { page: parsedPage, limit: parsedLimit } =
+      parseOffsetPagination(searchParams);
     const queryParams = {
-      page: searchParams.get('page')
-        ? parseInt(searchParams.get('page') || '1')
-        : 1,
-      limit: searchParams.get('limit')
-        ? parseInt(
-            searchParams.get('limit') ||
-              paginationConfig.defaultPageSize.toString()
-          )
-        : paginationConfig.defaultPageSize,
+      page: parsedPage,
+      limit: parsedLimit,
       status: searchParams.get('status') || undefined,
       customerId: searchParams.get('customerId') || undefined,
       search: searchParams.get('search') || undefined, // ✅ 新增：提取 search 参数
@@ -644,7 +634,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: orderListSelect,
       }),
       prisma.factoryShipmentOrder.count({ where }),
