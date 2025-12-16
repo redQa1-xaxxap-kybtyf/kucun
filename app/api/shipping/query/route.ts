@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withErrorHandling } from '@/lib/api/middleware';
 import {
   errorResponse,
@@ -26,11 +27,10 @@ import {
  */
 export const GET = withErrorHandling(
   withAuth(async (request: NextRequest) => {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const siteId = searchParams.get('siteId');
     const queryStatus = searchParams.get('queryStatus');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const { page, limit, skip } = parseOffsetPagination(searchParams);
 
     const where: Record<string, unknown> = {};
     if (siteId) {
@@ -46,19 +46,19 @@ export const GET = withErrorHandling(
     // 查询数据
     const queries = await prisma.shippingQuery.findMany({
       where,
-      orderBy: { queriedAt: 'desc' },
-      skip: (page - 1) * limit,
+      orderBy: [{ queriedAt: 'desc' }, { id: 'desc' }],
+      skip,
       take: limit,
     });
 
     return successResponse({
       data: queries,
-      pagination: {
+      pagination: buildOffsetPaginationMeta({
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
-      },
+        hasMore: skip + queries.length < total,
+      }),
     });
   })
 );

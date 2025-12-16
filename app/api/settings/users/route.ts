@@ -6,9 +6,10 @@
 import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env, paginationConfig } from '@/lib/env';
+import { env } from '@/lib/env';
 import { extractRequestInfo, logger, logUserAction } from '@/lib/logger';
 import type {
   UpdateUserRequest,
@@ -49,12 +50,11 @@ export const GET = withAuth(
   async (request: NextRequest) => {
     try {
       // 解析查询参数
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = request.nextUrl;
+      const { page, limit, skip } = parseOffsetPagination(searchParams);
       const queryParams = {
-        page: searchParams.get('page') || '1',
-        limit:
-          searchParams.get('limit') ||
-          paginationConfig.defaultPageSize.toString(),
+        page,
+        limit,
         search: searchParams.get('search'),
         role: searchParams.get('role'),
         status: searchParams.get('status'),
@@ -92,10 +92,9 @@ export const GET = withAuth(
         where.status = validatedQuery.status;
       }
 
-      // 计算分页
-      const page = validatedQuery.page || 1;
-      const limit = validatedQuery.limit || paginationConfig.defaultPageSize;
-      const skip = (page - 1) * limit;
+      const effectivePage = validatedQuery.page ?? page;
+      const effectiveLimit = validatedQuery.limit ?? limit;
+      const effectiveSkip = (effectivePage - 1) * effectiveLimit;
 
       // 查询用户总数
       const total = await prisma.user.count({ where });
@@ -113,23 +112,33 @@ export const GET = withAuth(
           createdAt: true,
           updatedAt: true,
         },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip: effectiveSkip,
+        take: effectiveLimit,
+      });
+
+      const pagination = buildOffsetPaginationMeta({
+        page: effectivePage,
+        limit: effectiveLimit,
+        total,
+        hasMore: effectiveSkip + users.length < total,
       });
 
       // 构建响应数据
       const response: UserListResponse = {
         users: users.map(transformUser),
         total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit),
+        page: effectivePage,
+        limit: effectiveLimit,
+        totalPages: pagination.totalPages ?? Math.ceil(total / effectiveLimit),
       };
 
       return NextResponse.json({
         success: true,
-        data: response,
+        data: {
+          ...response,
+          pagination,
+        },
       });
     } catch (error) {
       logger.error('settings', '获取用户列表失败', error);

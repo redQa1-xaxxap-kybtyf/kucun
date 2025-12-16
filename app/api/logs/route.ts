@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type {
@@ -31,10 +32,12 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     }
 
     // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
+    const { searchParams } = request.nextUrl;
+    const { page: parsedPage, limit: parsedLimit } =
+      parseOffsetPagination(searchParams);
     const validationResult = SystemLogListRequestSchema.safeParse({
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      page: parsedPage,
+      limit: parsedLimit,
       filters: {
         type: searchParams.get('type') || null,
         level: searchParams.get('level') || null,
@@ -115,9 +118,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip,
         take: limit,
       }),
@@ -144,17 +145,27 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       createdAt: log.createdAt.toISOString(),
     }));
 
+    const pagination = buildOffsetPaginationMeta({
+      page,
+      limit,
+      total,
+      hasMore: skip + formattedLogs.length < total,
+    });
+
     const response: SystemLogListResponse = {
       logs: formattedLogs,
       total,
       page,
       limit,
-      totalPages: Math.ceil(total / limit),
+      totalPages: pagination.totalPages ?? Math.ceil(total / limit),
     };
 
     return NextResponse.json({
       success: true,
-      data: response,
+      data: {
+        ...response,
+        pagination,
+      },
     });
   } catch (error) {
     console.error('获取系统日志失败:', error);
