@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { prisma } from '@/lib/db';
 
 /**
@@ -17,8 +18,27 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const supplierId = searchParams.get('supplierId');
     const search = searchParams.get('search');
-    const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
+
+    let page: number;
+    let limit: number;
+    let skip: number;
+    try {
+      const parsed = parseOffsetPagination(searchParams, {
+        defaultLimit: 20,
+        maxLimit: 100,
+        strict: true,
+        pageFieldLabel: '页码',
+        limitFieldLabel: '每页数量',
+      });
+      page = parsed.page;
+      limit = parsed.limit;
+      skip = parsed.skip;
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : '分页参数格式不正确' },
+        { status: 400 }
+      );
+    }
 
     // 构建查询条件
     const where: {
@@ -67,8 +87,9 @@ export async function GET(request: NextRequest) {
       orderBy: [
         { usageCount: 'desc' }, // 按使用次数降序
         { lastUsedAt: 'desc' }, // 最近使用时间降序
+        { id: 'desc' },
       ],
-      skip: (page - 1) * limit,
+      skip,
       take: limit,
     });
 

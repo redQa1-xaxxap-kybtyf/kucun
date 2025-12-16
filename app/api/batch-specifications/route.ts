@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/batch-specification-handlers';
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { logger } from '@/lib/logger';
 import {
   batchSpecificationQuerySchema,
@@ -21,11 +22,28 @@ import {
 /**
  * 解析查询参数
  */
-function parseQueryParams(url: string) {
-  const { searchParams } = new URL(url);
+function parseQueryParams(searchParams: URLSearchParams) {
+  let page: number;
+  let limit: number;
+  try {
+    const parsed = parseOffsetPagination(searchParams, {
+      defaultLimit: 20,
+      maxLimit: 100,
+      strict: true,
+      pageFieldLabel: '页码',
+      limitFieldLabel: '每页数量',
+    });
+    page = parsed.page;
+    limit = parsed.limit;
+  } catch (error) {
+    throw ApiError.badRequest(
+      error instanceof Error ? error.message : '分页参数格式不正确'
+    );
+  }
+
   return {
-    page: parseInt(searchParams.get('page') || '1', 10),
-    limit: parseInt(searchParams.get('limit') || '20', 10),
+    page,
+    limit,
     search: searchParams.get('search') || undefined,
     productId: searchParams.get('productId') || undefined,
     batchNumber: searchParams.get('batchNumber') || undefined,
@@ -48,7 +66,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // 解析查询参数
-  const queryData = parseQueryParams(request.url);
+  const queryData = parseQueryParams(request.nextUrl.searchParams);
 
   // 验证查询参数
   const validatedQuery = batchSpecificationQuerySchema.parse(queryData);

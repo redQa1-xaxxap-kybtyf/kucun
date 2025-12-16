@@ -12,8 +12,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
-import { paginationConfig } from '@/lib/env';
 import { createCategory, getCategories } from '@/lib/services/category-service';
 import {
   CategoryQuerySchema,
@@ -26,12 +26,26 @@ import {
 async function handleGetCategories(request: NextRequest) {
   const { searchParams } = request.nextUrl;
 
+  let page: number;
+  let limit: number;
+  try {
+    const parsed = parseOffsetPagination(searchParams, {
+      strict: true,
+      pageFieldLabel: '页码',
+      limitFieldLabel: '每页数量',
+    });
+    page = parsed.page;
+    limit = parsed.limit;
+  } catch (error) {
+    throw ApiError.badRequest(
+      error instanceof Error ? error.message : '分页参数格式不正确'
+    );
+  }
+
   // 1. 解析查询参数
   const queryParams = {
-    page: parseInt(searchParams.get('page') || '1'),
-    limit: parseInt(
-      searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
-    ),
+    page,
+    limit,
     search: searchParams.get('search') || '',
     sortBy: searchParams.get('sortBy') || 'createdAt',
     sortOrder: searchParams.get('sortOrder') || 'desc',

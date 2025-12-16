@@ -2,12 +2,13 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { ApiError, handlePrismaError } from '@/lib/api/errors';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { publishDataUpdate, revalidateProducts } from '@/lib/cache';
 import { prisma } from '@/lib/db';
-import { paginationConfig, productConfig } from '@/lib/env';
+import { productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { toProductResponse } from '@/lib/utils/product-transforms';
 import { productCreateSchema } from '@/lib/validations/product';
@@ -29,11 +30,11 @@ function parseProductQueryParams(
 
   const includeBatchSpecs = searchParams.get('includeBatchSpecs') === 'true';
 
-  const page = parseInt(searchParams.get('page') || '1', 10);
-  const limit = parseInt(
-    searchParams.get('limit') || paginationConfig.defaultPageSize.toString(),
-    10
-  );
+  const { page, limit } = parseOffsetPagination(searchParams, {
+    strict: true,
+    pageFieldLabel: '页码',
+    limitFieldLabel: '每页数量',
+  });
   const search = searchParams.get('search') || undefined;
   const categoryId = searchParams.get('categoryId') || undefined;
   const status = searchParams.get('status') || undefined;
@@ -58,10 +59,21 @@ function parseProductQueryParams(
  * 实际处理产品列表查询的函数（不做认证）
  */
 async function handleGetProducts(request: NextRequest) {
+  // 解析查询参数（分页错误返回 400，避免落入 500）
+  let params: ProductListQueryParams & { includeBatchSpecs?: boolean };
   try {
-    // 解析查询参数
-    const params = parseProductQueryParams(request.nextUrl.searchParams);
+    params = parseProductQueryParams(request.nextUrl.searchParams);
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '分页参数格式不正确',
+      },
+      { status: 400 }
+    );
+  }
 
+  try {
     // 调用服务器端函数（复用缓存和逻辑）
     const data = await getProductsForServer(params);
 
