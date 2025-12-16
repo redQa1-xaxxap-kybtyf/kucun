@@ -5,7 +5,8 @@
 
 'use client';
 
-import { Eye, Package } from 'lucide-react';
+import { Eye, ImageIcon, Package } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
@@ -42,6 +43,7 @@ interface ProductGroup {
   productCode: string;
   productName: string;
   specification: string;
+  thumbnailUrl?: string; // 产品缩略图URL
   items: Inventory[];
   totalPieces: number; // 总片数
   totalUnits: number; // 总件数
@@ -64,6 +66,7 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
         productCode: code,
         productName: inventory.product?.name || '-',
         specification: formatSpecification(inventory.product?.specification),
+        thumbnailUrl: inventory.product?.thumbnailUrl,
         items: [inventory],
         totalPieces: 0,
         totalUnits: 0,
@@ -151,13 +154,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
       >
         <TableHeader className="card-shadow-light sticky top-0 z-20 bg-[hsl(var(--color-bg-card))]">
           <TableRow>
+            <TableHead className="w-12 whitespace-nowrap">缩略图</TableHead>
             <TableHead className="whitespace-nowrap">产品编码</TableHead>
             <TableHead className="whitespace-nowrap">产品名称</TableHead>
             <TableHead className="whitespace-nowrap">规格</TableHead>
             <TableHead className="whitespace-nowrap">包装信息</TableHead>
-            <TableHead className="text-right whitespace-nowrap">
-              重量(kg)
-            </TableHead>
             <TableHead className="whitespace-nowrap">批次号</TableHead>
             <TableHead className="text-right whitespace-nowrap">
               库存数量
@@ -169,14 +170,9 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
               可用数量
             </TableHead>
             {hasFinancePermission && (
-              <>
-                <TableHead className="text-right whitespace-nowrap">
-                  单位成本（元）
-                </TableHead>
-                <TableHead className="text-right whitespace-nowrap">
-                  库存总成本（元）
-                </TableHead>
-              </>
+              <TableHead className="text-right whitespace-nowrap">
+                成本（单价/总价）
+              </TableHead>
             )}
             <TableHead className="whitespace-nowrap">库存状态</TableHead>
             <TableHead className="whitespace-nowrap">最后更新</TableHead>
@@ -187,7 +183,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
           {isEmptyState ? (
             <TableRow>
               <TableCell
-                colSpan={hasFinancePermission ? 14 : 12}
+                colSpan={hasFinancePermission ? 13 : 12}
                 className="p-8"
               >
                 <EmptyState
@@ -284,6 +280,27 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     } ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))]' : ''}`}
                     onDoubleClick={() => onAdjust(item.id)}
                   >
+                    {/* 产品缩略图 - 只在分组第一行显示 */}
+                    <TableCell className="w-12">
+                      {isFirstInGroup ? (
+                        group.thumbnailUrl ? (
+                          <div className="relative h-10 w-10 overflow-hidden rounded border border-[hsl(var(--color-border-secondary))] bg-white">
+                            <Image
+                              src={group.thumbnailUrl}
+                              alt={group.productName}
+                              fill
+                              className="object-cover"
+                              sizes="40px"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+                            <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
+                          </div>
+                        )
+                      ) : null}
+                    </TableCell>
+
                     {/* 产品编码 */}
                     <TableCell
                       className={`${
@@ -343,7 +360,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       )}
                     </TableCell>
 
-                    {/* 包装信息 */}
+                    {/* 包装信息（含重量） */}
                     <TableCell
                       className={`${
                         isFirstInGroup
@@ -351,40 +368,28 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                           : 'text-[hsl(var(--color-text-secondary))]'
                       }`}
                     >
-                      {packaging > 0 ? (
-                        <span className="font-semibold">
-                          {packaging}
-                          <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-                            片/件
+                      <div className="flex flex-col gap-0.5">
+                        {packaging > 0 ? (
+                          <span className="font-semibold">
+                            {packaging}
+                            <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                              片/件
+                            </span>
                           </span>
-                        </span>
-                      ) : (
-                        <span className="text-[hsl(var(--color-text-tertiary))]">
-                          -
-                        </span>
-                      )}
-                    </TableCell>
-
-                    {/* 重量 */}
-                    <TableCell
-                      className={`text-right tabular-nums ${
-                        isFirstInGroup
-                          ? 'font-medium text-[hsl(var(--color-text-primary))]'
-                          : 'text-[hsl(var(--color-text-secondary))]'
-                      }`}
-                    >
-                      {item.weight ? (
-                        <span className="font-semibold">
-                          {item.weight.toFixed(2)}
-                          <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-                            kg
+                        ) : (
+                          <span className="text-[hsl(var(--color-text-tertiary))]">
+                            -
                           </span>
-                        </span>
-                      ) : (
-                        <span className="text-[hsl(var(--color-text-tertiary))]">
-                          -
-                        </span>
-                      )}
+                        )}
+                        {item.weight ? (
+                          <span className="text-xs tabular-nums text-[hsl(var(--color-text-secondary))]">
+                            {item.weight.toFixed(2)}
+                            <span className="ml-0.5 font-normal text-[hsl(var(--color-text-tertiary))]">
+                              kg
+                            </span>
+                          </span>
+                        ) : null}
+                      </div>
                     </TableCell>
 
                     {/* 批次号 */}
@@ -411,21 +416,22 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       {availableDisplay}
                     </TableCell>
 
-                    {/* 成本信息（仅财务权限可见） */}
+                    {/* 成本信息（合并显示） */}
                     {hasFinancePermission && (
-                      <>
-                        {/* 单位成本 */}
-                        <TableCell className="text-right font-medium text-[hsl(var(--color-text-primary))] tabular-nums">
-                          {item.unitCost ? formatCurrency(item.unitCost) : '-'}
-                        </TableCell>
-
-                        {/* 库存总成本 */}
-                        <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))] tabular-nums">
-                          {item.unitCost
-                            ? formatCurrency(item.quantity * item.unitCost)
-                            : '-'}
-                        </TableCell>
-                      </>
+                      <TableCell className="text-right tabular-nums">
+                        {item.unitCost ? (
+                          <div className="space-y-0.5">
+                            <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                              {formatCurrency(item.unitCost)}
+                            </div>
+                            <div className="font-semibold text-[hsl(var(--color-primary))]">
+                              {formatCurrency(item.quantity * item.unitCost)}
+                            </div>
+                          </div>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
                     )}
 
                     {/* 库存状态 */}

@@ -10,7 +10,7 @@
           class="thumb-image"
           src="{{ thumbnailUrl }}"
           mode="aspectFill"
-          bindtap="onPreviewThumbnail"
+          bindtap="onThumbnailTap"
         />
         <view
           wx:else
@@ -93,80 +93,126 @@
       </view>
     </view>
 
-    <!-- 产品编码 -->
+    <!-- 产品编号 - 增强版 -->
     <view class="form-item">
-      <text class="label">产品编码</text>
-      <input
-        class="input"
-        placeholder="请输入产品编码（仅字母、数字、-、_）"
-        placeholder-class="input-placeholder"
-        value="{{ code }}"
-        bindinput="onCodeInput"
-      />
-    </view>
-
-    <!-- 产品名称 -->
-    <view class="form-item">
-      <text class="label">产品名称</text>
-      <input
-        class="input"
-        placeholder="请输入产品名称"
-        placeholder-class="input-placeholder"
-        value="{{ name }}"
-        bindinput="onNameInput"
-      />
-    </view>
-
-    <!-- 规格 -->
-    <view class="form-item">
-      <text class="label">规格</text>
-      <input
-        class="input"
-        placeholder="例如：800x800，300x600 等"
-        placeholder-class="input-placeholder"
-        value="{{ specification }}"
-        bindinput="onSpecInput"
-      />
-    </view>
-
-    <!-- 分类选择 -->
-    <view class="form-item">
-      <text class="label">分类</text>
-      <picker
-        mode="selector"
-        range="{{ categories }}"
-        range-key="name"
-        bindchange="onCategoryChange"
-      >
-        <view class="picker-value">
-          {{ categoryName || '请选择产品分类' }}
+      <view class="input-wrapper {{ (code || focusStates.code) ? 'has-value' : '' }}">
+        <text class="label-float">产品编号</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced"
+            placeholder="请输入产品编号"
+            placeholder-class="input-placeholder"
+            value="{{ code }}"
+            data-field="code"
+            bindinput="onCodeInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+          />
         </view>
-      </picker>
+        <view class="input-hint">仅支持字母、数字、-、_</view>
+      </view>
     </view>
 
-    <!-- 厚度 -->
+    <!-- 产品名称 - 增强版 -->
     <view class="form-item">
-      <text class="label">厚度 (mm)</text>
-      <input
-        class="input"
-        type="digit"
-        placeholder="可选，例如：9.5"
-        placeholder-class="input-placeholder"
-        value="{{ thickness }}"
-        bindinput="onThicknessInput"
-      />
+      <view class="input-wrapper {{ (name || focusStates.name) ? 'has-value' : '' }}">
+        <text class="label-float">产品名称</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced"
+            placeholder="请输入产品名称"
+            placeholder-class="input-placeholder"
+            value="{{ name }}"
+            data-field="name"
+            bindinput="onNameInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+          />
+        </view>
+      </view>
     </view>
 
-    <!-- 描述 -->
+    <!-- 规格 - 增强版 -->
     <view class="form-item">
-      <text class="label">产品描述</text>
-      <textarea
-        class="textarea"
-        placeholder="可选，用于补充说明（最多1000字）"
-        placeholder-class="input-placeholder"
-        value="{{ description }}"
-        bindinput="onDescInput"
-      />
+      <view class="input-wrapper {{ (specification || focusStates.specification) ? 'has-value' : '' }}">
+        <text class="label-float">规格</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced"
+            placeholder="例如:800x800,300x600 等"
+            placeholder-class="input-placeholder"
+            value="{{ specification }}"
+            data-field="specification"
+            bindinput="onSpecInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 分类选择 - 增强版 -->
+    <view class="form-item">
+      <view class="input-wrapper {{ categoryName ? 'has-value' : '' }}">
+        <text class="label-float">分类</text>
+        <picker
+          mode="selector"
+          range="{{ categories }}"
+          range-key="name"
+          bindchange="onCategoryChange"
+        >
+          <view class="picker-container">
+            <view class="picker-value-enhanced">
+              {{ categoryName || '请选择产品分类' }}
+            </view>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+        <view class="input-hint">必须选择一个分类</view>
+      </view>
+    </view>
+
+    <!-- 厚度 - 增强版 -->
+    <view class="form-item">
+      <view class="input-wrapper {{ (thickness || focusStates.thickness) ? 'has-value' : '' }}">
+        <text class="label-float">厚度 (mm)</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced"
+            type="digit"
+            placeholder="可选,例如:9.5"
+            placeholder-class="input-placeholder"
+            value="{{ thickness }}"
+            data-field="thickness"
+            bindinput="onThicknessInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+          />
+        </view>
+        <view class="input-hint">可选填写</view>
+      </view>
+    </view>
+
+    <!-- 描述 - 增强版 -->
+    <view class="form-item">
+      <view class="textarea-wrapper {{ (description || focusStates.description) ? 'has-value' : '' }}">
+        <text class="label-float">产品描述</text>
+        <view class="textarea-container">
+          <textarea
+            class="textarea-enhanced"
+            placeholder="用于补充说明产品特性、用途等信息"
+            placeholder-class="input-placeholder"
+            value="{{ description }}"
+            data-field="description"
+            bindinput="onDescInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+            maxlength="1000"
+          />
+          <view class="char-count">{{ description ? description.length : 0 }}/1000</view>
+        </view>
+        <view class="input-hint">可选,最多1000字</view>
+      </view>
     </view>
   </view>
 

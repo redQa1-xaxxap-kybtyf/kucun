@@ -184,9 +184,9 @@ Page({
     this.loadInitialData();
   },
   calcLayout: function () {
-    // 获取系统信息
-    var systemInfo = wx.getSystemInfoSync();
-    var statusBarHeight = systemInfo.statusBarHeight;
+    // 获取窗口信息（新推荐 API），避免使用已废弃的 getSystemInfoSync
+    var windowInfo = wx.getWindowInfo();
+    var statusBarHeight = windowInfo.statusBarHeight || 0;
     // 获取胶囊按钮位置
     var menuButtonInfo = wx.getMenuButtonBoundingClientRect();
     // 计算导航栏高度 (胶囊顶部距离状态栏的间隙 * 2 + 胶囊高度)
@@ -415,7 +415,7 @@ Page({
   onSearch: function (e) {
     var value =
       (e && e.detail && e.detail.value) || this.data.searchValue || '';
-    console.log('搜索:', value);
+    if (!value) return;
     // 跳转到产品列表页并传递搜索关键词
     wx.navigateTo({
       url: '/pages/products/list?keyword='.concat(value),
@@ -429,8 +429,7 @@ Page({
   onCategoryTap: function (e) {
     var id = e.currentTarget.dataset.id;
     this.setData({ selectedCategoryId: id });
-    // TODO: 根据分类筛选产品
-    console.log('选择分类:', id);
+    // TODO: 根据分类筛选产品（旧首页实现，目前实际跳转在主首页 index.ts 中处理）
   },
   // 导航方法
   navigateToProducts: function () {

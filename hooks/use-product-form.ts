@@ -305,9 +305,29 @@ async function handleUpdateSubmit(
 ): Promise<void> {
   const { values, form, setSubmitError, updateMutation, targetId } = args;
 
+  // 🎯 智能处理产品名称（编辑模式）：
+  // - 如果用户清空了产品名称，但选择了分类（尤其是 2/3 级），
+  //   则自动使用 1 级分类名称作为回退，避免出现“产品名称不能为空”的报错
+  let productName: string | undefined = values.name;
+  if (!productName || productName.trim() === '') {
+    const categoryName = form.getValues('_categoryName' as any);
+    if (categoryName && typeof categoryName === 'string') {
+      productName = categoryName;
+      // 同步回表单，让用户看到最终保存的名称
+      form.setValue('name', categoryName, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    } else {
+      // 如果没有可用的分类名称，则让 name 变为 undefined，
+      // 交给后端/验证逻辑决定是否允许为空
+      productName = undefined;
+    }
+  }
+
   const updateInput: ProductUpdateFormData = {
     code: values.code,
-    name: values.name,
+    name: productName,
     specification: values.specification,
     description: values.description,
     piecesPerUnit: values.piecesPerUnit,

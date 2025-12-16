@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { decode, getToken } from 'next-auth/jwt';
 
 import { env } from './env';
+
+// 内部调用密钥（与 verify-token API 保持一致）
+const INTERNAL_API_KEY = `internal_${env.NEXTAUTH_SECRET?.slice(0, 16)}`;
+const MINI_PROGRAM_JWT_SALT = 'mini-program';
 
 // 需要认证的路径
 const protectedPaths = [
@@ -47,11 +51,13 @@ const protectedPaths = [
   '/api/notifications', // 通知 API
   '/api/price-history', // 价格历史 API
   '/api/profile', // 个人资料 API
+  '/api/admin', // 管理端 API（仅管理员可用）
 ];
 
 // 需要管理员权限的路径
 const adminOnlyPaths = [
   '/api/settings/users',
+  '/api/admin',
   '/dashboard/users',
   '/dashboard/settings',
   '/settings', // 系统设置页面（包括基本设置、用户管理等）
@@ -65,6 +71,7 @@ const publicPaths = [
   '/api/captcha',
   '/api/address', // 地址数据 API（省市区）
   '/api/internal', // 内部API（仅供middleware使用）
+  '/api/uploads', // 本地上传文件读取（供 Web/小程序图片展示）
 ];
 
 // 检查路径是否需要认证
@@ -169,46 +176,79 @@ export async function authMiddleware(request: NextRequest) {
   try {
     let token: any = null;
 
-    // 🔧 小程序支持：检查Bearer Token（用于微信小程序）
+    // 🔧 小程序支持：检查 Bearer Token（用于微信小程序）
+    // 说明：部分代理/网关可能不透传 Authorization 头，故同时支持 x-mini-token 作为兜底
     const authHeader = request.headers.get('Authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      const bearerToken = authHeader.substring(7);
+    const miniTokenHeader = request.headers.get('x-mini-token');
 
+    const bearerToken = authHeader?.startsWith('Bearer ')
+      ? authHeader.substring(7)
+      : miniTokenHeader || null;
+
+    if (bearerToken) {
+      // 0) 优先直接解码小程序 token，避免中间件内部 fetch 自己的 API 在某些部署环境下不稳定
       try {
-        // 调用内部API验证Bearer Token
-        const verifyResponse = await fetch(
-          new URL('/api/internal/verify-token', request.url),
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              host: request.headers.get('host') || 'localhost:3000',
-            },
-            body: JSON.stringify({ token: bearerToken }),
-          }
-        );
+        const payload = await decode({
+          token: bearerToken,
+          secret: env.NEXTAUTH_SECRET,
+          salt: MINI_PROGRAM_JWT_SALT,
+        });
 
-        if (verifyResponse.ok) {
-          const result = await verifyResponse.json();
-          if (result.success && result.user) {
-            // 构造与NextAuth token格式兼容的对象
+        if (payload && typeof payload === 'object') {
+          const userId = String((payload as any).sub || (payload as any).id || '');
+          const username = String((payload as any).username || '');
+          if (userId && username) {
             token = {
-              sub: result.user.id,
-              email: result.user.email,
-              name: result.user.name,
-              username: result.user.username,
-              role: result.user.role,
-              status: result.user.status,
+              sub: userId,
+              email: (payload as any).email ?? '',
+              name: (payload as any).name ?? '',
+              username,
+              role: (payload as any).role ?? 'user',
+              status: (payload as any).status ?? 'active',
             };
           }
         }
-      } catch (error) {
-        // Bearer Token验证失败，继续尝试NextAuth
-        // eslint-disable-next-line no-console
-        console.warn(
-          'Bearer token verification failed, trying NextAuth',
-          error
-        );
+      } catch (_error) {
+        // ignore，继续走内部验证兜底
+      }
+
+      // 1) 兜底：调用内部API验证 Bearer Token
+      if (!token) {
+        try {
+          const verifyResponse = await fetch(
+            new URL('/api/internal/verify-token', request.url),
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-internal-key': INTERNAL_API_KEY,
+              },
+              body: JSON.stringify({ token: bearerToken }),
+            }
+          );
+
+          if (verifyResponse.ok) {
+            const result = await verifyResponse.json();
+            if (result.success && result.user) {
+              // 构造与NextAuth token格式兼容的对象
+              token = {
+                sub: result.user.id,
+                email: result.user.email,
+                name: result.user.name,
+                username: result.user.username,
+                role: result.user.role,
+                status: result.user.status,
+              };
+            }
+          }
+        } catch (error) {
+          // Bearer Token验证失败，继续尝试NextAuth
+          // eslint-disable-next-line no-console
+          console.warn(
+            'Bearer token verification failed, trying NextAuth',
+            error
+          );
+        }
       }
     }
 
@@ -223,6 +263,17 @@ export async function authMiddleware(request: NextRequest) {
     // 未登录用户处理
     if (!token) {
       if (isApiRoute) {
+        // 小程序端排查：输出是否拿到了认证头（避免“线上能登录但写操作全 401”难以定位）
+        if (request.headers.get('x-client-from') === 'mini-program') {
+          // eslint-disable-next-line no-console
+          console.warn('mini-program unauthorized (missing token)', {
+            pathname,
+            method,
+            hasAuthorization: !!request.headers.get('Authorization'),
+            hasMiniToken: !!request.headers.get('x-mini-token'),
+          });
+        }
+
         // API 路由返回 401 JSON 响应
         return NextResponse.json(
           { success: false, error: '未授权访问' },

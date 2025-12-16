@@ -1,28 +1,33 @@
-'use strict';
+"use strict";
 // 分类服务
 // 封装所有分类相关的 API 请求
-Object.defineProperty(exports, '__esModule', { value: true });
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.categoryService = void 0;
-const api_1 = require('../config/api');
-const request_1 = require('../utils/request');
+const api_1 = require("../config/api");
+const request_1 = require("../utils/request");
 /**
  * 分类服务类
  */
 class CategoryService {
-  /**
-   * 获取分类列表
-   */
-  async getCategories() {
-    return (0, request_1.get)(api_1.API_ENDPOINTS.CATEGORIES.LIST, {
-      status: 'active', // 只获取启用的分类
-    });
-  }
-  /**
-   * 获取分类详情
-   */
-  async getCategoryDetail(id) {
-    return (0, request_1.get)(api_1.API_ENDPOINTS.CATEGORIES.DETAIL(id));
-  }
+    /**
+     * 获取分类列表
+     */
+    async getCategories() {
+        return (0, request_1.get)(api_1.API_ENDPOINTS.CATEGORIES.LIST, {
+            status: 'active', // 只获取启用的分类
+        }, {
+            // 分类浏览允许游客模式，不自动跳转登录
+            autoRedirectOn401: false,
+        });
+    }
+    /**
+     * 获取分类详情
+     */
+    async getCategoryDetail(id) {
+        return (0, request_1.get)(api_1.API_ENDPOINTS.CATEGORIES.DETAIL(id), undefined, {
+            autoRedirectOn401: false,
+        });
+    }
 }
 // 导出单例
 exports.categoryService = new CategoryService();

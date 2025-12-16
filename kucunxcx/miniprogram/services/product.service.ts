@@ -1,14 +1,34 @@
 // 产品服务
 // 封装所有产品相关的 API 请求
 
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, TOKEN_KEY } from '../config/api';
 import type { PaginationResponse } from '../types/common';
 import type {
   Product,
   ProductDetail,
   ProductQueryParams,
 } from '../types/product';
-import { get, post } from '../utils/request';
+import { get, post, put } from '../utils/request';
+import authService from './auth.service';
+import inventoryService from './inventory.service';
+
+function appendMiniTokenForLocalUploads(url: string): string {
+  if (!url) return url;
+
+  // 本地兜底图片通过 /api/uploads/... 提供；小程序 <image> 无法设置 header，
+  // 这里对历史数据的旧 URL 追加 mt=token（服务端会校验）。
+  if (!url.includes('/api/uploads/')) return url;
+  if (/[?&](t|mt)=/.test(url)) return url;
+
+  try {
+    const token = wx.getStorageSync(TOKEN_KEY);
+    if (!token) return url;
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}mt=${encodeURIComponent(token)}`;
+  } catch (_error) {
+    return url;
+  }
+}
 
 /**
  * 产品服务类
@@ -31,7 +51,11 @@ class ProductService {
       sortOrder: params.sortOrder || 'desc',
       includeInventory: params.includeInventory !== false, // 默认包含库存
       includeStatistics: params.includeStatistics || false,
-      includeBatchSpecs: params.includeBatchSpecs || false,
+      // 小程序默认开启批次规格信息，方便计算“X件Y片”
+      includeBatchSpecs:
+        params.includeBatchSpecs === undefined
+          ? true
+          : params.includeBatchSpecs,
     };
 
     // 调用后端API
@@ -55,11 +79,61 @@ class ProductService {
                 ? img.url
                 : ''
           )
-          .filter((url: string) => !!url);
+          .filter((url: string) => !!url)
+          .map((url: string) => appendMiniTokenForLocalUploads(url));
+      }
+
+      // 计算统一的“每件片数”
+      // 1) 优先使用产品本身的 piecesPerUnit（>1 时认为是有效包装）
+      // 2) 如未设置或为 1，则从批次规格 / 库存批次中推导（所有批次一致时采用）
+      let effectivePiecesPerUnit: number | undefined =
+        typeof product.piecesPerUnit === 'number' &&
+        product.piecesPerUnit > 1
+          ? product.piecesPerUnit
+          : undefined;
+
+      if (!effectivePiecesPerUnit) {
+        const candidateValues: number[] = [];
+
+        // 从批次规格里收集每件片数
+        if (Array.isArray(product.batchSpecs)) {
+          product.batchSpecs.forEach((spec: any) => {
+            const v =
+              spec && typeof spec.piecesPerUnit === 'number'
+                ? spec.piecesPerUnit
+                : undefined;
+            if (v && v > 0) {
+              candidateValues.push(v);
+            }
+          });
+        }
+
+        // 兼容：从库存批次中收集 piecesPerUnit（如果后端有返回）
+        if (
+          product.inventory &&
+          Array.isArray(product.inventory.batches)
+        ) {
+          product.inventory.batches.forEach((batch: any) => {
+            const v =
+              batch && typeof batch.piecesPerUnit === 'number'
+                ? batch.piecesPerUnit
+                : undefined;
+            if (v && v > 0) {
+              candidateValues.push(v);
+            }
+          });
+        }
+
+        const unique = Array.from(new Set(candidateValues));
+        if (unique.length === 1) {
+          effectivePiecesPerUnit = unique[0];
+        }
       }
 
       return {
         ...product,
+        piecesPerUnit: effectivePiecesPerUnit ?? product.piecesPerUnit,
+        thumbnailUrl: appendMiniTokenForLocalUploads(product.thumbnailUrl || ''),
         images,
       } as Product;
     });
@@ -88,7 +162,6 @@ class ProductService {
       {
         includeInventory: true,
         includeStatistics: true,
-        includeBatchSpecs: true,
       },
       {
         // 产品详情同样允许游客访问，不自动跳转登录
@@ -96,22 +169,85 @@ class ProductService {
       }
     );
 
+    // 将后端返回的图片结构(ProductImage[])拆分为主图 / 效果图，方便小程序分别展示
     let images: string[] = [];
+    let mainImages: string[] = [];
+    let effectImages: string[] = [];
+
     if (Array.isArray(raw.images)) {
-      images = raw.images
-        .map((img: any) =>
-          typeof img === 'string'
-            ? img
-            : img && typeof img.url === 'string'
-              ? img.url
-              : ''
-        )
-        .filter((url: string) => !!url);
+      raw.images.forEach((img: any) => {
+        if (!img) return;
+
+        // 兼容历史数据：字符串数组视为主图
+        if (typeof img === 'string') {
+          mainImages.push(img);
+          images.push(img);
+          return;
+        }
+
+        if (img && typeof img.url === 'string' && img.url) {
+          const url = appendMiniTokenForLocalUploads(img.url as string);
+          if (img.type === 'effect') {
+            effectImages.push(url);
+          } else {
+            // 默认归类为主图
+            mainImages.push(url);
+          }
+          images.push(url);
+        }
+      });
+    }
+
+    // 详情页同样需要正确的“每件片数”用于 X件Y片 展示
+    let effectivePiecesPerUnit: number | undefined =
+      typeof raw.piecesPerUnit === 'number' && raw.piecesPerUnit > 1
+        ? raw.piecesPerUnit
+        : undefined;
+
+    // 如果产品本身没有配置 piecesPerUnit，则在有权限查看库存数字的情况下，
+    // 尝试从库存批次信息中推导统一的“每件片数”
+    if (!effectivePiecesPerUnit && authService.canViewNumericInventory()) {
+      try {
+        const inventoryResponse =
+          await inventoryService.getInventoryList({
+            productId: id,
+            page: 1,
+            limit: 100,
+          });
+
+        const candidateValues: number[] = [];
+
+        if (Array.isArray(inventoryResponse.inventories)) {
+          inventoryResponse.inventories.forEach(item => {
+            const v =
+              typeof item.batchPiecesPerUnit === 'number'
+                ? item.batchPiecesPerUnit
+                : undefined;
+            if (v && v > 0) {
+              candidateValues.push(v);
+            }
+          });
+        }
+
+        const unique = Array.from(new Set(candidateValues));
+        if (unique.length === 1) {
+          effectivePiecesPerUnit = unique[0];
+        }
+      } catch (error) {
+        // 推导失败不影响主流程，只在控制台记录
+        // eslint-disable-next-line no-console
+        console.error('获取库存批次规格失败:', error);
+      }
     }
 
     return {
       ...raw,
+      piecesPerUnit: effectivePiecesPerUnit ?? raw.piecesPerUnit,
+      thumbnailUrl: appendMiniTokenForLocalUploads(raw.thumbnailUrl || ''),
       images,
+      // 如果没有单独的主图数组，则回退为全部图片
+      mainImages: mainImages.length > 0 ? mainImages : images,
+      effectImages,
     } as ProductDetail;
   }
 
@@ -213,6 +349,75 @@ class ProductService {
     };
 
     return post<ProductDetail>(API_ENDPOINTS.PRODUCTS.LIST, body);
+  }
+
+  /**
+   * 更新产品
+   * 仅用于小程序端管理员 / 销售编辑产品
+   */
+  async updateProduct(
+    id: string,
+    payload: {
+      code: string;
+      name: string;
+      specification: string;
+      description?: string;
+      thickness?: number;
+      categoryId: string;
+      thumbnailUrl?: string;
+      mainImages?: string[];
+      effectImages?: string[];
+    }
+  ): Promise<ProductDetail> {
+    const images: Array<{
+      url: string;
+      type: 'main' | 'effect';
+      order: number;
+    }> = [];
+    let order = 0;
+
+    if (payload.thumbnailUrl) {
+      images.push({
+        url: payload.thumbnailUrl,
+        type: 'main',
+        order: order++,
+      });
+    }
+
+    if (payload.mainImages && payload.mainImages.length > 0) {
+      payload.mainImages.forEach(url => {
+        if (!url) return;
+        images.push({
+          url,
+          type: 'main',
+          order: order++,
+        });
+      });
+    }
+
+    if (payload.effectImages && payload.effectImages.length > 0) {
+      payload.effectImages.forEach(url => {
+        if (!url) return;
+        images.push({
+          url,
+          type: 'effect',
+          order: order++,
+        });
+      });
+    }
+
+    const body = {
+      code: payload.code,
+      name: payload.name,
+      specification: payload.specification,
+      description: payload.description ?? '',
+      thickness: payload.thickness,
+      categoryId: payload.categoryId,
+      thumbnailUrl: payload.thumbnailUrl ?? '',
+      images,
+    };
+
+    return put<ProductDetail>(API_ENDPOINTS.PRODUCTS.DETAIL(id), body);
   }
 }
 

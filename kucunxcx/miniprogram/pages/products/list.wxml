@@ -6,53 +6,38 @@
   <view class="search-section">
     <van-search
       value="{{ searchValue }}"
-      placeholder="搜索产品名称/编码"
+      placeholder="搜索产品名称或编码"
       bind:search="onSearch"
       bind:change="onSearchChange"
       bind:clear="onClearSearch"
       shape="round"
       background="transparent"
-      use-action-slot
+      show-action
     >
-      <view slot="action" class="action-buttons">
-        <view bind:tap="toggleFilter" class="icon-btn">
-          <text class="filter-text">筛选</text>
-          <van-icon name="filter-o" size="16px" color="#1d1d1f" />
-        </view>
+      <view slot="action" bind:tap="toggleFilter" class="filter-btn">
+        <text class="filter-text">筛选</text>
+        <van-icon name="filter-o" size="16px" color="#007aff" />
       </view>
     </van-search>
   </view>
 
-  <!-- 筛选栏 - 整合筛选和布局切换 -->
-  <view class="filter-bar" wx:if="{{ showFilter }}">
-    <van-dropdown-menu class="filter-dropdown" active-color="#1d1d1f">
+  <!-- 筛选下拉菜单和布局切换 -->
+  <view class="filter-layout-bar" wx:if="{{ showFilter }}">
+    <van-dropdown-menu active-color="#007aff" class="filter-menu">
       <van-dropdown-item value="{{ filterCategory }}" options="{{ categoryOptions }}" bind:change="onCategoryChange" />
       <van-dropdown-item value="{{ filterStatus }}" options="{{ statusOptions }}" bind:change="onStatusChange" />
       <van-dropdown-item value="{{ filterSort }}" options="{{ sortOptions }}" bind:change="onSortChange" />
     </van-dropdown-menu>
 
-    <!-- 布局切换按钮组 -->
-    <view class="layout-switcher">
-      <view
-        class="layout-btn {{ layoutMode === 'list' ? 'active' : '' }}"
-        bind:tap="switchToLayout"
-        data-mode="list"
-      >
-        <van-icon name="bars" size="18px" />
+    <view class="layout-switcher-compact">
+      <view class="layout-icon {{ layoutMode === 'list' ? 'active' : '' }}" bindtap="switchToLayout" data-mode="list">
+        <text>━</text>
       </view>
-      <view
-        class="layout-btn {{ layoutMode === 'grid-2' ? 'active' : '' }}"
-        bind:tap="switchToLayout"
-        data-mode="grid-2"
-      >
-        <van-icon name="apps-o" size="18px" />
+      <view class="layout-icon {{ layoutMode === 'grid-2' ? 'active' : '' }}" bindtap="switchToLayout" data-mode="grid-2">
+        <text>▦</text>
       </view>
-      <view
-        class="layout-btn {{ layoutMode === 'grid-3' ? 'active' : '' }}"
-        bind:tap="switchToLayout"
-        data-mode="grid-3"
-      >
-        <van-icon name="grid-o" size="18px" />
+      <view class="layout-icon {{ layoutMode === 'grid-3' ? 'active' : '' }}" bindtap="switchToLayout" data-mode="grid-3">
+        <text>▦</text>
       </view>
     </view>
   </view>
@@ -72,37 +57,37 @@
         bindtap="navigateToDetail"
         data-id="{{ item.id }}"
       >
-        <image 
-          class="product-thumb" 
-          src="{{ item.thumbnailUrl || 'https://img.yzcdn.cn/vant/cat.jpeg' }}" 
+        <image
+          class="product-thumb"
+          src="{{ item.thumbnailUrl || '/assets/images/placeholder.png' }}"
           mode="aspectFill"
         />
-        
+
         <view class="product-content">
+          <!-- 顶部：编码和状态 -->
           <view class="product-header">
-            <text class="product-name">{{ item.name }}</text>
+            <text class="product-code">{{ item.code }}</text>
             <van-tag
               type="{{ item.inventory.availableQuantity > 0 ? 'success' : 'danger' }}"
-              size="{{ layoutMode === 'list' ? 'medium' : 'mini' }}"
+              size="medium"
               custom-class="status-tag"
-              wx:if="{{ layoutMode !== 'grid-3' }}"
             >
               {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
             </van-tag>
           </view>
-          
-          <text class="product-code" wx:if="{{ layoutMode !== 'grid-3' }}">编码: {{ item.code }}</text>
-          
+
+          <!-- 中部：产品名称 -->
+          <text class="product-name">{{ item.name }}</text>
+
+          <!-- 底部：规格和库存 -->
           <view class="product-footer">
-            <text class="product-spec" wx:if="{{ layoutMode === 'list' }}">{{ item.specification || '默认规格' }}</text>
-            <text class="product-stock {{ item.inventory.availableQuantity > 0 ? '' : 'text-danger' }}">
-              <!-- 销售/管理员显示数字，访客只显示有货/缺货 -->
-              <block wx:if="{{ canViewNumericInventory }}">
-                {{ fmt.formatQuantity(item.inventory.availableQuantity, item.unit, item.piecesPerUnit) }}
-              </block>
-              <block wx:else>
-                {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
-              </block>
+            <text class="product-spec">{{ item.specification || '默认规格' }}</text>
+            <!-- 库存数字（有权限用户）单列模式靠右显示 -->
+            <text
+              class="product-stock {{ item.inventory.availableQuantity > 0 ? '' : 'text-danger' }}"
+              wx:if="{{ item.inventory && canViewNumericInventory }}"
+            >
+              {{ fmt.formatQuantityWithPieces(item.inventory.availableQuantity, item.unit, item.piecesPerUnit) }}
             </text>
           </view>
         </view>

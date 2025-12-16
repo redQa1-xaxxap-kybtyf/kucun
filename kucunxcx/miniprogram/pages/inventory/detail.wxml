@@ -62,7 +62,9 @@
           title="每件重量"
           value="{{ inventory.weight ? (inventory.weight + 'kg/件') : '—' }}"
         />
+        <!-- 访客模式不展示批次号，仅内部账号可见 -->
         <van-cell
+          wx:if="{{ canViewNumericInventory }}"
           title="批次号"
           value="{{ inventory.batchNumber || '—' }}"
         />

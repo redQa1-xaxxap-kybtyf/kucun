@@ -3,11 +3,12 @@ import { promises as fs } from 'fs';
 import path from 'path';
 
 import { type NextRequest, NextResponse } from 'next/server';
+import { encode } from 'next-auth/jwt';
 import sharp from 'sharp';
 import { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/api-helpers';
-import { uploadConfig } from '@/lib/env';
+import { env, uploadConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { uploadToQiniu } from '@/lib/services/qiniu-upload';
 
@@ -27,6 +28,26 @@ const SUPPORTED_IMAGE_TYPES = [
   'image/webp',
   'image/gif',
 ] as const;
+
+type ProductImageKind = 'thumbnail' | 'main' | 'effect';
+
+// 根据图片用途返回最大允许大小（字节）
+function getMaxSizeForKind(type: string, kind?: string | null): number {
+  // 仅对产品图片做更细粒度控制，其它类型继续使用全局 maxSize
+  if (type === 'product') {
+    if (kind === 'thumbnail' || kind === 'main') {
+      // 缩略图 & 主图：1MB，且不超过全局限制
+      return Math.min(1 * 1024 * 1024, uploadConfig.maxSize);
+    }
+    if (kind === 'effect') {
+      // 效果图：2MB，且不超过全局限制
+      return Math.min(2 * 1024 * 1024, uploadConfig.maxSize);
+    }
+  }
+
+  // 默认回退到全局上传大小
+  return uploadConfig.maxSize;
+}
 
 interface LocalUploadResult {
   success: boolean;
@@ -60,6 +81,9 @@ async function saveFileLocally(
 ): Promise<LocalUploadResult> {
   try {
     const safeType = type || 'product';
+
+    // 本地兜底仍写入配置的 UPLOAD_DIR，真正对外访问通过 /api/uploads/... 读取文件，
+    // 避免依赖 Nginx /uploads 静态目录映射（线上经常因配置差异导致 404）。
     const baseDir = path.resolve(process.cwd(), uploadConfig.directory);
     const targetDir = path.join(baseDir, safeType);
 
@@ -71,20 +95,9 @@ async function saveFileLocally(
 
     await fs.writeFile(absolutePath, buffer);
 
-    const publicDir = path.resolve(process.cwd(), 'public');
-    let urlPath: string;
-    if (absolutePath.startsWith(publicDir)) {
-      urlPath = `/${path
-        .relative(publicDir, absolutePath)
-        .split(path.sep)
-        .join('/')}`;
-    } else {
-      // 如果上传目录不在 public 内，仍然返回相对路径，前端需自行处理
-      urlPath = `/${path
-        .relative(process.cwd(), absolutePath)
-        .split(path.sep)
-        .join('/')}`;
-    }
+    const urlPath = `/api/uploads/${encodeURIComponent(safeType)}/${encodeURIComponent(
+      safeFileName
+    )}`;
 
     logger.info('upload', '文件已保存到本地目录', undefined, {
       path: absolutePath,
@@ -97,10 +110,18 @@ async function saveFileLocally(
       key: `local://${safeType}/${safeFileName}`,
     };
   } catch (error) {
-    logger.error('upload', '本地保存文件失败', error);
+    const errno = error as NodeJS.ErrnoException;
+    logger.error('upload', '本地保存文件失败', error, {
+      code: errno?.code,
+      errno: errno?.errno,
+      syscall: errno?.syscall,
+    });
     return {
       success: false,
-      error: '文件上传失败（本地保存错误）',
+      error:
+        errno?.code === 'EACCES' || errno?.code === 'EPERM'
+          ? '服务器存储目录无写入权限，请联系管理员'
+          : '文件上传失败（本地保存错误）',
     };
   }
 }
@@ -115,6 +136,11 @@ async function extractUploadPayload(
   const formData = await request.formData();
   const rawFile = formData.get('file');
   const type = (formData.get('type') as string) || 'product';
+   const kindRaw = formData.get('kind');
+   const kind =
+     typeof kindRaw === 'string' && kindRaw.trim().length > 0
+       ? (kindRaw as ProductImageKind)
+       : undefined;
 
   const validationResult = uploadValidation.safeParse({ type });
   if (!validationResult.success) {
@@ -160,13 +186,26 @@ async function extractUploadPayload(
     };
   }
 
-  if (file.size > uploadConfig.maxSize) {
+  // 按用途限制图片大小（缩略图/主图 1MB，效果图 2MB，默认使用全局限制）
+  const maxSizeForKind = getMaxSizeForKind(type, kind);
+  if (file.size > maxSizeForKind) {
+    const maxMb = maxSizeForKind / 1024 / 1024;
+    const sizeText =
+      Number.isInteger(maxMb) ? maxMb.toString() : maxMb.toFixed(2);
+
+    let prefix = '文件';
+    if (type === 'product' && kind) {
+      if (kind === 'thumbnail') prefix = '缩略图';
+      else if (kind === 'main') prefix = '主图';
+      else if (kind === 'effect') prefix = '效果图';
+    }
+
     return {
       ok: false,
       response: NextResponse.json(
         {
           success: false,
-          error: `文件大小不能超过 ${uploadConfig.maxSize / 1024 / 1024}MB`,
+          error: `${prefix}大小不能超过 ${sizeText}MB`,
         },
         { status: 400 }
       ),
@@ -266,7 +305,8 @@ async function handleUploadWithFallback(
   buffer: Buffer,
   file: File,
   type: string,
-  userId: string
+  userId: string,
+  options?: { forceFallback?: boolean; publicBaseOrigin?: string }
 ) {
   // 统一以 WebP 作为目标格式存储到七牛
   const targetFileName = `${file.name.replace(/\.[^.]+$/, '')}.webp`;
@@ -288,7 +328,9 @@ async function handleUploadWithFallback(
     cloudError: uploadResult.error,
   });
 
-  if (!uploadConfig.fallbackEnabled) {
+  const fallbackEnabled = uploadConfig.fallbackEnabled || !!options?.forceFallback;
+
+  if (!fallbackEnabled) {
     return NextResponse.json(
       {
         success: false,
@@ -320,10 +362,48 @@ async function handleUploadWithFallback(
     );
   }
 
+  const publicBaseOrigin =
+    options?.publicBaseOrigin?.replace(/\/+$/, '') ||
+    process.env.NEXTAUTH_URL?.replace(/\/+$/, '') ||
+    null;
+
+  // /api/uploads 不公开读取：为本地兜底文件生成短期访问 token（避免在 URL 中暴露长期登录 token）
+  let signedRelativeUrl = fallbackResult.url;
+  try {
+    const localKey = String(fallbackResult.key || '');
+    if (localKey.startsWith('local://')) {
+      const keyPath = localKey.slice('local://'.length);
+      const [localType, localFileName] = keyPath.split('/');
+      if (localType && localFileName) {
+        const accessToken = await encode({
+          token: { path: `${localType}/${localFileName}` },
+          secret: env.NEXTAUTH_SECRET,
+          salt: 'uploads',
+          maxAge: 60 * 60, // 1小时有效期
+        });
+
+        signedRelativeUrl = `/api/uploads/${encodeURIComponent(
+          localType
+        )}/${encodeURIComponent(localFileName)}?t=${encodeURIComponent(
+          accessToken
+        )}`;
+      }
+    }
+  } catch (error) {
+    logger.warn('upload', '生成本地文件访问 token 失败，将使用原始 URL', undefined, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  const absoluteUrl =
+    publicBaseOrigin && signedRelativeUrl.startsWith('/')
+      ? `${publicBaseOrigin}${signedRelativeUrl}`
+      : signedRelativeUrl;
+
   return respondWithSuccess({
     file,
     key: fallbackResult.key,
-    url: fallbackResult.url,
+    url: absoluteUrl,
     storage: 'local',
     userId,
     message: '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
@@ -332,6 +412,8 @@ async function handleUploadWithFallback(
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
+    const isMiniProgram = request.headers.get('x-client-from') === 'mini-program';
+
     const payload = await extractUploadPayload(request);
     if (!payload.ok) {
       return payload.response;
@@ -340,7 +422,16 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     const { file, type } = payload;
     const buffer = await prepareUploadBuffer(file, type);
 
-    return handleUploadWithFallback(buffer, file, type, user.id);
+    const publicBaseOrigin = process.env.NEXTAUTH_URL
+      ? new URL(process.env.NEXTAUTH_URL).origin
+      : request.nextUrl.origin;
+
+    // 小程序端上传优先保证可用：即使未启用 UPLOAD_FALLBACK_ENABLED，
+    // 也允许在七牛失败时落本地（避免生产环境存储配置缺失导致“无法上传”）。
+    return handleUploadWithFallback(buffer, file, type, user.id, {
+      forceFallback: isMiniProgram,
+      publicBaseOrigin,
+    });
   } catch (error) {
     logger.error('upload', '文件上传错误', error);
     return NextResponse.json(

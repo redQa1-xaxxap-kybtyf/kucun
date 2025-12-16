@@ -4,10 +4,14 @@
 import authService from '../../services/auth.service';
 import { categoryService } from '../../services/category.service';
 import { productService } from '../../services/product.service';
+import qiniuService from '../../services/qiniu-upload.service';
 import type { Category } from '../../types/category';
 
 Page({
   data: {
+    // 是否为编辑模式
+    isEditMode: false,
+    productId: '',
     code: '',
     name: '',
     specification: '',
@@ -23,9 +27,17 @@ Page({
     uploadInfo: null as any,
     mainImages: [] as string[],
     effectImages: [] as string[],
+    // 输入框焦点状态(用于浮动标签动画)
+    focusStates: {
+      code: false,
+      name: false,
+      specification: false,
+      description: false,
+      thickness: false,
+    },
   },
 
-  async onLoad() {
+  async onLoad(options: any) {
     // 未登录时跳转到登录页
     if (!authService.isLoggedIn()) {
       wx.reLaunch({
@@ -34,7 +46,61 @@ Page({
       return;
     }
 
-    await this.loadCategories();
+    // 必须是管理员或销售才可以创建 / 编辑产品
+    if (!authService.canEditProduct()) {
+      wx.showToast({
+        title: '无权编辑产品',
+        icon: 'none',
+      });
+      setTimeout(() => {
+        wx.navigateBack();
+      }, 1500);
+      return;
+    }
+
+    const isEditMode = !!options?.id;
+    if (isEditMode) {
+      this.setData({
+        isEditMode: true,
+        productId: options.id,
+      });
+      wx.setNavigationBarTitle({
+        title: '编辑产品',
+      });
+      await this.loadCategories();
+      await this.loadProductDetail(options.id);
+    } else {
+      wx.setNavigationBarTitle({
+        title: '创建产品',
+      });
+      await this.loadCategories();
+    }
+  },
+
+  async loadProductDetail(id: string) {
+    try {
+      const product = await productService.getProductDetail(id);
+
+      // 回填表单数据
+      this.setData({
+        code: product.code,
+        name: product.name,
+        specification: product.specification || '',
+        description: product.description || '',
+        thickness: product.thickness ? String(product.thickness) : '',
+        categoryId: product.category?.id || product.categoryId || '',
+        categoryName: product.category?.name || '',
+        thumbnailUrl: product.thumbnailUrl || '',
+        mainImages: product.mainImages || product.images || [],
+        effectImages: product.effectImages || [],
+      });
+    } catch (error) {
+      console.error('加载产品详情失败(编辑模式):', error);
+      wx.showToast({
+        title: '加载产品信息失败',
+        icon: 'none',
+      });
+    }
   },
 
   async loadCategories() {
@@ -71,6 +137,25 @@ Page({
     this.setData({ thickness: e.detail.value });
   },
 
+  // 焦点管理 - 用于浮动标签动画
+  onInputFocus(e: any) {
+    const field = e.currentTarget.dataset.field;
+    if (field) {
+      this.setData({
+        [`focusStates.${field}`]: true,
+      });
+    }
+  },
+
+  onInputBlur(e: any) {
+    const field = e.currentTarget.dataset.field;
+    if (field) {
+      this.setData({
+        [`focusStates.${field}`]: false,
+      });
+    }
+  },
+
   // 分类选择
   onCategoryChange(e: any) {
     const index = Number(e.detail.value);
@@ -99,7 +184,37 @@ Page({
           return;
         }
         const filePath = res.tempFilePaths[0];
+
+        // 根据类型限制大小（缩略图/主图 1MB，效果图 2MB）
+        const maxSizeMb = kind === 'effect' ? 2 : 1;
+        const fileInfo = res.tempFiles && res.tempFiles[0];
+        if (fileInfo && typeof fileInfo.size === 'number') {
+          const sizeMb = fileInfo.size / (1024 * 1024);
+          if (sizeMb > maxSizeMb) {
+            wx.showToast({
+              title: `${kind === 'effect' ? '效果图' : '图片'}不能超过 ${maxSizeMb}MB`,
+              icon: 'none',
+            });
+            return;
+          }
+        }
+
         that.uploadImage(filePath, kind);
+      },
+      fail(err) {
+        const msg = String((err as any)?.errMsg || '');
+        // 取消也给一个轻提示，避免用户误以为“没反应”
+        if (msg.includes('cancel')) {
+          wx.showToast({ title: '已取消', icon: 'none', duration: 1200 });
+          return;
+        }
+
+        wx.showToast({
+          title: '无法选择图片，请检查相册/相机权限',
+          icon: 'none',
+          duration: 2000,
+        });
+        console.error('选择图片失败:', err);
       },
     });
   },
@@ -126,6 +241,35 @@ Page({
     wx.previewImage({
       current: url,
       urls: [url],
+    });
+  },
+
+  // 缩略图点击：支持预览/更换/删除（编辑模式下更符合直觉）
+  onThumbnailTap() {
+    const url = this.data.thumbnailUrl;
+    if (!url) {
+      this.onChooseThumbnail();
+      return;
+    }
+
+    wx.showActionSheet({
+      itemList: ['预览', '更换', '删除'],
+      success: res => {
+        if (res.tapIndex === 0) {
+          this.onPreviewThumbnail();
+        } else if (res.tapIndex === 1) {
+          this.onChooseThumbnail();
+        } else if (res.tapIndex === 2) {
+          this.setData({ thumbnailUrl: '', uploadInfo: null });
+          wx.showToast({ title: '已删除缩略图', icon: 'none' });
+        }
+      },
+      fail: err => {
+        const msg = String((err as any)?.errMsg || '');
+        if (msg && !msg.includes('cancel')) {
+          wx.showToast({ title: '操作失败', icon: 'none' });
+        }
+      },
     });
   },
 
@@ -169,67 +313,56 @@ Page({
     }
   },
 
-  // 上传图片到后台 /api/upload
-  uploadImage(filePath: string, kind: 'thumbnail' | 'main' | 'effect') {
-    const token = wx.getStorageSync('auth_token');
-    // 动态 require 避免循环依赖
+  // 上传图片（使用七牛云直传）
+  async uploadImage(filePath: string, kind: 'thumbnail' | 'main' | 'effect') {
+    try {
+      // 使用七牛云服务上传
+      const result = await qiniuService.uploadImage(filePath, kind);
 
-    const api = require('../../config/api');
-    const baseURL: string = (api.apiConfig && api.apiConfig.baseURL) || '';
+      // 上传成功，更新对应的状态
+      const url = result.url;
 
-    wx.showLoading({ title: '上传中...', mask: true });
+      if (kind === 'thumbnail') {
+        this.setData({
+          thumbnailUrl: url,
+          uploadInfo: { url, key: result.key },
+        });
+      } else if (kind === 'main') {
+        const list = (this.data.mainImages || []).slice();
+        list.push(url);
+        this.setData({ mainImages: list });
+      } else if (kind === 'effect') {
+        const list = (this.data.effectImages || []).slice();
+        list.push(url);
+        this.setData({ effectImages: list });
+      }
 
-    wx.uploadFile({
-      url: `${baseURL}/upload`,
-      filePath,
-      name: 'file',
-      formData: { type: 'product' },
-      header: token
-        ? {
-            Authorization: `Bearer ${token}`,
-          }
-        : {},
-      success: res => {
-        try {
-          const raw = JSON.parse(res.data || '{}');
-          if (raw && raw.success && raw.data && raw.data.url) {
-            const url = raw.data.url as string;
-            if (kind === 'thumbnail') {
-              this.setData({
-                thumbnailUrl: url,
-                uploadInfo: raw.data,
-              });
-            } else if (kind === 'main') {
-              const list = (this.data.mainImages || []).slice();
-              list.push(url);
-              this.setData({ mainImages: list });
-            } else if (kind === 'effect') {
-              const list = (this.data.effectImages || []).slice();
-              list.push(url);
-              this.setData({ effectImages: list });
-            }
-          } else {
-            const msg = (raw && (raw.error || raw.message)) || '上传失败';
-            wx.showToast({ title: msg, icon: 'none' });
-          }
-        } catch (e) {
-          console.error('解析上传响应失败:', e);
-          wx.showToast({ title: '上传返回解析失败', icon: 'none' });
-        }
-      },
-      fail: err => {
-        console.error('上传图片失败:', err);
-        wx.showToast({ title: '上传失败', icon: 'none' });
-      },
-      complete: () => {
-        wx.hideLoading();
-      },
-    });
+      wx.showToast({
+        title: '上传成功',
+        icon: 'success',
+        duration: 1500,
+      });
+    } catch (error) {
+      console.error('上传失败:', error);
+      wx.showToast({
+        title: '上传失败，请重试',
+        icon: 'none',
+        duration: 2000,
+      });
+    }
   },
 
-  // 提交创建
+  // 提交创建/更新
   async onSubmit() {
-    if (this.data.submitting) return;
+    // 防抖：防止重复提交
+    if (this.data.submitting) {
+      wx.showToast({
+        title: '提交中，请稍候',
+        icon: 'none',
+        duration: 1000,
+      });
+      return;
+    }
 
     const code = this.data.code.trim();
     const name = this.data.name.trim();
@@ -237,7 +370,7 @@ Page({
     const categoryId = this.data.categoryId;
 
     if (!code) {
-      wx.showToast({ title: '请输入产品编码', icon: 'none' });
+      wx.showToast({ title: '请输入产品编号', icon: 'none' });
       return;
     }
     if (!name) {
@@ -267,23 +400,44 @@ Page({
     this.setData({ submitting: true });
 
     try {
-      const product = await productService.createProduct({
+      // 如果缩略图没有选择，自动使用主图的第一张
+      const thumbnailUrl = this.data.thumbnailUrl ||
+                          (this.data.mainImages && this.data.mainImages.length > 0
+                            ? this.data.mainImages[0]
+                            : undefined);
+
+      const payload = {
         code,
         name,
         specification,
         description: this.data.description.trim(),
         thickness: thicknessNumber,
         categoryId,
-        thumbnailUrl: this.data.thumbnailUrl || undefined,
+        thumbnailUrl,
         mainImages: this.data.mainImages || [],
         effectImages: this.data.effectImages || [],
-      });
+      };
 
-      wx.showToast({
-        title: '创建成功',
-        icon: 'success',
-        duration: 1500,
-      });
+      let product;
+
+      if (this.data.isEditMode && this.data.productId) {
+        product = await productService.updateProduct(
+          this.data.productId,
+          payload
+        );
+        wx.showToast({
+          title: '更新成功',
+          icon: 'success',
+          duration: 1500,
+        });
+      } else {
+        product = await productService.createProduct(payload);
+        wx.showToast({
+          title: '创建成功',
+          icon: 'success',
+          duration: 1500,
+        });
+      }
 
       setTimeout(() => {
         if (product && product.id) {

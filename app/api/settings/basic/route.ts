@@ -4,6 +4,8 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
@@ -15,7 +17,18 @@ import {
   BasicSettingsFormSchema,
   BasicSettingsSchema,
 } from '@/lib/validations/settings';
-import packageJson from '@/package.json';
+
+function readPackageVersionFromDisk(): string | null {
+  try {
+    const pkgPath = path.join(process.cwd(), 'package.json');
+    const raw = fs.readFileSync(pkgPath, 'utf8');
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    const version = typeof parsed.version === 'string' ? parsed.version : null;
+    return version && version.trim().length > 0 ? version.trim() : null;
+  } catch {
+    return null;
+  }
+}
 
 // 应用版本号 - 优先使用环境变量，其次使用 package.json，最后回退到 1.0.0
 // 说明：
@@ -24,7 +37,7 @@ import packageJson from '@/package.json';
 const APP_VERSION =
   process.env.APP_VERSION ||
   process.env.npm_package_version ||
-  packageJson.version ||
+  readPackageVersionFromDisk() ||
   '1.0.0';
 
 // 默认基本设置 - 使用环境配置

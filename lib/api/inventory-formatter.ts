@@ -20,7 +20,7 @@ export interface FormattedInventory {
   unitCost?: number;
   updatedAt: string;
   batchPiecesPerUnit?: number;
-  weight?: number; // 产��重量(kg) - 优先使用批次级重量，回退到产品默认重量
+  weight?: number; // 产品重量(kg) - 优先使用批次级重量，回退到产品默认重量
   product: {
     id: string;
     code: string;
@@ -29,6 +29,7 @@ export interface FormattedInventory {
     unit: string;
     piecesPerUnit: number;
     status: string;
+    thumbnailUrl?: string; // 产品缩略图URL
     categoryId?: string;
     category: {
       id: string;
@@ -66,6 +67,7 @@ export function formatInventoryRecord(
       unit: record.product_unit,
       piecesPerUnit: record.product_piecesPerUnit,
       status: record.product_status,
+      thumbnailUrl: record.product_thumbnailUrl ?? undefined, // 产品缩略图
       categoryId: record.category_id ?? undefined,
       category:
         record.category_id && record.category_name

@@ -32,6 +32,17 @@ export interface UploadResult {
   error?: string;
 }
 
+export interface DirectUploadParamsResult {
+  success: boolean;
+  uploadToken?: string;
+  uploadHost?: string;
+  fallbackUploadHosts?: string[];
+  key?: string;
+  url?: string;
+  domain?: string;
+  error?: string;
+}
+
 /**
  * 获取七牛云配置（带缓存）
  */
@@ -162,6 +173,32 @@ function getQiniuZone(region: string = 'z0'): qiniu.conf.Zone {
   return zoneMap[region] || qiniu.zone.Zone_z0;
 }
 
+function getQiniuUploadHosts(region?: string): string[] {
+  // 七牛官方推荐的通用上传入口（会根据 token/region 自动路由）
+  // https://developer.qiniu.com/kodo/1289/qiniu-api-domain
+  // 小程序侧需将这些域名加入"request 合法域名"白名单，否则会被拦截。
+  const universal = ['https://up.qiniup.com', 'https://upload.qiniup.com'];
+
+  // 区域专用上传域名（优先使用，更稳定）
+  const regionalMap: Record<string, string[]> = {
+    z0: ['https://up-z0.qiniup.com', 'https://upload-z0.qiniup.com'],
+    z1: ['https://up-z1.qiniup.com', 'https://upload-z1.qiniup.com'],
+    z2: ['https://up-z2.qiniup.com', 'https://upload-z2.qiniup.com'],
+    na0: ['https://up-na0.qiniup.com', 'https://upload-na0.qiniup.com'],
+    as0: ['https://up-as0.qiniup.com', 'https://upload-as0.qiniup.com'],
+    'cn-east-1': ['https://up-z0.qiniup.com', 'https://upload-z0.qiniup.com'],
+    'cn-north-1': ['https://up-z1.qiniup.com', 'https://upload-z1.qiniup.com'],
+    'cn-south-1': ['https://up-z2.qiniup.com', 'https://upload-z2.qiniup.com'],
+    'cn-east-2': ['https://up-cn-east-2.qiniup.com'],
+    'up-cn-east-2': ['https://up-cn-east-2.qiniup.com'],
+  };
+
+  const regional = region ? regionalMap[region] || [] : [];
+  // 优先使用区域专用域名（更稳定），然后才是通用域名作为备用
+  const all = [...regional, ...universal];
+  return Array.from(new Set(all));
+}
+
 function deriveQiniuKeyFromUrl(
   url: string,
   config: QiniuConfig
@@ -249,6 +286,49 @@ function generateUploadToken(config: QiniuConfig, key: string): string {
   });
 
   return putPolicy.uploadToken(mac);
+}
+
+/**
+ * 为“客户端直传七牛”生成上传参数（token/key/uploadHost/url）。
+ * - uploadHost 给小程序的 wx.uploadFile 使用
+ * - url/key 保存到业务数据中
+ */
+export async function createQiniuDirectUploadParams(
+  fileName: string,
+  type: string = 'product'
+): Promise<DirectUploadParamsResult> {
+  try {
+    const config = await getQiniuConfig();
+    if (!config) {
+      return {
+        success: false,
+        error: '七牛云配置未设置或不完整，请联系管理员配置存储服务',
+      };
+    }
+
+    const key = generateFilePath(fileName, type, config.pathFormat);
+    const uploadToken = generateUploadToken(config, key);
+    const domain = config.domain.replace(/\/+$/, '');
+    const url = `${domain}/${key}`;
+
+    const hosts = getQiniuUploadHosts(config.region);
+
+    return {
+      success: true,
+      uploadToken,
+      uploadHost: hosts[0],
+      fallbackUploadHosts: hosts.slice(1),
+      key,
+      url,
+      domain,
+    };
+  } catch (error) {
+    logger.error('qiniu', 'Failed to create direct upload params', error);
+    return {
+      success: false,
+      error: `生成上传参数失败: ${error instanceof Error ? error.message : '未知错误'}`,
+    };
+  }
 }
 
 /**

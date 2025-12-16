@@ -178,6 +178,11 @@ export function withAuth(
       );
 
       if (isStateChanging) {
+        // 微信小程序请求不走浏览器 Cookie 自动携带的模式，且使用 Bearer/JWT 鉴权，
+        // CSRF/同源校验会在生产环境（HTTPS + Cookie 可用）下误伤小程序的写操作（如上传）。
+        // 因此对标记为 mini-program 的请求跳过 CSRF/Origin 校验。
+        const clientFrom = request.headers.get('x-client-from');
+        if (clientFrom !== 'mini-program') {
         // 0.1 同源检查：Origin 必须在允许列表中（如果存在 Origin）
         const origin = request.headers.get('origin');
 
@@ -226,6 +231,7 @@ export function withAuth(
               { status: 403 }
             );
           }
+        }
         }
       }
 

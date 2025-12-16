@@ -18,6 +18,8 @@ export interface Product {
   unit: string;
   // 每件包含的片数（用于“X件Y片”展示）
   piecesPerUnit?: number;
+  // 厚度（单位：mm），可选
+  thickness?: number;
   categoryId?: string;
   category?: {
     id: string;
@@ -27,6 +29,9 @@ export interface Product {
   status: Status;
   thumbnailUrl?: string;
   images: string[];
+  // 区分主图与效果图，便于小程序端分别展示
+  mainImages?: string[];
+  effectImages?: string[];
   description?: string;
   createdAt: string;
   updatedAt: string;

@@ -1,94 +1,154 @@
 <!-- 用户中心页 -->
 <view class="container">
-  <!-- 大标题 -->
-  <view class="page-title">我的</view>
-
-  <!-- 用户信息卡片 -->
-  <view class="user-profile-card" bindtap="navigateToUserInfo">
-    <image
-      class="user-avatar"
-      src="{{ isLoggedIn && userInfo && userInfo.avatar ? userInfo.avatar : 'https://img.yzcdn.cn/vant/user-active.png' }}"
-      mode="aspectFill"
-    />
-    <view class="user-info">
-      <!-- 已登录时显示姓名/用户名，未登录时显示“点击登录” -->
-      <text class="user-name">
-        {{ isLoggedIn ? (userInfo.name || userInfo.username || '已登录') : '点击登录' }}
-      </text>
-      <!-- 已登录时显示角色，未登录时显示“访客身份” -->
-      <text class="user-role">
-        {{ isLoggedIn ? (userInfo.role || '普通用户') : '访客身份' }}
-      </text>
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
+    <view class="custom-nav-bar" style="height: {{navBarHeight}}px;">
+      <view class="custom-nav-title">我的</view>
     </view>
-    <van-icon name="arrow" color="#C7C7CC" size="20px" />
+  </view>
+  <!-- 占位，避免内容被 fixed 顶栏遮挡 -->
+  <view class="custom-nav-placeholder" style="height: {{navHeight}}px;"></view>
+
+  <!-- 顶部区域 -->
+  <view class="header">
+    <!-- 用户信息卡片 -->
+    <view class="profile-card" bindtap="navigateToUserInfo">
+      <image
+        class="avatar"
+        src="{{ isLoggedIn && userInfo && userInfo.avatar ? userInfo.avatar : 'https://img.yzcdn.cn/vant/user-active.png' }}"
+        mode="aspectFill"
+      />
+      <view class="profile-text">
+        <text class="profile-title">
+          {{ isLoggedIn ? (userInfo.name || userInfo.username || '已登录') : '登录/注册' }}
+        </text>
+        <text class="profile-subtitle">
+          {{ isLoggedIn ? (userInfo.role || '普通用户') : '登录后可同步收藏与浏览记录' }}
+        </text>
+      </view>
+      <van-icon name="arrow" class="profile-arrow" size="18px" />
+    </view>
+
+    <!-- 两张快捷卡片（不新增功能，仅更换呈现） -->
+    <view class="shortcut-row">
+      <view class="shortcut-card shortcut-green" bindtap="navigateToFavorites">
+        <view class="shortcut-icon">
+          <van-icon name="star-o" size="20px" />
+        </view>
+        <view class="shortcut-text">
+          <text class="shortcut-title">我的收藏</text>
+          <text class="shortcut-desc">常用产品快速找</text>
+        </view>
+      </view>
+      <view class="shortcut-card shortcut-orange" bindtap="navigateToHistory">
+        <view class="shortcut-icon">
+          <van-icon name="clock-o" size="20px" />
+        </view>
+        <view class="shortcut-text">
+          <text class="shortcut-title">浏览历史</text>
+          <text class="shortcut-desc">最近查看一键回到</text>
+        </view>
+      </view>
+    </view>
   </view>
 
-  <!-- 功能菜单 1 -->
-  <view class="ios-list-group">
-    <van-cell-group border="{{ false }}">
-      <van-cell
-        title="个人信息"
-        is-link
-        size="large"
-        bind:click="navigateToUserInfo"
-      >
-        <van-icon slot="icon" name="user-o" class="icon-blue" size="22px" style="margin-right: 12px;"/>
-      </van-cell>
-      <van-cell
-        title="我的收藏"
-        is-link
-        size="large"
-        bind:click="navigateToFavorites"
-      >
-        <van-icon slot="icon" name="star-o" class="icon-yellow" size="22px" style="margin-right: 12px;"/>
-      </van-cell>
-      <van-cell
-        title="浏览历史"
-        is-link
-        size="large"
-        bind:click="navigateToHistory"
-      >
-        <van-icon slot="icon" name="clock-o" class="icon-purple" size="22px" style="margin-right: 12px;"/>
-      </van-cell>
-    </van-cell-group>
+  <!-- 我的内容（图标网格） -->
+  <view class="section">
+    <view class="section-title">我的内容</view>
+    <view class="card">
+      <view class="grid">
+        <view class="grid-item" bindtap="navigateToUserInfo">
+          <view class="grid-icon grid-icon-blue">
+            <van-icon name="user-o" size="20px" />
+          </view>
+          <text class="grid-label">个人信息</text>
+        </view>
+        <view class="grid-item" bindtap="navigateToFavorites">
+          <view class="grid-icon grid-icon-yellow">
+            <van-icon name="star-o" size="20px" />
+          </view>
+          <text class="grid-label">我的收藏</text>
+        </view>
+        <view class="grid-item" bindtap="navigateToHistory">
+          <view class="grid-icon grid-icon-purple">
+            <van-icon name="clock-o" size="20px" />
+          </view>
+          <text class="grid-label">浏览历史</text>
+        </view>
+      </view>
+    </view>
   </view>
 
-  <!-- 功能菜单 2 -->
-  <view class="ios-list-group">
-    <van-cell-group border="{{ false }}">
-      <van-cell
-        title="设置"
-        is-link
-        size="large"
-        bind:click="navigateToSettings"
-      >
-        <van-icon slot="icon" name="setting-o" class="icon-grey" size="22px" style="margin-right: 12px; color: #8E8E93;"/>
-      </van-cell>
-      <van-cell
-        title="关于我们"
-        is-link
-        size="large"
-        bind:click="navigateToAbout"
-      >
-        <van-icon slot="icon" name="info-o" class="icon-blue" size="22px" style="margin-right: 12px;"/>
-      </van-cell>
-      <van-cell
-        title="帮助中心"
-        is-link
-        size="large"
-        bind:click="navigateToHelp"
-      >
-        <van-icon slot="icon" name="question-o" class="icon-green" size="22px" style="margin-right: 12px;"/>
-      </van-cell>
-    </van-cell-group>
+  <!-- 其他功能（列表） -->
+  <view class="section">
+    <view class="section-title">更多</view>
+    <view class="card list">
+      <view class="list-item" bindtap="navigateToSettings">
+        <view class="list-left">
+          <view class="list-icon list-icon-grey">
+            <van-icon name="setting-o" size="18px" />
+          </view>
+          <text class="list-text">设置</text>
+        </view>
+        <van-icon name="arrow" class="list-arrow" size="16px" />
+      </view>
+      <view class="divider"></view>
+      <view class="list-item" bindtap="navigateToAbout">
+        <view class="list-left">
+          <view class="list-icon list-icon-blue">
+            <van-icon name="info-o" size="18px" />
+          </view>
+          <text class="list-text">关于我们</text>
+        </view>
+        <van-icon name="arrow" class="list-arrow" size="16px" />
+      </view>
+      <view class="divider"></view>
+      <view class="list-item" bindtap="navigateToHelp">
+        <view class="list-left">
+          <view class="list-icon list-icon-green">
+            <van-icon name="question-o" size="18px" />
+          </view>
+          <text class="list-text">帮助中心</text>
+        </view>
+        <van-icon name="arrow" class="list-arrow" size="16px" />
+      </view>
+    </view>
   </view>
 
   <!-- 退出登录按钮 -->
   <view class="logout-section" wx:if="{{ isLoggedIn }}">
     <button class="ios-btn ios-btn-danger" bindtap="onLogout">退出登录</button>
   </view>
-  
+
   <view class="logout-section" wx:else>
     <button class="ios-btn" bindtap="onLogin">立即登录</button>
+  </view>
+
+  <!-- Safe Area Spacer -->
+  <view class="bottom-spacer"></view>
+
+  <!-- 底部导航 (Floating Dock) -->
+  <view class="floating-dock">
+    <view class="dock-item" bindtap="navigateToProducts">
+      <van-icon name="apps-o" size="22px" />
+      <text>产品</text>
+    </view>
+    <view class="dock-item" bindtap="navigateToInventory">
+      <van-icon name="search" size="22px" />
+      <text>查询</text>
+    </view>
+    <view class="dock-main" bindtap="navigateToCreateProduct">
+      <view class="dock-circle {{ canCreateProduct ? 'dock-circle-enabled' : 'dock-circle-disabled' }}">
+        <van-icon name="plus" size="24px" color="#fff" />
+      </view>
+    </view>
+    <view class="dock-item" bindtap="navigateToCategories">
+      <van-icon name="label-o" size="22px" />
+      <text>分类</text>
+    </view>
+    <view class="dock-item dock-item-active" bindtap="navigateToUser">
+      <van-icon name="user-o" size="22px" />
+      <text>我的</text>
+    </view>
   </view>
 </view>

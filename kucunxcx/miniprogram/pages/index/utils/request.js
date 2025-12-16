@@ -100,6 +100,8 @@ function request(config) {
       var token = getToken();
       if (token) {
         requestHeaders['Authorization'] = 'Bearer '.concat(token);
+        // 兼容部分代理/网关可能不透传 Authorization 头的情况
+        requestHeaders['x-mini-token'] = token;
       }
     }
     // 显示加载提示

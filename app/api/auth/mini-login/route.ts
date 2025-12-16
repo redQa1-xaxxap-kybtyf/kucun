@@ -1,13 +1,13 @@
 // 小程序专用登录API
 // 不需要验证码，简化认证流程
 
-import { randomBytes } from 'crypto';
-
 import bcrypt from 'bcryptjs';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { encode } from 'next-auth/jwt';
 
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import {
   checkLoginLimit,
@@ -15,6 +15,9 @@ import {
   logLoginSuccess,
 } from '@/lib/services/login-log-service';
 import { baseValidations } from '@/lib/validations/base';
+
+const MINI_PROGRAM_JWT_SALT = 'mini-program';
+const MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS = 30 * 24 * 60 * 60; // 30 天
 
 /**
  * 从请求中提取客户端 IP
@@ -103,8 +106,12 @@ export async function POST(request: NextRequest) {
     // 2. 验证输入格式（小程序不需要验证码，只验证用户名和密码）
     const usernameValidation = baseValidations.username.safeParse(username);
     if (!usernameValidation.success) {
+      const firstIssue = usernameValidation.error.issues[0];
       return NextResponse.json(
-        { success: false, error: usernameValidation.error.errors[0].message },
+        {
+          success: false,
+          error: firstIssue?.message || '用户名格式不正确',
+        },
         { status: 400 }
       );
     }
@@ -112,24 +119,50 @@ export async function POST(request: NextRequest) {
     const passwordValidation =
       baseValidations.simplePassword.safeParse(password);
     if (!passwordValidation.success) {
+      const firstIssue = passwordValidation.error.issues[0];
       return NextResponse.json(
-        { success: false, error: passwordValidation.error.errors[0].message },
+        {
+          success: false,
+          error: firstIssue?.message || '密码格式不正确',
+        },
         { status: 400 }
       );
     }
 
     // 3. 检查登录限制（防止暴力破解）
-    const limitCheck = await checkLoginLimit(username, clientIp);
-    if (!limitCheck.allowed) {
-      await logLoginFailure(username, clientIp, 'too_many_attempts', userAgent);
-      return NextResponse.json(
-        {
-          success: false,
-          error: '登录尝试次数过多，请稍后再试',
-          retryAfter: limitCheck.retryAfter,
-        },
-        { status: 429 }
-      );
+    // 注意：这里任何 Redis / 日志异常都不应该导致登录 500，最多视作“未限制”
+    try {
+      const limitCheck = await checkLoginLimit(username, clientIp);
+      if (!limitCheck.allowed) {
+        try {
+          await logLoginFailure(
+            username,
+            clientIp,
+            'too_many_attempts',
+            userAgent
+          );
+        } catch (logError) {
+          logger.error('auth', '记录登录失败日志异常', logError, {
+            username,
+            clientIp,
+            reason: 'too_many_attempts',
+          });
+        }
+        return NextResponse.json(
+          {
+            success: false,
+            error: '登录尝试次数过多，请稍后再试',
+            retryAfter: limitCheck.remainingTime,
+          },
+          { status: 429 }
+        );
+      }
+    } catch (limitError) {
+      // 限流检查异常时，只记录日志，不阻塞正常登录流程
+      logger.error('auth', '检查登录限制失败(忽略，继续登录流程)', limitError, {
+        username,
+        clientIp,
+      });
     }
 
     // 4. 查找用户
@@ -147,12 +180,19 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      await logLoginFailure(
-        username,
-        clientIp,
-        'invalid_credentials',
-        userAgent
-      );
+      try {
+        await logLoginFailure(
+          username,
+          clientIp,
+          'invalid_credentials',
+          userAgent
+        );
+      } catch (logError) {
+        logger.error('auth', '记录用户名不存在的登录失败日志异常', logError, {
+          username,
+          clientIp,
+        });
+      }
       return NextResponse.json(
         { success: false, error: '用户名或密码错误' },
         { status: 401 }
@@ -161,7 +201,19 @@ export async function POST(request: NextRequest) {
 
     // 5. 检查用户状态
     if (user.status !== 'active') {
-      await logLoginFailure(username, clientIp, 'account_disabled', userAgent);
+      try {
+        await logLoginFailure(
+          username,
+          clientIp,
+          'account_disabled',
+          userAgent
+        );
+      } catch (logError) {
+        logger.error('auth', '记录账户禁用登录失败日志异常', logError, {
+          username,
+          clientIp,
+        });
+      }
       return NextResponse.json(
         { success: false, error: '账户已被禁用' },
         { status: 403 }
@@ -172,20 +224,34 @@ export async function POST(request: NextRequest) {
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
-      await logLoginFailure(
-        username,
-        clientIp,
-        'invalid_credentials',
-        userAgent
-      );
+      try {
+        await logLoginFailure(
+          username,
+          clientIp,
+          'invalid_credentials',
+          userAgent
+        );
+      } catch (logError) {
+        logger.error('auth', '记录密码错误登录失败日志异常', logError, {
+          username,
+          clientIp,
+        });
+      }
       return NextResponse.json(
         { success: false, error: '用户名或密码错误' },
         { status: 401 }
       );
     }
 
-    // 7. 登录成功 - 记录日志
-    await logLoginSuccess(user.id, user.username, clientIp, userAgent);
+    // 7. 登录成功 - 记录日志（日志异常不影响登录）
+    try {
+      await logLoginSuccess(user.id, user.username, clientIp, userAgent);
+    } catch (logError) {
+      logger.error('auth', '记录登录成功日志异常(忽略)', logError, {
+        userId: user.id,
+        username: user.username,
+      });
+    }
 
     // 8. 更新最后登录时间
     try {
@@ -201,22 +267,25 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 9. 生成简单的会话Token（32字节随机字符串）
-    const token = randomBytes(32).toString('hex');
-
-    // 10. 将会话信息存储到数据库
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7天后过期
-
-    await prisma.session.create({
-      data: {
-        sessionToken: token,
-        userId: user.id,
-        expires: expiresAt,
+    // 9. 生成小程序 Bearer Token（JWT/JWE），避免依赖 Prisma Session 表（生产环境可能未建表）
+    const token = await encode({
+      token: {
+        // 同时放 sub 与 id，便于不同端统一识别
+        sub: user.id,
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        role: user.role,
+        status: user.status,
+        client: 'mini-program',
       },
+      secret: env.NEXTAUTH_SECRET,
+      salt: MINI_PROGRAM_JWT_SALT,
+      maxAge: MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS,
     });
 
-    // 11. 返回成功响应
+    // 10. 返回成功响应
     return NextResponse.json({
       success: true,
       token,
@@ -227,10 +296,24 @@ export async function POST(request: NextRequest) {
         email: user.email,
         role: user.role,
       },
-      expiresIn: 7 * 24 * 60 * 60, // 7天，单位：秒
+      expiresIn: MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS, // 单位：秒
     });
   } catch (error) {
     logger.error('auth', '小程序登录失败', error);
+
+    // 开发环境下返回更详细的错误信息，方便排查问题
+    if (env.NODE_ENV === 'development') {
+      const message =
+        error instanceof Error
+          ? `小程序登录失败: ${error.message}`
+          : '小程序登录失败: 未知错误';
+      return NextResponse.json(
+        { success: false, error: message },
+        { status: 500 }
+      );
+    }
+
+    // 生产环境保持通用提示，避免泄露内部细节
     return NextResponse.json(
       { success: false, error: '服务器错误，请稍后重试' },
       { status: 500 }

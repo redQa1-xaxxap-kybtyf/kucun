@@ -1,86 +1,213 @@
 <!-- 首页 - 2025 Redesign -->
 <wxs src="../../utils/format.wxs" module="fmt" />
+<wxs module="anim">
+// WXS 运行在视图层，实现高性能滚动动画，解决重影问题
+var navBarHeight = 44; // 默认值，实际会通过dataset传入
+var statusBarHeight = 20;
+
+function onScroll(event, ownerInstance) {
+  var scrollTop = event.detail.scrollTop;
+  
+  // 1. 计算透明度 (0-60px 区间完成渐变)
+  var opacity = scrollTop / 60;
+  if (opacity > 1) opacity = 1;
+  if (opacity < 0) opacity = 0;
+
+  // 2. 获取组件实例
+  var headerBg = ownerInstance.selectComponent('.header-bg');
+  var centerTitle = ownerInstance.selectComponent('.nav-center-title');
+  var leftContainer = ownerInstance.selectComponent('.nav-left-container');
+  var heroSearchBar = ownerInstance.selectComponent('.hero-search-bar');
+
+  // 3. 应用样式 - Header 背景
+  if (headerBg) {
+    headerBg.setStyle({
+      'opacity': opacity
+    });
+  }
+
+  // 4. 应用样式 - 居中标题 (淡出)
+  if (centerTitle) {
+    centerTitle.setStyle({
+      'opacity': 1 - opacity,
+      'visibility': (1 - opacity) < 0.1 ? 'hidden' : 'visible' // 彻底隐藏防止重影
+    });
+  }
+
+  // 5. 应用样式 - 左侧容器 (淡入 + 上移)
+  if (leftContainer) {
+    var translateY = (1 - opacity) * 8; // 从下往上浮动
+    leftContainer.setStyle({
+      'opacity': opacity,
+      'transform': 'translateY(' + translateY + 'px)',
+      'visibility': opacity < 0.1 ? 'hidden' : 'visible' // 彻底隐藏防止重影
+    });
+  }
+
+  // 6. 应用样式 - Hero 搜索条 (向上滑动视差 + 淡出)
+  if (heroSearchBar) {
+    var heroTranslateY = opacity * -20; 
+    heroSearchBar.setStyle({
+      'opacity': 1 - opacity,
+      'transform': 'translateY(' + heroTranslateY + 'rpx)',
+      'visibility': (1 - opacity) < 0.1 ? 'hidden' : 'visible'
+    });
+  }
+}
+
+module.exports = {
+  onScroll: onScroll
+};
+</wxs>
+
 <view class="page-container">
   
   <!-- 顶部导航栏 (Sticky Header) -->
-  <view class="sticky-header" style="padding-top: {{statusBarHeight}}px;">
+  <view class="sticky-header" style="height: {{ navBarHeight + statusBarHeight }}px; padding-top: {{statusBarHeight}}px;">
+    <!-- 背景渐变 -->
+    <view class="header-bg" style="opacity: 0;"></view>
+    
     <view class="nav-bar-content" style="height: {{navBarHeight}}px; padding-right: {{menuButtonWidth + 24}}px;">
-      <text class="nav-title">豪星陶瓷</text>
-      <!-- 搜索框 -->
-      <view class="search-box" style="height: {{menuButtonHeight}}px;">
-        <van-icon name="search" size="16px" color="#86868b" />
-        <input 
-          class="search-input" 
-          placeholder="搜索产品名称/编码" 
-          placeholder-class="search-placeholder"
-          bindinput="onSearchInput"
-          bindconfirm="onSearch"
-        />
+      
+      <!-- 状态1：居中标题 -->
+      <view class="nav-center-title" style="opacity: 1;">
+        豪星陶瓷
       </view>
+
+      <!-- 状态2：左侧标题 + 搜索框 -->
+      <view 
+        class="nav-left-container" 
+        style="opacity: 0; transform: translateY(8px); visibility: hidden;"
+      >
+        <text class="nav-title-left">豪星陶瓷</text>
+        <view class="search-box-mini">
+          <van-icon name="search" size="14px" color="#86868b" />
+          <input 
+            class="search-mini-input" 
+            placeholder="搜索产品" 
+            placeholder-class="search-placeholder"
+            value="{{ searchValue }}"
+            bindinput="onSearchInput"
+            bindconfirm="onSearch"
+          />
+          <van-icon
+            wx:if="{{ searchValue }}"
+            class="search-clear-icon"
+            name="cross"
+            size="14px"
+            color="#C0C0C5"
+            bindtap="onClearSearch"
+          />
+        </view>
+      </view>
+
     </view>
   </view>
 
   <!-- 内容滚动区域 -->
-  <scroll-view class="main-scroll" scroll-y show-scrollbar="{{false}}" enhanced="{{true}}">
-    <view class="scroll-content">
+  <scroll-view 
+    class="main-scroll" 
+    scroll-y 
+    show-scrollbar="{{false}}" 
+    enhanced="{{true}}"
+    bindscroll="{{ anim.onScroll }}" 
+  >
+    <!-- 动态设置顶部内边距，精确避让 Header -->
+    <view class="scroll-content" style="padding-top: {{ statusBarHeight + navBarHeight + 10 }}px;">
       
-
-      <!-- 2. 营销 Banner (Modern Card) -->
-      <view class="section-banner">
-        <swiper 
-          class="modern-swiper" 
-          circular 
-          autoplay 
-          interval="5000"
-          previous-margin="0"
-          next-margin="0"
+      <!-- 1. Hero 搜索区域 -->
+      <view class="hero-section">
+        <view 
+          class="hero-search-bar" 
+          style="opacity: 1;"
         >
-          <swiper-item wx:for="{{ banners }}" wx:key="id">
-            <view class="modern-banner-card" style="background: {{ item.bgColor }}">
-              <view class="banner-txt">
-                <text class="b-title">{{ item.title }}</text>
-                <text class="b-sub">{{ item.subtitle }}</text>
-                <view class="b-btn">查看详情</view>
-              </view>
-              <view class="banner-visual"></view> <!-- Abstract shape -->
-            </view>
-          </swiper-item>
-        </swiper>
+          <van-icon name="search" size="18px" color="#86868b" />
+          <input 
+            class="hero-input" 
+            placeholder="搜索产品名称、编码或规格" 
+            placeholder-class="search-placeholder"
+            value="{{ searchValue }}"
+            bindinput="onSearchInput"
+            bindconfirm="onSearch"
+          />
+          <van-icon
+            wx:if="{{ searchValue }}"
+            class="search-clear-icon"
+            name="cross"
+            size="16px"
+            color="#C0C0C5"
+            bindtap="onClearSearch"
+          />
+        </view>
       </view>
 
-      <!-- 3. 分类导航 (Horizontal Scroll) -->
+      <!-- 2. 分类导航卡片：区分 1 级 / 2 级 -->
       <view class="section-categories">
-        <view class="section-title-row">
-          <text class="section-h1">分类浏览</text>
-          <text class="section-link" bindtap="navigateToCategories">全部</text>
+        <view class="section-header">
+          <text class="section-h1">分类导航</text>
+          <text class="section-hint">点击分类查看产品</text>
         </view>
-        <scroll-view scroll-x class="cat-scroll" show-scrollbar="{{false}}">
-          <view class="cat-list">
-            <view 
-              class="cat-chip {{ selectedCategoryId === item.id ? 'active' : '' }}" 
-              wx:for="{{ categories }}" 
-              wx:key="id"
+
+        <view
+          class="home-category-card"
+          wx:for="{{ categories }}"
+          wx:key="id"
+        >
+          <!-- 一级分类：整卡使用强视觉（深色图标）；二级分类：在卡片内部用浅色胶囊展示 -->
+          <view class="home-category-card-header">
+            <text
+              class="home-category-name"
               bindtap="onCategoryTap"
               data-id="{{ item.id }}"
               data-name="{{ item.name }}"
-            >
-              <text>{{ item.name }}</text>
+            >{{ item.name }}</text>
+
+            <view class="home-category-right">
+              <!-- "全部"按钮：在箭头旁边 -->
+              <view
+                class="home-all-btn"
+                bindtap="onCategoryTap"
+                data-id="{{ item.id }}"
+                data-name="{{ item.name }}"
+                wx:if="{{ item.children && item.children.length }}"
+              >
+                <text>全部</text>
+              </view>
+              <van-icon name="arrow" size="14px" color="#C7C7CC" />
             </view>
           </view>
-        </scroll-view>
+
+          <!-- 2 级分类：放在卡片内部，用浅灰胶囊表示 -->
+          <view
+            class="home-subcategory-row"
+            wx:if="{{ item.children && item.children.length }}"
+          >
+            <view
+              class="home-subcategory-pill"
+              wx:for="{{ item.children }}"
+              wx:for-item="child"
+              wx:key="id"
+              bindtap="onCategoryTap"
+              data-id="{{ child.id }}"
+              data-name="{{ child.name }}"
+            >
+              <text>{{ child.name }}</text>
+            </view>
+          </view>
+        </view>
       </view>
 
-      <!-- 4. 热门推荐 (Masonry/Grid) -->
+      <!-- 3. 热门推荐 (Masonry/Grid) -->
       <view class="section-hot">
         <text class="section-h1">近期热门</text>
         <view class="hot-grid">
-      <view 
-        class="hot-card" 
-        wx:for="{{ hotProducts }}" 
-        wx:key="id" 
-        bindtap="navigateToProductDetail"
-        data-id="{{ item.id }}"
-      >
+          <view 
+            class="hot-card" 
+            wx:for="{{ hotProducts }}" 
+            wx:key="id" 
+            bindtap="navigateToProductDetail"
+            data-id="{{ item.id }}"
+          >
             <view class="card-img-box">
               <image src="{{ item.thumbnailUrl || 'https://img.yzcdn.cn/vant/cat.jpeg' }}" mode="aspectFill" />
               <view 
@@ -93,17 +220,12 @@
             <view class="card-info">
               <text class="card-title">{{ item.name }}</text>
               <text class="card-code">{{ item.code }}</text>
-              <text 
-                class="card-stock" 
-                wx:if="{{ item.inventory }}"
+              <!-- 首页热门区域：访客只看图片上的“有货/缺货”角标，这里只给有权限的人显示数字 -->
+              <text
+                class="card-stock"
+                wx:if="{{ item.inventory && canViewNumericInventory }}"
               >
-                <!-- 销售/管理员显示数字，访客只显示有货/缺货 -->
-                <block wx:if="{{ canViewNumericInventory }}">
-                  库存：{{ fmt.formatQuantity(item.inventory.availableQuantity, item.unit, item.piecesPerUnit) }}
-                </block>
-                <block wx:else>
-                  {{ item.inventory.availableQuantity > 0 ? '有货' : '缺货' }}
-                </block>
+                库存：{{ fmt.formatQuantity(item.inventory.availableQuantity, item.unit, item.piecesPerUnit) }}
               </text>
             </view>
           </view>
@@ -131,8 +253,8 @@
       </view>
     </view>
     <view class="dock-item" bindtap="navigateToCategories">
-      <van-icon name="bar-chart-o" size="22px" />
-      <text>统计</text>
+      <van-icon name="label-o" size="22px" />
+      <text>分类</text>
     </view>
     <view class="dock-item" bindtap="navigateToUser">
       <van-icon name="user-o" size="22px" />

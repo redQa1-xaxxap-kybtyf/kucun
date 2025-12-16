@@ -68,6 +68,12 @@
 
         <!-- 二级分类 -->
         <view wx:if="{{ item.expanded && item.children && item.children.length > 0 }}" class="sub-categories">
+          <!-- 父级分类提示 -->
+          <view class="parent-hint">
+            <text class="parent-hint-text">{{ item.name }}</text>
+            <text class="parent-hint-arrow">的子分类</text>
+          </view>
+
           <view
             wx:for="{{ item.children }}"
             wx:key="id"
@@ -78,11 +84,17 @@
             data-name="{{ child.name }}"
           >
             <view class="sub-category-info">
-              <van-icon name="circle" size="12px" color="#969799" class="sub-icon" />
+              <!-- 连接线 -->
+              <view class="tree-line">
+                <view class="tree-line-vertical"></view>
+                <view class="tree-line-horizontal"></view>
+              </view>
+              <van-icon name="circle" size="8px" color="#d4a5d4" class="sub-icon" />
               <text class="sub-category-name">{{ child.name }}</text>
             </view>
             <view class="sub-product-count">
               <text class="sub-count">{{ child.productCount }}</text>
+              <text class="sub-count-unit">个</text>
             </view>
           </view>
         </view>

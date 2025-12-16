@@ -7,7 +7,8 @@
 const ENV = {
   // 开发环境
   development: {
-    baseURL: 'http://localhost:3000/api',
+    // 真机联调时无法访问 localhost，开发环境默认指向线上 API
+    baseURL: 'https://kucun.0595t.com/api',
     timeout: 30000,
   },
   // 生产环境
@@ -23,17 +24,30 @@ const ENV = {
  * 微信小程序可以通过 wx.getAccountInfoSync() 判断
  */
 function getCurrentEnv(): 'development' | 'production' {
-  // 在开发者工具中返回 development
-  // 在正式版中返回 production
+  // 优先用 deviceInfo 判断 devtools（使用 wx.getDeviceInfo 替代已弃用的 wx.getSystemInfoSync），避免 accountInfo 异常时误判到 localhost
   try {
-    const accountInfo = wx.getAccountInfoSync();
-    return accountInfo.miniProgram.envVersion === 'develop'
-      ? 'development'
-      : 'production';
+    const deviceInfo = wx.getDeviceInfo?.();
+    if (deviceInfo?.platform === 'devtools') {
+      return 'development';
+    }
   } catch (_error) {
-    // 默认返回开发环境
-    return 'development';
+    // ignore
   }
+
+  // 在开发者工具/开发版中 envVersion === 'develop'
+  try {
+    if (typeof wx.getAccountInfoSync === 'function') {
+      const accountInfo = wx.getAccountInfoSync();
+      return accountInfo.miniProgram.envVersion === 'develop'
+        ? 'development'
+        : 'production';
+    }
+  } catch (_error) {
+    // ignore
+  }
+
+  // 兜底：生产环境（避免线上误打到 localhost 导致无法登录/无法请求）
+  return 'production';
 }
 
 /**
@@ -84,6 +98,11 @@ export const API_ENDPOINTS = {
   PROFILE: {
     FAVORITES: '/profile/favorites',
     HISTORY: '/profile/history',
+  },
+
+  // 上传相关
+  UPLOAD: {
+    QINIU_TOKEN: '/upload/qiniu-token', // 获取七牛云上传 Token
   },
 };
 

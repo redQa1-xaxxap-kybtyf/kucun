@@ -25,6 +25,17 @@ Page({
   },
 
   onLoad() {
+    // 开启右上角分享菜单（好友 + 朋友圈）
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage', 'shareTimeline'],
+    });
+
+    this.loadCategories();
+  },
+
+  // 每次返回分类页时自动刷新一次，确保看到最新的分类结构
+  onShow() {
     this.loadCategories();
   },
 
@@ -39,29 +50,22 @@ Page({
     this.setData({ loading: true });
 
     try {
-      // 从API获取分类数据
+      // 从API获取分类数据（扁平数组）
       const categories = await categoryService.getCategories();
 
-      // 添加expanded字段并计算产品数量
-      const categoriesWithExpanded: CategoryWithExpanded[] = categories.map(
-        cat => ({
-          ...cat,
-          expanded: false,
-          // 如果后端没有返回productCount，使用_count
-          productCount: cat.productCount || (cat._count?.products ?? 0),
-        })
-      );
+      // 将扁平数组转换为树形结构
+      const treeData = this.buildCategoryTree(categories);
 
       // 计算统计数据
-      const totalCategories = this.countAllCategories(categoriesWithExpanded);
-      const totalProducts = categoriesWithExpanded.reduce(
-        (sum, cat) => sum + (cat.productCount || 0),
+      const totalCategories = this.countAllCategories(treeData);
+      const totalProducts = categories.reduce(
+        (sum, cat) => sum + (cat.productCount || (cat._count?.products ?? 0)),
         0
       );
 
       this.setData({
-        categories: categoriesWithExpanded,
-        allCategories: categoriesWithExpanded, // 保存原始数据
+        categories: treeData,
+        allCategories: treeData, // 保存原始数据
         totalCategories,
         activeCategories: categories.filter(c => c.status === 'active').length,
         totalProducts,
@@ -76,6 +80,42 @@ Page({
     } finally {
       this.setData({ loading: false });
     }
+  },
+
+  // 将扁平数组转换为树形结构
+  buildCategoryTree(categories: Category[]): CategoryWithExpanded[] {
+    // 1级分类（没有parentId或parentId为null）
+    const topLevel = categories.filter(cat => !cat.parentId);
+
+    // 2级分类（有parentId）
+    const secondLevel = categories.filter(cat => cat.parentId);
+
+    // 如果没有1级分类，说明所有分类可能都有parentId，直接平铺显示
+    if (topLevel.length === 0) {
+      console.warn('未找到1级分类，将所有分类作为1级显示');
+      return categories.map(cat => ({
+        ...cat,
+        expanded: false,
+        productCount: cat.productCount || (cat._count?.products ?? 0),
+        children: [],
+      }));
+    }
+
+    // 构建树形结构
+    const treeData: CategoryWithExpanded[] = topLevel.map(parent => ({
+      ...parent,
+      expanded: true,  // 默认展开，让用户能看到2级分类
+      productCount: parent.productCount || (parent._count?.products ?? 0),
+      children: secondLevel
+        .filter(child => child.parentId === parent.id)
+        .map(child => ({
+          ...child,
+          expanded: false,
+          productCount: child.productCount || (child._count?.products ?? 0),
+        })),
+    }));
+
+    return treeData;
   },
 
   // 递归统计所有分类数量（包含子分类）
@@ -98,20 +138,31 @@ Page({
       return;
     }
 
-    // 过滤分类
-    const filteredCategories = this.data.allCategories.filter(cat => {
-      const matchParent =
-        cat.name.toLowerCase().includes(keyword) ||
-        cat.code.toLowerCase().includes(keyword);
-      const matchChildren =
-        cat.children &&
-        cat.children.some(
-          child =>
-            child.name.toLowerCase().includes(keyword) ||
-            child.code.toLowerCase().includes(keyword)
-        );
-      return matchParent || matchChildren;
-    });
+    // 过滤分类（支持树形结构）
+    const filteredCategories = this.data.allCategories
+      .map(cat => {
+        const matchParent =
+          cat.name.toLowerCase().includes(keyword) ||
+          cat.code.toLowerCase().includes(keyword);
+
+        // 过滤匹配的子分类
+        const matchedChildren =
+          cat.children?.filter(
+            child =>
+              child.name.toLowerCase().includes(keyword) ||
+              child.code.toLowerCase().includes(keyword)
+          ) || [];
+
+        // 如果父级匹配，保留所有子分类；否则只保留匹配的子分类
+        if (matchParent) {
+          return { ...cat, expanded: cat.children && cat.children.length > 0 };
+        } else if (matchedChildren.length > 0) {
+          return { ...cat, children: matchedChildren, expanded: true };
+        }
+
+        return null;
+      })
+      .filter((cat): cat is CategoryWithExpanded => cat !== null);
 
     this.setData({ categories: filteredCategories });
   },
@@ -147,6 +198,14 @@ Page({
     return {
       title: '产品分类浏览',
       path: '/pages/categories/list',
+    };
+  },
+
+  // 分享到朋友圈
+  onShareTimeline() {
+    return {
+      title: '产品分类浏览',
+      query: '',
     };
   },
 });

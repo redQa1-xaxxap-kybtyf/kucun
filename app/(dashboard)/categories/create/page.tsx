@@ -223,32 +223,135 @@ function useCreateCategoryController(): CreateCategoryController {
       }),
   });
 
-  const parentOptions = React.useMemo(
-    () =>
-      (categoriesResponse?.data ?? []).slice().sort((a, b) => {
-        const levelA = a.parent ? 1 : 0;
-        const levelB = b.parent ? 1 : 0;
-        if (levelA !== levelB) {
-          return levelA - levelB;
+  /**
+   * 构建父级分类下拉选项
+   *
+   * 规则：
+   * - 允许选择的父级分类最多为第2级（这样新建分类最多到第3级）
+   * - 第3级分类不能再作为父级，避免出现第4级分类
+   * - 按层级 + 排序值 + 名称排序，方便选择
+   */
+  const parentOptions = React.useMemo(() => {
+    const categories = (categoriesResponse?.data ?? []) as Category[];
+    if (!categories.length) return [];
+
+    const byId = new Map<string, Category>();
+    const depthCache = new Map<string, number>();
+
+    categories.forEach(category => {
+      byId.set(category.id, category);
+    });
+
+    const computeDepth = (
+      category: Category,
+      ancestry = new Set<string>()
+    ): number => {
+      const cached = depthCache.get(category.id);
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      // 顶级分类：深度为 1
+      if (!category.parentId) {
+        depthCache.set(category.id, 1);
+        return 1;
+      }
+
+      // 防止循环引用
+      if (ancestry.has(category.id)) {
+        depthCache.set(category.id, 1);
+        return 1;
+      }
+
+      ancestry.add(category.id);
+      const parent = category.parentId ? byId.get(category.parentId) : undefined;
+
+      if (!parent) {
+        depthCache.set(category.id, 2);
+        ancestry.delete(category.id);
+        return 2;
+      }
+
+      const depth = computeDepth(parent, ancestry) + 1;
+      depthCache.set(category.id, depth);
+      ancestry.delete(category.id);
+      return depth;
+    };
+
+    const MAX_DEPTH = 3;
+
+    // 计算每个分类的深度，并只保留可作为父级的分类（最多到第 2 级）
+    const withDepth = categories
+      .map(category => ({
+        ...category,
+        depth: computeDepth(category),
+      }))
+      // 只允许选择深度小于 3 的分类作为父级（顶级 / 二级）
+      .filter(category => category.depth < MAX_DEPTH);
+
+    /**
+     * 为了让 2 级分类“挂在”对应的 1 级分类下面显示，
+     * 我们在排序时优先按顶级父分类分组，然后在组内按层级和排序值排列。
+     */
+    const getRootCategory = (category: Category & { depth: number }) => {
+      let current: Category | undefined = category;
+      const visited = new Set<string>();
+
+      while (current?.parentId) {
+        if (visited.has(current.id)) break;
+        visited.add(current.id);
+        const parent = byId.get(current.parentId);
+        if (!parent) break;
+        current = parent;
+      }
+
+      return current ?? category;
+    };
+
+    return withDepth.sort((a, b) => {
+      const rootA = getRootCategory(a);
+      const rootB = getRootCategory(b);
+
+      // 1) 先按顶级父分类分组：同一个 1 级分类的所有子分类挨在一起
+      if (rootA.id !== rootB.id) {
+        const rootSortA =
+          typeof rootA.sortOrder === 'number'
+            ? rootA.sortOrder
+            : Number.MAX_SAFE_INTEGER;
+        const rootSortB =
+          typeof rootB.sortOrder === 'number'
+            ? rootB.sortOrder
+            : Number.MAX_SAFE_INTEGER;
+
+        if (rootSortA !== rootSortB) {
+          return rootSortA - rootSortB;
         }
 
-        const sortOrderA =
-          typeof a.sortOrder === 'number'
-            ? a.sortOrder
-            : Number.MAX_SAFE_INTEGER;
-        const sortOrderB =
-          typeof b.sortOrder === 'number'
-            ? b.sortOrder
-            : Number.MAX_SAFE_INTEGER;
+        return rootA.name.localeCompare(rootB.name, 'zh-Hans-CN');
+      }
 
-        if (sortOrderA !== sortOrderB) {
-          return sortOrderA - sortOrderB;
-        }
+      // 2) 同一棵树内部：1 级在前，2 级紧跟其后
+      if (a.depth !== b.depth) {
+        return a.depth - b.depth;
+      }
 
-        return a.name.localeCompare(b.name, 'zh-Hans-CN');
-      }),
-    [categoriesResponse?.data]
-  );
+      // 3) 同层级内部：按 sortOrder + 名称排序
+      const sortOrderA =
+        typeof a.sortOrder === 'number'
+          ? a.sortOrder
+          : Number.MAX_SAFE_INTEGER;
+      const sortOrderB =
+        typeof b.sortOrder === 'number'
+          ? b.sortOrder
+          : Number.MAX_SAFE_INTEGER;
+
+      if (sortOrderA !== sortOrderB) {
+        return sortOrderA - sortOrderB;
+      }
+
+      return a.name.localeCompare(b.name, 'zh-Hans-CN');
+    });
+  }, [categoriesResponse?.data]);
 
   const isParentOptionsLoading =
     isLoading || isFetching || parentSearchTerm !== deferredSearchTerm;

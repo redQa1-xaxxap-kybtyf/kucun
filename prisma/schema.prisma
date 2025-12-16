@@ -189,7 +189,8 @@ model Product {
   categoryId    String?  @map("category_id") @db.Char(36)
   status        String   @default("active") @db.VarChar(32)
   thumbnailUrl  String?  @map("thumbnail_url")
-  images        String?
+  /// 存储产品图片 JSON（最多 10 张）；生产环境可能存较长的 CDN/签名 URL，用 LONGTEXT 兜底
+  images        String?  @db.LongText
   description   String?
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

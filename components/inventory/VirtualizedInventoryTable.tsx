@@ -43,20 +43,17 @@ const TableHeaderComponent = React.memo<{ hasFinancePermission: boolean }>(
   ({ hasFinancePermission }) => (
     <TableHeader className="sticky top-0 z-20 bg-[hsl(var(--color-bg-card))] shadow-sm">
       <TableRow>
+        <TableHead className="w-12">缩略图</TableHead>
         <TableHead>产品编码</TableHead>
         <TableHead>产品名称</TableHead>
         <TableHead>规格</TableHead>
         <TableHead>包装信息</TableHead>
-        <TableHead className="text-right">重量(kg)</TableHead>
         <TableHead>批次号</TableHead>
         <TableHead className="text-right">库存数量</TableHead>
         <TableHead className="text-right">预留数量</TableHead>
         <TableHead className="text-right">可用数量</TableHead>
         {hasFinancePermission && (
-          <>
-            <TableHead className="text-right">单位成本（元）</TableHead>
-            <TableHead className="text-right">库存总成本（元）</TableHead>
-          </>
+          <TableHead className="text-right">成本（单价/总价）</TableHead>
         )}
         <TableHead>库存状态</TableHead>
         <TableHead>最后更新</TableHead>
@@ -78,7 +75,7 @@ const InventoryEmptyState = React.memo<{ hasFinancePermission: boolean }>(
         <TableHeaderComponent hasFinancePermission={hasFinancePermission} />
         <TableBody>
           <TableRow>
-            <TableCell colSpan={hasFinancePermission ? 13 : 11} className="p-8">
+            <TableCell colSpan={hasFinancePermission ? 13 : 12} className="p-8">
               <EmptyState
                 title="暂无库存数据"
                 icon={<Package className="text-muted-foreground h-6 w-6" />}

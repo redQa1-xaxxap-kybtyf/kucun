@@ -15,9 +15,14 @@ Page({
   data: {
     userInfo: null as UserInfo | null,
     isLoggedIn: false,
+    canCreateProduct: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    navHeight: 44,
   },
 
   onLoad() {
+    this.initCustomNav();
     this.loadUserInfo();
   },
 
@@ -26,10 +31,36 @@ Page({
     this.loadUserInfo();
   },
 
+  // 初始化自定义导航栏高度（适配不同机型/状态栏）
+  initCustomNav() {
+    try {
+      // 使用新推荐 API，避免 wx.getSystemInfoSync 的弃用警告
+      const windowInfo = wx.getWindowInfo();
+      const statusBarHeight = windowInfo.statusBarHeight || 0;
+
+      // 胶囊按钮仅在非 tab 首页等场景可靠，这里拿不到也能回退到 44
+      let navBarHeight = 44;
+      try {
+        const menu = wx.getMenuButtonBoundingClientRect?.();
+        if (menu && menu.top && menu.bottom) {
+          navBarHeight = menu.bottom + menu.top - statusBarHeight;
+        }
+      } catch (_error) {
+        // ignore
+      }
+
+      const navHeight = statusBarHeight + navBarHeight;
+      this.setData({ statusBarHeight, navBarHeight, navHeight });
+    } catch (_error) {
+      // ignore
+    }
+  },
+
   // 加载用户信息
   loadUserInfo() {
     // 检查登录状态
     const isLoggedIn = authService.isLoggedIn();
+    const canManage = authService.canViewNumericInventory();
 
     if (isLoggedIn) {
       // 从存储获取用户信息
@@ -47,6 +78,7 @@ Page({
             avatar: (user as any).avatar || (user as any).avatarUrl || '',
           },
           isLoggedIn: true,
+          canCreateProduct: canManage,
         });
       } else {
         // 用户信息丢失,清除登录状态
@@ -54,12 +86,14 @@ Page({
         this.setData({
           userInfo: null,
           isLoggedIn: false,
+          canCreateProduct: false,
         });
       }
     } else {
       this.setData({
         userInfo: null,
         isLoggedIn: false,
+        canCreateProduct: false,
       });
     }
   },
@@ -171,5 +205,45 @@ Page({
         }
       },
     });
+  },
+
+  // 底部导航（与首页保持一致）
+  navigateToProducts() {
+    wx.navigateTo({
+      url: '/pages/products/list',
+    });
+  },
+
+  navigateToInventory() {
+    wx.navigateTo({
+      url: '/pages/inventory/list',
+    });
+  },
+
+  navigateToCreateProduct() {
+    const canManage = authService.canViewNumericInventory();
+
+    // 访客 / 普通用户：仅展示极光渐变效果，不做任何提示
+    if (!canManage) {
+      return;
+    }
+
+    wx.navigateTo({
+      url: '/pages/products/create',
+    });
+  },
+
+  navigateToCategories() {
+    wx.navigateTo({
+      url: '/pages/categories/list',
+    });
+  },
+
+  navigateToUser() {
+    try {
+      wx.pageScrollTo({ scrollTop: 0, duration: 0 });
+    } catch (_error) {
+      // ignore
+    }
   },
 });

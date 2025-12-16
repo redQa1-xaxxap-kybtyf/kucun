@@ -169,14 +169,68 @@ function useCategoryData(categoryId: string, parentSearch: string) {
   const categoryData = categoryQuery.data?.data as CategoryDetail | undefined;
 
   const parentCategories = React.useMemo(() => {
-    const categories = (categoriesQuery.data?.data || []) as ParentCategory[];
-    const filtered = categories.filter(cat => cat.id !== categoryId);
+    type ParentWithParentId = ParentCategory & { parentId?: string | null };
 
+    const categories = (categoriesQuery.data?.data || []) as ParentWithParentId[];
+
+    if (!categories.length) {
+      return [] as ParentCategory[];
+    }
+
+    const byId = new Map<string, ParentWithParentId>();
+    const depthCache = new Map<string, number>();
+
+    categories.forEach(cat => {
+      byId.set(cat.id, cat);
+    });
+
+    const computeDepth = (
+      category: ParentWithParentId,
+      ancestry = new Set<string>()
+    ): number => {
+      const cached = depthCache.get(category.id);
+      if (cached !== undefined) {
+        return cached;
+      }
+
+      if (!category.parentId) {
+        depthCache.set(category.id, 1);
+        return 1;
+      }
+
+      if (ancestry.has(category.id)) {
+        depthCache.set(category.id, 1);
+        return 1;
+      }
+
+      ancestry.add(category.id);
+      const parent = category.parentId ? byId.get(category.parentId) : undefined;
+
+      if (!parent) {
+        depthCache.set(category.id, 2);
+        ancestry.delete(category.id);
+        return 2;
+      }
+
+      const depth = computeDepth(parent, ancestry) + 1;
+      depthCache.set(category.id, depth);
+      ancestry.delete(category.id);
+      return depth;
+    };
+
+    const MAX_DEPTH = 3;
+
+    // 过滤掉自身以及深度已达 3 级的分类（避免选择为父级后变成第4级）
+    let filtered: ParentCategory[] = categories
+      .filter(cat => cat.id !== categoryId)
+      .filter(cat => computeDepth(cat) < MAX_DEPTH);
+
+    // 确保当前父级始终在列表中（即便它是因筛选被过滤的旧数据）
     if (
       categoryData?.parent &&
       !filtered.some(cat => cat.id === categoryData.parent?.id)
     ) {
-      return [
+      filtered = [
         {
           id: categoryData.parent.id,
           name: categoryData.parent.name,

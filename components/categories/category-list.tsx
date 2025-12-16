@@ -76,52 +76,95 @@ const LEVEL_STYLES: LevelStyle[] = [
   },
 ];
 
+/**
+ * 构建带层级的分类列表（严格按父子关系展开）
+ *
+ * 设计目标：
+ * - 确保“子分类始终显示在所选父分类下面”
+ * - 避免之前那种按 level 单独排序导致所有二级分类挤在一起、
+ *   视觉上好像都挂在第一个顶级分类下的错觉
+ */
 function buildCategoriesWithLevel(categories: Category[]): CategoryWithLevel[] {
-  const byId = new Map<string, Category>();
-  const levelCache = new Map<string, number>();
+  if (!categories.length) return [];
+
+  // 1) 按 parentId 分组，构建父 -> 子的映射
+  const childrenMap = new Map<string | null, Category[]>();
+  const allIds = new Set<string>();
 
   categories.forEach(category => {
-    byId.set(category.id, category);
+    const parentKey = category.parentId ?? null;
+    const bucket = childrenMap.get(parentKey);
+    if (bucket) {
+      bucket.push(category);
+    } else {
+      childrenMap.set(parentKey, [category]);
+    }
+    allIds.add(category.id);
   });
 
-  const computeLevel = (
-    category: Category,
-    ancestry = new Set<string>()
-  ): number => {
-    const cached = levelCache.get(category.id);
-    if (cached !== undefined) {
-      return cached;
+  // 通用排序：先按 sortOrder，再按名称
+  const sortCategories = (a: Category, b: Category) => {
+    const sortOrderA =
+      typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+    const sortOrderB =
+      typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+
+    if (sortOrderA !== sortOrderB) {
+      return sortOrderA - sortOrderB;
     }
 
-    if (!category.parentId) {
-      levelCache.set(category.id, 0);
-      return 0;
-    }
-
-    if (ancestry.has(category.id)) {
-      levelCache.set(category.id, 0);
-      return 0;
-    }
-
-    ancestry.add(category.id);
-    const parent = byId.get(category.parentId);
-
-    if (!parent) {
-      levelCache.set(category.id, 1);
-      ancestry.delete(category.id);
-      return 1;
-    }
-
-    const level = Math.min(computeLevel(parent, ancestry) + 1, 10);
-    levelCache.set(category.id, level);
-    ancestry.delete(category.id);
-    return level;
+    return a.name.localeCompare(b.name, 'zh-Hans-CN');
   };
 
-  return categories.map(category => ({
-    ...category,
-    level: computeLevel(category),
-  }));
+  const result: CategoryWithLevel[] = [];
+  const visited = new Set<string>();
+
+  // 2) 递归展开层级结构
+  const walk = (parentId: string | null, level: number) => {
+    const children = childrenMap.get(parentId);
+    if (!children || children.length === 0) return;
+
+    children
+      .slice()
+      .sort(sortCategories)
+      .forEach(child => {
+        if (visited.has(child.id)) return;
+        visited.add(child.id);
+
+        result.push({
+          ...child,
+          level,
+        });
+
+        // 最多显示到 L3，超过的层级依然按 L3 样式展示
+        const nextLevel = Math.min(level + 1, LEVEL_STYLES.length - 1);
+        walk(child.id, nextLevel);
+      });
+  };
+
+  // 3) 先从所有“顶级分类”（parentId 为 null）开始
+  walk(null, 0);
+
+  // 4) 兜底：如果存在 parentId 指向缺失父级的“孤儿分类”，
+  //    也要保证它们能显示出来（按顶级处理）
+  if (visited.size < allIds.size) {
+    const orphanIds = [...allIds].filter(id => !visited.has(id));
+    const orphans = categories.filter(cat => orphanIds.includes(cat.id));
+
+    orphans.sort(sortCategories).forEach(orphan => {
+      if (visited.has(orphan.id)) return;
+      visited.add(orphan.id);
+
+      result.push({
+        ...orphan,
+        level: 0,
+      });
+
+      walk(orphan.id, 1);
+    });
+  }
+
+  return result;
 }
 
 export function CategoryList({
@@ -133,23 +176,8 @@ export function CategoryList({
   const router = useRouter();
 
   const categoriesWithLevel = useMemo<CategoryWithLevel[]>(() => {
-    const withLevel = buildCategoriesWithLevel(categories);
-    return withLevel.slice().sort((a, b) => {
-      if (a.level !== b.level) {
-        return a.level - b.level;
-      }
-
-      const sortOrderA =
-        typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
-      const sortOrderB =
-        typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
-
-      if (sortOrderA !== sortOrderB) {
-        return sortOrderA - sortOrderB;
-      }
-
-      return a.name.localeCompare(b.name, 'zh-Hans-CN');
-    });
+    // 按父子层级顺序展开，避免所有二级分类挤在一起
+    return buildCategoriesWithLevel(categories);
   }, [categories]);
 
   const handleEdit = useMemo(

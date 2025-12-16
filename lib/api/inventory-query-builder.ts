@@ -35,6 +35,7 @@ const inventoryQueryResultSchema = z.object({
   product_unit: z.string(),
   product_piecesPerUnit: z.number(),
   product_weight: z.number().nullable(),
+  product_thumbnailUrl: z.string().nullable(), // 产品缩略图URL
   batch_piecesPerUnit: z.number().nullable(),
   batch_weight: z.number().nullable(),
   product_status: z.string(),
@@ -215,6 +216,7 @@ export async function getOptimizedInventoryList(
       p.unit as product_unit,
       p.pieces_per_unit as product_piecesPerUnit,
       p.weight as product_weight,
+      p.thumbnail_url as product_thumbnailUrl,
       bs.pieces_per_unit as batch_piecesPerUnit,
       bs.weight as batch_weight,
       p.status as product_status,

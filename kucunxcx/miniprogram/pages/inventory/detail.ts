@@ -4,6 +4,7 @@
 import authService from '../../services/auth.service';
 import inventoryService from '../../services/inventory.service';
 import type { InventoryItem } from '../../types/inventory';
+import { formatDateTime } from '../../utils/format';
 
 Page({
   data: {
@@ -35,7 +36,10 @@ Page({
   },
 
   async loadDetail() {
-    const { id } = this.data;
+    const { id, canViewNumericInventory } = this.data as {
+      id: string;
+      canViewNumericInventory: boolean;
+    };
     if (!id) return;
 
     this.setData({ loading: true });
@@ -43,15 +47,21 @@ Page({
     try {
       const inventory = await inventoryService.getInventoryDetail(id);
 
-      this.setData({ inventory });
+      // 统一格式化更新时间，避免直接展示 ISO 字符串
+      const normalized: InventoryItem = {
+        ...inventory,
+        updatedAt: formatDateTime(inventory.updatedAt),
+      };
 
-      // 根据产品名称和批次号设置标题
+      this.setData({ inventory: normalized });
+
+      // 根据产品名称和批次号设置标题（访客模式下不展示批次号）
       const titleParts: string[] = [];
-      if (inventory.product?.name) {
-        titleParts.push(inventory.product.name);
+      if (normalized.product?.name) {
+        titleParts.push(normalized.product.name);
       }
-      if (inventory.batchNumber) {
-        titleParts.push(inventory.batchNumber);
+      if (canViewNumericInventory && normalized.batchNumber) {
+        titleParts.push(normalized.batchNumber);
       }
 
       wx.setNavigationBarTitle({

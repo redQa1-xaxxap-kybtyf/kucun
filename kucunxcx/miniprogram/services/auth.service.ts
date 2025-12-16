@@ -173,6 +173,18 @@ class AuthService {
     const role = String(user.role).toLowerCase();
     return role === 'admin' || role === 'sales';
   }
+
+  /**
+   * 判断当前用户是否有编辑产品的权限
+   * 目前约定：管理员和销售人员都可以在小程序中编辑产品
+   */
+  canEditProduct(): boolean {
+    const user = this.getCurrentUser();
+    if (!user || !user.role) return false;
+
+    const role = String(user.role).toLowerCase();
+    return role === 'admin' || role === 'sales';
+  }
 }
 
 // 导出单例

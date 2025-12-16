@@ -5,6 +5,7 @@ import authService from '../../services/auth.service';
 import inventoryService from '../../services/inventory.service';
 import productService from '../../services/product.service';
 import type { InventoryItem } from '../../types/inventory';
+import { formatDateTime } from '../../utils/format';
 
 interface InventoryListItem extends InventoryItem {
   statusType: 'success' | 'warning' | 'danger';
@@ -63,6 +64,12 @@ Page({
     this.setData({ canViewNumericInventory: canView });
 
     // 加载库存数据
+    this.loadInventory(true);
+  },
+
+  // 每次返回库存列表页时自动刷新一次，确保看到最新库存数据
+  onShow() {
+    // 这里使用 reset=true，始终从第一页重新拉取，避免展示过期的分页数据
     this.loadInventory(true);
   },
 
@@ -139,7 +146,7 @@ Page({
       // 调用库存服务
       const response = await inventoryService.getInventoryList(queryParams);
 
-      // 处理库存数据,添加状态信息
+      // 处理库存数据,添加状态信息与时间展示
       const inventoryListWithStatus: InventoryListItem[] =
         response.inventories.map(item => {
           let statusType: 'success' | 'warning' | 'danger' = 'success';
@@ -155,6 +162,8 @@ Page({
 
           return {
             ...item,
+            // 统一格式化更新时间，避免直接展示 ISO 字符串
+            updatedAt: formatDateTime(item.updatedAt),
             statusType,
             statusText,
           };

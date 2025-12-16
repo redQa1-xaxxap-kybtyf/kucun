@@ -83,6 +83,26 @@ var formatQuantity = function(quantity, unit, piecesPerUnit) {
 };
 
 /**
+ * 格式化数量显示（同时展示「件/片拆分」和「总片数」）
+ * 示例：库存=91片, 每件10片 -> "9件1片（91片）"
+ * - 当未提供 piecesPerUnit 时，退化为 formatQuantity 行为
+ */
+var formatQuantityWithPieces = function(quantity, unit, piecesPerUnit) {
+  var display = formatQuantity(quantity, unit, piecesPerUnit);
+
+  if (typeof quantity !== 'number') {
+    quantity = 0;
+  }
+
+  // 仅在提供了每件片数时追加总片数，避免对非片数单位造成误解
+  if (piecesPerUnit && piecesPerUnit > 0) {
+    return display + '（' + quantity + '片）';
+  }
+
+  return display;
+};
+
+/**
  * 格式化金额 - 使用人民币符号（简化版，WXS不支持正则）
  */
 var formatAmount = function(amount) {
@@ -139,6 +159,7 @@ var getStockStatusType = function(quantity) {
 module.exports = {
   formatUnit: formatUnit,
   formatQuantity: formatQuantity,
+  formatQuantityWithPieces: formatQuantityWithPieces,
   formatAmount: formatAmount,
   formatStockStatus: formatStockStatus,
   getStockStatusType: getStockStatusType

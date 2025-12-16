@@ -6,7 +6,8 @@
 
 'use client';
 
-import { Eye, MoreHorizontal } from 'lucide-react';
+import { Eye, ImageIcon, MoreHorizontal } from 'lucide-react';
+import Image from 'next/image';
 import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
@@ -202,6 +203,24 @@ function InventoryRowView({
       style={style}
       onDoubleClick={onAdjust}
     >
+      {/* 产品缩略图 */}
+      <TableCell className="w-12">
+        {item.product?.thumbnailUrl ? (
+          <div className="relative h-10 w-10 overflow-hidden rounded border border-[hsl(var(--color-border-secondary))] bg-white">
+            <Image
+              src={item.product.thumbnailUrl}
+              alt={item.product.name || '产品'}
+              fill
+              className="object-cover"
+              sizes="40px"
+            />
+          </div>
+        ) : (
+          <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+            <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
+          </div>
+        )}
+      </TableCell>
       <TableCell className="font-medium text-[hsl(var(--color-primary))]">
         {item.product?.code ? <CopyableText text={item.product.code} /> : '-'}
       </TableCell>
@@ -210,28 +229,26 @@ function InventoryRowView({
       </TableCell>
       <TableCell>{formattedSpecification}</TableCell>
       <TableCell className="font-medium">
-        {packaging > 0 ? (
-          <>
-            {packaging}
-            <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
-              片/件
+        <div className="flex flex-col gap-0.5">
+          {packaging > 0 ? (
+            <>
+              {packaging}
+              <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
+                片/件
+              </span>
+            </>
+          ) : (
+            <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+          )}
+          {item.weight ? (
+            <span className="text-[10px] tabular-nums text-[hsl(var(--color-text-secondary))]">
+              {item.weight.toFixed(2)}
+              <span className="ml-0.5 font-normal text-[hsl(var(--color-text-tertiary))]">
+                kg
+              </span>
             </span>
-          </>
-        ) : (
-          <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
-        )}
-      </TableCell>
-      <TableCell className="text-right font-medium tabular-nums">
-        {item.weight ? (
-          <>
-            {item.weight.toFixed(2)}
-            <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
-              kg
-            </span>
-          </>
-        ) : (
-          <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
-        )}
+          ) : null}
+        </div>
       </TableCell>
       <TableCell className="font-mono">
         {item.batchNumber ? <CopyableText text={item.batchNumber} /> : '-'}
@@ -245,20 +262,22 @@ function InventoryRowView({
       <TableCell className="text-right font-medium text-[hsl(var(--color-primary))] tabular-nums">
         {availableDisplay}
       </TableCell>
-      {/* 成本信息（仅财务权限可见） */}
+      {/* 成本信息（仅财务权限可见）- 合并显示 */}
       {hasFinancePermission && (
-        <>
-          {/* 单位成本 */}
-          <TableCell className="text-right font-medium tabular-nums">
-            {item.unitCost ? formatCurrency(item.unitCost) : '-'}
-          </TableCell>
-          {/* 库存总成本 */}
-          <TableCell className="text-right font-semibold text-[hsl(var(--color-primary))] tabular-nums">
-            {item.unitCost
-              ? formatCurrency(item.quantity * item.unitCost)
-              : '-'}
-          </TableCell>
-        </>
+        <TableCell className="text-right tabular-nums">
+          {item.unitCost ? (
+            <div className="space-y-0.5">
+              <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                {formatCurrency(item.unitCost)}
+              </div>
+              <div className="font-semibold text-[hsl(var(--color-primary))]">
+                {formatCurrency(item.quantity * item.unitCost)}
+              </div>
+            </div>
+          ) : (
+            '-'
+          )}
+        </TableCell>
       )}
       <TableCell>{stockBadge}</TableCell>
       <TableCell className="text-xs">

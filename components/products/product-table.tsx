@@ -1,6 +1,7 @@
 'use client';
 
-import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit, Eye, ImageIcon, MoreHorizontal, Trash2 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ export function ProductTable({
     <Table>
       <TableHeader className="card-shadow-light">
         <TableRow>
+          <TableHead className="w-16">缩略图</TableHead>
           <TableHead>产品编码</TableHead>
           <TableHead>产品名称</TableHead>
           <TableHead>分类</TableHead>
@@ -68,6 +70,23 @@ export function ProductTable({
             key={product.id}
             className="transition-colors hover:bg-[hsl(var(--color-primary-light))]"
           >
+            <TableCell>
+              {product.thumbnailUrl ? (
+                <div className="relative h-10 w-10 overflow-hidden rounded border border-[hsl(var(--color-border-secondary))] bg-white">
+                  <Image
+                    src={product.thumbnailUrl}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    sizes="40px"
+                  />
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+                  <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
+                </div>
+              )}
+            </TableCell>
             <TableCell className="font-medium text-[hsl(var(--color-primary))]">
               {product.code}
             </TableCell>

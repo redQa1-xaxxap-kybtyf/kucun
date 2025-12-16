@@ -8,7 +8,7 @@ import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface UseImageUploadProps {
   maxFiles?: number;
-  maxSize?: number; // MB
+  maxSize?: number; // 全局兜底大小（MB），具体类型会在此基础上再收紧
   onThumbnailChange: (url: string) => void;
   onImagesChange: (images: ProductImage[]) => void;
 }
@@ -23,9 +23,30 @@ export function useImageUpload({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const validateFile = (file: File): string | null => {
-    if (file.size > maxSize * 1024 * 1024) {
-      return `文件大小不能超过 ${maxSize}MB`;
+  // 不同类型图片的前端大小限制（单位：MB）
+  const getMaxSizeForType = (
+    imageType: 'thumbnail' | 'main' | 'effect'
+  ): number => {
+    // 业务约定：
+    // - 缩略图：1MB
+    // - 主图：1MB
+    // - 效果图：2MB
+    const typeLimit =
+      imageType === 'effect'
+        ? 2
+        : 1;
+
+    // 同时不超过外部传入的 maxSize（兜底）
+    return Math.min(typeLimit, maxSize);
+  };
+
+  const validateFile = (
+    file: File,
+    imageType: 'thumbnail' | 'main' | 'effect'
+  ): string | null => {
+    const limitMb = getMaxSizeForType(imageType);
+    if (file.size > limitMb * 1024 * 1024) {
+      return `文件大小不能超过 ${limitMb}MB`;
     }
     if (!file.type.startsWith('image/')) {
       return '只能上传图片文件';
@@ -59,10 +80,15 @@ export function useImageUpload({
     });
 
   // 单文件上传（带 CSRF 头）
-  const uploadFile = async (file: File): Promise<string> => {
+  const uploadFile = async (
+    file: File,
+    imageType: 'thumbnail' | 'main' | 'effect'
+  ): Promise<string> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('type', 'product');
+    // 标记图片用途，方便后端按类型做更细粒度大小控制
+    formData.append('kind', imageType);
 
     const response = await fetch(
       '/api/upload',
@@ -88,6 +114,7 @@ export function useImageUpload({
   // 带重试的上传（指数退避，仅对网络/服务器错误重试）
   const uploadFileWithRetry = async (
     file: File,
+    imageType: 'thumbnail' | 'main' | 'effect',
     maxRetries = 2,
     baseDelayMs = 500
   ): Promise<string> => {
@@ -97,7 +124,7 @@ export function useImageUpload({
 
     while (true) {
       try {
-        return await uploadFile(file);
+        return await uploadFile(file, imageType);
       } catch (error) {
         attempt += 1;
         const message = getErrorMessage(error);
@@ -164,7 +191,7 @@ export function useImageUpload({
         fileArray,
         3, // 同时最多 3 个上传请求
         async (file, index) => {
-          const validationError = validateFile(file);
+          const validationError = validateFile(file, imageType);
           if (validationError) {
             throw new Error(validationError);
           }
@@ -175,7 +202,7 @@ export function useImageUpload({
             throw new Error(dimensionError);
           }
 
-          const url = await uploadFileWithRetry(file);
+          const url = await uploadFileWithRetry(file, imageType);
           setUploadProgress(((index + 1) / fileArray.length) * 100);
           return url;
         }

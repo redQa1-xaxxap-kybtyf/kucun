@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import React from 'react';
-import type { Control } from 'react-hook-form';
+import { useWatch, type Control } from 'react-hook-form';
 
 import {
   FormControl,
@@ -118,6 +118,47 @@ function ProductCategorySelect({
     [categoriesResponse?.data]
   );
 
+  // 实时监听当前选中的分类ID（包含编辑场景下的初始值）
+  const currentCategoryId = useWatch({
+    control,
+    name: 'categoryId',
+  });
+
+  // 当表单已经有分类值（编辑场景 / 默认值）时，也同步一次 1 级分类名称
+  React.useEffect(() => {
+    if (!onCategoryChange) return;
+
+    const value =
+      currentCategoryId === '' || currentCategoryId === undefined
+        ? 'uncategorized'
+        : currentCategoryId;
+
+    if (value === 'uncategorized') {
+      return;
+    }
+
+    const selectedCategory = categoryOptions.find(cat => cat.id === value);
+    if (!selectedCategory) {
+      return;
+    }
+
+    // 向上寻找 1 级分类名称
+    let rootCategory: CategoryOptionWithDepth = selectedCategory;
+    let safetyCounter = 0;
+    while (rootCategory.parentId && safetyCounter < 5) {
+      const parent = categoryOptions.find(
+        cat => cat.id === rootCategory.parentId
+      );
+      if (!parent) {
+        break;
+      }
+      rootCategory = parent;
+      safetyCounter += 1;
+    }
+
+    onCategoryChange(value, rootCategory.name);
+  }, [currentCategoryId, categoryOptions, onCategoryChange]);
+
   return (
     <FormField
       control={control}
@@ -136,7 +177,21 @@ function ProductCategorySelect({
                   cat => cat.id === value
                 );
                 if (selectedCategory) {
-                  onCategoryChange(value, selectedCategory.name);
+                  // 使用 1 级分类名称，而不是当前所选的 2/3 级分类名
+                  // 这样在“产品名称”为空时，可以直接复用 1 级分类名称
+                  let rootCategory: CategoryOptionWithDepth = selectedCategory;
+                  let safetyCounter = 0;
+                  while (rootCategory.parentId && safetyCounter < 5) {
+                    const parent = categoryOptions.find(
+                      cat => cat.id === rootCategory.parentId
+                    );
+                    if (!parent) {
+                      break;
+                    }
+                    rootCategory = parent;
+                    safetyCounter += 1;
+                  }
+                  onCategoryChange(value, rootCategory.name);
                 }
               }
             }}

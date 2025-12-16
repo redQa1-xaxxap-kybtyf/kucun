@@ -6,7 +6,7 @@
   <view class="search-section">
     <van-search
       value="{{ searchValue }}"
-      placeholder="搜索产品名称/编码/批次号"
+      placeholder="搜索产品名称/产品编号"
       bind:search="onSearch"
       bind:change="onSearchChange"
       shape="round"
@@ -38,8 +38,13 @@
         </view>
 
         <van-cell-group border="{{ false }}">
-          <van-cell title="产品编码" value="{{ item.product.code }}" />
-          <van-cell title="批次号" value="{{ item.batchNumber }}" />
+          <van-cell title="产品编号" value="{{ item.product.code }}" />
+          <!-- 访客模式不展示批次号，仅内部账号可见 -->
+          <van-cell
+            wx:if="{{ canViewNumericInventory }}"
+            title="批次号"
+            value="{{ item.batchNumber }}"
+          />
           <van-cell
             title="每件片数"
             value="{{ item.batchPiecesPerUnit ? (item.batchPiecesPerUnit + '片/件') : (item.product.piecesPerUnit ? (item.product.piecesPerUnit + '片/件') : '-') }}"
@@ -50,11 +55,11 @@
           />
           <van-cell
             title="总库存"
-            value="{{ canViewNumericInventory ? fmt.formatQuantity(item.quantity, item.product.unit, item.batchPiecesPerUnit || item.product.piecesPerUnit) : (item.availableQuantity > 0 ? '有货' : '缺货') }}"
+            value="{{ canViewNumericInventory ? fmt.formatQuantityWithPieces(item.quantity, item.product.unit, item.batchPiecesPerUnit || item.product.piecesPerUnit) : (item.availableQuantity > 0 ? '有货' : '缺货') }}"
           />
           <van-cell
             title="可用库存"
-            value="{{ canViewNumericInventory ? fmt.formatQuantity(item.availableQuantity, item.product.unit, item.batchPiecesPerUnit || item.product.piecesPerUnit) : (item.availableQuantity > 0 ? '有货' : '缺货') }}"
+            value="{{ canViewNumericInventory ? fmt.formatQuantityWithPieces(item.availableQuantity, item.product.unit, item.batchPiecesPerUnit || item.product.piecesPerUnit) : (item.availableQuantity > 0 ? '有货' : '缺货') }}"
           />
           <van-cell title="更新时间" value="{{ item.updatedAt }}" label-class="time-label" />
         </van-cell-group>

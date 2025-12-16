@@ -1,6 +1,7 @@
 'use client';
 
-import { Boxes, Eye } from 'lucide-react';
+import { Boxes, Eye, ImageIcon } from 'lucide-react';
+import Image from 'next/image';
 import { memo } from 'react';
 
 import { RelativeTime } from '@/components/common/relative-time';
@@ -88,8 +89,28 @@ function InventoryMobileList({
             key={item.id}
             className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
+            <div className="flex items-start gap-3">
+              {/* 产品缩略图 */}
+              <div className="shrink-0">
+                {item.product?.thumbnailUrl ? (
+                  <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white">
+                    <Image
+                      src={item.product.thumbnailUrl}
+                      alt={item.product.name || '产品'}
+                      fill
+                      className="object-cover"
+                      sizes="56px"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-14 w-14 items-center justify-center rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
+                    <ImageIcon className="h-5 w-5 text-[hsl(var(--color-text-tertiary))]" />
+                  </div>
+                )}
+              </div>
+
+              {/* 产品信息 */}
+              <div className="min-w-0 flex-1">
                 <div className="text-xs text-[hsl(var(--color-text-secondary))]">
                   {item.product?.code || '未知编码'}
                 </div>
@@ -102,12 +123,29 @@ function InventoryMobileList({
                     item.product?.specification
                   ) || '-'}
                 </div>
-                {packaging > 0 && (
+                {(packaging > 0 || item.weight) && (
                   <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                    包装：
-                    <span className="font-medium text-[hsl(var(--color-text-primary))]">
-                      {packaging}片/件
-                    </span>
+                    {packaging > 0 && (
+                      <>
+                        包装：
+                        <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                          {packaging}片/件
+                        </span>
+                      </>
+                    )}
+                    {packaging > 0 && item.weight && (
+                      <span className="mx-1 text-[hsl(var(--color-border-primary))]">
+                        |
+                      </span>
+                    )}
+                    {item.weight && (
+                      <>
+                        重量：
+                        <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                          {item.weight.toFixed(2)}kg
+                        </span>
+                      </>
+                    )}
                   </div>
                 )}
                 {item.location && (
@@ -121,6 +159,8 @@ function InventoryMobileList({
                   </div>
                 )}
               </div>
+
+              {/* 更新时间 */}
               <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
                 <div>最后更新</div>
                 <div className="mt-0.5">
