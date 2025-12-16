@@ -6,7 +6,7 @@ import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
 async function handleDistrictsRequest(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const cityCode = searchParams.get('cityCode');
 
     if (!cityCode) {

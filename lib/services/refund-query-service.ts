@@ -149,7 +149,10 @@ async function fetchRefundRecords(
 
   return prisma.refundRecord.findMany({
     where: whereConditions,
-    orderBy: { [sortBy]: sortOrder === 'asc' ? 'asc' : 'desc' },
+    orderBy: [
+      { [sortBy]: sortOrder === 'asc' ? 'asc' : 'desc' },
+      { id: 'desc' },
+    ],
     skip: (page - 1) * limit,
     take: limit,
     include: {

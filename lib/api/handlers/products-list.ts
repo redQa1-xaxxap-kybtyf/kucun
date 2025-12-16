@@ -152,12 +152,16 @@ export async function queryProducts(params: {
   limit: number;
 }) {
   const { where, select, sortBy, sortOrder, page, limit } = params;
+  const direction: Prisma.SortOrder = sortOrder === 'asc' ? 'asc' : 'desc';
 
   return Promise.all([
     prisma.product.findMany({
       where,
       select,
-      orderBy: { [sortBy]: sortOrder },
+      orderBy: [
+        { [sortBy]: direction } as Prisma.ProductOrderByWithRelationInput,
+        { id: 'desc' },
+      ],
       skip: (page - 1) * limit,
       take: limit,
     }),

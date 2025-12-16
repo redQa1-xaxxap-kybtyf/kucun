@@ -149,7 +149,7 @@ export const GET = withErrorHandling(
   withAuth(async (request: NextRequest, { user }) => {
     try {
       // 解析查询参数
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = request.nextUrl;
       const typeParam = searchParams.get('orderType');
       const queryParams = {
         jobId: searchParams.get('jobId') || undefined,
@@ -216,9 +216,7 @@ export const GET = withErrorHandling(
             where: {
               factoryShipmentOrderId: resolvedOrderId,
             },
-            orderBy: {
-              queriedAt: 'desc',
-            },
+            orderBy: [{ queriedAt: 'desc' }, { id: 'desc' }],
             select: {
               status: true,
               destination: true,
@@ -308,9 +306,7 @@ export const GET = withErrorHandling(
               where: {
                 factoryShipmentOrderId: order.id,
               },
-              orderBy: {
-                queriedAt: 'desc',
-              },
+              orderBy: [{ queriedAt: 'desc' }, { id: 'desc' }],
               select: {
                 status: true,
                 destination: true,

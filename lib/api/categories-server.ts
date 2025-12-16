@@ -69,7 +69,10 @@ export const getCategoriesServer = cache(
         where,
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: [
+          { [sortBy]: sortOrder } as Prisma.CategoryOrderByWithRelationInput,
+          { id: 'desc' },
+        ],
         include: {
           parent: {
             select: { id: true, name: true, code: true },
