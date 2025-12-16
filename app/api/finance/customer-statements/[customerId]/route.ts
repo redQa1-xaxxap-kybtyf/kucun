@@ -77,7 +77,7 @@ const getCustomerStatementDetailHandler = withAuth(
         return errorResponse('缺少客户ID', 400);
       }
 
-      const searchParams = new URL(request.url).searchParams;
+      const searchParams = request.nextUrl.searchParams;
       const { startDate, endDate } = normalizeRange(
         searchParams.get('startDate'),
         searchParams.get('endDate')

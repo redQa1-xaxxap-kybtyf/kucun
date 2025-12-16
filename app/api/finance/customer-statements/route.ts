@@ -5,6 +5,7 @@ import {
   successResponse,
   withAuth,
 } from '@/lib/auth/api-helpers';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { getCustomerStatements } from '@/lib/services/customer-statement-service';
@@ -30,11 +31,12 @@ const ALLOWED_BALANCE_TYPES: Array<
   NonNullable<CustomerStatementQuery['balanceType']>
 > = ['receivable', 'payable', 'all'];
 
-function parseQuery(searchParams: URLSearchParams): CustomerStatementQuery {
+function parseQuery(
+  searchParams: URLSearchParams,
+  pagination: { page: number; pageSize: number }
+): CustomerStatementQuery {
   const query: CustomerStatementQuery = {};
 
-  const pageParam = searchParams.get('page');
-  const limitParam = searchParams.get('pageSize') ?? searchParams.get('limit');
   const customerId = searchParams.get('customerId');
   const customerName =
     searchParams.get('customerName') ?? searchParams.get('search');
@@ -46,21 +48,8 @@ function parseQuery(searchParams: URLSearchParams): CustomerStatementQuery {
   const sortBy = searchParams.get('sortBy');
   const sortOrder = searchParams.get('sortOrder');
 
-  const page = pageParam ? Number.parseInt(pageParam, 10) : DEFAULT_PAGE;
-  if (Number.isFinite(page) && page > 0) {
-    query.page = page;
-  } else {
-    query.page = DEFAULT_PAGE;
-  }
-
-  const pageSize = limitParam
-    ? Number.parseInt(limitParam, 10)
-    : DEFAULT_PAGE_SIZE;
-  if (Number.isFinite(pageSize) && pageSize > 0 && pageSize <= 100) {
-    query.pageSize = pageSize;
-  } else {
-    query.pageSize = DEFAULT_PAGE_SIZE;
-  }
+  query.page = pagination.page;
+  query.pageSize = pagination.pageSize;
 
   if (customerId) {
     query.customerId = customerId;
@@ -125,8 +114,34 @@ function parseQuery(searchParams: URLSearchParams): CustomerStatementQuery {
 const getCustomerStatementsHandler = withAuth(
   async (request: NextRequest) => {
     try {
-      const searchParams = new URL(request.url).searchParams;
-      const query = parseQuery(searchParams);
+      const searchParams = request.nextUrl.searchParams;
+      const normalized = new URLSearchParams(searchParams);
+      if (!normalized.get('pageSize') && normalized.get('limit')) {
+        normalized.set('pageSize', normalized.get('limit') as string);
+      }
+
+      let page: number;
+      let pageSize: number;
+      try {
+        const parsed = parseOffsetPagination(normalized, {
+          defaultPage: DEFAULT_PAGE,
+          defaultLimit: DEFAULT_PAGE_SIZE,
+          maxLimit: 100,
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+          limitParamName: 'pageSize',
+        });
+        page = parsed.page;
+        pageSize = parsed.limit;
+      } catch (error) {
+        return errorResponse(
+          error instanceof Error ? error.message : '分页参数格式不正确',
+          400
+        );
+      }
+
+      const query = parseQuery(normalized, { page, pageSize });
 
       const result = await getCustomerStatements(query);
 

@@ -125,9 +125,7 @@ async function calculateTotalInventoryValue(categoryId?: string) {
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
     try {
-      const searchParams = request.url.includes('?')
-        ? new URL(request.url).searchParams
-        : new URLSearchParams();
+      const searchParams = request.nextUrl.searchParams;
 
       const categoryId = searchParams.get('categoryId') || undefined;
 

@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -12,13 +13,34 @@ import {
 // 获取产品变体列表
 export const GET = withAuth(async (request: NextRequest) => {
   try {
-    const { searchParams } = new URL(request.url);
+    const searchParams = request.nextUrl.searchParams;
+    let page: number;
+    let limit: number;
+    let skip: number;
+    try {
+      const parsed = parseOffsetPagination(searchParams, {
+        strict: true,
+        pageFieldLabel: '页码',
+        limitFieldLabel: '每页数量',
+      });
+      page = parsed.page;
+      limit = parsed.limit;
+      skip = parsed.skip;
+    } catch (error) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error instanceof Error ? error.message : '分页参数格式不正确',
+        },
+        { status: 400 }
+      );
+    }
     const queryParams = {
       productId: searchParams.get('productId') || undefined,
       colorCode: searchParams.get('colorCode') || undefined,
       status: searchParams.get('status') || undefined,
-      page: searchParams.get('page') || '1',
-      limit: searchParams.get('limit') || '20',
+      page,
+      limit,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',
     };
@@ -36,7 +58,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       );
     }
 
-    const { productId, colorCode, status, page, limit, sortBy, sortOrder } =
+    const { productId, colorCode, status, sortBy, sortOrder } =
       validationResult.data;
 
     // 构建查询条件
@@ -50,6 +72,11 @@ export const GET = withAuth(async (request: NextRequest) => {
     if (status) {
       where.status = status;
     }
+
+    const orderBy: Prisma.ProductVariantOrderByWithRelationInput[] = [
+      { [sortBy]: sortOrder },
+      { id: 'desc' },
+    ];
 
     // 查询产品变体列表
     const [variants, total] = await Promise.all([
@@ -82,8 +109,8 @@ export const GET = withAuth(async (request: NextRequest) => {
             },
           },
         },
-        orderBy: { [sortBy]: sortOrder },
-        skip: (page - 1) * limit,
+        orderBy,
+        skip,
         take: limit,
       }),
       prisma.productVariant.count({ where }),

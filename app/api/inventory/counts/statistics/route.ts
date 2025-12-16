@@ -26,7 +26,7 @@ const statisticsQuerySchema = z.object({
 export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
+    const searchParams = request.nextUrl.searchParams;
     const queryParams = {
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,
