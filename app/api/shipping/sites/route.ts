@@ -1,5 +1,9 @@
 import type { NextRequest } from 'next/server';
 
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import { withErrorHandling } from '@/lib/api/middleware';
 import {
   errorResponse,
@@ -20,10 +24,9 @@ import {
  */
 export const GET = withErrorHandling(
   withAuth(async (request: NextRequest, { user }) => {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
     const status = searchParams.get('status');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const { page, limit, skip } = parseOffsetPagination(searchParams);
 
     const where: Record<string, unknown> = {};
     if (status) {
@@ -37,7 +40,7 @@ export const GET = withErrorHandling(
     const sites = await prisma.shippingSite.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * limit,
+      skip,
       take: limit,
     });
 
@@ -57,12 +60,7 @@ export const GET = withErrorHandling(
 
     return successResponse({
       data: sitesData,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      pagination: buildOffsetPaginationMeta({ page, limit, total }),
     });
   })
 );

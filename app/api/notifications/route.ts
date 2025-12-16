@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+  sliceLimitPlusOne,
+} from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import {
@@ -16,17 +21,20 @@ import {
 export const GET = withAuth(async (request, { user }) => {
   try {
     const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const skip = (page - 1) * limit;
+    const { page, limit, skip } = parseOffsetPagination(searchParams);
 
     const notificationDelegate = getNotificationDelegate(prisma);
 
     if (!notificationDelegate) {
-      console.debug('[通知列表] Notification 委托不存在，返回空数据');
       return NextResponse.json({
         notifications: [],
         unreadCount: 0,
+        pagination: buildOffsetPaginationMeta({
+          page,
+          limit,
+          total: 0,
+          hasMore: false,
+        }),
       });
     }
 
@@ -40,7 +48,7 @@ export const GET = withAuth(async (request, { user }) => {
         createdAt: 'desc',
       },
       skip,
-      take: limit,
+      take: limit + 1,
     });
 
     const unreadCount = await notificationDelegate.count({
@@ -50,8 +58,10 @@ export const GET = withAuth(async (request, { user }) => {
       },
     });
 
+    const { items, hasMore } = sliceLimitPlusOne(notifications, limit);
+
     return NextResponse.json({
-      notifications: notifications.map((notification: NotificationRecord) => ({
+      notifications: items.map((notification: NotificationRecord) => ({
         id: notification.id,
         title: notification.title,
         message: notification.message,
@@ -61,6 +71,7 @@ export const GET = withAuth(async (request, { user }) => {
         createdAt: notification.createdAt,
       })),
       unreadCount,
+      pagination: buildOffsetPaginationMeta({ page, limit, hasMore }),
     });
   } catch (error) {
     // 如果 Notification 模型不存在或表不存在，返回空列表（向后兼容）
@@ -70,10 +81,16 @@ export const GET = withAuth(async (request, { user }) => {
         error.message.includes('Cannot read properties of undefined') ||
         error.message.includes('notification'))
     ) {
-      console.debug('[通知列表] Notification 表尚未创建，返回空数据');
+      const { page, limit } = parseOffsetPagination(request.nextUrl.searchParams);
       return NextResponse.json({
         notifications: [],
         unreadCount: 0,
+        pagination: buildOffsetPaginationMeta({
+          page,
+          limit,
+          total: 0,
+          hasMore: false,
+        }),
       });
     }
 
