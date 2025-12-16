@@ -165,7 +165,7 @@ export function buildInboundWhereClause(queryData: {
 export function buildInboundOrderBy(queryData: {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
-}): Prisma.InboundRecordOrderByWithRelationInput {
+}): Prisma.InboundRecordOrderByWithRelationInput[] {
   // 使用对象字面量映射,支持关联字段排序
   const orderByMap: Record<
     string,
@@ -173,11 +173,15 @@ export function buildInboundOrderBy(queryData: {
   > = {
     createdAt: { createdAt: queryData.sortOrder },
     quantity: { quantity: queryData.sortOrder },
+    recordNumber: { recordNumber: queryData.sortOrder },
     productName: { product: { name: queryData.sortOrder } },
   };
 
   // 默认按创建时间排序
-  return orderByMap[queryData.sortBy] ?? { createdAt: queryData.sortOrder };
+  const primary =
+    orderByMap[queryData.sortBy] ?? ({ createdAt: queryData.sortOrder } as const);
+
+  return [primary, { id: 'desc' }];
 }
 
 /**

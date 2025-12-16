@@ -19,6 +19,8 @@ export interface ParseOffsetPaginationOptions {
   defaultPage?: number;
   defaultLimit?: number;
   maxLimit?: number;
+  pageParamName?: string;
+  limitParamName?: string;
   /**
    * 严格模式：
    * - 当请求显式提供了 page/limit，但值非法时抛错（用于需要返回 400 的接口）
@@ -50,8 +52,10 @@ export function parseOffsetPagination(
   const strict = options.strict ?? false;
   const pageLabel = options.pageFieldLabel ?? 'page';
   const limitLabel = options.limitFieldLabel ?? 'limit';
+  const pageParamName = options.pageParamName ?? 'page';
+  const limitParamName = options.limitParamName ?? 'limit';
 
-  const rawPage = searchParams.get('page');
+  const rawPage = searchParams.get(pageParamName);
   const parsedPage = parseSafeInt(rawPage);
   if (strict && rawPage !== null) {
     if (parsedPage === null || parsedPage <= 0) {
@@ -62,7 +66,7 @@ export function parseOffsetPagination(
     ? (parsedPage ?? defaultPage)
     : Math.max(1, parsedPage ?? defaultPage);
 
-  const rawLimit = searchParams.get('limit');
+  const rawLimit = searchParams.get(limitParamName);
   const parsedLimit = parseSafeInt(rawLimit);
   if (strict && rawLimit !== null) {
     if (parsedLimit === null || parsedLimit <= 0) {

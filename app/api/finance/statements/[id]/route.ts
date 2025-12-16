@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
@@ -24,11 +25,34 @@ const getStatementDetailHandler = withAuth(
       const { id } = await resolveParams(context.params);
       partnerId = id;
 
-      const searchParams = new URL(request.url).searchParams;
-      const page = parseInt(searchParams.get('page') || '1', 10);
-      const pageSizeParam =
-        searchParams.get('pageSize') || searchParams.get('limit');
-      const pageSize = pageSizeParam ? parseInt(pageSizeParam, 10) : 50;
+      const searchParams = request.nextUrl.searchParams;
+      const normalized = new URLSearchParams(searchParams);
+      if (!normalized.get('pageSize') && normalized.get('limit')) {
+        normalized.set('pageSize', normalized.get('limit') as string);
+      }
+
+      let page: number;
+      let pageSize: number;
+      try {
+        const parsed = parseOffsetPagination(normalized, {
+          defaultLimit: 50,
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+          limitParamName: 'pageSize',
+        });
+        page = parsed.page;
+        pageSize = parsed.limit;
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              error instanceof Error ? error.message : '分页参数格式不正确',
+          },
+          { status: 400 }
+        );
+      }
 
       const options: PartnerStatementDetailOptions = {
         page,

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
-import { paginationConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 // ✅ P1修复: 使用带缓存的财务统计服务
@@ -19,18 +19,36 @@ const getStatementsHandler = withAuth(
   async (request: NextRequest) => {
     try {
       // 解析查询参数
-      const searchParams = new URL(request.url).searchParams;
+      const searchParams = request.nextUrl.searchParams;
       const searchValue = searchParams.get('search')?.trim();
       const typeValue = searchParams.get('type')?.trim();
       const startDateValue = searchParams.get('startDate')?.trim();
       const endDateValue = searchParams.get('endDate')?.trim();
+
+      let page: number;
+      let limit: number;
+      try {
+        const parsed = parseOffsetPagination(searchParams, {
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+        });
+        page = parsed.page;
+        limit = parsed.limit;
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              error instanceof Error ? error.message : '分页参数格式不正确',
+          },
+          { status: 400 }
+        );
+      }
+
       const queryParams = {
-        page: parseInt(searchParams.get('page') || '1', 10),
-        limit: parseInt(
-          searchParams.get('limit') ||
-            paginationConfig.defaultPageSize.toString(),
-          10
-        ),
+        page,
+        limit,
         search: searchValue || undefined,
         type: (typeValue as StatementType | 'all' | undefined) || 'all',
         sortBy: (searchParams.get('sortBy') ||
