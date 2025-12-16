@@ -3,6 +3,7 @@
 
 import { type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
@@ -33,8 +34,31 @@ import {
 export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
+    const searchParams = request.nextUrl.searchParams;
+
+    let normalizedPage: number;
+    let normalizedLimit: number;
+    try {
+      ({ page: normalizedPage, limit: normalizedLimit } = parseOffsetPagination(
+        searchParams,
+        {
+          defaultLimit: 20,
+          maxLimit: 50000,
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+        }
+      ));
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '分页参数格式不正确',
+        400
+      );
+    }
+
     const queryParams = Object.fromEntries(searchParams.entries());
+    queryParams.page = String(normalizedPage);
+    queryParams.limit = String(normalizedLimit);
     const validationResult = paymentOutRecordQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
@@ -131,9 +155,7 @@ export const GET = withAuth(
             },
           },
         },
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
+        orderBy: [{ [sortBy]: sortOrder } as any, { id: 'desc' }],
         skip,
         take: limit,
       }),

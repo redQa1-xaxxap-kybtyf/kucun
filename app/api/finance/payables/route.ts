@@ -3,6 +3,7 @@
 
 import { type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
@@ -29,28 +30,46 @@ import {
  */
 export const GET = withAuth(
   async (request: NextRequest) => {
-    // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
-    const queryParams = Object.fromEntries(searchParams.entries());
-    const sanitizedParams = sanitizePayableSearchParams(queryParams);
-    const validationResult =
-      payableRecordQuerySchema.safeParse(sanitizedParams);
+    const searchParams = request.nextUrl.searchParams;
 
-    if (!validationResult.success) {
+    try {
+      const { page, limit } = parseOffsetPagination(searchParams, {
+        defaultLimit: 20,
+        maxLimit: 50000,
+        strict: true,
+        pageFieldLabel: '页码',
+        limitFieldLabel: '每页数量',
+      });
+
+      const queryParams = Object.fromEntries(searchParams.entries());
+      queryParams.page = String(page);
+      queryParams.limit = String(limit);
+
+      const sanitizedParams = sanitizePayableSearchParams(queryParams);
+      const validationResult =
+        payableRecordQuerySchema.safeParse(sanitizedParams);
+
+      if (!validationResult.success) {
+        return errorResponse(
+          `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
+          400
+        );
+      }
+
+      const parsedQuery = validationResult.data;
+      const normalizedQuery = normalizePayableQuery({
+        ...parsedQuery,
+        limit: parsedQuery.limit ?? paginationConfig.defaultPageSize,
+      });
+      const response = await fetchPayableRecordList(normalizedQuery);
+
+      return successResponse(response);
+    } catch (error) {
       return errorResponse(
-        `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
+        error instanceof Error ? error.message : '查询参数格式不正确',
         400
       );
     }
-
-    const parsedQuery = validationResult.data;
-    const normalizedQuery = normalizePayableQuery({
-      ...parsedQuery,
-      limit: parsedQuery.limit ?? paginationConfig.defaultPageSize,
-    });
-    const response = await fetchPayableRecordList(normalizedQuery);
-
-    return successResponse(response);
   },
   { permissions: ['finance:view'] }
 );

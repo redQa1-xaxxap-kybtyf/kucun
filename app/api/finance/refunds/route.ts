@@ -1,11 +1,13 @@
 import { type NextRequest } from 'next/server';
 
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 import { publishFinanceEvent } from '@/lib/events';
 import {
   createRefundRecordSchema,
@@ -25,13 +27,34 @@ import {
 export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析并验证查询参数
-    const { searchParams } = new URL(request.url);
-    const pageParam = searchParams.get('page');
-    const limitParam =
-      searchParams.get('limit') ?? searchParams.get('pageSize');
+    const searchParams = request.nextUrl.searchParams;
+    const normalized = new URLSearchParams(searchParams);
+    if (!normalized.get('limit') && normalized.get('pageSize')) {
+      normalized.set('limit', normalized.get('pageSize') as string);
+    }
+
+    let normalizedPage: number;
+    let normalizedLimit: number;
+    try {
+      ({ page: normalizedPage, limit: normalizedLimit } = parseOffsetPagination(
+        normalized,
+        {
+          defaultLimit: 20,
+          maxLimit: paginationConfig.maxPageSize,
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+        }
+      ));
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '分页参数格式不正确',
+        400
+      );
+    }
     const queryParams = {
-      page: pageParam ? Number.parseInt(pageParam, 10) : undefined,
-      limit: limitParam ? Number.parseInt(limitParam, 10) : undefined,
+      page: normalizedPage,
+      limit: normalizedLimit,
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       customerId: searchParams.get('customerId') || undefined,
@@ -164,7 +187,7 @@ export const GET = withAuth(
             },
           },
         },
-        orderBy,
+        orderBy: [orderBy, { id: 'desc' }] as any,
         skip,
         take: limit,
       }),
@@ -257,12 +280,12 @@ export const GET = withAuth(
         processingCount,
         completedCount,
       },
-      pagination: {
+      pagination: buildOffsetPaginationMeta({
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit),
-      },
+        hasMore: skip + formattedRefunds.length < total,
+      }),
     });
   },
   { permissions: ['finance:view'] }

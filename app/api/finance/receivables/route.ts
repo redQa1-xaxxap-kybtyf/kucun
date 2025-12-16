@@ -10,6 +10,7 @@
 
 import { type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
@@ -31,9 +32,28 @@ export const GET = withAuth(
   async (request: NextRequest, { user }) => {
     try {
       // 参数验证
-      const searchParams = new URL(request.url).searchParams;
-      const limitParam =
-        searchParams.get('limit') ?? searchParams.get('pageSize') ?? '20';
+      const searchParams = request.nextUrl.searchParams;
+      const normalized = new URLSearchParams(searchParams);
+      if (!normalized.get('limit') && normalized.get('pageSize')) {
+        normalized.set('limit', normalized.get('pageSize') as string);
+      }
+
+      let page: number;
+      let limit: number;
+      try {
+        ({ page, limit } = parseOffsetPagination(normalized, {
+          defaultLimit: 10,
+          maxLimit: 100,
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+        }));
+      } catch (error) {
+        return errorResponse(
+          error instanceof Error ? error.message : '分页参数格式不正确',
+          400
+        );
+      }
 
       const paymentStatusParam =
         searchParams.get('paymentStatus') ??
@@ -41,8 +61,8 @@ export const GET = withAuth(
         undefined;
 
       const validationResult = accountsReceivableQuerySchema.safeParse({
-        page: parseInt(searchParams.get('page') || '1'),
-        limit: parseInt(limitParam, 10),
+        page,
+        limit,
         search: searchParams.get('search') || undefined,
         customerId: searchParams.get('customerId') || undefined,
         paymentStatus: paymentStatusParam || undefined,

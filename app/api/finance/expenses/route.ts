@@ -3,6 +3,7 @@
 
 import { type NextRequest } from 'next/server';
 
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
@@ -26,13 +27,34 @@ import {
 export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析查询参数
-    const searchParams = new URL(request.url).searchParams;
-    const pageParam = searchParams.get('page');
-    const pageSizeParam = searchParams.get('pageSize');
+    const searchParams = request.nextUrl.searchParams;
+    const normalized = new URLSearchParams(searchParams);
+    if (!normalized.get('limit') && normalized.get('pageSize')) {
+      normalized.set('limit', normalized.get('pageSize') as string);
+    }
+
+    let page: number;
+    let pageSize: number;
+    try {
+      const parsed = parseOffsetPagination(normalized, {
+        defaultLimit: 20,
+        maxLimit: 100,
+        strict: true,
+        pageFieldLabel: '页码',
+        limitFieldLabel: '每页数量',
+      });
+      page = parsed.page;
+      pageSize = parsed.limit;
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '分页参数格式不正确',
+        400
+      );
+    }
 
     const queryParams = {
-      page: pageParam ? parseInt(pageParam, 10) : undefined,
-      pageSize: pageSizeParam ? parseInt(pageSizeParam, 10) : undefined,
+      page,
+      pageSize,
       expenseType: searchParams.get('expenseType') || undefined,
       startDate: searchParams.get('startDate') || undefined,
       endDate: searchParams.get('endDate') || undefined,

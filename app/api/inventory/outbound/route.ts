@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
+import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
@@ -103,32 +104,6 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
   };
 }
 
-function parsePositiveInteger(
-  value: string | null,
-  {
-    defaultValue,
-    field,
-    max,
-  }: { defaultValue: number; field: string; max?: number }
-): number {
-  if (value === null) {
-    return defaultValue;
-  }
-
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
-    throw new Error(`${field}必须为正整数`);
-  }
-  if (parsed <= 0) {
-    throw new Error(`${field}必须大于0`);
-  }
-  if (typeof max === 'number' && parsed > max) {
-    throw new Error(`${field}不能超过${max}`);
-  }
-
-  return parsed;
-}
-
 function normalizeStringParam(value: string | null): string | undefined {
   if (!value) {
     return undefined;
@@ -175,15 +150,14 @@ const getOutboundRecordsHandler = withAuth(
       let page: number;
       let limit: number;
       try {
-        page = parsePositiveInteger(searchParams.get('page'), {
-          defaultValue: 1,
-          field: '页码',
-        });
-        limit = parsePositiveInteger(searchParams.get('limit'), {
-          defaultValue: paginationConfig.defaultPageSize,
-          field: '每页数量',
-          max: paginationConfig.maxPageSize,
-        });
+        ({ page, limit } = parseOffsetPagination(searchParams, {
+          defaultPage: 1,
+          defaultLimit: paginationConfig.defaultPageSize,
+          maxLimit: paginationConfig.maxPageSize,
+          strict: true,
+          pageFieldLabel: '页码',
+          limitFieldLabel: '每页数量',
+        }));
       } catch (error) {
         return NextResponse.json(
           {
@@ -228,7 +202,7 @@ const getOutboundRecordsHandler = withAuth(
           where,
           skip,
           take: limit,
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           include: {
             product: {
               select: {
@@ -298,12 +272,12 @@ const getOutboundRecordsHandler = withAuth(
 
       return NextResponse.json({
         data: formattedRecords,
-        pagination: {
+        pagination: buildOffsetPaginationMeta({
           page,
           limit,
           total,
-          totalPages: Math.ceil(total / limit),
-        },
+          hasMore: skip + formattedRecords.length < total,
+        }),
       });
     })(request, {}),
   { permissions: ['inventory:view'] }

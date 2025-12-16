@@ -19,6 +19,14 @@ export interface ParseOffsetPaginationOptions {
   defaultPage?: number;
   defaultLimit?: number;
   maxLimit?: number;
+  /**
+   * 严格模式：
+   * - 当请求显式提供了 page/limit，但值非法时抛错（用于需要返回 400 的接口）
+   * - 当请求未提供参数时使用默认值
+   */
+  strict?: boolean;
+  pageFieldLabel?: string;
+  limitFieldLabel?: string;
 }
 
 function parseSafeInt(value: string | null | undefined): number | null {
@@ -39,15 +47,34 @@ export function parseOffsetPagination(
   const defaultPage = options.defaultPage ?? 1;
   const defaultLimit = options.defaultLimit ?? paginationConfig.defaultPageSize;
   const maxLimit = options.maxLimit ?? paginationConfig.maxPageSize;
+  const strict = options.strict ?? false;
+  const pageLabel = options.pageFieldLabel ?? 'page';
+  const limitLabel = options.limitFieldLabel ?? 'limit';
 
-  const page = Math.max(
-    1,
-    parseSafeInt(searchParams.get('page')) ?? defaultPage
-  );
-  const limit = Math.min(
-    maxLimit,
-    Math.max(1, parseSafeInt(searchParams.get('limit')) ?? defaultLimit)
-  );
+  const rawPage = searchParams.get('page');
+  const parsedPage = parseSafeInt(rawPage);
+  if (strict && rawPage !== null) {
+    if (parsedPage === null || parsedPage <= 0) {
+      throw new Error(`${pageLabel}必须大于0`);
+    }
+  }
+  const page = strict
+    ? (parsedPage ?? defaultPage)
+    : Math.max(1, parsedPage ?? defaultPage);
+
+  const rawLimit = searchParams.get('limit');
+  const parsedLimit = parseSafeInt(rawLimit);
+  if (strict && rawLimit !== null) {
+    if (parsedLimit === null || parsedLimit <= 0) {
+      throw new Error(`${limitLabel}必须大于0`);
+    }
+    if (parsedLimit > maxLimit) {
+      throw new Error(`${limitLabel}不能超过${maxLimit}`);
+    }
+  }
+  const limit = strict
+    ? (parsedLimit ?? defaultLimit)
+    : Math.min(maxLimit, Math.max(1, parsedLimit ?? defaultLimit));
 
   const skip = (page - 1) * limit;
 
@@ -88,4 +115,3 @@ export function buildOffsetPaginationMeta(params: {
     hasMore: params.hasMore,
   };
 }
-
