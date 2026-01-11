@@ -758,7 +758,8 @@ export async function submitCountData(
             if (!fifoCostCache.has(cacheKey)) {
               const fifoAvgCost = await getWeightedAverageCostFromFIFO(
                 existingItem.productId,
-                existingItem.variantId
+                existingItem.variantId,
+                tx
               );
               fifoCostCache.set(cacheKey, fifoAvgCost);
             }
@@ -961,7 +962,8 @@ export async function completeCount(
         if (unitCost === null) {
           const fifoAvg = await getWeightedAverageCostFromFIFO(
             item.productId,
-            item.variantId
+            item.variantId,
+            tx
           );
           unitCost = fifoAvg > 0 ? fifoAvg : null;
 
@@ -1003,7 +1005,8 @@ export async function completeCount(
             // FIFO 队列为空时退回到平均成本/库存单价，但仍完成盘点
             const fifoAvg = await getWeightedAverageCostFromFIFO(
               item.productId,
-              item.variantId
+              item.variantId,
+              tx
             );
             unitCost =
               fifoAvg > 0 ? fifoAvg : unitCost !== null ? unitCost : null;

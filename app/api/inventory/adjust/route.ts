@@ -133,7 +133,8 @@ export async function executeAdjustmentTransaction(
         const fifoAvg = await getWeightedAverageCostFromFIFOByBatch(
           productId,
           variantId || null,
-          batchNumber?.trim() || null
+          batchNumber?.trim() || null,
+          tx
         );
 
         if (fifoAvg > 0) {
@@ -175,7 +176,8 @@ export async function executeAdjustmentTransaction(
             const fifoAvg = await getWeightedAverageCostFromFIFOByBatch(
               productId,
               variantId || null,
-              batchNumber?.trim() || null
+              batchNumber?.trim() || null,
+              tx
             );
 
             if (fifoAvg > 0) {
