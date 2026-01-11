@@ -205,7 +205,13 @@
       "Bash(else echo '❌ $comp')",
       "Bash(then echo '✅ van-$comp')",
       "Bash(else echo '❌ van-$comp')",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(get-current-datetime:*)",
+      "Bash(where:*)",
+      "Bash(auggie:*)",
+      "Bash(export AUGMENT_API_TOKEN=\"ace_7355611ec1954fb5ff4c21174636dbe91817d63a\")",
+      "Bash(export AUGMENT_API_URL=\"https://acemcp.heroman.wtf/relay/\")",
+      "Bash(env:*)"
     ],
     "deny": [],
     "ask": []
