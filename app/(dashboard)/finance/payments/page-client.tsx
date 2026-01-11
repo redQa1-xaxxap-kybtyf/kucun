@@ -410,7 +410,7 @@ export function PaymentsPageClient({
                     收款记录
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    管理销售订单的收款记录，跟踪收款状态和金额
+                    记录客户回款明细，确保应收账款及时核销
                   </p>
                 </div>
               </div>

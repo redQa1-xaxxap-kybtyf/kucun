@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
 
 import {
-  getStatementsList,
-  type StatementQueryParams,
+    getStatementsList,
+    type StatementQueryParams,
 } from '@/lib/services/finance-statistics';
 
 import { StatementsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '往来账单 - 财务管理',
-  description: '统一管理业务伙伴往来账本',
+  title: '应收应付总账 - 财务管理',
+  description: '统一管理客户与供应商的应收应付汇总数据',
 };
 
 // ✅ Next.js 15 Route Segment Config

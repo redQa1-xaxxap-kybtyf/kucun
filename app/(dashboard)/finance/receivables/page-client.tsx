@@ -1,11 +1,11 @@
 'use client';
 
 import {
-  Download,
-  FileSpreadsheet,
-  FileText,
-  Plus,
-  TrendingUp,
+    Download,
+    FileSpreadsheet,
+    FileText,
+    Plus,
+    TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback } from 'react';
@@ -14,12 +14,12 @@ import { PageHeader } from '@/components/common/page-header';
 import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
@@ -50,7 +50,7 @@ export function ReceivablesPageClient({
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应收货款管理"
-          description="管理销售订单产生的应收账款，跟踪收款状态"
+          description="跟踪销售订单产生的应收账款，督促客户按时回款"
           icon={<TrendingUp className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

@@ -14,10 +14,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
-  PAYMENT_OUT_SORT_OPTIONS,
-  type PaymentOutMethod,
-  type PaymentOutRecordDetail,
-  type PaymentOutStatus,
+    PAYMENT_OUT_SORT_OPTIONS,
+    type PaymentOutMethod,
+    type PaymentOutRecordDetail,
+    type PaymentOutStatus,
 } from '@/lib/types/payable';
 
 type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
@@ -515,7 +515,7 @@ export function PaymentsOutPageClient({
                     付款记录
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    管理采购订单的付款记录，跟踪付款状态和金额
+                    记录向供应商付款明细，确保应付账款及时结清
                   </p>
                 </div>
               </div>

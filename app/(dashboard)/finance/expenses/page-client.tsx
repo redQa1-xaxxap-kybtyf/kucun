@@ -1,9 +1,9 @@
 'use client';
 
 import { Plus, Receipt } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';
@@ -13,9 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
 import type {
-  ExpenseQueryParams,
-  ExpenseStatisticsParams,
-  ExpenseType,
+    ExpenseQueryParams,
+    ExpenseStatisticsParams,
+    ExpenseType,
 } from '@/lib/types/expense';
 
 interface ExpensesPageClientProps {
@@ -232,20 +232,24 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-start gap-3 sm:items-center sm:gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)] sm:h-12 sm:w-12">
-                  <Receipt className="h-5 w-5 text-white sm:h-6 sm:w-6" />
+        {/* 页面标题卡片 - v3 PRO 旗舰玻璃拟态 */}
+        <Card className="relative overflow-hidden border-none bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
+          {/* 装饰性光斑 */}
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+          
+          <CardContent className="relative z-10 p-6 sm:p-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
+                  <Receipt className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
-                    费用记录
+                  <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    费用支出流水 <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm uppercase tracking-widest">费用开支明细台账</span>
                   </h1>
-                  <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    管理各类费用记录，跟踪费用支出情况
+                  <p className="mt-1 text-sm font-medium text-slate-400">
+                    智能财务开支监控 · 业务关联穿透审计
                   </p>
                 </div>
               </div>
@@ -253,11 +257,11 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
                 <Button
                   size="lg"
                   asChild
-                  className="h-9 px-4 text-xs shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)] sm:h-11 sm:px-6 sm:text-sm"
+                  className="h-12 border-none bg-blue-600 px-8 text-white shadow-[0_10px_20px_rgba(37,99,235,0.2)] transition-all hover:scale-105 hover:bg-blue-500 sm:text-sm"
                 >
                   <Link href="/finance/expenses/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    新增费用
+                    <Plus className="mr-2 h-5 w-5" />
+                    新增费用记录
                   </Link>
                 </Button>
               )}

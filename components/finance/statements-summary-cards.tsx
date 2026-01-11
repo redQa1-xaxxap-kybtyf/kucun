@@ -1,4 +1,5 @@
 import { FileText, TrendingDown, TrendingUp, Users } from 'lucide-react';
+import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
@@ -62,47 +63,52 @@ function SummaryCard({
   variant?: 'emerald' | 'amber' | 'blue' | 'purple';
 }) {
   const themes = {
-    emerald: "bg-emerald-50/50 border-emerald-100/50 text-emerald-600 shadow-emerald-100/20",
-    amber: "bg-amber-50/50 border-amber-100/50 text-amber-600 shadow-amber-100/20",
-    blue: "bg-blue-50/50 border-blue-100/50 text-blue-600 shadow-blue-100/20",
-    purple: "bg-purple-50/50 border-purple-100/50 text-purple-600 shadow-purple-100/20",
+    emerald: "bg-emerald-50 text-emerald-600 shadow-emerald-100",
+    amber: "bg-amber-50 text-amber-600 shadow-amber-100",
+    blue: "bg-blue-50 text-blue-600 shadow-blue-100",
+    purple: "bg-purple-50 text-purple-600 shadow-purple-100",
   };
 
   return (
     <div className={cn(
-      "group relative overflow-hidden rounded-[2rem] border bg-white/60 p-8 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
+      "group relative overflow-hidden rounded-[2.5rem] border-none bg-white shadow-[0_10px_40px_rgba(0,0,0,0.04)] p-8 transition-all duration-500 hover:shadow-2xl hover:-translate-y-1",
       "hover:bg-white"
     )}>
-      <div className="relative flex flex-col gap-6">
+      {/* Decorative background icon */}
+      <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:scale-110 transition-transform duration-700">
+         {React.cloneElement(icon as React.ReactElement, { size: 120 })}
+      </div>
+
+      <div className="relative z-10 flex flex-col gap-6">
         <div className="flex items-center justify-between">
-          <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl border transition-transform group-hover:scale-110", themes[variant])}>
-            {icon}
+          <div className={cn("flex h-14 w-14 items-center justify-center rounded-2xl border-none shadow-lg transition-transform group-hover:rotate-6", themes[variant])}>
+            {React.cloneElement(icon as React.ReactElement, { className: "h-7 w-7" })}
           </div>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-500 transition-colors">
-            Metric insight
-          </span>
+          <div className="flex flex-col items-end">
+             <span className="text-[10px] font-black uppercase tracking-widest text-slate-300 group-hover:text-slate-400 transition-colors">
+               Metric insight
+             </span>
+             <div className="h-1 w-8 bg-slate-100 mt-1 rounded-full overflow-hidden">
+                <div className={cn("h-full w-2/3 animate-pulse rounded-full", variant === 'emerald' ? "bg-emerald-500" : variant === 'amber' ? "bg-amber-500" : variant === 'blue' ? "bg-blue-500" : "bg-purple-500")} />
+             </div>
+          </div>
         </div>
         
         <div className="space-y-1">
-          <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider">{title}</h3>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{title} / {variant.toUpperCase()}</h3>
           <p className="text-3xl font-black tracking-tighter text-slate-900">
             {value}
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-slate-200" />
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-normal">{footer}</p>
+        <div className="flex items-center justify-between border-t border-slate-50 pt-4">
+           <div className="flex items-center gap-2">
+              <span className={cn("h-2 w-2 rounded-full", variant === 'emerald' ? "bg-emerald-500" : variant === 'amber' ? "bg-amber-500" : variant === 'blue' ? "bg-blue-500" : "bg-purple-500")} />
+              <p className="text-[11px] font-black text-slate-500 uppercase tracking-normal">{footer}</p>
+           </div>
+           <div className="px-2 py-0.5 rounded-md bg-slate-50 text-[9px] font-black text-slate-400 uppercase">Live</div>
         </div>
       </div>
-      
-      {/* Decorative gradient blur */}
-      <div className={cn(
-        "absolute -right-8 -bottom-8 h-24 w-24 rounded-full blur-[40px] opacity-20 transition-opacity group-hover:opacity-40",
-        variant === 'emerald' ? "bg-emerald-400" :
-        variant === 'amber' ? "bg-amber-400" :
-        variant === 'blue' ? "bg-blue-400" : "bg-purple-400"
-      )} />
     </div>
   );
 }

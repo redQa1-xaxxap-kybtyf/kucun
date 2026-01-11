@@ -217,17 +217,17 @@ export function CustomerStatementsPageClient({
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-4xl font-black tracking-tighter text-slate-900">
-                    客户对账单
+                    往来明细账
                   </h1>
                   <div className="text-xs uppercase font-bold tracking-wider px-4 py-1.5 rounded-full bg-blue-600 text-white shadow-lg shadow-blue-200">
-                    深度审计洞察
+                    逐笔核对
                   </div>
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-6">
                    <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                    <span className="uppercase text-xs tracking-wider text-slate-500">账户治理规范</span>
-                    <span className="text-slate-600 font-bold">管理与客户之间的完整财务往来记录</span>
+                    <span className="uppercase text-xs tracking-wider text-slate-500">明细核对中心</span>
+                    <span className="text-slate-600 font-bold">按客户查看往来流水与余额明细</span>
                    </div>
                 </div>
               </div>
@@ -239,7 +239,7 @@ export function CustomerStatementsPageClient({
                 className="h-14 rounded-2xl bg-slate-900 font-black text-white shadow-xl hover:shadow-slate-200 transition-all active:scale-95 px-10"
               >
                 <Download className="mr-2 h-5 w-5" />
-                批量导出审计对账单
+                导出明细账报表
               </Button>
             </div>
           </div>
@@ -274,9 +274,9 @@ export function CustomerStatementsPageClient({
                 </div>
               </SelectTrigger>
               <SelectContent className="rounded-2xl border-none shadow-2xl">
-                <SelectItem value="all" className="rounded-xl font-bold py-3">查看全部账户</SelectItem>
-                <SelectItem value="receivable" className="rounded-xl font-bold py-3 text-emerald-600">仅看应收余额</SelectItem>
-                <SelectItem value="payable" className="rounded-xl font-bold py-3 text-rose-600">仅看应付余额</SelectItem>
+                <SelectItem value="all" className="rounded-xl font-bold py-3">全部往来账户</SelectItem>
+                <SelectItem value="receivable" className="rounded-xl font-bold py-3 text-emerald-600">仅看应收账款</SelectItem>
+                <SelectItem value="payable" className="rounded-xl font-bold py-3 text-rose-600">仅看应付账款</SelectItem>
               </SelectContent>
             </Select>
         </div>
@@ -286,13 +286,13 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:bg-white text-emerald-600">
              <div className="relative z-10 space-y-4">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">总应收余额</h3>
+                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">应收账款余额</h3>
                    <TrendingUp className="h-5 w-5" />
                 </div>
                 <div className="text-3xl font-black tracking-tighter text-slate-900">
                   {statisticsLoading ? '---' : formatCurrency(totalReceivableBalance)}
                 </div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-normal">活跃应收资产流</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-normal">待回收货款总额</p>
              </div>
              <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-emerald-400 blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity" />
           </div>
@@ -300,13 +300,13 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:bg-white text-rose-600">
              <div className="relative z-10 space-y-4">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">总应付余额</h3>
+                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">应付账款余额</h3>
                    <TrendingDown className="h-5 w-5" />
                 </div>
                 <div className="text-3xl font-black tracking-tighter text-slate-900">
                   {statisticsLoading ? '---' : formatCurrency(totalPayableBalance)}
                 </div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-normal">累计应付债务总额</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-normal">待支付货款总额</p>
              </div>
              <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-rose-400 blur-[40px] opacity-10 group-hover:opacity-20 transition-opacity" />
           </div>
@@ -330,13 +330,13 @@ export function CustomerStatementsPageClient({
           <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-8 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:bg-white text-slate-900">
              <div className="relative z-10 space-y-4">
                 <div className="flex items-center justify-between">
-                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">净资产头寸</h3>
+                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">往来净额</h3>
                    <Wallet className="h-5 w-5 text-slate-400" />
                 </div>
                 <div className="text-3xl font-black tracking-tighter text-slate-900">
                   {statisticsLoading ? '---' : formatCurrency(totalNetBalance)}
                 </div>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-normal">净资产综合头寸</p>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-normal">应收减应付结余</p>
              </div>
              <div className="absolute -right-8 -bottom-8 h-24 w-24 rounded-full bg-slate-900 blur-[40px] opacity-5 group-hover:opacity-10 transition-opacity" />
           </div>
@@ -345,10 +345,10 @@ export function CustomerStatementsPageClient({
         {/* 对账单列表 */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">对账审计列表</h2>
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">客户明细账列表</h2>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
                <History className="h-3.5 w-3.5" />
-               实时对账同步
+               实时数据同步
             </div>
           </div>
 
@@ -359,13 +359,13 @@ export function CustomerStatementsPageClient({
                   <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
                   <div className="absolute inset-0 rounded-full border-4 border-slate-900 border-t-transparent animate-spin" />
                 </div>
-                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">正在同步对账流...</p>
+                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">正在加载明细账数据...</p>
               </div>
             </div>
           ) : statements.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20">
                <FileText className="h-12 w-12 text-slate-200 mb-4" />
-               <p className="text-sm font-black text-slate-400 uppercase tracking-widest">暂无相关财务往来记录</p>
+               <p className="text-sm font-black text-slate-400 uppercase tracking-widest">暂无往来明细账记录</p>
             </div>
           ) : (
             <div className="grid gap-4">

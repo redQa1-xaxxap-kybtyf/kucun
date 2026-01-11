@@ -1,7 +1,7 @@
 import {
-  HydrationBoundary,
-  QueryClient,
-  dehydrate,
+    HydrationBoundary,
+    QueryClient,
+    dehydrate,
 } from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
@@ -12,8 +12,8 @@ import type { CustomerStatementQuery } from '@/lib/types/customer-statement';
 import { CustomerStatementsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '客户对账单 - 财务管理',
-  description: '查看与客户之间的往来账务记录与余额情况',
+  title: '往来明细账 - 财务管理',
+  description: '按客户查看详细的往来流水与余额核对',
 };
 
 export const dynamic = 'force-dynamic';

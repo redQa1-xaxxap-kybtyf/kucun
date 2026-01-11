@@ -449,13 +449,13 @@ export function ProfitLossClient() {
            </div>
            <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
               {[
-                { label: '物流运费', value: analysis.expenses.shipping },
-                { label: '仓储维护', value: analysis.expenses.storage },
-                { label: '人力成本', value: analysis.expenses.labor },
-                { label: '商务差旅', value: analysis.expenses.travel },
-                { label: '日常办公', value: analysis.expenses.living },
-                { label: '装卸费用', value: analysis.expenses.loading_unloading },
-                { label: '杂项开支', value: analysis.expenses.other },
+                { label: '运费', value: analysis.expenses.shipping },
+                { label: '仓储费', value: analysis.expenses.storage },
+                { label: '人工费', value: analysis.expenses.labor },
+                { label: '差旅费', value: analysis.expenses.travel },
+                { label: '生活费', value: analysis.expenses.living },
+                { label: '装卸费', value: analysis.expenses.loading_unloading },
+                { label: '其他费用', value: analysis.expenses.other },
               ].map((item) => (
                 <div key={item.label} className="flex flex-col rounded-xl bg-slate-50/50 p-4 transition-colors hover:bg-slate-100">
                    <span className="text-xs font-black uppercase text-slate-400">{item.label}</span>
@@ -696,10 +696,10 @@ export function ProfitLossClient() {
                      </thead>
                      <tbody className="divide-y divide-slate-100">
                         {[
-                          { name: '物流与快递运费', val: analysis.expenses.shipping },
-                          { name: '仓储与库存维护', val: analysis.expenses.storage },
-                          { name: '人力支出与行政', val: analysis.expenses.labor },
-                          { name: '差旅与业务公关', val: analysis.expenses.travel },
+                          { name: '运费', val: analysis.expenses.shipping },
+                          { name: '仓储费', val: analysis.expenses.storage },
+                          { name: '人工费', val: analysis.expenses.labor },
+                          { name: '差旅费', val: analysis.expenses.travel },
                         ].map((row) => (
                            <tr key={row.name}>
                               <td className="py-4 font-bold text-slate-900">{row.name}</td>

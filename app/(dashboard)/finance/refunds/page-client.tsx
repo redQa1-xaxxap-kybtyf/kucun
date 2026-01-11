@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useRefundsQuery } from '@/hooks/use-refunds-query';
 import type {
-  RefundListData,
-  RefundListQueryParams,
-  RefundStatus,
+    RefundListData,
+    RefundListQueryParams,
+    RefundStatus,
 } from '@/lib/types/refund';
 
 type RefundsQueryParams = RefundListQueryParams;
@@ -298,7 +298,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
           title="应退货款管理"
-          description="管理退货订单产生的应退账款，跟踪退款处理状态"
+          description="跟踪退货订单产生的应退账款，确保及时完成退款处理"
           icon={<TrendingDown className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-warning))"
           actions={

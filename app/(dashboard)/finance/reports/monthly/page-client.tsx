@@ -214,7 +214,7 @@ export function MonthlyReportClient() {
                     月度报表
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看月度收入、支出、利润等财务数据统计
+                    查看月度营业收入、营业成本、费用支出与净利润数据
                   </p>
                 </div>
               </div>
@@ -365,11 +365,11 @@ export function MonthlyReportClient() {
               />
               <div className="h-px bg-slate-200 sm:col-span-2 lg:col-span-4 xl:col-span-5 my-2" />
               {[
-                { label: '物流运输', value: report.expenses.byType.shipping, icon: <Package className="h-3 w-3" /> },
-                { label: '仓储租赁', value: report.expenses.byType.storage, icon: <ChineseYuan className="h-3 w-3" /> },
-                { label: '人工劳务', value: report.expenses.byType.labor, icon: <ChineseYuan className="h-3 w-3" /> },
-                { label: '装卸搬运', value: report.expenses.byType.loading_unloading, icon: <ChineseYuan className="h-3 w-3" /> },
-                { label: '其他杂项', value: report.expenses.byType.travel + report.expenses.byType.living, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '运费', value: report.expenses.byType.shipping, icon: <Package className="h-3 w-3" /> },
+                { label: '仓储费', value: report.expenses.byType.storage, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '人工费', value: report.expenses.byType.labor, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '装卸费', value: report.expenses.byType.loading_unloading, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '其他费用', value: report.expenses.byType.travel + report.expenses.byType.living, icon: <ChineseYuan className="h-3 w-3" /> },
               ].map((item) => (
                 <StatCard
                   key={item.label}
@@ -547,10 +547,10 @@ export function MonthlyReportClient() {
                   </thead>
                   <tbody className="divide-y divide-slate-100 italic">
                     {[
-                      { l: '物流运输费', v: report.expenses.byType.shipping },
-                      { l: '仓储租赁费', v: report.expenses.byType.storage },
-                      { l: '人工劳务费', v: report.expenses.byType.labor },
-                      { l: '经营管理费', v: report.expenses.byType.travel + report.expenses.byType.living },
+                      { l: '运费', v: report.expenses.byType.shipping },
+                      { l: '仓储费', v: report.expenses.byType.storage },
+                      { l: '人工费', v: report.expenses.byType.labor },
+                      { l: '其他费用', v: report.expenses.byType.travel + report.expenses.byType.living },
                     ].map((row) => (
                       <tr key={row.l}>
                         <td className="py-2 text-slate-600 font-bold">{row.l}</td>

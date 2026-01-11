@@ -2,14 +2,15 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowUpDown,
-  Eye,
-  FileText,
-  Package,
-  Pencil,
-  ShoppingCart,
-  Trash2,
-  Truck,
+    ArrowUpDown,
+    Eye,
+    FileText,
+    Package,
+    Pencil,
+    Receipt,
+    ShoppingCart,
+    Trash2,
+    Truck,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -17,41 +18,36 @@ import * as React from 'react';
 import { CopyableText } from '@/components/common/copyable-text';
 import { RelativeTime } from '@/components/common/relative-time';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  EXPENSE_RELATED_TYPE_LABELS,
-  EXPENSE_STATUS_LABELS,
-  EXPENSE_TYPE_LABELS,
-  type ExpenseQueryParams,
-  type ExpenseRecord,
+    EXPENSE_RELATED_TYPE_LABELS,
+    EXPENSE_STATUS_LABELS,
+    EXPENSE_TYPE_LABELS,
+    type ExpenseQueryParams,
+    type ExpenseRecord,
 } from '@/lib/types/expense';
+import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -70,12 +66,12 @@ const getExpenseTypeBadgeVariant = (type: string) => {
 };
 
 const getStatusBadgeVariant = (status: string) => {
-  const variants: Record<string, 'default' | 'secondary' | 'destructive'> = {
-    draft: 'secondary',
-    approved: 'default', // 使用默认深色表示已审核/生效
-    cancelled: 'destructive',
+  const variants: Record<string, string> = {
+    draft: 'bg-slate-100 text-slate-600 border-slate-200',
+    approved: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    cancelled: 'bg-rose-50 text-rose-600 border-rose-200',
   };
-  return variants[status] || 'secondary';
+  return variants[status] || 'bg-slate-100 text-slate-600 border-slate-200';
 };
 
 const getRelatedTypeIcon = (type: string) => {
@@ -256,18 +252,24 @@ export function ExpenseList({
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            费用记录列表
-            {pagination && (
-              <span className="text-muted-foreground ml-2 text-sm font-normal">
-                共 {pagination.total} 条记录
-              </span>
-            )}
-          </CardTitle>
+      <Card className="overflow-hidden border-none shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
+        <CardHeader className="border-b border-slate-50 bg-slate-50/30">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-black tracking-tight text-slate-900 border-l-4 border-slate-900 pl-3 uppercase">
+              费用开支明细台账
+              {pagination && (
+                <span className="ml-3 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                  共计 {pagination.total} 项流水记录
+                </span>
+              )}
+            </CardTitle>
+            <div className="flex gap-2">
+               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">账目实时同步中</span>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {records.length === 0 ? (
             <div className="text-muted-foreground py-8 text-center">
               暂无费用记录
@@ -275,137 +277,106 @@ export function ExpenseList({
           ) : (
             <>
               {/* 桌面端：表格视图 */}
-              <div className="hidden overflow-x-auto rounded-md border md:block">
+              <div className="hidden md:block">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>费用编号</TableHead>
-                      <TableHead className="w-[100px] text-center">
-                        费用类型
-                      </TableHead>
-                      <TableHead className="w-[90px] text-center">
-                        状态
-                      </TableHead>
-                      <TableHead>费用名称</TableHead>
-                      <TableHead className="w-[120px] text-right">
+                    <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">流水编号</TableHead>
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto text-center">分类/状态</TableHead>
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">费用事宜</TableHead>
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto text-right">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSort('expenseAmount')}
-                          className="h-8 w-full justify-end"
+                          className="h-auto p-0 hover:bg-transparent font-black uppercase tracking-widest text-[11px] text-slate-400"
                         >
-                          费用金额
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                          收支金额
+                          <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="w-[120px] text-center">
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto text-center">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSort('expenseDate')}
-                          className="h-8 w-full justify-center"
+                          className="h-auto p-0 hover:bg-transparent font-black uppercase tracking-widest text-[11px] text-slate-400"
                         >
-                          费用日期
-                          <ArrowUpDown className="ml-2 h-4 w-4" />
+                          发生日期
+                          <ArrowUpDown className="ml-1 h-3 w-3" />
                         </Button>
                       </TableHead>
-                      <TableHead className="w-[150px]">关联业务</TableHead>
-                      <TableHead className="w-[220px]">备注</TableHead>
-                      <TableHead className="w-[150px] text-center">
-                        操作
-                      </TableHead>
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">业务穿透</TableHead>
+                      <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto text-right">管理操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {records.map((expense: ExpenseRecord) => (
-                      <TableRow key={expense.id}>
-                        <TableCell className="font-medium">
-                          <CopyableText text={expense.expenseNumber} />
+                      <TableRow key={expense.id} className="hover:bg-slate-50/30 transition-colors group">
+                        <TableCell className="py-4">
+                          <div className="font-mono text-xs font-black text-slate-900">
+                             <CopyableText text={expense.expenseNumber} />
+                          </div>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant={getExpenseTypeBadgeVariant(
-                              expense.expenseType
-                            )}
-                          >
-                            {EXPENSE_TYPE_LABELS[expense.expenseType]}
-                          </Badge>
+                        <TableCell className="text-center py-4">
+                           <div className="flex flex-col items-center gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className="text-[10px] font-black uppercase border-slate-200 text-slate-500"
+                              >
+                                {EXPENSE_TYPE_LABELS[expense.expenseType]}
+                              </Badge>
+                              <span
+                                className={cn(
+                                  "inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter border",
+                                  getStatusBadgeVariant(expense.status)
+                                )}
+                              >
+                                {EXPENSE_STATUS_LABELS[expense.status]}
+                              </span>
+                           </div>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <Badge
-                            variant={getStatusBadgeVariant(expense.status)}
-                            className={
-                              expense.status === 'approved'
-                                ? 'bg-green-600 hover:bg-green-700'
-                                : ''
-                            }
-                          >
-                            {EXPENSE_STATUS_LABELS[expense.status]}
-                          </Badge>
+                        <TableCell className="py-4">
+                           <div className="flex flex-col">
+                              <span className="text-sm font-black text-slate-900 leading-tight mb-1">{expense.expenseName}</span>
+                              {expense.remarks && (
+                                 <span className="text-xs font-bold text-slate-400 max-w-[200px] truncate">{expense.remarks}</span>
+                              )}
+                           </div>
                         </TableCell>
-                        <TableCell>{expense.expenseName}</TableCell>
-                        <TableCell className="text-right font-mono text-base font-bold">
-                          {formatCurrency(expense.expenseAmount)}
+                        <TableCell className="text-right py-4">
+                          <span className="font-mono text-base font-black text-slate-900">
+                             {formatCurrency(expense.expenseAmount)}
+                          </span>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <RelativeTime date={expense.expenseDate} />
+                        <TableCell className="text-center py-4">
+                          <span className="text-xs font-bold text-slate-600">
+                             <RelativeTime date={expense.expenseDate} />
+                          </span>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-4">
                           {expense.relatedType && expense.relatedNumber ? (
                             <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5 font-medium">
+                              <div className="flex items-center gap-1.5 font-black text-xs text-slate-900">
                                 {getRelatedTypeIcon(expense.relatedType)}
                                 <CopyableText text={expense.relatedNumber} />
                               </div>
-                              <div className="text-muted-foreground text-xs">
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                                 {
                                   EXPENSE_RELATED_TYPE_LABELS[
                                     expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS
                                   ]
                                 }
-                                {expense.expenseType === 'shipping' &&
-                                  expense.containerNumber && (
-                                    <span className="ml-1">
-                                      (柜号:
-                                      <CopyableText
-                                        text={expense.containerNumber}
-                                        className="ml-0.5 inline-flex"
-                                        iconSize="sm"
-                                      />
-                                      )
-                                    </span>
-                                  )}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">−</span>
+                            <span className="text-slate-300 text-xs font-bold">未关联业务</span>
                           )}
                         </TableCell>
-                        <TableCell>
-                          {expense.remarks &&
-                          expense.remarks.trim().length > 0 ? (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="max-w-[180px] truncate text-sm">
-                                    {expense.remarks}
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className="max-w-[300px] break-words">
-                                    {expense.remarks}
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
+                        <TableCell className="text-right py-4">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Link href={`/finance/expenses/${expense.id}`}>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900">
                                 <Eye className="h-4 w-4" />
                               </Button>
                             </Link>
@@ -414,7 +385,7 @@ export function ExpenseList({
                                 <Link
                                   href={`/finance/expenses/${expense.id}/edit`}
                                 >
-                                  <Button variant="ghost" size="sm">
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-900">
                                     <Pencil className="h-4 w-4" />
                                   </Button>
                                 </Link>
@@ -422,15 +393,17 @@ export function ExpenseList({
                                   <Button
                                     variant="ghost"
                                     size="sm"
+                                    className="h-8 px-2 text-xs font-black text-blue-600 hover:text-blue-700 uppercase"
                                     onClick={() => setApproveTarget(expense)}
                                     disabled={approveMutation.isPending}
                                   >
-                                    审核
+                                    审核生效
                                   </Button>
                                 )}
                                 <Button
                                   variant="ghost"
-                                  size="sm"
+                                  size="icon"
+                                  className="h-8 w-8 text-slate-300 hover:text-rose-600"
                                   onClick={() => handleDelete(expense)}
                                   disabled={
                                     deleteMutation.isPending ||
@@ -579,150 +552,89 @@ function ExpenseCard({
   onApprove: (expense: ExpenseRecord) => void;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-light)] sm:p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>费用编号</span>
-            <span className="font-mono">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-5 shadow-sm active:scale-[0.98] transition-all group">
+      {/* 装饰性背景 */}
+      <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-110 transition-transform">
+        <Receipt size={64} />
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-4">
+          <div className="space-y-1">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">流水编号 / ID</div>
+            <div className="font-mono text-xs font-black text-slate-900 leading-none">
               <CopyableText text={expense.expenseNumber} />
-            </span>
-          </div>
-          <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-            {expense.expenseName}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2 text-xs">
-          <Badge variant={getExpenseTypeBadgeVariant(expense.expenseType)}>
-            {EXPENSE_TYPE_LABELS[expense.expenseType]}
-          </Badge>
-          <Badge
-            variant={getStatusBadgeVariant(expense.status)}
-            className={
-              expense.status === 'approved'
-                ? 'bg-green-600 hover:bg-green-700'
-                : ''
-            }
-          >
-            {EXPENSE_STATUS_LABELS[expense.status]}
-          </Badge>
-        </div>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:text-sm">
-        <div className="space-y-1">
-          <div className="text-muted-foreground">费用金额</div>
-          <div className="font-mono text-base font-bold">
-            {formatCurrency(expense.expenseAmount)}
-          </div>
-        </div>
-        <div className="space-y-1">
-          <div className="text-muted-foreground">费用日期</div>
-          <div className="flex items-center gap-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-            <RelativeTime date={expense.expenseDate} />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-2 text-xs sm:text-sm">
-        <div className="text-muted-foreground">关联业务</div>
-        {expense.relatedType && expense.relatedNumber ? (
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5 font-medium">
-              {getRelatedTypeIcon(expense.relatedType)}
-              <CopyableText text={expense.relatedNumber} />
-            </div>
-            <div className="text-muted-foreground text-xs">
-              {
-                EXPENSE_RELATED_TYPE_LABELS[
-                  expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS
-                ]
-              }
-              {expense.expenseType === 'shipping' &&
-                expense.containerNumber && (
-                  <span className="ml-1">
-                    (柜号:
-                    <CopyableText
-                      text={expense.containerNumber}
-                      className="ml-0.5 inline-flex"
-                      iconSize="sm"
-                    />
-                    )
-                  </span>
-                )}
             </div>
           </div>
-        ) : (
-          <div className="text-muted-foreground">—</div>
-        )}
-      </div>
+          <div className="flex flex-col items-end gap-1.5">
+             <Badge
+               variant="outline"
+               className="text-[9px] font-black uppercase border-slate-200 text-slate-500 px-1.5 py-0"
+             >
+               {EXPENSE_TYPE_LABELS[expense.expenseType]}
+             </Badge>
+             <span
+               className={cn(
+                 "inline-flex items-center rounded-md px-1.5 py-0.5 text-[9px] font-black uppercase tracking-tighter border",
+                 getStatusBadgeVariant(expense.status)
+               )}
+             >
+               {EXPENSE_STATUS_LABELS[expense.status]}
+             </span>
+          </div>
+        </div>
 
-      <div className="mt-3 space-y-1 text-xs sm:text-sm">
-        <div className="text-muted-foreground">备注</div>
-        {expense.remarks && expense.remarks.trim().length > 0 ? (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="max-w-full truncate">{expense.remarks}</div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="max-w-[300px] break-words">{expense.remarks}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        ) : (
-          <div className="text-muted-foreground">—</div>
-        )}
-      </div>
+        <div className="mb-5">
+           <h4 className="text-sm font-black text-slate-900 leading-tight mb-1">{expense.expenseName}</h4>
+           {expense.remarks && (
+              <p className="text-xs font-bold text-slate-400 line-clamp-2">{expense.remarks}</p>
+           )}
+        </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-8 px-3 text-xs"
-          >
-            <Link href={`/finance/expenses/${expense.id}`}>
-              <Eye className="mr-1 h-3.5 w-3.5" />
-              查看详情
-            </Link>
-          </Button>
-          {hasManagePermission && (
-            <>
-              <Button
-                asChild
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 text-xs"
-              >
-                <Link href={`/finance/expenses/${expense.id}/edit`}>
-                  <Pencil className="mr-1 h-3.5 w-3.5" />
-                  编辑
-                </Link>
-              </Button>
-              {expense.status === 'draft' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3 text-xs"
-                  onClick={() => onApprove(expense)}
-                >
-                  审核
+        <div className="grid grid-cols-2 gap-4 mb-6 pt-4 border-t border-slate-50">
+          <div className="space-y-1">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">收支金额 / AMOUNT</div>
+            <div className="font-mono text-lg font-black text-slate-900">{formatCurrency(expense.expenseAmount)}</div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">业务日期 / DATE</div>
+            <div className="text-xs font-black text-slate-600">
+               <RelativeTime date={expense.expenseDate} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4">
+           {expense.relatedType && expense.relatedNumber ? (
+              <div className="flex items-center gap-2">
+                 <div className="h-8 w-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400">
+                    {getRelatedTypeIcon(expense.relatedType)}
+                 </div>
+                 <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-slate-900 leading-none mb-1 uppercase tracking-tighter">{expense.relatedNumber}</span>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest line-clamp-1">
+                       {EXPENSE_RELATED_TYPE_LABELS[expense.relatedType as keyof typeof EXPENSE_RELATED_TYPE_LABELS]}
+                    </span>
+                 </div>
+              </div>
+           ) : (
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-widest">未关联资产</span>
+           )}
+
+           <div className="flex gap-1">
+              <Link href={`/finance/expenses/${expense.id}`}>
+                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400">
+                  <Eye className="h-4 w-4" />
                 </Button>
+              </Link>
+              {hasManagePermission && (
+                <Link href={`/finance/expenses/${expense.id}/edit`}>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400">
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </Link>
               )}
-              <Button
-                variant="destructive"
-                size="sm"
-                className="h-8 px-3 text-xs"
-                onClick={() => onDelete(expense)}
-                disabled={expense.status === 'approved'}
-              >
-                <Trash2 className="mr-1 h-3.5 w-3.5" />
-                删除
-              </Button>
-            </>
-          )}
+           </div>
         </div>
       </div>
     </div>

@@ -13,9 +13,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
-  PAYABLE_SORT_OPTIONS,
-  type PayableSourceType,
-  type PayableStatus,
+    PAYABLE_SORT_OPTIONS,
+    type PayableSourceType,
+    type PayableStatus,
 } from '@/lib/types/payable';
 
 type PayableSortField =
@@ -585,7 +585,7 @@ export function PayablesPageClient({
                     应付款管理
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    管理供应商应付款和付款记录，跟踪付款状态和账务动态
+                    跟踪采购订单产生的应付账款，确保按时完成付款结算
                   </p>
                 </div>
               </div>

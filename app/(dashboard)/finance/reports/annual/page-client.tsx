@@ -244,7 +244,7 @@ export function AnnualReportClient() {
                     年度报表
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看年度收入、支出、利润趋势及费用分布
+                    查看年度营业收入、营业成本、利润趋势与费用结构
                   </p>
                 </div>
               </div>
@@ -401,7 +401,7 @@ export function AnnualReportClient() {
           {/* 月度趋势图 */}
           <Card className="border-slate-100 shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-6 py-4">
-              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-700">Section I: Monthly Operating Trend</CardTitle>
+              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-700">第一部分：月度营业趋势</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <ResponsiveContainer width="100%" height={320}>
@@ -450,7 +450,7 @@ export function AnnualReportClient() {
           {/* 季度对比分析 */}
           <Card className="border-slate-100 shadow-sm overflow-hidden">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-6 py-4">
-              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-700">Section II: Quarterly Performance</CardTitle>
+              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-700">第二部分：季度经营对比</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <ResponsiveContainer width="100%" height={320}>
@@ -550,7 +550,7 @@ export function AnnualReportClient() {
           {/* 费用分布 - 占据2栏 */}
           <Card className="lg:col-span-2 border-slate-100 shadow-sm">
             <CardHeader className="px-6 py-4 border-b border-slate-50">
-              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Expense Allocation</CardTitle>
+              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">费用支出结构</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
                <div className="h-[220px]">
@@ -603,16 +603,16 @@ export function AnnualReportClient() {
                         ANTIGRAVITY <span className="font-light text-slate-500">ERP</span>
                       </h1>
                     </div>
-                    <div className="text-xs font-bold tracking-[0.3em] text-slate-500">GROUP FINANCIAL REPORTING UNIT</div>
+                    <div className="text-xs font-bold tracking-[0.3em] text-slate-500">集团财务报告中心</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Status: Restricted / Final</div>
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">状态：内部机密 / 终稿</div>
                     <div className="text-4xl font-black tracking-tighter italic text-slate-900">{year}</div>
                   </div>
                </div>
                <div className="mt-8 flex items-baseline justify-between">
-                  <h2 className="text-2xl font-black tracking-tight uppercase">Annual Business Performance Analysis</h2>
-                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-none">Fiscal Year Summary Report</div>
+                  <h2 className="text-2xl font-black tracking-tight uppercase">年度经营业绩分析</h2>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-none">年度财务汇总报表</div>
                </div>
             </div>
 
@@ -622,8 +622,8 @@ export function AnnualReportClient() {
                 {[
                   { label: '年度销售总收入', value: report.summary.totalRevenue, sub: `成交单量: ${report.summary.orderCount}` },
                   { label: '年度经营总利润', value: report.summary.totalProfit, sub: `利润率: ${report.summary.profitMargin.toFixed(2)}%`, highlight: true },
-                  { label: '营业总成本 (COGS)', value: report.summary.totalCost, sub: `成本率: ${report.summary.totalRevenue > 0 ? ((report.summary.totalCost / report.summary.totalRevenue) * 100).toFixed(1) : '0.0'}%` },
-                  { label: '库存周转率 (Yearly)', value: report.inventoryTurnover?.turnoverRate || 0, sub: `周转天数: ${report.inventoryTurnover?.turnoverDays.toFixed(0)} DAY`, isCurrency: false },
+                  { label: '营业总成本', value: report.summary.totalCost, sub: `成本率: ${report.summary.totalRevenue > 0 ? ((report.summary.totalCost / report.summary.totalRevenue) * 100).toFixed(1) : '0.0'}%` },
+                  { label: '年度库存周转率', value: report.inventoryTurnover?.turnoverRate || 0, sub: `周转天数: ${report.inventoryTurnover?.turnoverDays.toFixed(0)} 天`, isCurrency: false },
                 ].map((item) => (
                   <div key={item.label} className={cn("bg-white p-6", item.highlight && "bg-slate-50")}>
                     <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">{item.label}</div>
@@ -640,14 +640,14 @@ export function AnnualReportClient() {
             <div className="grid grid-cols-2 gap-12 mb-10">
                <div>
                   <div className="mb-4 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 italic">Sub-Report: Expense Structure</h3>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 italic">子报表：费用支出结构</h3>
                   </div>
                   <table className="w-full text-left text-[11px]">
                     <thead className="bg-slate-900 text-white">
                       <tr>
-                        <th className="py-2.5 px-3 font-black">Expense Category</th>
-                        <th className="py-2.5 px-3 text-right font-black">Amount (CNY)</th>
-                        <th className="py-2.5 px-3 text-right font-black">Ratio</th>
+                        <th className="py-2.5 px-3 font-black">费用类别</th>
+                        <th className="py-2.5 px-3 text-right font-black">金额 (元)</th>
+                        <th className="py-2.5 px-3 text-right font-black">占比</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 italic border-x border-b border-slate-100">
@@ -664,7 +664,7 @@ export function AnnualReportClient() {
                <div className="space-y-8">
                    <div>
                       <div className="mb-4 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
-                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 italic">Sub-Report: Direct Fulfillment</h3>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 italic">子报表：厂家直发业务</h3>
                       </div>
                       <div className="rounded-xl border-2 border-dashed border-slate-200 p-5 bg-blue-50/20">
                          <div className="flex justify-between items-end mb-4">
@@ -678,14 +678,14 @@ export function AnnualReportClient() {
                             </div>
                          </div>
                          <div className="text-[9px] font-bold text-slate-400 leading-relaxed uppercase border-t border-slate-100 pt-3">
-                            Direct shipment business accounts for a strategic portion of the overall annual growth, maintaining high efficiency.
+                            厂家直发业务在年度整体增长中占据重要战略地位，保持高效运营。
                          </div>
                       </div>
                    </div>
                    <div className="rounded-lg bg-slate-50 p-5 border border-slate-200">
-                      <div className="text-[10px] font-black text-slate-400 uppercase mb-3">Auditor Summary Note</div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase mb-3">审计摘要说明</div>
                        <div className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
-                          "This annual report confirms a stable growth trajectory. Asset turnover remains within optimal ranges, and diversified expense management has successfully mitigated operational risks."
+                          "本年度报表确认了稳定的增长轨迹。资产周转率保持在最优范围内，多元化的费用管理成功降低了经营风险。"
                        </div>
                    </div>
                </div>
@@ -693,12 +693,12 @@ export function AnnualReportClient() {
             {/* 页脚 - 报表鉴真 */}
             <div className="mt-16 flex items-end justify-between border-t border-slate-200 pt-6">
                <div className="space-y-1">
-                  <div className="text-[10px] font-black text-slate-900 font-mono tracking-widest uppercase">Verified Financial Data Asset</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Digital Signature: AG-SEC-{year}-FS-{new Date().getTime().toString(16).toUpperCase()}</div>
+                  <div className="text-[10px] font-black text-slate-900 font-mono tracking-widest uppercase">已验证财务数据资产</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">数字签名: AG-SEC-{year}-FS-{new Date().getTime().toString(16).toUpperCase()}</div>
                </div>
                <div className="text-right space-y-1">
-                  <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">© 2026 ANTIGRAVITY ERP SYSTEM</div>
-                  <div className="text-[9px] font-bold text-slate-400 italic uppercase">Page 01 / Annual Business Insight</div>
+                  <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">© 2026 ANTIGRAVITY ERP 系统</div>
+                  <div className="text-[9px] font-bold text-slate-400 italic uppercase">第 01 页 / 年度经营分析</div>
                </div>
             </div>
           </Card>
