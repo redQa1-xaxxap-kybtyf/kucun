@@ -7,14 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import type { StatementTransaction } from '@/lib/types/statement';
+import { cn } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -57,82 +58,106 @@ export function StatementTransactions({
   const getTransactionStatusBadge = (
     status: StatementTransaction['status']
   ) => {
-    const variant = status === 'pending' ? 'secondary' : 'outline';
-    const label = status === 'pending' ? '待入账' : '已完成';
-    return <Badge variant={variant}>{label}</Badge>;
+    const isPending = status === 'pending';
+    return (
+      <Badge
+        className={cn(
+          "font-bold uppercase tracking-wider",
+          isPending
+            ? "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+            : "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+        )}
+      >
+        {isPending ? '待入账' : '已核销'}
+      </Badge>
+    );
   };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5" />
-          交易明细
+      <CardHeader className="bg-slate-900 border-b border-slate-800 px-6 py-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 italic">
+          <FileText className="h-4 w-4" />
+          全业务往来明细账 (Transaction Ledger)
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>交易类型</TableHead>
-              <TableHead>单据号</TableHead>
-              <TableHead>描述</TableHead>
-              <TableHead className="text-right">应收增加</TableHead>
-              <TableHead className="text-right">应收减少</TableHead>
-              <TableHead className="text-right">余额</TableHead>
-              <TableHead>交易日期</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead className="text-right">操作</TableHead>
+          <TableHeader className="bg-slate-50/80">
+            <TableRow className="border-b-2 border-slate-900 hover:bg-transparent">
+              <TableHead className="py-4 font-black text-slate-900">业务类型</TableHead>
+              <TableHead className="py-4 font-black text-slate-900">参考单号</TableHead>
+              <TableHead className="py-4 font-black text-slate-900">摘要说明</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-900">应收 (+) / 应付 (-)</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-900">回款 / 付讫</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-900">期后余额</TableHead>
+              <TableHead className="py-4 font-black text-slate-900">发生时间</TableHead>
+              <TableHead className="py-4 font-black text-slate-900">核销状态</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-900">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {reversedTransactions.map(transaction => {
               const debit = transaction.debitAmount || 0;
               const credit = transaction.creditAmount || 0;
-              const balanceClass =
-                transaction.balance >= 0
-                  ? 'text-[hsl(var(--color-success))]'
-                  : 'text-[hsl(var(--color-warning))]';
+              const isPositive = transaction.balance >= 0;
 
               return (
-                <TableRow key={transaction.id}>
-                  <TableCell>
+                <TableRow 
+                  key={transaction.id}
+                  className="group transition-colors hover:bg-blue-50/30"
+                >
+                  <TableCell className="py-4">
                     {getTransactionTypeBadge(transaction.transactionType)}
                   </TableCell>
-                  <TableCell className="font-medium">
+                  <TableCell className="py-4 font-mono text-xs font-black tracking-tighter text-slate-400 group-hover:text-slate-900">
                     {transaction.referenceNumber || '-'}
                   </TableCell>
-                  <TableCell className="max-w-[220px] truncate">
+                  <TableCell className="max-w-[200px] truncate py-4 text-xs font-bold text-slate-500">
                     {transaction.description}
                   </TableCell>
-                  <TableCell className="text-right font-medium text-[hsl(var(--color-error))]">
-                    {debit > 0 ? formatCurrency(debit) : '-'}
-                  </TableCell>
-                  <TableCell className="text-right font-medium text-[hsl(var(--color-success))]">
-                    {credit > 0 ? formatCurrency(credit) : '-'}
-                  </TableCell>
-                  <TableCell
-                    className={`text-right font-semibold ${balanceClass}`}
-                  >
-                    {formatCurrency(
-                      transaction.afterBalance ?? transaction.balance
+                  <TableCell className="py-4 text-right">
+                    {debit > 0 ? (
+                      <span className="font-mono text-sm font-black tracking-tight text-rose-500">
+                        + {formatCurrency(debit).replace('¥', '')}
+                      </span>
+                    ) : (
+                      <span className="text-slate-200">-</span>
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4 text-right">
+                    {credit > 0 ? (
+                      <span className="font-mono text-sm font-black tracking-tight text-emerald-500">
+                        - {formatCurrency(credit).replace('¥', '')}
+                      </span>
+                    ) : (
+                      <span className="text-slate-200">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="py-4 text-right">
+                    <span className={cn(
+                      "font-mono text-sm font-black tracking-tight",
+                      isPositive ? 'text-orange-500' : 'text-rose-500'
+                    )}>
+                      {formatCurrency(transaction.afterBalance ?? transaction.balance).replace('¥', '')}
+                    </span>
+                  </TableCell>
+                  <TableCell className="py-4 text-[10px] font-bold uppercase text-slate-400">
                     {formatDateTime(transaction.transactionDate)}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-4">
                     {getTransactionStatusBadge(transaction.status)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="py-4 text-right">
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-8 w-8 rounded-full p-0 opacity-0 transition-opacity group-hover:opacity-100 dark:hover:bg-slate-800"
                       onClick={() =>
                         router.push(`/finance/transactions/${transaction.id}`)
                       }
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-4 w-4 text-blue-600" />
                     </Button>
                   </TableCell>
                 </TableRow>
