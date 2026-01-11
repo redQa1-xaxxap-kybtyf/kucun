@@ -2,9 +2,9 @@
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import {
-  EXPENSE_RELATED_TYPE_OPTIONS,
-  EXPENSE_TYPE_OPTIONS,
-  type ExpenseQueryParams,
+    EXPENSE_RELATED_TYPE_OPTIONS,
+    EXPENSE_TYPE_OPTIONS,
+    type ExpenseQueryParams,
 } from '@/lib/types/expense';
 
 interface ExpenseFiltersProps {
@@ -66,7 +66,7 @@ export function ExpenseFilters({
         },
         placeholder: '选择日期范围',
       }}
-      variant="elevated"
+      variant="pro"
       compact={true}
     />
   );

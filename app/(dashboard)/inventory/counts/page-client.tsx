@@ -1,20 +1,19 @@
 'use client';
 
 import { ClipboardCheck, Plus } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { CountList } from '@/components/inventory/counts/count-list';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
 import type {
-  CountStatus,
-  CountType,
-  InventoryCountQueryParams,
+    CountStatus,
+    CountType,
+    InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
 
 import { CountRecordsFilters } from './components/CountRecordsFilters';
@@ -164,14 +163,9 @@ export function CountsPageClient({ initialParams }: CountsPageClientProps) {
         />
 
         {/* 盘点计划列表 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>盘点计划列表</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <CountList filters={filters} />
-          </CardContent>
-        </Card>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <CountList filters={filters} />
+        </div>
       </div>
     </div>
   );

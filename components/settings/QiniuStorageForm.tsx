@@ -13,26 +13,25 @@ import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import type { QiniuStorageConfig } from '@/lib/types/settings';
 import {
-  QiniuStorageConfigFormSchema,
-  QiniuStorageConfigSchema,
+    QiniuStorageConfigFormSchema,
+    QiniuStorageConfigSchema,
 } from '@/lib/validations/settings';
 
 interface QiniuStorageFormProps {
@@ -207,213 +206,237 @@ export const QiniuStorageForm = ({
         onSubmit={form.handleSubmit((data: any) =>
           handleSubmit(data as QiniuStorageFormValues)
         )}
-        className="space-y-6"
+        className="space-y-10"
       >
-        {/* Access Key */}
-        <FormField
-          control={form.control}
-          name="accessKey"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Access Key *</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    {...field}
-                    type={showAccessKey ? 'text' : 'password'}
-                    placeholder="请输入七牛云Access Key"
-                    disabled={isFormDisabled}
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowAccessKey(!showAccessKey)}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Access Key */}
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+            <FormField
+              control={form.control}
+              name="accessKey"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <div className="flex flex-col">
+                    <FormLabel className="text-sm font-black text-slate-900">Access Key (AK)</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">七牛云账户的公钥，用于 API 调用鉴权</span>
+                  </div>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type={showAccessKey ? 'text' : 'password'}
+                        placeholder="请输入 Access Key"
+                        className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                        disabled={isFormDisabled}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent text-slate-400 hover:text-slate-600"
+                        onClick={() => setShowAccessKey(!showAccessKey)}
+                        disabled={isFormDisabled}
+                      >
+                        {showAccessKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* Secret Key */}
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+            <FormField
+              control={form.control}
+              name="secretKey"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <div className="flex flex-col">
+                    <FormLabel className="text-sm font-black text-slate-900">Secret Key (SK)</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">七牛云账户的私钥，请妥善保管</span>
+                  </div>
+                  <FormControl>
+                    <div className="relative">
+                      <Input
+                        {...field}
+                        type={showSecretKey ? 'text' : 'password'}
+                        placeholder="请输入 Secret Key"
+                        className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                        disabled={isFormDisabled}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent text-slate-400 hover:text-slate-600"
+                        onClick={() => setShowSecretKey(!showSecretKey)}
+                        disabled={isFormDisabled}
+                      >
+                        {showSecretKey ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* 存储空间 */}
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+            <FormField
+              control={form.control}
+              name="bucket"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <div className="flex flex-col">
+                    <FormLabel className="text-sm font-black text-slate-900">存储空间名称 (Bucket)</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">在对象存储中创建的 Bucket 唯一名称</span>
+                  </div>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="例如: kucun-assets"
+                      className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                      disabled={isFormDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* 访问域名 */}
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+            <FormField
+              control={form.control}
+              name="domain"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <div className="flex flex-col">
+                    <FormLabel className="text-sm font-black text-slate-900">外部访问域名</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">已绑定至 Bucket 的 CDN 域名或临时域名</span>
+                  </div>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="https://cdn.example.com"
+                      className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                      disabled={isFormDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* 存储区域 */}
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+            <FormField
+              control={form.control}
+              name="region"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <div className="flex flex-col">
+                    <FormLabel className="text-sm font-black text-slate-900">物理存储区域</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">Bucket 所在的地理机房位置</span>
+                  </div>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value || 'z0'}
                     disabled={isFormDisabled}
                   >
-                    {showAccessKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </FormControl>
-              <FormDescription>
-                七牛云控制台获取的Access Key，用于身份验证
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                    <FormControl>
+                      <SelectTrigger className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10">
+                        <SelectValue placeholder="选择存储区域" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {QINIU_REGIONS.map(region => (
+                        <SelectItem key={region.value} value={region.value} className="text-xs font-bold">
+                          {region.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                </FormItem>
+              )}
+            />
+          </div>
 
-        {/* Secret Key */}
-        <FormField
-          control={form.control}
-          name="secretKey"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Secret Key *</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    {...field}
-                    type={showSecretKey ? 'text' : 'password'}
-                    placeholder="请输入七牛云Secret Key"
-                    disabled={isFormDisabled}
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowSecretKey(!showSecretKey)}
-                    disabled={isFormDisabled}
-                  >
-                    {showSecretKey ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </FormControl>
-              <FormDescription>
-                七牛云控制台获取的Secret Key，用于身份验证
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          {/* 存储目录格式 */}
+          <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
+            <FormField
+              control={form.control}
+              name="pathFormat"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <div className="flex flex-col">
+                    <FormLabel className="text-sm font-black text-slate-900">预设存储路径格式</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">支持日期变量，如 {'{y}/{m}/{d}'}</span>
+                  </div>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="留空则直接存储在根目录"
+                      className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                      disabled={isFormDisabled}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
-        {/* 存储空间 */}
-        <FormField
-          control={form.control}
-          name="bucket"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>存储空间 *</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder="请输入存储空间名称"
-                  disabled={isFormDisabled}
-                />
-              </FormControl>
-              <FormDescription>
-                七牛云对象存储的存储空间名称（Bucket）
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 访问域名 */}
-        <FormField
-          control={form.control}
-          name="domain"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>访问域名 *</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder="https://example.qiniucdn.com"
-                  disabled={isFormDisabled}
-                />
-              </FormControl>
-              <FormDescription>
-                存储空间绑定的访问域名，用于文件访问
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 存储区域 */}
-        <FormField
-          control={form.control}
-          name="region"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>存储区域</FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                defaultValue={field.value || 'z0'}
+        {/* 操作按钮区 */}
+        <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/10 pt-8">
+           <p className="text-[11px] font-medium text-slate-400">
+             修改配置后建议先进行连接诊断，确保服务可用性。
+           </p>
+           <div className="flex items-center gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleTestConnection}
                 disabled={isFormDisabled}
+                className="h-11 rounded-2xl border-slate-200 bg-white px-8 text-xs font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-95"
               >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择存储区域" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {QINIU_REGIONS.map(region => (
-                    <SelectItem key={region.value} value={region.value}>
-                      {region.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
-                存储空间所在的区域，影响访问速度和费用
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 存储目录格式 */}
-        <FormField
-          control={form.control}
-          name="pathFormat"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>存储目录格式</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder="留空表示不使用目录，例如: {y}/{m}/{d}"
-                  disabled={isFormDisabled}
-                />
-              </FormControl>
-              <FormDescription>
-                文件存储目录格式，留空表示不使用目录结构。支持变量：{'{y}'}{' '}
-                (年份), {'{m}'} (月份), {'{d}'} (日期)，使用 / 分隔目录。例如：
-                {'{y}/{m}/{d}'} 表示按年/月/日存储
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 操作按钮 */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleTestConnection}
-            disabled={isFormDisabled}
-            className="sm:w-auto"
-          >
-            {isTesting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <TestTube className="mr-2 h-4 w-4" />
-            )}
-            测试连接
-          </Button>
-          <Button type="submit" disabled={isFormDisabled} className="sm:w-auto">
-            {isSaving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            保存配置
-          </Button>
+                {isTesting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <TestTube className="mr-2 h-4 w-4" />
+                )}
+                连接性诊断
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isFormDisabled}
+                className="h-11 rounded-2xl bg-slate-900 px-10 text-xs font-black shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-95"
+              >
+                {isSaving ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                更新存储密钥
+              </Button>
+           </div>
         </div>
       </form>
     </Form>

@@ -87,13 +87,15 @@ export function ReceivablePaymentDialog({
     defaultValues,
   });
 
+  const { getValues, reset } = form;
+
   useEffect(() => {
     if (receivable) {
-      form.reset({
+      reset({
         paymentType: 'order_payment',
         salesOrderId: receivable.id,
         customerId: receivable.customerId,
-        paymentMethod: form.getValues('paymentMethod') ?? 'cash',
+        paymentMethod: getValues('paymentMethod') ?? 'cash',
         paymentAmount: receivable.remainingAmount,
         actualPaymentAmount: receivable.remainingAmount,
         roundingAmount: 0,
@@ -102,11 +104,11 @@ export function ReceivablePaymentDialog({
         receiptNumber: '',
         bankInfo: '',
       });
-    } else {
-      form.reset(defaultValues);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [receivable, form.reset]);
+
+    reset(defaultValues);
+  }, [defaultValues, getValues, receivable, reset]);
 
   const _paymentMethod = form.watch('paymentMethod');
   const paymentAmountValue = form.watch('paymentAmount');

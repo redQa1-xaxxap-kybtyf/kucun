@@ -7,18 +7,12 @@
 'use client';
 
 import { ArrowLeft, Settings } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 import { BasicSettingsForm } from '@/components/settings/BasicSettingsForm';
+import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { usePermissions } from '@/lib/utils/permissions';
 
 const BasicSettingsPage = () => {
@@ -26,132 +20,36 @@ const BasicSettingsPage = () => {
   const { data: session } = useSession();
   const permissions = usePermissions(session?.user?.role as 'admin' | 'sales');
 
-  // 检查用户权限
-  if (!session) {
+  if (!session || !permissions.isAdmin()) {
     return (
-      <div className="space-y-6 p-6">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <Settings className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  基本设置
-                </h1>
-                <p className="text-sm text-gray-600">系统基础配置</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-amber-800">
-              <Settings className="mr-2 h-5 w-5" />
-              需要登录
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              请先登录以访问基本设置。
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
-  // 检查管理员权限
-  if (!permissions.isAdmin()) {
-    return (
-      <div className="space-y-6 p-6">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Settings className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    基本设置
-                  </h1>
-                  <p className="text-sm text-gray-600">系统基础配置</p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => router.push('/settings')}
-                className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回设置
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-amber-800">
-              <Settings className="mr-2 h-5 w-5" />
-              权限不足
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              只有管理员可以修改基本设置。
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <div className="flex h-[80vh] flex-col items-center justify-center space-y-4 p-6 text-center">
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-rose-50 text-rose-500 border border-rose-100 shadow-sm">
+          <Settings className="h-10 w-10" />
+        </div>
+        <div className="space-y-2">
+            <h2 className="text-xl font-black text-slate-900">权限受限 / ACCESS DENIED</h2>
+            <p className="text-sm font-medium text-slate-500">此区域仅限系统管理员 (ADMIN) 访问与配置。</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => router.push('/settings')}
+          className="mt-4 h-11 px-8 font-bold text-slate-600 hover:bg-slate-50"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" /> 返回工作区
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* 页面头部 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <Settings className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  基本设置
-                </h1>
-                <p className="text-sm text-gray-600">
-                  配置公司信息、系统参数、业务规则等基础信息
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => router.push('/settings')}
-              className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回设置
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 基本设置表单 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="space-y-6 p-6">
-          <div className="flex items-start gap-2 text-sm text-gray-600">
-            <Settings className="mt-0.5 h-4 w-4 text-blue-600" />
-            <span>配置公司基本信息、系统参数、库存规则、订单流程等设置</span>
-          </div>
-          <BasicSettingsForm />
-        </CardContent>
-      </Card>
-    </div>
+    <SettingsLayout
+      title="核心基本设置"
+      description="配置系统全局参数、业务规则及供应链预警阈值，这些变更将实时同步至全站节点。"
+    >
+      <div className="w-full pb-20">
+         <BasicSettingsForm />
+      </div>
+    </SettingsLayout>
   );
 };
 

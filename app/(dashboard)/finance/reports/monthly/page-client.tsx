@@ -2,15 +2,14 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  Calendar,
-  MinusIcon,
-  Package,
-  RefreshCw,
-  TrendingDown,
-  TrendingUp,
-  Receipt,
+    ArrowDownIcon,
+    ArrowUpIcon,
+    Calendar,
+    MinusIcon,
+    Package,
+    Receipt,
+    RefreshCw,
+    TrendingUp
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -18,17 +17,18 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { ExportService } from '@/lib/services/export-service';
 import type { MonthlyReport } from '@/lib/types/report';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 
 export function MonthlyReportClient() {
@@ -299,434 +299,363 @@ export function MonthlyReportClient() {
           </CardContent>
         </Card>
 
-        {/* 收入统计 */}
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">收入统计</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard
-              title="销售收入"
-              value={report.revenue.salesRevenue}
-              icon={<ChineseYuan className="h-4 w-4" />}
-              comparison={report.comparison?.revenue}
-            />
-            <StatCard
-              title="订单数量"
-              value={report.revenue.orderCount}
-              icon={<TrendingUp className="h-4 w-4" />}
-              isCurrency={false}
-            />
-            <StatCard
-              title="平均订单金额"
-              value={report.revenue.averageOrderValue}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-          </div>
+        {/* 核心指标 - 顶部大卡片 */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="本月销售总收入"
+            value={report.revenue.salesRevenue}
+            icon={<ChineseYuan className="h-4 w-4" />}
+            variant="primary"
+            size="lg"
+            comparison={report.comparison?.revenue}
+            subtitle={`完成订单: ${report.revenue.completedOrders} 笔`}
+          />
+          <StatCard
+            title="本月净利润"
+            value={report.profit.netProfit}
+            icon={<TrendingUp className="h-4 w-4" />}
+            variant="success"
+            size="lg"
+            comparison={report.comparison?.profit}
+            subtitle={`净利率: ${report.profit.profitMargin.toFixed(2)}%`}
+          />
+          <StatCard
+            title="库存总价值"
+            value={report.inventoryTurnover?.averageInventoryValue || 0}
+            icon={<Package className="h-4 w-4" />}
+            variant="info"
+            subtitle="资产健康状况"
+          />
+          <StatCard
+            title="异常提醒"
+            value={report.alerts?.length || 0}
+            icon={<Receipt className="h-4 w-4" />}
+            variant={(report.alerts?.length ?? 0) > 0 ? "warning" : "default"}
+            isCurrency={false}
+            subtitle="待处理审计项"
+          />
         </div>
 
-        {/* 支出统计 */}
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">支出统计</h2>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
-            <StatCard
-              title="总费用"
-              value={report.expenses.totalExpenses}
-              icon={<TrendingDown className="h-4 w-4" />}
-              comparison={report.comparison?.expenses}
-            />
-            <StatCard
-              title="运费"
-              value={report.expenses.byType.shipping}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="仓储费"
-              value={report.expenses.byType.storage}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="人工费"
-              value={report.expenses.byType.labor}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="差旅费"
-              value={report.expenses.byType.travel}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="生活费"
-              value={report.expenses.byType.living}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="装卸费"
-              value={report.expenses.byType.loading_unloading}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-          </div>
-        </div>
-
-        {/* 利润统计 */}
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">利润统计</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <StatCard
-              title="毛利润"
-              value={report.profit.grossProfit}
-              icon={<ChineseYuan className="h-4 w-4" />}
-              subtitle={`毛利率: ${report.profit.grossProfitMargin.toFixed(2)}%`}
-            />
-            <StatCard
-              title="营业利润"
-              value={report.profit.operatingProfit}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="净利润"
-              value={report.profit.netProfit}
-              icon={<ChineseYuan className="h-4 w-4" />}
-              subtitle={`利润率: ${report.profit.profitMargin.toFixed(2)}%`}
-              comparison={report.comparison?.profit}
-            />
-          </div>
-        </div>
-
-        {/* 库存周转率 */}
-        {report.inventoryTurnover && (
-          <div>
-            <h2 className="mb-4 text-xl font-semibold">库存周转率</h2>
-            <div className="grid gap-4 md:grid-cols-3">
-              <StatCard
-                title="周转率"
-                value={report.inventoryTurnover.turnoverRate}
-                icon={<RefreshCw className="h-4 w-4" />}
-                isCurrency={false}
-                subtitle={`${report.inventoryTurnover.turnoverRate.toFixed(2)} 次/月`}
-              />
-              <StatCard
-                title="周转天数"
-                value={report.inventoryTurnover.turnoverDays}
-                icon={<Calendar className="h-4 w-4" />}
-                isCurrency={false}
-                subtitle={`${report.inventoryTurnover.turnoverDays.toFixed(0)} 天`}
-              />
-              <StatCard
-                title="平均库存价值"
-                value={report.inventoryTurnover.averageInventoryValue}
-                icon={<Package className="h-4 w-4" />}
-              />
+        {/* 收入与支出明细 - 高清晰分组区 */}
+        <div className="rounded-2xl bg-slate-50/80 p-6 border border-slate-100">
+          <div className="mb-6 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              收支明细中心
+            </h2>
+            <div className="flex items-center gap-4 text-xs font-bold">
+              <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+                毛利率: {(report.profit.grossProfitMargin || 0).toFixed(2)}%
+              </div>
             </div>
           </div>
-        )}
 
-        {/* 应收应付 */}
-        <div>
-          <h2 className="mb-4 text-xl font-semibold">应收应付</h2>
-          <div className="grid gap-4 md:grid-cols-4">
-            <StatCard
-              title="应收款总额"
-              value={report.receivables.totalReceivable}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="实收金额"
-              value={report.receivables.receivedAmount}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="应付款总额"
-              value={report.receivables.totalPayable}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
-            <StatCard
-              title="实付金额"
-              value={report.receivables.paidAmount}
-              icon={<ChineseYuan className="h-4 w-4" />}
-            />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+             <StatCard
+                title="日均销售"
+                value={report.revenue.salesRevenue / 30}
+                icon={<TrendingUp className="h-4 w-4" />}
+                variant="default"
+              />
+              <StatCard
+                title="平均客单价"
+                value={report.revenue.averageOrderValue}
+                icon={<ChineseYuan className="h-4 w-4" />}
+                variant="default"
+              />
+              <div className="h-px bg-slate-200 sm:col-span-2 lg:col-span-4 xl:col-span-5 my-2" />
+              {[
+                { label: '物流运输', value: report.expenses.byType.shipping, icon: <Package className="h-3 w-3" /> },
+                { label: '仓储租赁', value: report.expenses.byType.storage, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '人工劳务', value: report.expenses.byType.labor, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '装卸搬运', value: report.expenses.byType.loading_unloading, icon: <ChineseYuan className="h-3 w-3" /> },
+                { label: '其他杂项', value: report.expenses.byType.travel + report.expenses.byType.living, icon: <ChineseYuan className="h-3 w-3" /> },
+              ].map((item) => (
+                <StatCard
+                  key={item.label}
+                  title={item.label}
+                  value={item.value}
+                  icon={item.icon}
+                  variant="neutral"
+                  subtitle={`${report.expenses.totalExpenses > 0 ? ((item.value / report.expenses.totalExpenses) * 100).toFixed(1) : '0.0'}% 总支出`}
+                />
+              ))}
           </div>
         </div>
 
-        {/* 厂家发货利润 */}
-        {report.factoryShipmentProfit && (
-          <div>
-            <h2 className="mb-4 text-xl font-semibold">厂家发货利润</h2>
-            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-              <StatCard
-                title="订单总数"
-                value={report.factoryShipmentProfit.totalOrders}
-                icon={<Package className="h-4 w-4" />}
-                isCurrency={false}
-              />
-              <StatCard
-                title="订单总金额"
-                value={report.factoryShipmentProfit.totalAmount}
-                icon={<ChineseYuan className="h-4 w-4" />}
-              />
-              <StatCard
-                title="总收入"
-                value={report.factoryShipmentProfit.totalRevenue}
-                icon={<ChineseYuan className="h-4 w-4" />}
-                subtitle="应收金额"
-              />
-              <StatCard
-                title="客户货利润"
-                value={report.factoryShipmentProfit.customerProfit}
-                icon={<TrendingUp className="h-4 w-4" />}
-              />
-              <StatCard
-                title="自有货成本"
-                value={report.factoryShipmentProfit.selfCostAmount}
-                icon={<TrendingDown className="h-4 w-4" />}
-              />
-              <StatCard
-                title="总费用"
-                value={report.factoryShipmentProfit.totalExpenses}
-                icon={<ChineseYuan className="h-4 w-4" />}
-              />
-              <StatCard
-                title="平均利润率"
-                value={report.factoryShipmentProfit.averageProfitMargin}
-                icon={<TrendingUp className="h-4 w-4" />}
-                isCurrency={false}
-                subtitle={`${report.factoryShipmentProfit.averageProfitMargin.toFixed(2)}%`}
-              />
+        {/* 资产回收与供应链 - 分组区 */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* 资金回收看板 */}
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+              <ChineseYuan className="h-4 w-4 text-blue-500" />
+              资金回收看板
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl bg-blue-50/50 p-4 border border-blue-100/50">
+                <div className="text-[10px] font-bold text-blue-600 uppercase">累计应收 (回款率)</div>
+                <div className="mt-1 flex items-baseline justify-between">
+                  <div className="text-xl font-black text-slate-900">{formatCurrency(report.receivables.totalReceivable)}</div>
+                  <div className="text-xs font-bold text-blue-700">{report.receivables.totalReceivable > 0 ? ((report.receivables.receivedAmount / report.receivables.totalReceivable) * 100).toFixed(1) : '0.0'}%</div>
+                </div>
+                <div className="mt-3 h-1.5 w-full rounded-full bg-blue-200/50">
+                   <div className="h-full rounded-full bg-blue-500" style={{ width: `${report.receivables.totalReceivable > 0 ? (report.receivables.receivedAmount / report.receivables.totalReceivable) * 100 : 0}%` }} />
+                </div>
+              </div>
+              <div className="rounded-xl bg-slate-50 p-4 border border-slate-200/50">
+                <div className="text-[10px] font-bold text-slate-500 uppercase">业务应付 (结算进度)</div>
+                <div className="mt-1 flex items-baseline justify-between">
+                  <div className="text-xl font-black text-slate-900">{formatCurrency(report.receivables.totalPayable)}</div>
+                  <div className="text-xs font-bold text-slate-600">{report.receivables.totalPayable > 0 ? ((report.receivables.paidAmount / report.receivables.totalPayable) * 100).toFixed(1) : '0.0'}%</div>
+                </div>
+                <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200">
+                   <div className="h-full rounded-full bg-slate-500" style={{ width: `${report.receivables.totalPayable > 0 ? (report.receivables.paidAmount / report.receivables.totalPayable) * 100 : 0}%` }} />
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 border border-red-100">
+              <span className="text-xs font-bold text-red-700">待收余额 (欠款):</span>
+              <span className="text-lg font-black text-red-700">{formatCurrency(report.receivables.receivableBalance)}</span>
             </div>
           </div>
-        )}
 
-        {/* 预警信息 */}
+          {/* 供应链与直发分析 */}
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-sm">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+              <RefreshCw className="h-4 w-4 text-emerald-500" />
+              效率与直发绩效
+            </h2>
+            <div className="grid gap-3">
+              {[
+                { label: '库存周转周期', value: `${report.inventoryTurnover?.turnoverDays?.toFixed(0) ?? 'N/A'} 天`, icon: <RefreshCw className="h-3 w-3" />, color: 'text-emerald-600' },
+                { label: '厂家直发利润率', value: `${report.factoryShipmentProfit?.averageProfitMargin?.toFixed(2) ?? '0.00'}%`, icon: <TrendingUp className="h-3 w-3" />, color: 'text-blue-600' },
+                { label: '直发订单贡献', value: `${report.factoryShipmentProfit?.totalOrders ?? 0} 笔`, icon: <Package className="h-3 w-3" />, color: 'text-slate-600' },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between p-3 rounded-xl border border-dashed border-slate-200">
+                  <div className="flex items-center gap-2 text-slate-600 font-bold">
+                    {item.icon}
+                    {item.label}
+                  </div>
+                  <div className={cn("font-black text-lg", item.color)}>{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 异常审计 - v3 风格内容 */}
         {report.alerts && report.alerts.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>预警信息</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {report.alerts.map((alert, index) => (
-                  <div
-                    key={index}
-                    className={`rounded-lg border p-3 ${
-                      alert.type === 'danger'
-                        ? 'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]'
-                        : alert.type === 'warning'
-                          ? 'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]'
-                          : 'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]'
-                    }`}
-                  >
-                    <div className="font-medium">{alert.title}</div>
-                    <div className="text-muted-foreground text-sm">
-                      {alert.message}
+          <div className="rounded-2xl bg-amber-50 p-6 border border-amber-100">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-amber-800">
+              <Receipt className="h-4 w-4" />
+              智能风险审计建议
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+               {report.alerts.map((alert, index) => (
+                  <div key={index} className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm border border-amber-200/50">
+                    <div className="flex items-center justify-between">
+                      <span className={cn(
+                        "rounded-full px-2 py-0.5 text-[9px] font-black uppercase",
+                        alert.type === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                      )}>
+                        {alert.type === 'danger' ? '高风险' : '建议关注'}
+                      </span>
                     </div>
+                    <div className="text-sm font-black text-slate-800">{alert.title}</div>
+                    <div className="text-xs leading-relaxed text-slate-500">{alert.message}</div>
+                  </div>
+               ))}
+            </div>
+          </div>
+        )}
+
+        {/* 报表导出区域 (v3 PRO: 专用于图片导出，格式化为专业纸质报表感) */}
+        <div className="overflow-hidden h-0 w-0 opacity-0 pointer-events-none">
+          <Card
+            ref={exportRef}
+            className="w-[1000px] border-none bg-white p-10 text-slate-900 shadow-none"
+          >
+            {/* 页眉 - 仿纸质报表标记 */}
+            <div className="mb-8 flex items-end justify-between border-b-2 border-slate-900 pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 bg-slate-900 flex items-center justify-center rounded text-white font-black italic">AG</div>
+                  <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-900">
+                    ANTIGRAVITY <span className="font-light text-slate-500">SYSTEMS</span>
+                  </h1>
+                </div>
+                <div className="text-[10px] font-bold tracking-widest text-slate-500">ERP FINANCIAL REPORTING UNIT</div>
+              </div>
+              <div className="text-right space-y-0.5">
+                <h2 className="text-xl font-black tracking-tight">{year}年{month}月度财务分析报表</h2>
+                <div className="text-[10px] uppercase font-bold text-slate-400">REPORT NO: FS-{year}{month.toString().padStart(2, '0')}-001</div>
+              </div>
+            </div>
+
+            {/* 元数据行 */}
+            <div className="mb-6 grid grid-cols-4 gap-4 rounded-lg bg-slate-50 p-4 border border-slate-100">
+              {[
+                { label: '报表类型', value: '月度经营分析' },
+                { label: '统计周期', value: `${report.period.startDate} / ${report.period.endDate}` },
+                { label: '币种', value: '人民币 (CNY)' },
+                { label: '保密级别', value: '内部机密' },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="text-[9px] font-black uppercase text-slate-400">{item.label}</div>
+                  <div className="text-xs font-bold text-slate-700">{item.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* A. 核心经营业绩汇总 */}
+            <div className="mb-8">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-1 w-8 bg-slate-900" />
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Section I: Operating Performance Summary</h3>
+              </div>
+              <div className="grid grid-cols-4 gap-px bg-slate-200 border border-slate-200">
+                {[
+                  { label: '销售总收入', value: report.revenue.salesRevenue, sub: `订单量: ${report.revenue.orderCount}` },
+                  { label: '营业总成本', value: report.costs.totalCost, sub: `销售毛利: ${formatCurrency(report.profit.grossProfit)}` },
+                  { label: '经营总费用', value: report.expenses.totalExpenses, sub: `费用占比: ${report.revenue.salesRevenue > 0 ? ((report.expenses.totalExpenses / report.revenue.salesRevenue) * 100).toFixed(1) : '0.0'}%` },
+                  { label: '本月净利润', value: report.profit.netProfit, sub: `净利率: ${report.profit.profitMargin.toFixed(2)}%`, highlight: true },
+                ].map((item) => (
+                  <div key={item.label} className={cn("bg-white p-5", item.highlight && "bg-slate-50")}>
+                    <div className="text-[10px] font-bold text-slate-500 mb-1">{item.label}</div>
+                    <div className="text-xl font-black font-mono text-slate-900">{formatCurrency(item.value)}</div>
+                    <div className="mt-1 text-[9px] font-medium text-slate-400">{item.sub}</div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 报表导出区域（专用于图片导出，格式化为单页报表） */}
-        <Card
-          ref={exportRef}
-          className="border border-[hsl(var(--color-border-primary))] bg-white shadow-[var(--shadow-light)]"
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between text-lg font-semibold">
-              <span>
-                {year} 年 {month} 月度财务报表
-              </span>
-              <span className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
-                统计区间：{report.period.startDate} ~ {report.period.endDate}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 text-[13px] text-[hsl(var(--color-text-primary))]">
-              {/* 核心汇总 */}
-              <div className="grid gap-3 md:grid-cols-4">
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    销售收入
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.revenue.salesRevenue)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    总成本
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.costs.totalCost)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    总费用
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.expenses.totalExpenses)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    净利润 / 利润率
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.profit.netProfit)} （
-                    {report.profit.profitMargin.toFixed(2)}%）
-                  </div>
-                </div>
-              </div>
-
-              {/* 收入与订单 */}
-              <div className="mt-2 grid gap-3 md:grid-cols-3">
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    订单数量
-                  </div>
-                  <div className="text-base">
-                    {report.revenue.orderCount.toLocaleString()} 单
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    平均订单金额
-                  </div>
-                  <div className="text-base">
-                    {formatCurrency(report.revenue.averageOrderValue)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    完成 / 待处理订单
-                  </div>
-                  <div className="text-base">
-                    {report.revenue.completedOrders} /{' '}
-                    {report.revenue.pendingOrders}
-                  </div>
-                </div>
-              </div>
-
-              {/* 应收应付简表 */}
-              <div className="mt-4">
-                <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                  应收 / 应付概览
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div>
-                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                      应收总额
-                    </div>
-                    <div className="text-base">
-                      {formatCurrency(report.receivables.totalReceivable)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                      应付总额
-                    </div>
-                    <div className="text-base">
-                      {formatCurrency(report.receivables.totalPayable)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                      应收余额 / 应付余额
-                    </div>
-                    <div className="text-base">
-                      {formatCurrency(report.receivables.receivableBalance)} /{' '}
-                      {formatCurrency(report.receivables.payableBalance)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 厂家直发与库存（简要） */}
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <div>
-                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                    厂家直发汇总
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-xs">
-                      <span>直发订单数</span>
-                      <span>
-                        {report.factoryShipmentProfit.totalOrders.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span>直发收入</span>
-                      <span>
-                        {formatCurrency(
-                          report.factoryShipmentProfit.totalRevenue
-                        )}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span>平均利润率</span>
-                      <span>
-                        {report.factoryShipmentProfit.averageProfitMargin.toFixed(
-                          2
-                        )}
-                        %
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {report.inventoryTurnover && (
-                  <div>
-                    <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                      库存周转概览
-                    </div>
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs">
-                        <span>周转率</span>
-                        <span>
-                          {report.inventoryTurnover.turnoverRate.toFixed(2)} 次
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span>周转天数</span>
-                        <span>
-                          {report.inventoryTurnover.turnoverDays.toFixed(0)} 天
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 简要预警列表 */}
-              {report.alerts && report.alerts.length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                    预警摘要
-                  </div>
-                  <ul className="space-y-1 text-xs">
-                    {report.alerts.slice(0, 4).map((alert, index) => (
-                      <li key={index} className="leading-snug">
-                        {index + 1}. {alert.title}：{alert.message}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
-          </CardContent>
-        </Card>
+
+            {/* B. 细分指标矩阵 */}
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              {/* 支出构成明细表 */}
+              <div>
+                <div className="mb-3 flex items-center gap-2">
+                  <div className="h-1 w-4 bg-slate-400" />
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">Section II: Expense Distribution</h3>
+                </div>
+                <table className="w-full text-left text-[11px]">
+                  <thead className="border-b-2 border-slate-900">
+                    <tr>
+                      <th className="py-2 font-black">费用类别</th>
+                      <th className="py-2 text-right font-black">金额 (CNY)</th>
+                      <th className="py-2 text-right font-black">占比 (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 italic">
+                    {[
+                      { l: '物流运输费', v: report.expenses.byType.shipping },
+                      { l: '仓储租赁费', v: report.expenses.byType.storage },
+                      { l: '人工劳务费', v: report.expenses.byType.labor },
+                      { l: '经营管理费', v: report.expenses.byType.travel + report.expenses.byType.living },
+                    ].map((row) => (
+                      <tr key={row.l}>
+                        <td className="py-2 text-slate-600 font-bold">{row.l}</td>
+                        <td className="py-2 text-right font-mono font-bold">{formatCurrency(row.v)}</td>
+                        <td className="py-2 text-right font-bold">{((row.v / report.expenses.totalExpenses) * 100).toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="border-t-2 border-slate-900">
+                    <tr className="font-black">
+                      <td className="py-2">合计</td>
+                      <td className="py-2 text-right font-mono">{formatCurrency(report.expenses.totalExpenses)}</td>
+                      <td className="py-2 text-right">100.0%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* 资金回收与效率看板 */}
+              <div className="space-y-6">
+                <div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <div className="h-1 w-4 bg-slate-400" />
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">Section III: Cash Flow & Turnover</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded border border-slate-200 p-3">
+                      <div className="text-[9px] font-black text-slate-400 uppercase">应收账款回收率</div>
+                      <div className="text-lg font-black font-mono">
+                        {report.receivables.totalReceivable > 0 ? ((report.receivables.receivedAmount / report.receivables.totalReceivable) * 100).toFixed(1) : '0.0'}%
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">余额: {formatCurrency(report.receivables.receivableBalance)}</div>
+                    </div>
+                    <div className="rounded border border-slate-200 p-3">
+                      <div className="text-[9px] font-black text-slate-400 uppercase">库存周转周期 (天)</div>
+                      <div className="text-lg font-black font-mono">
+                        {report.inventoryTurnover?.turnoverDays.toFixed(0) || '0'} DAYS
+                      </div>
+                      <div className="text-[9px] text-slate-400 mt-1">周转率: {report.inventoryTurnover?.turnoverRate.toFixed(2)}x</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded bg-slate-900 p-4 text-white">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">直发业务绩效汇报</div>
+                    <span className="text-[9px] bg-slate-700 px-1.5 py-0.5 rounded">DIRECT FULFILLMENT</span>
+                  </div>
+                  <div className="flex justify-between items-baseline">
+                    <div className="text-2xl font-black font-mono">
+                      {formatCurrency(report.factoryShipmentProfit?.customerProfit || 0)}
+                    </div>
+                    <div className="text-xs font-bold text-slate-300">
+                      Margin: {report.factoryShipmentProfit?.averageProfitMargin.toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* C. 审计预警摘要 */}
+            {report.alerts && report.alerts.length > 0 && (
+              <div className="bg-slate-50 border-2 border-slate-900 rounded-lg p-5">
+                <div className="mb-3 flex items-center gap-2">
+                  <Receipt className="h-4 w-4" />
+                  <h3 className="text-xs font-black uppercase tracking-widest">Management Audit & Warnings</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+                  {report.alerts.map((alert, idx) => (
+                    <div key={idx} className="flex gap-3">
+                      <span className="font-black text-slate-400">{String(idx + 1).padStart(2, '0')}.</span>
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">{alert.title}</div>
+                        <div className="text-[10px] leading-relaxed text-slate-500 mt-0.5 italic">{alert.message}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 页脚 - 报表鉴真 */}
+            <div className="mt-12 flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+              <div className="flex gap-4">
+                <span>Generated by: AI Financial Module</span>
+                <span>Timestamp: {new Date().toLocaleString()}</span>
+              </div>
+              <div>© 2026 ANTIGRAVITY ERP SYSTEMS - ALL RIGHTS RESERVED</div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
 }
 
-// 统计卡片组件
+// 统计卡片组件 (v3: 高清晰专业版)
 interface StatCardProps {
   title: string;
   value: number;
   icon: React.ReactNode;
   subtitle?: string;
   isCurrency?: boolean;
+  variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  size?: 'sm' | 'md' | 'lg';
   comparison?: {
     current: number;
     previous: number;
@@ -742,51 +671,101 @@ function StatCard({
   icon,
   subtitle,
   isCurrency = true,
+  variant = 'default',
+  size = 'md',
   comparison,
 }: StatCardProps) {
+  // 高级配色方案：极淡的背景 + 饱和度适中的语义色
+  const themeStyles = {
+    default: 'border-slate-200 bg-white text-slate-600',
+    primary: 'border-blue-100 bg-blue-50/30 text-blue-700',
+    success: 'border-emerald-100 bg-emerald-50/30 text-emerald-700',
+    warning: 'border-amber-100 bg-amber-50/30 text-amber-700',
+    error: 'border-red-100 bg-red-50/30 text-red-700',
+    info: 'border-sky-100 bg-sky-50/30 text-sky-700',
+    neutral: 'border-slate-200 bg-slate-50/50 text-slate-600',
+  };
+
+  const iconStyles = {
+    default: 'bg-slate-100 text-slate-500',
+    primary: 'bg-blue-100 text-blue-600',
+    success: 'bg-emerald-100 text-emerald-600',
+    warning: 'bg-amber-100 text-amber-600',
+    error: 'bg-red-100 text-red-600',
+    info: 'bg-sky-100 text-sky-600',
+    neutral: 'bg-slate-200 text-slate-600',
+  };
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <div className="text-muted-foreground">{icon}</div>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">
-          {isCurrency ? formatCurrency(value) : value.toLocaleString()}
-        </div>
-        {subtitle && (
-          <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>
-        )}
-        {comparison && (
-          <div className="mt-2 flex items-center gap-1 text-xs">
-            {comparison.trend === 'up' && (
-              <ArrowUpIcon className="h-3 w-3 text-[hsl(var(--color-success))]" />
+    <Card
+      className={cn(
+        'group relative overflow-hidden border transition-all duration-300 hover:shadow-md hover:border-opacity-50',
+        themeStyles[variant],
+        size === 'lg' ? 'md:col-span-2 lg:col-span-1' : ''
+      )}
+    >
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">
+            {title}
+          </CardTitle>
+          <div
+            className={cn(
+              'font-black tracking-tight text-slate-900',
+              size === 'lg' ? 'text-3xl' : 'text-2xl'
             )}
-            {comparison.trend === 'down' && (
-              <ArrowDownIcon className="h-3 w-3 text-[hsl(var(--color-error))]" />
-            )}
-            {comparison.trend === 'stable' && (
-              <MinusIcon className="h-3 w-3 text-[hsl(var(--color-text-secondary))]" />
-            )}
-            <span
-              className={
-                comparison.trend === 'up'
-                  ? 'text-[hsl(var(--color-success))]'
-                  : comparison.trend === 'down'
-                    ? 'text-[hsl(var(--color-error))]'
-                    : 'text-[hsl(var(--color-text-secondary))]'
-              }
-            >
-              {comparison.changeRate > 0 ? '+' : ''}
-              {comparison.changeRate.toFixed(2)}%
-            </span>
-            <span className="text-muted-foreground">环比</span>
+          >
+            {isCurrency ? formatCurrency(value) : value.toLocaleString()}
           </div>
-        )}
+        </div>
+        <div className={cn('rounded-lg p-2 transition-transform group-hover:scale-110', iconStyles[variant])}>
+          {icon}
+        </div>
+      </CardHeader>
+      
+      <CardContent className="px-5 pb-4">
+        <div className="flex flex-col gap-2">
+          {comparison && (
+            <div className="flex items-center gap-2">
+              <div
+                className={cn(
+                  'flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-bold shadow-sm',
+                  comparison.trend === 'up'
+                    ? 'bg-emerald-500 text-white'
+                    : comparison.trend === 'down'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-slate-400 text-white'
+                )}
+              >
+                {comparison.trend === 'up' && <ArrowUpIcon className="mr-0.5 h-3 w-3" />}
+                {comparison.trend === 'down' && <ArrowDownIcon className="mr-0.5 h-3 w-3" />}
+                {comparison.trend === 'stable' && <MinusIcon className="mr-0.5 h-3 w-3" />}
+                {Math.abs(comparison.changeRate).toFixed(1)}%
+              </div>
+              <span className="text-[10px] font-medium text-slate-500 italic">vs 上月</span>
+            </div>
+          )}
+          {subtitle && (
+            <p className="text-[11px] leading-relaxed text-slate-500 line-clamp-1 border-t border-slate-200/50 pt-2 mt-1">
+              {subtitle}
+            </p>
+          )}
+        </div>
       </CardContent>
+      
+      {/* 底部装饰线条，增加专业感 */}
+      <div className={cn(
+        'h-1 w-full opacity-30',
+        variant === 'primary' ? 'bg-blue-600' :
+        variant === 'success' ? 'bg-emerald-600' :
+        variant === 'error' ? 'bg-red-600' :
+        variant === 'warning' ? 'bg-amber-600' : 'bg-slate-300'
+      )} />
     </Card>
   );
 }
+
+
 
 // 加载骨架屏
 function MonthlyReportSkeleton() {

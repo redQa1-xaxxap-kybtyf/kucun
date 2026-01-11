@@ -5,21 +5,19 @@ import { Edit, ShoppingCart, User } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
+import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
-import { PageHeader } from '@/components/common/page-header';
 import { CustomerActivityTabs } from '@/components/customers/customer-detail/customer-activity-tabs';
 import { CustomerContactCard } from '@/components/customers/customer-detail/customer-contact-card';
 import { CustomerStatsGrid } from '@/components/customers/customer-detail/customer-stats-grid';
 import type {
-  CustomerDetail,
-  CustomerExtendedInfo,
+    CustomerDetail,
+    CustomerExtendedInfo,
 } from '@/components/customers/customer-detail/types';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/queryKeys';
-import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
@@ -69,6 +67,9 @@ export default function CustomerDetailPage() {
     enabled: !!id,
   });
 
+  // 设置动态面包屑标题：显示客户名称
+  useBreadcrumbTitle(customer ? customer.name : null);
+
   if (isLoading) {
     return <ContentLoading />;
   }
@@ -113,36 +114,66 @@ function CustomerHeader({
   customer: CustomerDetail;
   onEdit: () => void;
 }) {
+  const router = useRouter();
+
   return (
-    <PageHeader
-      title={customer.name}
-      description={
-        <div className="flex items-center gap-2">
-          <Badge variant={getCommonStatusBadgeVariant(customer.status)}>
-            {getStatusLabel(customer.status)}
-          </Badge>
-          {customer.phone && (
-            <span className="text-sm text-[hsl(var(--color-text-secondary))]">
-              {customer.phone}
-            </span>
-          )}
+    <div className="relative overflow-hidden rounded-[2.5rem] bg-white/60 p-8 backdrop-blur-xl border border-white shadow-sm transition-all duration-500 hover:shadow-xl">
+      <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-50/50 blur-3xl" />
+      <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-emerald-50/30 blur-3xl" />
+      
+      <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-6">
+          <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-900 text-white shadow-2xl transition-transform hover:scale-110 duration-500">
+            <User className="h-10 w-10" />
+          </div>
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-4xl font-black tracking-tighter text-slate-900">
+                {customer.name}
+              </h1>
+              <div className={cn(
+                "text-xs uppercase font-bold tracking-wider px-4 py-1.5 rounded-full",
+                customer.status === 'active' ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200" : "bg-slate-100 text-slate-500"
+              )}>
+                {getStatusLabel(customer.status)}账户
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-6">
+               <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
+                 <span className="uppercase text-xs tracking-wider text-slate-500">档案编号</span>
+                 <span className="text-slate-600 font-bold">{customer.id.substring(0, 8).toUpperCase()}</span>
+               </div>
+               <span className="h-1 w-1 rounded-full bg-slate-200" />
+               <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
+                 <span className="uppercase text-xs tracking-wider text-slate-500">合作始于</span>
+                 <span className="text-slate-600 font-bold">{formatDateTime(customer.createdAt).split(' ')[0]}</span>
+               </div>
+            </div>
+          </div>
         </div>
-      }
-      icon={<User className="h-6 w-6 text-white" />}
-      iconBgColor="hsl(var(--color-purple))"
-      actions={
-        <>
-          <Button variant="outline" size="sm" onClick={onEdit} className="h-9">
-            <Edit className="mr-2 h-4 w-4" />
-            编辑
+        
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="lg"
+            onClick={onEdit}
+            className="h-14 rounded-2xl bg-white font-black text-slate-600 shadow-sm border-none hover:bg-slate-900 hover:text-white transition-all active:scale-95 px-8"
+          >
+            <Edit className="mr-2 h-5 w-5" />
+            修订档案
           </Button>
-          <Button size="sm" className="h-9">
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            创建订单
+          <Button 
+             size="lg" 
+             className="h-14 rounded-2xl bg-slate-900 font-black text-white shadow-xl hover:shadow-slate-200 transition-all active:scale-95 px-10"
+             onClick={() => router.push(`/sales-orders/create?customerId=${customer.id}`)}
+          >
+            <ShoppingCart className="mr-2 h-5 w-5" />
+            快速建立订单
           </Button>
-        </>
-      }
-    />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -185,15 +216,15 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4">
-      <div className="space-y-4">
+    <div className="min-h-screen bg-slate-50/50">
+      <div className="mx-auto max-w-[1680px] space-y-12 p-4 lg:p-10 xl:p-14 transition-all duration-500">
         <CustomerHeader
           customer={customer}
           onEdit={() => router.push(`/customers/${customer.id}/edit`)}
         />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-4">
+          <div className="lg:col-span-3">
             <CustomerContactCard
               phone={customer.phone}
               address={customer.address}
@@ -203,26 +234,26 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
               formatDateTime={formatDateTime}
             />
           </div>
-          <CustomerStatsGrid
-            totalSalesAmount={totalSalesAmount}
-            totalReturnAmount={totalReturnAmount}
-            totalUnpaidAmount={totalUnpaidAmount}
-            salesOrderCount={customer._count.salesOrders}
-            returnOrderCount={customer._count.returnOrders}
-            unpaidOrderCount={unpaidOrders.length}
-          />
+          <div className="lg:col-span-1">
+            <CustomerStatsGrid
+              totalSalesAmount={totalSalesAmount}
+              totalReturnAmount={totalReturnAmount}
+              totalUnpaidAmount={totalUnpaidAmount}
+              salesOrderCount={customer._count.salesOrders}
+              returnOrderCount={customer._count.returnOrders}
+              unpaidOrderCount={unpaidOrders.length}
+            />
+          </div>
         </div>
 
-        <Card>
-          <CardContent className="space-y-3 p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">近期订单与退货</h2>
-                <p className="text-muted-foreground text-sm">
-                  优先关注未付款订单，查看历史销售与退货记录
-                </p>
-              </div>
-            </div>
+        <div className="rounded-[2.5rem] border border-white bg-white/40 p-1 backdrop-blur-md shadow-sm">
+          <div className="p-8 pb-4">
+            <h2 className="text-2xl font-black tracking-tight text-slate-900">往来审计与近期活动</h2>
+            <p className="text-slate-400 text-sm font-bold mt-1">
+              追踪未结订单、历史销售及退货的完整生命周期。
+            </p>
+          </div>
+          <div className="p-2">
             <CustomerActivityTabs
               salesOrders={customer.salesOrders}
               returnOrders={customer.returnOrders}
@@ -235,8 +266,8 @@ function CustomerDetailContent({ customer }: { customer: CustomerDetail }) {
                 router.push(`/return-orders/${orderId}`)
               }
             />
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

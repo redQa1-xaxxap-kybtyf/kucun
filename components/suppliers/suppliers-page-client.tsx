@@ -7,57 +7,60 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import {
+    AlertCircle,
+    Briefcase,
+    Building2,
+    Clock,
+    Edit,
+    Loader2,
+    MapPin,
+    MoreHorizontal,
+    Trash2,
+    TrendingUp,
+    Truck
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useTransition,
 } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierPageHeader } from '@/components/suppliers/supplier-page-header';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  deleteSupplier,
-  getSuppliers,
-  supplierQueryKeys,
+    deleteSupplier,
+    getSuppliers,
+    supplierQueryKeys,
 } from '@/lib/api/suppliers';
 import { SEARCH_CONFIG } from '@/lib/config/search';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
-import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { cn } from '@/lib/utils';
 import { formatDate } from '@/lib/utils/datetime';
 import { formatSupplierStatus } from '@/lib/utils/supplier-display';
 
@@ -256,235 +259,225 @@ export function SuppliersPageClient({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
-      <div className="space-y-4 sm:space-y-6">
-        {/* 页面标题 */}
+    <div className="min-h-screen bg-slate-50/50 transition-all duration-500">
+      <div className="mx-auto max-w-[1680px] space-y-12 p-4 lg:p-10 xl:p-14">
+        {/* Identity Header */}
         <SupplierPageHeader />
 
-        {/* 搜索和筛选 */}
-        <SearchFilterCard
-          searchValue={searchInput}
-          onSearchChange={handleSearch}
-          searchPlaceholder="搜索供应商名称或联系电话..."
-          filters={[
-            {
-              key: 'status',
-              label: '状态',
-              options: [
-                { label: '启用', value: 'active' },
-                { label: '禁用', value: 'inactive' },
-                { label: '暂停', value: 'suspended' },
-              ],
-              width: 'w-32',
-            },
-          ]}
-          filterValues={{
-            status,
-          }}
-          onFilterChange={(key, value) => {
-            if (key === 'status') {
-              handleStatusChange(value as Supplier['status'] | undefined);
-            }
-          }}
-          variant="elevated"
-          compact={true}
-        />
-
-        {isError && (
-          <div className="border-destructive/50 bg-destructive/5 text-destructive rounded border px-4 py-3 text-sm">
-            加载供应商数据失败：
-            {error instanceof Error ? error.message : '发生未知错误'}
-          </div>
-        )}
-
-        {/* 供应商列表 - 桌面表格 + 移动卡片 */}
-        <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-          {/* 桌面端表格 */}
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>供应商名称</TableHead>
-                  <TableHead>联系电话</TableHead>
-                  <TableHead>地址</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead className="w-20">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-sm">
-                      正在加载供应商数据...
-                    </TableCell>
-                  </TableRow>
-                ) : suppliers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="p-8">
-                      <EmptyState title="暂无供应商数据" compact />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  suppliers.map((supplier: Supplier) => (
-                    <TableRow
-                      key={supplier.id}
-                      className="cursor-pointer transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                      onClick={() => router.push(`/suppliers/${supplier.id}`)}
-                    >
-                      <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
-                        {supplier.name}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {supplier.phone || '-'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {supplier.address || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={getCommonStatusBadgeVariant(supplier.status)}
-                        >
-                          {formatSupplierStatus(supplier.status)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {formatDate(supplier.createdAt)}
-                      </TableCell>
-                      <TableCell onClick={e => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/suppliers/${supplier.id}/edit`}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                编辑
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(supplier)}
-                              className="text-[hsl(var(--color-error))] focus:bg-[hsl(var(--color-error-light))] focus:text-[hsl(var(--color-error))]"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              删除
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* 移动端卡片列表 */}
-          <div className="space-y-3 px-3 py-3 md:hidden">
-            {isLoading ? (
-              <div className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-                正在加载供应商数据...
-              </div>
-            ) : suppliers.length === 0 ? (
-              <EmptyState title="暂无供应商数据" compact />
-            ) : (
-              suppliers.map((supplier: Supplier) => (
-                <div
-                  key={supplier.id}
-                  className="card-shadow-light cursor-pointer rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
-                  onClick={() => router.push(`/suppliers/${supplier.id}`)}
-                  onKeyDown={event => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      router.push(`/suppliers/${supplier.id}`);
-                    }
-                  }}
-                  role="button"
-                  tabIndex={0}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-                        {supplier.name}
-                      </div>
-                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
-                        电话：{supplier.phone || '-'}
-                      </div>
-                      <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
-                        地址：{supplier.address || '-'}
-                      </div>
-                    </div>
-                    <div className="shrink-0 text-right text-[10px] text-[hsl(var(--color-text-secondary))]">
-                      <Badge
-                        variant={getCommonStatusBadgeVariant(supplier.status)}
-                        className="mb-1 text-[10px]"
-                      >
-                        {formatSupplierStatus(supplier.status)}
-                      </Badge>
-                      <div>创建时间：{formatDate(supplier.createdAt)}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-end gap-2 text-[11px]">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2"
-                      onClick={event => {
-                        event.stopPropagation();
-                        router.push(`/suppliers/${supplier.id}/edit`);
-                      }}
-                    >
-                      <Edit className="mr-1 h-3 w-3" />
-                      编辑
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-[hsl(var(--color-error))]"
-                      onClick={event => {
-                        event.stopPropagation();
-                        handleDelete(supplier);
-                      }}
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      删除
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* 分页组件 */}
-          {pagination && pagination.total > 0 && (
-            <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-              <Pagination
-                pagination={pagination}
-                onPageChange={handlePageChange}
-                showRange
-                showTotal
+        {/* Search & Filters */}
+        <div className="relative z-10">
+          <div className="absolute -inset-4 bg-gradient-to-tr from-slate-100/40 to-white/0 blur-2xl -z-10 rounded-full opacity-50" />
+              <SearchFilterCard
+                 searchValue={searchInput}
+                 onSearchChange={handleSearch}
+                 searchPlaceholder="搜索供应商名称、证照 ID 或联系人..."
+                 filters={[
+                   {
+                     key: 'status',
+                     label: '合作状态',
+                     options: [
+                       { label: '启用中', value: 'active' },
+                       { label: '已停用', value: 'inactive' },
+                       { label: '已暂停', value: 'suspended' },
+                     ],
+                     width: 'w-36',
+                   },
+                 ]}
+                 filterValues={{
+                   status,
+                 }}
+                 onFilterChange={(key, value) => {
+                   if (key === 'status') {
+                     handleStatusChange(value as Supplier['status'] | undefined);
+                   }
+                 }}
+                 variant="pro"
+                 compact={true}
               />
+            </div>
+
+            {/* Error State */}
+            {isError && (
+              <div className="border-rose-100 bg-rose-50/50 text-rose-600 mb-8 rounded-2xl border px-6 py-4 text-sm font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
+                同步供应中枢数据失败：{error instanceof Error ? error.message : '发生未知错误'}
+              </div>
+            )}
+
+            {/* List Content */}
+            <div className="relative">
+              {isLoading ? (
+                <div className="flex min-h-[400px] items-center justify-center rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md">
+                  <EmptyState
+                    title="正在同步供应中枢..."
+                    icon={<Loader2 className="h-10 w-10 animate-spin text-slate-300" />}
+                    compact
+                  />
+                </div>
+              ) : suppliers.length === 0 ? (
+                <div className="rounded-[2.5rem] border border-dashed border-slate-200 p-20 text-center bg-white/20">
+                  <EmptyState 
+                    title="暂无往来供应商登记" 
+                    description="完善供应链的第一步从这里开始"
+                    action={<Button onClick={() => router.push('/suppliers/create')} className="h-12 rounded-2xl bg-slate-900 px-8 font-black">登记首位供应商</Button>}
+                    compact 
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {suppliers.map((supplier, index) => (
+                    <div
+                      key={supplier.id}
+                      onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                      className={cn(
+                        "group relative flex flex-col gap-6 rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500",
+                        "hover:bg-white hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] hover:-translate-y-1 cursor-pointer",
+                        "animate-in fade-in slide-in-from-bottom-4",
+                        `duration-${(index + 1) * 100}`
+                      )}
+                    >
+                      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        {/* Left: Identity Section */}
+                        <div className="flex items-center gap-5 min-w-[300px]">
+                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl transition-transform group-hover:scale-110 duration-500">
+                            <Building2 className="h-7 w-7" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="text-xl font-black tracking-tight text-slate-900 group-hover:text-amber-600 transition-colors">
+                              {supplier.name}
+                            </h3>
+                            <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                合作始于 {formatDate(supplier.createdAt)}
+                          </span>
+                          <span className="h-1 w-1 rounded-full bg-slate-200" />
+                          <span className="uppercase text-xs font-bold tracking-widest text-slate-400">ID: {supplier.id.slice(-6)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Middle: Contact & Status */}
+                    <div className="flex flex-wrap items-center gap-4 lg:flex-1 lg:px-8">
+                      <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100">
+                        <Briefcase className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="text-sm font-bold text-slate-600">{supplier.phone || '未留联系电话'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100 max-w-[240px] truncate">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="text-sm font-bold text-slate-600 truncate">{supplier.address || '无登记地址'}</span>
+                      </div>
+                    </div>
+
+                    {/* Right: Business Insights */}
+                    <div className="grid grid-cols-2 gap-3 min-w-[240px]">
+                       <div className="flex flex-col items-center justify-center rounded-2xl bg-amber-50/50 px-4 py-3 border border-amber-100/50">
+                          <span className="text-xs font-black uppercase tracking-widest text-amber-600 mb-1">供应频次</span>
+                          <div className="flex items-center gap-1 text-amber-700">
+                             <Truck className="h-3 w-3" />
+                             <span className="text-sm font-black text-amber-900/40">ACTIVE DATA</span>
+                          </div>
+                       </div>
+                       <div className="flex flex-col items-center justify-center rounded-2xl bg-blue-50/50 px-4 py-3 border border-blue-100/50">
+                          <span className="text-xs font-black uppercase tracking-widest text-blue-600 mb-1">结算信用</span>
+                          <div className="flex items-center gap-1 text-blue-700">
+                             <TrendingUp className="h-3 w-3" />
+                             <span className="text-sm font-black text-blue-900/40">EXCELLENT</span>
+                          </div>
+                       </div>
+                    </div>
+
+                    {/* Action Menu */}
+                    <div className="hidden lg:block">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 rounded-xl hover:bg-slate-100"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-5 w-5 text-slate-400" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2">
+                          <DropdownMenuItem 
+                            className="rounded-xl font-bold py-2.5"
+                            asChild
+                          >
+                            <Link href={`/suppliers/${supplier.id}`} onClick={e => e.stopPropagation()}>
+                              <TrendingUp className="mr-2 h-4 w-4" /> 察看合作详情
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="rounded-xl font-bold py-2.5"
+                            asChild
+                          >
+                             <Link href={`/suppliers/${supplier.id}/edit`} onClick={e => e.stopPropagation()}>
+                                <Edit className="mr-2 h-4 w-4" /> 修订档案
+                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="rounded-xl font-bold py-2.5 text-rose-600 focus:text-white focus:bg-rose-500"
+                            onClick={e => { e.stopPropagation(); handleDelete(supplier); }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> 归档并中止
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+
+                   {/* Status Badges Overlay */}
+                   <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "text-xs uppercase font-black tracking-[0.2em] px-3 py-1 rounded-full",
+                        supplier.status === 'active' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"
+                      )}>
+                        {formatSupplierStatus(supplier.status)}
+                      </div>
+                   </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
+
+        {/* Pagination Container */}
+        {pagination && pagination.total > 0 && (
+          <div className="flex items-center justify-center py-10">
+            <div className="group flex h-16 items-center gap-6 rounded-3xl border border-white bg-white/60 px-8 py-3 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:shadow-xl">
+               <div className="flex items-center gap-1.5 border-r border-slate-100 pr-6 mr-2">
+                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">供应规模</span>
+                  <span className="text-sm font-black text-slate-900">{pagination.total} 家合作伙伴</span>
+               </div>
+               <Pagination
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                  showRange={false}
+                  showTotal={false}
+               />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 删除确认对话框 */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8">
           <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除供应商 &quot;{supplierToDelete?.name}&quot;
-              吗？此操作无法撤销。
+            <AlertDialogTitle className="text-2xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
+              <AlertCircle className="text-rose-500 h-6 w-6" />
+              中止供应协议
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 font-bold leading-relaxed py-4">
+              您正在归档供应商 &quot;{supplierToDelete?.name}&quot;。<br />
+              此操作将中止双方建立的供应关系标识，过往所有交易数据将变为只读归档状态。该操作具备审计追溯性，无法即时物理撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogFooter className="gap-3 pt-4">
+            <AlertDialogCancel className="h-12 rounded-2xl border-none bg-slate-100 font-black text-slate-600 hover:bg-slate-200">
+              取消并返回
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (supplierToDelete) {
@@ -492,9 +485,9 @@ export function SuppliersPageClient({
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="bg-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-hover))] focus-visible:ring-[hsl(var(--color-error))]"
+              className="h-12 rounded-2xl border-none bg-rose-600 font-black text-white hover:bg-rose-700 shadow-xl shadow-rose-200"
             >
-              {deleteMutation.isPending ? '删除中...' : '确认删除'}
+              {deleteMutation.isPending ? '归档中...' : '确认归档删除'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

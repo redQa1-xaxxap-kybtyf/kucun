@@ -57,6 +57,7 @@ import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 // 创建付款记录表单Schema
 const createPaymentOutSchema = z.object({
+  idempotencyKey: z.string().uuid({ message: '幂等性键格式不正确' }),
   payableRecordId: z.string().optional(),
   supplierId: z.string().min(1, { error: '请选择供应商' }),
   paymentMethod: z.enum(
@@ -476,6 +477,7 @@ export default function CreatePaymentOutPage() {
   const form = useForm<CreatePaymentOutFormData>({
     resolver: standardSchemaResolver(createPaymentOutSchema),
     defaultValues: {
+      idempotencyKey: crypto.randomUUID(),
       payableRecordId: payableId || '',
       supplierId: '',
       paymentMethod: 'bank_transfer',

@@ -75,14 +75,51 @@ async function getPaymentOutDetail(
   try {
     const payment = await prisma.paymentOutRecord.findUnique({
       where: { id },
-      include: {
+      select: {
+        id: true,
+        paymentNumber: true,
+        paymentAmount: true,
+        paymentMethod: true,
+        paymentDate: true,
+        status: true,
+        remarks: true,
+        voucherNumber: true,
+        bankInfo: true,
+        payableRecordId: true,
+        supplierId: true,
+        createdAt: true,
+        updatedAt: true,
         payableRecord: {
-          include: {
-            supplier: true,
+          select: {
+            id: true,
+            payableNumber: true,
+            payableAmount: true,
+            paidAmount: true,
+            remainingAmount: true,
+            status: true,
+            supplier: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
+            },
           },
         },
-        supplier: true,
-        user: true,
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            address: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 

@@ -1,16 +1,9 @@
-/**
- * 库存调整记录筛选组件
- * 使用统一的RecordsFilters组件，遵循唯一真理原则
- */
-
-'use client';
-
-import {
-  ADJUSTMENT_FILTER_CONFIG,
-  RecordsFilters,
-  type FilterValues,
-} from '@/components/inventory/forms/RecordsFilters';
-import type { AdjustmentQueryParams } from '@/lib/types/inventory';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
+import { ADJUSTMENT_REASON_OPTIONS } from '@/lib/constants/inventory-filters';
+import type {
+    AdjustmentQueryParams,
+    AdjustmentReason,
+} from '@/lib/types/inventory';
 
 interface AdjustmentRecordsFiltersProps {
   filters: AdjustmentQueryParams;
@@ -23,46 +16,64 @@ export function AdjustmentRecordsFilters({
   onFiltersChange,
   onReset,
 }: AdjustmentRecordsFiltersProps) {
-  // 将filters转换为FilterValues格式
-  const filterValues: FilterValues = {
-    search: filters?.search,
-    type: filters?.reason,
-    startDate: filters?.startDate,
-    endDate: filters?.endDate,
-  };
-
-  // 处理筛选变更
-  const handleFilterChange = (
-    key: keyof FilterValues,
-    value: string | undefined
-  ) => {
-    // 将FilterValues的key映射到AdjustmentQueryParams的key
-    const keyMap: Record<
-      keyof FilterValues,
-      keyof AdjustmentQueryParams | null
-    > = {
-      search: 'search',
-      type: 'reason',
-      startDate: 'startDate',
-      endDate: 'endDate',
-    };
-
-    const mappedKey = keyMap[key];
-    if (mappedKey) {
+  // 将筛选变更逻辑映射回状态更新
+  const handleFilterChange = (key: string, value: string | undefined) => {
+    if (key === 'reason') {
       onFiltersChange({
         ...filters,
-        [mappedKey]: value,
-        page: 1, // 重置到第一页
+        reason: value as AdjustmentReason | undefined,
+        page: 1,
       });
     }
   };
 
   return (
-    <RecordsFilters
-      config={ADJUSTMENT_FILTER_CONFIG}
-      values={filterValues}
+    <SearchFilterCard
+      searchValue={filters?.search || ''}
+      onSearchChange={(val) =>
+        onFiltersChange({ ...filters, search: val, page: 1 })
+      }
+      searchPlaceholder="搜索调整单号、产品名称、编码..."
+      // 筛选器配置
+      filters={[
+        {
+          key: 'reason',
+          label: '调整原因',
+          options: ADJUSTMENT_REASON_OPTIONS,
+          width: 'w-40',
+        },
+      ]}
+      filterValues={{
+        reason: filters?.reason || 'all',
+      }}
       onFilterChange={handleFilterChange}
-      onReset={onReset}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '调整日期',
+        value: {
+          startDate: filters?.startDate,
+          endDate: filters?.endDate,
+        },
+        onChange: ({ startDate, endDate }) => {
+          onFiltersChange({
+            ...filters,
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            page: 1,
+          });
+        },
+        placeholder: '选择调整日期范围',
+      }}
+      onClearFilters={onReset}
+      hasActiveFilters={
+        !!filters?.search ||
+        !!filters?.reason ||
+        !!filters?.startDate ||
+        !!filters?.endDate
+      }
+      variant="pro"
+      compact={true}
     />
   );
 }

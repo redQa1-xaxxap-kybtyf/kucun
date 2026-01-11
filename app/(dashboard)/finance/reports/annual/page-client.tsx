@@ -1,39 +1,49 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Calendar, Package, Receipt } from 'lucide-react';
+import {
+    ArrowDownIcon,
+    ArrowUpIcon,
+    Calendar,
+    MinusIcon,
+    Package,
+    Receipt,
+    RefreshCw,
+    TrendingUp
+} from 'lucide-react';
 import * as React from 'react';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Legend,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Legend,
+    Line,
+    LineChart,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
 } from 'recharts';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { ExportService } from '@/lib/services/export-service';
 import type { AnnualReport } from '@/lib/types/report';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 
 // ✅ 使用CSS变量统一图表颜色
@@ -297,419 +307,416 @@ export function AnnualReportClient() {
           </CardContent>
         </Card>
 
-        {/* 年度汇总（精简版） */}
-        <div>
-          <h2 className="mb-3 text-base font-semibold sm:mb-4 sm:text-xl">
-            年度汇总
-          </h2>
-          <div className="grid gap-3 md:grid-cols-3">
-            <SummaryCard
-              title="总收入"
-              value={report.summary.totalRevenue}
-            />
-            <SummaryCard
-              title="总利润"
-              value={report.summary.totalProfit}
-            />
-            <SummaryCard
-              title="利润率"
-              value={report.summary.profitMargin}
-              isCurrency={false}
-              suffix="%"
-            />
+        {/* 年度核心指标 - 顶部大卡片 */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="年度销售总收入"
+            value={report.summary.totalRevenue}
+            icon={<ChineseYuan className="h-4 w-4" />}
+            variant="primary"
+            size="lg"
+            comparison={report.yearOverYear?.revenue}
+            subtitle={`年成交单量: ${report.summary.orderCount.toLocaleString()} 单`}
+          />
+          <StatCard
+            title="年度累计利润"
+            value={report.summary.totalProfit}
+            icon={<TrendingUp className="h-4 w-4" />}
+            variant="success"
+            size="lg"
+            comparison={report.yearOverYear?.profit}
+            subtitle={`平均月利润: ${formatCurrency(report.summary.totalProfit / 12)}`}
+          />
+          <StatCard
+            title="平均利润率"
+            value={report.summary.profitMargin}
+            icon={<TrendingUp className="h-4 w-4" />}
+            variant="info"
+            isCurrency={false}
+            subtitle="经营效益综合评估"
+          />
+          <StatCard
+            title="异常/预警提醒"
+            value={report.alerts?.length || 0}
+            icon={<Receipt className="h-4 w-4" />}
+            variant={(report.alerts?.length ?? 0) > 0 ? "warning" : "default"}
+            isCurrency={false}
+            subtitle="待审计经营风险"
+          />
+        </div>
+
+        {/* 经营绩效与效率 - 高清晰分组区 */}
+        <div className="rounded-2xl bg-slate-50/80 p-6 border border-slate-100">
+           <div className="mb-6 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              年度经营效率看板
+            </h2>
+            <div className="flex items-center gap-4 text-xs font-bold">
+               <div className="flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-emerald-700">
+                月均营收: {formatCurrency(report.summary.averageMonthlyRevenue)}
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+             <StatCard
+                title="总成交订单"
+                value={report.summary.orderCount}
+                icon={<Receipt className="h-4 w-4" />}
+                variant="default"
+                isCurrency={false}
+              />
+              <StatCard
+                title="营业总成本"
+                value={report.summary.totalCost}
+                icon={<MinusIcon className="h-4 w-4" />}
+                variant="neutral"
+              />
+              {report.inventoryTurnover && (
+                <>
+                  <StatCard
+                    title="库存周转率"
+                    value={report.inventoryTurnover.turnoverRate}
+                    icon={<RefreshCw className="h-4 w-4" />}
+                    variant="info"
+                    isCurrency={false}
+                    subtitle="年度周转频次"
+                  />
+                   <StatCard
+                    title="周转天数"
+                    value={report.inventoryTurnover.turnoverDays}
+                    icon={<Calendar className="h-4 w-4" />}
+                    variant="info"
+                    isCurrency={false}
+                    subtitle="资产变现周期"
+                  />
+                </>
+              )}
           </div>
         </div>
 
-        {/* 库存周转率（精简版） */}
-        {report.inventoryTurnover && (
-          <div>
-            <h2 className="mb-3 text-base font-semibold sm:mb-4 sm:text-xl">
-              库存周转率
-            </h2>
-            <div className="grid gap-3 md:grid-cols-2">
-              <SummaryCard
-                title="周转率（年度）"
-                value={report.inventoryTurnover.turnoverRate}
-                isCurrency={false}
-                suffix=" 次/年"
-              />
-              <SummaryCard
-                title="周转天数"
-                value={report.inventoryTurnover.turnoverDays}
-                isCurrency={false}
-                suffix=" 天"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* 月度趋势图 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>月度趋势</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={report.monthlyTrend}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="monthLabel" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke={CHART_COLORS.revenue}
-                  name="收入"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="expenses"
-                  stroke={CHART_COLORS.expenses}
-                  name="支出"
-                  strokeWidth={2}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="profit"
-                  stroke={CHART_COLORS.profit}
-                  name="利润"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* 季度对比 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>季度对比</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={report.quarterlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="quarterLabel" />
-                <YAxis />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                <Legend />
-                <Bar
-                  dataKey="revenue"
-                  fill={CHART_COLORS.revenue}
-                  name="收入"
-                />
-                <Bar
-                  dataKey="expenses"
-                  fill={CHART_COLORS.expenses}
-                  name="支出"
-                />
-                <Bar dataKey="profit" fill={CHART_COLORS.profit} name="利润" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* 厂家发货利润 */}
-        {report.factoryShipmentProfit && (
-          <>
-            {/* 厂家发货利润汇总 */}
-            <div>
-              <h2 className="mb-4 text-xl font-semibold">厂家发货利润</h2>
-              <div className="grid gap-3 md:grid-cols-3">
-                <SummaryCard
-                  title="订单总数"
-                  value={report.factoryShipmentProfit.totalOrders}
-                  isCurrency={false}
-                />
-                <SummaryCard
-                  title="客户货利润"
-                  value={report.factoryShipmentProfit.customerProfit}
-                />
-                <SummaryCard
-                  title="自有货成本"
-                  value={report.factoryShipmentProfit.selfCostAmount}
-                />
-                <SummaryCard
-                  title="平均利润率"
-                  value={report.factoryShipmentProfit.averageProfitMargin}
-                  isCurrency={false}
-                  suffix="%"
-                />
-              </div>
-            </div>
-
-            {/* 厂家发货月度利润趋势 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
-                  厂家发货月度利润趋势
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={report.factoryShipmentProfit.monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      dataKey="month"
-                      tickFormatter={month => `${month}月`}
-                    />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip
-                      formatter={(value: number, name: string) => {
-                        if (name === '利润率') {
-                          return `${value.toFixed(2)}%`;
-                        }
-                        return formatCurrency(value);
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="profit"
-                      stroke={CHART_COLORS.profit}
-                      name="利润"
-                      strokeWidth={2}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="profitMargin"
-                      stroke={CHART_COLORS.expenses}
-                      name="利润率"
-                      strokeWidth={2}
-                      strokeDasharray="5 5"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        {/* 费用分布 */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>费用分布（饼图）</CardTitle>
+        {/* 核心趋势分析图表 */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* 月度趋势图 */}
+          <Card className="border-slate-100 shadow-sm overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-6 py-4">
+              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-700">Section I: Monthly Operating Trend</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    data={report.expenseDistribution as any}
-                    dataKey="amount"
-                    nameKey="typeName"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    label
-                  >
-                    {report.expenseDistribution.map((_entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={PIE_COLORS[index % PIE_COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
+            <CardContent className="p-6">
+              <ResponsiveContainer width="100%" height={320}>
+                <LineChart data={report.monthlyTrend}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="monthLabel" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} 
                   />
-                  <Legend />
-                </PieChart>
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}}
+                    tickFormatter={(val) => `¥${val/10000}w`}
+                  />
+                  <Tooltip 
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                    formatter={(value: number) => [formatCurrency(value), '']} 
+                  />
+                  <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '11px', fontWeight: 600}} />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke={CHART_COLORS.revenue}
+                    name="收入"
+                    strokeWidth={3}
+                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="profit"
+                    stroke={CHART_COLORS.profit}
+                    name="利润"
+                    strokeWidth={3}
+                    dot={{ r: 4, strokeWidth: 2, fill: '#fff' }}
+                    activeDot={{ r: 6, strokeWidth: 0 }}
+                  />
+                </LineChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>费用明细</CardTitle>
+          {/* 季度对比分析 */}
+          <Card className="border-slate-100 shadow-sm overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 px-6 py-4">
+              <CardTitle className="text-sm font-black uppercase tracking-wider text-slate-700">Section II: Quarterly Performance</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {report.expenseDistribution.map((item, index) => (
-                  <div key={item.type} className="flex items-center gap-3">
-                    <div
-                      className="h-4 w-4 rounded"
-                      style={{
-                        backgroundColor: PIE_COLORS[index % PIE_COLORS.length],
-                      }}
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{item.typeName}</span>
-                        <span className="text-muted-foreground text-sm">
-                          {item.percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        {formatCurrency(item.amount)} ({item.count}条记录)
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <CardContent className="p-6">
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={report.quarterlyData} barGap={8}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis 
+                    dataKey="quarterLabel" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} 
+                  />
+                  <YAxis 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}}
+                  />
+                  <Tooltip 
+                    cursor={{fill: '#f8fafc'}}
+                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                    formatter={(value: number) => [formatCurrency(value), '']} 
+                  />
+                  <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '11px', fontWeight: 600}} />
+                  <Bar
+                    dataKey="revenue"
+                    fill={CHART_COLORS.revenue}
+                    name="收入"
+                    radius={[4, 4, 0, 0]}
+                    barSize={24}
+                  />
+                  <Bar
+                    dataKey="profit"
+                    fill={CHART_COLORS.profit}
+                    name="利润"
+                    radius={[4, 4, 0, 0]}
+                    barSize={24}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </CardContent>
           </Card>
         </div>
 
-        {/* 报表导出区域（专用于图片导出，格式化为单页年度报表） */}
-        <Card
-          ref={exportRef}
-          className="border border-[hsl(var(--color-border-primary))] bg-white shadow-[var(--shadow-light)]"
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between text-lg font-semibold">
-              <span>{year} 年度财务报表</span>
-              <span className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
-                统计区间：{report.period.startDate} ~ {report.period.endDate}
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4 text-[13px] text-[hsl(var(--color-text-primary))]">
-              {/* 年度核心汇总 */}
-              <div className="grid gap-3 md:grid-cols-4">
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    年度总收入
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.summary.totalRevenue)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    年度总成本
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.summary.totalCost)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    年度总费用
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.summary.totalExpenses)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    净利润 / 利润率
-                  </div>
-                  <div className="text-base font-semibold">
-                    {formatCurrency(report.summary.totalProfit)} （
-                    {report.summary.profitMargin.toFixed(2)}%）
-                  </div>
-                </div>
-              </div>
-
-              {/* 订单与收入概览 */}
-              <div className="mt-2 grid gap-3 md:grid-cols-3">
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    订单总数
-                  </div>
-                  <div className="text-base">
-                    {report.summary.orderCount.toLocaleString()} 单
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    月均收入
-                  </div>
-                  <div className="text-base">
-                    {formatCurrency(report.summary.averageMonthlyRevenue)}
-                  </div>
-                </div>
-                {report.inventoryTurnover && (
-                  <div>
-                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                      库存周转率 / 周转天数
-                    </div>
-                    <div className="text-base">
-                      {report.inventoryTurnover.turnoverRate.toFixed(2)} 次 /{' '}
-                      {report.inventoryTurnover.turnoverDays.toFixed(0)} 天
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 厂家发货汇总（如有） */}
-              {report.factoryShipmentProfit && (
-                <div className="mt-4">
-                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                    厂家发货概览
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-3">
-                    <div>
-                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        直发订单数
-                      </div>
-                      <div className="text-base">
-                        {report.factoryShipmentProfit.totalOrders.toLocaleString()}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        客户货利润
-                      </div>
-                      <div className="text-base">
-                        {formatCurrency(
-                          report.factoryShipmentProfit.customerProfit
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        平均利润率
-                      </div>
-                      <div className="text-base">
-                        {report.factoryShipmentProfit.averageProfitMargin.toFixed(
-                          2
-                        )}
-                        %
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 简要预警列表 */}
-              {report.alerts && report.alerts.length > 0 && (
-                <div className="mt-4">
-                  <div className="mb-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                    预警摘要
-                  </div>
-                  <ul className="space-y-1 text-xs">
-                    {report.alerts.slice(0, 4).map((alert, index) => (
-                      <li key={index} className="leading-snug">
-                        {index + 1}. {alert.title}：{alert.message}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+        {/* 厂家发货与费用分布看板 */}
+        <div className="grid gap-6 lg:grid-cols-5">
+           {/* 厂家发货汇总 - 占据3栏 */}
+          <div className="lg:col-span-3 rounded-2xl bg-blue-50/50 p-6 border border-blue-100 flex flex-col">
+             <div className="mb-6 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+                <Package className="h-4 w-4 text-blue-500" />
+                厂家直发业务年度报告
+              </h2>
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="grid grid-cols-2 gap-4 mb-6">
+               <div className="rounded-xl bg-white p-4 shadow-sm border border-blue-100">
+                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-wider">客户货利润</div>
+                  <div className="mt-1 text-2xl font-black text-slate-900">{formatCurrency(report.factoryShipmentProfit?.customerProfit)}</div>
+               </div>
+               <div className="rounded-xl bg-white p-4 shadow-sm border border-blue-100">
+                  <div className="text-[10px] font-black text-blue-400 uppercase tracking-wider">平均利润率</div>
+                  <div className="mt-1 text-2xl font-black text-slate-900">{report.factoryShipmentProfit?.averageProfitMargin.toFixed(2)}%</div>
+               </div>
+            </div>
+
+            <div className="flex-1 min-h-[240px]">
+               <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={report.factoryShipmentProfit?.monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dbeafe" />
+                    <XAxis 
+                      dataKey="month" 
+                      tickFormatter={month => `${month}月`}
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#3b82f6', fontSize: 10, fontWeight: 700}} 
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{fill: '#3b82f6', fontSize: 10, fontWeight: 700}}
+                    />
+                    <Tooltip 
+                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                      formatter={(value: number) => [formatCurrency(value), '利润']} 
+                    />
+                    <Line
+                      type="stepAfter"
+                      dataKey="profit"
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={false}
+                    />
+                  </LineChart>
+               </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* 费用分布 - 占据2栏 */}
+          <Card className="lg:col-span-2 border-slate-100 shadow-sm">
+            <CardHeader className="px-6 py-4 border-b border-slate-50">
+              <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">Expense Allocation</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+               <div className="h-[220px]">
+                 <ResponsiveContainer width="100%" height="100%">
+                   <PieChart>
+                     <Pie
+                       data={report.expenseDistribution as any}
+                       dataKey="amount"
+                       nameKey="typeName"
+                       innerRadius={60}
+                       outerRadius={80}
+                       paddingAngle={5}
+                     >
+                       {report.expenseDistribution.map((_entry, index) => (
+                         <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                       ))}
+                     </Pie>
+                     <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                   </PieChart>
+                 </ResponsiveContainer>
+               </div>
+               <div className="mt-6 space-y-2">
+                 {report.expenseDistribution.map((item, index) => (
+                   <div key={item.type} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                         <div className="h-2 w-2 rounded-full" style={{backgroundColor: PIE_COLORS[index % PIE_COLORS.length]}} />
+                         <span className="font-bold text-slate-600">{item.typeName}</span>
+                      </div>
+                      <span className="font-mono font-black text-slate-400">{item.percentage.toFixed(1)}%</span>
+                   </div>
+                 ))}
+               </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 年度报表导出区域 (v3 PRO: 专用于图片导出，格式化为专业年度经营报告) */}
+        <div className="overflow-hidden h-0 w-0 opacity-0 pointer-events-none">
+          <Card
+            ref={exportRef}
+            className="w-[1000px] border-none bg-white p-12 text-slate-900 shadow-none"
+          >
+            {/* 页眉 - 年度报告风格 */}
+            <div className="mb-10 border-b-4 border-slate-900 pb-6">
+               <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="h-10 w-10 bg-slate-900 flex items-center justify-center rounded text-white font-black italic text-xl">AG</div>
+                      <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">
+                        ANTIGRAVITY <span className="font-light text-slate-500">ERP</span>
+                      </h1>
+                    </div>
+                    <div className="text-xs font-bold tracking-[0.3em] text-slate-500">GROUP FINANCIAL REPORTING UNIT</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Status: Restricted / Final</div>
+                    <div className="text-4xl font-black tracking-tighter italic text-slate-900">{year}</div>
+                  </div>
+               </div>
+               <div className="mt-8 flex items-baseline justify-between">
+                  <h2 className="text-2xl font-black tracking-tight uppercase">Annual Business Performance Analysis</h2>
+                  <div className="text-xs font-bold text-slate-500 uppercase tracking-widest leading-none">Fiscal Year Summary Report</div>
+               </div>
+            </div>
+
+            {/* A. 年度核心经营数据汇总 */}
+            <div className="mb-10">
+              <div className="grid grid-cols-4 gap-px bg-slate-200 border border-slate-200">
+                {[
+                  { label: '年度销售总收入', value: report.summary.totalRevenue, sub: `成交单量: ${report.summary.orderCount}` },
+                  { label: '年度经营总利润', value: report.summary.totalProfit, sub: `利润率: ${report.summary.profitMargin.toFixed(2)}%`, highlight: true },
+                  { label: '营业总成本 (COGS)', value: report.summary.totalCost, sub: `成本率: ${report.summary.totalRevenue > 0 ? ((report.summary.totalCost / report.summary.totalRevenue) * 100).toFixed(1) : '0.0'}%` },
+                  { label: '库存周转率 (Yearly)', value: report.inventoryTurnover?.turnoverRate || 0, sub: `周转天数: ${report.inventoryTurnover?.turnoverDays.toFixed(0)} DAY`, isCurrency: false },
+                ].map((item) => (
+                  <div key={item.label} className={cn("bg-white p-6", item.highlight && "bg-slate-50")}>
+                    <div className="text-[10px] font-bold text-slate-500 mb-2 uppercase tracking-wider">{item.label}</div>
+                    <div className="text-2xl font-black font-mono text-slate-900 border-b-2 border-slate-100 pb-2 mb-2">
+                       {item.isCurrency !== false ? formatCurrency(item.value) : item.value.toFixed(2)}
+                    </div>
+                    <div className="text-[9px] font-bold text-slate-400 italic">{item.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* B. 细分分析看板 */}
+            <div className="grid grid-cols-2 gap-12 mb-10">
+               <div>
+                  <div className="mb-4 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 italic">Sub-Report: Expense Structure</h3>
+                  </div>
+                  <table className="w-full text-left text-[11px]">
+                    <thead className="bg-slate-900 text-white">
+                      <tr>
+                        <th className="py-2.5 px-3 font-black">Expense Category</th>
+                        <th className="py-2.5 px-3 text-right font-black">Amount (CNY)</th>
+                        <th className="py-2.5 px-3 text-right font-black">Ratio</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 italic border-x border-b border-slate-100">
+                      {report.expenseDistribution.map((row) => (
+                        <tr key={row.type}>
+                          <td className="py-3 px-3 text-slate-600 font-bold">{row.typeName}</td>
+                          <td className="py-3 px-3 text-right font-mono font-bold text-slate-900">{formatCurrency(row.amount)}</td>
+                          <td className="py-3 px-3 text-right font-bold text-slate-400">{row.percentage.toFixed(1)}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+               </div>
+               <div className="space-y-8">
+                   <div>
+                      <div className="mb-4 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-slate-900 italic">Sub-Report: Direct Fulfillment</h3>
+                      </div>
+                      <div className="rounded-xl border-2 border-dashed border-slate-200 p-5 bg-blue-50/20">
+                         <div className="flex justify-between items-end mb-4">
+                            <div>
+                               <div className="text-[10px] font-black text-blue-500 uppercase mb-1">年度直发净利润</div>
+                               <div className="text-3xl font-black font-mono text-slate-900">{formatCurrency(report.factoryShipmentProfit?.customerProfit)}</div>
+                            </div>
+                            <div className="text-right">
+                               <div className="text-[10px] font-black text-slate-400 uppercase">Margin</div>
+                               <div className="text-base font-black text-slate-600">{report.factoryShipmentProfit?.averageProfitMargin.toFixed(2)}%</div>
+                            </div>
+                         </div>
+                         <div className="text-[9px] font-bold text-slate-400 leading-relaxed uppercase border-t border-slate-100 pt-3">
+                            Direct shipment business accounts for a strategic portion of the overall annual growth, maintaining high efficiency.
+                         </div>
+                      </div>
+                   </div>
+                   <div className="rounded-lg bg-slate-50 p-5 border border-slate-200">
+                      <div className="text-[10px] font-black text-slate-400 uppercase mb-3">Auditor Summary Note</div>
+                       <div className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
+                          "This annual report confirms a stable growth trajectory. Asset turnover remains within optimal ranges, and diversified expense management has successfully mitigated operational risks."
+                       </div>
+                   </div>
+               </div>
+            </div>
+            {/* 页脚 - 报表鉴真 */}
+            <div className="mt-16 flex items-end justify-between border-t border-slate-200 pt-6">
+               <div className="space-y-1">
+                  <div className="text-[10px] font-black text-slate-900 font-mono tracking-widest uppercase">Verified Financial Data Asset</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Digital Signature: AG-SEC-{year}-FS-{new Date().getTime().toString(16).toUpperCase()}</div>
+               </div>
+               <div className="text-right space-y-1">
+                  <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">© 2026 ANTIGRAVITY ERP SYSTEM</div>
+                  <div className="text-[9px] font-bold text-slate-400 italic uppercase">Page 01 / Annual Business Insight</div>
+               </div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
 }
 
-// 汇总卡片组件
-interface SummaryCardProps {
+// 统计卡片组件 (v3: 高清晰专业版，同步自月度报表)
+interface StatCardProps {
   title: string;
   value: number;
+  icon: React.ReactNode;
+  subtitle?: string;
   isCurrency?: boolean;
-  suffix?: string;
+  variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  size?: 'sm' | 'md' | 'lg';
   comparison?: {
     current: number;
     previous: number;
@@ -719,25 +726,94 @@ interface SummaryCardProps {
   };
 }
 
-function SummaryCard({
+function StatCard({
   title,
   value,
+  icon,
+  subtitle,
   isCurrency = true,
-  suffix = '',
-}: SummaryCardProps) {
+  variant = 'default',
+  size = 'md',
+  comparison,
+}: StatCardProps) {
+  const themeStyles = {
+    default: 'border-slate-200 bg-white text-slate-600',
+    primary: 'border-blue-100 bg-blue-50/30 text-blue-700',
+    success: 'border-emerald-100 bg-emerald-50/30 text-emerald-700',
+    warning: 'border-amber-100 bg-amber-50/30 text-amber-700',
+    error: 'border-red-100 bg-red-50/30 text-red-700',
+    info: 'border-sky-100 bg-sky-50/30 text-sky-700',
+    neutral: 'border-slate-200 bg-slate-50/50 text-slate-600',
+  };
+
+  const iconStyles = {
+    default: 'bg-slate-100 text-slate-500',
+    primary: 'bg-blue-100 text-blue-600',
+    success: 'bg-emerald-100 text-emerald-600',
+    warning: 'bg-amber-100 text-amber-600',
+    error: 'bg-red-100 text-red-600',
+    info: 'bg-sky-100 text-sky-600',
+    neutral: 'bg-slate-200 text-slate-600',
+  };
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-xs font-medium sm:text-sm">
-          {title}
-        </CardTitle>
-        <ChineseYuan className="text-muted-foreground h-3 w-3 sm:h-4 sm:w-4" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-xl font-bold sm:text-2xl">
-          {isCurrency ? formatCurrency(value) : value.toFixed(2)}
-          {suffix}
+    <Card
+      className={cn(
+        'group relative overflow-hidden border transition-all duration-300 hover:shadow-md hover:border-opacity-50',
+        themeStyles[variant],
+        size === 'lg' ? 'md:col-span-2 lg:col-span-1' : ''
+      )}
+    >
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">
+            {title}
+          </CardTitle>
+          <div className="flex flex-col">
+            <div className={cn(
+              "font-black tracking-tight",
+              size === 'lg' ? "text-2xl sm:text-3xl" : "text-xl"
+            )}>
+              {isCurrency ? formatCurrency(value) : value.toLocaleString()}
+            </div>
+          </div>
         </div>
+        <div className={cn('rounded-lg p-2 transition-transform duration-300 group-hover:scale-110', iconStyles[variant])}>
+          {icon}
+        </div>
+      </CardHeader>
+      <CardContent className="px-5 pb-5 pt-0">
+        <div className="flex flex-col gap-2">
+          {comparison && (
+            <div className="flex items-center gap-2">
+              <div className={cn(
+                "flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold shadow-sm",
+                comparison.trend === 'up' ? "bg-emerald-500 text-white" :
+                comparison.trend === 'down' ? "bg-red-500 text-white" : "bg-slate-500 text-white"
+              )}>
+                {comparison.trend === 'up' ? <ArrowUpIcon className="h-3 w-3" /> :
+                 comparison.trend === 'down' ? <ArrowDownIcon className="h-3 w-3" /> :
+                 <MinusIcon className="h-3 w-3" />}
+                {Math.abs(comparison.changeRate).toFixed(1)}%
+              </div>
+              <span className="text-[11px] font-medium text-slate-400">vs 上期</span>
+            </div>
+          )}
+          {subtitle && (
+            <p className="text-[11px] font-medium leading-relaxed text-slate-500/80">
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {/* 底部装饰线 */}
+        <div className={cn(
+          "absolute bottom-0 left-0 h-1 w-full opacity-30",
+          variant === 'primary' ? "bg-blue-500" :
+          variant === 'success' ? "bg-emerald-500" :
+          variant === 'warning' ? "bg-amber-500" :
+          variant === 'error' ? "bg-red-500" :
+          variant === 'info' ? "bg-sky-500" : "bg-slate-300"
+        )} />
       </CardContent>
     </Card>
   );

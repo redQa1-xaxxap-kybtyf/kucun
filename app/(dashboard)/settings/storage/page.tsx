@@ -8,26 +8,27 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Cloud } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
 import { StorageTestConnection } from '@/components/settings/StorageTestConnection';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
-  QiniuStorageConfig,
-  QiniuStorageTestResponse,
-  SettingsApiResponse,
+    QiniuStorageConfig,
+    QiniuStorageTestResponse,
+    SettingsApiResponse,
 } from '@/lib/types/settings';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
@@ -222,75 +223,100 @@ export default function StorageSettingsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="flex-1 space-y-6 overflow-y-auto">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
-                  <Cloud className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    七牛云存储
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    配置文件上传和存储服务
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => router.push('/settings')}
-                className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回设置
-              </Button>
+    <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
+      <div className="mx-auto w-full max-w-[1680px] space-y-12">
+        {/* 1. Identity Header: 业务标识中枢 */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-2">
+          <div className="flex items-center gap-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 shadow-xl shadow-slate-900/10 ring-4 ring-white">
+              <Cloud className="h-8 w-8 text-white" />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 配置表单 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="p-6">
-            {configError ? (
-              <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
-                <p>加载配置失败</p>
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    queryClient.invalidateQueries({
-                      queryKey: queryKeys.settings.storage(),
-                    })
-                  }
-                  className="mt-2"
-                >
-                  重试
-                </Button>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+                   七牛云存储
+                </h1>
+                <Badge variant="outline" className="border-slate-200 text-slate-400 text-[10px] font-black uppercase tracking-widest px-2.5 py-1">
+                   External Cloud
+                </Badge>
               </div>
-            ) : (
-              <QiniuStorageForm
-                initialData={storageConfig}
-                onSubmit={handleSaveConfig}
-                onTestConnection={handleTestConnection}
-                isSaving={saveConfigMutation.isPending}
-                isTesting={testConnectionMutation.isPending}
-              />
-            )}
-          </CardContent>
-        </Card>
+              <p className="text-sm font-bold text-slate-400">
+                 配置您的第三方对象存储服务，确保存储空间的读写访问权限正确
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/settings')}
+            className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-black text-slate-900 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回全局设置
+          </Button>
+        </div>
 
-        {/* 连接测试结果 */}
-        <StorageTestConnection
-          testResult={testResult}
-          isTesting={testConnectionMutation.isPending}
-          testError={testError}
-          onRetry={handleRetryTest}
-        />
+        <div className="grid gap-12 lg:grid-cols-[2.5fr_1fr]">
+          {/* 左侧：核心配置区域 */}
+          <div className="space-y-10">
+            <section className="space-y-6">
+              <div className="flex flex-col gap-1 px-1">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">服务接入配置</h3>
+                <p className="text-[11px] font-medium text-slate-400">设置云存储密钥与基础访问参数</p>
+              </div>
+
+              {configError ? (
+                <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white p-8 group transition-all hover:border-slate-300">
+                  <p className="text-sm font-bold text-slate-400">加载配置失败，请检查网络连接</p>
+                  <Button
+                    variant="outline"
+                    onClick={() => queryClient.invalidateQueries({ queryKey: queryKeys.settings.storage() })}
+                    className="mt-6 h-10 rounded-xl px-8 text-xs font-black"
+                  >
+                    重试加载
+                  </Button>
+                </div>
+              ) : (
+                <QiniuStorageForm
+                  initialData={storageConfig}
+                  onSubmit={handleSaveConfig}
+                  onTestConnection={handleTestConnection}
+                  isSaving={saveConfigMutation.isPending}
+                  isTesting={testConnectionMutation.isPending}
+                />
+              )}
+            </section>
+
+            {/* 连接测试结果：转化为结构化悬浮条或模块 */}
+            <StorageTestConnection
+              testResult={testResult}
+              isTesting={testConnectionMutation.isPending}
+              testError={testError}
+              onRetry={handleRetryTest}
+            />
+          </div>
+
+          <div className="space-y-8">
+             <section className="space-y-4">
+               <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">配置指</h3>
+               <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                  <div className="space-y-6">
+                    <div className="space-y-2">
+                       <span className="text-[11px] font-black text-slate-900">获取秘钥 (AK/SK)</span>
+                       <p className="text-[11px] leading-relaxed text-slate-400 font-medium">
+                          进入七牛云控制台，点击“个人中心” -{'>'} “秘钥管理”获取您的 AccessKey 与 SecretKey。
+                       </p>
+                    </div>
+                    <div className="space-y-2">
+                       <span className="text-[11px] font-black text-slate-900">存储空间 (Bucket)</span>
+                       <p className="text-[11px] leading-relaxed text-slate-400 font-medium">
+                          请确保该空间具有公共读或私有读权限，并已正确配置跨域 (CORS) 设置。
+                       </p>
+                    </div>
+                  </div>
+               </div>
+             </section>
+          </div>
+        </div>
       </div>
     </div>
   );

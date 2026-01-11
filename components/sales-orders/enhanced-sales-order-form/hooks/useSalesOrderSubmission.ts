@@ -29,14 +29,6 @@ export function useSalesOrderSubmission(
   // ✅ 使用新的 useCreateSalesOrder Hook，自动处理缓存刷新
   const createMutation = useCreateSalesOrder({
     onSuccess: data => {
-      // 🔍 调试日志：订单创建成功
-      console.group('🎯 [DEBUG] Sales Order Created');
-      console.log('Order Number:', data.orderNumber);
-      console.log('Order ID:', data.id);
-      console.log('Order Status:', (data as any).status || 'N/A');
-      console.log('Full Order Data:', data);
-      console.groupEnd();
-
       toast({
         title: '创建成功',
         description: `销售订单 “${data.orderNumber}” 创建成功！`,

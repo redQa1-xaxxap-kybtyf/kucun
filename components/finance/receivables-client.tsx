@@ -8,7 +8,7 @@ import { useReceivablesController } from '@/components/finance/receivables-clien
 import type { ReceivablesResult } from '@/lib/services/receivables-service';
 
 interface ReceivablesClientProps {
-  initialData: ReceivablesResult;
+  initialData?: ReceivablesResult;
   initialParams?: ReceivablesQueryParams;
 }
 

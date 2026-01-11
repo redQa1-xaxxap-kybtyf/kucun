@@ -4,15 +4,15 @@
 'use client';
 
 import {
-  AlertCircle,
-  Calendar,
-  CheckSquare,
-  ExternalLink,
-  Plus,
-  RefreshCw,
-  RotateCcw,
-  ShoppingCart,
-  Users,
+    AlertCircle,
+    Calendar,
+    CheckSquare,
+    ExternalLink,
+    Plus,
+    RefreshCw,
+    RotateCcw,
+    ShoppingCart,
+    Users,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -20,11 +20,11 @@ import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -254,7 +254,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-3 w-3" />
                     <span
-                      className={cn(isDueSoon ? 'text-yellow-600' : undefined)}
+                      className={isDueSoon ? 'text-yellow-600' : ''}
                     >
                       {formatDate(todo.dueDate)}
                     </span>
@@ -435,7 +435,14 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
               </p>
             </div>
           ) : (
-            <ScrollArea style={{ maxHeight }}>
+            <ScrollArea
+              className="max-h-[var(--todo-max-height)]"
+              style={
+                {
+                  '--todo-max-height': maxHeight,
+                } as React.CSSProperties
+              }
+            >
               <div className={cn('space-y-3', compact && 'space-y-2')}>
                 {filteredTodos.map(todo => (
                   <TodoItemComponent
@@ -466,3 +473,4 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
 TodoList.displayName = 'TodoList';
 
 export { TodoItemComponent, TodoList };
+

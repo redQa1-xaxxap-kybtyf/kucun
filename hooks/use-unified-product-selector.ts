@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo } from 'react';
 
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
-import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { getProduct, getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Product } from '@/lib/types/product';
 import type {
   ApiQueryConfig,
@@ -100,12 +100,46 @@ export function useProductSelectorData({
     debouncedValue,
   });
 
+  const selectedId =
+    mode === 'single' && typeof value === 'string' && value ? value : null;
+
+  const selectedIdMissingFromList = useMemo(() => {
+    if (!selectedId) {
+      return false;
+    }
+
+    const existsInApi = apiResponse?.data?.some(item => item.id === selectedId);
+    const existsInProps = propsProducts?.some(item => item.id === selectedId);
+    return !existsInApi && !existsInProps;
+  }, [apiResponse?.data, propsProducts, selectedId]);
+
+  const fallbackQueryKey = selectedId
+    ? productQueryKeys.detail(selectedId)
+    : (['products', 'detail', '__disabled__'] as const);
+
+  const { data: fallbackSelectedProduct, isLoading: isFallbackLoading } =
+    useQuery({
+      queryKey: fallbackQueryKey,
+      queryFn: () => getProduct(selectedId as string),
+      enabled: shouldFetchFromApi && Boolean(selectedId) && selectedIdMissingFromList,
+      staleTime: apiConfig?.enableCache
+        ? (apiConfig?.staleTime ?? 5 * 60 * 1000)
+        : 0,
+      gcTime: apiConfig?.enableCache
+        ? (apiConfig?.staleTime ?? 5 * 60 * 1000)
+        : 0,
+      refetchOnWindowFocus: false,
+    });
+
   const baseProducts = useMemo(() => {
     if (shouldFetchFromApi) {
-      return apiResponse?.data ?? [];
+      const apiProducts = apiResponse?.data ?? [];
+      return fallbackSelectedProduct
+        ? [fallbackSelectedProduct, ...apiProducts]
+        : apiProducts;
     }
     return propsProducts ?? [];
-  }, [apiResponse?.data, propsProducts, shouldFetchFromApi]);
+  }, [apiResponse?.data, fallbackSelectedProduct, propsProducts, shouldFetchFromApi]);
 
   const uniqueProducts = useMemo(
     () => buildUniqueProducts(baseProducts, propsProducts, mode, value),
@@ -147,7 +181,7 @@ export function useProductSelectorData({
     selectedProducts,
     searchValue,
     setSearchValue: setInputValue,
-    isLoading: shouldFetchFromApi ? isApiLoading : false,
+    isLoading: shouldFetchFromApi ? isApiLoading || isFallbackLoading : false,
   };
 }
 

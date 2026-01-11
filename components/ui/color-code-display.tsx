@@ -152,8 +152,8 @@ const ColorCodeDisplay = React.forwardRef<
       >
         {showColorSwatch && (
           <div
-            className="h-3 w-3 shrink-0 rounded-full border border-gray-300"
-            style={{ backgroundColor: colorValue }}
+            className="h-3 w-3 shrink-0 rounded-full border border-gray-300 bg-[var(--swatch-color)]"
+            style={{ '--swatch-color': colorValue } as React.CSSProperties}
             title={`色号: ${colorCode}`}
           />
         )}
@@ -290,8 +290,8 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
     ref
   ) => (
     <div
-      className={cn('grid gap-2', className)}
-      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      className={cn('grid grid-cols-[repeat(var(--grid-cols),minmax(0,1fr))] gap-2', className)}
+      style={{ '--grid-cols': columns } as React.CSSProperties}
       ref={ref}
       {...props}
     >
@@ -316,9 +316,10 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
 ColorCodeGrid.displayName = 'ColorCodeGrid';
 
 export {
-  COLOR_CODE_COLORS,
-  ColorCodeDisplay,
-  colorCodeDisplayVariants,
-  ColorCodeGrid,
-  ColorCodeSelector,
+    COLOR_CODE_COLORS,
+    ColorCodeDisplay,
+    colorCodeDisplayVariants,
+    ColorCodeGrid,
+    ColorCodeSelector
 };
+

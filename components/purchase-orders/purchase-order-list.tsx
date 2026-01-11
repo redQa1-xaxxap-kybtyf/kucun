@@ -14,23 +14,23 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  getPurchaseOrders,
-  purchaseOrderQueryKeys,
-  type PurchaseOrderListParams,
+    getPurchaseOrders,
+    purchaseOrderQueryKeys,
+    type PurchaseOrderListParams,
 } from '@/lib/api/purchase-orders';
 import {
-  PURCHASE_ORDER_STATUS,
-  PURCHASE_ORDER_STATUS_LABELS,
-  type PurchaseOrder,
-  type PurchaseOrderStatus,
+    PURCHASE_ORDER_STATUS,
+    PURCHASE_ORDER_STATUS_LABELS,
+    type PurchaseOrder,
+    type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 import { formatPurchaseOrderSuppliers } from '@/lib/utils/purchase-order-suppliers';
 
@@ -303,10 +303,10 @@ export function PurchaseOrderList({
                   <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
                     供应商：{formatPurchaseOrderSuppliers(order.items || [])}
                   </div>
-                  <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                  <div className="mt-1 text-xs font-bold text-slate-500">
                     集装箱：{order.containerNumber || '未填写'}
                   </div>
-                  <div className="mt-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                  <div className="mt-0.5 text-xs font-bold text-slate-500">
                     船运公司：{order.shippingCompany || '未填写'}
                   </div>
                 </div>
@@ -320,13 +320,13 @@ export function PurchaseOrderList({
                 </div>
               </div>
 
-              <div className="mt-2 flex items-center justify-between text-[11px] text-[hsl(var(--color-text-secondary))]">
+              <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-500">
                 <div className="flex items-center gap-2">
                   <Badge
                     variant={
                       STATUS_VARIANTS[order.status as PurchaseOrderStatus]
                     }
-                    className="text-[10px]"
+                    className="text-xs"
                   >
                     {
                       PURCHASE_ORDER_STATUS_LABELS[
@@ -334,7 +334,7 @@ export function PurchaseOrderList({
                       ]
                     }
                   </Badge>
-                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                  <span className="text-slate-400">
                     创建：
                     <RelativeTime date={order.createdAt} />
                   </span>
@@ -343,26 +343,26 @@ export function PurchaseOrderList({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 px-2 text-[11px]"
+                    className="h-7 px-2 text-xs font-bold"
                     onClick={event => {
                       event.stopPropagation();
                       handleCardClick();
                     }}
                   >
-                    <Eye className="mr-1 h-3 w-3" />
+                    <Eye className="mr-1 h-3.5 w-3.5" />
                     查看
                   </Button>
                   {order.status === PURCHASE_ORDER_STATUS.DRAFT && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-7 px-2 text-[11px]"
+                      className="h-7 px-2 text-xs font-bold"
                       onClick={event => {
                         event.stopPropagation();
                         window.location.href = `/purchase-orders/${order.id}/edit`;
                       }}
                     >
-                      <Edit className="mr-1 h-3 w-3" />
+                      <Edit className="mr-1 h-3.5 w-3.5" />
                       编辑
                     </Button>
                   )}

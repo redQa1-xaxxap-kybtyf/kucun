@@ -77,7 +77,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     watchedInputUnit,
     watchedPiecesPerUnit,
   } = useInboundForm({
-    initialReason: isOpeningBalance ? 'opening_balance' : 'purchase',
+    initialReason: isOpeningBalance ? 'opening_balance' : 'other',
   });
 
   // 产品选择逻辑

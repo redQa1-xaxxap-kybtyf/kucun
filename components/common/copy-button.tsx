@@ -28,6 +28,25 @@ export function CopyButton({
 }: CopyButtonProps) {
   const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // 清理 timeout，防止内存泄漏
+  React.useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const resetCopiedState = React.useCallback(() => {
+    // 清除之前的 timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    // 1秒后恢复图标
+    timeoutRef.current = setTimeout(() => setCopied(false), 1000);
+  }, []);
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation(); // 防止触发父元素的点击事件
@@ -41,9 +60,7 @@ export function CopyButton({
         variant: 'default',
       });
       onCopy?.();
-
-      // 1秒后恢复图标
-      setTimeout(() => setCopied(false), 1000);
+      resetCopiedState();
     } catch (_err) {
       // 降级方案:使用旧的 execCommand 方法
       try {
@@ -63,8 +80,7 @@ export function CopyButton({
           variant: 'default',
         });
         onCopy?.();
-
-        setTimeout(() => setCopied(false), 1000);
+        resetCopiedState();
       } catch (_fallbackErr) {
         toast({
           title: '复制失败',

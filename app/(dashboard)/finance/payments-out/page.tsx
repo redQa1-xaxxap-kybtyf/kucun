@@ -220,19 +220,19 @@ async function getPaymentsOutData(searchParams: {
   ]);
 
   // 计算总体指标
-  const totalAmount = totalStats._sum.paymentAmount ?? 0;
-  const confirmedAmount = confirmedStats._sum.paymentAmount ?? 0;
-  const pendingAmount = pendingStats._sum.paymentAmount ?? 0;
+  const totalAmount = Number(totalStats._sum.paymentAmount ?? 0);
+  const confirmedAmount = Number(confirmedStats._sum.paymentAmount ?? 0);
+  const pendingAmount = Number(pendingStats._sum.paymentAmount ?? 0);
 
   // ✅ 优化：从 groupBy 结果计算月度已确认金额
   const calculateMonthlyConfirmedAmount = (
     groupedStats: Array<{
       status: string;
-      _sum: { paymentAmount: number | null };
+      _sum: { paymentAmount: unknown };
     }>
   ) => {
     const confirmed = groupedStats.find(stat => stat.status === 'confirmed');
-    return confirmed?._sum.paymentAmount ?? 0;
+    return Number(confirmed?._sum.paymentAmount ?? 0);
   };
 
   const currentMonthConfirmedAmount =

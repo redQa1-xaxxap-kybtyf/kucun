@@ -23,17 +23,14 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
-import type { ReceivablesResult } from '@/lib/services/receivables-service';
 
 type ReceivablesPageQueryParams = ReceivablesParams;
 
 interface ReceivablesPageClientProps {
-  initialData: ReceivablesResult;
   initialParams: ReceivablesPageQueryParams;
 }
 
 export function ReceivablesPageClient({
-  initialData,
   initialParams,
 }: ReceivablesPageClientProps) {
   const { exportData, isExporting } = useFinanceExport();
@@ -104,7 +101,6 @@ export function ReceivablesPageClient({
         />
 
         <ReceivablesClient
-          initialData={initialData}
           initialParams={initialParams}
         />
       </div>

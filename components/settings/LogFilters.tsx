@@ -5,31 +5,23 @@
 
 'use client';
 
-import { Filter, Search, X } from 'lucide-react';
-import React from 'react';
+import { Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import type {
-  SystemLogFilters,
-  SystemLogLevel,
-  SystemLogType,
+    SystemLogFilters,
+    SystemLogLevel,
+    SystemLogType,
 } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
 
@@ -99,111 +91,123 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Filter className="mr-2 h-5 w-5" />
-            筛选条件
+    <div className="group relative flex flex-col rounded-[32px] border border-white bg-white/60 p-8 shadow-sm backdrop-blur-md transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
+      <div className="mb-8 flex items-center justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              Filter / 条件筛选
+            </p>
           </div>
-          {hasActiveFilters && (
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              <X className="mr-2 h-4 w-4" />
-              清除筛选
-            </Button>
-          )}
-        </CardTitle>
-        <CardDescription>
-          根据日志类型、级别、时间范围等条件筛选日志记录
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* 关键词搜索 */}
-          <div className="space-y-2">
-            <Label htmlFor="search">关键词搜索</Label>
-            <div className="relative">
-              <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
-              <Input
-                id="search"
-                placeholder="搜索描述、操作等..."
-                value={filters.search || ''}
-                onChange={e => handleFilterChange('search', e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
+          <p className="text-xl font-black tracking-tight text-slate-900">
+            精细化审计检索
+          </p>
+        </div>
+        {hasActiveFilters && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={clearFilters}
+            className="rounded-xl border-slate-200 font-bold text-slate-500 hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+          >
+            <X className="mr-2 h-4 w-4" />
+            清空所有条件
+          </Button>
+        )}
+      </div>
 
-          {/* 日志类型 */}
-          <div className="space-y-2">
-            <Label>日志类型</Label>
-            <Select
-              value={filters.type || 'all'}
-              onValueChange={value => handleFilterChange('type', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择日志类型" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部类型</SelectItem>
-                {LOG_TYPE_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 日志级别 */}
-          <div className="space-y-2">
-            <Label>日志级别</Label>
-            <Select
-              value={filters.level || 'all'}
-              onValueChange={value => handleFilterChange('level', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择日志级别" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部级别</SelectItem>
-                {LOG_LEVEL_OPTIONS.map(option => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className={cn('font-medium', option.color)}>
-                      {option.label}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 操作动作 */}
-          <div className="space-y-2">
-            <Label htmlFor="action">操作动作</Label>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* 关键词搜索 */}
+        <div className="space-y-2.5">
+          <Label htmlFor="search" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">关键词检索</Label>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
-              id="action"
-              placeholder="如：login, create_user..."
-              value={filters.action || ''}
-              onChange={e => handleFilterChange('action', e.target.value)}
-            />
-          </div>
-
-          {/* 日期范围筛选 - 统一组件 */}
-          <div className="space-y-2 md:col-span-2">
-            <DateRangePicker
-              value={{
-                startDate: filters.startDate || undefined,
-                endDate: filters.endDate || undefined,
-              }}
-              onChange={handleDateRangeChange}
-              label="日期范围"
-              showPresets={true}
-              showClearButton={true}
+              id="search"
+              placeholder="搜索描述、操作、摘要..."
+              value={filters.search || ''}
+              onChange={e => handleFilterChange('search', e.target.value)}
+              className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 pl-11 font-bold text-slate-900 focus:bg-white focus:ring-slate-900/5 transition-all"
             />
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* 日志类型 */}
+        <div className="space-y-2.5">
+          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">日志类型</Label>
+          <Select
+            value={filters.type || 'all'}
+            onValueChange={value => handleFilterChange('type', value)}
+          >
+            <SelectTrigger className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-slate-900 focus:ring-slate-900/5">
+              <SelectValue placeholder="选择日志类型" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+              <SelectItem value="all" className="font-bold">全部类型</SelectItem>
+              {LOG_TYPE_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value} className="font-bold">
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 日志级别 */}
+        <div className="space-y-2.5">
+          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">风险级别</Label>
+          <Select
+            value={filters.level || 'all'}
+            onValueChange={value => handleFilterChange('level', value)}
+          >
+            <SelectTrigger className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-slate-900 focus:ring-slate-900/5">
+              <SelectValue placeholder="选择日志级别" />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
+              <SelectItem value="all" className="font-bold">全部级别</SelectItem>
+              {LOG_LEVEL_OPTIONS.map(option => (
+                <SelectItem key={option.value} value={option.value} className="font-bold text-slate-900">
+                  <span className={cn('flex items-center gap-2')}>
+                    <div className={cn("h-1.5 w-1.5 rounded-full", option.color.replace('text-', 'bg-'))} />
+                    {option.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* 操作动作 */}
+        <div className="space-y-2.5">
+          <Label htmlFor="action" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">操作指令</Label>
+          <Input
+            id="action"
+            placeholder="如：login, sync_data..."
+            value={filters.action || ''}
+            onChange={e => handleFilterChange('action', e.target.value)}
+            className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-slate-900 focus:bg-white focus:ring-slate-900/5"
+          />
+        </div>
+
+        {/* 日期范围筛选 */}
+        <div className="md:col-span-2">
+          <DateRangePicker
+            value={{
+              startDate: filters.startDate || undefined,
+              endDate: filters.endDate || undefined,
+            }}
+            onChange={handleDateRangeChange}
+            label="时间跨度检索"
+            className="rounded-2xl border-slate-100 bg-slate-50/50 font-black"
+            showPresets={true}
+            showClearButton={true}
+          />
+        </div>
+      </div>
+      
+      {/* 背景装饰轨迹 */}
+      <div className="absolute -right-4 -bottom-4 h-32 w-32 rounded-full bg-slate-900 opacity-5 blur-3xl transition-all group-hover:opacity-10" />
+    </div>
   );
 };

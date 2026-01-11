@@ -49,6 +49,7 @@ import {
 } from '@/lib/validations/payable';
 
 const paymentFormSchema = z.object({
+  idempotencyKey: z.string().uuid('幂等性键格式不正确'),
   payableRecordId: z.string().min(1, '应付款ID不能为空'),
   supplierId: z.string().min(1, '供应商ID不能为空'),
   paymentAmount: z.number().min(0.01, '付款金额必须大于0'),
@@ -91,11 +92,13 @@ const PAYMENT_METHOD_DETAILS: {
 // 使用付款模态框状态的Hook
 function usePaymentDialogState(
   payableInfo: PayableInfo | null,
+  open: boolean,
   onOpenChange: (open: boolean) => void
 ) {
   const form = useForm<PaymentFormData>({
     resolver: standardSchemaResolver(paymentFormSchema),
     defaultValues: {
+      idempotencyKey: crypto.randomUUID(),
       payableRecordId: '',
       supplierId: '',
       paymentAmount: 0,
@@ -109,8 +112,13 @@ function usePaymentDialogState(
   const paymentMethod = form.watch('paymentMethod');
 
   useEffect(() => {
+    if (!open) {
+      return;
+    }
+
     if (payableInfo) {
       form.reset({
+        idempotencyKey: crypto.randomUUID(),
         payableRecordId: payableInfo.id,
         supplierId: payableInfo.supplier?.id ?? '',
         paymentAmount: payableInfo.remainingAmount,
@@ -120,7 +128,7 @@ function usePaymentDialogState(
         remarks: '',
       });
     }
-  }, [payableInfo, form]);
+  }, [open, payableInfo, form]);
 
   const handleDialogOpenChange = useCallback(
     (open: boolean) => {
@@ -394,6 +402,7 @@ export function PayablePaymentDialog({
 }: PayablePaymentDialogProps) {
   const { form, paymentMethod, handleDialogOpenChange } = usePaymentDialogState(
     payableInfo,
+    open,
     onOpenChange
   );
 
@@ -416,6 +425,7 @@ export function PayablePaymentDialog({
 
       // 创建付款记录
       paymentMutation.mutate({
+        idempotencyKey: data.idempotencyKey,
         payableRecordId: data.payableRecordId,
         supplierId: data.supplierId,
         paymentAmount: data.paymentAmount,

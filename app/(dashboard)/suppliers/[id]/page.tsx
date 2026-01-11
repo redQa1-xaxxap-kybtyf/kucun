@@ -101,6 +101,8 @@ export default async function SupplierDetailPage({
     factoryShipments,
     payableRecords: supplier.payableRecords.map(record => ({
       ...record,
+      payableAmount: Number(record.payableAmount),
+      remainingAmount: Number(record.remainingAmount),
       dueDate: record.dueDate ? record.dueDate.toISOString() : null,
       createdAt: record.createdAt.toISOString(),
     })),

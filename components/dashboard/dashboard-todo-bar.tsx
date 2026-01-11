@@ -3,7 +3,6 @@
 import { ArrowRight, Package, ShoppingCart } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface DashboardTodoBarProps {
@@ -22,22 +21,26 @@ export function DashboardTodoBar({
   const todos = [
     {
       id: 'low-stock',
-      title: '库存预警',
+      title: '库存异常 / STOCK ALERT',
       count: lowStockItems,
-      label: '个产品库存不足',
+      label: '个产品触发预警',
       icon: Package,
       action: onViewInventory,
-      variant: 'destructive', // 红色警告
+      color: 'bg-rose-500',
+      text: 'text-rose-500',
+      bg: 'bg-rose-50/50',
       show: lowStockItems > 0,
     },
     {
       id: 'pending-orders',
-      title: '待处理订单',
+      title: '待处理 / PENDING',
       count: pendingOrderCount,
-      label: '个订单待发货',
+      label: '个订单等待出库',
       icon: ShoppingCart,
       action: onViewOrders,
-      variant: 'warning', // 橙色提醒
+      color: 'bg-amber-500',
+      text: 'text-amber-500',
+      bg: 'bg-amber-50/50',
       show: pendingOrderCount > 0,
     },
   ];
@@ -49,56 +52,54 @@ export function DashboardTodoBar({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-6 md:grid-cols-2">
       {activeTodos.map(todo => (
-        <Card
+        <div
           key={todo.id}
           className={cn(
-            'border-l-4 shadow-sm transition-all hover:shadow-md',
-            todo.variant === 'destructive'
-              ? 'border-l-destructive bg-destructive/5'
-              : 'border-l-orange-500 bg-orange-50'
+            'group relative overflow-hidden rounded-[32px] border border-white p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50',
+            todo.bg
           )}
         >
-          <CardContent className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between rounded-[28px] bg-white/60 p-5 backdrop-blur-md">
+            <div className="flex items-center gap-5">
               <div
                 className={cn(
-                  'rounded-full p-2',
-                  todo.variant === 'destructive'
-                    ? 'bg-destructive/10 text-destructive'
-                    : 'bg-orange-100 text-orange-600'
+                  'flex h-14 w-14 items-center justify-center rounded-2xl shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:rotate-3',
+                  todo.color
                 )}
               >
-                <todo.icon className="h-4 w-4" />
+                <todo.icon className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">
+              <div className="space-y-0.5">
+                <p className="text-xs font-black uppercase tracking-widest text-slate-500">
                   {todo.title}
                 </p>
-                <p
-                  className={cn(
-                    'text-xs font-bold',
-                    todo.variant === 'destructive'
-                      ? 'text-destructive'
-                      : 'text-orange-600'
-                  )}
-                >
-                  {todo.count} {todo.label}
-                </p>
+                <div className="flex items-baseline gap-2">
+                   <span className={cn("text-2xl font-black tracking-tighter", todo.text)}>
+                     {todo.count}
+                   </span>
+                   <span className="text-xs font-bold text-slate-400">
+                     {todo.label}
+                   </span>
+                </div>
               </div>
             </div>
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="h-8 w-8"
+              className="h-12 w-12 rounded-2xl border-slate-100 text-slate-400 hover:bg-slate-900 hover:text-white transition-all active:scale-90"
               onClick={todo.action}
             >
-              <ArrowRight className="text-muted-foreground h-4 w-4" />
+              <ArrowRight className="h-5 w-5" />
             </Button>
-          </CardContent>
-        </Card>
+          </div>
+          {/* 背景装饰轨迹 */}
+          <div className={cn("absolute -right-4 -bottom-4 h-24 w-24 rounded-full opacity-5 blur-2xl", todo.color)} />
+        </div>
       ))}
     </div>
   );
 }
+
+

@@ -1,395 +1,161 @@
-/**
- * 系统日志页面
- * 严格遵循全栈项目统一约定规范
- * ✅ 符合产品模块UI风格规范
- */
+"use client";
 
-'use client';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertCircle, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, FileText, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import React from 'react';
-
-import { LogFilters } from '@/components/settings/LogFilters';
-import { SystemLogsTable } from '@/components/settings/SystemLogsTable';
+import { LogFilters } from "@/components/settings/LogFilters";
+import { SystemLogsTable } from "@/components/settings/SystemLogsTable";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useToast } from '@/components/ui/use-toast';
-import { queryKeys } from '@/lib/queryKeys';
-import type {
-  SettingsApiResponse,
-  SystemLogFilters,
-  SystemLogListResponse,
-} from '@/lib/types/settings';
-import { csrfFetch } from '@/lib/utils/csrf';
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import type { SettingsApiResponse, SystemLogFilters, SystemLogListResponse } from "@/lib/types/settings";
 
-export default function LogsSettingsPage() {
-  const router = useRouter();
-  const { data: session } = useSession();
-  const { toast } = useToast();
+export default function LogsPage() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = React.useState<SystemLogFilters>({});
-  const [page, setPage] = React.useState(1);
-  const [limit] = React.useState(20);
-  const [confirmText, setConfirmText] = React.useState('');
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20);
+  const [filters, setFilters] = useState<SystemLogFilters>({});
 
-  // 获取系统日志列表
-  const {
-    data: logsData,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: queryKeys.settings.logs(),
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["system-logs", page, filters],
     queryFn: async () => {
-      const params = new URLSearchParams({
+      const searchParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
+        ...(filters.type && { type: filters.type }),
+        ...(filters.level && { level: filters.level }),
+        ...(filters.search && { search: filters.search }),
+        ...(filters.action && { action: filters.action }),
+        ...(filters.startDate && { startDate: filters.startDate }),
+        ...(filters.endDate && { endDate: filters.endDate }),
       });
 
-      // 添加筛选参数
-      if (filters.type) {
-        params.append('type', filters.type);
-      }
-      if (filters.level) {
-        params.append('level', filters.level);
-      }
-      if (filters.userId) {
-        params.append('userId', filters.userId);
-      }
-      if (filters.action) {
-        params.append('action', filters.action);
-      }
-      if (filters.startDate) {
-        params.append('startDate', filters.startDate);
-      }
-      if (filters.endDate) {
-        params.append('endDate', filters.endDate);
-      }
-      if (filters.search) {
-        params.append('search', filters.search);
-      }
-
-      const response = await fetch(`/api/settings/logs?${params}`);
-      if (!response.ok) {
-        throw new Error('获取系统日志失败');
-      }
-      const result: SettingsApiResponse<SystemLogListResponse> =
-        await response.json();
-      if (!result.success) {
-        throw new Error(result.error || '获取系统日志失败');
-      }
-      if (!result.data) {
-        throw new Error('获取系统日志数据失败');
-      }
+      const response = await fetch(`/api/settings/logs?${searchParams}`);
+      if (!response.ok) throw new Error("获取日志失败");
+      const result: SettingsApiResponse<SystemLogListResponse> = await response.json();
+      if (!result.success) throw new Error(result.error || "获取日志失败");
       return result.data;
     },
   });
 
-  // 清空所有日志的mutation
-  const clearAllLogsMutation = useMutation({
+  const clearLogsMutation = useMutation({
     mutationFn: async () => {
-      const response = await csrfFetch('/api/settings/logs?clearAll=true', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("/api/settings/logs?clearAll=true", {
+        method: "DELETE",
       });
-
-      if (!response.ok) {
-        throw new Error('清空日志失败');
-      }
-
-      const result: SettingsApiResponse<{
-        message: string;
-        deletedCount: number;
-      }> = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || '清空日志失败');
-      }
-
-      if (!result.data) {
-        throw new Error('清空日志数据获取失败');
-      }
+      if (!response.ok) throw new Error("清空日志失败");
+      const result: SettingsApiResponse<{ message: string }> = await response.json();
+      if (!result.success) throw new Error(result.error || "清空日志失败");
       return result.data;
     },
-    onSuccess: data => {
-      toast({
-        title: '清空成功',
-        description: data.message || `已清空 ${data.deletedCount} 条业务日志`,
-        variant: 'success',
-      });
-      // 刷新日志列表
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.logs() });
-      // 重置确认文本
-      setConfirmText('');
+    onSuccess: () => {
+      toast.success("所有日志已成功清空");
+      queryClient.invalidateQueries({ queryKey: ["system-logs"] });
     },
-    onError: (error: Error) => {
-      toast({
-        title: '清空失败',
-        description: error.message,
-        variant: 'destructive',
-      });
+    onError: (err: Error) => {
+      toast.error(err.message);
     },
   });
-
-  // 检查权限
-  if (session?.user?.role !== 'admin') {
-    return (
-      <div className="flex h-full flex-col overflow-hidden p-6">
-        <div className="space-y-6">
-          {/* 页面头部 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                      系统日志
-                    </h1>
-                    <p className="text-sm text-gray-600">
-                      系统操作记录和审计日志
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => router.push('/settings')}
-                  className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  返回设置
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
-            <CardHeader>
-              <CardTitle className="flex items-center text-amber-800">
-                <FileText className="mr-2 h-5 w-5" />
-                权限不足
-              </CardTitle>
-              <CardDescription className="text-amber-700">
-                只有管理员可以查看系统日志。
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  const handleFiltersChange = (newFilters: SystemLogFilters) => {
-    setFilters(newFilters);
-    setPage(1); // 重置到第一页
-  };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleClearAllLogs = () => {
-    if (confirmText !== '确认清空') {
-      toast({
-        title: '确认文本错误',
-        description: '请输入"确认清空"来确认操作',
-        variant: 'destructive',
-      });
-      return;
-    }
-    clearAllLogsMutation.mutate();
+  const handleFiltersChange = (newFilters: SystemLogFilters) => {
+    setFilters(newFilters);
+    setPage(1);
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="space-y-6">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    系统日志
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    系统操作记录和审计日志
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => router.push('/settings')}
-                  className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  返回设置
-                </Button>
+    <div className="min-h-screen bg-slate-50/50">
+      <div className="mx-auto max-w-[1680px] space-y-12 p-4 lg:p-10 xl:p-14 transition-all duration-500">
+        
+        {/* Identity Header */}
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-black tracking-tighter text-slate-900">
+              审计日志
+            </h2>
+            <p className="text-slate-400 text-sm font-bold max-w-2xl leading-relaxed">
+               系统自动记录的操作与异常日志数值，用于业务追溯与安全审计。
+            </p>
+          </div>
 
-                {/* 清空日志按钮 - 只有管理员可见 */}
-                {session?.user?.role === 'admin' && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="destructive"
-                        size="lg"
-                        className="h-11 gap-2 shadow-sm"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        清空业务日志
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="flex items-center text-red-600">
-                          <Trash2 className="mr-2 h-5 w-5" />
-                          确认清空业务日志
-                        </AlertDialogTitle>
-                        <AlertDialogDescription asChild>
-                          <div className="space-y-3">
-                            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 font-medium text-amber-700">
-                              🛡️
-                              安全提示：此操作将清空业务操作日志，但会保留关键系统日志以维护审计痕迹
-                            </div>
-                            <div className="space-y-2 text-sm">
-                              <div className="font-medium text-green-700">
-                                ✅ 将保留的关键日志：
-                              </div>
-                              <ul className="ml-4 list-inside list-disc space-y-1 text-green-600">
-                                <li>安全相关日志（登录、权限等）</li>
-                                <li>系统事件日志（启动、关闭等）</li>
-                                <li>错误和关键级别日志</li>
-                                <li>管理员操作审计记录</li>
-                              </ul>
-                            </div>
-                            <div className="space-y-2 text-sm">
-                              <div className="font-medium text-red-700">
-                                🗑️ 将清空的日志：
-                              </div>
-                              <ul className="ml-4 list-inside list-disc space-y-1 text-red-600">
-                                <li>一般用户操作日志</li>
-                                <li>业务操作记录</li>
-                                <li>信息级别的常规日志</li>
-                              </ul>
-                            </div>
-                            <div className="space-y-2">
-                              <Label
-                                htmlFor="confirm-text"
-                                className="text-sm font-medium"
-                              >
-                                请输入{' '}
-                                <span className="font-bold text-red-600">
-                                  &ldquo;确认清空&rdquo;
-                                </span>{' '}
-                                来确认操作：
-                              </Label>
-                              <Input
-                                id="confirm-text"
-                                value={confirmText}
-                                onChange={e => setConfirmText(e.target.value)}
-                                placeholder="确认清空"
-                                className="border-red-200 focus:border-red-400"
-                              />
-                            </div>
-                          </div>
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel onClick={() => setConfirmText('')}>
-                          取消
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={handleClearAllLogs}
-                          disabled={
-                            confirmText !== '确认清空' ||
-                            clearAllLogsMutation.isPending
-                          }
-                          className="bg-red-600 hover:bg-red-700"
-                        >
-                          {clearAllLogsMutation.isPending
-                            ? '清空中...'
-                            : '确认清空'}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
+          <div className="flex items-center gap-3 lg:ml-0">
+             <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  className="h-12 rounded-2xl border-none bg-rose-50 font-black text-rose-600 hover:bg-rose-600 hover:text-white transition-all active:scale-95 px-6"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  清空审计日志
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-3xl border-none shadow-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-xl font-black">确定清空所有日志吗？</AlertDialogTitle>
+                  <AlertDialogDescription className="font-medium text-slate-500">
+                    此操作将永久删除系统内所有的审计记录，删除后将无法通过日志追溯业务操作，请务必谨慎操作。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="gap-2">
+                  <AlertDialogCancel className="rounded-2xl border-slate-100 font-bold">暂不处理</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={() => clearLogsMutation.mutate()}
+                    className="rounded-2xl bg-rose-600 font-black hover:bg-rose-700"
+                  >
+                    确认永久清空
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {/* Action Matrix (Filters) */}
+        <div className="animate-in fade-in duration-700 slide-in-from-top-4">
+          <LogFilters filters={filters} onFiltersChange={handleFiltersChange} />
+        </div>
+
+        {/* Audit Flow (Content) */}
+        <div className="animate-in fade-in-50 duration-1000 slide-in-from-bottom-4">
+          {error ? (
+            <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-rose-200 bg-rose-50/30 py-20 text-center backdrop-blur-md">
+              <AlertCircle className="mb-4 h-12 w-12 text-rose-300" />
+              <p className="text-sm font-black uppercase tracking-widest text-rose-500 mb-4">数据同步失败</p>
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                className="rounded-xl border-rose-100 font-bold text-rose-600 hover:bg-rose-600 hover:text-white transition-all"
+              >
+                重试同步
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 日志筛选器 */}
-        <LogFilters filters={filters} onFiltersChange={handleFiltersChange} />
-
-        {/* 日志列表 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle className="flex items-center text-gray-900">
-              <FileText className="mr-2 h-5 w-5 text-gray-600" />
-              系统日志列表
-            </CardTitle>
-            <CardDescription>
-              查看和管理系统操作记录、错误日志和安全审计信息
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            {error ? (
-              <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
-                <p>加载日志失败</p>
-                <Button
-                  variant="outline"
-                  onClick={() => refetch()}
-                  className="mt-2"
-                >
-                  重试
-                </Button>
-              </div>
-            ) : (
-              <SystemLogsTable
-                logs={logsData?.logs || []}
-                total={logsData?.total || 0}
-                page={page}
-                limit={limit}
-                totalPages={logsData?.totalPages || 0}
-                isLoading={isLoading}
-                onPageChange={handlePageChange}
-              />
-            )}
-          </CardContent>
-        </Card>
+          ) : (
+            <SystemLogsTable
+              logs={data?.logs || []}
+              total={data?.total || 0}
+              page={page}
+              limit={limit}
+              totalPages={data?.totalPages || 0}
+              isLoading={isLoading}
+              onPageChange={handlePageChange}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -5,18 +5,19 @@ import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type {
-  LayoutConfig,
-  NavigationItem,
-  SidebarState,
+    LayoutConfig,
+    NavigationItem,
+    SidebarState,
 } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
 import { Breadcrumb } from './Breadcrumb';
+import { BreadcrumbProvider } from './BreadcrumbContext';
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
 import {
-  bottomNavigationItems,
-  navigationItems,
+    bottomNavigationItems,
+    navigationItems,
 } from './sidebar-navigation-config';
 import { SidebarClient } from './SidebarClient';
 
@@ -232,7 +233,14 @@ export function DashboardLayoutClient({
   };
 
   return (
-    <>
+    <BreadcrumbProvider>
+      {/* 跳过导航链接 - WCAG 2.4.1 合规 */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      >
+        跳过导航，直达主要内容
+      </a>
       <div className={cn('bg-background flex h-screen flex-col', className)}>
         {/* 顶部导航栏 - 固定高度 */}
         {showHeader && (
@@ -263,11 +271,13 @@ export function DashboardLayoutClient({
 
           {/* 主内容区域 - 允许滚动 */}
           <main
+            id="main-content"
+            tabIndex={-1}
             className={cn(
-              'flex flex-1 flex-col overflow-y-auto transition-all duration-300',
+              'flex flex-1 flex-col overflow-y-auto transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] focus:outline-none',
               !isMobile &&
                 sidebarSettings.isOpen &&
-                (sidebarSettings.isCollapsed ? 'ml-16' : 'ml-64')
+                (sidebarSettings.isCollapsed ? 'ml-20' : 'ml-72')
             )}
             onTouchStart={isMobile ? onTouchStart : undefined}
             onTouchMove={isMobile ? onTouchMove : undefined}
@@ -277,11 +287,11 @@ export function DashboardLayoutClient({
             {showBreadcrumb && (
               <div
                 className={cn(
-                  'bg-background flex-shrink-0 space-y-4 border-b',
-                  isMobile ? 'p-4 pb-4' : 'px-6 pt-6 pb-4'
+                  'sticky top-0 z-40 bg-white/40 flex-shrink-0 border-b border-slate-50 backdrop-blur-md transition-all',
+                  isMobile ? 'px-4 py-3' : 'px-8 py-3'
                 )}
               >
-                <Breadcrumb />
+                <Breadcrumb className="text-xs font-black uppercase tracking-widest text-slate-500" />
               </div>
             )}
 
@@ -290,6 +300,6 @@ export function DashboardLayoutClient({
           </main>
         </div>
       </div>
-    </>
+    </BreadcrumbProvider>
   );
 }

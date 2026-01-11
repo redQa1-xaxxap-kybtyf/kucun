@@ -2,11 +2,11 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  BarChart3,
-  ChevronDown,
-  ChevronRight,
-  Package,
-  Plus,
+    BarChart3,
+    ChevronDown,
+    ChevronRight,
+    Package,
+    Plus,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -15,9 +15,9 @@ import { Suspense } from 'react';
 import { ErrorBoundaryFallback } from '@/components/common/error-boundary-fallback';
 import { PageHeader } from '@/components/common/page-header';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
-import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
 import { InventoryStatisticsCards } from '@/components/inventory/inventory-statistics-cards';
 import { Button } from '@/components/ui/button';
+import { InventoryListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
@@ -26,8 +26,8 @@ import { queryKeys } from '@/lib/queryKeys';
 import { inventoryParamsSchema } from '@/lib/schemas/inventory-params';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
-  InventoryListResponse,
-  InventoryQueryParams,
+    InventoryListResponse,
+    InventoryQueryParams,
 } from '@/lib/types/inventory';
 
 interface InventoryPageClientProps {
@@ -56,7 +56,6 @@ export function InventoryPageClient({
 
   const handleExport = React.useCallback(() => {
     // TODO: Implement export logic
-    console.log('Exporting...');
   }, []);
 
   return (

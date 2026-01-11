@@ -5,28 +5,22 @@
  */
 
 import {
-  BookOpen,
-  Download,
-  ExternalLink,
-  FileText,
-  HelpCircle,
-  Mail,
-  MessageCircle,
-  Phone,
-  Video,
+    BookOpen,
+    Download,
+    ExternalLink,
+    FileText,
+    HelpCircle,
+    Mail,
+    MessageCircle,
+    Phone,
+    Video,
 } from 'lucide-react';
 import type { Metadata } from 'next';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
   title: '帮助中心 - 库存管理工具',
@@ -150,215 +144,183 @@ const contactMethods = [
  */
 export default function HelpPage() {
   return (
-    <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      {/* 页面头部 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-              <HelpCircle className="h-6 w-6 text-white" />
+    <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
+      <div className="mx-auto w-full max-w-[1680px] space-y-12">
+        {/* 1. Identity Header: 帮助门户标头 */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-2">
+          <div className="flex items-center gap-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-900 shadow-xl shadow-slate-900/10 ring-4 ring-white">
+              <HelpCircle className="h-8 w-8 text-white" />
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                帮助中心
-              </h1>
-              <p className="text-sm text-gray-600">
-                欢迎使用库存管理工具帮助中心，这里有您需要的所有使用指南和支持信息
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+                  帮助与服务中心
+                </h1>
+                <Badge className="bg-slate-900 text-white hover:bg-slate-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1">
+                  Support Hub
+                </Badge>
+              </div>
+              <p className="text-sm font-bold text-slate-400">
+                为您提供系统操作指南、常见问题解答及全方位的技术支持服务
               </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* 快速链接 */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50 transition-all hover:scale-105 hover:shadow-xl">
-          <CardContent className="p-6 text-center">
-            <Video className="mx-auto mb-3 h-8 w-8 text-blue-600" />
-            <h3 className="mb-2 font-semibold text-gray-900">视频教程</h3>
-            <p className="mb-4 text-sm text-gray-600">观看操作演示视频</p>
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
-              size="sm"
-              className="transition-all hover:border-blue-300 hover:bg-blue-50"
+              className="h-11 rounded-xl border-slate-200 bg-white px-6 text-xs font-black text-slate-900 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
             >
-              <ExternalLink className="mr-2 h-4 w-4" />
-              观看视频
+              <Mail className="mr-2 h-4 w-4 text-slate-400" />
+              提交问题反馈
             </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50 transition-all hover:scale-105 hover:shadow-xl">
-          <CardContent className="p-6 text-center">
-            <Download className="mx-auto mb-3 h-8 w-8 text-green-600" />
-            <h3 className="mb-2 font-semibold text-gray-900">用户手册</h3>
-            <p className="mb-4 text-sm text-gray-600">下载完整操作手册</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="transition-all hover:border-green-300 hover:bg-green-50"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              下载PDF
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50 transition-all hover:scale-105 hover:shadow-xl">
-          <CardContent className="p-6 text-center">
-            <MessageCircle className="mx-auto mb-3 h-8 w-8 text-purple-600" />
-            <h3 className="mb-2 font-semibold text-gray-900">在线支持</h3>
-            <p className="mb-4 text-sm text-gray-600">联系技术支持团队</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="transition-all hover:border-purple-300 hover:bg-purple-50"
-            >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              联系客服
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 帮助分类 */}
-        <div className="lg:col-span-2">
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center text-gray-900">
-                <BookOpen className="mr-2 h-5 w-5 text-blue-600" />
-                使用指南
-              </CardTitle>
-              <CardDescription>系统功能详细说明和操作指导</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                {helpCategories.map(category => {
-                  const IconComponent = category.icon;
-                  return (
-                    <div
-                      key={category.id}
-                      className="rounded-lg border bg-white p-4 shadow-sm transition-all hover:shadow-md"
-                    >
-                      <div className="mb-4 flex items-center gap-3">
-                        <IconComponent className="h-6 w-6 text-blue-600" />
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            {category.title}
-                          </h3>
-                          <p className="text-sm text-gray-600">
-                            {category.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                        {category.items.map((item, index) => (
-                          <Button
-                            key={index}
-                            variant="ghost"
-                            className="h-auto justify-start p-3 text-left transition-all hover:bg-blue-50"
-                          >
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {item.title}
-                              </div>
-                              <div className="mt-1 text-xs text-gray-500">
-                                {item.description}
-                              </div>
-                            </div>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
 
-        {/* 侧边栏 */}
-        <div className="space-y-6">
-          {/* 常见问题 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center gap-2 text-gray-900">
-                <HelpCircle className="h-5 w-5 text-blue-600" />
-                常见问题
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-6">
-              {faqItems.map((faq, index) => (
-                <div
-                  key={index}
-                  className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
-                >
-                  <h4 className="mb-2 text-sm font-medium text-gray-900">
-                    {faq.question}
-                  </h4>
-                  <p className="text-xs text-gray-600">{faq.answer}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+        {/* 2. Service Matrix: 快速响应矩阵 */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            { title: '操作教学视频', desc: '手把手带您熟悉核心业务流程', icon: Video, color: 'text-blue-500', bg: 'bg-blue-50/50', action: '立即观看' },
+            { title: '用户使用手册', desc: '完整的系统功能字典与操作规范', icon: Download, color: 'text-emerald-500', bg: 'bg-emerald-50/50', action: '下载 PDF' },
+            { title: '专家在线诊断', desc: '针对复杂业务场景提供即时支持', icon: MessageCircle, color: 'text-purple-500', bg: 'bg-purple-50/50', action: '发起咨询' }
+          ].map((service, i) => (
+            <div key={i} className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-8 shadow-sm transition-all hover:border-blue-100 hover:shadow-lg">
+              <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 transition-transform group-hover:scale-110">
+                <service.icon className={cn("h-6 w-6", service.color)} />
+              </div>
+              <h3 className="mb-2 text-lg font-black text-slate-900">{service.title}</h3>
+              <p className="mb-6 text-sm font-medium text-slate-400 leading-relaxed">{service.desc}</p>
+              <Button 
+                variant="ghost" 
+                className={cn("h-9 rounded-xl p-0 text-xs font-black transition-all hover:bg-transparent", service.color)}
+              >
+                {service.action} <ExternalLink className="ml-2 h-3.3" />
+              </Button>
+              <div className={cn("absolute -right-8 -top-8 h-24 w-24 rounded-full opacity-0 transition-opacity group-hover:opacity-10", service.bg)} />
+            </div>
+          ))}
+        </div>
 
-          {/* 联系支持 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="text-gray-900">联系支持</CardTitle>
-              <CardDescription>
-                需要更多帮助？联系我们的支持团队
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 p-6">
-              {contactMethods.map((method, index) => {
-                const IconComponent = method.icon;
-                return (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    className="h-auto w-full justify-start p-3 transition-all hover:border-blue-300 hover:bg-blue-50"
-                    asChild
-                  >
-                    <a href={method.href}>
-                      <IconComponent className="mr-3 h-4 w-4" />
-                      <div className="text-left">
-                        <div className="text-sm font-medium text-gray-900">
-                          {method.type}
+        <div className="grid gap-12 lg:grid-cols-[2.5fr_1fr]">
+          {/* 3. Main Guide Area: 结构化指南聚合 */}
+          <div className="space-y-10">
+            <section className="space-y-6">
+              <div className="flex flex-col gap-1 px-1">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">系统操作指南目录</h3>
+                <p className="text-[11px] font-medium text-slate-400">按照业务模块分类的详细操作说明</p>
+              </div>
+
+              <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm shadow-slate-200/50 transition-all hover:shadow-md">
+                <div className="divide-y divide-slate-50">
+                  {helpCategories.map((category) => {
+                    const IconComponent = category.icon;
+                    return (
+                      <div key={category.id} className="p-8 transition-colors hover:bg-slate-50/30">
+                        <div className="mb-8 flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+                            <IconComponent className="h-5 w-5 text-slate-600" />
+                          </div>
+                          <div>
+                            <h4 className="text-base font-black text-slate-900">{category.title}</h4>
+                            <p className="text-[11px] font-medium text-slate-400">{category.description}</p>
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {method.description}
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          {category.items.map((item, index) => (
+                            <button
+                              key={index}
+                              className="flex flex-col items-start rounded-2xl border border-slate-50 bg-white p-5 text-left transition-all hover:border-blue-100 hover:shadow-sm group"
+                            >
+                              <span className="text-sm font-black text-slate-700 group-hover:text-blue-600 transition-colors">
+                                {item.title}
+                              </span>
+                              <span className="mt-1 text-[11px] font-medium text-slate-400 leading-relaxed">
+                                {item.description}
+                              </span>
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    </a>
-                  </Button>
-                );
-              })}
-            </CardContent>
-          </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+          </div>
 
-          {/* 系统状态 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="text-gray-900">系统状态</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-900">服务状态</span>
-                <Badge
-                  variant="secondary"
-                  className="bg-green-100 text-green-800"
-                >
-                  正常运行
-                </Badge>
+          {/* 4. Support Sidebar: 精捷支持模块 */}
+          <div className="space-y-10">
+            {/* 常见问题模块 */}
+            <section className="space-y-6">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">智库 FAQ</h3>
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div className="space-y-6">
+                  {faqItems.map((faq, index) => (
+                    <div key={index} className="space-y-2 group">
+                      <h4 className="flex items-center gap-2 text-sm font-black text-slate-800 transition-colors group-hover:text-blue-600">
+                        <div className="h-1.5 w-1.5 rounded-full bg-slate-200 group-hover:bg-blue-400" />
+                        {faq.question}
+                      </h4>
+                      <p className="pl-3.5 text-[11px] font-medium text-slate-400 leading-relaxed">
+                        {faq.answer}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <Separator className="my-3" />
-              <div className="text-xs text-gray-500">
-                最后更新：{new Date().toLocaleString('zh-CN')}
+            </section>
+
+            {/* 专业支持渠道 */}
+            <section className="space-y-6">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">专业支持反馈</h3>
+              <div className="rounded-3xl border border-slate-100 bg-white shadow-sm overflow-hidden">
+                <div className="divide-y divide-slate-50">
+                  {contactMethods.map((method, index) => {
+                    const IconComponent = method.icon;
+                    return (
+                      <a 
+                        key={index} 
+                        href={method.href}
+                        className="flex items-center justify-between p-5 transition-all hover:bg-slate-50 group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 group-hover:bg-white transition-colors">
+                            <IconComponent className="h-5 w-5 text-slate-400 group-hover:text-slate-900" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-sm font-black text-slate-900">{method.type}</span>
+                            <p className="text-[10px] font-medium text-slate-400">{method.description}</p>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-4 w-4 text-slate-200 group-hover:text-slate-400" />
+                      </a>
+                    );
+                  })}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </section>
+
+            {/* 系统服务健康度 */}
+            <section className="space-y-6">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">系统服务状态</h3>
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs font-black text-slate-900">核心引擎状态</span>
+                    <p className="text-[10px] font-medium text-slate-400">所有数据中心均处于最优负载</p>
+                  </div>
+                  <Badge className="bg-emerald-50 text-emerald-600 border-none px-3 py-1 font-black flex items-center gap-2">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    正常运行
+                  </Badge>
+                </div>
+                <Separator className="my-5 bg-slate-50" />
+                <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest text-right">
+                  Last Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>

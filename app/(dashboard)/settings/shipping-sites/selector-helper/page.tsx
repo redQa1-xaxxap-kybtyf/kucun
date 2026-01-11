@@ -1,25 +1,14 @@
-/**
- * CSS 选择器智能助手
- * 帮助用户从 HTML 代码自动生成 CSS 选择器
- */
-
 'use client';
 
-import { ArrowLeft, Copy, Sparkles } from 'lucide-react';
+import { ArrowLeft, Copy, Globe, Sparkles } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 
 interface SelectorOption {
   selector: string;
@@ -390,191 +379,234 @@ export default function SelectorHelperPage() {
   };
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
-      {/* 页面标题 */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            CSS 选择器智能助手
-          </h1>
-          <p className="text-sm text-gray-600">
-            粘贴 HTML 代码，自动生成 CSS 选择器配置
-          </p>
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="flex-1 space-y-6 overflow-y-auto">
+        {/* 页面头部 */}
+        <div className="group relative overflow-hidden rounded-[32px] border border-white bg-white/60 p-1 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:shadow-slate-300/40">
+          <div className="flex items-center justify-between rounded-[28px] bg-white/80 p-8 shadow-inner backdrop-blur-md">
+            <div className="flex items-center gap-6">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => router.back()}
+                className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-500 hover:bg-slate-100 transition-all active:scale-95"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-black tracking-tight text-slate-900">
+                  CSS 选择器智能助手
+                </h1>
+                <p className="mt-1 text-sm font-bold text-slate-500">
+                  粘贴 HTML 代码，自动生成符合 v3 标准的 CSS/XPath 选择器配置
+                </p>
+              </div>
+            </div>
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg shadow-indigo-600/30 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-3">
+              <Sparkles className="h-8 w-8 text-white" />
+            </div>
+          </div>
+          {/* 装饰性背景层 */}
+          <div className="absolute -left-4 -bottom-4 h-24 w-24 rounded-full bg-indigo-500 opacity-5 blur-3xl" />
         </div>
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 左侧：HTML 输入 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-blue-500" />
-              步骤 1: 粘贴 HTML 代码
-            </CardTitle>
-            <CardDescription>
-              在浏览器中右键点击船舶信息区域，选择&ldquo;检查&rdquo;，复制 HTML
-              代码并粘贴到下方
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 选择器类型选择 */}
-            <div>
-              <Label>选择器类型</Label>
-              <div className="mt-2 flex gap-2">
-                <Button
-                  variant={selectorType === 'both' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectorType('both')}
-                >
-                  全部
-                </Button>
-                <Button
-                  variant={selectorType === 'xpath' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectorType('xpath')}
-                >
-                  XPath（推荐）
-                </Button>
-                <Button
-                  variant={selectorType === 'css' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectorType('css')}
-                >
-                  CSS
-                </Button>
+        <div className="rounded-[32px] border border-white bg-white/60 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all hover:shadow-2xl hover:shadow-slate-300/40">
+          <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <Sparkles className="h-5 w-5" />
               </div>
-              <p className="mt-1.5 text-xs text-gray-500">
-                XPath 支持 contains() 函数，更适合多 class 场景
-              </p>
+              <h3 className="text-lg font-black tracking-tight text-slate-900">
+                步骤 1: 粘贴 HTML 源码
+              </h3>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step 01 / Input</span>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-500">解析目标类型</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: 'both', label: '全部格式', icon: '🌐' },
+                  { id: 'xpath', label: 'XPath (推荐)', icon: '🧭' },
+                  { id: 'css', label: 'CSS 选择器', icon: '🎨' }
+                ].map(type => (
+                  <Button
+                    key={type.id}
+                    variant={selectorType === type.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectorType(type.id as any)}
+                    className={cn(
+                      "h-10 rounded-xl px-4 font-bold transition-all active:scale-95",
+                      selectorType === type.id 
+                        ? "bg-slate-900 shadow-lg shadow-slate-900/20" 
+                        : "border-slate-100 bg-white text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    <span className="mr-2 text-sm">{type.icon}</span>
+                    {type.label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
-            <div>
-              <Label htmlFor="htmlInput">HTML 代码</Label>
-              <Textarea
-                id="htmlInput"
-                value={htmlInput}
-                onChange={e => setHtmlInput(e.target.value)}
-                placeholder='粘贴 HTML 代码，例如：
-<li class="flex-in flex-c">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="htmlInput" className="text-xs font-black uppercase tracking-widest text-slate-500">HTML 代码块</Label>
+                <span className="text-[10px] font-bold text-slate-400">建议复制包含 label 和 value 的完整父节点</span>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl border border-slate-100 bg-slate-900/5 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+                <Textarea
+                  id="htmlInput"
+                  value={htmlInput}
+                  onChange={e => setHtmlInput(e.target.value)}
+                  placeholder='<li class="flex-in">
   <span title="状态">状态</span>：
-  <span class="ship-mmsi text-over-hide copy">用主机航行</span>
+  <span class="ship-mmsi">正在航行</span>
 </li>'
-                className="mt-2 min-h-[300px] font-mono text-xs"
-              />
+                  className="min-h-[400px] border-none bg-transparent font-mono text-[11px] leading-relaxed text-slate-700 focus-visible:ring-0 resize-none p-4"
+                />
+                <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+              </div>
             </div>
 
             <Button
               onClick={analyzeHTML}
               disabled={isAnalyzing || !htmlInput.trim()}
-              className="w-full"
+              className="h-14 w-full rounded-2xl bg-blue-600 font-black tracking-widest shadow-xl shadow-blue-600/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:bg-slate-200"
             >
-              {isAnalyzing ? '分析中...' : '🔍 智能分析'}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* 右侧：检测结果 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>步骤 2: 检测结果</span>
-              {detectedFields.length > 0 && (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={copyAsJSON}>
-                    <Copy className="mr-2 h-4 w-4" />
-                    复制 JSON
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyAllSelectors}
-                  >
-                    <Copy className="mr-2 h-4 w-4" />
-                    复制推荐
-                  </Button>
+              {isAnalyzing ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                  <span>正在深度分析 HTML 结构...</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>🔍 执行智能分析检测</span>
                 </div>
               )}
-            </CardTitle>
-            <CardDescription>
-              检测到的字段和多种选择器方案（推荐方案已标记 ⭐）
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+            </Button>
+          </div>
+        </div>
+
+        {/* 右侧：检测结果 */}
+        <div className="rounded-[32px] border border-white bg-white/60 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl transition-all hover:shadow-2xl hover:shadow-slate-300/40 flex flex-col">
+          <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                <div className="h-5 w-5">⭐</div>
+              </div>
+              <h3 className="text-lg font-black tracking-tight text-slate-900">
+                步骤 2: 提取分析结果
+              </h3>
+            </div>
+            {detectedFields.length > 0 && (
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={copyAsJSON}
+                  className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyAllSelectors}
+                  className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  <Copy className="mr-2 h-4 w-4" />
+                  全选
+                </Button>
+              </div>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {detectedFields.length === 0 ? (
-              <div className="flex min-h-[400px] items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50">
-                <p className="text-sm text-gray-500">
-                  粘贴 HTML 代码后点击&ldquo;智能分析&rdquo;
+              <div className="flex h-full flex-col items-center justify-center rounded-[24px] border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white shadow-lg">
+                  <Globe className="h-10 w-10 text-slate-200" />
+                </div>
+                <h4 className="text-sm font-black text-slate-400">暂无分析数据</h4>
+                <p className="mt-2 text-xs font-bold text-slate-400 max-w-[200px]">
+                  请在左侧区域粘贴 HTML 源码并点击执行分析
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {detectedFields.map((field, fieldIndex) => (
                   <div
                     key={fieldIndex}
-                    className="rounded-lg border bg-white p-4 shadow-sm"
+                    className="group rounded-[24px] border border-white bg-white/80 p-6 shadow-sm shadow-slate-200/50 transition-all hover:bg-white hover:shadow-md"
                   >
                     {/* 字段标题和值 */}
-                    <div className="mb-3 flex items-center justify-between border-b pb-2">
-                      <div>
-                        <span className="font-semibold text-gray-900">
-                          {field.label}
-                        </span>
-                        <span className="ml-2 text-sm text-gray-600">
-                          值: <span className="font-medium">{field.value}</span>
-                        </span>
+                    <div className="mb-4 flex items-center justify-between border-b border-slate-50 pb-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">
+                            {field.label}
+                          </span>
+                          <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-black text-slate-500">
+                            {field.options.length} OPTIONS
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-400">
+                          Detected Value: <span className="text-slate-900">{field.value}</span>
+                        </p>
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {field.options.length} 个方案
-                      </span>
                     </div>
 
                     {/* 选择器选项列表 */}
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {field.options.map((option, optIndex) => {
                         const isRecommended =
                           option.selector === field.recommended.selector;
                         return (
                           <div
                             key={optIndex}
-                            className={`rounded-lg border p-3 ${
+                            className={cn(
+                              "relative rounded-2xl border p-4 transition-all",
                               isRecommended
-                                ? 'border-blue-300 bg-blue-50'
-                                : 'border-gray-200 bg-gray-50'
-                            }`}
+                                ? "border-blue-100 bg-blue-50/50 ring-1 ring-blue-50"
+                                : "border-slate-50 bg-slate-50/30 hover:bg-white hover:border-slate-200"
+                            )}
                           >
                             {/* 选择器头部 */}
-                            <div className="mb-2 flex items-center justify-between">
+                            <div className="mb-3 flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 {isRecommended && (
-                                  <span className="text-sm">⭐</span>
+                                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-[10px] text-white shadow-lg shadow-blue-600/30">
+                                    ⭐
+                                  </div>
                                 )}
                                 <span
-                                  className={`rounded px-2 py-0.5 text-xs font-medium ${
+                                  className={cn(
+                                    "rounded-lg px-2 py-1 text-[10px] font-black tracking-widest outline outline-1",
                                     option.type === 'xpath'
-                                      ? 'bg-purple-100 text-purple-700'
-                                      : 'bg-green-100 text-green-700'
-                                  }`}
+                                      ? "bg-purple-50 text-purple-600 outline-purple-100"
+                                      : "bg-emerald-50 text-emerald-600 outline-emerald-100"
+                                  )}
                                 >
                                   {option.type.toUpperCase()}
                                 </span>
-                                <span
-                                  className={`rounded px-2 py-0.5 text-xs ${
-                                    option.confidence === 'high'
-                                      ? 'bg-green-100 text-green-700'
-                                      : option.confidence === 'medium'
-                                        ? 'bg-yellow-100 text-yellow-700'
-                                        : 'bg-red-100 text-red-700'
-                                  }`}
-                                >
-                                  {option.confidence === 'high'
-                                    ? '高可信度'
+                                <div className={cn(
+                                  "flex items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-black tracking-widest uppercase",
+                                  option.confidence === 'high'
+                                    ? "text-emerald-600"
                                     : option.confidence === 'medium'
-                                      ? '中可信度'
-                                      : '低可信度'}
-                                </span>
+                                      ? "text-amber-600"
+                                      : "text-rose-600"
+                                )}>
+                                  <div className={cn("h-1 w-1 rounded-full", 
+                                    option.confidence === 'high' ? "bg-emerald-500" : option.confidence === 'medium' ? "bg-amber-500" : "bg-rose-500"
+                                  )} />
+                                  {option.confidence === 'high' ? 'High' : option.confidence === 'medium' ? 'Medium' : 'Low'}
+                                </div>
                               </div>
                               <Button
                                 variant="ghost"
@@ -582,49 +614,26 @@ export default function SelectorHelperPage() {
                                 onClick={() =>
                                   copySelector(option.selector, option.type)
                                 }
+                                className="h-8 w-8 rounded-lg bg-white/50 text-slate-400 hover:text-slate-900"
                               >
-                                <Copy className="h-4 w-4" />
+                                <Copy className="h-3.5 w-3.5" />
                               </Button>
                             </div>
 
                             {/* 选择器代码 */}
-                            <code className="block rounded bg-white px-2 py-1.5 font-mono text-xs">
-                              {option.selector}
-                            </code>
+                            <div className="rounded-xl bg-slate-900 p-3 shadow-inner">
+                              <code className="block font-mono text-[11px] font-bold text-emerald-400/90 break-all leading-relaxed">
+                                {option.selector}
+                              </code>
+                            </div>
 
                             {/* 推荐理由 */}
-                            <p className="mt-2 text-xs text-gray-600">
-                              💡 {option.reason}
-                            </p>
-
-                            {/* 优缺点（可折叠） */}
-                            <details className="mt-2">
-                              <summary className="cursor-pointer text-xs font-medium text-gray-700">
-                                查看优缺点
-                              </summary>
-                              <div className="mt-2 space-y-1 text-xs">
-                                <div>
-                                  <span className="font-medium text-green-700">
-                                    ✓ 优点:
-                                  </span>
-                                  <ul className="ml-4 list-disc text-gray-600">
-                                    {option.pros.map((pro, i) => (
-                                      <li key={i}>{pro}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                                <div>
-                                  <span className="font-medium text-red-700">
-                                    ✗ 缺点:
-                                  </span>
-                                  <ul className="ml-4 list-disc text-gray-600">
-                                    {option.cons.map((con, i) => (
-                                      <li key={i}>{con}</li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              </div>
-                            </details>
+                            <div className="mt-3 flex items-start gap-2">
+                              <div className="mt-0.5 text-blue-500">💡</div>
+                              <p className="text-[11px] font-bold leading-relaxed text-slate-500">
+                                {option.reason}
+                              </p>
+                            </div>
                           </div>
                         );
                       })}
@@ -633,121 +642,94 @@ export default function SelectorHelperPage() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* 使用说明 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>使用说明</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <div className="rounded-[32px] border border-white bg-slate-900 shadow-2xl p-8 transition-transform hover:scale-[1.01]">
+        <div className="mb-8 border-b border-slate-800 pb-6 text-center">
+          <h2 className="text-xl font-black tracking-tight text-white mb-2">配置使用指南</h2>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest text-center">Integration Workflow</p>
+        </div>
+
+        <div className="space-y-12">
           {/* 步骤说明 */}
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg border p-4">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                1
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                num: '01',
+                title: '获取 HTML 源代码',
+                desc: '在目标页面按下 F12 检查元素，右键对应的配置区域选择 "Copy outerHTML"。',
+                color: 'bg-blue-500'
+              },
+              {
+                num: '02',
+                title: '执行深度分析',
+                desc: '将代码片段粘贴到上方输入框，系统将根据特征库智能解析字段级联关系。',
+                color: 'bg-indigo-500'
+              },
+              {
+                num: '03',
+                title: '一键应用配置',
+                desc: '点击 ⭐ 标记的推荐方案，直接粘贴到主站点的“提取映射表”中即可生效。',
+                color: 'bg-purple-500'
+              }
+            ].map(step => (
+              <div key={step.num} className="group relative rounded-2xl bg-white/5 p-6 border border-white/5 hover:bg-white/10 transition-all">
+                <div className={cn("inline-flex items-center justify-center rounded-xl px-3 py-1 text-xs font-black text-white mb-4 shadow-lg", step.color)}>
+                  STEP {step.num}
+                </div>
+                <h3 className="mb-2 text-sm font-black text-white">{step.title}</h3>
+                <p className="text-xs font-bold leading-relaxed text-slate-500">
+                  {step.desc}
+                </p>
               </div>
-              <h3 className="mb-1 font-medium">获取 HTML 代码</h3>
-              <p className="text-sm text-gray-600">
-                在船舶信息页面，右键点击信息区域，选择&ldquo;检查&rdquo;，复制
-                HTML 代码
-              </p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                2
-              </div>
-              <h3 className="mb-1 font-medium">智能分析</h3>
-              <p className="text-sm text-gray-600">
-                选择选择器类型，粘贴代码后点击&ldquo;智能分析&rdquo;，系统自动生成多种方案
-              </p>
-            </div>
-            <div className="rounded-lg border p-4">
-              <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                3
-              </div>
-              <h3 className="mb-1 font-medium">选择复制</h3>
-              <p className="text-sm text-gray-600">
-                查看各方案的优缺点，选择最适合的选择器复制使用
-              </p>
-            </div>
+            ))}
           </div>
 
-          {/* 选择器类型说明 */}
-          <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
-            <h3 className="mb-2 font-semibold text-purple-900">
-              💡 选择器类型对比
-            </h3>
-            <div className="space-y-2 text-sm">
-              <div>
-                <span className="font-medium text-purple-800">
-                  XPath（推荐）:
-                </span>
-                <ul className="mt-1 ml-4 list-disc text-purple-700">
-                  <li>
-                    支持{' '}
-                    <code className="rounded bg-purple-100 px-1">
-                      contains()
-                    </code>{' '}
-                    函数，能匹配多个 class
-                  </li>
-                  <li>
-                    适用于复杂场景，如{' '}
-                    <code className="rounded bg-purple-100 px-1">
-                      class=&quot;ship-mmsi text-over-hide copy&quot;
-                    </code>
-                  </li>
-                  <li>稳定性好，不受 class 顺序影响</li>
-                </ul>
-              </div>
-              <div>
-                <span className="font-medium text-green-800">CSS:</span>
-                <ul className="mt-1 ml-4 list-disc text-green-700">
-                  <li>语法简洁，易于理解</li>
-                  <li>ID 和 name 选择器性能最好</li>
-                  <li>
-                    属性选择器{' '}
-                    <code className="rounded bg-green-100 px-1">
-                      [class*=&quot;xxx&quot;]
-                    </code>{' '}
-                    可部分匹配
-                  </li>
-                </ul>
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* 选择器类型说明 */}
+            <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6">
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-black text-amber-500">
+                <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                技术方案选择指南
+              </h3>
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-600/80">XPath Path (Recommended)</span>
+                  <p className="text-xs font-bold leading-relaxed text-amber-100/80">
+                    支持 `contains()` 模糊匹配。即使样式类名随机或包含空格，也能通过文本特征定位。
+                  </p>
+                </div>
+                <div className="space-y-1 border-t border-amber-500/10 pt-4">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-emerald-600/80">CSS Selector</span>
+                  <p className="text-xs font-bold leading-relaxed text-emerald-100/80">
+                    运行效率极高。在有 ID 或稳定属性值的简单页面中是最佳选择。
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* 实际案例 */}
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <h3 className="mb-2 font-semibold text-amber-900">
-              📌 实际案例：ships66.com
-            </h3>
-            <div className="space-y-2 text-sm text-amber-800">
-              <p>
-                <strong>HTML 结构：</strong>
-              </p>
-              <code className="block rounded bg-white p-2 font-mono text-xs">
-                {`<li class="flex-in flex-c">
-  <span title="状态">状态</span>：
-  <span class="ship-mmsi text-over-hide copy">用主机航行</span>
-</li>`}
-              </code>
-              <p className="mt-2">
-                <strong>推荐选择器（XPath）：</strong>
-              </p>
-              <code className="block rounded bg-white p-2 font-mono text-xs">
-                {`.//li[.//span[@title='状态']]/span[contains(@class, 'ship-mmsi')]`}
-              </code>
-              <p className="mt-2 text-xs">
-                ✓ 使用 contains() 匹配主 class，即使元素有多个 class
-                也能正确匹配
-              </p>
+            {/* 实际案例 */}
+            <div className="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6">
+              <h3 className="mb-4 flex items-center gap-2 text-sm font-black text-blue-500">
+                <div className="h-1.5 w-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
+                智能提取案例展示
+              </h3>
+              <div className="rounded-xl bg-slate-800 p-4 border border-slate-700">
+                <code className="block font-mono text-[10px] space-y-1">
+                  <div className="text-slate-500 opacity-50">&lt;!-- Input --&gt;</div>
+                  <div className="text-slate-300">&lt;span title="状态"&gt;航行中&lt;/span&gt;</div>
+                  <div className="text-slate-500 opacity-50 mt-2">&lt;!-- Result --&gt;</div>
+                  <div className="text-emerald-400 font-bold">.//span[@title='状态']</div>
+                </code>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      </div>
     </div>
   );
 }

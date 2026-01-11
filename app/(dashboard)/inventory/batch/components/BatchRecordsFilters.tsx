@@ -1,15 +1,4 @@
-/**
- * 批次管理筛选组件
- * 使用统一的RecordsFilters组件，遵循唯一真理原则
- */
-
-'use client';
-
-import {
-  BATCH_FILTER_CONFIG,
-  RecordsFilters,
-  type FilterValues,
-} from '@/components/inventory/forms/RecordsFilters';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { BatchSpecificationQueryParams } from '@/lib/types/batch-specification';
 
 interface BatchRecordsFiltersProps {
@@ -23,44 +12,34 @@ export function BatchRecordsFilters({
   onFiltersChange,
   onReset,
 }: BatchRecordsFiltersProps) {
-  // 将filters转换为FilterValues格式
-  const filterValues: FilterValues = {
-    search: filters.search,
-    type: undefined, // 批次管理不需要类型筛选
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-  };
-
-  // 处理筛选变更
-  const handleFilterChange = (
-    key: keyof FilterValues,
-    value: string | undefined
-  ) => {
-    // 将FilterValues的key映射到BatchSpecificationQueryParams的key
-    if (key === 'search') {
-      onFiltersChange({
-        search: value,
-        page: 1, // 重置到第一页
-      });
-    } else if (key === 'startDate') {
-      onFiltersChange({
-        startDate: value,
-        page: 1, // 重置到第一页
-      });
-    } else if (key === 'endDate') {
-      onFiltersChange({
-        endDate: value,
-        page: 1, // 重置到第一页
-      });
-    }
-  };
-
   return (
-    <RecordsFilters
-      config={BATCH_FILTER_CONFIG}
-      values={filterValues}
-      onFilterChange={handleFilterChange}
-      onReset={onReset}
+    <SearchFilterCard
+      searchValue={filters.search || ''}
+      onSearchChange={(val) => onFiltersChange({ search: val, page: 1 })}
+      searchPlaceholder="搜索批次号、产品名称、编码..."
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '创建日期',
+        value: {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        },
+        onChange: ({ startDate, endDate }) => {
+          onFiltersChange({
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+            page: 1,
+          });
+        },
+        placeholder: '选择批次日期范围',
+      }}
+      onClearFilters={onReset}
+      hasActiveFilters={
+        !!filters.search || !!filters.startDate || !!filters.endDate
+      }
+      variant="pro"
+      compact={true}
     />
   );
 }

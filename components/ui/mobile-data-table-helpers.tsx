@@ -178,10 +178,17 @@ export function DesktopTableView<T extends Record<string, unknown>>({
       <div
         className={cn(
           'rounded-lg border',
-          maxHeight && 'overflow-auto',
+          maxHeight && 'max-h-[var(--table-max-height)] overflow-auto',
           tableClassName
         )}
-        style={maxHeight ? { maxHeight } : undefined}
+        style={
+          maxHeight
+            ? ({
+                '--table-max-height':
+                  typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
+              } as React.CSSProperties)
+            : undefined
+        }
       >
         <Table>
           <TableHeader

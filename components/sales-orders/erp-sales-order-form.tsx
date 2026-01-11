@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function, max-lines, react-hooks/exhaustive-deps */
+/* eslint-disable max-lines-per-function, max-lines */
 'use client';
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
@@ -71,6 +71,9 @@ import {
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
 import { PrepaymentSection } from './erp-sales-order-form/PrepaymentSection';
+
+const EMPTY_SALES_ORDER_ITEMS: SalesOrderItemFormData[] = [];
+const EMPTY_FEE_ITEMS: SalesOrderFeeItem[] = [];
 
 const UNIT_MAPPING: Record<string, string> = {
   piece: '件',
@@ -300,7 +303,8 @@ export function ERPSalesOrderForm({
     | TransferFulfillmentMode
     | undefined;
   const supplierId = form.watch('supplierId');
-  const feeItems = (form.watch('feeItems') || []) as SalesOrderFeeItem[];
+  const feeItems = (form.watch('feeItems') ??
+    EMPTY_FEE_ITEMS) as SalesOrderFeeItem[];
   const roundingAdjustment = Number(form.watch('roundingAdjustment') ?? 0);
 
   // 客户数据查询已移至 CustomerSelector 组件内部
@@ -390,7 +394,7 @@ export function ERPSalesOrderForm({
     control: form.control,
     name: 'items',
     defaultValue: form.getValues('items'),
-  }) ?? []) as SalesOrderItemFormData[];
+  }) ?? EMPTY_SALES_ORDER_ITEMS) as SalesOrderItemFormData[];
 
   const inventoryCheckItems = React.useMemo(
     () =>
@@ -818,56 +822,74 @@ export function ERPSalesOrderForm({
   // 页面加载时设置订单号（仅创建模式）
   // 优化：优先使用服务端预生成的订单号，消除加载延迟
   React.useEffect(() => {
-    if (mode === 'create') {
-      // 如果有预生成的订单号，直接使用
-      if (initialOrderNumber) {
-        setAutoOrderNumber(initialOrderNumber);
-        return;
-      }
+    if (mode !== 'create') {
+      return;
+    }
 
-      // 降级方案：客户端异步生成（保持向后兼容）
-      const generateOrderNumber = async () => {
-        const generateLocalOrderNumber = () => {
-          const now = new Date();
-          const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-          const timeStr = now.getTime().toString().slice(-4);
-          return `SO${dateStr}${timeStr}`;
-        };
+    // 如果有预生成的订单号，直接使用
+    if (initialOrderNumber) {
+      setAutoOrderNumber(initialOrderNumber);
+      return;
+    }
 
-        try {
-          const response = await fetch(
-            '/api/sales-orders/generate-order-number',
-            getCsrfTokenHeader({
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-            })
-          );
-          const data = await response.json();
-          if (response.ok && data?.success && data.data?.orderNumber) {
-            setAutoOrderNumber(data.data.orderNumber);
-            return;
-          }
+    // 降级方案：客户端异步生成（保持向后兼容）
+    const abortController = new AbortController();
 
-          // 接口可达但未成功，降级到本地生成
-          logger.warn(
-            'sales-orders',
-            '自动生成订单号返回非成功结果',
-            undefined,
-            { status: response.status, body: data }
-          );
-          setAutoOrderNumber(generateLocalOrderNumber());
-        } catch (error) {
-          logger.error('sales-orders', '自动生成订单号失败', error);
-          // 如果API失败，使用本地生成逻辑作为备用
-          setAutoOrderNumber(generateLocalOrderNumber());
-        }
+    const generateOrderNumber = async () => {
+      const generateLocalOrderNumber = () => {
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const timeStr = now.getTime().toString().slice(-4);
+        return `SO${dateStr}${timeStr}`;
       };
 
-      generateOrderNumber();
-    }
+      try {
+        const response = await fetch(
+          '/api/sales-orders/generate-order-number',
+          getCsrfTokenHeader({
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            signal: abortController.signal,
+          })
+        );
+
+        // 检查是否已被取消
+        if (abortController.signal.aborted) {
+          return;
+        }
+
+        const data = await response.json();
+        if (response.ok && data?.success && data.data?.orderNumber) {
+          setAutoOrderNumber(data.data.orderNumber);
+          return;
+        }
+
+        // 接口可达但未成功，降级到本地生成
+        logger.warn('sales-orders', '自动生成订单号返回非成功结果', undefined, {
+          status: response.status,
+          body: data,
+        });
+        setAutoOrderNumber(generateLocalOrderNumber());
+      } catch (error) {
+        // 如果是取消请求，不处理
+        if (error instanceof Error && error.name === 'AbortError') {
+          return;
+        }
+        logger.error('sales-orders', '自动生成订单号失败', error);
+        // 如果API失败，使用本地生成逻辑作为备用
+        setAutoOrderNumber(generateLocalOrderNumber());
+      }
+    };
+
+    generateOrderNumber();
+
+    // cleanup: 取消 pending 的请求
+    return () => {
+      abortController.abort();
+    };
   }, [mode, initialOrderNumber]);
 
   // 客户创建成功处理（客户数据查询已移至 CustomerSelector 组件内部）
@@ -987,47 +1009,19 @@ export function ERPSalesOrderForm({
     }
   };
 
-  const handleFormSubmit = React.useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      void (async () => {
-        const isCustomerValid = await form.trigger('customerId');
-        if (!isCustomerValid) {
-          try {
-            form.setFocus('customerId');
-          } catch (error) {
-            logger.debug(
-              'sales-orders',
-              'Failed to focus customer field on base submit',
-              error
-            );
-          }
-          toast({
-            variant: 'destructive',
-            title: '客户未选择',
-            description: '请选择客户后再保存订单。',
-          });
-          return;
-        }
-
-        await form.handleSubmit(onSubmit)();
-      })();
-    },
-    [form, onSubmit, toast]
-  );
-
-  const submitWithStatus = React.useCallback(
-    (status: SalesOrderStatus) => {
-      const snapshot = form.getValues();
-      if (!snapshot.customerId || snapshot.customerId.trim() === '') {
-        form.setError('customerId', {
-          type: 'manual',
-          message: '请选择客户',
-        });
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void (async () => {
+      const isCustomerValid = await form.trigger('customerId');
+      if (!isCustomerValid) {
         try {
           form.setFocus('customerId');
         } catch (error) {
-          logger.debug('sales-orders', 'Failed to focus customer field', error);
+          logger.debug(
+            'sales-orders',
+            'Failed to focus customer field on base submit',
+            error
+          );
         }
         toast({
           variant: 'destructive',
@@ -1037,111 +1031,131 @@ export function ERPSalesOrderForm({
         return;
       }
 
-      // 提交为“已确认”时，先在前端做一次库存充足性快速检查
-      // 目的：在点击提交前就给销售明确提示，减少来回修改的次数
-      if (status === 'confirmed') {
-        const currentOrderType = snapshot.orderType;
-        const currentTransferMode = snapshot.transferMode as
-          | TransferFulfillmentMode
-          | undefined;
+      await form.handleSubmit(onSubmit)();
+    })();
+  };
 
-        // 与后端库存预留逻辑保持一致：
-        // - 普通销售：检查本地库存
-        // - 调货销售：只在 MIXED 模式下检查本地库存
-        const shouldCheckInventory =
-          currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
+  const submitWithStatus = (status: SalesOrderStatus) => {
+    const snapshot = form.getValues();
+    if (!snapshot.customerId || snapshot.customerId.trim() === '') {
+      form.setError('customerId', {
+        type: 'manual',
+        message: '请选择客户',
+      });
+      try {
+        form.setFocus('customerId');
+      } catch (error) {
+        logger.debug('sales-orders', 'Failed to focus customer field', error);
+      }
+      toast({
+        variant: 'destructive',
+        title: '客户未选择',
+        description: '请选择客户后再保存订单。',
+      });
+      return;
+    }
 
-        if (shouldCheckInventory && watchedItems.length > 0) {
-          const requestedByProduct = new Map<string, number>();
+    // 提交为“已确认”时，先在前端做一次库存充足性快速检查
+    // 目的：在点击提交前就给销售明确提示，减少来回修改的次数
+    if (status === 'confirmed') {
+      const currentOrderType = snapshot.orderType;
+      const currentTransferMode = snapshot.transferMode as
+        | TransferFulfillmentMode
+        | undefined;
 
-          for (const item of watchedItems) {
-            if (!item || !item.productId || item.isManualProduct) {
-              continue;
-            }
+      // 与后端库存预留逻辑保持一致：
+      // - 普通销售：检查本地库存
+      // - 调货销售：只在 MIXED 模式下检查本地库存
+      const shouldCheckInventory =
+        currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
 
-            const productId = item.productId.toString().trim();
-            if (!productId) continue;
+      if (shouldCheckInventory && watchedItems.length > 0) {
+        const requestedByProduct = new Map<string, number>();
 
-            const effectiveQty =
-              currentOrderType === 'TRANSFER' && currentTransferMode === 'MIXED'
-                ? Number(item.localQuantity ?? 0)
-                : Number(item.quantity ?? 0);
+        for (const item of watchedItems) {
+          if (!item || !item.productId || item.isManualProduct) {
+            continue;
+          }
 
-            if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) {
-              continue;
-            }
+          const productId = item.productId.toString().trim();
+          if (!productId) continue;
 
-            requestedByProduct.set(
-              productId,
-              (requestedByProduct.get(productId) ?? 0) + effectiveQty
+          const effectiveQty =
+            currentOrderType === 'TRANSFER' && currentTransferMode === 'MIXED'
+              ? Number(item.localQuantity ?? 0)
+              : Number(item.quantity ?? 0);
+
+          if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) {
+            continue;
+          }
+
+          requestedByProduct.set(
+            productId,
+            (requestedByProduct.get(productId) ?? 0) + effectiveQty
+          );
+        }
+
+        const shortageMessages: string[] = [];
+
+        requestedByProduct.forEach((requestedQty, productId) => {
+          const product = productMap.get(productId);
+          const available = product?.inventory?.availableQuantity ?? undefined;
+
+          if (
+            available !== undefined &&
+            Number.isFinite(available) &&
+            available < requestedQty
+          ) {
+            const name = product?.name || '未知产品';
+            const code = product?.code || productId;
+            shortageMessages.push(
+              `[${code}] ${name}：可用 ${available} 片，需要 ${requestedQty} 片`
             );
           }
+        });
 
-          const shortageMessages: string[] = [];
-
-          requestedByProduct.forEach((requestedQty, productId) => {
-            const product = productMap.get(productId);
-            const available =
-              product?.inventory?.availableQuantity ?? undefined;
-
-            if (
-              available !== undefined &&
-              Number.isFinite(available) &&
-              available < requestedQty
-            ) {
-              const name = product?.name || '未知产品';
-              const code = product?.code || productId;
-              shortageMessages.push(
-                `[${code}] ${name}：可用 ${available} 片，需要 ${requestedQty} 片`
-              );
-            }
+        if (shortageMessages.length > 0) {
+          toast({
+            variant: 'destructive',
+            title: '库存不足，无法提交为已确认',
+            description:
+              shortageMessages.length === 1
+                ? shortageMessages[0]
+                : `以下产品库存不足：\n${shortageMessages.join('\n')}`,
           });
+          return;
+        }
+      }
+    }
 
-          if (shortageMessages.length > 0) {
-            toast({
-              variant: 'destructive',
-              title: '库存不足，无法提交为已确认',
-              description:
-                shortageMessages.length === 1
-                  ? shortageMessages[0]
-                  : `以下产品库存不足：\n${shortageMessages.join('\n')}`,
-            });
-            return;
-          }
+    // Zod schema 验证会在 handleSubmit 中自动执行
+    form.setValue('status', status, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    void form.handleSubmit(onSubmit, errors => {
+      const firstError = findFirstError(errors);
+
+      if (firstError?.path) {
+        try {
+          form.setFocus(firstError.path);
+        } catch (error) {
+          logger.debug(
+            'sales-orders',
+            'Failed to focus first error field',
+            firstError.path,
+            error
+          );
         }
       }
 
-      // Zod schema 验证会在 handleSubmit 中自动执行
-      form.setValue('status', status, {
-        shouldDirty: true,
-        shouldValidate: false,
+      toast({
+        variant: 'destructive',
+        title: '请检查订单信息',
+        description: firstError?.message || '部分字段填写不完整，请检查后再试',
       });
-      void form.handleSubmit(onSubmit, errors => {
-        const firstError = findFirstError(errors);
-
-        if (firstError?.path) {
-          try {
-            form.setFocus(firstError.path);
-          } catch (error) {
-            logger.debug(
-              'sales-orders',
-              'Failed to focus first error field',
-              firstError.path,
-              error
-            );
-          }
-        }
-
-        toast({
-          variant: 'destructive',
-          title: '请检查订单信息',
-          description:
-            firstError?.message || '部分字段填写不完整，请检查后再试',
-        });
-      })();
-    },
-    [findFirstError, form, onSubmit, toast]
-  );
+    })();
+  };
 
   return (
     <div className="space-y-4">

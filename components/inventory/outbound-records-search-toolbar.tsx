@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 入库记录搜索工具栏
+ * 出库记录搜索工具栏
  * 使用统一的 SearchFilterCard 组件
  *
  * ✅ 设计原则：
@@ -10,56 +10,56 @@
  * - 一致性: 与项目整体风格保持统一
  */
 
-import { Package, RefreshCw } from 'lucide-react';
+import { PackageX, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
-import { INBOUND_REASON_OPTIONS } from '@/lib/constants/inventory-filters';
+import { OUTBOUND_REASON_OPTIONS } from '@/lib/constants/inventory-filters';
 
-interface InboundRecordsSearchToolbarProps {
+interface OutboundRecordsSearchToolbarProps {
   /** 搜索关键词（受控） */
   searchValue: string;
-  /** 入库原因筛选（'all' 表示全部） */
-  reasonFilter: string | 'all';
+  /** 出库原因筛选（'all' 表示全部） */
+  typeFilter: string | 'all';
   /** 日期范围筛选 */
   dateRange: DateRangeValue;
   /** 输入框加载指示 */
   isSearching?: boolean;
   /** 搜索回调 */
   onSearch: (value: string) => void;
-  /** 入库原因筛选回调 */
-  onReasonChange: (value: string | 'all') => void;
+  /** 出库原因筛选回调 */
+  onTypeChange: (value: string | 'all') => void;
   /** 日期范围变更 */
   onDateRangeChange: (range: DateRangeValue) => void;
   /** 清空筛选回调 */
   onClearFilters: () => void;
 }
 
-export const InboundRecordsSearchToolbar =
-  React.memo<InboundRecordsSearchToolbarProps>(
+export const OutboundRecordsSearchToolbar =
+  React.memo<OutboundRecordsSearchToolbarProps>(
     ({
       searchValue,
-      reasonFilter,
+      typeFilter,
       dateRange,
       isSearching,
       onSearch,
-      onReasonChange,
+      onTypeChange,
       onDateRangeChange,
       onClearFilters,
     }) => {
-      const logic = useInboundToolbarLogic({
-        reasonFilter,
+      const logic = useOutboundToolbarLogic({
+        typeFilter,
         dateRange,
-        onReasonChange,
+        onTypeChange,
         onDateRangeChange,
         onClearFilters,
       });
 
       return (
-        <InboundToolbarView
+        <OutboundToolbarView
           searchValue={searchValue}
-          reasonFilter={reasonFilter}
+          typeFilter={typeFilter}
           isSearching={isSearching}
           dateRange={dateRange}
           onSearch={onSearch}
@@ -69,36 +69,36 @@ export const InboundRecordsSearchToolbar =
     }
   );
 
-InboundRecordsSearchToolbar.displayName = 'InboundRecordsSearchToolbar';
+OutboundRecordsSearchToolbar.displayName = 'OutboundRecordsSearchToolbar';
 
-function useInboundToolbarLogic({
-  reasonFilter,
+function useOutboundToolbarLogic({
+  typeFilter,
   dateRange,
-  onReasonChange,
+  onTypeChange,
   onDateRangeChange,
   onClearFilters,
 }: Pick<
-  InboundRecordsSearchToolbarProps,
-  | 'reasonFilter'
+  OutboundRecordsSearchToolbarProps,
+  | 'typeFilter'
   | 'dateRange'
-  | 'onReasonChange'
+  | 'onTypeChange'
   | 'onDateRangeChange'
   | 'onClearFilters'
 >) {
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
-      if (key === 'reason') {
-        onReasonChange(value && value !== 'all' ? value : 'all');
+      if (key === 'type') {
+        onTypeChange(value && value !== 'all' ? value : 'all');
       }
     },
-    [onReasonChange]
+    [onTypeChange]
   );
 
-  const toggleReason = React.useCallback(
-    (reason: string) => () => {
-      onReasonChange(reasonFilter === reason ? 'all' : reason);
+  const toggleType = React.useCallback(
+    (type: string) => () => {
+      onTypeChange(typeFilter === type ? 'all' : type);
     },
-    [onReasonChange, reasonFilter]
+    [onTypeChange, typeFilter]
   );
 
   const handleDateRangeChange = React.useCallback(
@@ -113,42 +113,42 @@ function useInboundToolbarLogic({
   }, [onClearFilters]);
 
   const hasActiveFilters =
-    reasonFilter !== 'all' || !!dateRange.startDate || !!dateRange.endDate;
+    typeFilter !== 'all' || !!dateRange.startDate || !!dateRange.endDate;
 
   return {
     handleFilterChange,
-    toggleReason,
+    toggleType,
     handleDateRangeChange,
     handleClearFilters,
     hasActiveFilters,
   } as const;
 }
 
-type InboundToolbarViewProps = {
+type OutboundToolbarViewProps = {
   searchValue: string;
-  reasonFilter: string | 'all';
+  typeFilter: string | 'all';
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
   handleFilterChange: (key: string, value: string | undefined) => void;
-  toggleReason: (reason: string) => () => void;
+  toggleType: (type: string) => () => void;
   handleDateRangeChange: (range: DateRangeValue) => void;
   handleClearFilters: () => void;
   hasActiveFilters: boolean;
 };
 
-function InboundToolbarView({
+function OutboundToolbarView({
   searchValue,
-  reasonFilter,
+  typeFilter,
   dateRange,
   isSearching,
   onSearch,
   handleFilterChange,
-  toggleReason,
+  toggleType,
   handleDateRangeChange,
   handleClearFilters,
   hasActiveFilters,
-}: InboundToolbarViewProps) {
+}: OutboundToolbarViewProps) {
   return (
     <SearchFilterCard
       searchValue={searchValue}
@@ -158,40 +158,40 @@ function InboundToolbarView({
       // Toggle 按钮
       toggleButtons={[
         {
-          key: 'purchase',
-          label: '采购入库',
-          icon: <Package className="h-3.5 w-3.5" />,
-          active: reasonFilter === 'purchase',
-          onClick: toggleReason('purchase'),
+          key: 'sales_outbound',
+          label: '销售出库',
+          icon: <PackageX className="h-3.5 w-3.5" />,
+          active: typeFilter === 'sales_outbound',
+          onClick: toggleType('sales_outbound'),
         },
         {
-          key: 'return',
-          label: '退货入库',
+          key: 'adjust_outbound',
+          label: '调整出库',
           icon: <RefreshCw className="h-3.5 w-3.5" />,
-          active: reasonFilter === 'return',
-          onClick: toggleReason('return'),
+          active: typeFilter === 'adjust_outbound',
+          onClick: toggleType('adjust_outbound'),
         },
       ]}
       // 筛选器配置
       filters={[
         {
-          key: 'reason',
-          label: '入库原因',
-          options: INBOUND_REASON_OPTIONS,
+          key: 'type',
+          label: '出库原因',
+          options: OUTBOUND_REASON_OPTIONS,
           width: 'w-full sm:w-40',
         },
       ]}
       filterValues={{
-        reason: reasonFilter === 'all' ? 'all' : reasonFilter,
+        type: typeFilter === 'all' ? 'all' : typeFilter,
       }}
       onFilterChange={handleFilterChange}
       // 日期范围筛选
       dateRangeFilter={{
         key: 'dateRange',
-        label: '入库日期',
+        label: '出库日期',
         value: dateRange,
         onChange: handleDateRangeChange,
-        placeholder: '选择入库日期',
+        placeholder: '选择出库日期',
       }}
       // 清空筛选
       onClearFilters={handleClearFilters}

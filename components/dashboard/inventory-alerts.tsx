@@ -384,7 +384,14 @@ const InventoryAlerts = React.forwardRef<HTMLDivElement, InventoryAlertsProps>(
               <p className="text-muted-foreground mt-1 text-sm">库存状态良好</p>
             </div>
           ) : (
-            <ScrollArea style={{ maxHeight }}>
+            <ScrollArea
+              className="max-h-[var(--alerts-max-height)]"
+              style={
+                {
+                  '--alerts-max-height': maxHeight,
+                } as React.CSSProperties
+              }
+            >
               <div className={cn('space-y-3', compact && 'space-y-2')}>
                 {sortedAlerts.map(alert => (
                   <InventoryAlertItem

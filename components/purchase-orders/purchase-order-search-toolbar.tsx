@@ -5,8 +5,8 @@ import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-  PURCHASE_ORDER_STATUS_LABELS,
-  type PurchaseOrderStatus,
+    PURCHASE_ORDER_STATUS_LABELS,
+    type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 
 interface PurchaseOrderSearchToolbarProps {
@@ -141,7 +141,7 @@ export function PurchaseOrderSearchToolbar({
       // 清空筛选
       onClearFilters={onClearFilters}
       hasActiveFilters={hasActiveFilters}
-      variant="elevated"
+      variant="pro"
       compact={true}
       // ✅ 添加供应商选择器作为自定义筛选器
       customFilters={supplierFilterNode}

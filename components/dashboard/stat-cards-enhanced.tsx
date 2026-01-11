@@ -4,22 +4,19 @@
 'use client';
 
 import {
-  AlertTriangle,
-  BadgeJapaneseYen,
-  Minus,
-  Package,
-  RotateCcw,
-  ShoppingCart,
-  TrendingDown,
-  TrendingUp,
-  Users,
+    AlertTriangle,
+    ArrowRight,
+    BadgeJapaneseYen,
+    Package,
+    RotateCcw,
+    ShoppingCart,
+    Users
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { dashboardUtils } from '@/lib/api/dashboard';
 import type { BusinessOverview, StatCard } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
@@ -38,46 +35,40 @@ const ICON_MAP = {
 // ✅ 使用项目定义的CSS变量替代硬编码颜色
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-gradient-to-br from-[hsl(var(--color-info-light))] to-[hsl(var(--color-info-light))]/50',
-    icon: 'text-[hsl(var(--color-info))]',
-    border:
-      'border-[hsl(var(--color-info-light))] hover:border-[hsl(var(--color-info))]',
-    glow: 'bg-[hsl(var(--color-info))]/20',
+    bg: 'bg-blue-50/30',
+    icon: 'text-blue-600',
+    border: 'border-blue-100 hover:border-blue-200',
+    dot: 'bg-blue-500',
   },
   green: {
-    bg: 'bg-gradient-to-br from-[hsl(var(--color-success-light))] to-[hsl(var(--color-success-light))]/50',
-    icon: 'text-[hsl(var(--color-success))]',
-    border:
-      'border-[hsl(var(--color-success-light))] hover:border-[hsl(var(--color-success))]',
-    glow: 'bg-[hsl(var(--color-success))]/20',
+    bg: 'bg-emerald-50/30',
+    icon: 'text-emerald-600',
+    border: 'border-emerald-100 hover:border-emerald-200',
+    dot: 'bg-emerald-500',
   },
   yellow: {
-    bg: 'bg-gradient-to-br from-[hsl(var(--color-warning-light))] to-[hsl(var(--color-warning-light))]/50',
-    icon: 'text-[hsl(var(--color-warning))]',
-    border:
-      'border-[hsl(var(--color-warning-light))] hover:border-[hsl(var(--color-warning))]',
-    glow: 'bg-[hsl(var(--color-warning))]/20',
+    bg: 'bg-amber-50/30',
+    icon: 'text-amber-600',
+    border: 'border-amber-100 hover:border-amber-200',
+    dot: 'bg-amber-500',
   },
   red: {
-    bg: 'bg-gradient-to-br from-[hsl(var(--color-error-light))] to-[hsl(var(--color-error-light))]/50',
-    icon: 'text-[hsl(var(--color-error))]',
-    border:
-      'border-[hsl(var(--color-error-light))] hover:border-[hsl(var(--color-error))]',
-    glow: 'bg-[hsl(var(--color-error))]/20',
+    bg: 'bg-rose-50/30',
+    icon: 'text-rose-600',
+    border: 'border-rose-100 hover:border-rose-200',
+    dot: 'bg-rose-500',
   },
   purple: {
-    bg: 'bg-gradient-to-br from-[hsl(var(--color-purple-light))] to-[hsl(var(--color-purple-light))]/50',
-    icon: 'text-[hsl(var(--color-purple))]',
-    border:
-      'border-[hsl(var(--color-purple-light))] hover:border-[hsl(var(--color-purple))]',
-    glow: 'bg-[hsl(var(--color-purple))]/20',
+    bg: 'bg-indigo-50/30',
+    icon: 'text-indigo-600',
+    border: 'border-indigo-100 hover:border-indigo-200',
+    dot: 'bg-indigo-500',
   },
   gray: {
-    bg: 'bg-gradient-to-br from-[hsl(var(--color-bg-tertiary))] to-[hsl(var(--color-bg-tertiary))]/50',
-    icon: 'text-[hsl(var(--color-text-secondary))]',
-    border:
-      'border-[hsl(var(--color-border-secondary))] hover:border-[hsl(var(--color-border))]',
-    glow: 'bg-[hsl(var(--color-text-secondary))]/20',
+    bg: 'bg-slate-50/30',
+    icon: 'text-slate-600',
+    border: 'border-slate-100 hover:border-slate-200',
+    dot: 'bg-slate-500',
   },
 } as const;
 
@@ -116,92 +107,74 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
     if (loading) {
       return (
-        <Card className={cn('', className)} ref={ref} {...props}>
-          <CardContent className="p-6">
-            <ContentLoading text="加载中..." />
-          </CardContent>
-        </Card>
+        <Card className={cn('h-[160px] rounded-3xl animate-pulse bg-white/40', className)} ref={ref} {...props} />
       );
     }
 
-    // 卡片内容
     const cardContent = (
-      <Card
+      <div
         className={cn(
-          'group relative transition-all duration-300',
-          'hover:-translate-y-1 hover:shadow-md',
+          'group relative flex h-[160px] flex-col justify-between overflow-hidden rounded-3xl border border-white bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-500',
+          'hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1',
           href && 'cursor-pointer',
-          'border-l-4',
-          colorClasses.border,
           className
         )}
         ref={ref}
         {...props}
       >
-        <CardContent className="relative p-6">
-          <div className="flex items-start justify-between gap-4">
-            {/* 左侧内容区 */}
-            <div className="flex-1 space-y-2">
-              {/* 标题 - 增加图标装饰 */}
-              <p className="text-muted-foreground text-sm font-semibold tracking-wide">
-                {title}
-              </p>
+        {/* 背景装饰轨迹 */}
+        <div className={cn("absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-5 blur-2xl transition-all group-hover:opacity-10", colorClasses.dot)} />
 
-              {/* 数值显示 - 更大更醒目 */}
-              <div className="space-y-2">
-                <p
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+             <div className="flex items-center gap-2">
+                <div className={cn("h-1.5 w-1.5 rounded-full", colorClasses.dot)} />
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  {title}
+                </p>
+             </div>
+             <p className="text-3xl font-black tracking-tighter text-slate-900">
+                {typeof value === 'number'
+                  ? dashboardUtils.formatNumber(value)
+                  : value}
+             </p>
+          </div>
+          <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6", colorClasses.bg)}>
+            <IconComponent className={cn('h-6 w-6', colorClasses.icon)} />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-4">
+           {change ? (
+             <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
                   className={cn(
-                    'text-3xl font-bold tracking-tight',
-                    colorClasses.icon
+                    "h-6 rounded-lg px-2 text-xs font-bold uppercase border-none tracking-tight",
+                    change.type === 'increase' ? "bg-emerald-50 text-emerald-700" : 
+                    change.type === 'decrease' ? "bg-rose-50 text-rose-700" : 
+                    "bg-slate-50 text-slate-500"
                   )}
                 >
-                  {typeof value === 'number'
-                    ? dashboardUtils.formatNumber(value)
-                    : value}
-                </p>
-
-                {/* 变化趋势 - 优化视觉层次 */}
-                {change && (
-                  <div className="text-muted-foreground flex items-center gap-2 text-xs">
-                    <Badge
-                      variant={
-                        change.type === 'increase'
-                          ? 'success'
-                          : change.type === 'decrease'
-                            ? 'destructive'
-                            : 'secondary'
-                      }
-                      className="gap-1 font-semibold"
-                    >
-                      {change.type === 'increase' && (
-                        <TrendingUp className="h-3 w-3" />
-                      )}
-                      {change.type === 'decrease' && (
-                        <TrendingDown className="h-3 w-3" />
-                      )}
-                      {change.type === 'neutral' && (
-                        <Minus className="h-3 w-3" />
-                      )}
-                      <span>
-                        {dashboardUtils.formatPercentage(change.value)}
-                      </span>
-                    </Badge>
-                    <span>较{change.period}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* 右侧图标区 - 增强动效 */}
-            <div className="relative flex-shrink-0">
-              <IconComponent className={cn('h-8 w-8', colorClasses.icon)} />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+                  {change.type === 'increase' && "+"}{dashboardUtils.formatPercentage(change.value)}
+                </Badge>
+                <span className="text-xs font-bold text-slate-400">
+                  较 {change.period}
+                </span>
+             </div>
+           ) : (
+             <div className="h-6" />
+           )}
+           
+           {href && (
+             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-all group-hover:bg-slate-900 group-hover:text-white">
+                <ArrowRight className="h-3 w-3" />
+             </div>
+           )}
+        </div>
+      </div>
     );
 
-    // 根据 href 决定是否包裹 Link
     if (href) {
       return <Link href={href}>{cardContent}</Link>;
     }
@@ -221,11 +194,10 @@ export interface StatCardsGridProps {
 
 const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
   ({ overview, loading = false, className, ...props }, ref) => {
-    // 构建统计卡片数据 - 只保留4个核心指标
     const statCards: StatCardProps[] = React.useMemo(
       () => [
         {
-          title: '总收入',
+          title: '累计营收 / REVENUE',
           value: dashboardUtils.formatCurrency(
             overview?.sales?.totalRevenue || 0
           ),
@@ -243,7 +215,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '订单数量',
+          title: '成交订单 / ORDERS',
           value: overview?.sales?.totalOrders || 0,
           change: {
             value: overview?.sales?.ordersGrowth || 0,
@@ -259,7 +231,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '库存产品',
+          title: '商品库容 / PRODUCTS',
           value: overview?.inventory?.totalProducts || 0,
           change: {
             value: overview?.inventory?.stockHealth || 0,
@@ -277,11 +249,11 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '退货处理',
+          title: '退货统计 / RETURNS',
           value: overview?.returns?.pendingReturns || 0,
           change: {
             value: overview?.returns?.returnRate || 0,
-            type: 'neutral' as const,
+            type: 'neutral',
             period: '退货率',
           },
           icon: 'rotate-ccw',
@@ -297,8 +269,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
     return (
       <div
         className={cn(
-          'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4',
-          'animate-in fade-in-50 slide-in-from-bottom-8 duration-500',
+          'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4',
           className
         )}
         ref={ref}
@@ -307,7 +278,12 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
         {statCards.map((card, index) => (
           <div
             key={index}
-            className={`animate-in fade-in-50 slide-in-from-bottom-4 fade-delay-${Math.min(index + 1, 6)}`}
+            className="animate-in fade-in-50 slide-in-from-bottom-4"
+            style={
+              {
+                'animation-delay': `${index * 100}ms`,
+              } as React.CSSProperties
+            }
           >
             <StatCard {...card} />
           </div>
@@ -320,3 +296,4 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
 StatCardsGrid.displayName = 'StatCardsGrid';
 
 export { StatCard, StatCardsGrid };
+

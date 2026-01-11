@@ -10,21 +10,21 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { DateTimePicker } from '@/components/ui/date-time-picker';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -135,8 +135,6 @@ function useConfirmShipmentDialogState({
   };
 
   const handleSubmit = form.handleSubmit(data => {
-    console.log('[DEBUG] 确认发货 - 表单数据:', data);
-
     const estimatedArrivalIso = data.estimatedArrival
       ? data.estimatedArrival.toISOString()
       : undefined;
@@ -153,8 +151,6 @@ function useConfirmShipmentDialogState({
       shipmentDate: shipmentDateIso,
     };
 
-    console.log('[DEBUG] 确认发货 - 发送到服务器的数据:', payload);
-
     confirmMutation.mutate(
       {
         id: orderId,
@@ -162,10 +158,7 @@ function useConfirmShipmentDialogState({
       },
       {
         onSuccess: handleSuccess,
-        onError: error => {
-          console.error('[DEBUG] 确认发货失败:', error);
-          handleError(error);
-        },
+        onError: handleError,
       }
     );
   });

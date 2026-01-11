@@ -169,28 +169,6 @@ async function getPaymentsData(searchParams: {
     prisma.paymentRecord.count({ where: whereConditions }),
   ]);
 
-  // 计算统计数据
-  const allPayments = await prisma.paymentRecord.findMany({
-    where: whereConditions,
-    select: {
-      paymentAmount: true,
-      status: true,
-    },
-  });
-
-  const totalAmount = allPayments.reduce(
-    (sum, p) => sum + Number(p.paymentAmount),
-    0
-  );
-  const confirmedAmount = allPayments
-    .filter(p => p.status === 'confirmed' || p.status === 'applied')
-    .reduce((sum, p) => sum + Number(p.paymentAmount), 0);
-  const pendingAmount = allPayments
-    .filter(p => p.status === 'pending')
-    .reduce((sum, p) => sum + Number(p.paymentAmount), 0);
-  const collectionRate =
-    totalAmount > 0 ? (confirmedAmount / totalAmount) * 100 : 0;
-
   const now = new Date();
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
@@ -216,60 +194,66 @@ async function getPaymentsData(searchParams: {
     },
   };
 
-  const [currentMonthPayments, previousMonthPayments] = await Promise.all([
-    prisma.paymentRecord.findMany({
-      where: currentMonthWhere,
-      select: { paymentAmount: true, status: true },
+  // 统计数据：使用 groupBy + sum，避免 findMany 全量扫描导致不必要的数据传输与内存占用
+  const [overallSums, currentMonthSums, previousMonthSums] = await Promise.all([
+    prisma.paymentRecord.groupBy({
+      by: ['status'],
+      where: whereConditions,
+      _sum: { paymentAmount: true },
     }),
-    prisma.paymentRecord.findMany({
+    prisma.paymentRecord.groupBy({
+      by: ['status'],
+      where: currentMonthWhere,
+      _sum: { paymentAmount: true },
+    }),
+    prisma.paymentRecord.groupBy({
+      by: ['status'],
       where: previousMonthWhere,
-      select: { paymentAmount: true, status: true },
+      _sum: { paymentAmount: true },
     }),
   ]);
 
-  const calculateCollectionRate = (
-    paymentList: Array<{
-      paymentAmount: Prisma.Decimal | number;
-      status: 'pending' | 'cancelled' | 'confirmed' | 'applied';
-    }>
-  ) => {
-    const monthlyTotal = paymentList.reduce(
-      (sum, payment) => sum + Number(payment.paymentAmount),
-      0
-    );
+  const CONFIRMED_STATUSES = new Set(['confirmed', 'applied'] as const);
 
-    if (monthlyTotal === 0) {
-      return null;
-    }
-
-    const monthlyConfirmed = paymentList.reduce((sum, payment) => {
-      if (payment.status === 'confirmed' || payment.status === 'applied') {
-        return sum + Number(payment.paymentAmount);
+  const sumPaymentAmount = (
+    rows: Array<{ status: string; _sum: { paymentAmount: Prisma.Decimal | null } }>,
+    allowedStatuses?: Set<string>
+  ) =>
+    rows.reduce((acc, row) => {
+      if (allowedStatuses && !allowedStatuses.has(row.status)) {
+        return acc;
       }
-      return sum;
+      return acc + Number(row._sum.paymentAmount ?? 0);
     }, 0);
 
-    return (monthlyConfirmed / monthlyTotal) * 100;
-  };
+  const totalAmount = sumPaymentAmount(overallSums);
+  const confirmedAmount = sumPaymentAmount(overallSums, CONFIRMED_STATUSES);
+  const pendingAmount = sumPaymentAmount(overallSums, new Set(['pending']));
+  const collectionRate =
+    totalAmount > 0 ? (confirmedAmount / totalAmount) * 100 : 0;
+
+  const calculateRate = (confirmed: number, total: number) =>
+    total === 0 ? null : (confirmed / total) * 100;
 
   const formatRate = (rate: number | null) =>
     rate === null ? null : Number(rate.toFixed(1));
 
+  const currentMonthTotal = sumPaymentAmount(currentMonthSums);
+  const previousMonthTotal = sumPaymentAmount(previousMonthSums);
+  const currentMonthConfirmed = sumPaymentAmount(
+    currentMonthSums,
+    CONFIRMED_STATUSES
+  );
+  const previousMonthConfirmed = sumPaymentAmount(
+    previousMonthSums,
+    CONFIRMED_STATUSES
+  );
+
   const currentMonthCollectionRate = formatRate(
-    calculateCollectionRate(
-      currentMonthPayments.map(payment => ({
-        paymentAmount: payment.paymentAmount,
-        status: payment.status as PaymentStatus,
-      }))
-    )
+    calculateRate(currentMonthConfirmed, currentMonthTotal)
   );
   const previousMonthCollectionRate = formatRate(
-    calculateCollectionRate(
-      previousMonthPayments.map(payment => ({
-        paymentAmount: payment.paymentAmount,
-        status: payment.status as PaymentStatus,
-      }))
-    )
+    calculateRate(previousMonthConfirmed, previousMonthTotal)
   );
   const collectionRateChange =
     currentMonthCollectionRate !== null && previousMonthCollectionRate !== null
@@ -282,7 +266,7 @@ async function getPaymentsData(searchParams: {
     totalAmount,
     confirmedAmount,
     pendingAmount,
-    recordCount: allPayments.length,
+    recordCount: total,
     collectionRate: Number(collectionRate.toFixed(1)),
     currentMonthCollectionRate,
     previousMonthCollectionRate,

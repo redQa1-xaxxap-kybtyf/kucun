@@ -4,7 +4,6 @@ import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { Button } from '@/components/ui/button';
 import type { NavigationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
@@ -37,10 +36,8 @@ const SubMenuItem = React.memo(
     const Icon = item.icon;
     const [isExpanded, setIsExpanded] = React.useState(false);
 
-    // 检查是否有子菜单
     const hasChildren = item.children && item.children.length > 0;
 
-    // 检查是否有激活的子菜单项
     const hasActiveChild = React.useMemo(
       () =>
         item.children?.some(
@@ -50,105 +47,72 @@ const SubMenuItem = React.memo(
       [item.children, pathname]
     );
 
-    // 如果有激活的子菜单项，自动展开
     React.useEffect(() => {
       if (hasActiveChild) {
         setIsExpanded(true);
       }
     }, [hasActiveChild]);
 
-    // 处理子菜单展开/收起
     const handleToggle = React.useCallback((e: React.MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setIsExpanded(prev => !prev);
     }, []);
 
-    // 计算缩进（每级增加 12px）
-    const indentClass = level === 2 ? 'ml-0' : `ml-${(level - 2) * 3}`;
+    // v3 PRO 子菜单项样式
+    const itemClasses = cn(
+      'group relative flex h-9 w-full items-center justify-start rounded-xl px-4 text-[13px] font-bold transition-all duration-300 active:scale-95',
+      isActive 
+        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' 
+        : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
+    );
 
-    // 如果没有子菜单，渲染普通链接
     if (!hasChildren) {
       return (
         <Link
           href={item.href}
           prefetch={false}
-          className="block rounded-md transition-all duration-150"
+          className={itemClasses}
         >
-          <Button
-            variant="ghost"
-            className={cn(
-              'group relative h-9 w-full justify-start rounded-md px-3 text-sm font-medium transition-colors duration-150',
-              indentClass,
-              'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
-              'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
-              'disabled:opacity-60',
-              isActive &&
-                'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
-            )}
-            disabled={item.disabled}
-            asChild
-          >
-            <div className="flex items-center">
-              {Icon && (
-                <Icon
-                  className={cn(
-                    'mr-3 h-3.5 w-3.5 text-[hsl(var(--sidebar-icon-muted))] transition-colors duration-150',
-                    'group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                    isActive && 'text-[hsl(var(--sidebar-hover-foreground))]'
-                  )}
-                />
-              )}
-              <span className="flex-1 text-left">{item.title}</span>
-            </div>
-          </Button>
+          <div className="flex items-center gap-3">
+             {/* 活跃状态下的动态小圆点 */}
+             <div className={cn(
+               "h-1 w-1 rounded-full transition-all duration-300",
+               isActive ? "bg-white scale-125" : "bg-slate-200 group-hover:bg-slate-400"
+             )} />
+             <span className="flex-1 text-left">{item.title}</span>
+          </div>
         </Link>
       );
     }
 
-    // 渲染带子菜单的项（三级菜单）
     return (
       <div className="space-y-1">
-        <Button
-          variant="ghost"
-          className={cn(
-            'group relative h-9 w-full justify-start rounded-md px-3 text-sm font-medium transition-colors duration-150',
-            indentClass,
-            'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
-            'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
-            'disabled:opacity-60',
-            (isActive || hasActiveChild) &&
-              'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm'
-          )}
-          disabled={item.disabled}
+        <button
+          className={cn(itemClasses, (isActive || hasActiveChild) && 'text-slate-900')}
           onClick={handleToggle}
           aria-expanded={isExpanded}
         >
-          {Icon && (
-            <Icon
+          <div className="flex w-full items-center gap-3">
+            <div className={cn(
+               "h-1 w-1 rounded-full transition-all",
+               (isActive || hasActiveChild) ? "bg-blue-500 scale-125" : "bg-slate-200"
+            )} />
+            <span className="flex-1 text-left">{item.title}</span>
+            <ChevronDown
               className={cn(
-                'mr-3 h-3.5 w-3.5 text-[hsl(var(--sidebar-icon-muted))] transition-colors duration-150',
-                'group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                (isActive || hasActiveChild) &&
-                  'text-[hsl(var(--sidebar-hover-foreground))]'
+                'h-3.5 w-3.5 transition-transform duration-300',
+                isExpanded && 'rotate-180'
               )}
             />
-          )}
-          <span className="flex-1 text-left">{item.title}</span>
-          <ChevronDown
-            className={cn(
-              'h-3.5 w-3.5 text-[hsl(var(--sidebar-text-tertiary))] transition-transform duration-150',
-              (isActive || hasActiveChild) &&
-                'text-[hsl(var(--sidebar-hover-foreground))]',
-              isExpanded && 'rotate-180'
-            )}
-          />
-        </Button>
+          </div>
+        </button>
 
-        {/* 递归渲染子菜单 */}
         {isExpanded && (
-          <div className="ml-3 space-y-1">
-            {item.children?.map((child, index) => {
+          <div className="relative ml-4 mt-1 space-y-1 pl-4">
+             {/* 垂直引导线 */}
+             <div className="absolute left-[18px] top-0 bottom-4 w-px bg-slate-100" />
+             {item.children?.map((child, index) => {
               const isChildActive =
                 pathname === child.href ||
                 pathname.startsWith(`${child.href}/`);
@@ -173,9 +137,6 @@ const SubMenuItem = React.memo(
 
 SubMenuItem.displayName = 'SubMenuItem';
 
-/**
- * 子菜单列表组件（优化：接收 pathname 作为 prop，避免重复订阅路由）
- */
 interface ChildMenuListProps {
   items: NavigationItem[];
   pathname: string;
@@ -184,7 +145,6 @@ interface ChildMenuListProps {
 
 const ChildMenuList = React.memo(
   ({ items, pathname, parentKey }: ChildMenuListProps) => {
-    // 找到最佳匹配的子菜单（最长路径匹配）
     const bestMatch = React.useMemo(
       () =>
         items
@@ -197,8 +157,10 @@ const ChildMenuList = React.memo(
     );
 
     return (
-      <div className="mt-2 ml-3 space-y-1 rounded-md border border-[hsl(var(--sidebar-subtle-border))] bg-[hsl(var(--sidebar-subtle-bg))] p-2">
-        {items.map((child, index) => {
+      <div className="relative mt-2 ml-4 space-y-1 pl-4">
+        {/* 垂直引导线 */}
+        <div className="absolute left-[6px] top-0 bottom-4 w-px bg-slate-100" />
+        {items.map((child: NavigationItem, index) => {
           const isChildActive = bestMatch?.id === child.id;
           const childKey = buildNavItemKey(parentKey, child, index);
 
@@ -230,17 +192,6 @@ interface SidebarNavItemProps {
   nodeKey: string;
 }
 
-/**
- * 侧边栏导航项 Client Component
- * 优化版本：通过 props 接收 pathname，避免每个导航项都订阅路由
- *
- * 性能优化点:
- * 1. pathname 通过 props 传递，避免重复订阅
- * 2. 使用 React.memo 避免不必要的重渲染
- * 3. 使用 useCallback 优化事件处理函数
- * 4. 禁用 Link 预取 (prefetch={false})
- * 5. 减少动画时长 (200ms -> 150ms)
- */
 export const SidebarNavItem = React.memo(
   React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
     (
@@ -258,7 +209,6 @@ export const SidebarNavItem = React.memo(
       const Icon = item.icon;
       const [isExpanded, setIsExpanded] = React.useState(false);
 
-      // ✅ 检查是否有子菜单项处于激活状态（使用 useMemo 优化）
       const hasActiveChild = React.useMemo(
         () =>
           item.children?.some(
@@ -270,19 +220,26 @@ export const SidebarNavItem = React.memo(
         [item.children, item.href, pathname]
       );
 
-      // ✅ 如果有激活的子菜单项，自动展开
       React.useEffect(() => {
         if (hasActiveChild && !isCollapsed) {
           setIsExpanded(true);
         }
       }, [hasActiveChild, isCollapsed]);
 
-      // ✅ 处理子菜单展开/收起 (使用 useCallback 优化)
       const handleSubMenuToggle = React.useCallback(() => {
         setIsExpanded(prev => !prev);
       }, []);
 
-      // 如果没有子菜单，渲染普通导航项
+      // v3 PRO 主导航项样式: Active Pill 2.0
+      const commonClasses = cn(
+        'group relative flex w-full items-center rounded-2xl transition-all duration-500 active:scale-95 outline-none',
+        isCollapsed ? 'h-14 justify-center' : 'h-12 px-4 gap-4',
+        isActive
+          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30'
+          : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900',
+        isFocused && 'ring-2 ring-blue-500/20 ring-offset-2'
+      );
+
       if (!item.children || item.children.length === 0) {
         return (
           <Link
@@ -290,139 +247,82 @@ export const SidebarNavItem = React.memo(
             ref={ref}
             tabIndex={tabIndex}
             prefetch={true}
-            className={cn(
-              'block rounded-md transition-all duration-150',
-              isFocused &&
-                'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
-            )}
+            className={commonClasses}
             aria-label={item.title}
-            title={isCollapsed ? item.title : undefined}
           >
-            <Button
-              variant="ghost"
-              className={cn(
-                'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
-                isCollapsed ? 'px-2' : 'px-3',
-                'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
-                'disabled:opacity-60',
-                isActive &&
-                  'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
-              )}
-              disabled={item.disabled}
-              asChild
-            >
-              <div className="flex items-center">
-                {Icon && (
-                  <Icon
-                    className={cn(
-                      'h-4 w-4 transition-colors duration-150',
-                      !isCollapsed && 'mr-3',
-                      'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                      isActive && 'text-[hsl(var(--sidebar-icon-active))]'
-                    )}
-                  />
+            {Icon && (
+              <Icon
+                className={cn(
+                  'transition-all duration-500',
+                  isCollapsed ? 'h-6 w-6' : 'h-5 w-5',
+                  isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-900 group-hover:scale-110'
                 )}
-                {!isCollapsed && (
-                  <span className="flex-1 text-left">{item.title}</span>
-                )}
-              </div>
-            </Button>
+              />
+            )}
+            {!isCollapsed && (
+              <span className={cn(
+                "flex-1 text-sm text-left truncate",
+                isActive ? "font-black" : "font-bold"
+              )}>
+                {item.title}
+              </span>
+            )}
           </Link>
         );
       }
 
-      // 渲染带子菜单的导航项
       return (
         <div className="space-y-1">
-          {/* 折叠状态下，父菜单可点击导航 */}
           {isCollapsed ? (
             <Link
               href={item.href}
               prefetch={true}
-              className={cn(
-                'block rounded-md transition-all duration-150',
-                isFocused &&
-                  'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
-              )}
+              className={commonClasses}
               aria-label={item.title}
-              title={item.title}
             >
-              <Button
-                variant="ghost"
-                className={cn(
-                  'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
-                  'px-2',
-                  'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                  'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
-                  'disabled:opacity-60',
-                  (isActive || hasActiveChild) &&
-                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
-                )}
-                disabled={item.disabled}
-                asChild
-              >
-                <div className="flex items-center justify-center">
-                  {Icon && (
-                    <Icon
-                      className={cn(
-                        'h-4 w-4 transition-colors duration-150',
-                        'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                        (isActive || hasActiveChild) &&
-                          'text-[hsl(var(--sidebar-icon-active))]'
-                      )}
-                    />
+              {Icon && (
+                <Icon
+                  className={cn(
+                    'h-6 w-6 transition-all duration-500',
+                    isActive || hasActiveChild ? 'text-white' : 'text-slate-400 group-hover:text-slate-900 group-hover:scale-110'
                   )}
-                </div>
-              </Button>
+                />
+              )}
             </Link>
           ) : (
-            /* 展开状态下，父菜单用于切换子菜单显示 */
             <div>
-              <Button
-                variant="ghost"
+              <button
                 className={cn(
-                  'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
-                  'px-3',
-                  'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                  'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
-                  'disabled:opacity-60',
-                  (isActive || hasActiveChild) &&
-                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]',
-                  isFocused &&
-                    'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+                  commonClasses,
+                  (isActive || hasActiveChild) && !isActive && 'bg-blue-50 text-blue-600 shadow-none border border-blue-100 hover:bg-blue-100'
                 )}
-                disabled={item.disabled}
                 onClick={handleSubMenuToggle}
                 aria-label={item.title}
                 aria-expanded={isExpanded}
                 tabIndex={tabIndex}
               >
-                <div className="flex w-full items-center">
-                  {Icon && (
-                    <Icon
-                      className={cn(
-                        'mr-3 h-4 w-4 transition-colors duration-150',
-                        'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                        (isActive || hasActiveChild) &&
-                          'text-[hsl(var(--sidebar-icon-active))]'
-                      )}
-                    />
-                  )}
-                  <span className="flex-1 text-left">{item.title}</span>
-                  <ChevronDown
+                {Icon && (
+                  <Icon
                     className={cn(
-                      'h-4 w-4 text-[hsl(var(--sidebar-text-tertiary))] transition-transform duration-150',
-                      (isActive || hasActiveChild) &&
-                        'text-[hsl(var(--sidebar-icon-active))]',
-                      isExpanded &&
-                        'rotate-180 text-[hsl(var(--sidebar-hover-foreground))]'
+                      'h-5 w-5 transition-all duration-500',
+                      isActive || hasActiveChild ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'
                     )}
                   />
-                </div>
-              </Button>
+                )}
+                <span className={cn(
+                  "flex-1 text-sm text-left truncate",
+                  isActive || hasActiveChild ? "font-black" : "font-bold"
+                )}>
+                  {item.title}
+                </span>
+                <ChevronDown
+                  className={cn(
+                    'h-4 w-4 transition-all duration-500',
+                    isExpanded ? 'rotate-180 opacity-100' : 'opacity-40'
+                  )}
+                />
+              </button>
 
-              {/* 子菜单 */}
               {isExpanded && (
                 <ChildMenuList
                   pathname={pathname}

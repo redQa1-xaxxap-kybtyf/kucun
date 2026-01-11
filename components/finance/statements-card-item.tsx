@@ -1,224 +1,148 @@
+import {
+    ArrowUpRight,
+    ChevronRight,
+    History,
+    TrendingDown,
+    User,
+    Wallet
+} from 'lucide-react';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
 
 import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 
 import {
-  STATUS_LABEL_MAP,
-  TYPE_LABEL_MAP,
-  type AccountStatementItem,
+    STATUS_LABEL_MAP,
+    TYPE_LABEL_MAP,
+    type AccountStatementItem,
 } from './statements-types';
 
 type StatementCardItemProps = {
   statement: AccountStatementItem;
 };
 
-type BadgeVariant = 'secondary' | 'destructive' | 'outline';
-
-const STATUS_BADGE_VARIANT: Record<
-  AccountStatementItem['status'],
-  BadgeVariant
-> = {
-  active: 'outline',
-  settled: 'secondary',
-  suspended: 'destructive',
-};
-
-type StatementMetricProps = {
-  label: string;
-  value: ReactNode;
-  valueClassName?: string;
-};
-
 export function StatementCardItem({ statement }: StatementCardItemProps) {
   const balance = statement.currentBalance ?? 0;
-  const balanceLabel =
-    balance > 0 ? '应收余额' : balance < 0 ? '应付余额' : '余额';
-  const balanceColorClass =
-    balance > 0
-      ? 'text-[hsl(var(--color-success))]'
-      : balance < 0
-        ? 'text-[hsl(var(--color-warning))]'
-        : 'text-muted-foreground';
+  const balanceLabel = balance > 0 ? '应收余额' : balance < 0 ? '应付余额' : '账目结清';
+  
   const paymentRate =
     Math.abs(statement.totalAmount) > 0
       ? (Math.abs(statement.paidAmount) / Math.abs(statement.totalAmount)) * 100
       : 0;
-  const pendingRate = Math.max(100 - paymentRate, 0);
-  const statusVariant = STATUS_BADGE_VARIANT[statement.status];
 
   return (
-    <Card className="overflow-hidden transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-[var(--shadow-medium)]">
-      <CardContent className="p-0">
-        <div className="flex flex-col lg:flex-row">
-          <StatementMainContent
-            statement={statement}
-            paymentRate={paymentRate}
-            statusVariant={statusVariant}
-          />
-          <StatementSidebar
-            statement={statement}
-            balance={balance}
-            balanceLabel={balanceLabel}
-            balanceColorClass={balanceColorClass}
-            pendingRate={pendingRate}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function StatementMainContent({
-  statement,
-  paymentRate,
-  statusVariant,
-}: {
-  statement: AccountStatementItem;
-  paymentRate: number;
-  statusVariant: BadgeVariant;
-}) {
-  return (
-    <div className="flex-1 space-y-4 p-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <h3 className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
-          {statement.name}
-        </h3>
-        <Badge variant="outline" className="font-medium">
-          {TYPE_LABEL_MAP[statement.type]}
-        </Badge>
-        <Badge variant={statusVariant} className="font-medium">
-          {STATUS_LABEL_MAP[statement.status]}
-        </Badge>
-      </div>
-
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatementMetric
-          label="订单数量"
-          value={statement.totalOrders}
-          valueClassName="text-[hsl(var(--color-info))]"
-        />
-        <StatementMetric
-          label="总交易额"
-          value={formatCurrency(Math.abs(statement.totalAmount))}
-        />
-        <StatementMetric
-          label="已收付金额"
-          value={formatCurrency(Math.abs(statement.paidAmount))}
-          valueClassName="text-[hsl(var(--color-success))]"
-        />
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">收付进度</span>
-          <span className="font-medium">{paymentRate.toFixed(1)}%</span>
-        </div>
-        <div className="bg-muted h-2 overflow-hidden rounded-full">
-          <div
-            className="h-full bg-gradient-to-r from-[hsl(var(--color-success))] to-[hsl(var(--color-info))] transition-all"
-            style={{ width: `${paymentRate}%` }}
-          />
-        </div>
-      </div>
-
-      <StatementTimeline statement={statement} />
-    </div>
-  );
-}
-
-function StatementSidebar({
-  statement,
-  balance,
-  balanceLabel,
-  balanceColorClass,
-  pendingRate,
-}: {
-  statement: AccountStatementItem;
-  balance: number;
-  balanceLabel: string;
-  balanceColorClass: string;
-  pendingRate: number;
-}) {
-  return (
-    <div className="bg-muted/30 flex flex-col justify-between space-y-4 p-6 lg:w-64">
-      <div className="space-y-4">
-        <div className="space-y-2 text-center">
-          <p className="text-muted-foreground text-sm">{balanceLabel}</p>
-          <p className={`text-3xl font-bold ${balanceColorClass}`}>
-            {formatCurrency(Math.abs(balance))}
-          </p>
-        </div>
-
-        {statement.pendingAmount > 0 && (
-          <div className="border-border/50 border-t pt-4">
-            <div className="space-y-1 text-center">
-              <p className="text-muted-foreground text-xs">待收付金额</p>
-              <p className="text-lg font-semibold text-[hsl(var(--color-warning))]">
-                {formatCurrency(statement.pendingAmount)}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                占比 {pendingRate.toFixed(1)}%
-              </p>
+    <div className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500 hover:bg-white hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] hover:-translate-y-1">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center">
+        
+        {/* Left: Identity Section */}
+        <div className="flex items-center gap-5 min-w-[280px]">
+          <div className={cn(
+            "flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-xl transition-transform group-hover:scale-110 duration-500",
+            statement.type === 'customer' ? "bg-blue-600 shadow-blue-200" : "bg-purple-600 shadow-purple-200"
+          )}>
+            {statement.type === 'customer' ? <User className="h-8 w-8" /> : <TrendingDown className="h-8 w-8" />}
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
+              {statement.name}
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="rounded-md border-slate-200 bg-slate-50/50 text-xs font-bold uppercase tracking-wider text-slate-600 px-2 py-0.5">
+                {TYPE_LABEL_MAP[statement.type]}
+              </Badge>
+              <div className={cn(
+                "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
+                statement.status === 'active' ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+              )}>
+                {STATUS_LABEL_MAP[statement.status]}
+              </div>
             </div>
           </div>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Button variant="default" size="sm" className="w-full" asChild>
-          <Link href={`/finance/statements/${statement.id}`}>查看详情</Link>
-        </Button>
-        <Button variant="outline" size="sm" className="w-full" asChild>
-          <Link href={`/finance/statements/${statement.id}/transactions`}>
-            交易记录
-          </Link>
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function StatementTimeline({ statement }: { statement: AccountStatementItem }) {
-  if (!statement.lastTransactionDate && !statement.lastPaymentDate) {
-    return null;
-  }
-
-  return (
-    <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
-      {statement.lastTransactionDate && (
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium">最后交易:</span>
-          <span>
-            <RelativeTime date={statement.lastTransactionDate} />
-          </span>
         </div>
-      )}
-      {statement.lastPaymentDate && (
-        <div className="flex items-center gap-1.5">
-          <span className="font-medium">最近收付:</span>
-          <span>
-            <RelativeTime date={statement.lastPaymentDate} />
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
 
-function StatementMetric({
-  label,
-  value,
-  valueClassName,
-}: StatementMetricProps) {
-  return (
-    <div className="space-y-1">
-      <p className="text-muted-foreground text-xs">{label}</p>
-      <p className={`text-2xl font-bold ${valueClassName ?? ''}`}>{value}</p>
+        {/* Middle: Professional Metrics Grid */}
+        <div className="grid flex-1 grid-cols-2 gap-6 border-slate-100 lg:border-x lg:px-8 xl:grid-cols-4">
+          <div className="space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">往来笔数</span>
+            <p className="text-lg font-black text-slate-900">{statement.totalOrders} <span className="text-xs font-bold text-slate-500 ml-1">笔账单</span></p>
+          </div>
+          <div className="space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">累计流</span>
+            <p className="text-lg font-black text-slate-900">{formatCurrency(Math.abs(statement.totalAmount))}</p>
+          </div>
+          <div className="space-y-1 lg:col-span-2 xl:col-span-2">
+            <div className="flex items-center justify-between mb-1.5">
+               <span className="text-xs font-bold uppercase tracking-wider text-slate-500">结算对账进度</span>
+               <span className="text-xs font-bold text-blue-700">{paymentRate.toFixed(1)}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+               <div 
+                 className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-1000 group-hover:from-emerald-500 group-hover:to-teal-500" 
+                 style={{ width: `${paymentRate}%` }} 
+               />
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Balance & Action */}
+        <div className="flex items-center gap-8 lg:min-w-[280px] lg:justify-end">
+          <div className="text-right space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">{balanceLabel}</span>
+            <div className="flex items-baseline justify-end gap-1">
+               <span className={cn("text-sm font-black", balance > 0 ? "text-emerald-500" : balance < 0 ? "text-amber-500" : "text-slate-400")}>¥</span>
+               <p className={cn(
+                 "text-2xl font-black tracking-tighter",
+                 balance > 0 ? "text-emerald-600" : balance < 0 ? "text-amber-600" : "text-slate-400"
+               )}>
+                 {formatCurrency(Math.abs(balance)).replace('¥', '')}
+               </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="ghost"
+              asChild
+              className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white transition-all active:scale-90 shadow-sm"
+            >
+              <Link href={`/finance/statements/${statement.id}`}>
+                <ChevronRight className="h-6 w-6" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Footer: Timeline & Metadata */}
+      <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-5">
+        <div className="flex items-center gap-6">
+           {statement.lastTransactionDate && (
+             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+               <History className="h-3.5 w-3.5 text-slate-400" />
+               最后动账 <span className="text-slate-900 ml-1"><RelativeTime date={statement.lastTransactionDate} /></span>
+             </div>
+           )}
+           {statement.lastPaymentDate && (
+             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
+               <Wallet className="h-3.5 w-3.5 text-slate-400" />
+               最近结算 <span className="text-slate-900 ml-1"><RelativeTime date={statement.lastPaymentDate} /></span>
+             </div>
+           )}
+        </div>
+        
+        <div className="flex items-center gap-3">
+           <Link 
+             href={`/finance/statements/${statement.id}/transactions`}
+             className="text-xs font-bold uppercase tracking-wider text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
+           >
+             Full Audit Stream <ArrowUpRight className="h-3 w-3" />
+           </Link>
+        </div>
+      </div>
     </div>
   );
 }

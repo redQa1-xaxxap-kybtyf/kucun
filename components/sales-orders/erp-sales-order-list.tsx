@@ -4,16 +4,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  AlertCircle,
-  Ban,
-  Clock,
-  Download,
-  Edit,
-  Eye,
-  MoreHorizontal,
-  Package,
-  Trash2,
-  Truck,
+    AlertCircle,
+    Ban,
+    Clock,
+    Download,
+    Edit,
+    Eye,
+    MoreHorizontal,
+    Package,
+    Trash2,
+    Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -23,46 +23,46 @@ import { EmptyState } from '@/components/common/empty-state';
 import { RelativeTime } from '@/components/common/relative-time';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
 import {
-  getSalesOrders,
-  salesOrderQueryKeys,
-  useDeleteSalesOrder,
-  useUpdateSalesOrderStatus,
+    getSalesOrders,
+    salesOrderQueryKeys,
+    useDeleteSalesOrder,
+    useUpdateSalesOrderStatus,
 } from '@/lib/api/sales-orders';
 import {
-  SALES_ORDER_STATUS_LABELS,
-  TRANSFER_MODE_LABELS,
-  type SalesOrder,
-  type SalesOrderQueryParams,
-  type SalesOrderStatus,
+    SALES_ORDER_STATUS_LABELS,
+    TRANSFER_MODE_LABELS,
+    type SalesOrder,
+    type SalesOrderQueryParams,
+    type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 import { formatDateTime } from '@/lib/utils/datetime';
 
@@ -452,12 +452,17 @@ export function ERPSalesOrderList({
     );
   };
 
-  // 格式化金额
-  const formatAmount = (amount?: number) => {
-    if (!amount) {
+  // 格式化金额 - 处理 Prisma Decimal 类型
+  const formatAmount = (amount?: number | unknown) => {
+    if (amount == null) {
       return '￥0.00';
     }
-    return `￥${amount.toFixed(2)}`;
+    // 确保转换为 JavaScript number 类型（处理 Prisma Decimal）
+    const numAmount = Number(amount);
+    if (isNaN(numAmount)) {
+      return '￥0.00';
+    }
+    return `￥${numAmount.toFixed(2)}`;
   };
 
   // 获取收款状态Badge
@@ -631,7 +636,7 @@ export function ERPSalesOrderList({
         // 清空筛选
         onClearFilters={handleClearFilters}
         hasActiveFilters={hasActiveFilters}
-        variant="elevated"
+        variant="pro"
         compact={true}
       />
 
@@ -994,12 +999,12 @@ export function ERPSalesOrderList({
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
                         {order.orderType === 'TRANSFER' && (
-                          <Badge variant="info" className="text-[10px]">
+                          <Badge variant="info" className="text-xs font-bold">
                             调货销售
                           </Badge>
                         )}
                         {order.hasReturnOrder && (
-                          <Badge variant="destructive" className="text-[10px]">
+                          <Badge variant="destructive" className="text-xs font-bold">
                             已发生退货
                           </Badge>
                         )}
@@ -1018,7 +1023,7 @@ export function ERPSalesOrderList({
                     </div>
                   </div>
 
-                  <div className="mt-2 flex items-center justify-between text-[11px] text-[hsl(var(--color-text-secondary))]">
+                  <div className="mt-2 flex items-center justify-between text-xs font-bold text-slate-500">
                     <div className="flex items-center gap-2">
                       <span className="text-[hsl(var(--color-text-tertiary))]">
                         状态：
@@ -1030,7 +1035,7 @@ export function ERPSalesOrderList({
                         <Button
                           variant="default"
                           size="sm"
-                          className="h-7 px-2 text-[11px]"
+                          className="h-7 px-2 text-xs font-bold"
                           onClick={e => {
                             e.stopPropagation();
                             handleConfirmShipment(order, e);
@@ -1046,7 +1051,7 @@ export function ERPSalesOrderList({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-1 text-[11px]"
+                        className="h-7 px-1 text-xs font-bold text-slate-500"
                         onClick={e => {
                           e.stopPropagation();
                           router.push(`/sales-orders/${order.id}`);

@@ -11,12 +11,12 @@ import * as React from 'react';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-  RETURN_ORDER_STATUS_LABELS,
-  RETURN_ORDER_TYPE_LABELS,
-  RETURN_PROCESS_TYPE_LABELS,
-  type ReturnOrderStatus,
-  type ReturnOrderType,
-  type ReturnProcessType,
+    RETURN_ORDER_STATUS_LABELS,
+    RETURN_ORDER_TYPE_LABELS,
+    RETURN_PROCESS_TYPE_LABELS,
+    type ReturnOrderStatus,
+    type ReturnOrderType,
+    type ReturnProcessType,
 } from '@/lib/types/return-order';
 
 interface ReturnOrderSearchToolbarProps {
@@ -260,7 +260,7 @@ function ReturnOrderToolbarView({
       // 清空筛选
       onClearFilters={handleClearFilters}
       hasActiveFilters={hasActiveFilters}
-      variant="elevated"
+      variant="pro"
       compact={true}
     />
   );

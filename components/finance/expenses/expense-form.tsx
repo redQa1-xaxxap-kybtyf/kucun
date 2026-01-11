@@ -11,41 +11,41 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  EXPENSE_RELATED_TYPE_OPTIONS,
-  EXPENSE_TYPE_OPTIONS,
-  type ExpenseRecord,
+    EXPENSE_RELATED_TYPE_OPTIONS,
+    EXPENSE_TYPE_OPTIONS,
+    type ExpenseRecord,
 } from '@/lib/types/expense';
 import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
-  expenseFormSchema,
-  type ExpenseFormData,
+    expenseFormSchema,
+    type ExpenseFormData,
 } from '@/lib/validations/expense';
 
 import { RelatedRecordSelector } from './related-record-selector';
@@ -102,15 +102,8 @@ export function ExpenseForm({
     },
   });
 
-  // ✅ 修复：使用 expenseId 作为依赖，避免 form 对象引用变化导致的重复调用
   React.useEffect(() => {
     if (isEditMode && initialData) {
-      console.log('🔍 [ExpenseForm] 编辑模式 - initialData:', {
-        expenseType: initialData.expenseType,
-        expenseName: initialData.expenseName,
-        expenseAmount: initialData.expenseAmount,
-      });
-
       form.reset({
         expenseType: initialData.expenseType,
         expenseName: initialData.expenseName,
@@ -121,14 +114,8 @@ export function ExpenseForm({
         relatedNumber: initialData.relatedNumber ?? '',
         remarks: initialData.remarks ?? '',
       });
-
-      console.log(
-        '✅ [ExpenseForm] form.reset 完成，当前值:',
-        form.getValues()
-      );
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expenseId, isEditMode]);
+  }, [form, initialData, isEditMode]);
 
   const watchedRelatedType = form.watch('relatedType');
 

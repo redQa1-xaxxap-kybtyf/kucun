@@ -12,11 +12,9 @@
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import {
-  KeyRound,
-  Loader2,
-  Mail,
-  Shield,
-  User as UserIcon,
+    KeyRound,
+    Loader2,
+    Shield
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
@@ -26,18 +24,17 @@ import { z } from 'zod';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import { cn } from '@/lib/utils';
 import { csrfFetch } from '@/lib/utils/csrf';
 import { changePasswordSchema } from '@/lib/validations/user';
 
@@ -345,330 +342,288 @@ export default function ProfilePage() {
     });
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        {/* 头部标题 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
-                  <UserIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    个人资料
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    查看并管理您的账户信息与登录密码
-                  </p>
-                </div>
+    <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
+      <div className="mx-auto w-full max-w-[1680px] space-y-10">
+        {/* 1. Identity Header: 简化并增强对齐 */}
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-2">
+          <div className="flex items-center gap-6">
+            <div className="relative">
+              <Avatar className="h-20 w-20 ring-4 ring-white shadow-xl">
+                <AvatarFallback className="bg-slate-900 text-2xl font-black text-white">
+                  {displayUser ? getInitials(displayUser.name) : '用户'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white">
+                 <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-black tracking-tighter text-slate-900">
+                  {displayUser?.name || '我的资料'}
+                </h1>
+                <Badge className="bg-slate-900 text-white hover:bg-slate-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1">
+                  {getUserRoleLabel(displayUser?.role || '')}
+                </Badge>
+              </div>
+              <p className="text-sm font-bold text-slate-400">
+                {displayUser?.email} <span className="mx-2 text-slate-200">|</span> 登录账号: {displayUser?.username}
+              </p>
+            </div>
+          </div>
+        </div>
 
-        <div className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)]">
-          {/* 基本信息 + 登录日志 */}
-          <div className="space-y-4">
-            {/* 基本信息 */}
-            <Card className="shadow-[var(--shadow-light)]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                  <UserIcon className="h-5 w-5" />
-                  基本信息
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback>
-                      {displayUser ? getInitials(displayUser.name) : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium">
-                      {displayUser?.name || '—'}
+        <div className="grid gap-12 lg:grid-cols-[2fr_1fr]">
+          {/* 左侧：聚合基本信息表单 (Main Container) */}
+          <div className="space-y-8">
+            <section className="space-y-4">
+              <div className="flex flex-col gap-1 px-1">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">基本信息管理</h3>
+                <p className="text-[11px] font-medium text-slate-400">在此管理您的显示姓名和联系方式</p>
+              </div>
+              
+              <Form {...profileForm}>
+                <form onSubmit={handleProfileSubmit} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:shadow-md">
+                  <div className="divide-y divide-slate-100">
+                    {/* 姓名行 */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8">
+                      <div className="w-full md:w-1/3">
+                        <FormLabel className="text-sm font-black text-slate-900">您的姓名</FormLabel>
+                        <p className="text-[11px] font-medium text-slate-400 mt-1">系统内部显示的名称</p>
+                      </div>
+                      <div className="flex-1">
+                        <FormField
+                          control={profileForm.control}
+                          name="name"
+                          render={({ field }) => (
+                            <FormItem className="space-y-1">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="请输入姓名"
+                                  className="h-10 border-slate-100 bg-slate-50/30 px-4 font-bold transition-all focus:bg-white focus:ring-4 focus:ring-blue-500/5"
+                                  disabled={isLoadingProfile || isSavingProfile}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
-                    <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1">
-                        <Mail className="h-3 w-3" />
-                        {displayUser?.email || '—'}
-                      </span>
-                      {displayUser && (
-                        <>
-                          <Separator orientation="vertical" className="h-3" />
-                          <Badge variant="outline" className="text-xs">
-                            {getUserRoleLabel(displayUser.role)}
-                          </Badge>
-                          <Badge variant="outline" className="text-xs">
-                            {getUserStatusLabel(displayUser.status)}
-                          </Badge>
-                        </>
-                      )}
+
+                    {/* 邮箱行 */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8 bg-slate-50/20">
+                      <div className="w-full md:w-1/3">
+                        <FormLabel className="text-sm font-black text-slate-900">电子邮箱</FormLabel>
+                        <p className="text-[11px] font-medium text-slate-400 mt-1">用于接收系统通知和找回密码</p>
+                      </div>
+                      <div className="flex-1">
+                        <FormField
+                          control={profileForm.control}
+                          name="email"
+                          render={({ field }) => (
+                            <FormItem className="space-y-1">
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="email"
+                                  placeholder="请输入邮箱地址"
+                                  className="h-10 border-slate-100 bg-slate-50/30 px-4 font-bold transition-all focus:bg-white focus:ring-4 focus:ring-blue-500/5"
+                                  disabled={isLoadingProfile || isSavingProfile}
+                                />
+                              </FormControl>
+                              <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <Separator />
-
-                <Form {...profileForm}>
-                  <form onSubmit={handleProfileSubmit} className="space-y-4">
-                    <FormField
-                      control={profileForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>姓名</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              placeholder="请输入您的姓名"
-                              disabled={isLoadingProfile || isSavingProfile}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={profileForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>邮箱</FormLabel>
-                          <FormControl>
-                            <Input
-                              {...field}
-                              type="email"
-                              placeholder="请输入您的邮箱"
-                              disabled={isLoadingProfile || isSavingProfile}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="text-muted-foreground space-y-1 text-sm">
-                        <div className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                          用户名
-                        </div>
-                        <div className="bg-muted rounded-md px-3 py-2 text-xs">
+                    {/* 只读项：账号标识 */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8">
+                      <div className="w-full md:w-1/3">
+                        <span className="text-sm font-black text-slate-900">登录账号 (ID)</span>
+                        <p className="text-[11px] font-medium text-slate-400 mt-1">您的系统唯一账号标识，不可更改</p>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-mono font-black text-slate-500 bg-slate-100/50 px-4 py-2 rounded-lg inline-block">
                           {displayUser?.username || '—'}
                         </div>
                       </div>
-                      <div className="text-muted-foreground space-y-1 text-sm">
-                        <div className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
-                          账户角色
-                        </div>
-                        <div className="bg-muted rounded-md px-3 py-2 text-xs">
-                          {displayUser
-                            ? getUserRoleLabel(displayUser.role)
-                            : '—'}
-                        </div>
-                      </div>
                     </div>
 
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        type="submit"
-                        size="sm"
-                        disabled={isLoadingProfile || isSavingProfile}
-                      >
-                        {isSavingProfile && (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        )}
-                        保存资料
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-
-            {/* 登录日志 */}
-            <Card className="shadow-[var(--shadow-light)]">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                  <Shield className="h-5 w-5" />
-                  登录日志
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-muted-foreground space-y-3 text-xs">
-                {isLoadingLogs ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>登录日志加载中...</span>
-                  </div>
-                ) : loginLogs.length === 0 ? (
-                  <div className="text-[hsl(var(--color-text-secondary))]">
-                    暂无登录记录。
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {loginLogs.map((log, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-md bg-[hsl(var(--color-bg-tertiary))] px-3 py-2"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              variant={
-                                log.type === 'success'
-                                  ? 'outline'
-                                  : log.type === 'failed'
-                                    ? 'destructive'
-                                    : 'secondary'
-                              }
-                              className="px-2 py-0 text-[10px]"
-                            >
-                              {log.type === 'success'
-                                ? '登录成功'
-                                : log.type === 'failed'
-                                  ? '登录失败'
-                                  : '被阻止'}
-                            </Badge>
-                            {log.failureReason && (
-                              <span>
-                                原因：
-                                {log.failureReason === 'invalid_credentials' &&
-                                  '用户名或密码错误'}
-                                {log.failureReason === 'account_disabled' &&
-                                  '账户被禁用'}
-                                {log.failureReason === 'captcha_incorrect' &&
-                                  '验证码错误'}
-                                {log.failureReason === 'captcha_expired' &&
-                                  '验证码过期'}
-                                {log.failureReason === 'too_many_attempts' &&
-                                  '尝试次数过多'}
-                                {log.failureReason === 'ip_blocked' &&
-                                  'IP 被封禁'}
-                                {log.failureReason === 'other' && '其他原因'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span>IP：{log.clientIp}</span>
-                            {log.userAgent && (
-                              <>
-                                <Separator
-                                  orientation="vertical"
-                                  className="h-3"
-                                />
-                                <span className="max-w-[220px] truncate">
-                                  UA：{log.userAgent}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <div className="ml-4 text-[10px] whitespace-nowrap text-[hsl(var(--color-text-secondary))]">
-                          {new Date(log.timestamp).toLocaleString('zh-CN')}
-                        </div>
+                    {/* 只读项：周期信息 */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8 bg-slate-50/20">
+                      <div className="w-full md:w-1/3">
+                        <span className="text-sm font-black text-slate-900">账户信息</span>
+                        <p className="text-[11px] font-medium text-slate-400 mt-1">您的注册日期与当前身份角色</p>
                       </div>
-                    ))}
+                      <div className="flex-1 flex items-center gap-6">
+                         <div className="space-y-1">
+                            <span className="text-[10px] font-black uppercase text-slate-300 block">注册于</span>
+                            <span className="text-xs font-bold text-slate-600">
+                               {displayUser?.createdAt ? new Date(displayUser.createdAt).toLocaleDateString() : '—'}
+                            </span>
+                         </div>
+                         <div className="h-8 w-px bg-slate-200" />
+                         <div className="space-y-1">
+                            <span className="text-[10px] font-black uppercase text-slate-300 block">账户角色</span>
+                            <span className="text-xs font-bold text-slate-600">
+                               {getUserRoleLabel(displayUser?.role || '')}
+                            </span>
+                         </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* 账户安全 / 修改密码 */}
-          <Card className="shadow-[var(--shadow-light)]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base font-semibold">
-                <Shield className="h-5 w-5" />
-                账户安全
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-md bg-[hsl(var(--color-bg-tertiary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                建议定期更新密码，并避免在不同系统中重复使用相同密码。
-              </div>
-
-              <Separator />
-
-              <Form {...passwordForm}>
-                <form onSubmit={handlePasswordSubmit} className="space-y-3">
-                  <FormField
-                    control={passwordForm.control}
-                    name="currentPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>当前密码</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="password"
-                            placeholder="请输入当前登录密码"
-                            disabled={isChangingPassword}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={passwordForm.control}
-                    name="newPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>新密码</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="password"
-                            placeholder="至少8位，包含大小写字母和数字"
-                            disabled={isChangingPassword}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={passwordForm.control}
-                    name="confirmNewPassword"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>确认新密码</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type="password"
-                            placeholder="请再次输入新密码"
-                            disabled={isChangingPassword}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex justify-end">
+                  {/* 底部按钮栏 */}
+                  <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/30 p-6">
+                    <p className="text-[11px] font-medium text-slate-400">
+                      提示：点击下方按钮将立即更新您的个人信息。
+                    </p>
                     <Button
                       type="submit"
-                      size="sm"
-                      variant="outline"
-                      disabled={isChangingPassword}
+                      className="h-11 rounded-2xl bg-slate-900 px-8 text-xs font-black shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-95"
+                      disabled={isLoadingProfile || isSavingProfile}
                     >
-                      {isChangingPassword && (
+                      {isSavingProfile ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Shield className="mr-2 h-4 w-4" />
                       )}
-                      <KeyRound className="mr-2 h-4 w-4" />
-                      修改密码
+                      确认保存修改
                     </Button>
                   </div>
                 </form>
               </Form>
-            </CardContent>
-          </Card>
+            </section>
+          </div>
+
+          {/* 右侧：安全设置与日志 (Sidebar Container) */}
+          <div className="space-y-8">
+            <section className="space-y-4">
+              <div className="flex flex-col gap-1 px-1">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">账号安全管理</h3>
+                <p className="text-[11px] font-medium text-slate-400">建议定期修改密码以保障账号安全</p>
+              </div>
+
+              <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
+                <Form {...passwordForm}>
+                  <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                    <FormField
+                      control={passwordForm.control}
+                      name="currentPassword"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[11px] font-black uppercase tracking-wider text-slate-400">验证当前密码</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="password"
+                              className="h-11 border-slate-100 bg-slate-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 font-bold"
+                              disabled={isChangingPassword}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-[10px] font-bold" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={passwordForm.control}
+                      name="newPassword"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[11px] font-black uppercase tracking-wider text-slate-400">设置新密码</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="password"
+                              className="h-11 border-slate-100 bg-slate-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 font-bold"
+                              disabled={isChangingPassword}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-[10px] font-bold" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={passwordForm.control}
+                      name="confirmNewPassword"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className="text-[11px] font-black uppercase tracking-wider text-slate-400">再次确认新密码</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              type="password"
+                              className="h-11 border-slate-100 bg-slate-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 font-bold"
+                              disabled={isChangingPassword}
+                            />
+                          </FormControl>
+                          <FormMessage className="text-[10px] font-bold" />
+                        </FormItem>
+                      )}
+                    />
+
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="w-full h-12 rounded-2xl border-slate-200 text-xs font-black text-slate-900 hover:bg-slate-50 transition-all active:scale-[0.98]"
+                      disabled={isChangingPassword}
+                    >
+                      {isChangingPassword ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <KeyRound className="mr-2 h-4 w-4" />
+                      )}
+                      确认更新密码
+                    </Button>
+                  </form>
+                </Form>
+              </div>
+            </section>
+
+            {/* 精简登录日志 */}
+            <section className="space-y-4">
+              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">最近登录记录</h3>
+              <div className="rounded-2xl border border-slate-100 bg-white/60 p-2 overflow-hidden">
+                <div className="space-y-1">
+                  {isLoadingLogs ? (
+                    <div className="py-6 text-center text-slate-300">
+                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                    </div>
+                  ) : loginLogs.length === 0 ? (
+                    <div className="py-6 text-center text-[10px] font-bold text-slate-300 uppercase">暂无登录历史</div>
+                  ) : (
+                    loginLogs.slice(0, 3).map((log, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-xl hover:bg-white transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                             "h-2 w-2 rounded-full",
+                             log.type === 'success' ? "bg-emerald-500 shadow-lg shadow-emerald-500/30" : "bg-rose-500 shadow-lg shadow-rose-500/30"
+                          )} />
+                          <div className="flex flex-col">
+                            <span className="text-[11px] font-black text-slate-900">
+                               {log.type === 'success' ? '登录成功' : '非法拦截'}
+                            </span>
+                            <span className="text-[9px] font-mono font-bold text-slate-400">
+                               IP: {log.clientIp}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-black text-slate-300 uppercase text-right">
+                           {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>

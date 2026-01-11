@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/components/ui/use-toast';
@@ -72,6 +73,9 @@ export default function SalesOrderDetailPage() {
     queryFn: () => fetchSalesOrderDetail(id),
     enabled: !!id,
   });
+
+  // 设置动态面包屑标题：显示订单号
+  useBreadcrumbTitle(order ? `订单 ${order.orderNumber}` : null);
 
   // ✅ 使用新的 useUpdateSalesOrderStatus Hook，自动处理缓存刷新
   const updateStatusMutation = useUpdateSalesOrderStatus({

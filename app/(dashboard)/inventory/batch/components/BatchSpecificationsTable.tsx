@@ -10,16 +10,16 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import type {
-  BatchSpecification,
-  BatchSpecificationListResponse,
+    BatchSpecification,
+    BatchSpecificationListResponse,
 } from '@/lib/types/batch-specification';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -61,23 +61,7 @@ export function BatchSpecificationsTable({
     format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   return (
-    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-      <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <PackageSearch className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-            <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-              批次规格列表 ({pagination.total} 条)
-            </span>
-          </div>
-          {isFetching && !isLoading ? (
-            <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
-              更新中...
-            </span>
-          ) : null}
-        </div>
-      </div>
-
+    <div className="overflow-hidden rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       <div className="p-0">
         {/* 桌面端：宽表格视图，支持横向滚动 */}
         <div className="hidden md:block">

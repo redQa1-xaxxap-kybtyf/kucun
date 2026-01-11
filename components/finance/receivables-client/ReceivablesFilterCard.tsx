@@ -4,11 +4,10 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
-import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type {
-  ReceivableItem,
-  ReceivablesResult,
+    ReceivableItem,
+    ReceivablesResult,
 } from '@/lib/services/receivables-service';
 
 import { ReceivablesTableList } from './ReceivablesTableList';
@@ -50,30 +49,28 @@ export function ReceivablesFilterCard({
   );
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <ReceivablesFilterBar
-          queryParams={queryParams}
-          searchValue={searchValue}
-          isSearching={isSearching}
-          onSearch={onSearch}
-          onFilterChange={onFilterChange}
-          onDateRangeChange={onDateRangeChange}
-        />
+    <div className="space-y-6">
+      <ReceivablesFilterBar
+        queryParams={queryParams}
+        searchValue={searchValue}
+        isSearching={isSearching}
+        onSearch={onSearch}
+        onFilterChange={onFilterChange}
+        onDateRangeChange={onDateRangeChange}
+      />
 
-        <div className="mt-6">
-          <ReceivablesTableList
-            isLoading={isLoading}
-            error={error}
-            receivables={receivables}
-            pagination={pagination}
-            onPageChange={onPageChange}
-            onOpenPaymentDialog={onOpenPaymentDialog}
-            onViewOrder={handleViewOrder}
-          />
-        </div>
-      </CardContent>
-    </Card>
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <ReceivablesTableList
+          isLoading={isLoading}
+          error={error}
+          receivables={receivables}
+          pagination={pagination}
+          onPageChange={onPageChange}
+          onOpenPaymentDialog={onOpenPaymentDialog}
+          onViewOrder={handleViewOrder}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -129,7 +126,7 @@ function ReceivablesFilterBar({
         onChange: onDateRangeChange,
         placeholder: '选择订单日期范围',
       }}
-      variant="default"
+      variant="pro"
       compact={true}
     />
   );

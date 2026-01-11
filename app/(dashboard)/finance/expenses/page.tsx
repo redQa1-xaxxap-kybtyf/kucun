@@ -1,9 +1,17 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { can } from '@/lib/auth/permissions';
+import { queryKeys } from '@/lib/queryKeys';
+import { getExpenseRecords } from '@/lib/services/expense-service';
+import type { ExpenseQueryParams } from '@/lib/types/expense';
 
 import { ExpensesPageClient } from './page-client';
 
@@ -48,6 +56,18 @@ export default async function ExpensesPage({
   const page = parseInt(params.page || '1', 10);
   const pageSize = parseInt(params.pageSize || '20', 10);
 
+  const sortBy: NonNullable<ExpenseQueryParams['sortBy']> =
+    params.sortBy === 'expenseDate' ||
+    params.sortBy === 'expenseAmount' ||
+    params.sortBy === 'createdAt'
+      ? params.sortBy
+      : 'expenseDate';
+
+  const sortOrder: NonNullable<ExpenseQueryParams['sortOrder']> =
+    params.sortOrder === 'asc' || params.sortOrder === 'desc'
+      ? params.sortOrder
+      : 'desc';
+
   const initialParams = {
     page,
     pageSize,
@@ -55,9 +75,39 @@ export default async function ExpensesPage({
     startDate: params.startDate,
     endDate: params.endDate,
     relatedType: params.relatedType,
-    sortBy: params.sortBy || 'expenseDate',
-    sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+    sortBy,
+    sortOrder,
   };
 
-  return <ExpensesPageClient initialParams={initialParams} />;
+  const expenseQuery: ExpenseQueryParams = {
+    page,
+    pageSize,
+    expenseType: params.expenseType as ExpenseQueryParams['expenseType'],
+    startDate: params.startDate,
+    endDate: params.endDate,
+    relatedType: params.relatedType as ExpenseQueryParams['relatedType'],
+    sortBy,
+    sortOrder,
+  };
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
+  const initialListData = await getExpenseRecords(expenseQuery);
+
+  queryClient.setQueryData(
+    queryKeys.finance.expensesList(expenseQuery),
+    initialListData
+  );
+
+  return (
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ExpensesPageClient initialParams={initialParams} />
+    </HydrationBoundary>
+  );
 }

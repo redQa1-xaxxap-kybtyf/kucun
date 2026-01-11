@@ -12,11 +12,11 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
@@ -97,6 +97,7 @@ export interface UnifiedSearchBarProps {
   // 样式
   className?: string;
   compact?: boolean; // 紧凑模式,用于移动端或空间有限的场景
+  variant?: 'default' | 'pro'; // 样式变体
 }
 
 interface ActionButtonsSectionProps {
@@ -170,16 +171,18 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
         )}
       />
     )}
-    <Input
-      placeholder={searchPlaceholder}
-      value={searchValue}
-      onChange={onChange}
-      className={cn(
-        'pl-10',
-        showClearButton && searchValue && 'pr-10',
-        inputSize
-      )}
-    />
+      <Input
+        placeholder={searchPlaceholder}
+        value={searchValue}
+        onChange={onChange}
+        className={cn(
+          'pl-10',
+          showClearButton && searchValue && 'pr-10',
+          inputSize,
+          // Pro 样式覆盖
+          inputSize.includes('h-14') && "rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md shadow-sm focus:bg-white"
+        )}
+      />
     {showClearButton && searchValue && (
       <Button
         type="button"
@@ -304,7 +307,9 @@ const FiltersSection: React.FC<FiltersSectionProps> = ({
               className={cn(
                 inputSize,
                 filter.width || 'w-32',
-                compact && 'text-xs'
+                compact && 'text-xs',
+                // Pro 样式覆盖
+                inputSize.includes('h-14') && "rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md shadow-sm hover:bg-white"
               )}
             >
               <SelectValue placeholder={filter.placeholder || filter.label} />
@@ -347,6 +352,7 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     actionButtons = [],
     className,
     compact = false,
+    variant = 'default',
   }) => {
     // ✅ 修复：使用受控输入，避免内部状态导致的双重渲染
     // 直接使用外部传入的 searchValue，不维护本地状态
@@ -377,8 +383,9 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
       [onFilterChange]
     );
 
-    const inputSize = compact ? 'h-8 text-sm' : 'h-10';
-    const buttonSize = compact ? 'h-8' : 'h-10';
+    const isPro = variant === 'pro';
+    const inputSize = isPro ? 'h-14' : compact ? 'h-8 text-sm' : 'h-10';
+    const buttonSize = isPro ? 'h-14 px-6' : compact ? 'h-8' : 'h-10';
 
     return (
       <div className={cn('flex flex-wrap items-center gap-2', className)}>

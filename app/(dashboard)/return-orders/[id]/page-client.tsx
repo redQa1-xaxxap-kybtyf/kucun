@@ -2,46 +2,47 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Ban,
-  CheckCircle,
-  Download,
-  Edit,
-  MoreHorizontal,
-  Printer,
-  XCircle,
+    Ban,
+    CheckCircle,
+    Download,
+    Edit,
+    MoreHorizontal,
+    Printer,
+    XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  RETURN_ORDER_MODE_LABELS,
-  RETURN_ORDER_STATUS_LABELS,
-  RETURN_ORDER_TYPE_LABELS,
-  RETURN_PROCESS_TYPE_LABELS,
+    RETURN_ORDER_MODE_LABELS,
+    RETURN_ORDER_STATUS_LABELS,
+    RETURN_ORDER_TYPE_LABELS,
+    RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
@@ -216,6 +217,9 @@ export function ReturnOrderDetailPageClient({
     queryFn: () => fetchReturnOrderDetail(id),
     enabled: !!id,
   });
+
+  // 设置动态面包屑标题：显示退货单号
+  useBreadcrumbTitle(order ? `退货单 ${order.returnNumber}` : null);
 
   // 取消退货订单
   const cancelMutation = useMutation({

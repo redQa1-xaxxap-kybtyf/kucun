@@ -146,10 +146,15 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
           ref={canvasRef}
           width={width}
           height={height}
-          className="border-input cursor-pointer rounded border bg-gray-50"
+          className="border-input min-h-[var(--captcha-h)] min-w-[var(--captcha-w)] cursor-pointer rounded border bg-gray-50"
           onClick={refreshCaptcha}
           title="点击刷新验证码"
-          style={{ minWidth: width, minHeight: height }}
+          style={
+            {
+              '--captcha-w': `${width}px`,
+              '--captcha-h': `${height}px`,
+            } as React.CSSProperties
+          }
         />
         <Button
           type="button"

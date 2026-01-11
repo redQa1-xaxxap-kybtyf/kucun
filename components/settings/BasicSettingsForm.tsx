@@ -14,21 +14,21 @@ import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,6 +36,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { inventoryConfig, salesOrderConfig, systemConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
+import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { BasicSettingsFormSchema } from '@/lib/validations/settings';
 
@@ -279,41 +280,76 @@ export function BasicSettingsForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12 pb-20">
         {/* 系统配置 */}
         <SettingsSection
-          title="系统配置"
-          description="配置系统基本参数和显示信息"
+          title="系统识别与环境"
+          description="定义系统的基础身份信息，这将在全站标题、导出报告及登录页中生效。"
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
               name="systemName"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>系统名称 *</FormLabel>
+                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                  <div className="space-y-1">
+                    <FormLabel className="text-sm font-black text-slate-900">系统显示名称 *</FormLabel>
+                    <p className="text-xs font-medium text-slate-500">展示于浏览器标签与侧边栏顶部</p>
+                  </div>
                   <FormControl>
-                    <Input placeholder="请输入系统名称" {...field} />
+                    <Input 
+                      placeholder="如: Antigravity ERP" 
+                      className="h-11 border-slate-100 bg-slate-50/50 px-4 font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all" 
+                      {...field} 
+                    />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="absolute -bottom-6 left-2" />
                 </FormItem>
               )}
             />
 
-            {/* 系统版本不再由用户手工填写，只在其他位置展示 */}
+            <FormField
+              control={form.control}
+              name="defaultLanguage"
+              render={({ field }) => (
+                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                  <div className="space-y-1">
+                    <FormLabel className="text-sm font-black text-slate-900">系统默认语言</FormLabel>
+                    <p className="text-xs font-medium text-slate-500">全局多语言切换的基础预设</p>
+                  </div>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 px-4 font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+                        <SelectValue placeholder="选择语言" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="zh" className="font-medium">简体中文 (Chinese)</SelectItem>
+                      <SelectItem value="en" className="font-medium">English (United States)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="absolute -bottom-6 left-2" />
+                </FormItem>
+              )}
+            />
           </div>
 
           <FormField
             control={form.control}
             name="systemDescription"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>系统描述</FormLabel>
+              <FormItem className="relative flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
+                <div className="space-y-1">
+                  <FormLabel className="text-sm font-black text-slate-900">系统全局描述 / 标语</FormLabel>
+                  <p className="text-xs font-medium text-slate-500">展示于登录页及关于页面，体现企业文化</p>
+                </div>
                 <FormControl>
                   <Textarea
-                    placeholder="请输入系统描述"
-                    className="resize-none"
-                    rows={3}
+                    placeholder="请输入系统描述，例如：专业的库存管理解决方案"
+                    className="min-h-[100px] resize-none border-slate-100 bg-slate-50/50 p-4 font-medium italic focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
                     {...field}
                   />
                 </FormControl>
@@ -323,80 +359,40 @@ export function BasicSettingsForm() {
           />
         </SettingsSection>
 
-        {/* 业务配置 */}
+        {/* 库存控制与预警阈值 */}
         <SettingsSection
-          title="业务配置"
-          description="配置系统业务相关的基础参数"
+          title="库存控制与预警阈值"
+          description="设定供应链流转中的自动控制逻辑。低库存阈值将触发系统的实时红色预警指示。"
         >
-          <div className="grid gap-4 md:grid-cols-1">
-            <FormField
-              control={form.control}
-              name="defaultLanguage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>默认语言</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择语言" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="zh">中文</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </SettingsSection>
-
-        {/* 库存配置 */}
-        <SettingsSection
-          title="库存配置"
-          description="配置库存管理相关的参数和预警设置"
-        >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
               name="lowStockThreshold"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>低库存阈值</FormLabel>
+                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                  <div className="space-y-1">
+                    <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900">
+                      <RefreshCw className="h-4 w-4 text-blue-500" />
+                      低库存全局预警值
+                    </FormLabel>
+                    <p className="text-xs font-medium text-slate-500">分界值，低于此值将被标记为“库存不足”</p>
+                  </div>
                   <FormControl>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="9999"
-                      placeholder="10"
-                      {...field}
-                      onChange={e => {
-                        const value = e.target.value;
-                        // 只允许正整数
-                        if (value === '' || /^[1-9]\d*$/.test(value)) {
-                          field.onChange(value === '' ? '' : Number(value));
-                        }
-                      }}
-                      onBlur={e => {
-                        const value = Number(e.target.value);
-                        // 确保值在有效范围内
-                        if (value < 1) {
-                          field.onChange(1);
-                        } else if (value > 9999) {
-                          field.onChange(9999);
-                        }
-                      }}
-                    />
+                    <div className="relative mt-2 w-full max-w-[180px]">
+                       <Input
+                         type="number"
+                         className="h-11 border-slate-100 bg-slate-50/50 px-4 font-mono text-lg font-black text-slate-900 focus:bg-white focus:ring-blue-500"
+                         {...field}
+                         onChange={e => {
+                           const value = e.target.value;
+                           if (value === '' || /^[1-9]\d*$/.test(value)) {
+                             field.onChange(value === '' ? '' : Number(value));
+                           }
+                         }}
+                       />
+                    </div>
                   </FormControl>
-                  <FormDescription>
-                    当库存数量低于此值时将触发预警（最小值：1，最大值：9999）
-                  </FormDescription>
-                  <FormMessage />
+                  <FormMessage className="absolute -bottom-6 left-2" />
                 </FormItem>
               )}
             />
@@ -405,44 +401,59 @@ export function BasicSettingsForm() {
               control={form.control}
               name="enableStockAlerts"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">库存预警</FormLabel>
-                    <FormDescription>
-                      启用库存不足时的自动预警通知
+                <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                  <div className="space-y-1">
+                    <FormLabel className="text-sm font-black text-slate-900">自动预警通知</FormLabel>
+                    <FormDescription className="text-[11px] font-medium text-slate-400 leading-relaxed max-w-[240px]">
+                      启用后，系统将在看板首页显著位置推送预警简报。
                     </FormDescription>
                   </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
+                  <div className="flex flex-col items-end gap-2 px-2">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <span className={cn(
+                        "text-xs font-black uppercase tracking-tighter transition-colors",
+                        field.value ? "text-blue-600" : "text-slate-300"
+                    )}>
+                      {field.value ? 'Active / 已开启' : 'Disabled / 已关闭'}
+                    </span>
+                  </div>
                 </FormItem>
               )}
             />
           </div>
         </SettingsSection>
 
-        {/* 订单配置 */}
+        {/* 订单流转规则 */}
         <SettingsSection
-          title="订单配置"
-          description="配置订单管理相关的参数和流程设置"
+          title="订单编号规则与审批工作流"
+          description="定义销售订单的生成逻辑。启用审批流程后，所有订单在生效前需经过财务或主管确认。"
         >
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <FormField
               control={form.control}
               name="orderNumberPrefix"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>订单号前缀</FormLabel>
+                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                  <div className="space-y-1">
+                    <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900 uppercase">
+                      订单唯一识别前缀
+                    </FormLabel>
+                    <p className="text-[11px] font-medium text-slate-400">如: SO (Sales Order)</p>
+                  </div>
                   <FormControl>
-                    <Input placeholder="SO" maxLength={10} {...field} />
+                    <Input 
+                        placeholder="如: SO" 
+                        maxLength={10} 
+                        className="mt-2 h-11 w-full max-w-[180px] border-slate-100 bg-slate-50/50 font-mono font-black text-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 uppercase transition-all"
+                        {...field} 
+                    />
                   </FormControl>
-                  <FormDescription>
-                    订单编号的前缀，如：SO20240101001
-                  </FormDescription>
-                  <FormMessage />
+                  <FormMessage className="absolute -bottom-6 left-2" />
                 </FormItem>
               )}
             />
@@ -451,44 +462,57 @@ export function BasicSettingsForm() {
               control={form.control}
               name="enableOrderApproval"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">订单审批</FormLabel>
-                    <FormDescription>
-                      启用订单创建后需要审批的流程
+                <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                  <div className="space-y-1">
+                    <FormLabel className="text-sm font-black text-slate-900">强制订单审批</FormLabel>
+                    <FormDescription className="text-[11px] font-medium text-slate-400 leading-relaxed max-w-[240px]">
+                      所有新建订单必须经过后台审批后方可启动出库流程。
                     </FormDescription>
                   </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
+                  <div className="flex flex-col items-end gap-2 px-2">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <span className={cn(
+                        "text-xs font-black uppercase tracking-tighter transition-colors",
+                        field.value ? "text-blue-600" : "text-slate-300"
+                    )}>
+                      {field.value ? 'Require / 已开启' : 'Bypass / 已关闭'}
+                    </span>
+                  </div>
                 </FormItem>
               )}
             />
           </div>
         </SettingsSection>
 
-        {/* 表单操作按钮 */}
-        <div className="flex items-center justify-between border-t pt-6">
+        {/* 底部悬浮动作栏 / Floating Action Bar */}
+        <div className="fixed bottom-6 left-1/2 z-50 flex w-fit -translate-x-1/2 items-center gap-3 rounded-full border border-slate-200 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-md transition-all duration-300">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={handleReset}
             disabled={isSubmitting || !hasChanges}
+            className="h-11 rounded-full px-6 font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-30"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            重置
+            <RefreshCw className={cn("mr-2 h-4 w-4", isSubmitting && "animate-spin")} />
+            撤销更改
           </Button>
 
-          <Button type="submit" disabled={isSubmitting || !hasChanges}>
+          <Button 
+            type="submit" 
+            disabled={isSubmitting || !hasChanges}
+            className="h-11 rounded-full bg-slate-900 px-10 font-black text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200"
+          >
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Save className="mr-2 h-4 w-4" />
+              <Save className="mr-2 h-4 w-4 text-blue-400" />
             )}
-            {isSubmitting ? '保存中...' : '保存设置'}
+            {isSubmitting ? '正在安全保存...' : '保存全局配置'}
           </Button>
         </div>
       </form>

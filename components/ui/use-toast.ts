@@ -2,7 +2,7 @@ import * as React from 'react';
 
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 
-const TOAST_LIMIT = 1;
+const TOAST_LIMIT = 5; // 允许同时显示最多 5 个 Toast
 const TOAST_REMOVE_DELAY = 5000; // 默认5秒后移除Toast
 
 type ToasterToast = ToastProps & {
@@ -211,3 +211,4 @@ function useToast() {
 }
 
 export { toast, useToast };
+

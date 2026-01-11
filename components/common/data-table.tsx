@@ -20,20 +20,21 @@ import { EmptyState } from '@/components/common/empty-state';
 import { InlineLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
 /**
  * 表格列定义
@@ -196,7 +197,15 @@ export function DataTable<TData>({
           <TableHeader>
             <TableRow>
               {columns.map((column, index) => (
-                <TableHead key={index} style={{ width: column.width }}>
+                <TableHead
+                  key={index}
+                  className={column.width ? 'w-[var(--col-width)]' : ''}
+                  style={
+                    column.width
+                      ? ({ '--col-width': column.width } as React.CSSProperties)
+                      : undefined
+                  }
+                >
                   {column.header}
                 </TableHead>
               ))}
@@ -245,13 +254,15 @@ export function DataTable<TData>({
             {columns.map((column, index) => (
               <TableHead
                 key={index}
-                style={{ width: column.width }}
-                className={
-                  column.align === 'center'
-                    ? 'text-center'
-                    : column.align === 'right'
-                      ? 'text-right'
-                      : ''
+                className={cn(
+                  column.width && 'w-[var(--col-width)]',
+                  column.align === 'center' && 'text-center',
+                  column.align === 'right' && 'text-right'
+                )}
+                style={
+                  column.width
+                    ? ({ '--col-width': column.width } as React.CSSProperties)
+                    : undefined
                 }
               >
                 {column.header}

@@ -3,9 +3,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle, Save } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -13,23 +13,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  COUNT_ITEM_STATUS_LABELS,
-  COUNT_STATUS_LABELS,
-  COUNT_TYPE_LABELS,
-  type CountItemStatus,
-  type InventoryCountDetail,
-  type InventoryCountItem,
+    COUNT_ITEM_STATUS_LABELS,
+    COUNT_STATUS_LABELS,
+    COUNT_TYPE_LABELS,
+    type CountItemStatus,
+    type InventoryCountDetail,
+    type InventoryCountItem,
 } from '@/lib/types/inventory-count';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
@@ -83,8 +83,28 @@ export function ExecuteCountPageClient({
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '提交盘点数据失败');
+        const errorData = await response.json();
+        // 提取详细错误信息，提供具体的修复指导
+        const errorMessage = errorData.error || errorData.message || '';
+        const details = errorData.details || '';
+        
+        // 构建用户友好的错误消息
+        let userMessage = '提交盘点数据失败';
+        if (errorMessage.includes('负数') || errorMessage.includes('negative')) {
+          userMessage = '提交失败：库存数量不能为负数，请检查实际数量后重试';
+        } else if (errorMessage.includes('权限') || response.status === 403) {
+          userMessage = '提交失败：您没有执行此操作的权限，请联系管理员';
+        } else if (errorMessage.includes('不存在') || response.status === 404) {
+          userMessage = '提交失败：盘点计划不存在或已被删除，请刷新页面后重试';
+        } else if (errorMessage.includes('状态') || errorMessage.includes('status')) {
+          userMessage = '提交失败：盘点计划状态已变更，请刷新页面查看最新状态';
+        } else if (errorMessage) {
+          userMessage = `提交失败：${errorMessage}${details ? `（${details}）` : ''}`;
+        } else {
+          userMessage = '提交失败：服务器暂时无法处理请求，请稍后重试';
+        }
+        
+        throw new Error(userMessage);
       }
 
       return response.json();
@@ -125,8 +145,24 @@ export function ExecuteCountPageClient({
       );
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || '完成盘点失败');
+        const errorData = await response.json();
+        const errorMessage = errorData.error || errorData.message || '';
+        
+        // 构建用户友好的错误消息
+        let userMessage = '完成盘点失败';
+        if (errorMessage.includes('未录入') || errorMessage.includes('pending')) {
+          userMessage = '完成失败：部分产品尚未录入实际数量，请确保所有产品都已盘点';
+        } else if (errorMessage.includes('权限') || response.status === 403) {
+          userMessage = '完成失败：您没有执行此操作的权限，请联系管理员';
+        } else if (errorMessage.includes('状态') || errorMessage.includes('status')) {
+          userMessage = '完成失败：盘点计划状态已变更，请刷新页面查看最新状态';
+        } else if (errorMessage) {
+          userMessage = `完成失败：${errorMessage}`;
+        } else {
+          userMessage = '完成失败：服务器暂时无法处理请求，请稍后重试';
+        }
+        
+        throw new Error(userMessage);
       }
 
       return response.json();

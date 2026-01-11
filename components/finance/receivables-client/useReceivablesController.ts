@@ -61,7 +61,7 @@ export function useReceivablesController({
   initialData,
   initialParams,
 }: {
-  initialData: ReceivablesResult;
+  initialData?: ReceivablesResult;
   initialParams?: ReceivablesQueryParams;
 }): ReceivablesControllerResult {
   // ✅ 使用统一的URL参数管理Hook
@@ -141,7 +141,8 @@ export function useReceivablesController({
   const effectiveIsLoading =
     !data && !!initialData && isLoading ? false : isLoading;
 
-  const currentData = data?.data || initialData;
+  const currentData =
+    data?.data ?? initialData ?? createEmptyReceivablesResult(queryParams);
 
   return {
     queryParams,
@@ -159,6 +160,30 @@ export function useReceivablesController({
     isPaymentDialogOpen: paymentDialogState.isPaymentDialogOpen,
     setIsPaymentDialogOpen: paymentDialogState.setIsPaymentDialogOpen,
     selectedOrder: paymentDialogState.selectedOrder,
+  };
+}
+
+function createEmptyReceivablesResult(
+  queryParams: ReceivablesQueryParams
+): ReceivablesResult {
+  return {
+    receivables: [],
+    pagination: {
+      page: queryParams.page ?? 1,
+      limit: queryParams.limit ?? 20,
+      total: 0,
+      totalPages: 0,
+    },
+    summary: {
+      totalReceivable: 0,
+      receivableCount: 0,
+      paidCount: 0,
+      unpaidCount: 0,
+      partialCount: 0,
+      pendingCount: 0,
+      collectionRate: 0,
+      collectionRateChange: 0,
+    },
   };
 }
 

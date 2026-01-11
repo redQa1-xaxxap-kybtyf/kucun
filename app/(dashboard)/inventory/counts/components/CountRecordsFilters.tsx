@@ -1,15 +1,5 @@
-/**
- * 库存盘点记录筛选组件
- * 使用统一的RecordsFilters组件，遵循唯一真理原则
- */
-
-'use client';
-
-import {
-  COUNT_FILTER_CONFIG,
-  RecordsFilters,
-  type FilterValues,
-} from '@/components/inventory/forms/RecordsFilters';
+import { SearchFilterCard } from '@/components/common/search-filter-card';
+import { COUNT_TYPE_OPTIONS } from '@/lib/constants/inventory-filters';
 import type { InventoryCountQueryParams } from '@/lib/types/inventory-count';
 
 interface CountRecordsFiltersProps {
@@ -23,45 +13,58 @@ export function CountRecordsFilters({
   onFiltersChange,
   onReset,
 }: CountRecordsFiltersProps) {
-  // 将filters转换为FilterValues格式
-  const filterValues: FilterValues = {
-    search: filters.location, // 使用 location 字段作为搜索
-    type: filters.countType,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
-  };
-
   // 处理筛选变更
-  const handleFilterChange = (
-    key: keyof FilterValues,
-    value: string | undefined
-  ) => {
-    // 将FilterValues的key映射到InventoryCountQueryParams的key
-    if (key === 'search') {
-      onFiltersChange({
-        location: value,
-      });
-    } else if (key === 'type') {
+  const handleFilterChange = (key: string, value: string | undefined) => {
+    if (key === 'countType') {
       onFiltersChange({
         countType: value as InventoryCountQueryParams['countType'],
-      });
-    } else if (key === 'startDate') {
-      onFiltersChange({
-        startDate: value,
-      });
-    } else if (key === 'endDate') {
-      onFiltersChange({
-        endDate: value,
       });
     }
   };
 
   return (
-    <RecordsFilters
-      config={COUNT_FILTER_CONFIG}
-      values={filterValues}
+    <SearchFilterCard
+      searchValue={filters.location || ''}
+      onSearchChange={(val) => onFiltersChange({ location: val })}
+      searchPlaceholder="搜索盘点位置..."
+      // 筛选器配置
+      filters={[
+        {
+          key: 'countType',
+          label: '盘点类型',
+          options: COUNT_TYPE_OPTIONS,
+          width: 'w-40',
+        },
+      ]}
+      filterValues={{
+        countType: filters.countType || 'all',
+      }}
       onFilterChange={handleFilterChange}
-      onReset={onReset}
+      // 日期范围筛选
+      dateRangeFilter={{
+        key: 'dateRange',
+        label: '盘点日期',
+        value: {
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        },
+        onChange: ({ startDate, endDate }) => {
+          onFiltersChange({
+            startDate: startDate || undefined,
+            endDate: endDate || undefined,
+          });
+        },
+        placeholder: '选择盘点日期范围',
+      }}
+      onClearFilters={onReset}
+      hasActiveFilters={
+        !!filters.location ||
+        !!filters.countType ||
+        !!filters.startDate ||
+        !!filters.endDate
+      }
+      variant="pro"
+      compact={true}
     />
   );
 }

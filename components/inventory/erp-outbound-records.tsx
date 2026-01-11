@@ -1,10 +1,10 @@
 'use client';
 
-import { OutboundRecordsFilters } from '@/components/inventory/forms/outbound-records-filters';
 import { OutboundRecordsTable } from '@/components/inventory/forms/outbound-records-table';
-import { OutboundRecordsToolbar } from '@/components/inventory/forms/outbound-records-toolbar';
+import { OutboundRecordsSearchToolbar } from '@/components/inventory/outbound-records-search-toolbar';
 import { useOutboundRecords } from '@/hooks/use-outbound-records';
 import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
+import * as React from 'react';
 
 interface ERPOutboundRecordsProps {
   initialParams?: OutboundRecordQueryParams;
@@ -13,6 +13,7 @@ interface ERPOutboundRecordsProps {
 /**
  * ERP风格的出库记录组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
+ * ✅ 已升级为 v3 PRO 高清筛选中心
  */
 export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
   const {
@@ -25,20 +26,37 @@ export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
     onPageChange,
   } = useOutboundRecords(initialParams);
 
+  // 本地同步搜索值（可选，为了更好的搜索体验）
+  const [searchValue, setSearchValue] = React.useState(filters.search || '');
+  React.useEffect(() => {
+    setSearchValue(filters.search || '');
+  }, [filters.search]);
+
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
-      <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <OutboundRecordsToolbar />
+    <div className="space-y-4">
+      {/* 搜索工具栏 (v3 PRO) */}
+      <OutboundRecordsSearchToolbar
+        searchValue={searchValue}
+        typeFilter={filters.type || 'all'}
+        dateRange={{
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        }}
+        isSearching={isLoading}
+        onSearch={(val) => {
+          setSearchValue(val);
+          updateFilter('search', val);
+        }}
+        onTypeChange={(val) => updateFilter('type', val)}
+        onDateRangeChange={(range) => {
+          updateFilter('startDate', range.startDate || '');
+          updateFilter('endDate', range.endDate || '');
+        }}
+        onClearFilters={resetFilters}
+      />
 
-        {/* 筛选条件 */}
-        <OutboundRecordsFilters
-          filters={filters}
-          onUpdateFilter={updateFilter}
-          onReset={resetFilters}
-        />
-
-        {/* 出库记录表格 */}
+      {/* 出库记录表格 */}
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
         <OutboundRecordsTable
           records={outboundRecords}
           pagination={pagination}

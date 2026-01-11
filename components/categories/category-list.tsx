@@ -19,25 +19,25 @@ import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Category } from '@/lib/api/categories';
 import { formatDateTime } from '@/lib/utils/datetime';
@@ -310,8 +310,8 @@ function CategoryNameCell({
   return (
     <TableCell className="font-medium">
       <div
-        className="flex items-center gap-2"
-        style={{ paddingLeft: `${indentPx}px` }}
+        className="flex items-center gap-2 pl-[var(--indent)]"
+        style={{ '--indent': `${indentPx}px` } as React.CSSProperties}
       >
         {category.level > 0 && (
           <div className="flex items-center">

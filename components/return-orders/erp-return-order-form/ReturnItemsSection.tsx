@@ -280,11 +280,12 @@ export function ReturnItemsSection({
                                   <Input
                                     type="number"
                                     min="1"
+                                    step="1"
                                     className="h-9 w-full text-right text-sm font-medium"
                                     {...fieldControl}
                                     onChange={event => {
                                       fieldControl.onChange(
-                                        Number(event.target.value)
+                                        parseInt(event.target.value, 10) || 0
                                       );
                                       calculateSubtotal(index);
                                     }}
@@ -305,13 +306,13 @@ export function ReturnItemsSection({
                                   <Input
                                     type="number"
                                     min="0"
-                                    step="0.01"
+                                    step="1"
                                     placeholder="0"
                                     className="h-9 w-full text-right text-sm"
                                     {...fieldControl}
                                     onChange={event => {
                                       fieldControl.onChange(
-                                        Number(event.target.value) || 0
+                                        parseInt(event.target.value, 10) || 0
                                       );
                                       calculateSubtotal(index);
                                     }}

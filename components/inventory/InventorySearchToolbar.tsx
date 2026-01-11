@@ -306,7 +306,7 @@ function InventoryToolbarView({
       // 清空筛选
       onClearFilters={handleClearFilters}
       hasActiveFilters={hasActiveFilters}
-      variant="elevated"
+      variant="pro"
       compact={true}
     />
   );

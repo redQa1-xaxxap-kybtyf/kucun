@@ -99,8 +99,7 @@ const SupplierPriceSelectorComponent = React.memo<SupplierPriceSelectorProps>(
           }
         }
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value, currentProductId, supplierPriceHistoryData]);
+    }, [currentProductId, form, index, supplierPriceHistoryData, toast, value]);
 
     return (
       <FormItem>

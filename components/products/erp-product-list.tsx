@@ -12,16 +12,21 @@ import { useProductListState } from '@/hooks/use-product-list-state';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
-import { type PaginatedResponse } from '@/lib/types/api';
 import type {
-  Product,
-  ProductQueryParams,
-  ProductStatus,
+    Product,
+    ProductQueryParams,
+    ProductStatus,
 } from '@/lib/types/product';
+
+const CATEGORY_OPTIONS_QUERY = {
+  status: 'active',
+  limit: 100,
+  sortBy: 'name',
+  sortOrder: 'asc',
+} as const;
 
 interface ERPProductListProps {
   onProductSelect?: (product: Product) => void;
-  _initialData?: PaginatedResponse<Product>;
   initialParams?: ProductQueryParams;
 }
 
@@ -31,7 +36,6 @@ interface ERPProductListProps {
  */
 export function ERPProductList({
   onProductSelect,
-  _initialData,
   initialParams,
 }: ERPProductListProps) {
   // 状态管理
@@ -53,8 +57,8 @@ export function ERPProductList({
 
   // 获取分类列表
   const { data: categoriesResponse } = useQuery({
-    queryKey: categoryQueryKeys.lists(),
-    queryFn: () => getCategories(),
+    queryKey: categoryQueryKeys.list(CATEGORY_OPTIONS_QUERY),
+    queryFn: () => getCategories(CATEGORY_OPTIONS_QUERY),
   });
 
   const categories = categoriesResponse?.data || [];
@@ -67,8 +71,6 @@ export function ERPProductList({
     staleTime: 0, // ✅ 修复：设置为0，确保每次导航都重新获取最新数据
     refetchOnWindowFocus: false, // 避免不必要的重新获取
     refetchOnMount: 'always', // ✅ 修复：每次挂载都重新获取，确保数据最新
-    initialData: _initialData, // 使用服务端预取的数据作为初始显示
-    initialDataUpdatedAt: 0, // ✅ 修复：标记初始数据为过期，强制重新验证
   });
 
   // 处理筛选器清空
@@ -146,7 +148,7 @@ export function ERPProductList({
           }
         }}
         onClearFilters={handleClearFilters}
-        variant="elevated"
+        variant="pro"
         compact={true}
       />
 

@@ -4,8 +4,8 @@ import { CheckCircle, Clock, Receipt, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useToast } from '@/components/ui/use-toast';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
@@ -204,23 +204,70 @@ export function PaymentsOutClient({
       {/* ... (保留统计卡片) */}
 
       {/* 搜索和筛选 */}
-      <Card>
-        <CardContent className="pt-6">
-          {/* ... (保留 SearchFilterCard) */}
+      <div className="relative z-10">
+        <SearchFilterCard
+          searchValue={_searchValue}
+          onSearchChange={_setSearchValue}
+          searchPlaceholder="检索供应商名称、单号或联系人..."
+          variant="pro"
+          compact={true}
+          filters={[
+            {
+              key: 'status',
+              label: '状态',
+              options: [
+                { label: '待确认', value: 'pending' },
+                { label: '已确认', value: 'confirmed' },
+                { label: '已取消', value: 'cancelled' },
+              ],
+              width: 'w-[140px]',
+            },
+            {
+              key: 'paymentMethod',
+              label: '付款方式',
+              options: [
+                { label: '现金', value: 'cash' },
+                { label: '银行转账', value: 'bank_transfer' },
+                { label: '支付宝', value: 'alipay' },
+                { label: '微信', value: 'wechat' },
+                { label: '支票', value: 'check' },
+              ],
+              width: 'w-[140px]',
+            },
+          ]}
+          filterValues={{
+            status: initialParams?.status || 'all',
+            paymentMethod: initialParams?.paymentMethod || 'all',
+          }}
+          onFilterChange={_onFilter}
+          dateRangeFilter={
+            _onDateRangeChange
+              ? {
+                  key: 'dateRange',
+                  label: '日期',
+                  value: {
+                    startDate: initialParams?.startDate,
+                    endDate: initialParams?.endDate,
+                  },
+                  onChange: _onDateRangeChange,
+                  placeholder: '付款日期范围',
+                }
+              : undefined
+          }
+        />
+      </div>
 
-          {/* 付款记录列表 */}
-          <div className="mt-6">
-            <PaymentsOutTableList
-              payments={payments}
-              pagination={pagination}
-              onPageChange={onPageChange}
-              onConfirm={handleConfirm}
-              confirmingId={confirmingId}
-              isConfirming={isConfirming}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* 付款记录列表 */}
+      <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <PaymentsOutTableList
+          payments={payments}
+          pagination={pagination}
+          onPageChange={onPageChange}
+          onConfirm={handleConfirm}
+          confirmingId={confirmingId}
+          isConfirming={isConfirming}
+        />
+      </div>
     </div>
   );
 }

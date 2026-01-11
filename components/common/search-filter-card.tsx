@@ -18,16 +18,16 @@ import { Filter, RotateCcw } from 'lucide-react';
 import * as React from 'react';
 
 import {
-  UnifiedSearchBar,
-  type ActionButton,
-  type FilterConfig,
-  type ToggleButton,
+    UnifiedSearchBar,
+    type ActionButton,
+    type FilterConfig,
+    type ToggleButton,
 } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  DateRangePicker,
-  type DateRangeValue,
+    DateRangePicker,
+    type DateRangeValue,
 } from '@/components/ui/date-range-picker';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +86,7 @@ export interface SearchFilterCardProps {
   compact?: boolean;
 
   // Card 样式变体
-  variant?: 'default' | 'bordered' | 'elevated';
+  variant?: 'default' | 'bordered' | 'elevated' | 'pro';
 }
 
 // ============================================================================
@@ -98,6 +98,7 @@ const CARD_VARIANTS = {
   bordered: 'border border-[hsl(var(--color-border-primary))]',
   elevated:
     'border border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]',
+  pro: 'border-white bg-white/60 backdrop-blur-xl shadow-sm rounded-[2.5rem]',
 } as const;
 
 // ============================================================================
@@ -112,7 +113,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     searchValue = '',
     onSearchChange,
     searchPlaceholder = '搜索...',
-    searchLabel = '搜索', // 默认标题为"搜索"
+    searchLabel = '搜索',
     isSearching = false,
     filters = [],
     filterValues = {},
@@ -128,18 +129,18 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     compact = false,
     variant = 'default',
   }) => {
+    const isPro = variant === 'pro';
+
     // 计算是否有活跃的筛选条件
     const hasFilters = React.useMemo(() => {
       if (hasActiveFilters !== undefined) {
         return hasActiveFilters;
       }
 
-      // 检查搜索值
       if (searchValue && searchValue.trim()) {
         return true;
       }
 
-      // 检查筛选器值
       const hasFilterValues = Object.values(filterValues).some(
         value => value !== undefined && value !== 'all'
       );
@@ -147,7 +148,6 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
         return true;
       }
 
-      // 检查日期范围
       if (
         dateRangeFilter?.value?.startDate ||
         dateRangeFilter?.value?.endDate
@@ -158,7 +158,6 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
       return false;
     }, [hasActiveFilters, searchValue, filterValues, dateRangeFilter?.value]);
 
-    // 清空筛选处理
     const handleClearFilters = React.useCallback(() => {
       if (onClearFilters) {
         onClearFilters();
@@ -166,21 +165,25 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     }, [onClearFilters]);
 
     return (
-      <Card className={cn(CARD_VARIANTS[variant], className)}>
-        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-          {/* 筛选条件标题 */}
-          <div className="mb-3 flex items-center gap-2">
-            <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-            <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-              筛选条件
-            </span>
-          </div>
+      <Card className={cn(CARD_VARIANTS[variant], isPro ? 'p-1' : '', className)}>
+        <CardContent className={cn(
+          isPro ? "bg-transparent p-6" : "bg-[hsl(var(--color-bg-card))] pt-6"
+        )}>
+          {/* 筛选条件标题 - Pro 模式下隐藏 */}
+          {!isPro && (
+            <div className="mb-3 flex items-center gap-2">
+              <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+              <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                筛选条件
+              </span>
+            </div>
+          )}
 
           {/* 主搜索栏 */}
-          <div className="flex flex-wrap items-end gap-2">
-            {/* 搜索框 - 添加标题包装 */}
-            <div className="flex flex-col gap-1.5">
-              {searchLabel && (
+          <div className="flex flex-wrap items-end gap-4">
+            {/* 搜索框 - Pro 模式下移除标签 */}
+            <div className="flex flex-1 flex-col gap-1.5 min-w-[300px]">
+              {!isPro && searchLabel && (
                 <label className="text-muted-foreground text-xs font-medium">
                   {searchLabel}
                 </label>
@@ -196,7 +199,10 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                 toggleButtons={toggleButtons}
                 actionButtons={actionButtons}
                 compact={compact}
-                debounceDelay={0} // 防抖由父组件处理
+                debounceDelay={0}
+                className={isPro ? "w-full" : ""}
+                // @ts-ignore - 传递 PRO 样式标识
+                variant={isPro ? "pro" : "default"}
               />
             </div>
 
@@ -205,23 +211,32 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
               <DateRangePicker
                 value={dateRangeFilter.value}
                 onChange={dateRangeFilter.onChange}
-                label={dateRangeFilter.label}
+                label={isPro ? undefined : dateRangeFilter.label}
                 placeholder={dateRangeFilter.placeholder || '选择日期范围'}
                 showPresets={dateRangeFilter.showPresets ?? true}
-                className={cn('min-w-[200px]', dateRangeFilter.className)}
+                className={cn(
+                  'min-w-[200px]', 
+                  isPro ? "h-14 rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md" : "",
+                  dateRangeFilter.className
+                )}
               />
             )}
 
-            {/* 自定义筛选器（例如：供应商选择器） */}
+            {/* 自定义筛选器 */}
             {customFilters && customFilters}
 
-            {/* 重置筛选按钮 - 与其他筛选器同行，优化空间利用 */}
+            {/* 重置筛选按钮 */}
             {showClearButton && hasFilters && onClearFilters && (
               <Button
-                variant="outline"
+                variant={isPro ? "ghost" : "outline"}
                 size="sm"
                 onClick={handleClearFilters}
-                className="h-8 gap-1.5 self-end transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
+                className={cn(
+                  "h-8 gap-1.5 self-end transition-all",
+                  isPro 
+                    ? "font-black text-slate-400 hover:text-slate-900 hover:bg-white/50" 
+                    : "hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
+                )}
               >
                 <RotateCcw className="mr-1 h-3 w-3" />
                 重置筛选
@@ -241,7 +256,8 @@ SearchFilterCard.displayName = 'SearchFilterCard';
 // ============================================================================
 
 export type {
-  ActionButton,
-  FilterConfig,
-  ToggleButton,
+    ActionButton,
+    FilterConfig,
+    ToggleButton
 } from '@/components/common/unified-search-bar';
+

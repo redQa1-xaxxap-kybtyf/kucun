@@ -508,15 +508,13 @@ export function ReturnOrderForm({
                                             <FormControl>
                                               <Input
                                                 type="number"
-                                                min="0.01"
-                                                step="0.01"
+                                                min="1"
+                                                step="1"
                                                 className="w-24"
                                                 {...quantityField}
                                                 onChange={e => {
                                                   quantityField.onChange(
-                                                    parseFloat(
-                                                      e.target.value
-                                                    ) || 0
+                                                    parseInt(e.target.value, 10) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
@@ -537,15 +535,13 @@ export function ReturnOrderForm({
                                               <Input
                                                 type="number"
                                                 min="0"
-                                                step="0.01"
+                                                step="1"
                                                 className="w-24"
                                                 placeholder="0"
                                                 {...damagedField}
                                                 onChange={e => {
                                                   damagedField.onChange(
-                                                    parseFloat(
-                                                      e.target.value
-                                                    ) || 0
+                                                    parseInt(e.target.value, 10) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
@@ -610,14 +606,12 @@ export function ReturnOrderForm({
                                             <FormControl>
                                               <Input
                                                 type="number"
-                                                min="0.01"
-                                                step="0.01"
+                                                min="1"
+                                                step="1"
                                                 {...quantityField}
                                                 onChange={e => {
                                                   quantityField.onChange(
-                                                    parseFloat(
-                                                      e.target.value
-                                                    ) || 0
+                                                    parseInt(e.target.value, 10) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
@@ -639,14 +633,12 @@ export function ReturnOrderForm({
                                               <Input
                                                 type="number"
                                                 min="0"
-                                                step="0.01"
+                                                step="1"
                                                 placeholder="0"
                                                 {...damagedField}
                                                 onChange={e => {
                                                   damagedField.onChange(
-                                                    parseFloat(
-                                                      e.target.value
-                                                    ) || 0
+                                                    parseInt(e.target.value, 10) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}

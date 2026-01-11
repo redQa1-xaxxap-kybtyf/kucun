@@ -1,20 +1,20 @@
 'use client';
 
 import { ChevronDown, Package } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
 } from '@/components/ui/sheet';
 import { getAccessibleNavItems } from '@/lib/auth/permissions';
 import type { NavigationItem } from '@/lib/types/layout';
@@ -22,8 +22,8 @@ import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
 
 import {
-  bottomNavigationItems,
-  navigationItems,
+    bottomNavigationItems,
+    navigationItems,
 } from './sidebar-navigation-config';
 
 interface MobileNavProps {
@@ -61,7 +61,7 @@ function MobileNavComponent({ open, onOpenChange, className }: MobileNavProps) {
   );
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={true}>
       <MobileNavSheetContent
         className={className}
         swipeHandlers={swipeHandlers}
@@ -387,7 +387,7 @@ export function MobileNavTrigger({
   onOpenChange,
 }: MobileNavTriggerProps) {
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={onOpenChange} modal={true}>
       <SheetTrigger asChild>{children}</SheetTrigger>
       <MobileNav open={open} onOpenChange={onOpenChange} />
     </Sheet>

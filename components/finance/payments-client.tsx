@@ -286,27 +286,27 @@ export function PaymentsClient({
       />
 
       {/* 搜索和筛选 */}
-      <Card>
-        <CardContent className="pt-6">
-          <PaymentFilters
-            searchValue={searchValue}
-            initialParams={initialParams}
-            onSearch={handleSearch}
-            onFilterChange={handleFilterChange}
-            onDateRangeChange={handleDateRangeChange}
-          />
+      <div className="relative z-10">
+        <PaymentFilters
+          searchValue={searchValue}
+          initialParams={initialParams}
+          onSearch={handleSearch}
+          onFilterChange={handleFilterChange}
+          onDateRangeChange={handleDateRangeChange}
+        />
+      </div>
 
-          {/* 收款记录列表 - 表格布局 */}
-          <PaymentsTableList
-            payments={payments}
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            onConfirm={handleConfirm}
-            confirmingId={confirmingId}
-            isConfirming={isConfirming}
-          />
-        </CardContent>
-      </Card>
+      {/* 收款记录列表 - 表格布局 */}
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <PaymentsTableList
+          payments={payments}
+          pagination={pagination}
+          onPageChange={handlePageChange}
+          onConfirm={handleConfirm}
+          confirmingId={confirmingId}
+          isConfirming={isConfirming}
+        />
+      </div>
     </div>
   );
 }
@@ -471,7 +471,7 @@ function PaymentFilters({
         onChange: onDateRangeChange,
         placeholder: '选择收款日期范围',
       }}
-      variant="default"
+      variant="pro"
       compact={true}
     />
   );

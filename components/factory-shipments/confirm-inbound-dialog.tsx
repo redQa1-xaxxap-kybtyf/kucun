@@ -6,12 +6,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +21,8 @@ import { useCreateInboundRecord } from '@/lib/api/inbound';
 import { queryKeys } from '@/lib/queryKeys';
 import { useUpdateFactoryShipmentItemInboundStatus } from '@/lib/services/factory-shipment-item-service';
 import {
-  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
-  type FactoryShipmentOrder,
+    FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+    type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import type { CreateInboundRequest } from '@/lib/types/inbound';
 
@@ -40,6 +40,7 @@ type InboundFormState = {
   batchNumber?: string;
   location?: string;
   piecesPerUnit: number;
+  unitCost: number;
   remarks?: string;
 };
 
@@ -56,6 +57,7 @@ function createInitialFormState(
       quantity: item.quantity,
       piecesPerUnit:
         item.piecesPerUnit && item.piecesPerUnit > 0 ? item.piecesPerUnit : 1,
+      unitCost: (item as any).unitCost ?? 0,
       batchNumber: undefined,
       location: undefined,
       remarks: undefined,
@@ -73,13 +75,17 @@ function buildInboundPayload(
     state?.quantity && state.quantity > 0 ? state.quantity : item.quantity;
   const piecesPerUnit =
     state?.piecesPerUnit && state.piecesPerUnit > 0 ? state.piecesPerUnit : 1;
+  const unitCost =
+    state?.unitCost !== undefined && state.unitCost >= 0
+      ? state.unitCost
+      : (item as any).unitCost ?? 0;
   return {
     idempotencyKey: crypto.randomUUID(),
     productId: item.productId,
     inputQuantity: quantity,
     inputUnit: 'units',
     quantity,
-    unitCost: 0, // TODO: 厂家发货入库需要添加成本输入
+    unitCost,
     reason: 'transfer',
     remarks:
       state?.remarks?.trim() ||
@@ -213,6 +219,22 @@ function InboundItemCard({
             onChange={e =>
               onFieldChange(item.id, 'piecesPerUnit', e.target.value)
             }
+            className="h-10"
+          />
+        </FormFieldWithDescription>
+
+        <FormFieldWithDescription
+          label="入库成本"
+          required
+          description="每单位的进货成本，用于库存成本核算"
+        >
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder="请输入入库成本"
+            value={state?.unitCost ?? (item as any).unitCost ?? 0}
+            onChange={e => onFieldChange(item.id, 'unitCost', e.target.value)}
             className="h-10"
           />
         </FormFieldWithDescription>
@@ -354,7 +376,7 @@ function useInboundDialogState({
       [itemId]: {
         ...prev[itemId],
         [field]:
-          field === 'quantity' || field === 'piecesPerUnit'
+          field === 'quantity' || field === 'piecesPerUnit' || field === 'unitCost'
             ? Number(value)
             : value,
       },

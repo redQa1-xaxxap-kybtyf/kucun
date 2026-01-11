@@ -1,6 +1,12 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
 import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
 import {
   getReceivables,
@@ -60,6 +66,14 @@ export default async function ReceivablesPage({
     endDate,
   };
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
   // 服务器端获取初始数据
   const initialData = await getReceivables({
     page,
@@ -72,10 +86,13 @@ export default async function ReceivablesPage({
     endDate,
   });
 
+  queryClient.setQueryData(queryKeys.finance.receivablesList(queryParams), {
+    data: initialData,
+  });
+
   return (
-    <ReceivablesPageClient
-      initialData={initialData}
-      initialParams={queryParams}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ReceivablesPageClient initialParams={queryParams} />
+    </HydrationBoundary>
   );
 }

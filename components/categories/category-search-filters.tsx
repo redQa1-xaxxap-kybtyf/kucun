@@ -50,7 +50,7 @@ export function CategorySearchFilters({
         status: queryParams.status || 'all',
       }}
       onFilterChange={handleFilterChange}
-      variant="elevated"
+      variant="pro"
       compact={true}
     />
   );

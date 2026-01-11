@@ -12,16 +12,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  getAdjustmentReasonLabel,
-  type InventoryAdjustment,
+    getAdjustmentReasonLabel,
+    type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 
@@ -136,16 +136,7 @@ export function AdjustmentRecordsTable({
   }
 
   return (
-    <div className="card-shadow-medium rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-      <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
-          <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
-            调整记录 ({adjustments.length} 条)
-          </span>
-        </div>
-      </div>
-
+    <div className="overflow-hidden rounded-xl border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] shadow-sm">
       {/* 桌面端表格视图 */}
       <div className="hidden overflow-x-auto md:block">
         <Table>

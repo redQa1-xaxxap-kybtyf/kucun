@@ -7,14 +7,10 @@ import * as React from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { ERPProductList } from '@/components/products/erp-product-list';
 import { Button } from '@/components/ui/button';
-import type { PaginatedResponse } from '@/lib/types/api';
-import type { Category } from '@/lib/types/category';
-import type { Product, ProductQueryParams } from '@/lib/types/product';
+import type { ProductQueryParams } from '@/lib/types/product';
 
 interface ProductsPageClientProps {
-  initialData: PaginatedResponse<Product>;
   initialParams: ProductQueryParams;
-  categories: Category[];
 }
 
 /**
@@ -25,7 +21,6 @@ interface ProductsPageClientProps {
  * ✅ 修复：使用 ERPProductList 避免双重滚动问题
  */
 export function ProductsPageClient({
-  initialData,
   initialParams,
 }: ProductsPageClientProps) {
   return (
@@ -52,10 +47,7 @@ export function ProductsPageClient({
         />
 
         {/* 产品列表 */}
-        <ERPProductList
-          _initialData={initialData}
-          initialParams={initialParams}
-        />
+        <ERPProductList initialParams={initialParams} />
       </div>
     </div>
   );

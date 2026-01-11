@@ -5,19 +5,9 @@
 
 'use client';
 
-import { AlertCircle, CheckCircle, Info, Loader2, XCircle } from 'lucide-react';
-import React from 'react';
+import { CheckCircle, Info, Loader2, XCircle } from 'lucide-react';
 
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import type { QiniuStorageTestResponse } from '@/lib/types/settings';
 
 interface StorageTestConnectionProps {
@@ -49,24 +39,17 @@ export const StorageTestConnection = ({
   // 正在测试中
   if (isTesting) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            正在测试连接
-          </CardTitle>
-          <CardDescription>正在验证七牛云存储配置，请稍候...</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert>
-            <Info className="h-4 w-4" />
-            <AlertTitle>测试中</AlertTitle>
-            <AlertDescription>
-              正在连接七牛云服务器，验证Access Key、Secret Key和存储空间配置...
-            </AlertDescription>
-          </Alert>
-        </CardContent>
-      </Card>
+      <div className="rounded-3xl border border-slate-100 bg-white/60 p-8 shadow-sm animate-pulse">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50">
+            <Loader2 className="h-6 w-6 text-blue-500 animate-spin" />
+          </div>
+          <div className="text-center">
+            <h4 className="text-sm font-black text-slate-900">正在执行连接诊断</h4>
+            <p className="text-xs font-medium text-slate-500 mt-1">正在验证 AK/SK 密钥与 Bucket 可访问性，请稍候...</p>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -75,132 +58,104 @@ export const StorageTestConnection = ({
     const errorMessage = testError || testResult?.message || '连接测试失败';
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-destructive flex items-center">
-            <XCircle className="mr-2 h-5 w-5" />
-            连接测试失败
-          </CardTitle>
-          <CardDescription>
-            七牛云存储配置验证失败，请检查配置信息
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>错误信息</AlertTitle>
-            <AlertDescription>{errorMessage}</AlertDescription>
-          </Alert>
-
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">请检查以下配置：</h4>
-            <ul className="text-muted-foreground space-y-1 text-sm">
-              <li>• Access Key 和 Secret Key 是否正确</li>
-              <li>• 存储空间名称是否存在</li>
-              <li>• 存储区域是否匹配</li>
-              <li>• 网络连接是否正常</li>
-            </ul>
+      <div className="rounded-3xl border border-rose-100 bg-rose-50/20 p-8 shadow-sm">
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-500 shadow-lg shadow-rose-500/20">
+              <XCircle className="h-6 w-6 text-white" />
+            </div>
+            <div className="space-y-0.5">
+              <h4 className="text-base font-black text-rose-900">配置验证未通过</h4>
+              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest">Diagnostic Failed</p>
+            </div>
           </div>
 
-          {onRetry && (
-            <Button
-              variant="outline"
-              onClick={onRetry}
-              className="w-full sm:w-auto"
-            >
-              重新测试
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+          <div className="rounded-2xl bg-white/80 p-5 border border-rose-100/50">
+            <span className="text-xs font-black uppercase text-rose-500 block mb-2">错误详情报告</span>
+            <p className="text-sm font-bold text-slate-700 leading-relaxed">{errorMessage}</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider">排难建议 (Checkpoint)</h5>
+              <ul className="space-y-1.5">
+                {['检查 AK/SK 是否包含多余空格', '确认 Bucket 名称与区域是否匹配', '检查域名是否带有 http/https 协议'].map((item, i) => (
+                  <li key={i} className="flex items-center gap-2 text-xs font-medium text-slate-600">
+                    <div className="h-1 w-1 rounded-full bg-rose-300" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            {onRetry && (
+              <div className="flex items-end justify-end">
+                <Button
+                  variant="outline"
+                  onClick={onRetry}
+                  className="h-10 rounded-xl border-rose-100 bg-white px-6 text-xs font-black text-rose-600 hover:bg-rose-50 transition-all active:scale-95"
+                >
+                  重新发起诊断
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     );
   }
 
   // 测试成功
   if (testResult && testResult.success) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center text-green-600">
-            <CheckCircle className="mr-2 h-5 w-5" />
-            连接测试成功
-          </CardTitle>
-          <CardDescription>
-            七牛云存储配置验证通过，可以正常使用
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertTitle className="text-green-800">配置验证成功</AlertTitle>
-            <AlertDescription className="text-green-700">
-              {testResult.message || '七牛云存储连接正常，配置信息正确'}
-            </AlertDescription>
-          </Alert>
-
-          {/* 存储空间信息 */}
-          {testResult.bucketInfo && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">存储空间信息</h4>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-muted-foreground text-sm">
-                    空间名称
-                  </span>
-                  <Badge variant="secondary">
-                    {testResult.bucketInfo.name}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-muted-foreground text-sm">
-                    存储区域
-                  </span>
-                  <Badge variant="secondary">
-                    {testResult.bucketInfo.region}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-muted-foreground text-sm">
-                    访问权限
-                  </span>
-                  <Badge
-                    variant={
-                      testResult.bucketInfo.private ? 'destructive' : 'default'
-                    }
-                  >
-                    {testResult.bucketInfo.private ? '私有' : '公开'}
-                  </Badge>
-                </div>
+      <div className="rounded-3xl border border-emerald-100 bg-emerald-50/20 p-8 shadow-sm">
+        <div className="flex flex-col gap-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500 shadow-lg shadow-emerald-500/20">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
+              <div className="space-y-0.5">
+                <h4 className="text-base font-black text-emerald-900">存储连接已就绪</h4>
+                <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Diagnostic Passed</p>
               </div>
             </div>
-          )}
-
-          <div className="rounded-lg bg-[hsl(var(--color-info-light))] p-3">
-            <div className="flex items-start">
-              <Info className="mt-0.5 mr-2 h-4 w-4 text-[hsl(var(--color-info))]" />
-              <div className="text-sm">
-                <p className="font-medium text-[hsl(var(--color-info))]">
-                  配置提示
-                </p>
-                <p className="mt-1 text-[hsl(var(--color-info))]">
-                  配置验证成功后，您可以保存配置并开始使用七牛云存储服务。
-                  建议定期检查存储空间的使用情况和费用。
-                </p>
-              </div>
-            </div>
+            {onRetry && (
+               <Button
+                 variant="ghost"
+                 onClick={onRetry}
+                 className="h-9 rounded-lg text-[10px] font-black text-slate-400 uppercase tracking-widest hover:bg-emerald-100/50"
+               >
+                 重新诊断
+               </Button>
+            )}
           </div>
 
-          {onRetry && (
-            <Button
-              variant="outline"
-              onClick={onRetry}
-              className="w-full sm:w-auto"
-            >
-              重新测试
-            </Button>
+          {testResult.bucketInfo && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                { label: '空间名称', value: testResult.bucketInfo.name },
+                { label: '所属区域', value: testResult.bucketInfo.region },
+                { label: '访问权限', value: testResult.bucketInfo.private ? '私有' : '公开' },
+              ].map((info, i) => (
+                <div key={i} className="rounded-2xl bg-white/60 border border-emerald-100/50 p-4 transition-all hover:shadow-md">
+                   <span className="text-[10px] font-black uppercase text-emerald-400 block mb-1">{info.label}</span>
+                   <span className="text-xs font-black text-slate-900">{info.value}</span>
+                </div>
+              ))}
+            </div>
           )}
-        </CardContent>
-      </Card>
+
+          <div className="flex items-start gap-3 rounded-2xl bg-emerald-50/50 p-4 border border-emerald-100/30">
+            <Info className="h-4 w-4 text-emerald-500 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-[11px] font-black text-emerald-900 uppercase">配置启用说明</p>
+              <p className="text-[11px] font-medium text-emerald-600/80 leading-relaxed">
+                当前链路验证通过。点击上方的“更新存储密钥”即可完成全站文件存储服务的切换。
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 

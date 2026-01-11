@@ -1,5 +1,11 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
+import { customerStatementQueryKeys } from '@/lib/api/customer-statements';
 import { getCustomerStatements } from '@/lib/services/customer-statement-service';
 import type { CustomerStatementQuery } from '@/lib/types/customer-statement';
 
@@ -136,10 +142,19 @@ export default async function CustomerStatementsPage({
   const query = normaliseQuery(params);
   const initialData = await getCustomerStatements(query);
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
+  queryClient.setQueryData(customerStatementQueryKeys.list(query), initialData);
+
   return (
-    <CustomerStatementsPageClient
-      initialData={initialData}
-      initialParams={query}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <CustomerStatementsPageClient initialParams={query} />
+    </HydrationBoundary>
   );
 }

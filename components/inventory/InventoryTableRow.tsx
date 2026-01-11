@@ -15,10 +15,10 @@ import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TableCell, TableRow } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
@@ -233,7 +233,7 @@ function InventoryRowView({
           {packaging > 0 ? (
             <>
               {packaging}
-              <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
+              <span className="ml-1 text-xs font-bold text-slate-500">
                 片/件
               </span>
             </>
@@ -241,9 +241,9 @@ function InventoryRowView({
             <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
           )}
           {item.weight ? (
-            <span className="text-[10px] tabular-nums text-[hsl(var(--color-text-secondary))]">
+            <span className="text-xs font-bold tabular-nums text-slate-500">
               {item.weight.toFixed(2)}
-              <span className="ml-0.5 font-normal text-[hsl(var(--color-text-tertiary))]">
+              <span className="ml-1 font-bold text-slate-400">
                 kg
               </span>
             </span>

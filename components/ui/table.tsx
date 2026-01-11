@@ -10,7 +10,7 @@ const Table = React.forwardRef<
     <table
       ref={ref}
       className={cn(
-        'w-full caption-bottom border-collapse text-xs text-[hsl(var(--color-text-primary))]',
+        'text-table-cell w-full caption-bottom border-collapse',
         className
       )}
       {...props}
@@ -83,7 +83,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      'h-12 bg-[hsl(var(--color-bg-table-header))] px-4 text-left align-middle text-xs font-semibold tracking-wide text-[hsl(var(--color-text-secondary))] uppercase [&:has([role=checkbox])]:pr-0',
+      'text-table-header h-12 bg-[hsl(var(--color-bg-table-header))] px-4 text-left align-middle [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}
@@ -98,7 +98,7 @@ const TableCell = React.forwardRef<
   <td
     ref={ref}
     className={cn(
-      'p-4 align-middle text-xs text-[hsl(var(--color-text-primary))] [&:has([role=checkbox])]:pr-0',
+      'text-table-cell p-4 align-middle [&:has([role=checkbox])]:pr-0',
       className
     )}
     {...props}

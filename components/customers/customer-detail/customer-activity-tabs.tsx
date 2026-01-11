@@ -1,13 +1,13 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import {
-  getReturnOrderStatusBadgeVariant,
-  getSalesOrderStatusBadgeVariant,
-  type BadgeVariant, // ✅ 导入BadgeVariant类型
+    getReturnOrderStatusBadgeVariant,
+    getSalesOrderStatusBadgeVariant,
+    type BadgeVariant,
 } from '@/lib/utils/badge-helpers';
+import { AlertCircle, CheckCircle2, ChevronRight, History, Package } from 'lucide-react';
 
 import type { CustomerReturnOrder, CustomerSalesOrder } from './types';
 
@@ -24,10 +24,10 @@ const STATUS_LABELS: Record<string, string> = {
   confirmed: '已确认',
   shipped: '已发货',
   delivered: '已交付',
-  completed: '已完成',
+  completed: '交易成功',
   cancelled: '已取消',
-  pending: '待处理',
-  approved: '已通过',
+  pending: '处理中',
+  approved: '审核通过',
   rejected: '已拒绝',
 };
 
@@ -45,17 +45,28 @@ export function CustomerActivityTabs({
 }: CustomerActivityTabsProps) {
   return (
     <Tabs defaultValue="sales" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="sales">销售订单</TabsTrigger>
-        <TabsTrigger value="returns">退货订单</TabsTrigger>
-        <TabsTrigger value="unpaid">
-          <span>未付款 ({unpaidOrders.length})</span>
-        </TabsTrigger>
-      </TabsList>
+      <div className="flex items-center justify-between mb-8 px-2">
+         <TabsList className="bg-slate-100/50 p-1.5 rounded-2xl h-14 border border-slate-200/50">
+           <TabsTrigger value="sales" className="rounded-xl px-6 font-black data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all h-10">
+             销售历史
+           </TabsTrigger>
+           <TabsTrigger value="returns" className="rounded-xl px-6 font-black data-[state=active]:bg-white data-[state=active]:shadow-xl transition-all h-10">
+             退货追溯
+           </TabsTrigger>
+           <TabsTrigger value="unpaid" className="rounded-xl px-6 font-black data-[state=active]:bg-rose-500 data-[state=active]:text-white data-[state=active]:shadow-xl transition-all h-10">
+             应收账款 ({unpaidOrders.length})
+           </TabsTrigger>
+         </TabsList>
+         
+         <div className="hidden md:flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <History className="h-3.5 w-3.5" />
+            Audit Persistence Active
+         </div>
+      </div>
 
-      <TabsContent value="sales" className="mt-2 space-y-1.5">
+      <TabsContent value="sales" className="mt-0 focus-visible:outline-none">
         {salesOrders.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="grid gap-4">
             {salesOrders.map(order => (
               <OrderCard
                 key={order.id}
@@ -66,17 +77,18 @@ export function CustomerActivityTabs({
                 statusVariant={getSalesOrderStatusBadgeVariant(order.status)}
                 formatDateTime={formatDateTime}
                 onClick={() => onNavigateToOrder(order.id)}
+                icon={<Package className="h-4 w-4" />}
               />
             ))}
           </div>
         ) : (
-          <EmptyState message="暂无销售订单" />
+          <EmptyState message="该客户尚无销售成交记录" />
         )}
       </TabsContent>
 
-      <TabsContent value="returns" className="mt-2 space-y-1.5">
+      <TabsContent value="returns" className="mt-0 focus-visible:outline-none">
         {returnOrders.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="grid gap-4">
             {returnOrders.map(order => (
               <OrderCard
                 key={order.id}
@@ -85,21 +97,22 @@ export function CustomerActivityTabs({
                 createdAt={order.createdAt}
                 amount={order.totalAmount}
                 amountPrefix="-"
-                amountClass="text-red-600"
+                amountClass="text-rose-600"
                 statusVariant={getReturnOrderStatusBadgeVariant(order.status)}
                 formatDateTime={formatDateTime}
                 onClick={() => onNavigateToReturnOrder(order.id)}
+                icon={<History className="h-4 w-4" />}
               />
             ))}
           </div>
         ) : (
-          <EmptyState message="暂无退货订单" />
+          <EmptyState message="该客户近期无退货异常" />
         )}
       </TabsContent>
 
-      <TabsContent value="unpaid" className="mt-2 space-y-1.5">
+      <TabsContent value="unpaid" className="mt-0 focus-visible:outline-none">
         {unpaidOrders.length > 0 ? (
-          <div className="space-y-1.5">
+          <div className="grid gap-4">
             {unpaidOrders.map(order => {
               const unpaidAmount = order.totalAmount - order.paidAmount;
               return (
@@ -118,7 +131,7 @@ export function CustomerActivityTabs({
             })}
           </div>
         ) : (
-          <EmptyState message="暂无未付款订单" />
+          <EmptyState message="所有账目已结清，信用良好" />
         )}
       </TabsContent>
     </Tabs>
@@ -135,6 +148,7 @@ function OrderCard({
   statusVariant,
   formatDateTime,
   onClick,
+  icon
 }: {
   orderNumber: string;
   status: string;
@@ -142,33 +156,43 @@ function OrderCard({
   amount: number;
   amountPrefix?: string;
   amountClass?: string;
-  statusVariant: BadgeVariant; // ✅ 使用BadgeVariant类型,支持所有variant包括purple
+  statusVariant: BadgeVariant;
   formatDateTime: (value: string) => string;
   onClick: () => void;
+  icon: React.ReactNode;
 }) {
   return (
     <div
-      className="group hover:border-primary cursor-pointer rounded-lg border p-2.5 transition-all hover:shadow-sm"
+      className="group relative flex items-center justify-between rounded-2xl border border-white bg-white/40 p-5 backdrop-blur-md transition-all duration-500 hover:bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-mono text-sm font-semibold">{orderNumber}</p>
-            <Badge variant={statusVariant} className="text-xs">
+      <div className="flex items-center gap-6">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all duration-500">
+           {icon}
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-black tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">#{orderNumber}</span>
+            <div className={cn(
+              "text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md",
+              status === 'completed' ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
+            )}>
               {getOrderStatusLabel(status)}
-            </Badge>
+            </div>
           </div>
-          <p className="text-muted-foreground mt-0.5 text-xs">
+          <p className="text-xs font-bold text-slate-500">
             {formatDateTime(createdAt)}
           </p>
         </div>
+      </div>
+      <div className="flex items-center gap-8">
         <div className="text-right">
-          <p className={`text-sm font-semibold ${amountClass}`}>
-            {amountPrefix}
-            {formatCurrency(amount)}
+          <p className={cn("text-lg font-black tracking-tighter text-slate-900", amountClass)}>
+            {amountPrefix}{formatCurrency(amount)}
           </p>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Transaction Value</span>
         </div>
+        <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-slate-900 transition-all group-hover:translate-x-1" />
       </div>
     </div>
   );
@@ -195,30 +219,38 @@ function UnpaidOrderCard({
 }) {
   return (
     <div
-      className="group hover:border-primary cursor-pointer rounded-lg border border-orange-200 bg-orange-50/40 p-2.5 transition-all hover:bg-orange-50 hover:shadow-sm"
+      className="group relative flex items-center justify-between rounded-2xl border-rose-100 bg-rose-50/20 p-5 backdrop-blur-md transition-all duration-500 hover:bg-white hover:shadow-xl hover:-translate-y-1 cursor-pointer"
       onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <p className="font-mono text-sm font-semibold">{orderNumber}</p>
-            <Badge variant="outline" className="text-xs">
-              {getOrderStatusLabel(status)}
-            </Badge>
+      <div className="flex items-center gap-6">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-rose-100 text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-all duration-500">
+           <AlertCircle className="h-5 w-5" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-black tracking-tight text-rose-900">#{orderNumber}</span>
+            <div className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-100 text-rose-700">
+              待结款
+            </div>
           </div>
-          <p className="text-muted-foreground mt-0.5 text-xs">
-            {formatDateTime(createdAt)}
+          <p className="text-xs font-bold text-slate-500">
+            应于 {formatDateTime(createdAt)} 前完成结算
           </p>
         </div>
-        <div className="text-right text-xs">
-          <p className="text-muted-foreground">
-            总额: {formatCurrency(totalAmount)}
-          </p>
-          <p className="text-green-600">已付: {formatCurrency(paidAmount)}</p>
-          <p className="font-semibold text-orange-600">
-            欠款: {formatCurrency(unpaidAmount)}
+      </div>
+      <div className="flex items-center gap-8">
+        <div className="text-right">
+          <div className="flex items-baseline gap-1 justify-end">
+            <span className="text-xs font-black text-rose-400">¥</span>
+            <p className="text-lg font-black tracking-tighter text-rose-600">
+               {formatCurrency(unpaidAmount).replace('¥', '')}
+            </p>
+          </div>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            Outstanding Balance
           </p>
         </div>
+        <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-slate-900 transition-all group-hover:translate-x-1" />
       </div>
     </div>
   );
@@ -226,8 +258,11 @@ function UnpaidOrderCard({
 
 function EmptyState({ message }: { message: string }) {
   return (
-    <div className="text-muted-foreground py-8 text-center text-sm">
-      {message}
+    <div className="flex flex-col items-center justify-center py-20 rounded-[2.5rem] border border-dashed border-slate-200 bg-slate-50/50">
+      <CheckCircle2 className="h-10 w-10 text-slate-200 mb-4" />
+      <p className="text-sm font-black text-slate-400 uppercase tracking-widest">
+        {message}
+      </p>
     </div>
   );
 }

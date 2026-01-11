@@ -55,7 +55,8 @@ export function MobileCard({
     <Card
       className={cn(
         'transition-all duration-200',
-        onClick && 'cursor-pointer hover:shadow-md active:scale-95',
+        onClick &&
+          'cursor-pointer hover:[box-shadow:var(--shadow-medium)] active:scale-95',
         isMobile && 'touch-manipulation',
         className
       )}

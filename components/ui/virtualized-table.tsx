@@ -126,35 +126,50 @@ export function VirtualizedTable<T>({
     <div className="bg-card rounded border">
       <div
         ref={parentRef}
-        className="overflow-auto"
-        style={{ height: `${containerHeight}px` }}
+        className="h-[var(--vt-container-height)] overflow-auto"
+        style={
+          {
+            '--vt-container-height': `${containerHeight}px`,
+          } as React.CSSProperties
+        }
       >
         {/* 虚拟空间容器 - 遵循 TanStack Virtual 最佳实践 */}
         <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
+          className="relative h-[var(--vt-total-height)] w-full"
+          style={
+            {
+              '--vt-total-height': `${rowVirtualizer.getTotalSize()}px`,
+            } as React.CSSProperties
+          }
         >
           <Table>
             {/* 表头 */}
             <TableHeader className="bg-muted/30 sticky top-0 z-10">
               <TableRow>
-                {columns.map(column => (
-                  <TableHead
-                    key={column.key}
-                    className={cn(
-                      'h-10 text-xs font-medium',
-                      column.align === 'center' && 'text-center',
-                      column.align === 'right' && 'text-right',
-                      column.headerClassName
-                    )}
-                    style={{ width: column.width }}
-                  >
-                    {column.header}
-                  </TableHead>
-                ))}
+                {columns.map(column => {
+                  const hasWidth = typeof column.width === 'number';
+                  const widthStyle = hasWidth
+                    ? ({
+                        '--vt-col-width': `${column.width}px`,
+                      } as React.CSSProperties)
+                    : undefined;
+
+                  return (
+                    <TableHead
+                      key={column.key}
+                      className={cn(
+                        'h-10 text-xs font-medium',
+                        column.align === 'center' && 'text-center',
+                        column.align === 'right' && 'text-right',
+                        hasWidth && 'w-[var(--vt-col-width)]',
+                        column.headerClassName
+                      )}
+                      style={widthStyle}
+                    >
+                      {column.header}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             </TableHeader>
 
@@ -168,41 +183,46 @@ export function VirtualizedTable<T>({
                     ? rowClassName(item, virtualRow.index)
                     : rowClassName;
 
+                const rowStyle = {
+                  '--vt-row-height': `${virtualRow.size}px`,
+                  '--vt-row-translate': `${virtualRow.start}px`,
+                } as React.CSSProperties;
+
                 return (
                   <TableRow
                     key={rowKey}
                     data-index={virtualRow.index}
                     className={cn(
-                      'hover:bg-muted/50 cursor-pointer',
+                      'hover:bg-muted/50 absolute top-0 left-0 h-[var(--vt-row-height)] w-full [transform:translateY(var(--vt-row-translate))] cursor-pointer [will-change:transform]',
                       className
                     )}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: `${virtualRow.size}px`,
-                      // 遵循 TanStack Virtual 最佳实践：直接使用 virtualRow.start
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
+                    style={rowStyle}
                     onClick={() => onRowClick?.(item, virtualRow.index)}
                   >
-                    {columns.map(column => (
-                      <TableCell
-                        key={column.key}
-                        className={cn(
-                          'h-full text-xs',
-                          column.align === 'center' && 'text-center',
-                          column.align === 'right' && 'text-right',
-                          column.cellClassName
-                        )}
-                        style={{
-                          width: column.width ? `${column.width}px` : undefined,
-                        }}
-                      >
-                        {column.render(item, virtualRow.index)}
-                      </TableCell>
-                    ))}
+                    {columns.map(column => {
+                      const hasWidth = typeof column.width === 'number';
+                      const widthStyle = hasWidth
+                        ? ({
+                            '--vt-col-width': `${column.width}px`,
+                          } as React.CSSProperties)
+                        : undefined;
+
+                      return (
+                        <TableCell
+                          key={column.key}
+                          className={cn(
+                            'h-full text-xs',
+                            column.align === 'center' && 'text-center',
+                            column.align === 'right' && 'text-right',
+                            hasWidth && 'w-[var(--vt-col-width)]',
+                            column.cellClassName
+                          )}
+                          style={widthStyle}
+                        >
+                          {column.render(item, virtualRow.index)}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 );
               })}

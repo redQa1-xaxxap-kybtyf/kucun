@@ -6,13 +6,13 @@
 'use client';
 
 import {
-  Loader2,
-  CheckCircle,
-  AlertCircle,
-  Brain,
-  Search,
-  Table,
-  Zap,
+    AlertCircle,
+    Brain,
+    CheckCircle,
+    Loader2,
+    Search,
+    Table,
+    Zap,
 } from 'lucide-react';
 import React from 'react';
 
@@ -167,10 +167,7 @@ const AnalysisStepItem = ({
     {isAnalyzing && step.status === 'running' && (
       <div className="max-w-20 flex-1">
         <div className="h-1 overflow-hidden rounded-full bg-gray-200">
-          <div
-            className="h-full animate-pulse bg-[hsl(var(--color-info))]"
-            style={{ width: '60%' }}
-          />
+          <div className="h-full w-3/5 animate-pulse bg-[hsl(var(--color-info))]" />
         </div>
       </div>
     )}

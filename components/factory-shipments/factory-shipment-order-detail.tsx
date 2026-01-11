@@ -2,19 +2,20 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertCircle,
-  Anchor,
-  ArrowLeft,
-  Calendar,
-  Edit,
-  Package,
-  Printer,
-  Ship,
-  Truck,
-  User,
+    AlertCircle,
+    Anchor,
+    ArrowLeft,
+    Calendar,
+    Edit,
+    Package,
+    Printer,
+    Ship,
+    Truck,
+    User,
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
 import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arrival-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
@@ -29,27 +30,27 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { getFactoryShipmentOrder } from '@/lib/api/factory-shipments';
 import { factoryShipmentPrintConfig } from '@/lib/config/print-fields/factory-shipment-fields';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  FACTORY_SHIPMENT_STATUS_LABELS,
-  type FactoryShipmentOrder,
+    FACTORY_SHIPMENT_STATUS_LABELS,
+    type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import {
-  canConfirmArrival,
-  canConfirmShipment,
-  formatAmount,
-  formatDate,
-  formatUnit,
-  getFactoryShipmentStatusBadgeVariant,
+    canConfirmArrival,
+    canConfirmShipment,
+    formatAmount,
+    formatDate,
+    formatUnit,
+    getFactoryShipmentStatusBadgeVariant,
 } from '@/lib/utils/factory-shipment-helpers';
 
 interface FactoryShipmentOrderDetailProps {
@@ -92,6 +93,9 @@ export function FactoryShipmentOrderDetail({
     queryFn: () => getFactoryShipmentOrder(orderId),
     enabled: !!orderId,
   });
+
+  // 设置动态面包屑标题：显示发货单号
+  useBreadcrumbTitle(order ? `发货单 ${order.orderNumber}` : null);
 
   if (isLoading) {
     return <ContentLoading text="加载订单详情中..." />;

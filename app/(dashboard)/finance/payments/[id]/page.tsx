@@ -131,19 +131,16 @@ async function getPaymentDetail(id: string): Promise<PaymentRecord | null> {
 
     if (payment.salesOrderId && payment.salesOrder) {
       // 动态计算该订单的已收款金额(所有已确认的收款记录)
-      const confirmedPayments = await prisma.paymentRecord.findMany({
+      const confirmedPaymentsAggregate = await prisma.paymentRecord.aggregate({
         where: {
           salesOrderId: payment.salesOrderId,
           status: 'confirmed',
         },
-        select: {
-          paymentAmount: true,
-        },
+        _sum: { paymentAmount: true },
       });
 
-      orderPaidAmount = confirmedPayments.reduce(
-        (sum, p) => sum + Number(p.paymentAmount),
-        0
+      orderPaidAmount = Number(
+        confirmedPaymentsAggregate._sum.paymentAmount ?? 0
       );
       orderTotalAmount = Number(payment.salesOrder.totalAmount);
       orderRemainingAmount = orderTotalAmount - orderPaidAmount;

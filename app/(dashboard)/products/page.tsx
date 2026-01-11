@@ -1,4 +1,12 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
+
+import { categoryQueryKeys } from '@/lib/api/categories';
 import { getCategoriesServer } from '@/lib/api/categories-server';
+import { productQueryKeys } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { paginationConfig, productConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
@@ -42,6 +50,14 @@ export default async function ProductsPage({
     params.includeStatistics === 'true' ||
     productConfig.defaultIncludeStatistics;
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
   // 并行获取产品数据和分类数据
   const [initialData, categoriesData] = await Promise.all([
     getProductsForServer({
@@ -55,7 +71,12 @@ export default async function ProductsPage({
       includeInventory,
       includeStatistics,
     }),
-    getCategoriesServer({ status: 'active' }), // 只获取激活的分类
+    getCategoriesServer({
+      status: 'active',
+      limit: 100,
+      sortBy: 'name',
+      sortOrder: 'asc',
+    }),
   ]);
 
   const normalizedData: PaginatedResponse<Product> = initialData
@@ -83,19 +104,42 @@ export default async function ProductsPage({
         },
       };
 
+  queryClient.setQueryData(
+    productQueryKeys.list({
+      page,
+      limit,
+      search,
+      categoryId,
+      status,
+      sortBy,
+      sortOrder,
+    }),
+    normalizedData
+  );
+
+  queryClient.setQueryData(
+    categoryQueryKeys.list({
+      status: 'active',
+      limit: 100,
+      sortBy: 'name',
+      sortOrder: 'asc',
+    }),
+    categoriesData
+  );
+
   return (
-    <ProductsPageClient
-      initialData={normalizedData}
-      initialParams={{
-        page,
-        limit,
-        search,
-        categoryId,
-        status,
-        sortBy,
-        sortOrder,
-      }}
-      categories={categoriesData.data}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ProductsPageClient
+        initialParams={{
+          page,
+          limit,
+          search,
+          categoryId,
+          status,
+          sortBy,
+          sortOrder,
+        }}
+      />
+    </HydrationBoundary>
   );
 }

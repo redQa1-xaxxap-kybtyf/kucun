@@ -15,19 +15,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import type {
-  RefundListData,
-  RefundListQueryParams,
-  RefundMethod,
-  RefundStatus,
-  RefundType,
+    RefundListData,
+    RefundListQueryParams,
+    RefundMethod,
+    RefundStatus,
+    RefundType,
 } from '@/lib/types/refund';
 import { formatCurrency } from '@/lib/utils';
 
@@ -365,7 +365,7 @@ export function RefundsClient({
           onChange: range => onDateRangeChange?.(range),
           placeholder: '选择退款日期范围',
         }}
-        variant="elevated"
+        variant="pro"
         compact={true}
       />
 
