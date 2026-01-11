@@ -7,42 +7,43 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Package, Search } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Loader2, Package, RefreshCw, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
-  ShippingQueriesResponse,
-  ShippingQuery,
-  ShippingSitesResponse,
+    ShippingQueriesResponse,
+    ShippingQuery,
+    ShippingSitesResponse,
 } from '@/lib/types/shipping';
+import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 export default function ShippingQueryPage() {
@@ -164,20 +165,24 @@ export default function ShippingQueryPage() {
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="flex-1 space-y-6 overflow-y-auto">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-600 shadow-lg shadow-purple-600/30">
-                  <Package className="h-6 w-6 text-white" />
+        {/* 页面头部 - v3 PRO 玻璃拟态风格 */}
+        <Card className="relative overflow-hidden border-none bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
+          {/* 装饰性背景 */}
+          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-purple-500/10 blur-3xl" />
+          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+          
+          <CardContent className="relative z-10 p-6 sm:p-8">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-5">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-[0_10px_20px_rgba(124,58,237,0.3)]">
+                  <Package className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    运输查询
+                  <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                    运输智能查询 <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm uppercase tracking-widest">Inquiry Center</span>
                   </h1>
-                  <p className="text-sm text-gray-600">
-                    查询快递物流运输状态信息
+                  <p className="mt-1 text-sm font-medium text-slate-400">
+                    全网快递实时追踪 · 节点信息深度同步
                   </p>
                 </div>
               </div>
@@ -185,10 +190,10 @@ export default function ShippingQueryPage() {
                 variant="outline"
                 size="lg"
                 onClick={() => router.push('/settings')}
-                className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-12 border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white transition-all hover:scale-105"
               >
-                <ArrowLeft className="h-4 w-4" />
-                返回设置
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回系统设置
               </Button>
             </div>
           </CardContent>
@@ -201,12 +206,12 @@ export default function ShippingQueryPage() {
               <Search className="h-4 w-4 text-purple-600" />
               <span>选择站点并输入追踪单号（支持中文自动转换）</span>
             </div>
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="site">查询站点 *</Label>
+            <div className="grid gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-5 space-y-2">
+                <Label htmlFor="site" className="text-xs font-black uppercase tracking-widest text-slate-500">选择查询站点 *</Label>
                 <Select value={siteId} onValueChange={setSiteId}>
-                  <SelectTrigger id="site">
-                    <SelectValue placeholder="选择查询站点" />
+                  <SelectTrigger id="site" className="h-12 border-slate-200 bg-slate-50/50 focus:ring-purple-500">
+                    <SelectValue placeholder="选择目标物流站点" />
                   </SelectTrigger>
                   <SelectContent>
                     {sitesData?.data.map(site => (
@@ -216,16 +221,18 @@ export default function ShippingQueryPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-[11px] font-bold text-slate-400">※ 系统将自动调用该站点的实时 API 接口</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="keyword">追踪单号 *</Label>
-                <div className="flex gap-2">
+              <div className="lg:col-span-7 space-y-2">
+                <Label htmlFor="keyword" className="text-xs font-black uppercase tracking-widest text-slate-500">全球追踪单号 *</Label>
+                <div className="flex gap-3">
                   <Input
                     id="keyword"
                     value={keyword}
                     onChange={e => setKeyword(e.target.value)}
-                    placeholder="输入追踪单号（支持中文）"
+                    className="h-12 flex-1 border-slate-200 bg-slate-50/50 font-mono text-lg focus:ring-purple-500"
+                    placeholder="输入追踪单号（支持中文自动转码）"
                     onKeyDown={e => {
                       if (e.key === 'Enter' && !queryMutation.isPending) {
                         handleQuery();
@@ -235,16 +242,17 @@ export default function ShippingQueryPage() {
                   <Button
                     onClick={handleQuery}
                     disabled={queryMutation.isPending}
+                    className="h-12 px-8 bg-slate-900 hover:bg-slate-800 shadow-xl shadow-slate-900/20"
                   >
                     {queryMutation.isPending ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        查询中
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        深度同步中
                       </>
                     ) : (
                       <>
-                        <Search className="mr-2 h-4 w-4" />
-                        查询
+                        <Search className="mr-2 h-5 w-5" />
+                        立即查询
                       </>
                     )}
                   </Button>
@@ -252,56 +260,59 @@ export default function ShippingQueryPage() {
               </div>
             </div>
 
-            {/* 查询结果展示 */}
+            {/* 查询结果展示 - v3 高度可视化布局 */}
             {currentResult && (
-              <div className="mt-6 rounded-lg border bg-slate-50 p-4">
-                <h3 className="mb-3 font-medium text-gray-900">查询结果</h3>
-                {currentResult.queryStatus === 'success' ? (
-                  <div className="grid gap-3 text-sm md:grid-cols-2">
-                    <div>
-                      <span className="text-gray-600">追踪单号：</span>
-                      <span className="font-medium">
-                        {currentResult.trackingNumber}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">当前状态：</span>
-                      <span className="font-medium">
-                        {currentResult.status || '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">目的地：</span>
-                      <span className="font-medium">
-                        {currentResult.destination || '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">预计到达：</span>
-                      <span className="font-medium">
-                        {currentResult.estimatedArrival
-                          ? new Date(
-                              currentResult.estimatedArrival
-                            ).toLocaleString('zh-CN')
-                          : '-'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">最后更新：</span>
-                      <span className="font-medium">
-                        {currentResult.lastUpdateTime
-                          ? new Date(
-                              currentResult.lastUpdateTime
-                            ).toLocaleString('zh-CN')
-                          : '-'}
-                      </span>
-                    </div>
+              <div className="mt-8 rounded-2xl border border-slate-100 bg-slate-50/30 p-8 shadow-sm overflow-hidden relative">
+                {/* 状态背景水印 */}
+                <div className="absolute -right-8 -top-8 opacity-[0.03]">
+                  {currentResult.queryStatus === 'success' ? <Package size={160} /> : <AlertCircle size={160} />}
+                </div>
+
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 border-l-4 border-slate-900 pl-3">
+                      实时运输状态追踪
+                    </h3>
+                    <span className={cn(
+                      "px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest shadow-sm",
+                      currentResult.queryStatus === 'success' 
+                        ? "bg-emerald-500 text-white" 
+                        : "bg-rose-500 text-white"
+                    )}>
+                      {currentResult.queryStatus === 'success' ? 'SYNC SUCCESS' : 'SYNC FAILED'}
+                    </span>
                   </div>
-                ) : (
-                  <div className="text-sm text-red-600">
-                    查询失败：{currentResult.errorMessage}
-                  </div>
-                )}
+
+                  {currentResult.queryStatus === 'success' ? (
+                    <div className="grid gap-8 md:grid-cols-3">
+                      <div className="space-y-4">
+                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">追踪单号 / TRACKING NO.</div>
+                        <div className="font-mono text-xl font-black text-slate-900 leading-none">{currentResult.trackingNumber}</div>
+                        <div className="text-xs font-bold text-slate-500">目的地: {currentResult.destination || '未知'}</div>
+                      </div>
+                      <div className="space-y-4 md:border-x md:border-slate-200 md:px-8">
+                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">当前物流节点 / CURRENT STATUS</div>
+                        <div className="text-lg font-black text-slate-900 leading-none">{currentResult.status || '准备中'}</div>
+                        <div className="text-xs font-bold text-slate-500">最后更新: {currentResult.lastUpdateTime ? new Date(currentResult.lastUpdateTime).toLocaleString('zh-CN') : '-'}</div>
+                      </div>
+                      <div className="space-y-4">
+                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">预计送达日期 / ESTIMATED ARRIVAL</div>
+                        <div className="text-lg font-black text-blue-600 leading-none">
+                          {currentResult.estimatedArrival ? new Date(currentResult.estimatedArrival).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : '计算中...'}
+                        </div>
+                        <div className="text-xs font-bold text-slate-500">优先级: 标准空运</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-4 text-rose-600 bg-rose-50 p-6 rounded-xl border border-rose-100">
+                      <AlertCircle className="h-6 w-6 shrink-0" />
+                      <div>
+                        <div className="text-sm font-black uppercase tracking-widest mb-1">同步异常中断</div>
+                        <div className="text-sm font-bold opacity-80">{currentResult.errorMessage}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
@@ -309,14 +320,22 @@ export default function ShippingQueryPage() {
 
         {/* 查询历史 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle className="flex items-center text-gray-900">
-              <Package className="mr-2 h-5 w-5 text-purple-600" />
-              查询历史记录
-            </CardTitle>
-            <CardDescription>最近50条查询记录</CardDescription>
+          <CardHeader className="border-b border-slate-50 relative overflow-hidden bg-slate-50/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center text-slate-900 font-black tracking-tight text-lg">
+                  查询历史资源池
+                </CardTitle>
+                <CardDescription className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
+                  RECENT 50 INQUIRY ASSETS · 自动保存
+                </CardDescription>
+              </div>
+              <Button variant="ghost" size="icon" className="text-slate-300 hover:text-slate-900 transition-colors">
+                 <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-0">
             {isLoadingHistory ? (
               <div className="flex h-32 items-center justify-center">
                 <Loader2 className="h-6 w-6 animate-spin" />
@@ -325,60 +344,44 @@ export default function ShippingQueryPage() {
             ) : (
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>查询时间</TableHead>
-                    <TableHead>站点</TableHead>
-                    <TableHead>追踪单号</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>目的地</TableHead>
-                    <TableHead>预到时间</TableHead>
-                    <TableHead>更新时间</TableHead>
-                    <TableHead>查询结果</TableHead>
+                  <TableRow className="bg-slate-50/50 hover:bg-slate-50/50 border-b border-slate-100">
+                    <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">查询时间</TableHead>
+                    <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">物流站点</TableHead>
+                    <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">追踪单号</TableHead>
+                    <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto">实时状态</TableHead>
+                    <TableHead className="text-[11px] font-black uppercase tracking-widest text-slate-400 py-4 h-auto text-right">同步结果</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {queriesData?.data.map(query => (
-                    <TableRow key={query.id}>
-                      <TableCell className="text-xs">
-                        {new Date(query.queriedAt).toLocaleString('zh-CN')}
+                  {queriesData?.data.map((query, index) => (
+                    <TableRow key={query.id} className="hover:bg-slate-50/30 transition-colors group">
+                      <TableCell className="text-xs font-bold text-slate-500 py-4">
+                        {new Date(query.queriedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-black text-slate-900 py-4">
                         {query.site?.name || '-'}
                       </TableCell>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className="font-mono text-xs font-black text-slate-900 py-4">
                         {query.trackingNumber}
                       </TableCell>
-                      <TableCell>{query.status || '-'}</TableCell>
-                      <TableCell>{query.destination || '-'}</TableCell>
-                      <TableCell className="text-xs">
-                        {query.estimatedArrival
-                          ? new Date(query.estimatedArrival).toLocaleString(
-                              'zh-CN'
-                            )
-                          : '-'}
+                      <TableCell className="py-4">
+                         <div className="flex flex-col">
+                           <span className="text-xs font-bold text-slate-900">{query.status || '暂无更新'}</span>
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{query.destination || 'DEST: UNKNOWN'}</span>
+                         </div>
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {query.lastUpdateTime
-                          ? new Date(query.lastUpdateTime).toLocaleString(
-                              'zh-CN'
-                            )
-                          : '-'}
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="text-right py-4">
                         <span
-                          className={`rounded-full px-2 py-1 text-xs ${
+                          className={cn(
+                            "inline-flex items-center rounded-lg px-3 py-1 text-[10px] font-black uppercase tracking-widest shadow-sm",
                             query.queryStatus === 'success'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-emerald-50 content-emerald-600 text-emerald-600 border border-emerald-200'
                               : query.queryStatus === 'failed'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
-                          }`}
+                                ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                : 'bg-slate-50 text-slate-500 border border-slate-200'
+                          )}
                         >
-                          {query.queryStatus === 'success'
-                            ? '成功'
-                            : query.queryStatus === 'failed'
-                              ? '失败'
-                              : '处理中'}
+                          {query.queryStatus === 'success' ? 'SUCCESS' : query.queryStatus === 'failed' ? 'FAILED' : 'SYNCING'}
                         </span>
                       </TableCell>
                     </TableRow>
