@@ -3,6 +3,7 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { REFUND_METHOD_LABELS } from '@/lib/config/finance';
 import { prisma } from '@/lib/db';
 import type {
@@ -117,31 +118,53 @@ export async function getCustomerStatements(
     customerWhere.name = { contains: customerName };
   }
 
+  const parsedDateFilter = buildDateTimeRangeFromDateStrings(startDate, endDate);
+  const hasDateFilter = Boolean(parsedDateFilter);
+  const dateFilter: Prisma.DateTimeFilter = parsedDateFilter ?? {};
+
   // 只显示“至少有一笔历史往来”的客户，避免列表出现大量 0 元账户
+  // 对 date range 筛选场景：必须把时间条件带入客户查询，否则分页总数会不准确
+  const salesOrderHistoryWhere: Prisma.SalesOrderWhereInput = {
+    status: { in: ['confirmed', 'shipped', 'completed'] },
+    ...(hasDateFilter && { createdAt: dateFilter }),
+  };
+
+  const returnOrderHistoryWhere: Prisma.ReturnOrderWhereInput = {
+    status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+    ...(hasDateFilter && { createdAt: dateFilter }),
+  };
+
+  const paymentRecordHistoryWhere: Prisma.PaymentRecordWhereInput = {
+    status: { in: ['confirmed', 'applied'] },
+    paymentType: { in: ['order_payment', 'prepayment'] },
+    ...(hasDateFilter && { paymentDate: dateFilter }),
+  };
+
+  const refundRecordHistoryWhere: Prisma.RefundRecordWhereInput = {
+    status: { in: ['pending', 'processing', 'completed'] },
+    ...(hasDateFilter && { refundDate: dateFilter }),
+  };
+
+  const factoryShipmentHistoryWhere: Prisma.FactoryShipmentOrderWhereInput = {
+    status: { notIn: ['draft', 'cancelled'] },
+    receivableAmount: { gt: 0 },
+    ...(hasDateFilter
+      ? { shipmentDate: dateFilter }
+      : { shipmentDate: { not: null } }),
+  };
+
   const customerWhereWithHistory: Prisma.CustomerWhereInput = {
     ...customerWhere,
     OR: [
-      { salesOrders: { some: {} } },
-      { returnOrders: { some: {} } },
-      { factoryShipmentOrders: { some: {} } },
-      { paymentRecords: { some: {} } },
-      { refundRecords: { some: {} } },
+      { salesOrders: { some: salesOrderHistoryWhere } },
+      { returnOrders: { some: returnOrderHistoryWhere } },
+      { factoryShipmentOrders: { some: factoryShipmentHistoryWhere } },
+      { paymentRecords: { some: paymentRecordHistoryWhere } },
+      { refundRecords: { some: refundRecordHistoryWhere } },
     ],
   };
 
   // 3. 批量查询所有客户的聚合数据（一次性查询，避免 N 次查询）
-  const dateFilter: Prisma.DateTimeFilter = {};
-  if (startDate) {
-    dateFilter.gte = new Date(startDate);
-  }
-  if (endDate) {
-    const end = new Date(endDate);
-    // 包含结束当天整日
-    end.setHours(23, 59, 59, 999);
-    dateFilter.lte = end;
-  }
-  const hasDateFilter = Object.keys(dateFilter).length > 0;
-
   const needsComputedPagination =
     sortBy !== 'customerName' ||
     balanceType !== 'all' ||

@@ -45,6 +45,8 @@ export async function clearCacheAfterPaymentOut(): Promise<void> {
   // 失效应付款相关缓存（自动级联失效统计、往来账单等）
   await Promise.all([
     revalidateFinance('payables'),
+    // ✅ 修复：付款记录创建后，需同步失效 payments-out 列表缓存，否则页面可能仍显示旧数据
+    revalidateFinance('payments'),
     invalidateStatementsCache(),
     invalidateFinanceSummaryCache(),
   ]);
