@@ -202,32 +202,46 @@ export class ExpenseManagementService {
         throw new Error('审核记录状态不正确');
       }
 
-      const updatedApproval = await tx.expenseApproval.update({
-        where: { id: approvalId },
+      const resolvedApprovedAmount =
+        status === 'APPROVED'
+          ? (approvedAmount ?? approval.requestedAmount)
+          : null;
+
+      const updateResult = await tx.expenseApproval.updateMany({
+        where: { id: approvalId, approvalStatus: 'PENDING' },
         data: {
           approvalStatus: status,
           approvedBy,
-          approvedAmount:
-            status === 'APPROVED'
-              ? approvedAmount || approval.requestedAmount
-              : null,
+          approvedAmount: status === 'APPROVED' ? resolvedApprovedAmount : null,
           approvalReason: status === 'APPROVED' ? reason : undefined,
           rejectionReason: status === 'REJECTED' ? reason : undefined,
           approvedAt: new Date(),
         },
       });
 
+      if (updateResult.count === 0) {
+        throw new Error('审核失败：记录已被处理，请刷新后重试');
+      }
+
       // 如果审核通过，更新费用项目
       if (status === 'APPROVED') {
         await tx.salesOrderFeeItem.update({
           where: { id: approval.feeItemId },
           data: {
-            feeAmount: approvedAmount || approval.requestedAmount,
+            feeAmount: resolvedApprovedAmount ?? approval.requestedAmount,
           },
         });
 
         // 重新计算订单总金额
         await this.recalculateOrderTotal(approval.salesOrderId, tx);
+      }
+
+      const updatedApproval = await tx.expenseApproval.findUnique({
+        where: { id: approvalId },
+      });
+
+      if (!updatedApproval) {
+        throw new Error('审核记录不存在');
       }
 
       return updatedApproval as ExpenseApproval;
