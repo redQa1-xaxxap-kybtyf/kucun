@@ -19,6 +19,7 @@ export const DELETE = withAuth(
     const suppliersToDelete = await prisma.supplier.findMany({
       where: { id: { in: supplierIds } },
       select: { id: true, name: true },
+      take: supplierIds.length,
     });
 
     const foundIds = suppliersToDelete.map(s => s.id);

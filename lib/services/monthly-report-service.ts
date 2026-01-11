@@ -19,8 +19,8 @@ import {
     calculateTotalExpenses,
     extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
+import { toNumber } from '@/lib/utils/number';
 
-import { includesCustomerRole } from './finance-statistics-shared';
 import {
     buildExpenseWhere,
     buildPaymentWhere,
@@ -33,6 +33,8 @@ import {
     getMonthDateRange,
     getPreviousMonth,
 } from './report-helpers';
+
+const REPORT_QUERY_BATCH_SIZE = 1000;
 
 // ==================== 数据查询函数 ====================
 
@@ -72,7 +74,7 @@ async function getMonthlyRevenue(
     }),
   ]);
 
-  const salesRevenue = salesStats._sum.totalAmount || 0;
+  const salesRevenue = toNumber(salesStats._sum.totalAmount);
   const orderCount = salesStats._count.id || 0;
   const averageOrderValue = orderCount > 0 ? salesRevenue / orderCount : 0;
 
@@ -151,7 +153,7 @@ async function getMonthlyCosts(
     },
   });
 
-  const salesCost = salesCostStats._sum.costAmount || 0;
+  const salesCost = toNumber(salesCostStats._sum.costAmount);
 
   // 库存成本变化（入库成本 - 出库成本 + 盘点调整成本）
   const [inboundCost, outboundCost, adjustmentCost] = await Promise.all([
@@ -221,28 +223,23 @@ async function getMonthlyReceivables(
   const { startDate, endDate } = getMonthDateRange(year, month);
 
   // 获取应收款余额（基于伙伴账本的当前余额快照，按角色拆分）
-  const accountStatements = await prisma.accountStatement.findMany({
+  const receivableAggregate = await prisma.accountStatement.aggregate({
     where: {
       partnerRole: { in: ['customer', 'partner'] },
       updatedAt: {
         gte: startDate,
         lte: endDate,
       },
+      currentBalance: {
+        gt: 0,
+      },
     },
-    select: {
-      partnerRole: true,
+    _sum: {
       currentBalance: true,
     },
   });
 
-  let totalReceivable = 0;
-  for (const statement of accountStatements) {
-    const balance = statement.currentBalance ?? 0;
-    if (includesCustomerRole(statement.partnerRole)) {
-      // 仅统计正向余额为应收
-      totalReceivable += Math.max(balance, 0);
-    }
-  }
+  const totalReceivable = toNumber(receivableAggregate._sum.currentBalance);
 
   // 获取应付款数据
   const payableStats = await prisma.payableRecord.aggregate({
@@ -282,10 +279,10 @@ async function getMonthlyReceivables(
     },
   });
 
-  const totalPayable = payableStats._sum.payableAmount || 0;
+  const totalPayable = toNumber(payableStats._sum.payableAmount);
   const receivedAmount = Number(receivedStats._sum.actualPaymentAmount ?? 0);
-  const paidAmount = paidStats._sum.paymentAmount || 0;
-  const payableBalance = payableStats._sum.remainingAmount || 0;
+  const paidAmount = toNumber(paidStats._sum.paymentAmount);
+  const payableBalance = toNumber(payableStats._sum.remainingAmount);
 
   return {
     totalReceivable,
@@ -308,22 +305,38 @@ async function getInventoryTurnover(
   const { startDate, endDate } = getMonthDateRange(year, month);
 
   // 获取期末库存价值（当前库存）
-  const currentInventory = await prisma.inventory.findMany({
-    where: {
-      quantity: {
-        gt: 0,
-      },
-    },
-    select: {
-      quantity: true,
-      unitCost: true,
-    },
-  });
+  let endingValue = 0;
+  let inventoryCursor: string | undefined;
 
-  const endingValue = currentInventory.reduce(
-    (sum, inv) => sum + inv.quantity * (inv.unitCost || 0),
-    0
-  );
+  while (true) {
+    const batch = await prisma.inventory.findMany({
+      where: {
+        quantity: {
+          gt: 0,
+        },
+      },
+      select: {
+        id: true,
+        quantity: true,
+        unitCost: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: REPORT_QUERY_BATCH_SIZE,
+      ...(inventoryCursor ? { cursor: { id: inventoryCursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const inv of batch) {
+      endingValue += inv.quantity * toNumber(inv.unitCost);
+    }
+
+    inventoryCursor = batch[batch.length - 1].id;
+  }
 
   // 计算期初库存价值
   // 期初库存 = 期末库存 - 本月入库 + 本月出库
@@ -356,8 +369,8 @@ async function getInventoryTurnover(
     }),
   ]);
 
-  const inboundCost = inboundStats._sum.totalCost || 0;
-  const outboundCost = outboundStats._sum.totalCost || 0;
+  const inboundCost = toNumber(inboundStats._sum.totalCost);
+  const outboundCost = toNumber(outboundStats._sum.totalCost);
 
   // 期初库存 = 期末库存 - 入库成本 + 出库成本
   const beginningValue = endingValue - inboundCost + outboundCost;
@@ -566,47 +579,57 @@ export async function getMonthlyFactoryShipmentProfit(
 ): Promise<MonthlyFactoryShipmentProfit> {
   const { startDate, endDate } = getMonthDateRange(year, month);
 
-  // 查询指定月份的所有已完成厂家发货订单
-  const orders = await prisma.factoryShipmentOrder.findMany({
-    where: {
-      shipmentDate: {
-        gte: startDate,
-        lte: endDate,
-      },
-      status: {
-        in: ['arrived', 'completed'],
-      },
-    },
-    select: {
-      id: true,
-      totalAmount: true,
-      receivableAmount: true,
-      customerProfit: true,
-      selfCostAmount: true,
-      expenseAmount: true,
-      profitAmount: true,
-    },
-  });
+  let totalOrders = 0;
+  let totalAmount = 0;
+  let totalRevenue = 0;
+  let customerProfit = 0;
+  let selfCostAmount = 0;
+  let totalExpenses = 0;
 
-  // 统计数据
-  const totalOrders = orders.length;
-  const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + (o.receivableAmount || 0),
-    0
-  );
-  const customerProfit = orders.reduce(
-    (sum, o) => sum + (o.customerProfit || 0),
-    0
-  );
-  const selfCostAmount = orders.reduce(
-    (sum, o) => sum + (o.selfCostAmount || 0),
-    0
-  );
-  const totalExpenses = orders.reduce(
-    (sum, o) => sum + (o.expenseAmount || 0),
-    0
-  );
+  let cursor: string | undefined;
+  while (true) {
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where: {
+        shipmentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          in: ['arrived', 'completed'],
+        },
+      },
+      select: {
+        id: true,
+        totalAmount: true,
+        receivableAmount: true,
+        customerProfit: true,
+        selfCostAmount: true,
+        expenseAmount: true,
+        profitAmount: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: REPORT_QUERY_BATCH_SIZE,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    totalOrders += batch.length;
+
+    for (const order of batch) {
+      totalAmount += toNumber(order.totalAmount);
+      totalRevenue += toNumber(order.receivableAmount);
+      customerProfit += toNumber(order.customerProfit);
+      selfCostAmount += toNumber(order.selfCostAmount);
+      totalExpenses += toNumber(order.expenseAmount);
+    }
+
+    cursor = batch[batch.length - 1].id;
+  }
 
   // 计算平均利润率
   const averageProfitMargin =

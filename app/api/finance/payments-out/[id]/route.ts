@@ -1,6 +1,7 @@
 // 单个付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { resolveParams } from '@/lib/api/middleware';
@@ -10,6 +11,7 @@ import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import type { PaymentOutRecordDetail } from '@/lib/types/payable';
+import { toNumber } from '@/lib/utils/number';
 import { updatePaymentOutRecordSchema } from '@/lib/validations/payable';
 
 type PaymentParams = { id: string };
@@ -40,6 +42,92 @@ const paymentInclude = {
   },
 };
 
+type PaymentOutRecordWithInclude = Prisma.PaymentOutRecordGetPayload<{
+  include: typeof paymentInclude;
+}>;
+
+const PAYMENT_OUT_STATUSES = [
+  'pending',
+  'confirmed',
+  'cancelled',
+] as const satisfies ReadonlyArray<PaymentOutRecordDetail['status']>;
+
+const PAYMENT_OUT_METHODS = [
+  'cash',
+  'bank_transfer',
+  'alipay',
+  'wechat',
+  'check',
+  'other',
+] as const satisfies ReadonlyArray<PaymentOutRecordDetail['paymentMethod']>;
+
+function normalizePaymentOutStatus(value: string): PaymentOutRecordDetail['status'] {
+  return (PAYMENT_OUT_STATUSES as readonly string[]).includes(value)
+    ? (value as PaymentOutRecordDetail['status'])
+    : 'pending';
+}
+
+function normalizePaymentOutMethod(value: string): PaymentOutRecordDetail['paymentMethod'] {
+  return (PAYMENT_OUT_METHODS as readonly string[]).includes(value)
+    ? (value as PaymentOutRecordDetail['paymentMethod'])
+    : 'other';
+}
+
+function serializePaymentOutRecordDetail(
+  payment: PaymentOutRecordWithInclude
+): PaymentOutRecordDetail {
+  return {
+    id: payment.id,
+    paymentNumber: payment.paymentNumber,
+    supplierId: payment.supplierId,
+    userId: payment.userId,
+    paymentMethod: normalizePaymentOutMethod(payment.paymentMethod),
+    paymentAmount: toNumber(payment.paymentAmount),
+    paymentDate: payment.paymentDate,
+    status: normalizePaymentOutStatus(payment.status),
+    ...(payment.payableRecordId !== null && payment.payableRecordId !== undefined
+      ? { payableRecordId: payment.payableRecordId }
+      : {}),
+    ...(payment.remarks !== null && payment.remarks !== undefined
+      ? { remarks: payment.remarks }
+      : {}),
+    ...(payment.voucherNumber !== null && payment.voucherNumber !== undefined
+      ? { voucherNumber: payment.voucherNumber }
+      : {}),
+    ...(payment.bankInfo !== null && payment.bankInfo !== undefined
+      ? { bankInfo: payment.bankInfo }
+      : {}),
+    createdAt: payment.createdAt,
+    updatedAt: payment.updatedAt,
+    ...(payment.payableRecord
+      ? {
+          payableRecord: {
+            id: payment.payableRecord.id,
+            payableNumber: payment.payableRecord.payableNumber,
+            payableAmount: toNumber(payment.payableRecord.payableAmount),
+            remainingAmount: toNumber(payment.payableRecord.remainingAmount),
+          },
+        }
+      : {}),
+    supplier: {
+      id: payment.supplier.id,
+      name: payment.supplier.name,
+      ...(payment.supplier.phone !== null && payment.supplier.phone !== undefined
+        ? { phone: payment.supplier.phone }
+        : {}),
+      ...(payment.supplier.address !== null &&
+      payment.supplier.address !== undefined
+        ? { address: payment.supplier.address }
+        : {}),
+    },
+    user: {
+      id: payment.user.id,
+      name: payment.user.name,
+      email: payment.user.email ?? '',
+    },
+  };
+}
+
 /**
  * GET /api/finance/payments-out/[id] - 获取单个付款记录详情
  */
@@ -66,7 +154,7 @@ const getPaymentHandler = withAuth(
 
       return NextResponse.json({
         success: true,
-        data: payment as PaymentOutRecordDetail,
+        data: serializePaymentOutRecordDetail(payment),
       });
     } catch (error) {
       logger.error(
@@ -151,11 +239,14 @@ const putPaymentHandler = withAuth(
             });
 
             if (payableRecord) {
+              const existingPaymentAmount = toNumber(existingPayment.paymentAmount);
+              const updatedPaymentAmount = toNumber(updateData.paymentAmount);
+              const payablePaidAmount = toNumber(payableRecord.paidAmount);
+              const payableAmount = toNumber(payableRecord.payableAmount);
+
               // 计算新的已付金额
               const newPaidAmount =
-                payableRecord.paidAmount -
-                existingPayment.paymentAmount +
-                updateData.paymentAmount;
+                payablePaidAmount - existingPaymentAmount + updatedPaymentAmount;
 
               // ✅ 校验：付款金额不能为负数
               if (newPaidAmount < 0) {
@@ -163,9 +254,9 @@ const putPaymentHandler = withAuth(
               }
 
               // ✅ 校验：付款金额不能超过应付金额
-              if (newPaidAmount > payableRecord.payableAmount) {
+              if (newPaidAmount > payableAmount) {
                 throw new Error(
-                  `付款金额不能超过应付金额 ${payableRecord.payableAmount}`
+                  `付款金额不能超过应付金额 ${payableAmount}`
                 );
               }
             }
@@ -191,12 +282,15 @@ const putPaymentHandler = withAuth(
           });
 
           if (payableRecord) {
+            const payableAmount = toNumber(payableRecord.payableAmount);
+            const payablePaidAmount = toNumber(payableRecord.paidAmount);
+            const existingPaymentAmount = toNumber(existingPayment.paymentAmount);
+            const currentPaymentAmount = toNumber(payment.paymentAmount);
+
             const newPaidAmount =
-              payableRecord.paidAmount -
-              existingPayment.paymentAmount +
-              payment.paymentAmount;
+              payablePaidAmount - existingPaymentAmount + currentPaymentAmount;
             const newRemainingAmount =
-              payableRecord.payableAmount - newPaidAmount;
+              payableAmount - newPaidAmount;
 
             let newStatus = 'pending';
             if (newRemainingAmount <= 0) {
@@ -282,7 +376,7 @@ const putPaymentHandler = withAuth(
 
       return NextResponse.json({
         success: true,
-        data: updatedPayment as PaymentOutRecordDetail,
+        data: serializePaymentOutRecordDetail(updatedPayment),
         message: '付款记录更新成功',
       });
     } catch (error) {
@@ -352,10 +446,14 @@ const deletePaymentHandler = withAuth(
           });
 
           if (payableRecord) {
+            const existingPaymentAmount = toNumber(existingPayment.paymentAmount);
+            const payablePaidAmount = toNumber(payableRecord.paidAmount);
+            const payableAmount = toNumber(payableRecord.payableAmount);
+
             const newPaidAmount =
-              payableRecord.paidAmount - existingPayment.paymentAmount;
+              payablePaidAmount - existingPaymentAmount;
             const newRemainingAmount =
-              payableRecord.payableAmount - newPaidAmount;
+              payableAmount - newPaidAmount;
 
             let newStatus = 'pending';
             if (newRemainingAmount <= 0) {

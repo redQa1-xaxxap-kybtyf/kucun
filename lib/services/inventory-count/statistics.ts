@@ -59,7 +59,7 @@ export async function getCountStatistics(params: {
     completedItems,
     differenceItems,
     totalDifference,
-    totalDifferenceCost: totalDifferenceCost._sum.totalCost || 0,
+    totalDifferenceCost: Number(totalDifferenceCost._sum.totalCost ?? 0),
     byType: typeSummary.map(entry => ({
       countType: entry.countType as InventoryCount['countType'],
       countTypeName: entry.countType,

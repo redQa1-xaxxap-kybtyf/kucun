@@ -5,9 +5,10 @@ import type { Prisma } from '@prisma/client';
 
 import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   addToFIFOQueue,
-  consumeFIFOQueue,
+  consumeFIFOQueueByBatch,
   getWeightedAverageCostFromFIFO,
 } from '@/lib/services/fifo-cost-service';
 import { getInventoryCountById as getInventoryCountDetailById } from '@/lib/services/inventory-count/queries';
@@ -24,6 +25,7 @@ import {
   type UpdateInventoryCountRequest,
 } from '@/lib/types/inventory-count';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
+import { toNumber } from '@/lib/utils/number';
 
 const roundCurrency = (value: number): number =>
   Math.round(Number(value || 0) * 100) / 100;
@@ -110,6 +112,7 @@ export async function createInventoryCount(
           unitCost: true,
           location: true,
         },
+        take: data.items.length,
       });
 
       // 创建库存映射
@@ -520,6 +523,7 @@ export async function addCountItems(
         unitCost: true,
         location: true,
       },
+      take: items.length,
     });
 
     // 创建库存映射
@@ -670,139 +674,178 @@ export async function submitCountData(
   data: SubmitCountDataRequest,
   userId: string
 ): Promise<{ success: boolean; message: string }> {
-  // 验证盘点计划是否存在
-  const existingCount = await prisma.inventoryCount.findUnique({
-    where: { id: countId },
-    select: { status: true },
+  logger.info('inventory-count', '提交盘点数据开始', {
+    countId,
+    userId,
+    itemCount: data.items.length,
   });
 
-  if (!existingCount) {
-    throw new Error('盘点计划不存在');
-  }
+  try {
+    // 验证盘点计划是否存在
+    const existingCount = await prisma.inventoryCount.findUnique({
+      where: { id: countId },
+      select: { status: true },
+    });
 
-  // 只有进行中状态可以提交盘点数据
-  if (existingCount.status !== 'in_progress') {
-    throw new Error('只有进行中状态的盘点计划可以提交数据');
-  }
+    if (!existingCount) {
+      throw new Error('盘点计划不存在');
+    }
 
-  // 使用事务批量更新盘点明细
-  await prisma.$transaction(async tx => {
-    const now = new Date();
-    const itemIds = data.items.map(item => item.id);
+    // 只有进行中状态可以提交盘点数据
+    if (existingCount.status !== 'in_progress') {
+      throw new Error('只有进行中状态的盘点计划可以提交数据');
+    }
 
-    if (itemIds.length > 0) {
-      const countItems = await tx.inventoryCountItem.findMany({
-        where: {
-          id: {
-            in: itemIds,
+    // 使用事务批量更新盘点明细
+    const updatedStats = await prisma.$transaction(async tx => {
+      const now = new Date();
+      const itemIds = data.items.map(item => item.id);
+
+      if (itemIds.length > 0) {
+        const countItems = await tx.inventoryCountItem.findMany({
+          where: {
+            id: {
+              in: itemIds,
+            },
+            countId,
           },
-          countId,
-        },
-        select: {
-          id: true,
-          productId: true,
-          variantId: true,
-          systemQuantity: true,
-          unitCost: true,
+          select: {
+            id: true,
+            productId: true,
+            variantId: true,
+            systemQuantity: true,
+            unitCost: true,
+          },
+          take: itemIds.length,
+        });
+
+        if (countItems.length !== itemIds.length) {
+          const foundIds = new Set(countItems.map(item => item.id));
+          const missingIds = data.items
+            .filter(item => !foundIds.has(item.id))
+            .map(item => item.id);
+          throw new Error(
+            `存在不属于当前盘点计划的明细：${missingIds.join(', ')}`
+          );
+        }
+
+        const countItemMap = new Map(countItems.map(item => [item.id, item]));
+        const fifoCostCache = new Map<string, number>();
+
+        for (const item of data.items) {
+          const existingItem = countItemMap.get(item.id);
+          if (!existingItem) {
+            throw new Error(`盘点明细 ${item.id} 不存在`);
+          }
+
+          if (!Number.isFinite(item.actualQuantity)) {
+            throw new Error(`盘点明细 ${item.id} 的实际数量无效`);
+          }
+
+          const difference = item.actualQuantity - existingItem.systemQuantity;
+
+          const cacheKey = `${existingItem.productId}-${
+            existingItem.variantId || ''
+          }`;
+
+          let unitCost =
+            existingItem.unitCost !== null &&
+            existingItem.unitCost !== undefined
+              ? Number(existingItem.unitCost)
+              : null;
+
+          if (unitCost === null) {
+            if (!fifoCostCache.has(cacheKey)) {
+              const fifoAvgCost = await getWeightedAverageCostFromFIFO(
+                existingItem.productId,
+                existingItem.variantId
+              );
+              fifoCostCache.set(cacheKey, fifoAvgCost);
+            }
+            const fifoCost = fifoCostCache.get(cacheKey) ?? 0;
+            unitCost = fifoCost > 0 ? fifoCost : null;
+          }
+
+          const totalCost =
+            unitCost !== null ? roundCurrency(difference * unitCost) : null;
+
+          await tx.inventoryCountItem.update({
+            where: { id: item.id },
+            data: {
+              actualQuantity: item.actualQuantity,
+              difference,
+              unitCost,
+              totalCost,
+              status: 'counted',
+              countedBy: userId,
+              countedAt: now,
+              remarks: item.remarks ?? null,
+            },
+          });
+        }
+      }
+
+      // 重新计算盘点计划的统计信息（聚合，避免拉全量明细）
+      const [completedItems, differenceItems, positiveDiff, negativeDiff] =
+        await Promise.all([
+          tx.inventoryCountItem.count({
+            where: { countId, status: 'counted' },
+          }),
+          tx.inventoryCountItem.count({
+            where: { countId, difference: { not: 0 } },
+          }),
+          tx.inventoryCountItem.aggregate({
+            where: { countId, difference: { gt: 0 } },
+            _sum: { difference: true },
+          }),
+          tx.inventoryCountItem.aggregate({
+            where: { countId, difference: { lt: 0 } },
+            _sum: { difference: true },
+          }),
+        ]);
+
+      const totalDifference =
+        (positiveDiff._sum.difference ?? 0) +
+        Math.abs(negativeDiff._sum.difference ?? 0);
+
+      // 更新盘点计划统计
+      await tx.inventoryCount.update({
+        where: { id: countId },
+        data: {
+          completedItems,
+          differenceItems,
+          totalDifference,
         },
       });
 
-      if (countItems.length !== itemIds.length) {
-        const foundIds = new Set(countItems.map(item => item.id));
-        const missingIds = data.items
-          .filter(item => !foundIds.has(item.id))
-          .map(item => item.id);
-        throw new Error(
-          `存在不属于当前盘点计划的明细：${missingIds.join(', ')}`
-        );
-      }
-
-      const countItemMap = new Map(countItems.map(item => [item.id, item]));
-      const fifoCostCache = new Map<string, number>();
-
-      for (const item of data.items) {
-        const existingItem = countItemMap.get(item.id);
-        if (!existingItem) {
-          throw new Error(`盘点明细 ${item.id} 不存在`);
-        }
-
-        if (!Number.isFinite(item.actualQuantity)) {
-          throw new Error(`盘点明细 ${item.id} 的实际数量无效`);
-        }
-
-        const difference = item.actualQuantity - existingItem.systemQuantity;
-
-        const cacheKey = `${existingItem.productId}-${
-          existingItem.variantId || ''
-        }`;
-
-        let unitCost =
-          existingItem.unitCost !== null && existingItem.unitCost !== undefined
-            ? Number(existingItem.unitCost)
-            : null;
-
-        if (unitCost === null) {
-          if (!fifoCostCache.has(cacheKey)) {
-            const fifoAvgCost = await getWeightedAverageCostFromFIFO(
-              existingItem.productId,
-              existingItem.variantId
-            );
-            fifoCostCache.set(cacheKey, fifoAvgCost);
-          }
-          const fifoCost = fifoCostCache.get(cacheKey) ?? 0;
-          unitCost = fifoCost > 0 ? fifoCost : null;
-        }
-
-        const totalCost =
-          unitCost !== null ? roundCurrency(difference * unitCost) : null;
-
-        await tx.inventoryCountItem.update({
-          where: { id: item.id },
-          data: {
-            actualQuantity: item.actualQuantity,
-            difference,
-            unitCost,
-            totalCost,
-            status: 'counted',
-            countedBy: userId,
-            countedAt: now,
-            remarks: item.remarks ?? null,
-          },
-        });
-      }
-    }
-
-    // 重新计算盘点计划的统计信息
-    const items = await tx.inventoryCountItem.findMany({
-      where: { countId },
-      select: {
-        status: true,
-        difference: true,
-      },
-    });
-
-    const completedItems = items.filter(i => i.status === 'counted').length;
-    const differenceItems = items.filter(i => i.difference !== 0).length;
-    const totalDifference = items.reduce(
-      (sum, i) => sum + Math.abs(i.difference),
-      0
-    );
-
-    // 更新盘点计划统计
-    await tx.inventoryCount.update({
-      where: { id: countId },
-      data: {
+      return {
         completedItems,
         differenceItems,
         totalDifference,
-      },
+      };
     });
-  });
 
-  return {
-    success: true,
-    message: `成功提交 ${data.items.length} 条盘点数据`,
-  };
+    logger.info('inventory-count', '提交盘点数据完成', {
+      countId,
+      userId,
+      itemCount: data.items.length,
+      completedItems: updatedStats.completedItems,
+      differenceItems: updatedStats.differenceItems,
+      totalDifference: updatedStats.totalDifference,
+    });
+
+    return {
+      success: true,
+      message: `成功提交 ${data.items.length} 条盘点数据`,
+    };
+  } catch (error) {
+    logger.error('inventory-count', '提交盘点数据失败', error, {
+      countId,
+      userId,
+      itemCount: data.items.length,
+    });
+    throw error;
+  }
 }
 
 /**
@@ -859,7 +902,7 @@ export async function completeCount(
       const difference = item.difference;
 
       // 2.1.1 生成调整单号
-      const adjustmentNumber = await generateAdjustmentNumber();
+      const adjustmentNumber = await generateAdjustmentNumber(tx);
 
       // 2.1.2 确定调整原因（盘盈或盘亏）
       const reason = difference > 0 ? 'surplus' : 'deficit';
@@ -867,15 +910,43 @@ export async function completeCount(
       const afterQuantity = item.actualQuantity!;
 
       // 2.1.3 更新库存数量
-      await tx.inventory.updateMany({
+      const inventories = await tx.inventory.findMany({
         where: {
           productId: item.productId,
-          ...(item.variantId && { variantId: item.variantId }),
-          ...(item.batchNumber && { batchNumber: item.batchNumber }),
+          variantId: item.variantId ?? null,
+          batchNumber: item.batchNumber ?? null,
         },
-        data: {
-          quantity: afterQuantity,
+        select: {
+          id: true,
+          reservedQuantity: true,
+          unitCost: true,
         },
+        take: 2,
+      });
+
+      const inventory = inventories[0];
+
+      if (!inventory) {
+        throw new Error(
+          `库存记录不存在: productId=${item.productId}, variantId=${item.variantId ?? 'null'}, batchNumber=${item.batchNumber ?? 'null'}`
+        );
+      }
+
+      if (inventories.length > 1) {
+        throw new Error(
+          `库存记录不唯一: productId=${item.productId}, variantId=${item.variantId ?? 'null'}, batchNumber=${item.batchNumber ?? 'null'}`
+        );
+      }
+
+      if (afterQuantity < inventory.reservedQuantity) {
+        throw new Error(
+          `盘点调整后库存(${afterQuantity})不能低于预留数量(${inventory.reservedQuantity})。请先释放预留量或拆分盘点调整。`
+        );
+      }
+
+      await tx.inventory.update({
+        where: { id: inventory.id },
+        data: { quantity: afterQuantity },
       });
 
       // 2.1.4 计算调整成本（严格按 FIFO 成本优先）
@@ -895,19 +966,9 @@ export async function completeCount(
           unitCost = fifoAvg > 0 ? fifoAvg : null;
 
           if (unitCost === null) {
-            const inventory = await tx.inventory.findFirst({
-              where: {
-                productId: item.productId,
-                ...(item.variantId && { variantId: item.variantId }),
-                ...(item.batchNumber && { batchNumber: item.batchNumber }),
-              },
-              select: {
-                unitCost: true,
-              },
-            });
             if (
-              inventory?.unitCost !== null &&
-              inventory?.unitCost !== undefined
+              inventory.unitCost !== null &&
+              inventory.unitCost !== undefined
             ) {
               unitCost = Number(inventory.unitCost);
             }
@@ -921,9 +982,10 @@ export async function completeCount(
         const absDiff = Math.abs(difference);
 
         try {
-          const fifoCost = await consumeFIFOQueue(
+          const fifoCost = await consumeFIFOQueueByBatch(
             item.productId,
             item.variantId,
+            item.batchNumber ?? null,
             absDiff,
             tx
           );
@@ -947,19 +1009,9 @@ export async function completeCount(
               fifoAvg > 0 ? fifoAvg : unitCost !== null ? unitCost : null;
 
             if (unitCost === null) {
-              const inventory = await tx.inventory.findFirst({
-                where: {
-                  productId: item.productId,
-                  ...(item.variantId && { variantId: item.variantId }),
-                  ...(item.batchNumber && { batchNumber: item.batchNumber }),
-                },
-                select: {
-                  unitCost: true,
-                },
-              });
               if (
-                inventory?.unitCost !== null &&
-                inventory?.unitCost !== undefined
+                inventory.unitCost !== null &&
+                inventory.unitCost !== undefined
               ) {
                 unitCost = Number(inventory.unitCost);
               }
@@ -1197,7 +1249,7 @@ export async function getCountStatistics(params: {
     },
   });
 
-  const totalDifferenceCost = itemsResult._sum.totalCost || 0;
+  const totalDifferenceCost = toNumber(itemsResult._sum.totalCost, 0);
 
   return {
     totalCounts,

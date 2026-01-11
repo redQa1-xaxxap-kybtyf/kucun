@@ -4,6 +4,7 @@ import {
   executeMinimalInboundTransaction,
   type MinimalInboundTransactionResult,
 } from '@/lib/api/minimal-inbound-transaction';
+import { toNumber } from '@/lib/utils/number';
 
 export type Tx = Omit<
   PrismaClient,
@@ -129,29 +130,23 @@ export async function applyCompletionEffects(
   >();
 
   if (returnOrder.salesOrderId) {
-    const outboundRecords = await tx.outboundRecord.findMany({
+    const outboundRecords = await tx.outboundRecord.groupBy({
+      by: ['productId'],
       where: {
         salesOrderId: returnOrder.salesOrderId,
         reason: 'sales_outbound',
       },
-      select: {
-        productId: true,
+      _sum: {
         quantity: true,
-        unitCost: true,
         totalCost: true,
       },
     });
 
     for (const record of outboundRecords) {
-      const qty = Number(record.quantity ?? 0);
+      const qty = Number(record._sum.quantity ?? 0);
       if (qty <= 0) continue;
 
-      const recordTotalCost =
-        typeof record.totalCost === 'number'
-          ? Number(record.totalCost)
-          : typeof record.unitCost === 'number'
-            ? Number(record.unitCost) * qty
-            : 0;
+      const recordTotalCost = toNumber(record._sum.totalCost, 0);
 
       if (!Number.isFinite(recordTotalCost) || recordTotalCost === 0) {
         continue;
@@ -169,14 +164,18 @@ export async function applyCompletionEffects(
   }
 
   for (const item of returnOrder.items) {
-    const damaged = item.damagedQuantity ?? 0;
-    if (damaged !== 0) {
+    const returnQuantity = Number(item.returnQuantity) || 0;
+    const damagedQuantity = Math.max(Number(item.damagedQuantity ?? 0) || 0, 0);
+    const quantity = Math.max(returnQuantity - damagedQuantity, 0);
+
+    if (quantity <= 0) {
       continue;
     }
 
-    const quantity = Number(item.returnQuantity) || 0;
-    if (quantity <= 0) {
-      continue;
+    if (!Number.isInteger(quantity)) {
+      throw new Error(
+        `退货入库数量必须为整数: productId=${item.productId}, return=${returnQuantity}, damaged=${damagedQuantity}`
+      );
     }
 
     // 优先使用原销售出库记录的加权平均成本
@@ -245,6 +244,7 @@ export async function batchUpdateReturnOrderStatusTx(
   const orders = await tx.returnOrder.findMany({
     where: { id: { in: ids } },
     select: { id: true, salesOrderId: true },
+    take: ids.length,
   });
   orders.forEach(
     o => o.salesOrderId && affectedSalesOrderIds.add(o.salesOrderId)
@@ -273,7 +273,15 @@ export async function batchUpdateReturnOrderStatusTx(
 }
 
 export async function batchDeleteReturnOrdersTx(tx: Tx, ids: string[]) {
-  const orders = await tx.returnOrder.findMany({ where: { id: { in: ids } } });
+  const orders = await tx.returnOrder.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      returnNumber: true,
+      status: true,
+    },
+    take: ids.length,
+  });
   for (const order of orders) {
     if (order.status !== 'draft' && order.status !== 'cancelled') {
       throw new Error(

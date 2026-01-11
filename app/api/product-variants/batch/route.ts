@@ -70,6 +70,7 @@ export const POST = withAuth(async (request: NextRequest) => {
         colorCode: { in: colorCodes },
       },
       select: { colorCode: true },
+      take: colorCodes.length,
     });
 
     if (existingVariants.length > 0) {
@@ -104,6 +105,7 @@ export const POST = withAuth(async (request: NextRequest) => {
         sku: { in: skus },
       },
       select: { sku: true },
+      take: skus.length,
     });
 
     if (existingSkus.length > 0) {
@@ -207,6 +209,7 @@ async function handleBatchOperation(body: unknown) {
     const existingVariants = await prisma.productVariant.findMany({
       where: { id: { in: variantIds } },
       select: { id: true, colorCode: true, status: true },
+      take: variantIds.length,
     });
 
     if (existingVariants.length !== variantIds.length) {
@@ -227,6 +230,8 @@ async function handleBatchOperation(body: unknown) {
             quantity: { gt: 0 },
           },
           select: { variantId: true },
+          distinct: ['variantId'],
+          take: variantIds.length,
         });
 
         if (variantsWithInventory.length > 0) {

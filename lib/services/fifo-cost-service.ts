@@ -18,6 +18,7 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { toNumber } from '@/lib/utils/number';
 
 // 事务类型定义：显式使用 Prisma.TransactionClient，避免使用模糊的 Omit<typeof prisma,...> 类型
 type PrismaTransaction = Prisma.TransactionClient;
@@ -88,19 +89,84 @@ export async function getFIFOCost(
   outboundQty: number
 ): Promise<FIFOCostResult> {
   try {
-    // 查询FIFO队列,按入库时间升序排列
-    const queue = await prisma.inventoryCostQueue.findMany({
-      where: {
-        productId,
-        variantId,
-        remainingQty: { gt: 0 },
-      },
-      orderBy: {
-        inboundDate: 'asc', // FIFO核心:先进先出
-      },
-    });
+    const pageSize = 2000;
+    let lastInboundDate: Date | undefined;
+    let lastId: string | undefined;
+    let hasAnyBatch = false;
 
-    if (queue.length === 0) {
+    // 按FIFO顺序计算成本（分页避免一次性加载全队列）
+    let remainingToConsume = outboundQty;
+    let totalCost = 0;
+    const batches: FIFOBatch[] = [];
+
+    while (remainingToConsume > 0) {
+      const page = await prisma.inventoryCostQueue.findMany({
+        where: {
+          productId,
+          variantId,
+          remainingQty: { gt: 0 },
+          ...(lastInboundDate && lastId
+            ? {
+                OR: [
+                  { inboundDate: { gt: lastInboundDate } },
+                  { inboundDate: lastInboundDate, id: { gt: lastId } },
+                ],
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          inboundRecordId: true,
+          remainingQty: true,
+          unitCost: true,
+          inboundDate: true,
+        },
+        orderBy: [{ inboundDate: 'asc' }, { id: 'asc' }],
+        take: pageSize,
+      });
+
+      if (page.length === 0) {
+        break;
+      }
+
+      hasAnyBatch = true;
+
+      for (const batch of page) {
+        if (remainingToConsume <= 0) {
+          break;
+        }
+
+        const consumeQty = Math.min(remainingToConsume, batch.remainingQty);
+        const batchCost = consumeQty * toNumber(batch.unitCost);
+
+        totalCost += batchCost;
+        batches.push({
+          inboundRecordId: batch.inboundRecordId,
+          qty: consumeQty,
+          unitCost: toNumber(batch.unitCost),
+          batchCost,
+        });
+
+        remainingToConsume -= consumeQty;
+      }
+
+      if (remainingToConsume <= 0) {
+        break;
+      }
+
+      if (page.length < pageSize) {
+        break;
+      }
+
+      const last = page[page.length - 1];
+      if (!last) {
+        break;
+      }
+      lastInboundDate = last.inboundDate;
+      lastId = last.id;
+    }
+
+    if (!hasAnyBatch) {
       logger.warn('fifo-cost-service', 'FIFO队列为空', {
         productId,
         variantId,
@@ -110,28 +176,6 @@ export async function getFIFOCost(
         averageUnitCost: 0,
         batches: [],
       };
-    }
-
-    // 按FIFO顺序计算成本
-    let remainingToConsume = outboundQty;
-    let totalCost = 0;
-    const batches: FIFOBatch[] = [];
-
-    for (const batch of queue) {
-      if (remainingToConsume <= 0) break;
-
-      const consumeQty = Math.min(remainingToConsume, batch.remainingQty);
-      const batchCost = consumeQty * batch.unitCost;
-
-      totalCost += batchCost;
-      batches.push({
-        inboundRecordId: batch.inboundRecordId,
-        qty: consumeQty,
-        unitCost: batch.unitCost,
-        batchCost,
-      });
-
-      remainingToConsume -= consumeQty;
     }
 
     // 检查库存是否足够
@@ -183,117 +227,160 @@ export async function consumeFIFOQueue(
   const MAX_CONCURRENCY_RETRY_PER_BATCH = 3;
 
   try {
-    // 查询FIFO队列
-    const queue = await tx.inventoryCostQueue.findMany({
-      where: {
-        productId,
-        variantId,
-        remainingQty: { gt: 0 },
-      },
-      orderBy: {
-        inboundDate: 'asc',
-      },
-    });
-
-    if (queue.length === 0) {
-      throw new Error('FIFO队列为空,无法出库');
-    }
+    const pageSize = 2000;
+    let lastInboundDate: Date | undefined;
+    let lastId: string | undefined;
+    let hasAnyBatch = false;
 
     let remainingToConsume = outboundQty;
     let totalCost = 0;
     const batches: FIFOBatch[] = [];
 
-    // 按FIFO顺序消耗库存
-    for (const batch of queue) {
-      if (remainingToConsume <= 0) break;
-
-      // 针对单个批次增加有限次并发重试，避免高并发下直接失败
-      let currentRemainingQty = batch.remainingQty;
-
-      for (
-        let attempt = 0;
-        attempt < MAX_CONCURRENCY_RETRY_PER_BATCH;
-        attempt++
-      ) {
-        if (remainingToConsume <= 0 || currentRemainingQty <= 0) {
-          break;
-        }
-
-        const consumeQty = Math.min(remainingToConsume, currentRemainingQty);
-        if (consumeQty <= 0) {
-          break;
-        }
-
-        const batchCost = consumeQty * batch.unitCost;
-        const newRemainingQty = currentRemainingQty - consumeQty;
-
-        // 使用乐观并发控制更新队列剩余数量
-        // 通过 remainingQty 条件防止两个事务同时消耗同一批次
-        const updateResult = await tx.inventoryCostQueue.updateMany({
-          where: {
-            id: batch.id,
-            remainingQty: currentRemainingQty,
-          },
-          data: {
-            remainingQty: newRemainingQty,
-          },
-        });
-
-        if (updateResult.count === 0) {
-          // 并发冲突：该批次在本次尝试前已被其他事务修改，重新读取最新剩余数量后再尝试
-          const fresh = await tx.inventoryCostQueue.findUnique({
-            where: { id: batch.id },
-          });
-
-          if (!fresh || fresh.remainingQty <= 0) {
-            logger.warn(
-              'fifo-cost-service',
-              'FIFO批次在并发中被完全消耗或删除，跳过当前批次',
-              {
-                batchId: batch.id,
-                productId,
-                variantId,
+    // 按FIFO顺序消耗库存（分页避免一次性加载全队列）
+    while (remainingToConsume > 0) {
+      const page = await tx.inventoryCostQueue.findMany({
+        where: {
+          productId,
+          variantId,
+          remainingQty: { gt: 0 },
+          ...(lastInboundDate && lastId
+            ? {
+                OR: [
+                  { inboundDate: { gt: lastInboundDate } },
+                  { inboundDate: lastInboundDate, id: { gt: lastId } },
+                ],
               }
-            );
-            currentRemainingQty = 0;
+            : {}),
+        },
+        select: {
+          id: true,
+          inboundRecordId: true,
+          remainingQty: true,
+          unitCost: true,
+          inboundDate: true,
+        },
+        orderBy: [{ inboundDate: 'asc' }, { id: 'asc' }],
+        take: pageSize,
+      });
+
+      if (page.length === 0) {
+        break;
+      }
+
+      hasAnyBatch = true;
+
+      for (const batch of page) {
+        if (remainingToConsume <= 0) {
+          break;
+        }
+
+        // 针对单个批次增加有限次并发重试，避免高并发下直接失败
+        let currentRemainingQty = batch.remainingQty;
+
+        for (
+          let attempt = 0;
+          attempt < MAX_CONCURRENCY_RETRY_PER_BATCH;
+          attempt++
+        ) {
+          if (remainingToConsume <= 0 || currentRemainingQty <= 0) {
             break;
           }
 
-          logger.warn(
-            'fifo-cost-service',
-            'FIFO批次并发冲突，重新读取剩余数量后重试',
-            {
-              batchId: batch.id,
-              previousRemainingQty: currentRemainingQty,
-              freshRemainingQty: fresh.remainingQty,
+          const consumeQty = Math.min(remainingToConsume, currentRemainingQty);
+          if (consumeQty <= 0) {
+            break;
+          }
+
+          const batchCost = consumeQty * toNumber(batch.unitCost);
+          const newRemainingQty = currentRemainingQty - consumeQty;
+
+          // 使用乐观锁(remainingQty版本)更新，确保并发下不会“读到旧值仍更新成功”
+          const updateResult = await tx.inventoryCostQueue.updateMany({
+            where: {
+              id: batch.id,
+              remainingQty: currentRemainingQty,
+            },
+            data: {
+              remainingQty: newRemainingQty,
+            },
+          });
+
+          if (updateResult.count === 0) {
+            // 并发冲突：该批次在本次尝试前已被其他事务修改，重新读取最新剩余数量后再尝试
+            const fresh = await tx.inventoryCostQueue.findUnique({
+              where: { id: batch.id },
+              select: { remainingQty: true },
+            });
+
+            if (!fresh || fresh.remainingQty <= 0) {
+              logger.warn(
+                'fifo-cost-service',
+                'FIFO批次在并发中被完全消耗或删除，跳过当前批次',
+                {
+                  batchId: batch.id,
+                  productId,
+                  variantId,
+                }
+              );
+              currentRemainingQty = 0;
+              break;
             }
-          );
 
-          currentRemainingQty = fresh.remainingQty;
-          continue;
+            logger.warn(
+              'fifo-cost-service',
+              'FIFO批次并发冲突，重新读取剩余数量后重试',
+              {
+                batchId: batch.id,
+                previousRemainingQty: currentRemainingQty,
+                freshRemainingQty: fresh.remainingQty,
+              }
+            );
+
+            currentRemainingQty = fresh.remainingQty;
+            continue;
+          }
+
+          // 更新成功，累计成本并继续处理下一批次
+          totalCost += batchCost;
+          batches.push({
+            inboundRecordId: batch.inboundRecordId,
+            qty: consumeQty,
+            unitCost: toNumber(batch.unitCost),
+            batchCost,
+          });
+
+          remainingToConsume -= consumeQty;
+          currentRemainingQty = newRemainingQty;
+
+          logger.debug('fifo-cost-service', 'FIFO批次消耗', {
+            batchId: batch.id,
+            consumeQty,
+            remainingQty: newRemainingQty,
+          });
+
+          // 当前批次处理完成（无更多可用数量或已满足需求），跳出重试循环
+          break;
         }
+      }
 
-        // 更新成功，累计成本并继续处理下一批次
-        totalCost += batchCost;
-        batches.push({
-          inboundRecordId: batch.inboundRecordId,
-          qty: consumeQty,
-          unitCost: batch.unitCost,
-          batchCost,
-        });
-
-        remainingToConsume -= consumeQty;
-        currentRemainingQty = newRemainingQty;
-
-        logger.debug('fifo-cost-service', 'FIFO批次消耗', {
-          batchId: batch.id,
-          consumeQty,
-          remainingQty: newRemainingQty,
-        });
-
-        // 当前批次处理完成（无更多可用数量或已满足需求），跳出重试循环
+      if (remainingToConsume <= 0) {
         break;
       }
+
+      if (page.length < pageSize) {
+        break;
+      }
+
+      const last = page[page.length - 1];
+      if (!last) {
+        break;
+      }
+      lastInboundDate = last.inboundDate;
+      lastId = last.id;
+    }
+
+    if (!hasAnyBatch) {
+      throw new Error('FIFO队列为空,无法出库');
     }
 
     if (remainingToConsume > 0) {
@@ -325,6 +412,245 @@ export async function consumeFIFOQueue(
 }
 
 /**
+ * 按批次消耗 FIFO 队列（出库/扣减时使用）
+ * - batchNumber 为空时，等价于 consumeFIFOQueue（全批次 FIFO）
+ * - batchNumber 不为空时，仅在该批次范围内按 FIFO 消耗
+ */
+export async function consumeFIFOQueueByBatch(
+  productId: string,
+  variantId: string | null,
+  batchNumber: string | null,
+  outboundQty: number,
+  tx: PrismaTransaction
+): Promise<FIFOCostResult> {
+  const normalizedBatch =
+    typeof batchNumber === 'string' && batchNumber.trim().length > 0
+      ? batchNumber.trim()
+      : null;
+
+  if (!normalizedBatch) {
+    return consumeFIFOQueue(productId, variantId, outboundQty, tx);
+  }
+
+  const MAX_CONCURRENCY_RETRY_PER_BATCH = 3;
+
+  try {
+    const pageSize = 2000;
+    let lastInboundDate: Date | undefined;
+    let lastId: string | undefined;
+    let hasAnyBatch = false;
+
+    let remainingToConsume = outboundQty;
+    let totalCost = 0;
+    const batches: FIFOBatch[] = [];
+
+    while (remainingToConsume > 0) {
+      const page = await tx.inventoryCostQueue.findMany({
+        where: {
+          productId,
+          variantId,
+          batchNumber: normalizedBatch,
+          remainingQty: { gt: 0 },
+          ...(lastInboundDate && lastId
+            ? {
+                OR: [
+                  { inboundDate: { gt: lastInboundDate } },
+                  { inboundDate: lastInboundDate, id: { gt: lastId } },
+                ],
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+          inboundRecordId: true,
+          remainingQty: true,
+          unitCost: true,
+          inboundDate: true,
+        },
+        orderBy: [{ inboundDate: 'asc' }, { id: 'asc' }],
+        take: pageSize,
+      });
+
+      if (page.length === 0) {
+        break;
+      }
+
+      hasAnyBatch = true;
+
+      for (const batch of page) {
+        if (remainingToConsume <= 0) {
+          break;
+        }
+
+        let currentRemainingQty = batch.remainingQty;
+
+        for (
+          let attempt = 0;
+          attempt < MAX_CONCURRENCY_RETRY_PER_BATCH;
+          attempt++
+        ) {
+          if (remainingToConsume <= 0 || currentRemainingQty <= 0) {
+            break;
+          }
+
+          const consumeQty = Math.min(remainingToConsume, currentRemainingQty);
+          if (consumeQty <= 0) {
+            break;
+          }
+
+          const batchCost = consumeQty * toNumber(batch.unitCost);
+          const newRemainingQty = currentRemainingQty - consumeQty;
+
+          // 使用乐观锁(remainingQty版本)更新，确保并发下不会“读到旧值仍更新成功”
+          const updateResult = await tx.inventoryCostQueue.updateMany({
+            where: {
+              id: batch.id,
+              remainingQty: currentRemainingQty,
+            },
+            data: {
+              remainingQty: newRemainingQty,
+            },
+          });
+
+          if (updateResult.count === 0) {
+            const fresh = await tx.inventoryCostQueue.findUnique({
+              where: { id: batch.id },
+              select: { remainingQty: true },
+            });
+
+            if (!fresh || fresh.remainingQty <= 0) {
+              currentRemainingQty = 0;
+              break;
+            }
+
+            currentRemainingQty = fresh.remainingQty;
+            continue;
+          }
+
+          totalCost += batchCost;
+          batches.push({
+            inboundRecordId: batch.inboundRecordId,
+            qty: consumeQty,
+            unitCost: toNumber(batch.unitCost),
+            batchCost,
+          });
+
+          remainingToConsume -= consumeQty;
+          currentRemainingQty = newRemainingQty;
+          break;
+        }
+      }
+
+      if (remainingToConsume <= 0) {
+        break;
+      }
+
+      if (page.length < pageSize) {
+        break;
+      }
+
+      const last = page[page.length - 1];
+      if (!last) {
+        break;
+      }
+      lastInboundDate = last.inboundDate;
+      lastId = last.id;
+    }
+
+    if (!hasAnyBatch) {
+      throw new Error('FIFO队列为空,无法出库');
+    }
+
+    if (remainingToConsume > 0) {
+      throw new Error(
+        `库存不足: 需要 ${outboundQty}, 可用 ${outboundQty - remainingToConsume}`
+      );
+    }
+
+    const averageUnitCost = totalCost / outboundQty;
+
+    return {
+      totalCost: Math.round(totalCost * 100) / 100,
+      averageUnitCost: Math.round(averageUnitCost * 100) / 100,
+      batches,
+    };
+  } catch (error) {
+    logger.error('fifo-cost-service', 'FIFO队列按批次消耗失败', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取指定批次的 FIFO 加权平均成本
+ * - batchNumber 为空时，等价于 getWeightedAverageCostFromFIFO（全批次）
+ */
+export async function getWeightedAverageCostFromFIFOByBatch(
+  productId: string,
+  variantId: string | null,
+  batchNumber: string | null
+): Promise<number> {
+  const normalizedBatch =
+    typeof batchNumber === 'string' && batchNumber.trim().length > 0
+      ? batchNumber.trim()
+      : null;
+
+  if (!normalizedBatch) {
+    return getWeightedAverageCostFromFIFO(productId, variantId);
+  }
+
+  try {
+    const pageSize = 2000;
+    let cursor: string | undefined;
+    let totalQty = 0;
+    let totalCost = 0;
+
+    while (true) {
+      const queue = await prisma.inventoryCostQueue.findMany({
+        where: {
+          productId,
+          variantId,
+          batchNumber: normalizedBatch,
+          remainingQty: { gt: 0 },
+        },
+        select: {
+          id: true,
+          remainingQty: true,
+          unitCost: true,
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      for (const batch of queue) {
+        totalQty += batch.remainingQty;
+        totalCost += batch.remainingQty * toNumber(batch.unitCost);
+      }
+
+      if (queue.length < pageSize) {
+        break;
+      }
+
+      cursor = queue[queue.length - 1]?.id;
+      if (!cursor) {
+        break;
+      }
+    }
+
+    if (totalQty === 0) {
+      return 0;
+    }
+
+    const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
+
+    return Math.round(avgCost * 100) / 100;
+  } catch (error) {
+    logger.error('fifo-cost-service', '计算批次加权平均成本失败', error);
+    throw error;
+  }
+}
+
+/**
  * 获取当前加权平均成本(用于兼容性)
  * 基于FIFO队列计算全部库存的平均成本
  */
@@ -333,24 +659,45 @@ export async function getWeightedAverageCostFromFIFO(
   variantId: string | null
 ): Promise<number> {
   try {
-    const queue = await prisma.inventoryCostQueue.findMany({
-      where: {
-        productId,
-        variantId,
-        remainingQty: { gt: 0 },
-      },
-    });
-
-    if (queue.length === 0) {
-      return 0;
-    }
-
+    const pageSize = 2000;
+    let cursor: string | undefined;
     let totalQty = 0;
     let totalCost = 0;
 
-    for (const batch of queue) {
-      totalQty += batch.remainingQty;
-      totalCost += batch.remainingQty * batch.unitCost;
+    while (true) {
+      const queue = await prisma.inventoryCostQueue.findMany({
+        where: {
+          productId,
+          variantId,
+          remainingQty: { gt: 0 },
+        },
+        select: {
+          id: true,
+          remainingQty: true,
+          unitCost: true,
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      for (const batch of queue) {
+        totalQty += batch.remainingQty;
+        totalCost += batch.remainingQty * toNumber(batch.unitCost);
+      }
+
+      if (queue.length < pageSize) {
+        break;
+      }
+
+      cursor = queue[queue.length - 1]?.id;
+      if (!cursor) {
+        break;
+      }
+    }
+
+    if (totalQty === 0) {
+      return 0;
     }
 
     const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
@@ -358,7 +705,7 @@ export async function getWeightedAverageCostFromFIFO(
     return Math.round(avgCost * 100) / 100;
   } catch (error) {
     logger.error('fifo-cost-service', '计算加权平均成本失败', error);
-    return 0;
+    throw error;
   }
 }
 

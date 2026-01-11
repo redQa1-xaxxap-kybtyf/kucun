@@ -243,7 +243,26 @@ export class ExpenseManagementService {
         isActive: true,
         ...(category && { category }),
       },
+      select: {
+        id: true,
+        typeCode: true,
+        typeName: true,
+        category: true,
+        calculationMethod: true,
+        defaultRate: true,
+        minAmount: true,
+        maxAmount: true,
+        isTaxable: true,
+        requiresApproval: true,
+        approvalThreshold: true,
+        isActive: true,
+        sortOrder: true,
+        description: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { sortOrder: 'asc' },
+      take: 1000,
     });
 
     return expenseTypes as ExpenseType[];
@@ -255,24 +274,85 @@ export class ExpenseManagementService {
   public async getPendingApprovals(
     userId?: string
   ): Promise<ExpenseApproval[]> {
-    const approvals = await prisma.expenseApproval.findMany({
+    const where = {
+      approvalStatus: 'PENDING',
+      ...(userId && { requestedBy: userId }),
+    };
+
+    const approvals: any[] = [];
+    let cursor: string | undefined;
+    const batchSize = 200;
+
+    while (true) {
+      const batch = await prisma.expenseApproval.findMany({
+        where,
+        select: {
+          id: true,
+          salesOrderId: true,
+          feeItemId: true,
+          expenseTypeId: true,
+          requestedAmount: true,
+          approvedAmount: true,
+          approvalStatus: true,
+          requestedBy: true,
+          approvedBy: true,
+          approvalReason: true,
+          rejectionReason: true,
+          requestedAt: true,
+          approvedAt: true,
+          createdAt: true,
+          updatedAt: true,
+          expenseType: {
+            select: {
+              id: true,
+              typeCode: true,
+              typeName: true,
+              category: true,
+              requiresApproval: true,
+              approvalThreshold: true,
+              isActive: true,
+              sortOrder: true,
+            },
+          },
+          salesOrder: {
+            select: {
+              orderNumber: true,
+              customer: { select: { name: true } },
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      if (batch.length === 0) {
+        break;
+      }
+
+      approvals.push(...batch);
+      cursor = batch[batch.length - 1].id;
+    }
+
+    approvals.sort((a, b) => {
+      const aTime = a.requestedAt instanceof Date ? a.requestedAt.getTime() : 0;
+      const bTime = b.requestedAt instanceof Date ? b.requestedAt.getTime() : 0;
+      return bTime - aTime;
+    });
+
+    return approvals as ExpenseApproval[];
+  }
+
+  /**
+   * 获取待审核费用数量（用于健康检查/告警）
+   */
+  public async countPendingApprovals(userId?: string): Promise<number> {
+    return prisma.expenseApproval.count({
       where: {
         approvalStatus: 'PENDING',
         ...(userId && { requestedBy: userId }),
       },
-      include: {
-        expenseType: true,
-        salesOrder: {
-          select: {
-            orderNumber: true,
-            customer: { select: { name: true } },
-          },
-        },
-      },
-      orderBy: { requestedAt: 'desc' },
     });
-
-    return approvals as ExpenseApproval[];
   }
 
   /**
@@ -335,26 +415,42 @@ function round2(v: number): number {
   return Math.round(v * 100) / 100;
 }
 
+function toCents(value: number): number {
+  return Math.round((value || 0) * 100);
+}
+
+function fromCents(cents: number): number {
+  return cents / 100;
+}
+
 function computeOrderAmounts(order: {
   items: Array<{ subtotal: number | null }>;
-  feeItems: Array<{ feeAmount: number | null }>;
+  feeItems: Array<{ feeAmount: number | null; paidBy: string | null }>;
   roundingAdjustment: number | null;
 }): {
   itemsAmount: number;
   additionalFees: number;
+  roundingAdjustment: number;
   totalAmount: number;
 } {
   const itemsAmount = order.items.reduce(
     (sum, item) => sum + Number(item.subtotal ?? 0),
     0
   );
-  const additionalFees = order.feeItems.reduce(
-    (sum, fee) => sum + Number(fee.feeAmount ?? 0),
-    0
-  );
-  const roundingAdjustment = Number(order.roundingAdjustment ?? 0);
 
-  const totalAmount = round2(itemsAmount + additionalFees + roundingAdjustment);
+  // 仅客户承担费用计入应收；公司承担费用计入成本（expenseAmount）
+  const additionalFees = order.feeItems.reduce((sum, fee) => {
+    const paidBy = fee.paidBy ?? 'customer';
+    if (paidBy === 'company') {
+      return sum;
+    }
+    return sum + Number(fee.feeAmount ?? 0);
+  }, 0);
+
+  const roundingAdjustment = round2(Number(order.roundingAdjustment ?? 0));
+
+  // totalAmount 不包含抹零；实际应收 = totalAmount + roundingAdjustment
+  const totalAmount = round2(itemsAmount + additionalFees);
 
   return {
     itemsAmount: round2(itemsAmount),
@@ -371,52 +467,58 @@ function computeCompanyExpenseAllocations(order: {
   normalizedCompanyExpense: number;
   allocations: Map<string, number>;
 } {
-  const companyExpenseAmount = order.feeItems.reduce((sum, fee) => {
+  const companyExpenseCents = order.feeItems.reduce((sum, fee) => {
     const paidBy = fee.paidBy ?? 'customer';
     if (paidBy !== 'company') {
       return sum;
     }
+
     const amount = Number(fee.feeAmount ?? 0);
-    return Number.isFinite(amount) ? sum + amount : sum;
+    if (!Number.isFinite(amount)) {
+      return sum;
+    }
+
+    return sum + toCents(amount);
   }, 0);
 
-  const normalizedCompanyExpense = round2(companyExpenseAmount);
+  const normalizedCompanyExpense = fromCents(companyExpenseCents);
 
-  const totalSalesValue = order.items.reduce(
-    (sum, item) => sum + Math.max(0, Number(item.subtotal ?? 0)),
-    0
-  );
+  const totalSalesValueCents = order.items.reduce((sum, item) => {
+    const subtotal = Math.max(0, Number(item.subtotal ?? 0));
+    return sum + toCents(subtotal);
+  }, 0);
 
   const allocations = new Map<string, number>();
 
-  if (order.items.length > 0 && normalizedCompanyExpense > 0) {
-    if (totalSalesValue > 0) {
-      let allocated = 0;
+  if (order.items.length > 0 && companyExpenseCents > 0) {
+    if (totalSalesValueCents > 0) {
+      let allocatedCents = 0;
       order.items.forEach((item, index) => {
         const subtotal = Math.max(0, Number(item.subtotal ?? 0));
-        const ratio = subtotal / totalSalesValue;
-        const value =
+        const subtotalCents = toCents(subtotal);
+        const ratio = subtotalCents / totalSalesValueCents;
+        const valueCents =
           index === order.items.length - 1
-            ? round2(normalizedCompanyExpense - allocated)
-            : round2(normalizedCompanyExpense * ratio);
-        allocations.set(item.id, value);
-        allocated += value;
+            ? companyExpenseCents - allocatedCents
+            : Math.round(companyExpenseCents * ratio);
+        allocations.set(item.id, fromCents(valueCents));
+        allocatedCents += valueCents;
       });
     } else {
-      const evenShare = round2(normalizedCompanyExpense / order.items.length);
-      let allocated = 0;
+      const evenShareCents = Math.floor(companyExpenseCents / order.items.length);
+      let allocatedCents = 0;
       order.items.forEach((item, index) => {
-        const value =
+        const valueCents =
           index === order.items.length - 1
-            ? round2(normalizedCompanyExpense - allocated)
-            : evenShare;
-        allocations.set(item.id, value);
-        allocated += value;
+            ? companyExpenseCents - allocatedCents
+            : evenShareCents;
+        allocations.set(item.id, fromCents(valueCents));
+        allocatedCents += valueCents;
       });
     }
   }
 
-  return { normalizedCompanyExpense, allocations, totalSalesValue };
+  return { normalizedCompanyExpense, allocations };
 }
 
 type ItemUpdate = {
@@ -446,49 +548,54 @@ function computeItemCostAndProfit(
   normalizedProfitAmount: number;
 } {
   const itemUpdates: ItemUpdate[] = [];
-  let totalCostAmount = 0;
+  let totalCostAmountCents = 0;
+  const itemsAmountCents = toCents(itemsAmount);
 
   for (const item of order.items) {
-    const subtotal = Number(item.subtotal ?? 0);
-    const previousAllocated = Number(item.allocatedExpense ?? 0);
-    const previousCostSubtotal = Number(item.costSubtotal ?? 0);
+    const subtotalCents = toCents(Number(item.subtotal ?? 0));
 
-    let baseCost = 0;
-    if (previousCostSubtotal || previousAllocated) {
-      baseCost = previousCostSubtotal - previousAllocated;
+    const previousAllocatedCents = toCents(Number(item.allocatedExpense ?? 0));
+    const previousCostSubtotalCents = toCents(Number(item.costSubtotal ?? 0));
+
+    let baseCostCents = 0;
+    if (previousCostSubtotalCents !== 0 || previousAllocatedCents !== 0) {
+      baseCostCents = previousCostSubtotalCents - previousAllocatedCents;
     } else if (
       item.unitCost !== null &&
       item.unitCost !== undefined &&
       item.quantity !== null &&
       item.quantity !== undefined
     ) {
-      baseCost = Number(item.unitCost) * Number(item.quantity);
+      const unitCostCents = toCents(Number(item.unitCost));
+      baseCostCents = unitCostCents * Number(item.quantity);
     }
-    baseCost = round2(baseCost);
 
-    const allocatedExpense = allocations.get(item.id) ?? 0;
-    const costSubtotal = round2(baseCost + allocatedExpense);
+    const allocatedExpenseCents = toCents(allocations.get(item.id) ?? 0);
+    const costSubtotalCents = baseCostCents + allocatedExpenseCents;
 
     let profitAmount: number | null = null;
     let profitMargin: number | null = null;
-    if (subtotal) {
-      profitAmount = round2(subtotal - costSubtotal);
-      profitMargin = round2((profitAmount / subtotal) * 100);
+    if (subtotalCents > 0) {
+      const profitAmountCents = subtotalCents - costSubtotalCents;
+      profitAmount = fromCents(profitAmountCents);
+      profitMargin = round2((profitAmountCents / subtotalCents) * 100);
     }
 
-    totalCostAmount += costSubtotal;
+    totalCostAmountCents += costSubtotalCents;
 
     itemUpdates.push({
       id: item.id,
-      allocatedExpense,
-      costSubtotal,
+      allocatedExpense: fromCents(allocatedExpenseCents),
+      costSubtotal: fromCents(costSubtotalCents),
       profitAmount,
       profitMargin,
     });
   }
 
-  const normalizedCostAmount = round2(totalCostAmount);
-  const normalizedProfitAmount = round2(itemsAmount - normalizedCostAmount);
+  const normalizedCostAmount = fromCents(totalCostAmountCents);
+  const normalizedProfitAmount = fromCents(
+    itemsAmountCents - totalCostAmountCents
+  );
 
   return { itemUpdates, normalizedCostAmount, normalizedProfitAmount };
 }

@@ -9,6 +9,7 @@
  */
 
 import { EXPENSE_TYPE_LABELS, type ExpenseType } from '@/lib/types/expense';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * Prisma 分组查询结果类型
@@ -16,7 +17,7 @@ import { EXPENSE_TYPE_LABELS, type ExpenseType } from '@/lib/types/expense';
 export interface PrismaExpenseGroupResult {
   expenseType: string;
   _sum: {
-    expenseAmount: number | null;
+    expenseAmount: unknown | null;
   };
 }
 
@@ -55,7 +56,7 @@ export function extractExpensesByType(
   // 遍历所有费用类型，确保每个类型都有值
   for (const type of Object.keys(EXPENSE_TYPE_LABELS) as ExpenseType[]) {
     const found = groupedData.find(g => g.expenseType === type);
-    result[type] = found?._sum.expenseAmount || 0;
+    result[type] = toNumber(found?._sum.expenseAmount);
   }
 
   return result;

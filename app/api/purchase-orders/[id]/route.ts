@@ -86,7 +86,10 @@ export const GET = withAuth(async (_request: NextRequest, context) => {
     });
 
     if (!order) {
-      return NextResponse.json({ error: '采购订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '采购订单不存在' },
+        { status: 404 }
+      );
     }
 
     const expenses = await prisma.expenseRecord.findMany({
@@ -97,6 +100,23 @@ export const GET = withAuth(async (_request: NextRequest, context) => {
       orderBy: {
         createdAt: 'asc',
       },
+      select: {
+        id: true,
+        expenseNumber: true,
+        expenseType: true,
+        expenseName: true,
+        expenseAmount: true,
+        expenseDate: true,
+        relatedType: true,
+        relatedId: true,
+        relatedNumber: true,
+        remarks: true,
+        attachments: true,
+        userId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      take: 5000,
     });
 
     const serializedExpenses = expenses.map(expense => ({
@@ -132,7 +152,10 @@ export const GET = withAuth(async (_request: NextRequest, context) => {
       userId: user.id,
       orderId,
     });
-    return NextResponse.json({ error: '获取订单详情失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '获取订单详情失败' },
+      { status: 500 }
+    );
   }
 });
 
@@ -160,6 +183,7 @@ const handleUpdate = withAuth(async (request: NextRequest, context) => {
       const statusCode = result.validationErrors ? 422 : 400;
       return NextResponse.json(
         {
+          success: false,
           error: result.error,
           validationErrors: result.validationErrors,
         },
@@ -173,7 +197,10 @@ const handleUpdate = withAuth(async (request: NextRequest, context) => {
     });
 
     if (!updatedOrder) {
-      return NextResponse.json({ error: '采购订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '采购订单不存在' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({ data: updatedOrder });
@@ -182,7 +209,10 @@ const handleUpdate = withAuth(async (request: NextRequest, context) => {
       userId: user.id,
       orderId,
     });
-    return NextResponse.json({ error: '更新订单失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '更新订单失败' },
+      { status: 500 }
+    );
   }
 });
 
@@ -198,12 +228,15 @@ export const DELETE = withAuth(async (_request: NextRequest, context) => {
     });
 
     if (!order) {
-      return NextResponse.json({ error: '采购订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '采购订单不存在' },
+        { status: 404 }
+      );
     }
 
     if (order.status !== PURCHASE_ORDER_STATUS.DRAFT) {
       return NextResponse.json(
-        { error: '只能删除草稿状态的订单' },
+        { success: false, error: '只能删除草稿状态的订单' },
         { status: 400 }
       );
     }
@@ -227,6 +260,9 @@ export const DELETE = withAuth(async (_request: NextRequest, context) => {
       userId: user.id,
       orderId,
     });
-    return NextResponse.json({ error: '删除订单失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '删除订单失败' },
+      { status: 500 }
+    );
   }
 });

@@ -54,6 +54,7 @@ export const ensureProductsExist = async (
   const products = await tx.product.findMany({
     where: { id: { in: productIds } },
     select: { id: true },
+    take: productIds.length,
   });
 
   const existingIds = new Set(products.map(product => product.id));

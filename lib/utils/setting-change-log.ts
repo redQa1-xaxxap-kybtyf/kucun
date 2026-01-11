@@ -7,6 +7,18 @@
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+const settingChangeLogSelect = {
+  id: true,
+  settingKey: true,
+  oldValue: true,
+  newValue: true,
+  changedBy: true,
+  changedAt: true,
+  ipAddress: true,
+  userAgent: true,
+  remarks: true,
+} as const;
+
 /**
  * 记录设置变更日志
  * @param settingKey 设置键
@@ -110,6 +122,7 @@ export async function getSettingChangeHistory(
     where: {
       settingKey,
     },
+    select: settingChangeLogSelect,
     orderBy: {
       changedAt: 'desc',
     },
@@ -131,6 +144,7 @@ export async function getAllSettingChangeHistory(
 
   const [logs, total] = await Promise.all([
     prisma.settingChangeLog.findMany({
+      select: settingChangeLogSelect,
       orderBy: {
         changedAt: 'desc',
       },

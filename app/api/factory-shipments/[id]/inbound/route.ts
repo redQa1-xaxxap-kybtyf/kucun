@@ -14,7 +14,10 @@ interface RouteParams {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const session = await auth();
   if (!session?.user?.id) {
-    return NextResponse.json({ error: '未授权操作' }, { status: 401 });
+    return NextResponse.json(
+      { success: false, error: '未授权操作' },
+      { status: 401 }
+    );
   }
 
   const { id } = params;
@@ -25,7 +28,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (itemIds.length === 0) {
       return NextResponse.json(
-        { error: '缺少需要更新的明细项' },
+        { success: false, error: '缺少需要更新的明细项' },
         { status: 400 }
       );
     }
@@ -40,11 +43,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         ownership: true,
         selfInboundStatus: true,
       },
+      take: itemIds.length,
     });
 
     if (items.length === 0) {
       return NextResponse.json(
-        { error: '未找到匹配的自用补货明细' },
+        { success: false, error: '未找到匹配的自用补货明细' },
         { status: 404 }
       );
     }
@@ -55,7 +59,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     if (invalidItems.length > 0) {
       return NextResponse.json(
-        { error: '存在非自用补货明细，无法标记入库' },
+        { success: false, error: '存在非自用补货明细，无法标记入库' },
         { status: 400 }
       );
     }
@@ -100,15 +104,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!order) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '订单不存在' },
+        { status: 404 }
+      );
     }
 
     const customerOwnedAmount = order.items
       .filter(item => item.ownership === 'customer')
-      .reduce((sum, item) => sum + item.totalPrice, 0);
+      .reduce((sum, item) => sum + Number(item.totalPrice), 0);
     const selfOwnedAmount = order.items
       .filter(item => item.ownership === 'self')
-      .reduce((sum, item) => sum + item.totalPrice, 0);
+      .reduce((sum, item) => sum + Number(item.totalPrice), 0);
 
     return NextResponse.json({
       ...order,
@@ -122,7 +129,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       orderId: id,
     });
     return NextResponse.json(
-      { error: '更新自用货入库状态失败' },
+      { success: false, error: '更新自用货入库状态失败' },
       { status: 500 }
     );
   }

@@ -122,6 +122,7 @@ async function attachBatchPiecesPerUnit(
       batchNumber: true,
       piecesPerUnit: true,
     },
+    take: uniquePairs.length,
   });
 
   if (!batchSpecs.length) {

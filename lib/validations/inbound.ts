@@ -78,7 +78,7 @@ export const createInboundSchema = z
         .int({ message: '数量必须是整数' })
     ),
 
-    reason: inboundReasonSchema.default('purchase'),
+    reason: inboundReasonSchema.default('other'),
 
     remarks: z
       .string()
@@ -187,7 +187,16 @@ export const createInboundSchema = z
   .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
     message: '传入采购订单明细时必须指定采购订单ID',
     path: ['purchaseOrderId'],
-  });
+  })
+  .refine(
+    data =>
+      data.reason !== 'purchase' ||
+      (Boolean(data.purchaseOrderId) && Boolean(data.purchaseOrderItemId)),
+    {
+      message: '采购入库必须关联采购订单与明细',
+      path: ['purchaseOrderId'],
+    }
+  );
 
 // 更新入库记录验证规则
 export const updateInboundSchema = z.object({
@@ -261,6 +270,7 @@ export const inboundQuerySchema = z.object({
           'other',
           'sales_cancel',
           'return_inbound',
+          'opening_balance',
         ].includes(val),
       '入库原因格式不正确'
     ),
@@ -517,6 +527,17 @@ export const inboundFormSchema = z
     message: '传入采购订单明细时必须指定采购订单ID',
     path: ['purchaseOrderId'],
   })
+  // 规则2：采购入库必须关联采购订单与明细
+  .refine(
+    data =>
+      data.reason !== 'purchase' ||
+      ((data.purchaseOrderId ?? '').trim().length > 0 &&
+        (data.purchaseOrderItemId ?? '').trim().length > 0),
+    {
+      message: '采购入库必须关联采购订单与明细',
+      path: ['purchaseOrderId'],
+    }
+  )
   // 规则2：普通入库必须选择供应商；期初入库(opening_balance)可以不选
   .refine(
     data =>
@@ -551,6 +572,7 @@ export const validateInboundReason = (
     'other',
     'sales_cancel',
     'return_inbound',
+    'opening_balance',
   ].includes(reason);
 
 // 数量格式化辅助函数

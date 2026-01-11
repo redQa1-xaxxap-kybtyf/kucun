@@ -11,6 +11,7 @@ import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
+import { toNumber } from '@/lib/utils/number';
 import {
   generatePayableNumber,
   generatePaymentNumber,
@@ -292,7 +293,7 @@ export async function updateFactoryShipmentStatus(
       // 验证状态前置条件 - 合并数据库中的现有值和新提交的值
       const prerequisites = validateStatusPrerequisites(targetStatus, {
         items: orderItems,
-        totalAmount: order.receivableAmount || 0,
+        totalAmount: toNumber(order.receivableAmount),
         containerNumber: data.containerNumber ?? order.containerNumber,
         shippingCompany: data.shippingCompany ?? order.shippingCompany,
       });
@@ -390,12 +391,15 @@ export async function updateFactoryShipmentStatus(
               item =>
                 item.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER
             )
-            .reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+            .reduce((sum, item) => sum + toNumber(item.totalPrice), 0);
+
+          const depositAmount = toNumber(order.depositAmount);
+          const paidAmount = toNumber(order.paidAmount);
 
           const outstandingAmount = Math.max(
             customerTotal -
-              (order.depositAmount || 0) -
-              (order.paidAmount || 0),
+              depositAmount -
+              paidAmount,
             0
           );
 
@@ -405,8 +409,8 @@ export async function updateFactoryShipmentStatus(
 
             logger.info('factory-shipment-status', '应收账款金额计算完成', {
               customerTotal,
-              depositAmount: order.depositAmount,
-              paidAmount: order.paidAmount,
+              depositAmount,
+              paidAmount,
               outstandingAmount: formattedAmount,
             });
 
@@ -486,26 +490,29 @@ export async function updateFactoryShipmentStatus(
       order.receivableAmount > 0
     ) {
       try {
-        await recordPartnerTransaction({
-          partnerId: order.customerId,
-          partnerRole: 'customer',
-          entityType: 'customer',
-          transactionType: 'sale',
-          amount: order.receivableAmount,
-          referenceId: order.id,
-          referenceNumber: order.orderNumber,
-          description: `厂家直发订单 ${order.orderNumber} 确认应收`,
-          occurredAt:
-            data.shipmentDate ??
-            order.shipmentDate ??
-            data.arrivalDate ??
-            order.arrivalDate ??
-            new Date(),
-          metadata: {
-            source: 'factory_shipment_order',
-            status: finalStatus,
+        await recordPartnerTransaction(
+          {
+            partnerId: order.customerId,
+            partnerRole: 'customer',
+            entityType: 'customer',
+            transactionType: 'sale',
+            amount: order.receivableAmount,
+            referenceId: order.id,
+            referenceNumber: order.orderNumber,
+            description: `厂家直发订单 ${order.orderNumber} 确认应收`,
+            occurredAt:
+              data.shipmentDate ??
+              order.shipmentDate ??
+              data.arrivalDate ??
+              order.arrivalDate ??
+              new Date(),
+            metadata: {
+              source: 'factory_shipment_order',
+              status: finalStatus,
+            },
           },
-        });
+          tx
+        );
       } catch (error) {
         logger.error(
           'factory-shipment-status',

@@ -250,7 +250,11 @@ async function testAuthenticatedApis() {
 }
 
 // 如果直接运行此文件，执行测试
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   testAuthenticatedApis()
     .then(() => {
       console.log('\n✅ 带认证的核心 API 测试成功完成');

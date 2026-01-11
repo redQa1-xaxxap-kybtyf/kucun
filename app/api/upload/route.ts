@@ -376,7 +376,13 @@ async function handleUploadWithFallback(
       const [localType, localFileName] = keyPath.split('/');
       if (localType && localFileName) {
         const accessToken = await encode({
-          token: { path: `${localType}/${localFileName}` },
+          token: {
+            id: userId,
+            username: '',
+            role: '',
+            status: '',
+            path: `${localType}/${localFileName}`,
+          },
           secret: env.NEXTAUTH_SECRET,
           salt: 'uploads',
           maxAge: 60 * 60, // 1小时有效期

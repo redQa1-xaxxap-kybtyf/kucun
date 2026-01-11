@@ -3,7 +3,7 @@
  * 包含基础库存模型和相关接口
  */
 
-import type { Product } from './product';
+import { PRODUCT_UNIT_LABELS, type Product } from './product';
 
 // 基础库存类型（对应数据库模型）
 export interface Inventory {
@@ -24,6 +24,62 @@ export interface Inventory {
   variant?: import('./product').ProductVariant;
 }
 
+function normalizeUnitLabel(unit?: string): string | undefined {
+  if (typeof unit !== 'string') return undefined;
+  const trimmed = unit.trim();
+  if (!trimmed) return undefined;
+  return PRODUCT_UNIT_LABELS[trimmed] ?? trimmed;
+}
+
+function formatNumber(value: number): string {
+  if (!Number.isFinite(value)) return '0';
+  if (Number.isInteger(value)) return String(value);
+  const rounded = Math.round(value * 100) / 100;
+  return String(rounded);
+}
+
+function formatPiecesToDisplay(
+  pieces: number,
+  unitLabel: string,
+  piecesPerUnit: number
+): string {
+  if (!Number.isFinite(pieces)) {
+    return unitLabel === '片' ? '0片' : `0${unitLabel}`;
+  }
+
+  if (pieces <= 0) {
+    if (unitLabel !== '片' && Number.isFinite(piecesPerUnit) && piecesPerUnit) {
+      return `0${unitLabel}`;
+    }
+    return '0片';
+  }
+
+  const hasValidPiecesPerUnit =
+    Number.isInteger(piecesPerUnit) && piecesPerUnit > 0;
+
+  // 系统内部统一以“片”为最小单位；当无法可靠换算时，回退显示“片”
+  if (unitLabel === '片' || !hasValidPiecesPerUnit) {
+    return `${formatNumber(pieces)}片`;
+  }
+
+  // 非整数片数无法做“X单位+Y片”分解，回退成带小数的单位数
+  if (!Number.isInteger(pieces)) {
+    const units = pieces / piecesPerUnit;
+    return `${formatNumber(units)}${unitLabel}`;
+  }
+
+  const fullUnits = Math.floor(pieces / piecesPerUnit);
+  const remainingPieces = pieces % piecesPerUnit;
+
+  if (remainingPieces === 0) {
+    return `${fullUnits}${unitLabel}`;
+  }
+  if (fullUnits === 0) {
+    return `${remainingPieces}片`;
+  }
+  return `${fullUnits}${unitLabel}+${remainingPieces}片`;
+}
+
 /**
  * 格式化库存数量显示
  * @param inventory 库存对象
@@ -38,11 +94,31 @@ export const formatInventoryQuantity = (
     0,
     inventory.quantity - inventory.reservedQuantity
   );
-  const unitStr = unit || '件';
+  const unitLabel =
+    normalizeUnitLabel(unit) ??
+    normalizeUnitLabel(inventory.product?.unit) ??
+    '片';
+  const piecesPerUnit =
+    inventory.batchPiecesPerUnit ?? inventory.product?.piecesPerUnit ?? 0;
+  const displayAvailable = formatPiecesToDisplay(
+    available,
+    unitLabel,
+    piecesPerUnit
+  );
 
   if (inventory.reservedQuantity > 0) {
-    return `${available}${unitStr} (总${inventory.quantity}${unitStr}, 预留${inventory.reservedQuantity}${unitStr})`;
+    const displayTotal = formatPiecesToDisplay(
+      inventory.quantity,
+      unitLabel,
+      piecesPerUnit
+    );
+    const displayReserved = formatPiecesToDisplay(
+      inventory.reservedQuantity,
+      unitLabel,
+      piecesPerUnit
+    );
+    return `${displayAvailable} (总${displayTotal}, 预留${displayReserved})`;
   } else {
-    return `${available}${unitStr}`;
+    return displayAvailable;
   }
 };

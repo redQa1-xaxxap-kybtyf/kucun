@@ -3,8 +3,29 @@
  * 用于监控Node.js应用的内存使用情况
  */
 
-import { logger } from '@/lib/logger';
-import { redis } from '@/lib/redis/redis-client';
+const MODULE_NAME = 'memory-monitor';
+
+function logDebug(message: string, metadata?: unknown): void {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  if (!process.env.DEBUG) {
+    return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.log(`[${MODULE_NAME}] ${message}`, metadata ?? '');
+}
+
+function logWarn(message: string, metadata?: unknown): void {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  // eslint-disable-next-line no-console
+  console.warn(`[${MODULE_NAME}] ${message}`, metadata ?? '');
+}
 
 interface MemoryStats {
   timestamp: number;
@@ -88,9 +109,7 @@ function checkAlerts(stats: MemoryStats): void {
 
   // 输出告警
   if (alerts.length > 0) {
-    logger.warn('memory-monitor', 'Memory usage alerts triggered', undefined, {
-      alerts,
-    });
+    logWarn('Memory usage alerts triggered', { alerts });
   }
 }
 
@@ -103,16 +122,6 @@ function formatMemoryStats(stats: MemoryStats): string {
     `RSS: ${stats.rssMB} MB`,
     `External: ${stats.externalMB} MB`,
   ];
-
-  // 获取Redis缓存统计
-  try {
-    const cacheStats = redis.getMemoryCacheStats();
-    if (cacheStats.size > 0) {
-      parts.push(`Cache: ${cacheStats.size}/${cacheStats.maxSize} keys`);
-    }
-  } catch {
-    // Redis统计获取失败，忽略
-  }
 
   return parts.join(', ');
 }
@@ -138,34 +147,23 @@ export function startMemoryMonitor(
 
   // 仅在生产环境或显式启用时运行
   if (process.env.NODE_ENV !== 'production' && !config?.enabled) {
-    if (process.env.DEBUG) {
-      logger.debug(
-        'memory-monitor',
-        'Memory monitor disabled in development mode'
-      );
-    }
+    logDebug('Memory monitor disabled in development mode');
     return;
   }
 
-  if (process.env.DEBUG) {
-    logger.debug('memory-monitor', 'Starting memory monitor', {
-      intervalMs,
-      alertsEnabled: alertConfig.enabled,
-    });
-  }
+  logDebug('Starting memory monitor', {
+    intervalMs,
+    alertsEnabled: alertConfig.enabled,
+  });
 
   // 立即执行一次
   const stats = getMemoryStats();
-  if (process.env.DEBUG) {
-    logger.debug('memory-monitor', formatMemoryStats(stats));
-  }
+  logDebug(formatMemoryStats(stats));
 
   // 定期监控
   monitorInterval = setInterval(() => {
     const stats = getMemoryStats();
-    if (process.env.DEBUG) {
-      logger.debug('memory-monitor', formatMemoryStats(stats));
-    }
+    logDebug(formatMemoryStats(stats));
     checkAlerts(stats);
   }, intervalMs);
 
@@ -180,9 +178,7 @@ export function stopMemoryMonitor(): void {
   if (monitorInterval) {
     clearInterval(monitorInterval);
     monitorInterval = null;
-    if (process.env.DEBUG) {
-      logger.debug('memory-monitor', 'Memory monitor stopped');
-    }
+    logDebug('Memory monitor stopped');
   }
 }
 
@@ -191,11 +187,7 @@ export function stopMemoryMonitor(): void {
  */
 export function updateAlertConfig(config: Partial<MemoryAlertConfig>): void {
   alertConfig = { ...alertConfig, ...config };
-  if (process.env.DEBUG) {
-    logger.debug('memory-monitor', 'Alert config updated', {
-      config: JSON.stringify(alertConfig),
-    });
-  }
+  logDebug('Alert config updated', { config: JSON.stringify(alertConfig) });
 }
 
 /**
@@ -210,91 +202,16 @@ export function getAlertConfig(): MemoryAlertConfig {
  */
 export function triggerGC(): void {
   if (global.gc) {
-    if (process.env.DEBUG) {
-      logger.debug('memory-monitor', 'Triggering manual GC');
-    }
+    logDebug('Triggering manual GC');
     const beforeStats = getMemoryStats();
     global.gc();
     const afterStats = getMemoryStats();
-    if (process.env.DEBUG) {
-      logger.debug('memory-monitor', 'Manual GC complete', {
-        freedMb: Math.round(beforeStats.heapUsedMB - afterStats.heapUsedMB),
-      });
-    }
+    logDebug('Manual GC complete', {
+      freedMb: Math.round(beforeStats.heapUsedMB - afterStats.heapUsedMB),
+    });
   } else {
-    logger.warn(
-      'memory-monitor',
-      'Manual GC not available. Run with --expose-gc flag.'
-    );
+    logWarn('Manual GC not available. Run with --expose-gc flag.');
   }
-}
-
-/**
- * 生成内存快照报告（包含 Redis 监控指标）
- */
-export function generateMemoryReport(): {
-  stats: MemoryStats;
-  cacheStats: ReturnType<typeof redis.getMemoryCacheStats>;
-  redisPoolHealth: ReturnType<typeof redis.getPoolHealth>;
-  redisConfig: ReturnType<typeof redis.getConfig>;
-  recommendations: string[];
-} {
-  const stats = getMemoryStats();
-  const cacheStats = redis.getMemoryCacheStats();
-  const redisPoolHealth = redis.getPoolHealth();
-  const redisConfig = redis.getConfig();
-  const recommendations: string[] = [];
-
-  // 生成建议 - Node.js 内存
-  if (stats.heapUsagePercent > 80) {
-    recommendations.push('堆内存使用率较高，考虑优化缓存策略或增加内存限制');
-  }
-
-  if (cacheStats.size > cacheStats.maxSize * 0.9) {
-    recommendations.push(
-      'Redis内存缓存接近上限，考虑增加MAX_MEMORY_CACHE_SIZE'
-    );
-  }
-
-  if (stats.rssMB > 2000) {
-    recommendations.push('RSS内存占用较高，检查是否存在内存泄漏');
-  }
-
-  // 生成建议 - Redis 连接池
-  if (!redisPoolHealth.isRedisAvailable) {
-    recommendations.push('⚠️ Redis 不可用，已降级到内存缓存');
-  }
-
-  const healthPercentage =
-    redisPoolHealth.total > 0
-      ? (redisPoolHealth.ready / redisPoolHealth.total) * 100
-      : 0;
-
-  if (healthPercentage < 50) {
-    recommendations.push(
-      `⚠️ Redis 连接池健康度较低 (${healthPercentage.toFixed(1)}%)，检查网络连接`
-    );
-  }
-
-  if (redisPoolHealth.reconnecting > 0) {
-    recommendations.push(
-      `⚠️ 有 ${redisPoolHealth.reconnecting} 个 Redis 连接正在重连`
-    );
-  }
-
-  if (redisPoolHealth.disconnected > 0) {
-    recommendations.push(
-      `⚠️ 有 ${redisPoolHealth.disconnected} 个 Redis 连接已断开`
-    );
-  }
-
-  return {
-    stats,
-    cacheStats,
-    redisPoolHealth,
-    redisConfig,
-    recommendations,
-  };
 }
 
 // 进程退出时清理 - 使用全局标志防止重复注册（HMR场景）
@@ -319,11 +236,6 @@ if (typeof process !== 'undefined' && typeof global !== 'undefined') {
       process.exit(0);
     });
 
-    if (process.env.DEBUG) {
-      logger.debug(
-        'memory-monitor',
-        'Process cleanup listeners registered for memory monitor'
-      );
-    }
+    logDebug('Process cleanup listeners registered for memory monitor');
   }
 }

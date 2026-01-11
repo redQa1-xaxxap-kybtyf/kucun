@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { toNumber } from '@/lib/utils/number';
 import { updateReturnOrderSchema } from '@/lib/validations/return-order';
 
 /**
@@ -190,6 +191,7 @@ export const PUT = withAuth(
               },
             },
           },
+          take: salesOrderItemIds.length,
         });
 
         // 构建 Map 快速查找
@@ -235,7 +237,7 @@ export const PUT = withAuth(
         const returnsMap = new Map(
           existingReturnsMap.map(r => [
             r.salesOrderItemId,
-            r._sum.returnQuantity || 0,
+            Number(r._sum.returnQuantity ?? 0),
           ])
         );
 
@@ -252,7 +254,7 @@ export const PUT = withAuth(
           }
 
           // 校验单价
-          const dbUnitPrice = salesOrderItem.unitPrice;
+          const dbUnitPrice = toNumber(salesOrderItem.unitPrice, 0);
           if (Math.abs(returnItem.unitPrice - dbUnitPrice) > 0.01) {
             const productName = salesOrderItem.product?.name || '未知产品';
             throw new Error(
@@ -265,13 +267,13 @@ export const PUT = withAuth(
           const alreadyReturnedQuantity =
             returnsMap.get(returnItem.salesOrderItemId) || 0;
           const remainingQuantity =
-            salesOrderItem.quantity - alreadyReturnedQuantity;
+            Number(salesOrderItem.quantity) - alreadyReturnedQuantity;
 
           if (returnItem.returnQuantity > remainingQuantity) {
             const productName = salesOrderItem.product?.name || '未知产品';
             throw new Error(
               `产品 ${productName} 退货数量超过可退数量。` +
-                `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
+                `已购买: ${Number(salesOrderItem.quantity)}, 已退货: ${alreadyReturnedQuantity}, ` +
                 `可退: ${remainingQuantity}, 本次退货: ${returnItem.returnQuantity}`
             );
           }

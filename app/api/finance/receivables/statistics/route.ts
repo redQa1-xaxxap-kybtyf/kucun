@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
@@ -68,37 +69,49 @@ export const GET = withAuth(async (request: NextRequest) => {
     const receivableCount = salesOrderStats._count.id || 0;
     const receivedCount = paymentStats._count.id || 0;
 
-    // 获取逾期数据（简化处理，实际应该基于到期日期）
-    const overdueOrders = await prisma.salesOrder.findMany({
-      where: {
-        ...whereConditions,
-        createdAt: {
-          lte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30天前的订单
-        },
-      },
-      include: {
-        payments: {
-          where: { status: 'confirmed' },
-          select: { paymentAmount: true },
-        },
-      },
-    });
+    const overdueThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30天前的订单
+    const overdueConditions: Prisma.Sql[] = [
+      Prisma.sql`so.status IN ('confirmed', 'shipped', 'completed')`,
+      Prisma.sql`so.created_at <= ${overdueThreshold}`,
+    ];
 
-    // 计算逾期金额和数量
-    let totalOverdue = 0;
-    let overdueCount = 0;
+    if (customerId) {
+      overdueConditions.push(Prisma.sql`so.customer_id = ${customerId}`);
+    }
 
-    overdueOrders.forEach(order => {
-      const paidAmount = order.payments.reduce(
-        (sum, payment) => sum + Number(payment.paymentAmount ?? 0),
-        0
-      );
-      const remainingAmount = Number(order.totalAmount ?? 0) - paidAmount;
-      if (remainingAmount > 0) {
-        totalOverdue += remainingAmount;
-        overdueCount++;
-      }
-    });
+    const overdueRow =
+      (
+        await prisma.$queryRaw<
+          Array<{ totalOverdue: unknown; overdueCount: unknown }>
+        >(
+          Prisma.sql`
+            SELECT
+              COALESCE(SUM(
+                CASE
+                  WHEN (so.total_amount - COALESCE(paid.paidAmount, 0)) > 0 THEN (so.total_amount - COALESCE(paid.paidAmount, 0))
+                  ELSE 0
+                END
+              ), 0) AS totalOverdue,
+              COALESCE(SUM(
+                CASE
+                  WHEN (so.total_amount - COALESCE(paid.paidAmount, 0)) > 0 THEN 1
+                  ELSE 0
+                END
+              ), 0) AS overdueCount
+            FROM sales_orders so
+            LEFT JOIN (
+              SELECT sales_order_id, SUM(payment_amount) AS paidAmount
+              FROM payment_records
+              WHERE status = 'confirmed'
+              GROUP BY sales_order_id
+            ) paid ON paid.sales_order_id = so.id
+            WHERE ${Prisma.join(overdueConditions, ' AND ')}
+          `
+        )
+      )[0] ?? null;
+
+    const totalOverdue = Number(overdueRow?.totalOverdue ?? 0);
+    const overdueCount = Number(overdueRow?.overdueCount ?? 0);
 
     // 计算平均收款天数（简化处理）
     const averagePaymentDays = 25; // 实际应该基于历史数据计算

@@ -82,6 +82,7 @@ export const updatePayableRecordSchema = z.object({
 
 // 创建付款记录验证规则
 export const createPaymentOutRecordSchema = z.object({
+  idempotencyKey: z.string().uuid('幂等性键格式不正确'),
   payableRecordId: z.string().optional(),
   supplierId: z.string().min(1, '请选择供应商'),
   paymentMethod: paymentOutMethodSchema,

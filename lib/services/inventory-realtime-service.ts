@@ -58,64 +58,75 @@ export async function updateInventoryWithNotification(
   }
 ): Promise<boolean> {
   try {
-    // 1. 使用原子操作更新数据库 (并发安全)
-    // 直接使用 increment 避免 read-then-write 竞态条件
-    const inventory = await prisma.inventory.findFirst({
-      where: {
-        productId,
-        variantId: variantId || null,
-      },
-    });
-
-    if (!inventory) {
-      throw new Error('库存记录不存在');
+    if ((type === 'reserve' || type === 'release') && quantity <= 0) {
+      throw new Error('预留/释放库存时，数量必须为正数');
     }
 
-    // 2. 使用原子操作更新库存
-    // ✅ 修复：预留和释放操作不应该修改实体库存 quantity
-    const updatedInventory = await prisma.inventory.update({
-      where: { id: inventory.id },
-      data: {
-        // 使用原子递增/递减操作,避免并发竞态
-        // ✅ 修复：预留和释放操作不修改 quantity
-        ...(type !== 'reserve' &&
-          type !== 'release' && {
-            quantity: { increment: quantity },
-          }),
-        // 根据类型更新预留数量
-        ...(type === 'reserve' && {
-          reservedQuantity: { increment: quantity },
-        }),
-        ...(type === 'release' && {
-          reservedQuantity: { increment: -quantity },
-        }),
-        updatedAt: new Date(),
-      },
-    });
+    const { beforeQuantity, afterQuantity, reservedQuantity } =
+      await prisma.$transaction(async tx => {
+        const inventory = await tx.inventory.findFirst({
+          where: {
+            productId,
+            variantId: variantId || null,
+          },
+          select: {
+            id: true,
+            quantity: true,
+            reservedQuantity: true,
+          },
+        });
 
-    // 3. 并发安全检查：验证更新后的库存不为负数
-    if (updatedInventory.quantity < 0) {
-      throw new Error(
-        `并发更新导致库存为负数。当前库存: ${updatedInventory.quantity}, 请重试`
-      );
-    }
+        if (!inventory) {
+          throw new Error('库存记录不存在');
+        }
 
-    // 4. 并发安全检查：验证更新后的预留数量不为负数
-    if (updatedInventory.reservedQuantity < 0) {
-      throw new Error(
-        `并发更新导致预留数量为负数。当前预留: ${updatedInventory.reservedQuantity}, 请重试`
-      );
-    }
+        const quantityDelta =
+          type === 'reserve' || type === 'release' ? 0 : quantity;
 
-    // 5. 并发安全检查：验证可用库存不为负数
-    if (updatedInventory.quantity < updatedInventory.reservedQuantity) {
-      throw new Error(
-        `并发更新导致可用库存(${updatedInventory.quantity})低于预留数量(${updatedInventory.reservedQuantity}), 请重试`
-      );
-    }
+        const updatedInventory = await tx.inventory.update({
+          where: { id: inventory.id },
+          data: {
+            ...(type !== 'reserve' &&
+              type !== 'release' && {
+                quantity: { increment: quantity },
+              }),
+            ...(type === 'reserve' && {
+              reservedQuantity: { increment: quantity },
+            }),
+            ...(type === 'release' && {
+              reservedQuantity: { decrement: quantity },
+            }),
+          },
+          select: {
+            quantity: true,
+            reservedQuantity: true,
+          },
+        });
 
-    const beforeQuantity = inventory.quantity;
-    const afterQuantity = updatedInventory.quantity;
+        if (updatedInventory.quantity < 0) {
+          throw new Error(
+            `并发更新导致库存为负数。当前库存: ${updatedInventory.quantity}, 请重试`
+          );
+        }
+
+        if (updatedInventory.reservedQuantity < 0) {
+          throw new Error(
+            `并发更新导致预留数量为负数。当前预留: ${updatedInventory.reservedQuantity}, 请重试`
+          );
+        }
+
+        if (updatedInventory.quantity < updatedInventory.reservedQuantity) {
+          throw new Error(
+            `并发更新导致可用库存(${updatedInventory.quantity})低于预留数量(${updatedInventory.reservedQuantity}), 请重试`
+          );
+        }
+
+        return {
+          beforeQuantity: updatedInventory.quantity - quantityDelta,
+          afterQuantity: updatedInventory.quantity,
+          reservedQuantity: updatedInventory.reservedQuantity,
+        };
+      });
 
     // 6. 使用 Redis 事务更新缓存
     const cacheKey = variantId
@@ -127,11 +138,7 @@ export async function updateInventoryWithNotification(
       pipeline.hset(cacheKey, 'quantity', afterQuantity);
 
       // 更新预留数量
-      pipeline.hset(
-        cacheKey,
-        'reserved',
-        updatedInventory.reservedQuantity.toString()
-      );
+      pipeline.hset(cacheKey, 'reserved', reservedQuantity.toString());
 
       // 更新最后修改时间
       pipeline.hset(cacheKey, 'updatedAt', new Date().toISOString());
@@ -431,11 +438,46 @@ export async function getRealtimeInventory(
     });
 
     if (!inventory) {
-      return null;
+      // 产品不存在时返回 null（与其它模块保持一致），避免把无效 productId 默认为 0 库存
+      const productExists = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { id: true },
+      });
+
+      if (!productExists) {
+        return null;
+      }
+
+      return {
+        quantity: 0,
+        reserved: 0,
+        available: 0,
+        updatedAt: new Date().toISOString(),
+      };
     }
 
-    // 3. 写入缓存
-    await redis.setJson(cacheKey, inventory, 3600);
+    // 3. 写入缓存（hash），Redis 不可用时不影响主流程
+    try {
+      await redis
+        .getClient()
+        .multi()
+        .hset(cacheKey, 'quantity', inventory.quantity)
+        .hset(cacheKey, 'reserved', inventory.reservedQuantity.toString())
+        .hset(cacheKey, 'updatedAt', inventory.updatedAt.toISOString())
+        .exec();
+    } catch (cacheError) {
+      logger.warn(
+        'inventory-realtime',
+        '写入库存缓存失败(忽略)',
+        { productId, variantId: variantId || undefined },
+        {
+          error:
+            cacheError instanceof Error
+              ? cacheError.message
+              : String(cacheError),
+        }
+      );
+    }
 
     // ✅ 修复：正确计算可用库存
     return {

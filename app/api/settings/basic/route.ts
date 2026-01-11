@@ -72,6 +72,7 @@ export const GET = withAuth(
           value: true,
           dataType: true,
         },
+        take: 200,
       });
 
       // 构建设置对象
@@ -171,17 +172,22 @@ export const PUT = withAuth(
       }
 
       const settingsData = validationResult.data;
+      const settingKeys = Object.keys(settingsData);
 
       // 获取当前设置值(用于记录变更日志)
-      const currentSettings = await prisma.systemSetting.findMany({
-        where: {
-          key: { in: Object.keys(settingsData) },
-        },
-        select: {
-          key: true,
-          value: true,
-        },
-      });
+      const currentSettings =
+        settingKeys.length > 0
+          ? await prisma.systemSetting.findMany({
+              where: {
+                key: { in: settingKeys },
+              },
+              select: {
+                key: true,
+                value: true,
+              },
+              take: settingKeys.length,
+            })
+          : [];
 
       const currentSettingsMap = new Map(
         currentSettings.map(s => [s.key, s.value])

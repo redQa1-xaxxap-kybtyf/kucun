@@ -167,6 +167,26 @@ export function validateRequiredFields(
       }
     }
 
+    // 混合履约：存在调货数量时要求填写调货部分单位成本
+    if (orderType === 'TRANSFER' && transferMode === 'MIXED') {
+      const transferQuantity =
+        typeof item.transferQuantity === 'number' &&
+        Number.isFinite(item.transferQuantity)
+          ? item.transferQuantity
+          : 0;
+
+      if (
+        transferQuantity > 0 &&
+        (typeof item.unitCost !== 'number' || Number.isNaN(item.unitCost))
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '混合履约订单存在调货数量时，必须填写调货部分单位成本',
+          path: ['items', index, 'unitCost'],
+        });
+      }
+    }
+
     // 调货销售的数量验证
     if (orderType === 'TRANSFER') {
       const mode =
@@ -250,6 +270,19 @@ export function validateManualProductFields(
 
   items.forEach((item, index) => {
     if (item.isManualProduct) {
+      if (!isDraft) {
+        const hasName =
+          typeof item.manualProductName === 'string' &&
+          item.manualProductName.trim() !== '';
+
+        if (!hasName) {
+          reportIssue(
+            ['items', index, 'manualProductName'],
+            '手动输入产品必须填写产品名称'
+          );
+        }
+      }
+
       if (shouldRequireManualCode) {
         const hasCode =
           typeof item.productCode === 'string' &&

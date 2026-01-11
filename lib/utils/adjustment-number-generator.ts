@@ -4,20 +4,22 @@
  */
 
 import { prisma } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
 
 /**
  * 生成库存调整单号
  * @returns 调整单号，格式：TZ-YYYYMMDD-序号
  */
-export async function generateAdjustmentNumber(): Promise<string> {
+export async function generateAdjustmentNumber(
+  tx?: Prisma.TransactionClient
+): Promise<string> {
   const now = new Date();
   const dateKey = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
   const prefix = `TZ-${dateKey}`;
 
-  // 使用事务确保序号的唯一性
-  const result = await prisma.$transaction(async tx => {
+  const createNumber = async (db: Prisma.TransactionClient) => {
     // 查找或创建当天的序号记录
-    const sequence = await tx.orderSequence.upsert({
+    const sequence = await db.orderSequence.upsert({
       where: {
         sequenceType_dateKey: {
           sequenceType: 'adjustment',
@@ -39,9 +41,13 @@ export async function generateAdjustmentNumber(): Promise<string> {
     // 生成完整的调整单号
     const sequenceNumber = sequence.currentSequence.toString().padStart(3, '0');
     return `${prefix}-${sequenceNumber}`;
-  });
+  };
 
-  return result;
+  // 使用事务确保序号的唯一性
+  if (tx) {
+    return createNumber(tx);
+  }
+  return prisma.$transaction(async innerTx => createNumber(innerTx));
 }
 
 /**

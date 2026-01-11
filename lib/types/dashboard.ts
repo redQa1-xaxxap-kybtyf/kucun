@@ -2,6 +2,7 @@
 // 定义仪表盘所需的所有数据结构和接口
 
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
+import type { SalesOrderStatus } from '@/lib/types/sales-order';
 
 // 业务概览数据
 export interface BusinessOverview {
@@ -96,15 +97,7 @@ export interface SalesTrendData {
   yearly: ChartDataPoint[]; // 年销售数据
 }
 
-export type DashboardSalesOrderStatus =
-  | 'draft'
-  | 'pending'
-  | 'confirmed'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'completed'
-  | 'cancelled';
+export type DashboardSalesOrderStatus = SalesOrderStatus;
 
 export interface DashboardSalesOrderSummary {
   id: string;

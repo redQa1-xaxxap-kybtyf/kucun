@@ -6,10 +6,50 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { env, monitoringConfig } from '@/lib/env';
+import { timingSafeEqual } from 'crypto';
+
+import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { redis } from '@/lib/redis/redis-client';
+
+export const runtime = 'nodejs';
+
+const DEFAULT_DEV_TOKEN = 'dev-token';
+const DEV_PLACEHOLDER_TOKEN = 'dev-token-change-in-production';
+const MIN_PROD_TOKEN_LENGTH = 32;
+
+function extractMonitoringToken(request: NextRequest): string | null {
+  const headerToken = request.headers.get('x-monitoring-token')?.trim();
+  if (headerToken) {
+    return headerToken;
+  }
+
+  const authHeader = request.headers.get('authorization')?.trim();
+  if (!authHeader) {
+    return null;
+  }
+
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+function tokensMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    return false;
+  }
+  return timingSafeEqual(bufA, bufB);
+}
+
+function isWeakProdToken(token: string): boolean {
+  return (
+    token === DEFAULT_DEV_TOKEN ||
+    token === DEV_PLACEHOLDER_TOKEN ||
+    token.length < MIN_PROD_TOKEN_LENGTH
+  );
+}
 
 /**
  * GET /api/monitoring/redis
@@ -19,13 +59,27 @@ import { redis } from '@/lib/redis/redis-client';
  */
 async function handleRedisMonitoring(request: NextRequest) {
   try {
-    // 1. 身份验证
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.replace('Bearer ', '');
+    // 1. 身份验证（生产环境必须显式配置强 token；避免弱口令/默认值导致未授权访问）
+    const isProduction = env.NODE_ENV === 'production';
+    let expectedToken = process.env.MONITORING_TOKEN;
 
-    if (!token || token !== monitoringConfig.token) {
+    if (isProduction) {
+      if (!expectedToken || isWeakProdToken(expectedToken)) {
+        logger.error('monitoring-redis', 'MONITORING_TOKEN 未配置或过弱，已禁用监控端点');
+        return NextResponse.json(
+          { success: false, error: 'Not Found' },
+          { status: 404 }
+        );
+      }
+    } else {
+      expectedToken = expectedToken || DEFAULT_DEV_TOKEN;
+    }
+
+    const token = extractMonitoringToken(request);
+    if (!token || !tokensMatch(token, expectedToken)) {
       return NextResponse.json(
         {
+          success: false,
           error: 'Unauthorized',
           message: 'Invalid or missing monitoring token',
         },

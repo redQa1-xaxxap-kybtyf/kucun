@@ -49,6 +49,21 @@ export const GET = withErrorHandling(
       orderBy: [{ queriedAt: 'desc' }, { id: 'desc' }],
       skip,
       take: limit,
+      select: {
+        id: true,
+        siteId: true,
+        trackingNumber: true,
+        inputKeyword: true,
+        status: true,
+        destination: true,
+        estimatedArrival: true,
+        lastUpdateTime: true,
+        queryStatus: true,
+        errorMessage: true,
+        queriedAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return successResponse({

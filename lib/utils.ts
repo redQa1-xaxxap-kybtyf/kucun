@@ -19,7 +19,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param amount 金额
  * @param precision 小数位数，默认为 2
  */
-export function formatCurrency(amount: number, precision: number = 2): string {
+export function formatCurrency(amount: unknown, precision: number = 2): string {
   return internalFormatCurrency(amount, precision);
 }
 

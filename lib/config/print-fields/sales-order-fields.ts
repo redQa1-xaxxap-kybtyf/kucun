@@ -91,16 +91,19 @@ const salesOrderHeaderFields: PrintFieldDefinition[] = [
     align: 'center',
     defaultVisible: false,
     group: '基本信息',
-    format: value => {
-      const statusMap: Record<string, string> = {
-        pending: '待处理',
-        confirmed: '已确认',
-        shipped: '已发货',
-        completed: '已完成',
-        cancelled: '已取消',
-      };
-      return statusMap[value as string] || (value as string);
-    },
+      format: value => {
+        const statusMap: Record<string, string> = {
+          pending: '草稿',
+          draft: '草稿',
+          confirmed: '已确认',
+          processing: '已确认',
+          shipped: '已发货',
+          delivered: '已完成',
+          completed: '已完成',
+          cancelled: '已取消',
+        };
+        return statusMap[value as string] || (value as string);
+      },
   },
   {
     key: 'remarks',

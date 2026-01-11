@@ -2,7 +2,6 @@
 
 import type {
   Prisma,
-  ExpenseRecord as PrismaExpenseRecord,
 } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
@@ -23,6 +22,7 @@ import {
   type PurchaseOrderItem,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
+import { toNumber } from '@/lib/utils/number';
 import type { ValidationIssue } from '@/lib/types/validation';
 import {
   createPurchaseOrderSchema,
@@ -51,6 +51,34 @@ import {
   updatePurchaseOrderInternal,
   type ActionResult,
 } from './purchase-orders.utils';
+
+const MAX_EXPENSE_RECORDS_PER_ORDER = 5000;
+
+const EXPENSE_RECORD_SELECT = {
+  id: true,
+  expenseNumber: true,
+  expenseType: true,
+  expenseName: true,
+  expenseAmount: true,
+  expenseDate: true,
+  relatedType: true,
+  relatedId: true,
+  relatedNumber: true,
+  remarks: true,
+  attachments: true,
+  status: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+  approvedById: true,
+  approvedAt: true,
+  cancelReason: true,
+} satisfies Prisma.ExpenseRecordSelect;
+
+type ExpenseRecordRow = Prisma.ExpenseRecordGetPayload<{
+  select: typeof EXPENSE_RECORD_SELECT;
+}>;
+
 const mapZodIssues = (issues: z.ZodIssue[]): ValidationIssue[] =>
   issues.map(issue => ({
     path: issue.path.length > 0 ? issue.path.join('.') : undefined,
@@ -206,8 +234,8 @@ export async function confirmPurchaseOrder(
         }
 
         // ✅ 修复：如果 expenseAmount 为 null，从费用记录即时求和
-        let actualExpenseAmount = order.expenseAmount;
-        if (actualExpenseAmount === null || actualExpenseAmount === undefined) {
+        let actualExpenseAmount = toNumber(order.expenseAmount);
+        if (order.expenseAmount === null || order.expenseAmount === undefined) {
           const expenseSum = await tx.expenseRecord.aggregate({
             where: {
               relatedType: 'purchase_order',
@@ -217,7 +245,7 @@ export async function confirmPurchaseOrder(
               expenseAmount: true,
             },
           });
-          actualExpenseAmount = expenseSum._sum.expenseAmount ?? 0;
+          actualExpenseAmount = toNumber(expenseSum._sum.expenseAmount);
 
           // 同步更新订单的 expenseAmount
           await tx.purchaseOrder.update({
@@ -232,7 +260,7 @@ export async function confirmPurchaseOrder(
             order.items.map(item => ({
               id: item.id,
               quantity: item.quantity,
-              unitPrice: item.unitPrice,
+              unitPrice: toNumber(item.unitPrice),
             })),
             actualExpenseAmount
           );
@@ -384,7 +412,7 @@ export async function deletePurchaseOrder(
       });
 
       if (existingPayable) {
-        if (existingPayable.paidAmount > 0) {
+        if (toNumber(existingPayable.paidAmount) > 0) {
           throw new Error('已有付款记录的采购订单不能删除');
         }
 
@@ -472,9 +500,11 @@ export async function getPurchaseOrderById(
         relatedType: 'purchase_order',
         relatedId: orderId,
       },
+      select: EXPENSE_RECORD_SELECT,
       orderBy: {
         createdAt: 'asc',
       },
+      take: MAX_EXPENSE_RECORDS_PER_ORDER,
     });
 
     const inboundByOrder = new Map<string, number>();
@@ -532,8 +562,9 @@ export async function getPurchaseOrderById(
       userId: order.userId,
       status: order.status as PurchaseOrderStatus,
       totalAmount: Number(order.totalAmount),
-      expenseAmount: order.expenseAmount ?? undefined,
-      costAmount: order.costAmount ?? undefined,
+      expenseAmount:
+        order.expenseAmount === null ? undefined : Number(order.expenseAmount),
+      costAmount: order.costAmount === null ? undefined : Number(order.costAmount),
       remarks: order.remarks ?? undefined,
       shippingCompany: order.shippingCompany ?? undefined,
       orderDate: order.orderDate ?? undefined,
@@ -582,21 +613,29 @@ function mapPurchaseOrderItem(
     isManualProduct: item.isManualProduct ?? undefined,
     manualProductName: item.manualProductName ?? undefined,
     manualSpecification: item.manualSpecification ?? undefined,
-    manualWeight: item.manualWeight ?? undefined,
+    manualWeight:
+      item.manualWeight == null ? undefined : toNumber(item.manualWeight),
     manualUnit: item.manualUnit ?? undefined,
     receivedQuantity,
     executionRate,
     displayName: item.displayName,
     specification: item.specification ?? undefined,
     unit: item.unit,
-    weight: item.weight ?? undefined,
-    piecesPerUnit: item.piecesPerUnit ?? undefined,
+    weight: item.weight == null ? undefined : toNumber(item.weight),
+    piecesPerUnit:
+      item.piecesPerUnit == null ? undefined : toNumber(item.piecesPerUnit),
     remarks: item.remarks ?? undefined,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-    unitCost: item.unitCost ?? undefined,
-    allocatedExpense: item.allocatedExpense ?? undefined,
-    unitCostWithExpense: item.unitCostWithExpense ?? undefined,
+    unitCost: item.unitCost == null ? undefined : toNumber(item.unitCost),
+    allocatedExpense:
+      item.allocatedExpense == null
+        ? undefined
+        : toNumber(item.allocatedExpense),
+    unitCostWithExpense:
+      item.unitCostWithExpense == null
+        ? undefined
+        : toNumber(item.unitCostWithExpense),
     product: item.product
       ? {
           id: item.product.id,
@@ -604,7 +643,8 @@ function mapPurchaseOrderItem(
           name: item.product.name,
           specification: item.product.specification ?? undefined,
           unit: item.product.unit,
-          weight: item.product.weight ?? undefined,
+          weight:
+            item.product.weight == null ? undefined : toNumber(item.product.weight),
         }
       : undefined,
     supplier: {
@@ -616,7 +656,7 @@ function mapPurchaseOrderItem(
   };
 }
 
-function mapExpenseRecord(expense: PrismaExpenseRecord): ExpenseRecordType {
+function mapExpenseRecord(expense: ExpenseRecordRow): ExpenseRecordType {
   return {
     id: expense.id,
     expenseNumber: expense.expenseNumber,

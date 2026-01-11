@@ -116,6 +116,7 @@ export const GET = withAuth(async (request: NextRequest) => {
         specification: true,
         unit: true,
       },
+      take: productIds.length,
     });
 
     // 组合数据
@@ -136,6 +137,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json(
       {
+        success: false,
         error: '获取价格历史失败',
         details: error instanceof Error ? error.message : '未知错误',
       },
@@ -163,7 +165,10 @@ export const POST = withAuth(async (request: NextRequest) => {
 
     // 验证必填字段
     if (!supplierId || !productId || unitPrice === undefined) {
-      return NextResponse.json({ error: '缺少必填字段' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: '缺少必填字段' },
+        { status: 400 }
+      );
     }
 
     // 创建价格历史记录
@@ -201,6 +206,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     logger.error('price-history', '记录供应商价格历史失败', error);
     return NextResponse.json(
       {
+        success: false,
         error: '记录价格历史失败',
         details: error instanceof Error ? error.message : '未知错误',
       },

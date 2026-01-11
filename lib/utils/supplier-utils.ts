@@ -240,6 +240,7 @@ export async function batchCheckSupplierReferences(
   const suppliers = await prisma.supplier.findMany({
     where: { id: { in: supplierIds } },
     select: { id: true, name: true },
+    take: supplierIds.length,
   });
 
   // 创建供应商映射

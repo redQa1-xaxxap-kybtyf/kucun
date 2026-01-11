@@ -138,6 +138,7 @@ export async function getSalesOrderById(id: string) {
       piecesPerUnit: true,
       weight: true,
     },
+    take: productIds.length,
   });
 
   const productsMap = new Map<
@@ -151,7 +152,15 @@ export async function getSalesOrderById(id: string) {
       piecesPerUnit: number;
       weight: number | null;
     }
-  >(products.map(p => [p.id, p]));
+  >(
+    products.map(p => [
+      p.id,
+      {
+        ...p,
+        weight: p.weight === null ? null : Number(p.weight),
+      },
+    ])
+  );
 
   return mapDetail(order, productsMap);
 }
@@ -227,6 +236,7 @@ export async function getSalesOrderDetailWithPayments(id: string) {
       piecesPerUnit: true,
       weight: true,
     },
+    take: productIds.length,
   });
 
   const productsMap = new Map<
@@ -240,7 +250,15 @@ export async function getSalesOrderDetailWithPayments(id: string) {
       piecesPerUnit: number;
       weight: number | null;
     }
-  >(products.map(p => [p.id, p]));
+  >(
+    products.map(p => [
+      p.id,
+      {
+        ...p,
+        weight: p.weight === null ? null : Number(p.weight),
+      },
+    ])
+  );
 
   const refundTotals = order.refundRecords.reduce(
     (acc, refund) => {

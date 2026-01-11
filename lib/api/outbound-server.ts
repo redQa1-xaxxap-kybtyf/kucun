@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/selectors/inventory-selectors';
 import { prisma } from '@/lib/db';
 import type { OutboundRecord } from '@/lib/types/inventory';
+import { toNumber } from '@/lib/utils/number';
 
 type OutboundWhereClause = {
   OR?: Array<{
@@ -136,13 +137,14 @@ async function fetchBatchSpecifications(
         piecesPerUnit: true,
         weight: true,
       },
+      take: batchQueries.length,
     });
 
     batchSpecs.forEach(spec => {
       const key = `${spec.productId}-${spec.batchNumber}`;
       batchSpecMap.set(key, {
         piecesPerUnit: spec.piecesPerUnit ?? undefined,
-        weight: spec.weight ?? undefined,
+        weight: spec.weight == null ? undefined : toNumber(spec.weight),
       });
     });
   }
@@ -182,8 +184,9 @@ function formatRecordWithBatchInfo(
   const batchOverride = batchKey ? batchSpecMap.get(batchKey) : undefined;
   const piecesPerUnit =
     batchOverride?.piecesPerUnit ?? record.product.piecesPerUnit ?? undefined;
+  const weightPerUnitRaw = batchOverride?.weight ?? record.product.weight;
   const weightPerUnit =
-    batchOverride?.weight ?? record.product.weight ?? undefined;
+    weightPerUnitRaw == null ? undefined : toNumber(weightPerUnitRaw);
 
   let totalWeight: number | undefined;
   if (weightPerUnit !== undefined) {
@@ -301,8 +304,8 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
     productId: record.productId,
     batchNumber: record.batchNumber ?? undefined,
     quantity: Number(record.quantity),
-    unitCost: record.unitCost ?? undefined,
-    totalCost: record.totalCost ?? undefined,
+    unitCost: record.unitCost == null ? undefined : toNumber(record.unitCost),
+    totalCost: record.totalCost == null ? undefined : toNumber(record.totalCost),
     customerId: record.customerId ?? undefined,
     salesOrderId: record.salesOrderId ?? undefined,
     userId: record.operatorId,
@@ -318,7 +321,10 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
             OutboundRecord['product']
           >['unit'],
           piecesPerUnit: record.product.piecesPerUnit ?? 0,
-          weight: record.product.weight ?? undefined,
+          weight:
+            record.product.weight == null
+              ? undefined
+              : toNumber(record.product.weight),
         } satisfies NonNullable<OutboundRecord['product']>)
       : undefined,
     user: record.operator

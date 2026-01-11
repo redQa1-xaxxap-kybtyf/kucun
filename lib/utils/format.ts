@@ -7,12 +7,14 @@
  * @param precision 小数位数，默认为 2
  * @returns 格式化后的货币字符串
  */
-export function formatCurrency(amount: number, precision: number = 2): string {
-  if (typeof amount !== 'number' || Number.isNaN(amount)) {
+export function formatCurrency(amount: unknown, precision: number = 2): string {
+  const numeric = typeof amount === 'number' ? amount : Number(amount);
+
+  if (!Number.isFinite(numeric)) {
     return '￥0.00';
   }
 
-  const formatted = amount.toLocaleString('zh-CN', {
+  const formatted = numeric.toLocaleString('zh-CN', {
     minimumFractionDigits: precision,
     maximumFractionDigits: precision,
   });

@@ -62,8 +62,8 @@ function formatBatchSpecifications(
     productId: string;
     batchNumber: string;
     piecesPerUnit: number;
-    weight: number | null;
-    thickness: number | null;
+    weight: unknown;
+    thickness: unknown;
     createdAt: Date;
     updatedAt: Date;
     product?: {
@@ -79,41 +79,52 @@ function formatBatchSpecifications(
     };
   }>
 ): BatchSpecification[] {
-  return specifications.map(spec => ({
-    id: spec.id,
-    productId: spec.productId,
-    batchNumber: spec.batchNumber,
-    piecesPerUnit: spec.piecesPerUnit,
-    weight: spec.weight || undefined,
-    thickness: spec.thickness || undefined,
-    createdAt: toISOString(spec.createdAt) || '',
-    updatedAt: toISOString(spec.updatedAt) || '',
+  return specifications.map(spec => {
+    const weight =
+      spec.weight === null || spec.weight === undefined
+        ? undefined
+        : Number(spec.weight);
+    const thickness =
+      spec.thickness === null || spec.thickness === undefined
+        ? undefined
+        : Number(spec.thickness);
 
-    // 嵌套的产品对象（如果包含）
-    ...(spec.product && {
-      product: {
-        id: spec.product.id,
-        code: spec.product.code,
-        name: spec.product.name,
-        specification: spec.product.specification ?? undefined,
-        description: undefined,
-        unit: spec.product.unit as Product['unit'],
-        piecesPerUnit: spec.product.piecesPerUnit ?? spec.piecesPerUnit ?? 0,
-        weight: spec.weight ?? undefined,
-        thickness: spec.thickness ?? undefined,
-        status: (spec.product.status ?? 'active') as Product['status'],
-        categoryId: undefined,
-        category: undefined,
-        thumbnailUrl: undefined,
-        images: undefined,
-        createdAt: toISOString(spec.product.createdAt) || '',
-        updatedAt: toISOString(spec.product.updatedAt) || '',
-        variants: undefined,
-        counts: undefined,
-        inventory: undefined,
-      } satisfies Product,
-    }),
-  }));
+    return {
+      id: spec.id,
+      productId: spec.productId,
+      batchNumber: spec.batchNumber,
+      piecesPerUnit: spec.piecesPerUnit,
+      weight,
+      thickness,
+      createdAt: toISOString(spec.createdAt) || '',
+      updatedAt: toISOString(spec.updatedAt) || '',
+
+      // 嵌套的产品对象（如果包含）
+      ...(spec.product && {
+        product: {
+          id: spec.product.id,
+          code: spec.product.code,
+          name: spec.product.name,
+          specification: spec.product.specification ?? undefined,
+          description: undefined,
+          unit: spec.product.unit as Product['unit'],
+          piecesPerUnit: spec.product.piecesPerUnit ?? spec.piecesPerUnit ?? 0,
+          weight,
+          thickness,
+          status: (spec.product.status ?? 'active') as Product['status'],
+          categoryId: undefined,
+          category: undefined,
+          thumbnailUrl: undefined,
+          images: undefined,
+          createdAt: toISOString(spec.product.createdAt) || '',
+          updatedAt: toISOString(spec.product.updatedAt) || '',
+          variants: undefined,
+          counts: undefined,
+          inventory: undefined,
+        } satisfies Product,
+      }),
+    };
+  });
 }
 
 /**

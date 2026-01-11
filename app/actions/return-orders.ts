@@ -267,6 +267,7 @@ export async function updateReturnOrderStatus(
                   id: true,
                   batchNumber: true,
                 },
+                take: returnOrder.items.length,
               });
 
               batchBySalesItemId = new Map(
@@ -381,7 +382,10 @@ export async function approveReturnOrder(
     }
 
     // 验证退款金额不超过总金额
-    if (data.refundAmount && data.refundAmount > returnOrder.totalAmount) {
+    if (
+      data.refundAmount &&
+      data.refundAmount > Number(returnOrder.totalAmount)
+    ) {
       return { success: false, error: '退款金额不能超过退货总金额' };
     }
 

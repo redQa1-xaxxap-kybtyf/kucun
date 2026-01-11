@@ -157,11 +157,69 @@ export class ValidationService {
       }
     }
 
-    // 规则4: 价格合理性验证
-    if (orderData.items) {
+    // 规则4: 价格合理性验证（利润率 + 历史价偏离）
+    if (orderData.items && orderData.customerId) {
+      const priceType =
+        orderData.orderType === 'TRANSFER' ? 'FACTORY' : 'SALES';
+
+      const productIds = Array.from(
+        new Set(
+          orderData.items
+            .filter((item: any) => item.productId)
+            .map((item: any) => item.productId)
+        )
+      ) as string[];
+
+      const priceMap = new Map<string, number>();
+
+      if (productIds.length > 0) {
+        const priceRecords = await prisma.customerProductPrice.findMany({
+          where: {
+            customerId: orderData.customerId,
+            productId: { in: productIds },
+            priceType,
+          },
+          orderBy: { createdAt: 'desc' },
+          select: { productId: true, unitPrice: true },
+        });
+
+        for (const record of priceRecords) {
+          if (priceMap.has(record.productId)) {
+            continue;
+          }
+          priceMap.set(record.productId, Number(record.unitPrice));
+        }
+      }
+
       for (const item of orderData.items) {
-        if (item.unitPrice && item.unitCost) {
-          const margin = (item.unitPrice - item.unitCost) / item.unitPrice;
+        const unitPrice = Number(item.unitPrice ?? 0);
+        const unitCost =
+          item.unitCost !== undefined && item.unitCost !== null
+            ? Number(item.unitCost)
+            : null;
+
+        if (unitPrice === 0) {
+          rules.push({
+            ruleName: 'unit_price_non_zero',
+            passed: false,
+            message: '单价为 0，请确认是否为正常售价',
+            severity: 'WARNING',
+          });
+          continue;
+        }
+
+        if (unitPrice < 0) {
+          rules.push({
+            ruleName: 'unit_price_non_negative',
+            passed: false,
+            message: '单价不能为负数',
+            severity: 'ERROR',
+          });
+          continue;
+        }
+
+        if (unitCost !== null && Number.isFinite(unitCost) && unitPrice > 0) {
+          const margin = (unitPrice - unitCost) / unitPrice;
           rules.push({
             ruleName: 'price_margin_check',
             passed: margin >= 0.05, // 最低5%利润率
@@ -171,24 +229,81 @@ export class ValidationService {
                 : `利润率过低: ${(margin * 100).toFixed(2)}%`,
             severity: margin >= 0.05 ? 'INFO' : 'WARNING',
           });
+
+          rules.push({
+            ruleName: 'price_not_below_cost',
+            passed: unitPrice >= unitCost,
+            message:
+              unitPrice >= unitCost
+                ? '售价高于成本'
+                : `售价低于成本（售价: ${unitPrice.toFixed(2)}, 成本: ${unitCost.toFixed(2)}）`,
+            severity: unitPrice >= unitCost ? 'INFO' : 'WARNING',
+          });
+        }
+
+        const referencePrice = item.productId
+          ? priceMap.get(item.productId)
+          : undefined;
+
+        if (referencePrice !== undefined && referencePrice > 0) {
+          const deviation =
+            Math.abs(unitPrice - referencePrice) / referencePrice;
+          const maxDeviation = 0.5; // 允许 ±50% 偏离（仅提示，不阻断）
+
+          rules.push({
+            ruleName: 'customer_price_deviation',
+            passed: deviation <= maxDeviation,
+            message:
+              deviation <= maxDeviation
+                ? '售价与客户历史价一致'
+                : `售价偏离客户历史价较大（历史价: ${referencePrice.toFixed(2)}, 当前: ${unitPrice.toFixed(2)}）`,
+            severity: deviation <= maxDeviation ? 'INFO' : 'WARNING',
+          });
         }
       }
     }
 
     // 规则5: 订单金额一致性验证
-    if (orderData.items && orderData.totalAmount) {
-      const calculatedTotal = orderData.items.reduce(
-        (sum: number, item: any) => sum + item.quantity * item.unitPrice,
-        0
-      );
-      const difference = Math.abs(calculatedTotal - orderData.totalAmount);
+    // 口径：totalAmount 不包含抹零；应收 = totalAmount + roundingAdjustment
+    if (
+      orderData.items &&
+      orderData.totalAmount !== undefined &&
+      orderData.totalAmount !== null
+    ) {
+      const itemsAmount = orderData.items.reduce((sum: number, item: any) => {
+        const quantity = Number(item.quantity ?? 0);
+        const unitPrice = Number(item.unitPrice ?? 0);
+        const subtotal =
+          item.subtotal !== undefined && item.subtotal !== null
+            ? Number(item.subtotal)
+            : Math.round(quantity * unitPrice * 100) / 100;
+        return sum + subtotal;
+      }, 0);
+
+      const additionalFees = Array.isArray(orderData.feeItems)
+        ? orderData.feeItems.reduce((sum: number, fee: any) => {
+            const paidBy = fee.paidBy ?? 'customer';
+            if (paidBy === 'company') {
+              return sum;
+            }
+            const amount = Number(fee.feeAmount ?? 0);
+            return Number.isFinite(amount) ? sum + amount : sum;
+          }, 0)
+        : 0;
+
+      const calculatedTotal =
+        Math.round((itemsAmount + additionalFees) * 100) / 100;
+      const expectedTotal =
+        Math.round(Number(orderData.totalAmount) * 100) / 100;
+      const difference = Math.abs(calculatedTotal - expectedTotal);
+
       rules.push({
         ruleName: 'amount_consistency',
         passed: difference < 0.01, // 允许1分钱的舍入误差
         message:
           difference < 0.01
             ? '订单金额一致'
-            : `订单金额不一致，差额: ${difference.toFixed(2)}`,
+            : `订单金额不一致，差额: ${difference.toFixed(2)}（计算值: ${calculatedTotal.toFixed(2)}, 订单值: ${expectedTotal.toFixed(2)}）`,
         severity: difference < 0.01 ? 'INFO' : 'ERROR',
       });
     }

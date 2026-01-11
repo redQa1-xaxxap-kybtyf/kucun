@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { toNumber } from '@/lib/utils/number';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
@@ -27,7 +28,10 @@ export const GET = withAuth(
     try {
       const params = await resolveParams(context.params);
       if (!params?.id) {
-        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: '缺少退款记录ID' },
+          { status: 400 }
+        );
       }
       refundId = params.id;
       const refund = await prisma.refundRecord.findUnique({
@@ -42,7 +46,10 @@ export const GET = withAuth(
       });
 
       if (!refund) {
-        return NextResponse.json({ error: '退款记录不存在' }, { status: 404 });
+        return NextResponse.json(
+          { success: false, error: '退款记录不存在' },
+          { status: 404 }
+        );
       }
 
       return NextResponse.json({
@@ -56,7 +63,10 @@ export const GET = withAuth(
         error,
         refundId ? { refundId } : undefined
       );
-      return NextResponse.json({ error: '获取退款记录失败' }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: '获取退款记录失败' },
+        { status: 500 }
+      );
     }
   }
 );
@@ -68,7 +78,10 @@ export const PUT = withAuth(
     try {
       const params = await resolveParams(context.params);
       if (!params?.id) {
-        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: '缺少退款记录ID' },
+          { status: 400 }
+        );
       }
       refundId = params.id;
       const body = await request.json();
@@ -107,10 +120,13 @@ export const PUT = withAuth(
         });
 
         if (currentRefund) {
+          const baseRefundAmount =
+            validatedData.refundAmount !== undefined
+              ? validatedData.refundAmount
+              : toNumber(currentRefund.refundAmount, 0);
           updateData.remainingAmount = Math.max(
             0,
-            (validatedData.refundAmount || currentRefund.refundAmount) -
-              validatedData.processedAmount
+            baseRefundAmount - validatedData.processedAmount
           );
         }
       } else if (validatedData.refundAmount !== undefined) {
@@ -121,9 +137,10 @@ export const PUT = withAuth(
         });
 
         if (currentRefund) {
+          const processedAmount = toNumber(currentRefund.processedAmount, 0);
           updateData.remainingAmount = Math.max(
             0,
-            validatedData.refundAmount - (currentRefund.processedAmount || 0)
+            validatedData.refundAmount - processedAmount
           );
         }
       }
@@ -152,7 +169,10 @@ export const PUT = withAuth(
         error,
         refundId ? { refundId } : undefined
       );
-      return NextResponse.json({ error: '更新退款记录失败' }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: '更新退款记录失败' },
+        { status: 500 }
+      );
     }
   }
 );
@@ -164,7 +184,10 @@ export const DELETE = withAuth(
     try {
       const params = await resolveParams(context.params);
       if (!params?.id) {
-        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: '缺少退款记录ID' },
+          { status: 400 }
+        );
       }
       refundId = params.id;
       // 检查退款记录是否存在且可以删除
@@ -173,12 +196,15 @@ export const DELETE = withAuth(
       });
 
       if (!refund) {
-        return NextResponse.json({ error: '退款记录不存在' }, { status: 404 });
+        return NextResponse.json(
+          { success: false, error: '退款记录不存在' },
+          { status: 404 }
+        );
       }
 
       if (refund.status === 'completed') {
         return NextResponse.json(
-          { error: '已完成的退款记录不能删除' },
+          { success: false, error: '已完成的退款记录不能删除' },
           { status: 400 }
         );
       }
@@ -198,7 +224,10 @@ export const DELETE = withAuth(
         error,
         refundId ? { refundId } : undefined
       );
-      return NextResponse.json({ error: '删除退款记录失败' }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: '删除退款记录失败' },
+        { status: 500 }
+      );
     }
   }
 );

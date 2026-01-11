@@ -4,6 +4,7 @@ import {
 } from '@/lib/config/sales-order';
 import { prisma } from '@/lib/db';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 销售订单服务层
@@ -114,7 +115,8 @@ export async function getReturnableItems(
 
   // 查询已退货数量
   // ✅ 修复：排除已取消和已拒绝的退货订单，避免永久占用可退库存
-  const existingReturns = await prisma.returnOrderItem.findMany({
+  const existingReturns = await prisma.returnOrderItem.groupBy({
+    by: ['salesOrderItemId'],
     where: {
       returnOrder: {
         salesOrderId: orderId,
@@ -123,8 +125,7 @@ export async function getReturnableItems(
         },
       },
     },
-    select: {
-      salesOrderItemId: true,
+    _sum: {
       returnQuantity: true,
     },
   });
@@ -133,7 +134,7 @@ export async function getReturnableItems(
   const returnedQuantities = existingReturns.reduce(
     (acc, item) => {
       const key = item.salesOrderItemId;
-      acc[key] = (acc[key] || 0) + item.returnQuantity;
+      acc[key] = Number(item._sum.returnQuantity ?? 0);
       return acc;
     },
     {} as Record<string, number>
@@ -165,7 +166,7 @@ export async function getReturnableItems(
       maxReturnAmount = round2(availableQuantity * perPieceAmount);
     } else {
       // 兜底：老数据没有 subtotal 时，退回到 unitPrice 计算
-      maxReturnAmount = round2(availableQuantity * item.unitPrice);
+      maxReturnAmount = round2(availableQuantity * toNumber(item.unitPrice, 0));
     }
 
     acc.push({
@@ -173,10 +174,10 @@ export async function getReturnableItems(
       productId: item.productId,
       product: item.product,
       batchNumber: item.batchNumber,
-      originalQuantity: item.quantity,
+      originalQuantity,
       returnedQuantity,
       availableQuantity,
-      unitPrice: item.unitPrice,
+      unitPrice: toNumber(item.unitPrice, 0),
       maxReturnAmount,
       colorCode: item.colorCode,
       productionDate: item.productionDate,
@@ -194,7 +195,7 @@ export async function getReturnableItems(
       id: salesOrder.id,
       orderNumber: salesOrder.orderNumber,
       status: salesOrder.status,
-      totalAmount: salesOrder.totalAmount,
+      totalAmount: toNumber(salesOrder.totalAmount, 0),
       customer: salesOrder.customer,
       createdAt: salesOrder.createdAt,
     },

@@ -10,6 +10,7 @@ import type {
   PaymentOutMethod,
   PaymentOutStatus,
 } from '@/lib/types/payable';
+import { toNumber } from '@/lib/utils/number';
 
 type RawPayableSearchParams = {
   page?: string;
@@ -77,41 +78,78 @@ function buildWhereConditions(
   return where;
 }
 
-function toUndefined<T>(value: T | null): T | undefined {
-  return value === null ? undefined : value;
-}
-
 function serializePayables(
   payables: Awaited<ReturnType<typeof fetchPayables>>
-) {
+): PayableRecordDetail[] {
   return payables.map(payable => ({
-    ...payable,
+    id: payable.id,
+    payableNumber: payable.payableNumber,
+    supplierId: payable.supplierId,
+    userId: payable.userId,
     sourceType: payable.sourceType as PayableSourceType,
+    ...(payable.sourceId !== null && payable.sourceId !== undefined
+      ? { sourceId: payable.sourceId }
+      : {}),
+    ...(payable.sourceNumber !== null && payable.sourceNumber !== undefined
+      ? { sourceNumber: payable.sourceNumber }
+      : {}),
+    payableAmount: toNumber(payable.payableAmount),
+    paidAmount: toNumber(payable.paidAmount),
+    remainingAmount: toNumber(payable.remainingAmount),
+    ...(payable.dueDate !== null && payable.dueDate !== undefined
+      ? { dueDate: payable.dueDate }
+      : {}),
     status: payable.status as PayableStatus,
-    sourceId: toUndefined(payable.sourceId),
-    sourceNumber: toUndefined(payable.sourceNumber),
-    description: toUndefined(payable.description),
-    remarks: toUndefined(payable.remarks),
-    dueDate: toUndefined(payable.dueDate),
+    paymentTerms: payable.paymentTerms,
+    ...(payable.description !== null && payable.description !== undefined
+      ? { description: payable.description }
+      : {}),
+    ...(payable.remarks !== null && payable.remarks !== undefined
+      ? { remarks: payable.remarks }
+      : {}),
+    createdAt: payable.createdAt,
+    updatedAt: payable.updatedAt,
     supplier: {
-      ...payable.supplier,
-      phone: toUndefined(payable.supplier.phone),
-      address: toUndefined(payable.supplier.address),
+      id: payable.supplier.id,
+      name: payable.supplier.name,
+      ...(payable.supplier.phone !== null && payable.supplier.phone !== undefined
+        ? { phone: payable.supplier.phone }
+        : {}),
+      ...(payable.supplier.address !== null &&
+      payable.supplier.address !== undefined
+        ? { address: payable.supplier.address }
+        : {}),
     },
     user: {
-      ...payable.user,
+      id: payable.user.id,
+      name: payable.user.name,
       email: payable.user.email ?? '',
     },
     paymentOutRecords: payable.paymentOutRecords.map(record => ({
-      ...record,
+      id: record.id,
+      paymentNumber: record.paymentNumber,
+      ...(record.payableRecordId !== null && record.payableRecordId !== undefined
+        ? { payableRecordId: record.payableRecordId }
+        : {}),
+      supplierId: record.supplierId,
+      userId: record.userId,
       paymentMethod: record.paymentMethod as PaymentOutMethod,
+      paymentAmount: toNumber(record.paymentAmount),
+      paymentDate: record.paymentDate,
       status: record.status as PaymentOutStatus,
-      payableRecordId: toUndefined(record.payableRecordId),
-      remarks: toUndefined(record.remarks),
-      voucherNumber: toUndefined(record.voucherNumber),
-      bankInfo: toUndefined(record.bankInfo),
+      ...(record.remarks !== null && record.remarks !== undefined
+        ? { remarks: record.remarks }
+        : {}),
+      ...(record.voucherNumber !== null && record.voucherNumber !== undefined
+        ? { voucherNumber: record.voucherNumber }
+        : {}),
+      ...(record.bankInfo !== null && record.bankInfo !== undefined
+        ? { bankInfo: record.bankInfo }
+        : {}),
+      createdAt: record.createdAt,
+      updatedAt: record.updatedAt,
     })),
-  })) as PayableRecordDetail[];
+  }));
 }
 
 async function fetchPayables(

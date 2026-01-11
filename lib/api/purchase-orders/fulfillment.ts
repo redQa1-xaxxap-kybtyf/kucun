@@ -72,15 +72,39 @@ export async function refreshPurchaseOrderFulfillment(
   tx: Prisma.TransactionClient,
   purchaseOrderId: string
 ): Promise<void> {
-  const items = await tx.purchaseOrderItem.findMany({
-    where: { purchaseOrderId },
-    select: {
-      id: true,
-      quantity: true,
-      inboundStatus: true,
-      inboundReceivedAt: true,
-    },
-  });
+  const items: Array<{
+    id: string;
+    quantity: number;
+    inboundStatus: string | null;
+    inboundReceivedAt: Date | null;
+  }> = [];
+  const pageSize = 2000;
+  let cursor: string | undefined;
+
+  while (true) {
+    const page = await tx.purchaseOrderItem.findMany({
+      where: { purchaseOrderId },
+      select: {
+        id: true,
+        quantity: true,
+        inboundStatus: true,
+        inboundReceivedAt: true,
+      },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+
+    items.push(...page);
+    if (page.length < pageSize) {
+      break;
+    }
+
+    cursor = page[page.length - 1]?.id;
+    if (!cursor) {
+      break;
+    }
+  }
 
   if (items.length === 0) {
     return;

@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import type { BatchMatchResult, ExistingBatch } from '@/lib/types/batch';
+import { toNumberOrNull } from '@/lib/utils/number';
 
 // 批次匹配查询参数验证
 const batchMatchQuerySchema = z.object({
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
       orderBy: {
         updatedAt: 'desc', // 按最后更新时间倒序
       },
+      take: 200,
     });
 
     // 如果没有找到匹配的批次,直接返回
@@ -125,6 +127,7 @@ export async function GET(request: NextRequest) {
         },
       },
       distinct: ['batchNumber'],
+      take: batchNumbers.length,
     });
 
     // 创建批次号到供应商的映射
@@ -150,7 +153,7 @@ export async function GET(request: NextRequest) {
         supplierId: supplierInfo?.supplierId || '',
         supplierName: supplierInfo?.supplierName || '',
         quantity: inv.quantity,
-        unitCost: inv.unitCost,
+        unitCost: toNumberOrNull(inv.unitCost),
         createdAt: inv.updatedAt, // 使用 updatedAt 作为创建时间的近似值
         updatedAt: inv.updatedAt,
       };

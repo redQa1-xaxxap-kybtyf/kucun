@@ -16,7 +16,7 @@ import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
 import { ExportAuditService } from '@/lib/services/export-audit-service';
 import { getReceivables } from '@/lib/services/receivables-service';
-import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
+import { accountsReceivableExportQuerySchema } from '@/lib/validations/payment';
 
 /**
  * POST /api/finance/receivables/export - 导出应收账款
@@ -25,14 +25,39 @@ import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
  */
 export const POST = withAuth(
   async (request: NextRequest, { user }) => {
+    let requestedFormat: 'excel' | 'csv' = 'excel';
+    let requestedFilters:
+      | {
+          paymentStatus?: unknown;
+          startDate?: unknown;
+          endDate?: unknown;
+          search?: unknown;
+        }
+      | undefined;
+    let auditRecordCount = 0;
+    let auditFilename: string | undefined;
+
     try {
+      const ipAddress =
+        request.headers.get('x-forwarded-for') ||
+        request.headers.get('x-real-ip') ||
+        undefined;
+      const userAgent = request.headers.get('user-agent') || undefined;
+
       // 参数验证
       const body = await request.json();
       const { pageSize, format = 'excel', ...restBody } = body ?? {};
+      requestedFormat = format === 'csv' ? 'csv' : 'excel';
       const paymentStatusBody =
         restBody?.paymentStatus ?? restBody?.status ?? undefined;
+      requestedFilters = {
+        paymentStatus: paymentStatusBody,
+        startDate: restBody?.startDate,
+        endDate: restBody?.endDate,
+        search: restBody?.search,
+      };
 
-      const validationResult = accountsReceivableQuerySchema.safeParse({
+      const validationResult = accountsReceivableExportQuerySchema.safeParse({
         ...restBody,
         paymentStatus: paymentStatusBody,
         page: 1,
@@ -40,21 +65,68 @@ export const POST = withAuth(
       });
 
       if (!validationResult.success) {
+        const message = `参数验证失败: ${validationResult.error.issues[0]?.message}`;
+        await ExportAuditService.logExport({
+          module: 'receivables',
+          format: requestedFormat,
+          recordCount: auditRecordCount,
+          filters: requestedFilters,
+          userId: user.id,
+          userName: user.name || user.email,
+          ipAddress,
+          userAgent,
+          success: false,
+          errorMessage: message,
+        });
         return errorResponse(
-          `参数验证失败: ${validationResult.error.issues[0]?.message}`,
+          message,
           400
         );
       }
 
+      requestedFilters = {
+        paymentStatus: validationResult.data.paymentStatus,
+        startDate: validationResult.data.startDate,
+        endDate: validationResult.data.endDate,
+        search: validationResult.data.search,
+      };
+
       // 验证导出格式
       if (format !== 'excel' && format !== 'csv') {
+        const message = '不支持的导出格式，仅支持 excel 或 csv';
+        await ExportAuditService.logExport({
+          module: 'receivables',
+          format: requestedFormat,
+          recordCount: 0,
+          filters: requestedFilters,
+          userId: user.id,
+          userName: user.name || user.email,
+          ipAddress,
+          userAgent,
+          success: false,
+          errorMessage: message,
+        });
         return errorResponse('不支持的导出格式，仅支持 excel 或 csv', 400);
       }
 
       // 调用服务层获取数据
       const result = await getReceivables(validationResult.data);
+      auditRecordCount = result.receivables.length;
 
       if (result.receivables.length === 0) {
+        const message = '没有符合条件的数据可导出';
+        await ExportAuditService.logExport({
+          module: 'receivables',
+          format: requestedFormat,
+          recordCount: 0,
+          filters: requestedFilters,
+          userId: user.id,
+          userName: user.name || user.email,
+          ipAddress,
+          userAgent,
+          success: false,
+          errorMessage: message,
+        });
         return errorResponse('没有符合条件的数据可导出', 404);
       }
 
@@ -64,8 +136,22 @@ export const POST = withAuth(
           total: result.pagination.total,
           userId: user.id,
         });
+        auditRecordCount = result.pagination.total;
+        const message = `数据量过大（${result.pagination.total}条），已超过导出限制（50,000条）。请使用日期范围、客户筛选等条件缩小导出范围。`;
+        await ExportAuditService.logExport({
+          module: 'receivables',
+          format: requestedFormat,
+          recordCount: auditRecordCount,
+          filters: requestedFilters,
+          userId: user.id,
+          userName: user.name || user.email,
+          ipAddress,
+          userAgent,
+          success: false,
+          errorMessage: message,
+        });
         return errorResponse(
-          `数据量过大（${result.pagination.total}条），已超过导出限制（50,000条）。请使用日期范围、客户筛选等条件缩小导出范围。`,
+          message,
           400
         );
       }
@@ -158,10 +244,11 @@ export const POST = withAuth(
       }
 
       // 记录导出审计日志
+      auditFilename = `${filename}.${fileExtension}`;
       await ExportAuditService.logExport({
         module: 'receivables',
         format,
-        recordCount: result.receivables.length,
+        recordCount: auditRecordCount,
         filters: {
           paymentStatus: validationResult.data.paymentStatus,
           startDate: validationResult.data.startDate,
@@ -170,13 +257,10 @@ export const POST = withAuth(
         },
         userId: user.id,
         userName: user.name || user.email,
-        ipAddress:
-          request.headers.get('x-forwarded-for') ||
-          request.headers.get('x-real-ip') ||
-          undefined,
-        userAgent: request.headers.get('user-agent') || undefined,
+        ipAddress,
+        userAgent,
         success: true,
-        filename: `${filename}.${fileExtension}`,
+        filename: auditFilename,
       });
 
       // 返回文件
@@ -214,8 +298,9 @@ export const POST = withAuth(
       try {
         await ExportAuditService.logExport({
           module: 'receivables',
-          format: 'excel',
+          format: requestedFormat,
           recordCount: 0,
+          filters: requestedFilters,
           userId: user.id,
           userName: user.name || user.email,
           ipAddress:
@@ -225,6 +310,7 @@ export const POST = withAuth(
           userAgent: request.headers.get('user-agent') || undefined,
           success: false,
           errorMessage,
+          filename: auditFilename,
         });
       } catch (auditError) {
         // 审计失败不应阻断错误响应

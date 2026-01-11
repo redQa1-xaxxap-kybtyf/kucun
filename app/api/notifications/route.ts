@@ -44,6 +44,15 @@ export const GET = withAuth(async (request, { user }) => {
       where: {
         userId: user.id,
       },
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        type: true,
+        isRead: true,
+        href: true,
+        createdAt: true,
+      },
       orderBy: {
         createdAt: 'desc',
       },

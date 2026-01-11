@@ -95,7 +95,11 @@ async function testSimpleApi() {
 }
 
 // 如果直接运行此文件，执行测试
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   testSimpleApi()
     .then(() => {
       console.log('\n✅ 简单 API 测试成功完成');

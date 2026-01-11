@@ -5,7 +5,6 @@
 /* eslint-disable max-lines-per-function, max-lines */
 
 import type {
-  AccountStatement as AccountStatementModel,
   Prisma,
 } from '@prisma/client';
 
@@ -13,6 +12,7 @@ import { publishFinanceChange } from '@/lib/cache/pubsub';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import type {
+  AccountStatement,
   AccountStatementDetail,
   PartnerRole,
   StatementTransaction as StatementTransactionType,
@@ -20,6 +20,7 @@ import type {
   StatementType,
   TransactionType,
 } from '@/lib/types/statement';
+import { toNumber } from '@/lib/utils/number';
 
 // ==================== 类型定义 ====================
 
@@ -202,17 +203,34 @@ function serialiseMetadata(
   }
 }
 
-function parseMetadata(
-  metadata: string | null
-): Record<string, unknown> | null {
-  if (!metadata) {
+function parseMetadata(metadata: unknown): Record<string, unknown> | null {
+  if (metadata === null || metadata === undefined) {
     return null;
   }
-  try {
-    return JSON.parse(metadata) as Record<string, unknown>;
-  } catch (_error) {
-    return { parseError: 'invalid_metadata', raw: metadata };
+
+  if (typeof metadata === 'string') {
+    if (!metadata) {
+      return null;
+    }
+    try {
+      const parsed = JSON.parse(metadata) as unknown;
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, unknown>;
+      }
+      return { value: parsed };
+    } catch (_error) {
+      return { parseError: 'invalid_metadata', raw: metadata };
+    }
   }
+
+  if (typeof metadata === 'object') {
+    if (Array.isArray(metadata)) {
+      return { value: metadata };
+    }
+    return metadata as Record<string, unknown>;
+  }
+
+  return { value: metadata };
 }
 
 function normalisePartnerRole(role?: string | null): PartnerRole {
@@ -280,7 +298,7 @@ async function resolvePartnerEntity(partnerId: string): Promise<PartnerEntity> {
   throw new Error(`未找到伙伴信息: ${partnerId}`);
 }
 
-function createVirtualStatement(partner: PartnerEntity): AccountStatementModel {
+function createVirtualStatement(partner: PartnerEntity): AccountStatement {
   const timestamp = new Date(0);
   return {
     id: `virtual-${partner.id}`,
@@ -297,8 +315,6 @@ function createVirtualStatement(partner: PartnerEntity): AccountStatementModel {
     creditLimit: 0,
     paymentTerms: '30天',
     status: 'active',
-    lastTransactionDate: null,
-    lastPaymentDate: null,
     createdAt: timestamp,
     updatedAt: timestamp,
   };
@@ -345,7 +361,8 @@ function normaliseStatementStatus(status?: string | null): StatementStatus {
  * 4. 发布缓存失效通知
  */
 export async function recordPartnerTransaction(
-  input: RecordPartnerTransactionInput
+  input: RecordPartnerTransactionInput,
+  tx?: Prisma.TransactionClient
 ) {
   if (input.amount <= 0) {
     throw new Error('交易金额必须大于0');
@@ -361,9 +378,9 @@ export async function recordPartnerTransaction(
     DEFAULT_TRANSACTION_STATUS[input.transactionType] ??
     'completed';
 
-  return prisma.$transaction(async tx => {
+  const execute = async (db: Prisma.TransactionClient) => {
     // ✅ 防重复: 检查是否已经记录过相同的referenceId和transactionType
-    const existingTransaction = await tx.statementTransaction.findFirst({
+    const existingTransaction = await db.statementTransaction.findFirst({
       where: {
         referenceId: input.referenceId,
         transactionType: input.transactionType,
@@ -386,7 +403,7 @@ export async function recordPartnerTransaction(
 
     const partner = await resolvePartnerEntity(input.partnerId);
     const incomingRole = input.partnerRole ?? partner.role;
-    const existingStatement = await tx.accountStatement.findUnique({
+    const existingStatement = await db.accountStatement.findUnique({
       where: { entityId: input.partnerId },
     });
     const mergedRole = mergePartnerRole(
@@ -403,7 +420,7 @@ export async function recordPartnerTransaction(
     const partnerName = input.partnerName ?? partner.name;
 
     const statement = existingStatement
-      ? await tx.accountStatement.update({
+      ? await db.accountStatement.update({
           where: { id: existingStatement.id },
           data: {
             entityName: partnerName,
@@ -411,7 +428,7 @@ export async function recordPartnerTransaction(
             entityType,
           },
         })
-      : await tx.accountStatement.create({
+      : await db.accountStatement.create({
           data: {
             entityId: partner.id,
             entityName: partnerName,
@@ -433,13 +450,13 @@ export async function recordPartnerTransaction(
           },
         });
 
-    const beforeBalance = statement.currentBalance ?? 0;
+    const beforeBalance = toNumber(statement.currentBalance);
     const delta = rule.balanceDelta(input.amount);
     const afterBalance = beforeBalance + delta;
     const debitAmount = rule.direction === 'debit' ? input.amount : 0;
     const creditAmount = rule.direction === 'credit' ? input.amount : 0;
 
-    const transaction = await tx.statementTransaction.create({
+    const transaction = await db.statementTransaction.create({
       data: {
         statementId: statement.id,
         transactionType: input.transactionType,
@@ -488,7 +505,7 @@ export async function recordPartnerTransaction(
       updateData.lastPaymentDate = transactionDate;
     }
 
-    await tx.accountStatement.update({
+    await db.accountStatement.update({
       where: { id: statement.id },
       data: updateData,
     });
@@ -501,7 +518,12 @@ export async function recordPartnerTransaction(
     });
 
     return transaction;
-  });
+  };
+
+  if (tx) {
+    return execute(tx);
+  }
+  return prisma.$transaction(execute);
 }
 
 /**
@@ -542,6 +564,23 @@ export async function getPartnerLedger(
 
   const transactions = await prisma.statementTransaction.findMany({
     where,
+    select: {
+      id: true,
+      statementId: true,
+      transactionType: true,
+      direction: true,
+      referenceId: true,
+      referenceNumber: true,
+      amount: true,
+      beforeBalance: true,
+      balance: true,
+      afterBalance: true,
+      description: true,
+      transactionDate: true,
+      status: true,
+      metadata: true,
+      createdAt: true,
+    },
     orderBy: { transactionDate: 'desc' },
     skip: options.offset,
     take: options.limit,
@@ -609,53 +648,59 @@ export async function getPartnerStatementDetail(
   }
 
   const mappedTransactions: StatementTransactionType[] = transactions.map(
-    transaction => ({
-      id: transaction.id,
-      statementId: transaction.statementId,
-      transactionType: transaction.transactionType as TransactionType,
-      direction: (transaction.direction as 'debit' | 'credit') ?? 'debit',
-      referenceId: transaction.referenceId,
-      referenceNumber: transaction.referenceNumber,
-      debitAmount:
-        typeof transaction.debitAmount === 'number'
-          ? transaction.debitAmount
-          : transaction.direction === 'debit'
-            ? transaction.amount
-            : 0,
-      creditAmount:
-        typeof transaction.creditAmount === 'number'
-          ? transaction.creditAmount
-          : transaction.direction === 'credit'
-            ? transaction.amount
-            : 0,
-      amount: transaction.amount,
-      beforeBalance: transaction.beforeBalance ?? 0,
-      balance: transaction.balance ?? 0,
-      afterBalance:
-        transaction.afterBalance ?? transaction.balance ?? transaction.amount,
-      description: transaction.description,
-      transactionDate:
-        transaction.transactionDate instanceof Date
-          ? transaction.transactionDate.toISOString()
-          : transaction.transactionDate,
-      status:
-        transaction.status === 'pending' || transaction.status === 'overdue'
-          ? 'pending'
-          : 'completed',
-      metadata:
-        (transaction as { metadata?: Record<string, unknown> | null })
-          .metadata ?? null,
-      createdAt:
-        transaction.createdAt instanceof Date
-          ? transaction.createdAt.toISOString()
-          : transaction.createdAt,
-    })
+    transaction => {
+      const direction = (transaction.direction as 'debit' | 'credit') ?? 'debit';
+      const amount = toNumber(transaction.amount);
+      const debitAmount = direction === 'debit' ? amount : 0;
+      const creditAmount = direction === 'credit' ? amount : 0;
+
+      return {
+        id: transaction.id,
+        statementId: transaction.statementId,
+        transactionType: transaction.transactionType as TransactionType,
+        direction,
+        referenceId: transaction.referenceId,
+        referenceNumber: transaction.referenceNumber,
+        debitAmount,
+        creditAmount,
+        amount,
+        beforeBalance: toNumber(transaction.beforeBalance),
+        balance: toNumber(transaction.balance),
+        afterBalance: toNumber(
+          transaction.afterBalance ?? transaction.balance ?? transaction.amount
+        ),
+        description: transaction.description,
+        transactionDate:
+          transaction.transactionDate instanceof Date
+            ? transaction.transactionDate.toISOString()
+            : transaction.transactionDate,
+        status:
+          transaction.status === 'pending' || transaction.status === 'overdue'
+            ? 'pending'
+            : 'completed',
+        metadata: parseMetadata(transaction.metadata),
+        createdAt:
+          transaction.createdAt instanceof Date
+            ? transaction.createdAt.toISOString()
+            : transaction.createdAt,
+      };
+    }
   );
 
   const partnerRole = normalisePartnerRole(statement.partnerRole);
   const entityType =
     normaliseEntityType(statement.entityType) ?? toStatementType(partnerRole);
-  const balance = statement.currentBalance ?? 0;
+  const totalOrders = statement.totalOrders ?? 0;
+  const totalAmount = toNumber(statement.totalAmount);
+  const paidAmount = toNumber(statement.paidAmount);
+  const currentBalance = toNumber(statement.currentBalance);
+  const pendingAmount =
+    statement.pendingAmount == null
+      ? Math.abs(currentBalance)
+      : toNumber(statement.pendingAmount);
+  const overdueAmount = toNumber(statement.overdueAmount);
+  const creditLimit = toNumber(statement.creditLimit);
+  const balance = currentBalance;
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
@@ -675,13 +720,11 @@ export async function getPartnerStatementDetail(
   const currentMonthAmount = aggregateByPeriod(startOfMonth, null);
   const lastMonthAmount = aggregateByPeriod(lastMonthStart, lastMonthEnd);
   const averageMonthlyAmount =
-    statement.totalOrders > 0
-      ? Math.abs(statement.totalAmount) / statement.totalOrders
-      : Math.abs(statement.totalAmount);
+    totalOrders > 0 ? Math.abs(totalAmount) / totalOrders : Math.abs(totalAmount);
 
   const paymentRate =
-    Math.abs(statement.totalAmount) > 0
-      ? (Math.abs(statement.paidAmount) / Math.abs(statement.totalAmount)) * 100
+    Math.abs(totalAmount) > 0
+      ? (Math.abs(paidAmount) / Math.abs(totalAmount)) * 100
       : 0;
 
   const detail: AccountStatementDetail = {
@@ -690,14 +733,13 @@ export async function getPartnerStatementDetail(
     entityName: statement.entityName,
     entityType,
     partnerRole,
-    totalOrders: statement.totalOrders,
-    totalAmount: statement.totalAmount,
-    paidAmount: statement.paidAmount,
-    pendingAmount:
-      statement.pendingAmount ?? Math.abs(statement.currentBalance ?? 0),
+    totalOrders,
+    totalAmount,
+    paidAmount,
+    pendingAmount,
     currentBalance: balance,
-    overdueAmount: statement.overdueAmount ?? 0,
-    creditLimit: statement.creditLimit ?? 0,
+    overdueAmount,
+    creditLimit,
     paymentTerms: statement.paymentTerms ?? '30天',
     status: normaliseStatementStatus(statement.status),
     lastTransactionDate: statement.lastTransactionDate ?? undefined,

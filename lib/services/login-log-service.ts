@@ -282,6 +282,15 @@ export async function getRecentLoginLogs(
 
     const records = await prisma.loginLog.findMany({
       where: { username },
+      select: {
+        userId: true,
+        username: true,
+        type: true,
+        failureReason: true,
+        clientIp: true,
+        userAgent: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: limit,
     });

@@ -4,6 +4,7 @@
  */
 
 import type { Prisma, PrismaClient } from '@prisma/client';
+import { randomBytes } from 'node:crypto';
 import { getServerSession } from 'next-auth';
 
 import { upsertBatchSpecification } from '@/lib/api/batch-specification-handlers';
@@ -18,6 +19,7 @@ import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import type { InboundListResponse } from '@/lib/types/inbound';
 import { toISOString } from '@/lib/utils/datetime';
+import { toNumberOrNull } from '@/lib/utils/number';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
 
 let lastSequenceTimestamp = 0;
@@ -43,7 +45,12 @@ export function generateInboundRecordNumber(): string {
   const millisecondStr = now.getMilliseconds().toString().padStart(3, '0');
   const sequenceStr = sequenceCounter.toString().padStart(3, '0');
 
-  return `IN${dateStr}${timeStr}${millisecondStr}${sequenceStr}`;
+  // 追加随机数字后缀，避免多进程/多实例并发下的编号冲突
+  const randomSuffix = (randomBytes(2).readUInt16BE(0) % 10000)
+    .toString()
+    .padStart(4, '0');
+
+  return `IN${dateStr}${timeStr}${millisecondStr}${sequenceStr}${randomSuffix}`;
 }
 
 /**
@@ -201,8 +208,8 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     userId: record.userId,
     batchNumber: record.batchNumber ?? undefined,
     colorCode: record.variant?.colorCode ?? undefined,
-    unitCost: record.unitCost ?? undefined,
-    totalCost: record.totalCost ?? undefined,
+    unitCost: toNumberOrNull(record.unitCost) ?? undefined,
+    totalCost: toNumberOrNull(record.totalCost) ?? undefined,
     createdAt: toISOString(record.createdAt) || '',
     updatedAt: toISOString(record.updatedAt) || '',
 
@@ -219,7 +226,9 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
         record.product.piecesPerUnit ??
         1,
       weight:
-        record.batchSpecification?.weight ?? record.product.weight ?? undefined,
+        toNumberOrNull(
+          record.batchSpecification?.weight ?? record.product.weight
+        ) ?? undefined,
     },
 
     // 批次规格参数信息（如果存在）
@@ -232,8 +241,9 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
               record.batchSpecification.piecesPerUnit ??
               record.product.piecesPerUnit ??
               1,
-            weight: record.batchSpecification.weight ?? undefined,
-            thickness: record.batchSpecification.thickness ?? undefined,
+            weight: toNumberOrNull(record.batchSpecification.weight) ?? undefined,
+            thickness:
+              toNumberOrNull(record.batchSpecification.thickness) ?? undefined,
           }
         : undefined,
 
@@ -372,6 +382,9 @@ export async function createInboundRecord(
     weight?: number; // 产品重量（入库时确定）
     unitCost?: number; // 单位成本（期初/采购入库）
     totalCost?: number; // 总成本（冗余，便于报表）
+    purchaseOrderId?: string;
+    purchaseOrderItemId?: string;
+    supplierId?: string;
   },
   userId: string,
   tx?: Omit<
@@ -424,6 +437,9 @@ export async function createInboundRecord(
       unitCost: typeof data.unitCost === 'number' ? data.unitCost : null,
       totalCost: typeof data.totalCost === 'number' ? data.totalCost : null,
       userId,
+      purchaseOrderId: data.purchaseOrderId || null,
+      purchaseOrderItemId: data.purchaseOrderItemId || null,
+      supplierId: data.supplierId || null,
     },
     select: INBOUND_RECORD_SELECT,
   });
@@ -433,6 +449,7 @@ export async function createInboundRecord(
     recordNumber: inboundRecord.recordNumber,
     productId: inboundRecord.productId,
     variantId: inboundRecord.variantId || undefined,
+    supplierId: inboundRecord.supplierId || undefined,
     quantity: inboundRecord.quantity,
     reason: inboundRecord.reason,
     remarks: inboundRecord.remarks || '',
@@ -456,6 +473,15 @@ export async function createInboundRecord(
       id: inboundRecord.user.id,
       name: inboundRecord.user.name,
     },
+
+    supplier: inboundRecord.supplier
+      ? {
+          id: inboundRecord.supplier.id,
+          name: inboundRecord.supplier.name ?? '',
+          phone: inboundRecord.supplier.phone ?? undefined,
+          address: inboundRecord.supplier.address ?? undefined,
+        }
+      : undefined,
 
     // 保持向后兼容的扁平化字段
     productName: inboundRecord.product.name,
@@ -484,11 +510,9 @@ export async function syncProductSpecificationAsync(
         select: { weight: true },
       });
 
-      const currentWeight = product?.weight ?? null;
+      const currentWeight = toNumberOrNull(product?.weight);
       const hasDifferentWeight =
-        currentWeight === null ||
-        Number.isNaN(currentWeight) ||
-        Math.abs(currentWeight - weight) > 0.0001;
+        currentWeight === null || Math.abs(currentWeight - weight) > 0.0001;
 
       if (hasDifferentWeight) {
         updates.weight = weight;

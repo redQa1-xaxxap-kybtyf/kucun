@@ -17,6 +17,8 @@ import type {
   BatchMovementGroup,
 } from '@/lib/types/inventory';
 
+const MAX_BATCH_HISTORY_RECORDS = 5000;
+
 type BatchWhereClauses = {
   inbound: Prisma.InboundRecordWhereInput;
   outbound: Prisma.OutboundRecordWhereInput;
@@ -178,6 +180,7 @@ function fetchInboundRecords(where: Prisma.InboundRecordWhereInput) {
         },
       },
     },
+    take: MAX_BATCH_HISTORY_RECORDS,
   });
 }
 
@@ -222,6 +225,7 @@ function fetchOutboundRecords(where: Prisma.OutboundRecordWhereInput) {
         },
       },
     },
+    take: MAX_BATCH_HISTORY_RECORDS,
   });
 }
 
@@ -260,6 +264,7 @@ function fetchAdjustmentRecords(where: Prisma.InventoryAdjustmentWhereInput) {
         },
       },
     },
+    take: MAX_BATCH_HISTORY_RECORDS,
   });
 }
 
@@ -271,6 +276,7 @@ function fetchInventoryRecords(where: Prisma.InventoryWhereInput) {
       variantId: true,
       quantity: true,
     },
+    take: MAX_BATCH_HISTORY_RECORDS,
   });
 }
 

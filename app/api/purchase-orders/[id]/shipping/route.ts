@@ -80,6 +80,9 @@ export const PATCH = withAuth(async (request: NextRequest, context) => {
     const message =
       error instanceof Error ? error.message : '更新运输信息失败，请重试';
 
-    return NextResponse.json({ error: message }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 400 }
+    );
   }
 });

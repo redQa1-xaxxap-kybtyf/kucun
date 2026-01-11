@@ -6,7 +6,7 @@
 import type { Inventory } from '@/lib/types/inventory';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 
-import { formatInventoryQuantity } from './piece-calculation';
+import { formatPieceSummary } from './piece-calculation';
 
 /**
  * 获取库存状态标签
@@ -50,27 +50,31 @@ export function getStockStatusColor(
 export function getStockDisplayData(record: Inventory) {
   const availableQuantity = record.quantity - (record.reservedQuantity || 0);
 
-  // 如果没有产品信息或piecesPerUnit，使用简单的数量显示
-  const hasProductInfo = record.product && record.product.piecesPerUnit;
+  const unitLabel = record.product?.unit
+    ? PRODUCT_UNIT_LABELS[
+        record.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+      ] || record.product.unit
+    : '片';
+
+  const packaging =
+    record.batchPiecesPerUnit ?? record.product?.piecesPerUnit ?? 0;
+  const includeApprox = unitLabel === '件';
 
   return {
     availableQuantity,
     totalQuantity: record.quantity,
     reservedQuantity: record.reservedQuantity || 0,
-    formattedQuantity:
-      hasProductInfo && record.product
-        ? formatInventoryQuantity(record.quantity, record.product, false)
-        : `${record.quantity} 件`,
-    formattedAvailable:
-      hasProductInfo && record.product
-        ? formatInventoryQuantity(availableQuantity, record.product, false)
-        : `${availableQuantity} 件`,
-    unitLabel:
-      hasProductInfo && record.product?.unit
-        ? PRODUCT_UNIT_LABELS[
-            record.product.unit as keyof typeof PRODUCT_UNIT_LABELS
-          ] || record.product.unit
-        : '件',
+    formattedQuantity: formatPieceSummary(record.quantity, packaging, {
+      fallbackUnit: '片',
+      zeroDisplay: '0片',
+      includeApprox,
+    }),
+    formattedAvailable: formatPieceSummary(availableQuantity, packaging, {
+      fallbackUnit: '片',
+      zeroDisplay: '0片',
+      includeApprox,
+    }),
+    unitLabel,
     statusLabel: getStockStatusLabel(record.quantity, record.reservedQuantity),
     statusColor: getStockStatusColor(record.quantity, record.reservedQuantity),
   };

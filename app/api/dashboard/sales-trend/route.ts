@@ -60,34 +60,26 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     const { startDate, endDate } = resolveTimeRange(rawTimeRange);
 
-    // 直接按 createdAt 取出订单，再在应用层按“天”聚合
-    const orders = await prisma.salesOrder.findMany({
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      select: {
-        createdAt: true,
-        totalAmount: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      },
+    // ✅ 按“天”在数据库侧聚合，避免把整段时间范围内的订单拉回应用层
+    const rows = await prisma.$queryRaw<
+      Array<{ date: Date | string; totalAmount: unknown }>
+    >`
+      SELECT DATE(created_at) as date, COALESCE(SUM(total_amount), 0) as totalAmount
+      FROM sales_orders
+      WHERE created_at >= ${startDate}
+        AND created_at <= ${endDate}
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `;
+
+    const daily: ChartDataPoint[] = rows.map(row => {
+      const date =
+        row.date instanceof Date
+          ? toDateKey(row.date)
+          : String(row.date).slice(0, 10);
+
+      return { date, value: Number(row.totalAmount ?? 0) };
     });
-
-    const dailyMap = new Map<string, number>();
-
-    for (const order of orders) {
-      const key = toDateKey(order.createdAt);
-      const current = dailyMap.get(key) ?? 0;
-      dailyMap.set(key, current + Number(order.totalAmount ?? 0));
-    }
-
-    const daily: ChartDataPoint[] = Array.from(dailyMap.entries())
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([date, value]) => ({ date, value }));
 
     const data: SalesTrendData = {
       daily,

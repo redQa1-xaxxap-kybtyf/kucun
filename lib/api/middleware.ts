@@ -1,4 +1,4 @@
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import {
@@ -309,22 +309,17 @@ function createErrorResponse(
   details?: unknown,
   errorId?: string
 ): Response {
-  return new Response(
-    JSON.stringify({
-      success: false,
-      error: {
-        type,
-        message,
-        details: env.NODE_ENV === 'development' ? details : undefined,
-        errorId,
-        timestamp: new Date().toISOString(),
-      },
-    }),
-    {
-      status: statusCode,
-      headers: { 'Content-Type': 'application/json' },
-    }
-  );
+  const response = {
+    success: false,
+    error: message,
+    code: type,
+    ...(errorId && { errorId }),
+    ...(env.NODE_ENV === 'development' && details !== undefined
+      ? { details: Array.isArray(details) ? details : [details] }
+      : {}),
+  };
+
+  return NextResponse.json(response, { status: statusCode });
 }
 
 /**

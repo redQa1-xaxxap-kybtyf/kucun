@@ -19,10 +19,12 @@ export const returnOrderItemSchema = z
     productionDate: z.string().optional(),
     returnQuantity: z
       .number()
-      .min(0.01, '退货数量必须大于0')
+      .int('退货数量必须为整数')
+      .min(1, '退货数量必须大于0')
       .max(999999, '退货数量不能超过999999'),
     damagedQuantity: z
       .number()
+      .int('破损数量必须为整数')
       .min(0, '破损数量不能为负数')
       .max(999999, '破损数量不能超过999999')
       .optional(),

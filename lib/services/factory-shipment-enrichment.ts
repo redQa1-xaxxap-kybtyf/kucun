@@ -24,9 +24,9 @@ export async function enrichFactoryShipmentOrders(
       factoryShipmentOrderId: { in: orderIds },
       queryStatus: 'success',
     },
-    orderBy: {
-      queriedAt: 'desc',
-    },
+    distinct: ['factoryShipmentOrderId'],
+    orderBy: [{ factoryShipmentOrderId: 'asc' }, { queriedAt: 'desc' }],
+    take: orderIds.length,
     select: {
       factoryShipmentOrderId: true,
       status: true,

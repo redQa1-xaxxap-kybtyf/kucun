@@ -158,6 +158,7 @@ export const POST = withAuth(async (request: NextRequest) => {
           },
         },
       },
+      take: allSkus.length,
     });
 
     // 创建SKU到变体的映射
@@ -241,6 +242,7 @@ async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
       },
       select: { sku: true },
       orderBy: { sku: 'asc' },
+      take: 1000,
     });
 
     const existingSkuSet = new Set(existingSkus.map(v => v.sku));

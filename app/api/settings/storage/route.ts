@@ -114,6 +114,11 @@ export const GET = withAuth(
             ],
           },
         },
+        select: {
+          key: true,
+          value: true,
+        },
+        take: 10,
       });
 
       // 构建配置对象

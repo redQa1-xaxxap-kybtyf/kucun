@@ -43,7 +43,8 @@ export const userRegisterSchema = z.object({
     .max(100, { message: '密码不能超过100个字符' })
     .regex(/[A-Z]/, { message: '密码必须包含至少一个大写字母' })
     .regex(/[a-z]/, { message: '密码必须包含至少一个小写字母' })
-    .regex(/[0-9]/, { message: '密码必须包含至少一个数字' }),
+    .regex(/[0-9]/, { message: '密码必须包含至少一个数字' })
+    .regex(/[^A-Za-z0-9]/, { message: '密码必须包含至少一个特殊字符' }),
 
   name: z
     .string({ message: '姓名必须是字符串' })
@@ -76,7 +77,8 @@ export const createUserSchema = z
       .max(100, { message: '密码不能超过100个字符' })
       .regex(/[A-Z]/, { message: '密码必须包含至少一个大写字母' })
       .regex(/[a-z]/, { message: '密码必须包含至少一个小写字母' })
-      .regex(/[0-9]/, { message: '密码必须包含至少一个数字' }),
+      .regex(/[0-9]/, { message: '密码必须包含至少一个数字' })
+      .regex(/[^A-Za-z0-9]/, { message: '密码必须包含至少一个特殊字符' }),
 
     confirmPassword: z.string({ message: '确认密码必须是字符串' }),
 
@@ -131,6 +133,7 @@ export const updateUserSchema = z
       .regex(/[A-Z]/, '密码必须包含至少一个大写字母')
       .regex(/[a-z]/, '密码必须包含至少一个小写字母')
       .regex(/[0-9]/, '密码必须包含至少一个数字')
+      .regex(/[^A-Za-z0-9]/, '密码必须包含至少一个特殊字符')
       .optional(),
 
     confirmPassword: z.string().optional(),
@@ -215,7 +218,8 @@ export const changePasswordSchema = z
       .max(100, { message: '新密码不能超过100个字符' })
       .regex(/[A-Z]/, { message: '新密码必须包含至少一个大写字母' })
       .regex(/[a-z]/, { message: '新密码必须包含至少一个小写字母' })
-      .regex(/[0-9]/, { message: '新密码必须包含至少一个数字' }),
+      .regex(/[0-9]/, { message: '新密码必须包含至少一个数字' })
+      .regex(/[^A-Za-z0-9]/, { message: '新密码必须包含至少一个特殊字符' }),
 
     confirmNewPassword: z
       .string({ message: '请确认新密码' })
@@ -252,6 +256,10 @@ export const validatePassword = (
     errors.push('密码至少8个字符');
   }
 
+  if (password.length > 100) {
+    errors.push('密码不能超过100个字符');
+  }
+
   if (!/[A-Z]/.test(password)) {
     errors.push('必须包含至少一个大写字母');
   }
@@ -262,6 +270,10 @@ export const validatePassword = (
 
   if (!/[0-9]/.test(password)) {
     errors.push('必须包含至少一个数字');
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    errors.push('必须包含至少一个特殊字符');
   }
 
   return {

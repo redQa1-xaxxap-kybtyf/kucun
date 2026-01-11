@@ -7,6 +7,7 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 退款处理幂等性键生成
@@ -154,12 +155,16 @@ export async function processRefundWithLock(
       throw new Error('退款记录不存在');
     }
 
+    const refundAmount = toNumber(refund.refundAmount);
+    const processedAmount = toNumber(refund.processedAmount);
+    const remainingAmount = toNumber(refund.remainingAmount);
+
     // 验证状态
     if (refund.status === 'completed') {
       return {
         success: false,
         refundId,
-        processedAmount: refund.processedAmount,
+        processedAmount,
         remainingAmount: 0,
         status: 'completed',
         message: '退款已完成，无需重复处理',
@@ -171,7 +176,7 @@ export async function processRefundWithLock(
         success: false,
         refundId,
         processedAmount: 0,
-        remainingAmount: refund.refundAmount,
+        remainingAmount: refundAmount,
         status: 'rejected',
         message: '退款已拒绝',
       };
@@ -187,18 +192,18 @@ export async function processRefundWithLock(
 
     if (status === 'rejected') {
       // ✅ 拒绝操作：不修改金额，只更新状态
-      processedAmountToPersist = refund.processedAmount;
-      remainingAmountToPersist = refund.remainingAmount;
+      processedAmountToPersist = processedAmount;
+      remainingAmountToPersist = remainingAmount;
       finalStatus = 'rejected';
     } else {
       // 批准操作：计算新的处理金额
-      const newProcessedAmount = refund.processedAmount + processAmount;
-      const newRemainingAmount = refund.refundAmount - newProcessedAmount;
+      const newProcessedAmount = processedAmount + processAmount;
+      const newRemainingAmount = refundAmount - newProcessedAmount;
 
       // 验证金额（除非抹平剩余金额）
-      if (!shouldCloseRemaining && newProcessedAmount > refund.refundAmount) {
+      if (!shouldCloseRemaining && newProcessedAmount > refundAmount) {
         throw new Error(
-          `处理金额超出剩余金额。剩余: ￥${refund.remainingAmount.toFixed(2)}, 尝试处理: ￥${processAmount.toFixed(2)}`
+          `处理金额超出剩余金额。剩余: ￥${remainingAmount.toFixed(2)}, 尝试处理: ￥${processAmount.toFixed(2)}`
         );
       }
 
@@ -209,7 +214,7 @@ export async function processRefundWithLock(
           throw new Error('抹平剩余金额时，处理金额必须大于0');
         }
         finalStatus = 'completed';
-        processedAmountToPersist = refund.refundAmount;
+        processedAmountToPersist = refundAmount;
         remainingAmountToPersist = 0;
       } else if (newRemainingAmount <= 0) {
         finalStatus = 'completed';
@@ -240,8 +245,8 @@ export async function processRefundWithLock(
       return {
         success: false,
         refundId,
-        processedAmount: refund.processedAmount,
-        remainingAmount: refund.remainingAmount,
+        processedAmount,
+        remainingAmount,
         status: 'conflict',
         message: '退款记录已被其他操作修改，请重试',
       };
@@ -354,11 +359,19 @@ export async function validateRefundProcessable(
     };
   }
 
+  const normalizedRefund = {
+    id: refund.id,
+    status: refund.status,
+    refundAmount: toNumber(refund.refundAmount),
+    processedAmount: toNumber(refund.processedAmount),
+    remainingAmount: toNumber(refund.remainingAmount),
+  };
+
   if (refund.status === 'completed') {
     return {
       valid: false,
       reason: '退款已完成',
-      refund,
+      refund: normalizedRefund,
     };
   }
 
@@ -366,20 +379,20 @@ export async function validateRefundProcessable(
     return {
       valid: false,
       reason: '退款已拒绝',
-      refund,
+      refund: normalizedRefund,
     };
   }
 
-  if (refund.remainingAmount <= 0) {
+  if (normalizedRefund.remainingAmount <= 0) {
     return {
       valid: false,
       reason: '无剩余金额可处理',
-      refund,
+      refund: normalizedRefund,
     };
   }
 
   return {
     valid: true,
-    refund,
+    refund: normalizedRefund,
   };
 }

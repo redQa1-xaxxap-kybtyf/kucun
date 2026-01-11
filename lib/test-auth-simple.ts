@@ -52,6 +52,7 @@ async function testAuthenticationSimple() {
         role: true,
         status: true,
       },
+      take: userCount,
     });
 
     console.log(`   ✅ 查询到 ${users.length} 个用户:`);
@@ -239,7 +240,11 @@ async function testAuthenticationSimple() {
 }
 
 // 如果直接运行此文件，执行测试
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   testAuthenticationSimple()
     .then(() => {
       console.log('\n✅ 认证测试成功完成');

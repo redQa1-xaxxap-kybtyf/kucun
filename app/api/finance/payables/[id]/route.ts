@@ -1,6 +1,7 @@
 // 单个应付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { resolveParams } from '@/lib/api/middleware';
@@ -9,6 +10,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import type { PayableRecordDetail } from '@/lib/types/payable';
+import { toNumber } from '@/lib/utils/number';
 import { updatePayableRecordSchema } from '@/lib/validations/payable';
 
 type PayableParams = { id: string };
@@ -30,20 +32,168 @@ const payableInclude = {
     },
   },
   paymentOutRecords: {
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
+    select: {
+      id: true,
+      paymentNumber: true,
+      payableRecordId: true,
+      supplierId: true,
+      userId: true,
+      paymentAmount: true,
+      paymentDate: true,
+      paymentMethod: true,
+      status: true,
+      remarks: true,
+      voucherNumber: true,
+      bankInfo: true,
+      createdAt: true,
+      updatedAt: true,
     },
-    orderBy: {
-      paymentDate: 'desc' as const,
-    },
+    orderBy: { paymentDate: 'desc' as const },
   },
 };
+
+type PayableRecordWithInclude = Prisma.PayableRecordGetPayload<{
+  include: typeof payableInclude;
+}>;
+
+const PAYABLE_SOURCE_TYPES = [
+  'purchase_order',
+  'factory_shipment',
+  'sales_order',
+  'service',
+  'other',
+] as const satisfies ReadonlyArray<PayableRecordDetail['sourceType']>;
+
+const PAYABLE_STATUSES = [
+  'pending',
+  'partial',
+  'paid',
+  'overdue',
+  'cancelled',
+] as const satisfies ReadonlyArray<PayableRecordDetail['status']>;
+
+const PAYMENT_OUT_STATUSES = [
+  'pending',
+  'confirmed',
+  'cancelled',
+] as const satisfies ReadonlyArray<
+  PayableRecordDetail['paymentOutRecords'][number]['status']
+>;
+
+const PAYMENT_OUT_METHODS = [
+  'cash',
+  'bank_transfer',
+  'alipay',
+  'wechat',
+  'check',
+  'other',
+] as const satisfies ReadonlyArray<
+  PayableRecordDetail['paymentOutRecords'][number]['paymentMethod']
+>;
+
+function normalizePayableSourceType(
+  value: string
+): PayableRecordDetail['sourceType'] {
+  return (PAYABLE_SOURCE_TYPES as readonly string[]).includes(value)
+    ? (value as PayableRecordDetail['sourceType'])
+    : 'other';
+}
+
+function normalizePayableStatus(value: string): PayableRecordDetail['status'] {
+  return (PAYABLE_STATUSES as readonly string[]).includes(value)
+    ? (value as PayableRecordDetail['status'])
+    : 'pending';
+}
+
+function normalizePaymentOutStatus(
+  value: string
+): PayableRecordDetail['paymentOutRecords'][number]['status'] {
+  return (PAYMENT_OUT_STATUSES as readonly string[]).includes(value)
+    ? (value as PayableRecordDetail['paymentOutRecords'][number]['status'])
+    : 'pending';
+}
+
+function normalizePaymentOutMethod(
+  value: string
+): PayableRecordDetail['paymentOutRecords'][number]['paymentMethod'] {
+  return (PAYMENT_OUT_METHODS as readonly string[]).includes(value)
+    ? (value as PayableRecordDetail['paymentOutRecords'][number]['paymentMethod'])
+    : 'other';
+}
+
+function serializePayableRecordDetail(
+  payable: PayableRecordWithInclude
+): PayableRecordDetail {
+  return {
+    id: payable.id,
+    payableNumber: payable.payableNumber,
+    supplierId: payable.supplierId,
+    userId: payable.userId,
+    sourceType: normalizePayableSourceType(payable.sourceType),
+    ...(payable.sourceId !== null && payable.sourceId !== undefined
+      ? { sourceId: payable.sourceId }
+      : {}),
+    ...(payable.sourceNumber !== null && payable.sourceNumber !== undefined
+      ? { sourceNumber: payable.sourceNumber }
+      : {}),
+    payableAmount: toNumber(payable.payableAmount),
+    paidAmount: toNumber(payable.paidAmount),
+    remainingAmount: toNumber(payable.remainingAmount),
+    ...(payable.dueDate !== null && payable.dueDate !== undefined
+      ? { dueDate: payable.dueDate }
+      : {}),
+    status: normalizePayableStatus(payable.status),
+    paymentTerms: payable.paymentTerms,
+    ...(payable.description !== null && payable.description !== undefined
+      ? { description: payable.description }
+      : {}),
+    ...(payable.remarks !== null && payable.remarks !== undefined
+      ? { remarks: payable.remarks }
+      : {}),
+    createdAt: payable.createdAt,
+    updatedAt: payable.updatedAt,
+    supplier: {
+      id: payable.supplier.id,
+      name: payable.supplier.name,
+      ...(payable.supplier.phone !== null && payable.supplier.phone !== undefined
+        ? { phone: payable.supplier.phone }
+        : {}),
+      ...(payable.supplier.address !== null &&
+      payable.supplier.address !== undefined
+        ? { address: payable.supplier.address }
+        : {}),
+    },
+    user: {
+      id: payable.user.id,
+      name: payable.user.name,
+      email: payable.user.email ?? '',
+    },
+    paymentOutRecords: payable.paymentOutRecords.map(payment => ({
+      id: payment.id,
+      paymentNumber: payment.paymentNumber,
+      ...(payment.payableRecordId !== null && payment.payableRecordId !== undefined
+        ? { payableRecordId: payment.payableRecordId }
+        : {}),
+      supplierId: payment.supplierId,
+      userId: payment.userId,
+      paymentMethod: normalizePaymentOutMethod(payment.paymentMethod),
+      paymentAmount: toNumber(payment.paymentAmount),
+      paymentDate: payment.paymentDate,
+      status: normalizePaymentOutStatus(payment.status),
+      ...(payment.remarks !== null && payment.remarks !== undefined
+        ? { remarks: payment.remarks }
+        : {}),
+      ...(payment.voucherNumber !== null && payment.voucherNumber !== undefined
+        ? { voucherNumber: payment.voucherNumber }
+        : {}),
+      ...(payment.bankInfo !== null && payment.bankInfo !== undefined
+        ? { bankInfo: payment.bankInfo }
+        : {}),
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    })),
+  };
+}
 
 /**
  * GET /api/finance/payables/[id] - 获取单个应付款记录详情
@@ -71,7 +221,7 @@ const getPayableHandler = withAuth(
 
       return NextResponse.json({
         success: true,
-        data: payable as PayableRecordDetail,
+        data: serializePayableRecordDetail(payable),
       });
     } catch (error) {
       logger.error(
@@ -141,7 +291,7 @@ const putPayableHandler = withAuth(
 
       if (
         updateData.payableAmount !== undefined &&
-        updateData.payableAmount < existingPayable.paidAmount
+        updateData.payableAmount < toNumber(existingPayable.paidAmount)
       ) {
         return NextResponse.json(
           { success: false, error: '应付金额不能小于已付金额' },
@@ -149,10 +299,12 @@ const putPayableHandler = withAuth(
         );
       }
 
+      const existingPaidAmount = toNumber(existingPayable.paidAmount);
+      const existingPayableAmount = toNumber(existingPayable.payableAmount);
       const remainingAmount =
         updateData.payableAmount !== undefined
-          ? updateData.payableAmount - existingPayable.paidAmount
-          : existingPayable.payableAmount - existingPayable.paidAmount;
+          ? updateData.payableAmount - existingPaidAmount
+          : existingPayableAmount - existingPaidAmount;
 
       const updatedPayable = await prisma.payableRecord.update({
         where: { id },
@@ -165,7 +317,7 @@ const putPayableHandler = withAuth(
 
       return NextResponse.json({
         success: true,
-        data: updatedPayable as PayableRecordDetail,
+        data: serializePayableRecordDetail(updatedPayable),
         message: '应付款记录更新成功',
       });
     } catch (error) {
@@ -217,7 +369,7 @@ const deletePayableHandler = withAuth(
       }
 
       if (
-        existingPayable.paidAmount > 0 ||
+        toNumber(existingPayable.paidAmount) > 0 ||
         existingPayable.paymentOutRecords.length > 0
       ) {
         return NextResponse.json(

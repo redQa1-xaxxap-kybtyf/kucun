@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import { Prisma as PrismaClient, type Prisma } from '@prisma/client';
 
 import {
   executeInvalidation,
@@ -12,6 +12,7 @@ import { ensureCompanyExpenses } from '@/lib/services/expense-service';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+import { toNumber } from '@/lib/utils/number';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 import {
@@ -160,10 +161,6 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       }
     }
 
-    if (shouldReserveInventory(validatedData, transferMode)) {
-      await reserveInventory(tx, validatedData, transferMode);
-    }
-
     const salesOrder = await tx.salesOrder.create({
       data: {
         orderNumber,
@@ -194,6 +191,73 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       },
       select: createSelect,
     });
+
+    if (shouldReserveInventory(validatedData, transferMode)) {
+      const reservationInput = {
+        ...validatedData,
+        items: salesOrder.items.map(item => ({
+          id: item.id,
+          productId: item.productId ?? undefined,
+          variantId: item.variantId ?? undefined,
+          batchNumber: item.batchNumber ?? undefined,
+          colorCode: item.colorCode ?? undefined,
+          productionDate: item.productionDate ?? undefined,
+          quantity: Number(item.quantity ?? 0),
+          localQuantity: Number(item.localQuantity ?? 0),
+          isManualProduct: Boolean(item.isManualProduct),
+        })),
+      };
+
+      const reservations = await reserveInventory(
+        tx,
+        reservationInput as any,
+        transferMode
+      );
+
+      const itemsById = new Map(salesOrder.items.map(item => [item.id, item]));
+      for (const reservation of reservations) {
+        if (!reservation.salesOrderItemId) {
+          continue;
+        }
+
+        const orderItem = itemsById.get(reservation.salesOrderItemId);
+        if (!orderItem) {
+          continue;
+        }
+
+        const updateData: {
+          variantId?: string | null;
+          batchNumber?: string | null;
+        } = {};
+
+        if (!orderItem.variantId && reservation.variantId) {
+          updateData.variantId = reservation.variantId;
+        }
+
+        const existingBatchNumber = (orderItem.batchNumber ?? '').trim();
+        const reservedBatchNumber = (reservation.batchNumber ?? '').trim();
+        if (
+          existingBatchNumber.length === 0 &&
+          reservedBatchNumber.length > 0
+        ) {
+          updateData.batchNumber = reservedBatchNumber;
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await tx.salesOrderItem.update({
+            where: { id: orderItem.id },
+            data: updateData,
+          });
+
+          if (updateData.variantId) {
+            orderItem.variantId = updateData.variantId;
+          }
+          if (updateData.batchNumber) {
+            orderItem.batchNumber = updateData.batchNumber;
+          }
+        }
+      }
+    }
 
     // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
     if (
@@ -256,12 +320,17 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       }
     }
 
-    if (
-      salesOrder.status === 'confirmed' &&
-      Number(financials.totalAmount) > 0
-    ) {
+    const roundedTotalAmount = Number(Number(financials.totalAmount ?? 0).toFixed(2));
+    const roundedRoundingAmount = Number(
+      Number(financials.roundingAdjustment ?? 0).toFixed(2)
+    );
+    const actualOrderDue = Number(
+      (roundedTotalAmount + roundedRoundingAmount).toFixed(2)
+    );
+
+    if (salesOrder.status === 'confirmed' && actualOrderDue > 0) {
       const paymentNumber = await generatePaymentNumber(tx);
-      const paymentAmount = Number(financials.totalAmount);
+      const paymentAmount = roundedTotalAmount;
       await tx.paymentRecord.create({
         data: {
           paymentNumber,
@@ -272,7 +341,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
           paymentMethod: 'cash',
           paymentAmount,
           actualPaymentAmount: 0,
-          roundingAmount: Number(financials.roundingAdjustment),
+          roundingAmount: roundedRoundingAmount,
           appliedAmount: 0,
           paymentDate: new Date(),
           status: 'pending',
@@ -286,7 +355,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
         tx,
         validatedData.customerId,
         salesOrder.id,
-        financials.totalAmount,
+        actualOrderDue,
         validatedData.prepaymentAmount ?? undefined
       );
 
@@ -298,7 +367,9 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
           },
         });
 
-        salesOrder.paidAmount = prepaymentResult.totalApplied;
+        salesOrder.paidAmount = new PrismaClient.Decimal(
+          prepaymentResult.totalApplied
+        );
       }
     }
 
@@ -319,15 +390,20 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
 
   const ledgerEligibleStatuses = new Set(['confirmed', 'shipped', 'completed']);
   const totalAmount = Number(order.totalAmount ?? 0);
+  const roundingAdjustment = toNumber(
+    (order as { roundingAdjustment?: unknown }).roundingAdjustment,
+    0
+  );
+  const actualOrderDue = Number((totalAmount + roundingAdjustment).toFixed(2));
 
-  if (ledgerEligibleStatuses.has(order.status) && totalAmount > 0) {
+  if (ledgerEligibleStatuses.has(order.status) && actualOrderDue > 0) {
     try {
       await recordPartnerTransaction({
         partnerId: order.customerId,
         partnerRole: 'customer',
         entityType: 'customer',
         transactionType: 'sale',
-        amount: totalAmount,
+        amount: actualOrderDue,
         referenceId: order.id,
         referenceNumber: order.orderNumber,
         description: `销售订单 ${order.orderNumber} 创建并已确认`,
@@ -361,6 +437,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       piecesPerUnit: true,
       weight: true,
     },
+    take: productIds.length,
   });
 
   const productsMap = new Map<
@@ -374,7 +451,15 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       piecesPerUnit: number;
       weight: number | null;
     }
-  >(products.map(p => [p.id, p]));
+  >(
+    products.map(p => [
+      p.id,
+      {
+        ...p,
+        weight: p.weight === null ? null : Number(p.weight),
+      },
+    ])
+  );
 
   return mapCreatedOrder(order, productsMap);
 }

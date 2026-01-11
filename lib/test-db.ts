@@ -1,5 +1,7 @@
 import { getDatabaseStats, prisma, testDatabaseConnection } from './db';
 
+const PREVIEW_TAKE = 50;
+
 async function testDatabase() {
   console.log('🧪 开始数据库测试...');
 
@@ -33,6 +35,7 @@ async function testDatabase() {
         role: true,
         status: true,
       },
+      take: PREVIEW_TAKE,
     });
     console.log(`✅ 查询到 ${users.length} 个用户:`);
     users.forEach(user => {
@@ -51,6 +54,7 @@ async function testDatabase() {
         piecesPerUnit: true,
         status: true,
       },
+      take: PREVIEW_TAKE,
     });
     console.log(`✅ 查询到 ${products.length} 个产品:`);
     products.forEach(product => {
@@ -68,6 +72,7 @@ async function testDatabase() {
         phone: true,
         address: true,
       },
+      take: PREVIEW_TAKE,
     });
     console.log(`✅ 查询到 ${customers.length} 个客户:`);
     customers.forEach(customer => {
@@ -90,6 +95,7 @@ async function testDatabase() {
           },
         },
       },
+      take: PREVIEW_TAKE,
     });
     console.log(`✅ 查询到 ${inventory.length} 条库存记录:`);
     inventory.forEach(item => {
@@ -118,6 +124,7 @@ async function testDatabase() {
           },
         },
       },
+      take: PREVIEW_TAKE,
     });
     console.log(`✅ 查询到 ${inboundRecords.length} 条入库记录:`);
     inboundRecords.forEach(record => {
@@ -140,6 +147,7 @@ async function testDatabase() {
           },
         },
       },
+      take: PREVIEW_TAKE,
     });
     console.log('📦 产品库存汇总:');
     productInventory.forEach(product => {
@@ -167,7 +175,11 @@ async function testDatabase() {
 }
 
 // 如果直接运行此文件，执行测试
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   testDatabase()
     .then(() => {
       console.log('\n✅ 测试成功完成');

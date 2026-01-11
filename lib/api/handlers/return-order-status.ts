@@ -7,6 +7,7 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { toNumber } from '@/lib/utils/number';
 
 const roundCurrency = (value: number): number =>
   Math.round(Number(value || 0) * 100) / 100;
@@ -238,28 +239,24 @@ export async function updateReturnOrderStatus(
           const aggregatedAmount = Number(aggregated._sum.subtotal ?? 0);
           if (aggregatedAmount > 0) {
             computedRefundAmount = aggregatedAmount;
-          } else if (
-            typeof order.totalAmount === 'number' &&
-            order.totalAmount > 0
-          ) {
-            computedRefundAmount = order.totalAmount;
+          } else {
+            const orderTotalAmount = toNumber(order.totalAmount, 0);
+            if (orderTotalAmount > 0) {
+              computedRefundAmount = orderTotalAmount;
+            }
           }
         }
 
         // 同步回退货订单上的退款金额，确保后续查询一致
+        const currentRefundAmount = toNumber(order.refundAmount, 0);
         if (
           computedRefundAmount > 0 &&
-          (typeof order.refundAmount !== 'number' ||
-            Math.abs(order.refundAmount - computedRefundAmount) > 0.0001)
+          Math.abs(currentRefundAmount - computedRefundAmount) > 0.0001
         ) {
           await tx.returnOrder.update({
             where: { id: orderId },
             data: { refundAmount: computedRefundAmount },
           });
-          order = {
-            ...order,
-            refundAmount: computedRefundAmount,
-          };
         }
 
         if (computedRefundAmount > 0) {
@@ -271,7 +268,7 @@ export async function updateReturnOrderStatus(
           });
 
           if (existingRefund) {
-            const processedAmount = existingRefund.processedAmount ?? 0;
+            const processedAmount = toNumber(existingRefund.processedAmount, 0);
             const remainingAmount = Math.max(
               Number((computedRefundAmount - processedAmount).toFixed(6)),
               0

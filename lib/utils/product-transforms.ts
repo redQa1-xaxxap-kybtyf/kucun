@@ -18,6 +18,7 @@ import type {
   ProductCategory,
   ProductImage,
 } from '@/lib/types/product';
+import { toNumberOrNull } from '@/lib/utils/number';
 
 // ==================== 图片JSON解析 ====================
 
@@ -98,8 +99,8 @@ export function toProductResponse(dbProduct: {
   description: string | null;
   unit: string;
   piecesPerUnit: number;
-  weight: number | null;
-  thickness: number | null;
+  weight: unknown | null;
+  thickness: unknown | null;
   status: string;
   categoryId: string | null;
   thumbnailUrl: string | null;
@@ -116,8 +117,8 @@ export function toProductResponse(dbProduct: {
     description: dbProduct.description ?? undefined,
     unit: dbProduct.unit as Product['unit'],
     piecesPerUnit: dbProduct.piecesPerUnit,
-    weight: dbProduct.weight ?? undefined,
-    thickness: dbProduct.thickness ?? undefined,
+    weight: toNumberOrNull(dbProduct.weight) ?? undefined,
+    thickness: toNumberOrNull(dbProduct.thickness) ?? undefined,
     status: dbProduct.status as Product['status'],
     categoryId: dbProduct.categoryId ?? undefined,
     thumbnailUrl: dbProduct.thumbnailUrl ?? undefined,

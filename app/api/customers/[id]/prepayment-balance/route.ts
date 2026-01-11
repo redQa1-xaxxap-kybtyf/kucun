@@ -6,6 +6,8 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
+const MAX_PREPAYMENT_RECORDS = 5000;
+
 /**
  * 获取客户预收款可用余额
  * GET /api/customers/[id]/prepayment-balance
@@ -15,45 +17,50 @@ const getPrepaymentBalanceHandler = withErrorHandling(
     async (_request: NextRequest, context) => {
       const { id: customerId } = await resolveParams(context?.params);
 
-      // 查询客户所有预收款记录
-      const prepayments = await prisma.paymentRecord.findMany({
-        where: {
-          customerId,
-          paymentType: 'prepayment',
-          status: {
-            in: ['confirmed', 'applied'], // 已确认和部分已冲抵的预收款
+      const prepaymentWhere = {
+        customerId,
+        paymentType: 'prepayment',
+        status: {
+          in: ['confirmed', 'applied'], // 已确认和部分已冲抵的预收款
+        },
+      };
+
+      const [prepaymentStats, prepayments] = await Promise.all([
+        prisma.paymentRecord.aggregate({
+          where: prepaymentWhere,
+          _count: { id: true },
+          _sum: {
+            paymentAmount: true,
+            appliedAmount: true,
           },
-        },
-        select: {
-          id: true,
-          paymentAmount: true,
-          appliedAmount: true,
-          paymentDate: true,
-          status: true,
-        },
-        orderBy: {
-          paymentDate: 'asc', // FIFO顺序
-        },
-      });
+        }),
+        // 查询客户预收款记录（用于展示明细）
+        prisma.paymentRecord.findMany({
+          where: prepaymentWhere,
+          select: {
+            id: true,
+            paymentAmount: true,
+            appliedAmount: true,
+            paymentDate: true,
+            status: true,
+          },
+          orderBy: {
+            paymentDate: 'asc', // FIFO顺序
+          },
+          take: MAX_PREPAYMENT_RECORDS,
+        }),
+      ]);
 
       // 计算可用余额
-      const availableBalance = prepayments.reduce((sum, record) => {
-        const available =
-          Number(record.paymentAmount) - Number(record.appliedAmount);
-        return sum + (available > 0 ? available : 0);
-      }, 0);
+      const totalAmount = Number(prepaymentStats._sum.paymentAmount ?? 0);
+      const appliedAmount = Number(prepaymentStats._sum.appliedAmount ?? 0);
+      const availableBalance = Math.max(0, totalAmount - appliedAmount);
 
       // 统计信息
       const stats = {
-        totalPrepayments: prepayments.length,
-        totalAmount: prepayments.reduce(
-          (sum, r) => sum + Number(r.paymentAmount),
-          0
-        ),
-        appliedAmount: prepayments.reduce(
-          (sum, r) => sum + Number(r.appliedAmount),
-          0
-        ),
+        totalPrepayments: prepaymentStats._count.id,
+        totalAmount,
+        appliedAmount,
         availableBalance,
       };
 

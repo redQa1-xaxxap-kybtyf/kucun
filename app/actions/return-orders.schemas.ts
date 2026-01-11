@@ -10,7 +10,8 @@ export const returnOrderItemSchema = z.object({
   productId: z.string().min(1, '产品ID不能为空'),
   returnQuantity: z
     .number()
-    .min(0.01, '退货数量必须大于0')
+    .int('退货数量必须为整数')
+    .min(1, '退货数量必须大于0')
     .max(999999, '退货数量不能超过999999'),
   originalQuantity: z.number().min(0, '原始数量不能为负数'),
   unitPrice: z

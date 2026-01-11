@@ -46,6 +46,7 @@ export async function resolveShipmentItems(
             weight: true,
             piecesPerUnit: true,
           },
+          take: productIds.length,
         })
       : [];
 

@@ -1,6 +1,15 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
+import {
+  buildDateTimeRangeFromDates,
+  parseDateRangeFromSearchParams,
+} from '@/lib/api/date-range';
+import {
+  ensureProductsExistFromItems,
+  ensureSuppliersExistByIds,
+} from '@/lib/api/entity-existence';
 import { parseOffsetPagination } from '@/lib/api/pagination';
 import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import { withAuth } from '@/lib/auth/api-helpers';
@@ -34,6 +43,7 @@ type ListParams = {
 function parseAndValidateListParams(request: NextRequest): ListParams {
   const { searchParams } = request.nextUrl;
   const { page, limit } = parseOffsetPagination(searchParams);
+  const { startDate, endDate } = parseDateRangeFromSearchParams(searchParams);
   const raw = {
     page,
     limit,
@@ -42,12 +52,8 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
     supplierId: searchParams.get('supplierId') || undefined,
     containerNumber: searchParams.get('containerNumber') || undefined,
     orderNumber: searchParams.get('orderNumber') || undefined,
-    startDate: searchParams.get('startDate')
-      ? new Date(searchParams.get('startDate') || '')
-      : undefined,
-    endDate: searchParams.get('endDate')
-      ? new Date(searchParams.get('endDate') || '')
-      : undefined,
+    startDate,
+    endDate,
     fulfillment: searchParams.get('fulfillment') || undefined,
   };
 
@@ -96,10 +102,12 @@ function buildWhere(params: ListParams): Prisma.PurchaseOrderWhereInput {
     if (params.orderNumber)
       where.orderNumber = { contains: params.orderNumber };
   }
-  if (params.startDate || params.endDate) {
-    where.createdAt = {};
-    if (params.startDate) where.createdAt.gte = params.startDate;
-    if (params.endDate) where.createdAt.lte = params.endDate;
+  const createdAt = buildDateTimeRangeFromDates(
+    params.startDate,
+    params.endDate
+  );
+  if (createdAt) {
+    where.createdAt = createdAt;
   }
   return where;
 }
@@ -155,44 +163,6 @@ const orderListSelect = {
     },
   },
 } satisfies Prisma.PurchaseOrderSelect;
-
-async function ensureSuppliersExist(supplierIds: string[]) {
-  if (!supplierIds.length) return;
-  const existing = await prisma.supplier.findMany({
-    where: { id: { in: supplierIds } },
-    select: { id: true },
-  });
-  const existingIds = new Set(existing.map(s => s.id));
-  const missing = supplierIds.filter(id => !existingIds.has(id));
-  if (missing.length > 0) {
-    throw new NextResponse(
-      JSON.stringify({ error: `供应商不存在: ${missing.join(', ')}` }),
-      { status: 400 }
-    ) as unknown as Error;
-  }
-}
-
-async function ensureProductsExist(
-  items: Array<{ isManualProduct?: boolean; productId?: string | null }>
-) {
-  const inventoryItems = items.filter(
-    item => !item.isManualProduct && item.productId
-  );
-  if (inventoryItems.length === 0) return;
-  const productIds = inventoryItems.map(item => item.productId || '');
-  const existing = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-    select: { id: true },
-  });
-  const existingIds = new Set(existing.map(p => p.id));
-  const missing = productIds.filter(id => !existingIds.has(id));
-  if (missing.length > 0) {
-    throw new NextResponse(
-      JSON.stringify({ error: `产品不存在: ${missing.join(', ')}` }),
-      { status: 400 }
-    ) as unknown as Error;
-  }
-}
 
 export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
@@ -287,7 +257,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       userId: user.id,
       url: request.url,
     });
-    return NextResponse.json({ error: '获取订单列表失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '获取订单列表失败' },
+      { status: 500 }
+    );
   }
 });
 
@@ -311,7 +284,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
 
       return NextResponse.json(
-        { error: '参数验证失败', details },
+        { success: false, error: '参数验证失败', details },
         { status: 422 }
       );
     }
@@ -328,13 +301,13 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     if (uniqueSupplierIds.length === 0) {
       return NextResponse.json(
-        { error: '至少需要为一个明细选择供应商' },
+        { success: false, error: '至少需要为一个明细选择供应商' },
         { status: 400 }
       );
     }
 
-    await ensureSuppliersExist(uniqueSupplierIds);
-    await ensureProductsExist(items);
+    await ensureSuppliersExistByIds(prisma, uniqueSupplierIds);
+    await ensureProductsExistFromItems(prisma, items);
 
     // 仍然写入一个“主供应商”到订单上，用于兼容旧的统计/应付逻辑
     const primarySupplierId = uniqueSupplierIds[0];
@@ -423,10 +396,28 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
   } catch (error) {
     logger.error('purchase-orders', '创建采购订单失败', error);
 
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json({ error: '订单号已存在' }, { status: 400 });
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.type,
+          errorId: error.errorId,
+        },
+        { status: error.statusCode }
+      );
     }
 
-    return NextResponse.json({ error: '创建订单失败' }, { status: 500 });
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { success: false, error: '订单号已存在' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, error: '创建订单失败' },
+      { status: 500 }
+    );
   }
 });

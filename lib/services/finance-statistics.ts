@@ -7,14 +7,13 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import type { StatementType } from '@/lib/types/statement';
+import { toNumber } from '@/lib/utils/number';
 
 import {
   CUSTOMER_ROLES,
   SUPPLIER_ROLES,
   buildStatementWhere,
   getStatementsOrderBy,
-  includesCustomerRole,
-  includesSupplierRole,
   mapAccountStatementToSummary,
   type FinanceOverview,
   type FinanceStatistics,
@@ -33,6 +32,52 @@ export type {
   StatementSummary,
 } from './finance-statistics-shared';
 
+const accountStatementSummarySelect = {
+  entityId: true,
+  entityName: true,
+  entityType: true,
+  partnerRole: true,
+  status: true,
+  totalOrders: true,
+  totalAmount: true,
+  paidAmount: true,
+  currentBalance: true,
+  lastTransactionDate: true,
+  lastPaymentDate: true,
+} satisfies Prisma.AccountStatementSelect;
+
+type AccountStatementSummaryRow = Prisma.AccountStatementGetPayload<{
+  select: typeof accountStatementSummarySelect;
+}>;
+
+async function fetchAccountStatementSummaries(where: Prisma.AccountStatementWhereInput) {
+  const statements: AccountStatementSummaryRow[] = [];
+  const pageSize = 2000;
+  let cursor: string | undefined;
+
+  while (true) {
+    const page = await prisma.accountStatement.findMany({
+      where,
+      select: accountStatementSummarySelect,
+      orderBy: [{ updatedAt: 'desc' }, { entityId: 'desc' }],
+      take: pageSize,
+      ...(cursor ? { cursor: { entityId: cursor }, skip: 1 } : {}),
+    });
+
+    statements.push(...page);
+    if (page.length < pageSize) {
+      break;
+    }
+
+    cursor = page[page.length - 1]?.entityId;
+    if (!cursor) {
+      break;
+    }
+  }
+
+  return statements;
+}
+
 // ==================== 核心聚合函数 ====================
 
 export async function calculateCustomerStatements(
@@ -46,10 +91,14 @@ export async function calculateCustomerStatements(
     where.entityId = { in: customerIds };
   }
 
-  const statements = await prisma.accountStatement.findMany({
-    where,
-    orderBy: { updatedAt: 'desc' },
-  });
+  const statements = customerIds?.length
+    ? await prisma.accountStatement.findMany({
+        where,
+        select: accountStatementSummarySelect,
+        orderBy: [{ updatedAt: 'desc' }, { entityId: 'desc' }],
+        take: customerIds.length,
+      })
+    : await fetchAccountStatementSummaries(where);
 
   return statements.map(statement =>
     mapAccountStatementToSummary(statement, 'customer')
@@ -67,10 +116,14 @@ export async function calculateSupplierStatements(
     where.entityId = { in: supplierIds };
   }
 
-  const statements = await prisma.accountStatement.findMany({
-    where,
-    orderBy: { updatedAt: 'desc' },
-  });
+  const statements = supplierIds?.length
+    ? await prisma.accountStatement.findMany({
+        where,
+        select: accountStatementSummarySelect,
+        orderBy: [{ updatedAt: 'desc' }, { entityId: 'desc' }],
+        take: supplierIds.length,
+      })
+    : await fetchAccountStatementSummaries(where);
 
   return statements.map(statement =>
     mapAccountStatementToSummary(statement, 'supplier')
@@ -80,51 +133,53 @@ export async function calculateSupplierStatements(
 export async function getFinanceSummary(
   filterType?: StatementType | 'all'
 ): Promise<FinanceSummary> {
-  const statements = await prisma.accountStatement.findMany({
-    select: {
-      partnerRole: true,
-      currentBalance: true,
-    },
-  });
-
   const includeCustomers =
     !filterType || filterType === 'customer' || filterType === 'partner';
   const includeSuppliers =
     !filterType || filterType === 'supplier' || filterType === 'partner';
 
-  const customerStatements = includeCustomers
-    ? statements.filter(statement =>
-        includesCustomerRole(statement.partnerRole)
-      )
-    : [];
+  const [totalCustomers, totalSuppliers, receivableAgg, payableAgg] =
+    await Promise.all([
+      includeCustomers
+        ? prisma.accountStatement.count({
+            where: { partnerRole: { in: CUSTOMER_ROLES } },
+          })
+        : Promise.resolve(0),
+      includeSuppliers
+        ? prisma.accountStatement.count({
+            where: { partnerRole: { in: SUPPLIER_ROLES } },
+          })
+        : Promise.resolve(0),
+      includeCustomers
+        ? prisma.accountStatement.aggregate({
+            where: {
+              partnerRole: { in: CUSTOMER_ROLES },
+              currentBalance: { gt: 0 },
+            },
+            _sum: { currentBalance: true },
+          })
+        : Promise.resolve(null),
+      includeSuppliers
+        ? prisma.accountStatement.aggregate({
+            where: {
+              partnerRole: { in: SUPPLIER_ROLES },
+              currentBalance: { lt: 0 },
+            },
+            _sum: { currentBalance: true },
+          })
+        : Promise.resolve(null),
+    ]);
 
-  const supplierStatements = includeSuppliers
-    ? statements.filter(statement =>
-        includesSupplierRole(statement.partnerRole)
-      )
-    : [];
-
-  const totalReceivable = customerStatements.reduce((sum, statement) => {
-    const balance = statement.currentBalance ?? 0;
-    return sum + Math.max(balance, 0);
-  }, 0);
-
-  const totalPayable = supplierStatements.reduce((sum, statement) => {
-    const balance = statement.currentBalance ?? 0;
-    return sum + Math.max(-balance, 0);
-  }, 0);
+  const totalReceivable = includeCustomers
+    ? toNumber(receivableAgg?._sum.currentBalance)
+    : 0;
+  const totalPayable = includeSuppliers
+    ? Math.abs(toNumber(payableAgg?._sum.currentBalance))
+    : 0;
 
   return {
-    totalCustomers: includeCustomers
-      ? statements.filter(statement =>
-          includesCustomerRole(statement.partnerRole)
-        ).length
-      : 0,
-    totalSuppliers: includeSuppliers
-      ? statements.filter(statement =>
-          includesSupplierRole(statement.partnerRole)
-        ).length
-      : 0,
+    totalCustomers,
+    totalSuppliers,
     totalReceivable,
     totalPayable,
   };
@@ -172,56 +227,61 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
 
   // ✅ 修复问题2：统计卡片应基于全量数据，不受分页影响
   // 1. 先查询全量数据用于统计（只查询必要字段）
-  const [total, statements, allStatementsForSummary] =
-    await prisma.$transaction([
-      prisma.accountStatement.count({ where }),
-      prisma.accountStatement.findMany({
-        where,
-        orderBy,
-        skip,
-        take: limit,
-      }),
-      // 查询全量数据用于统计（不带 skip/take）
-      prisma.accountStatement.findMany({
-        where,
-        select: {
-          currentBalance: true,
-          partnerRole: true,
-          entityId: true,
-        },
-      }),
-    ]);
+  const [
+    total,
+    statements,
+    customerCount,
+    supplierCount,
+    receivableAgg,
+    payableAgg,
+  ] = await Promise.all([
+    prisma.accountStatement.count({ where }),
+    prisma.accountStatement.findMany({
+      where,
+      orderBy,
+      skip,
+      take: limit,
+      select: accountStatementSummarySelect,
+    }),
+    prisma.accountStatement.count({
+      where: {
+        AND: [where, { partnerRole: { in: CUSTOMER_ROLES } }],
+      },
+    }),
+    prisma.accountStatement.count({
+      where: {
+        AND: [where, { partnerRole: { in: SUPPLIER_ROLES } }],
+      },
+    }),
+    prisma.accountStatement.aggregate({
+      where: {
+        AND: [
+          where,
+          { partnerRole: { in: CUSTOMER_ROLES }, currentBalance: { gt: 0 } },
+        ],
+      },
+      _sum: { currentBalance: true },
+    }),
+    prisma.accountStatement.aggregate({
+      where: {
+        AND: [
+          where,
+          { partnerRole: { in: SUPPLIER_ROLES }, currentBalance: { lt: 0 } },
+        ],
+      },
+      _sum: { currentBalance: true },
+    }),
+  ]);
 
   const mappedStatements = statements.map(statement =>
     mapAccountStatementToSummary(statement)
   );
 
-  // 2. 基于全量数据计算统计（不受分页影响）
-  const customerIds = new Set<string>();
-  const supplierIds = new Set<string>();
-  let totalReceivable = 0;
-  let totalPayable = 0;
-
-  for (const statement of allStatementsForSummary) {
-    const balance = statement.currentBalance ?? 0;
-    const role = statement.partnerRole;
-
-    if (includesCustomerRole(role)) {
-      customerIds.add(statement.entityId);
-      totalReceivable += Math.max(balance, 0);
-    }
-
-    if (includesSupplierRole(role)) {
-      supplierIds.add(statement.entityId);
-      totalPayable += Math.max(-balance, 0);
-    }
-  }
-
   const summary = {
-    totalCustomers: customerIds.size,
-    totalSuppliers: supplierIds.size,
-    totalReceivable,
-    totalPayable,
+    totalCustomers: customerCount,
+    totalSuppliers: supplierCount,
+    totalReceivable: toNumber(receivableAgg._sum.currentBalance),
+    totalPayable: Math.abs(toNumber(payableAgg._sum.currentBalance)),
   };
 
   return {
@@ -243,27 +303,25 @@ export async function getTotalReceivable(): Promise<{
   paidAmount: number;
   pendingAmount: number;
 }> {
-  const statements = await prisma.accountStatement.findMany({
-    where: { partnerRole: { in: CUSTOMER_ROLES } },
-    select: {
-      totalAmount: true,
-      paidAmount: true,
-      currentBalance: true,
-    },
-  });
+  const [totals, pending] = await Promise.all([
+    prisma.accountStatement.aggregate({
+      where: { partnerRole: { in: CUSTOMER_ROLES } },
+      _sum: {
+        totalAmount: true,
+        paidAmount: true,
+      },
+    }),
+    prisma.accountStatement.aggregate({
+      where: { partnerRole: { in: CUSTOMER_ROLES }, currentBalance: { gt: 0 } },
+      _sum: {
+        currentBalance: true,
+      },
+    }),
+  ]);
 
-  const totalAmount = statements.reduce(
-    (sum, statement) => sum + statement.totalAmount,
-    0
-  );
-  const paidAmount = statements.reduce(
-    (sum, statement) => sum + statement.paidAmount,
-    0
-  );
-  const pendingAmount = statements.reduce((sum, statement) => {
-    const balance = statement.currentBalance ?? 0;
-    return sum + Math.max(balance, 0);
-  }, 0);
+  const totalAmount = toNumber(totals._sum.totalAmount);
+  const paidAmount = toNumber(totals._sum.paidAmount);
+  const pendingAmount = toNumber(pending._sum.currentBalance);
 
   return {
     totalAmount: Math.abs(totalAmount),
@@ -281,7 +339,7 @@ export async function getTotalRefundable(): Promise<number> {
     },
   });
 
-  return result._sum.remainingAmount ?? 0;
+  return toNumber(result._sum.remainingAmount);
 }
 
 export async function getOverdueAmount(): Promise<number> {
@@ -306,7 +364,7 @@ export async function getMonthlyReceived(): Promise<number> {
     },
   });
 
-  return result._sum.amount ?? 0;
+  return toNumber(result._sum.amount);
 }
 
 export async function getOverdueCount(): Promise<number> {
@@ -319,24 +377,22 @@ export async function getFinanceOverview(): Promise<FinanceOverview> {
     receivableData,
     totalRefundable,
     monthlyReceived,
-    statementRoles,
+    receivableCount,
     refundCount,
   ] = await Promise.all([
     getTotalReceivable(),
     getTotalRefundable(),
     getMonthlyReceived(),
-    prisma.accountStatement.findMany({
-      select: { partnerRole: true, currentBalance: true },
+    prisma.accountStatement.count({
+      where: {
+        partnerRole: { in: CUSTOMER_ROLES },
+        currentBalance: { gt: 0 },
+      },
     }),
     prisma.refundRecord.count({
       where: { status: { in: ['pending', 'processing', 'completed'] } },
     }),
   ]);
-
-  const receivableCount = statementRoles.filter(statement => {
-    const balance = statement.currentBalance ?? 0;
-    return includesCustomerRole(statement.partnerRole) && balance > 0;
-  }).length;
 
   return {
     totalReceivable: receivableData.pendingAmount,
@@ -403,7 +459,7 @@ export async function getFinanceStatistics(
     _count: { id: true },
   });
 
-  const totalSalesAmount = salesOrderStats._sum.totalAmount || 0;
+  const totalSalesAmount = toNumber(salesOrderStats._sum.totalAmount);
   const totalPaymentAmount = Number(paymentStats._sum.paymentAmount ?? 0);
 
   const statisticsData: FinanceStatistics = {

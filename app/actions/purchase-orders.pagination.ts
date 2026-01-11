@@ -1,5 +1,6 @@
 import { calculatePurchaseOrderExecution } from '@/lib/api/purchase-orders/fulfillment';
 import { prisma } from '@/lib/db';
+import { userBasicSelect } from '@/lib/db/selects';
 import type { PurchaseOrderStatus } from '@/lib/types/purchase-order';
 
 export function resolvePagination(params?: { page?: number; limit?: number }) {
@@ -33,10 +34,19 @@ export async function fetchPurchaseOrderPageData(
     prisma.purchaseOrder.findMany({
       where,
       include: {
-        user: true,
+        user: {
+          select: userBasicSelect,
+        },
         items: {
           include: {
-            supplier: true,
+            supplier: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                address: true,
+              },
+            },
           },
         },
       },

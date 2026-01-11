@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
+import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 
@@ -43,24 +44,6 @@ const sortableFields: Record<
 const DEFAULT_SORT_FIELD: keyof Prisma.SalesOrderOrderByWithRelationInput =
   'createdAt';
 const DEFAULT_SORT_ORDER: Prisma.SortOrder = 'desc';
-
-const buildDateRange = (startDate?: string, endDate?: string) => {
-  if (!startDate && !endDate) {
-    return undefined;
-  }
-
-  const range: Prisma.DateTimeFilter = {};
-
-  if (startDate) {
-    range.gte = new Date(`${startDate}T00:00:00`);
-  }
-
-  if (endDate) {
-    range.lte = new Date(`${endDate}T23:59:59`);
-  }
-
-  return range;
-};
 
 const buildWhere = ({
   search,
@@ -116,7 +99,7 @@ const buildWhere = ({
     };
   }
 
-  const dateRange = buildDateRange(startDate, endDate);
+  const dateRange = buildDateTimeRangeFromDateStrings(startDate, endDate);
   if (dateRange) {
     where.createdAt = dateRange;
   }
@@ -131,7 +114,10 @@ const buildOrderBy = (params: SalesOrderQueryParams) => {
 
   orderBy[field] = params.sortOrder ?? DEFAULT_SORT_ORDER;
 
-  return [orderBy, { id: 'desc' }] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
+  return [
+    orderBy,
+    { id: 'desc' },
+  ] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
 };
 
 const mapListOrder = (
@@ -204,9 +190,18 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
       piecesPerUnit: true,
       weight: true,
     },
+    take: productIds.length,
   });
 
-  const productsMap = new Map(products.map(p => [p.id, p]));
+  const productsMap = new Map(
+    products.map(p => [
+      p.id,
+      {
+        ...p,
+        weight: p.weight === null ? null : Number(p.weight),
+      },
+    ])
+  );
 
   return {
     data: orders.map(order => mapListOrder(order, productsMap)),

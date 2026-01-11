@@ -3,6 +3,8 @@
  * 对接系统设置中的运输查询功能,实现自动状态更新
  */
 
+import type { Prisma } from '@prisma/client';
+
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -310,54 +312,73 @@ export async function updateAllShippingStatuses(): Promise<{
   };
 
   try {
-    // 查询所有"已发货"和"运输中"的订单
-    const orders = await prisma.factoryShipmentOrder.findMany({
-      where: {
-        status: {
-          in: [
-            FACTORY_SHIPMENT_STATUS.SHIPPED,
-            FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
-          ],
-        },
-        shippingCompany: {
-          not: null,
-        },
-        containerNumber: {
-          not: null,
-        },
+    const baseWhere: Prisma.FactoryShipmentOrderWhereInput = {
+      status: {
+        in: [FACTORY_SHIPMENT_STATUS.SHIPPED, FACTORY_SHIPMENT_STATUS.IN_TRANSIT],
       },
-      select: {
-        id: true,
-        orderNumber: true,
-        updatedAt: true,
+      shippingCompany: {
+        not: null,
       },
-      orderBy: {
-        updatedAt: 'asc', // 近似按上次更新排序
+      containerNumber: {
+        not: null,
       },
+    };
+
+    const skipCutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+    const [total, skipped] = await Promise.all([
+      prisma.factoryShipmentOrder.count({ where: baseWhere }),
+      prisma.factoryShipmentOrder.count({
+        where: {
+          ...baseWhere,
+          updatedAt: {
+            gt: skipCutoff,
+          },
+        },
+      }),
+    ]);
+
+    stats.total = total;
+    stats.skipped = skipped;
+
+    const processWhere: Prisma.FactoryShipmentOrderWhereInput = {
+      ...baseWhere,
+      updatedAt: { lte: skipCutoff },
+    };
+
+    const toProcess = await prisma.factoryShipmentOrder.count({
+      where: processWhere,
     });
 
-    stats.total = orders.length;
+    logger.info(
+      'shipping-tracking',
+      `找到 ${toProcess} 个订单需要查询（总计 ${total}，跳过 ${skipped} 个）`
+    );
 
-    logger.info('shipping-tracking', `找到 ${orders.length} 个订单需要查询`);
+    let cursor: string | undefined;
+    const batchSize = 200;
 
-    // 逐个更新订单状态
-    for (const order of orders) {
-      try {
-        // 避免查询过于频繁(距离上次更新少于2小时则跳过)
-        if (order.updatedAt) {
-          const hoursSinceLastUpdate =
-            (Date.now() - order.updatedAt.getTime()) / 1000 / 60 / 60;
+    while (true) {
+      const orders = await prisma.factoryShipmentOrder.findMany({
+        where: processWhere,
+        select: {
+          id: true,
+          orderNumber: true,
+          updatedAt: true,
+        },
+        orderBy: {
+          id: 'asc',
+        },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
 
-          if (hoursSinceLastUpdate < 2) {
-            logger.debug(
-              'shipping-tracking',
-              `跳过频繁查询: ${order.orderNumber}`
-            );
-            stats.skipped++;
-            continue;
-          }
-        }
+      if (orders.length === 0) {
+        break;
+      }
 
+      for (const order of orders) {
+        try {
         const updated = await updateOrderShippingStatus(order.id);
 
         if (updated) {
@@ -376,6 +397,9 @@ export async function updateAllShippingStatuses(): Promise<{
         );
         stats.failed++;
       }
+    }
+
+      cursor = orders[orders.length - 1].id;
     }
 
     logger.info('shipping-tracking', '批量更新完成', stats);

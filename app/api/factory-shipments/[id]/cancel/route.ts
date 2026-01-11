@@ -26,7 +26,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // 身份验证
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: '未授权操作' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: '未授权操作' },
+        { status: 401 }
+      );
     }
 
     // 检查订单是否存在
@@ -40,7 +43,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingOrder) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '订单不存在' },
+        { status: 404 }
+      );
     }
 
     // 验证状态：只能取消草稿、已确认、待发货状态的订单
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       existingOrder.status !== FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT
     ) {
       return NextResponse.json(
-        { error: '只能取消草稿、已确认或待发货的订单' },
+        { success: false, error: '只能取消草稿、已确认或待发货的订单' },
         { status: 400 }
       );
     }
@@ -78,6 +84,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       orderId: id,
     });
 
-    return NextResponse.json({ error: '取消订单失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '取消订单失败' },
+      { status: 500 }
+    );
   }
 }

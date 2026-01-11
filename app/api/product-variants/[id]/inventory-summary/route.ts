@@ -4,6 +4,7 @@ import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { toNumber, toNumberOrNull } from '@/lib/utils/number';
 
 interface BatchSummary {
   batchNumber: string;
@@ -84,6 +85,7 @@ export const GET = withAuth(
           { batchNumber: 'desc' },
           { batchNumber: 'asc' },
         ],
+        take: 5000,
       });
 
       // 计算汇总数据
@@ -159,7 +161,7 @@ export const GET = withAuth(
 
       // 计算平均成本
       const totalCost = inventoryRecords.reduce(
-        (sum, record) => sum + (record.unitCost || 0) * record.quantity,
+        (sum, record) => sum + toNumber(record.unitCost, 0) * record.quantity,
         0
       );
       const averageUnitCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
@@ -212,7 +214,7 @@ export const GET = withAuth(
           availableQuantity: record.quantity - record.reservedQuantity,
           location: record.location,
           batchNumber: record.batchNumber,
-          unitCost: record.unitCost,
+          unitCost: toNumberOrNull(record.unitCost),
           updatedAt: record.updatedAt,
         })),
       };

@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { paginationConfig } from '@/lib/env';
 
+import { baseValidations } from './inventory-base';
+
 /**
  * 库存查询验证规则
  * 包含库存查询、入库记录查询、出库记录查询、库存预警等API验证规则
@@ -9,8 +11,8 @@ import { paginationConfig } from '@/lib/env';
 
 // 库存可用性检查验证规则
 export const inventoryAvailabilityCheckSchema = z.object({
-  productId: z.string().min(1, '产品ID不能为空'),
-  quantity: z.number().min(1, '数量必须大于0'),
+  productId: baseValidations.productId,
+  quantity: baseValidations.quantity,
   variantId: z.string().optional(),
   batchNumber: z.string().optional(),
   location: z.string().optional(),
@@ -94,12 +96,11 @@ export const inventoryAdjustmentsQuerySchema = z
 
     reason: z
       .enum([
-        'damaged',
-        'lost',
-        'found',
-        'correction',
-        'quality_issue',
-        'expired',
+        'inventory_gain',
+        'inventory_loss',
+        'damage_loss',
+        'surplus_gain',
+        'transfer',
         'other',
       ])
       .nullable()

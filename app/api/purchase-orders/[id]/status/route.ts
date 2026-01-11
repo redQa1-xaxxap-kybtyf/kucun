@@ -21,6 +21,7 @@ import {
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 import { withIdempotency } from '@/lib/utils/idempotency';
+import { toNumber } from '@/lib/utils/number';
 import { updatePurchaseOrderStatusSchema } from '@/lib/validations/purchase-order';
 
 type PurchaseOrderParams = { id: string };
@@ -110,7 +111,10 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
     });
 
     if (!order) {
-      return NextResponse.json({ error: '采购订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '采购订单不存在' },
+        { status: 404 }
+      );
     }
 
     if (
@@ -121,6 +125,7 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
     ) {
       return NextResponse.json(
         {
+          success: false,
           error: `无法从 ${order.status} 状态变更为 ${normalizedPayload.status} 状态`,
         },
         { status: 400 }
@@ -211,9 +216,15 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
               }
 
               const inboundUnitCost = resolveInboundUnitCost({
-                unitCostWithExpense: item.unitCostWithExpense,
-                unitPrice: item.unitPrice ?? null,
-                fallback: item.unitPrice ?? 0,
+                unitCostWithExpense:
+                  item.unitCostWithExpense === null
+                    ? null
+                    : toNumber(item.unitCostWithExpense, Number.NaN),
+                unitPrice:
+                  item.unitPrice === null
+                    ? null
+                    : toNumber(item.unitPrice, Number.NaN),
+                fallback: toNumber(item.unitPrice, 0),
               });
 
               const inbound = await executeMinimalInboundTransaction(
@@ -244,8 +255,11 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
               supplierId: order.supplierId,
               userId: order.userId,
               orderNumber: order.orderNumber,
-              totalAmount: order.totalAmount,
-              expenseAmount: order.expenseAmount, // ✅ 修复：传递费用金额
+              totalAmount: toNumber(order.totalAmount, 0),
+              expenseAmount:
+                order.expenseAmount === null
+                  ? null
+                  : toNumber(order.expenseAmount, 0), // ✅ 修复：传递费用金额
             });
           }
 
@@ -276,6 +290,9 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
       userId: user.id,
       orderId,
     });
-    return NextResponse.json({ error: '更新订单状态失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '更新订单状态失败' },
+      { status: 500 }
+    );
   }
 });

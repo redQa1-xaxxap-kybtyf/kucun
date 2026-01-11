@@ -46,9 +46,9 @@ export const SALES_ORDER_FILTER_CONFIG = {
       key: 'status',
       label: '订单状态',
       options: [
-        { label: '待确认', value: 'pending' },
+        { label: '草稿', value: 'draft' },
         { label: '已确认', value: 'confirmed' },
-        { label: '生产中', value: 'in_production' },
+        { label: '已发货', value: 'shipped' },
         { label: '已完成', value: 'completed' },
         { label: '已取消', value: 'cancelled' },
       ],

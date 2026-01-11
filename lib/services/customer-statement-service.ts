@@ -29,6 +29,41 @@ const STATEMENT_PAYMENT_METHOD_LABELS: Record<string, string> = {
   other: '其他',
 };
 
+const roundCurrency = (value: number): number =>
+  Math.round(Number(value || 0) * 100) / 100;
+
+function computeReceivableBalance(params: {
+  salesAmount: number;
+  salesReturnAmount: number;
+  paymentReceived: number;
+  prepaymentReceived: number;
+  refundPaid: number;
+}): number {
+  return roundCurrency(
+    params.salesAmount -
+      params.salesReturnAmount -
+      params.paymentReceived -
+      params.prepaymentReceived +
+      params.refundPaid
+  );
+}
+
+function computePayableBalance(params: {
+  purchaseAmount: number;
+  purchaseReturnAmount: number;
+  paymentPaid: number;
+  prepaymentPaid: number;
+  refundReceived: number;
+}): number {
+  return roundCurrency(
+    params.purchaseAmount -
+      params.purchaseReturnAmount -
+      params.paymentPaid -
+      params.prepaymentPaid +
+      params.refundReceived
+  );
+}
+
 function formatStatementPaymentMethod(method?: string | null): string {
   if (!method) return '';
   return STATEMENT_PAYMENT_METHOD_LABELS[method] ?? method;
@@ -72,7 +107,7 @@ export async function getCustomerStatements(
   const skip = (page - 1) * pageSize;
 
   // 构建客户查询条件
-  const customerWhere: Record<string, unknown> = {};
+  const customerWhere: Prisma.CustomerWhereInput = {};
 
   if (customerId) {
     customerWhere.id = customerId;
@@ -82,34 +117,19 @@ export async function getCustomerStatements(
     customerWhere.name = { contains: customerName };
   }
 
-  // ✅ 性能优化：先在 SQL 层进行分页，只查询当前页需要的客户
-  // 这样可以避免全表扫描和 O(N) 的数据库查询
-
-  // 1. 先获取符合条件的客户总数（用于分页计算）
-  const totalCustomers = await prisma.customer.count({
-    where: customerWhere,
-  });
-
-  // 2. 使用 SQL 层分页查询客户（只查询当前页需要的数据）
-  const customers = await prisma.customer.findMany({
-    where: customerWhere,
-    select: {
-      id: true,
-      name: true,
-      phone: true,
-    },
-    // ✅ SQL 层排序（如果按客户名称排序）
-    ...(sortBy === 'customerName' && {
-      orderBy: { name: sortOrder },
-    }),
-    // ✅ SQL 层分页
-    skip,
-    take: pageSize,
-  });
+  // 只显示“至少有一笔历史往来”的客户，避免列表出现大量 0 元账户
+  const customerWhereWithHistory: Prisma.CustomerWhereInput = {
+    ...customerWhere,
+    OR: [
+      { salesOrders: { some: {} } },
+      { returnOrders: { some: {} } },
+      { factoryShipmentOrders: { some: {} } },
+      { paymentRecords: { some: {} } },
+      { refundRecords: { some: {} } },
+    ],
+  };
 
   // 3. 批量查询所有客户的聚合数据（一次性查询，避免 N 次查询）
-  const customerIds = customers.map(c => c.id);
-
   const dateFilter: Prisma.DateTimeFilter = {};
   if (startDate) {
     dateFilter.gte = new Date(startDate);
@@ -122,21 +142,55 @@ export async function getCustomerStatements(
   }
   const hasDateFilter = Object.keys(dateFilter).length > 0;
 
-  // ✅ 批量聚合查询：销售订单
-  const salesAggregates = await prisma.salesOrder.groupBy({
-    by: ['customerId'],
-    where: {
-      customerId: { in: customerIds },
-      status: { in: ['confirmed', 'shipped', 'completed'] },
-      ...(hasDateFilter && { createdAt: dateFilter }),
-    },
-    _sum: { totalAmount: true },
-    _max: { createdAt: true },
-    _count: { id: true },
-  });
+  const needsComputedPagination =
+    sortBy !== 'customerName' ||
+    balanceType !== 'all' ||
+    minBalance !== undefined ||
+    maxBalance !== undefined;
 
-  // ✅ 批量聚合查询：厂家直发订单(按客户汇总应收金额)
-  // 业务规则：只有“已发货及之后”的客户直发才计入对账；未发货的确认单先不计入应收
+  let totalCustomers = 0;
+  let customers: Array<{ id: string; name: string; phone: string | null }> = [];
+
+  if (needsComputedPagination) {
+    customers = await prisma.customer.findMany({
+      where: customerWhereWithHistory,
+      select: { id: true, name: true, phone: true },
+    });
+  } else {
+    const [total, pageCustomers] = await Promise.all([
+      prisma.customer.count({ where: customerWhereWithHistory }),
+      prisma.customer.findMany({
+        where: customerWhereWithHistory,
+        select: { id: true, name: true, phone: true },
+        orderBy: { name: sortOrder },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    totalCustomers = total;
+    customers = pageCustomers;
+  }
+
+  if (customers.length === 0) {
+    return {
+      statements: [],
+      pagination: {
+        page,
+        pageSize,
+        total: 0,
+        totalPages: 0,
+      },
+    };
+  }
+
+  const customerIds = customers.map(c => c.id);
+
+  // ✅ 批量聚合查询：销售订单（应收金额 = totalAmount + roundingAdjustment）
+  // ✅ 批量聚合查询：厂家直发订单（只统计已发货的单据）
+  // ✅ 批量聚合查询：退货订单（冲减应收）
+  // ✅ 批量聚合查询：收款记录（订单收款 + 预收款）
+  // ✅ 批量聚合查询：退款记录（已退款，用于冲回“应退给客户”的余额）
   const factoryWhere: Prisma.FactoryShipmentOrderWhereInput = {
     customerId: { in: customerIds },
     status: { notIn: ['draft', 'cancelled'] },
@@ -145,143 +199,258 @@ export async function getCustomerStatements(
   if (hasDateFilter) {
     factoryWhere.shipmentDate = dateFilter;
   } else {
-    // 没有时间筛选时，依然只统计已发货的单据
     factoryWhere.shipmentDate = { not: null };
   }
 
-  const factoryAggregates = await prisma.factoryShipmentOrder.groupBy({
-    by: ['customerId'],
-    where: factoryWhere,
-    _sum: { receivableAmount: true },
-    _max: { shipmentDate: true },
-    _count: { id: true },
-  });
+  const [
+    salesAggregates,
+    factoryAggregates,
+    returnAggregates,
+    paymentAggregates,
+    refundAggregates,
+    suppliersForCustomers,
+  ] = await Promise.all([
+    prisma.salesOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        customerId: { in: customerIds },
+        status: { in: ['confirmed', 'shipped', 'completed'] },
+        ...(hasDateFilter && { createdAt: dateFilter }),
+      },
+      _sum: { totalAmount: true, roundingAdjustment: true },
+      _max: { createdAt: true },
+      _count: { id: true },
+    }),
+    prisma.factoryShipmentOrder.groupBy({
+      by: ['customerId'],
+      where: factoryWhere,
+      _sum: { receivableAmount: true },
+      _max: { shipmentDate: true },
+      _count: { id: true },
+    }),
+    prisma.returnOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        customerId: { in: customerIds },
+        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+        ...(hasDateFilter && { createdAt: dateFilter }),
+      },
+      _sum: { refundAmount: true },
+      _max: { createdAt: true },
+      _count: { id: true },
+    }),
+    prisma.paymentRecord.groupBy({
+      by: ['customerId', 'paymentType'],
+      where: {
+        customerId: { in: customerIds },
+        status: { in: ['confirmed', 'applied'] },
+        paymentType: { in: ['order_payment', 'prepayment'] },
+        ...(hasDateFilter && { paymentDate: dateFilter }),
+      },
+      _sum: { paymentAmount: true },
+      _max: { paymentDate: true },
+      _count: { id: true },
+    }),
+    prisma.refundRecord.groupBy({
+      by: ['customerId'],
+      where: {
+        customerId: { in: customerIds },
+        status: { in: ['pending', 'processing', 'completed'] },
+        ...(hasDateFilter && { refundDate: dateFilter }),
+      },
+      _sum: { processedAmount: true },
+      _max: { refundDate: true },
+      _count: { id: true },
+    }),
+    Promise.all(
+      customers.map(customer =>
+        findSupplierForCustomer(customer.id, {
+          name: customer.name,
+          phone: customer.phone,
+        })
+      )
+    ),
+  ]);
 
-  // ✅ 批量聚合查询：退货订单
-  const returnAggregates = await prisma.returnOrder.groupBy({
-    by: ['customerId'],
-    where: {
-      customerId: { in: customerIds },
-      status: { in: ['submitted', 'approved', 'processing', 'completed'] },
-      ...(hasDateFilter && { createdAt: dateFilter }),
-    },
-    _sum: { refundAmount: true },
-    _max: { createdAt: true },
-    _count: { id: true },
-  });
-
-  // ✅ 批量聚合查询：收款记录
-  const paymentAggregates = await prisma.paymentRecord.groupBy({
-    by: ['customerId'],
-    where: {
-      customerId: { in: customerIds },
-      // 只统计已完成/已冲抵的收款，待确认收款不影响应收余额
-      status: { in: ['confirmed', 'applied'] },
-      ...(hasDateFilter && { paymentDate: dateFilter }),
-    },
-    _sum: { paymentAmount: true, appliedAmount: true },
-    _max: { paymentDate: true },
-    _count: { id: true },
-  });
-
-  // ✅ 批量聚合查询：退款记录
-  // 说明：
-  // - 退款金额在退货场景(ReturnOrder.refundAmount)中已经作为销售退货统计
-  // - 这里只对“补偿退款”(无退货关联的退款)做金额聚合，用于计算 refundPaid
-  // - 但为了统计最后交易日期和交易笔数，仍然需要聚合所有退款记录
-  const refundAggregates = await prisma.refundRecord.groupBy({
-    by: ['customerId', 'returnOrderId'],
-    where: {
-      customerId: { in: customerIds },
-      status: { in: ['pending', 'processing', 'completed'] },
-      ...(hasDateFilter && { refundDate: dateFilter }),
-    },
-    _sum: { processedAmount: true },
-    _max: { refundDate: true },
-    _count: { id: true },
-  });
-
-  // 3.1 额外查询：用于判断“是否有历史交易”（不受当前筛选条件限制）
-  // 只要客户历史上有任何一笔交易，就应该能在对账单列表中找到对应客户
-  const historyTransactionCounts = await Promise.all(
-    customers.map(c => _getTransactionCount(c.id))
+  const supplierIdByCustomerId = new Map(
+    customers.map((customer, index) => [
+      customer.id,
+      suppliersForCustomers[index]?.id ?? null,
+    ])
   );
-  const historyTransactionCountMap = new Map(
-    customers.map((c, index) => [c.id, historyTransactionCounts[index]])
-  );
+
+  const supplierIds = suppliersForCustomers
+    .filter((supplier): supplier is SupplierIdentifier => Boolean(supplier))
+    .map(supplier => supplier.id);
+
+  const supplierPrepaymentPaidMap = new Map<string, number>();
+
+  if (supplierIds.length > 0) {
+    const supplierPayments = await prisma.paymentOutRecord.groupBy({
+      by: ['supplierId'],
+      where: {
+        supplierId: { in: supplierIds },
+        status: 'confirmed',
+        ...(hasDateFilter && { paymentDate: dateFilter }),
+      },
+      _sum: { paymentAmount: true },
+    });
+
+    for (const row of supplierPayments) {
+      supplierPrepaymentPaidMap.set(
+        row.supplierId,
+        Number(row._sum.paymentAmount ?? 0)
+      );
+    }
+  }
+
+  const salesSummaryByCustomerId = new Map<
+    string,
+    { salesAmount: number; lastTransactionDate?: Date; count: number }
+  >();
+  for (const row of salesAggregates) {
+    salesSummaryByCustomerId.set(row.customerId, {
+      salesAmount:
+        Number(row._sum.totalAmount ?? 0) +
+        Number(row._sum.roundingAdjustment ?? 0),
+      lastTransactionDate: row._max.createdAt ?? undefined,
+      count: row._count.id ?? 0,
+    });
+  }
+
+  const factorySummaryByCustomerId = new Map<
+    string,
+    { salesAmount: number; lastTransactionDate?: Date; count: number }
+  >();
+  for (const row of factoryAggregates) {
+    factorySummaryByCustomerId.set(row.customerId, {
+      salesAmount: Number(row._sum.receivableAmount ?? 0),
+      lastTransactionDate: row._max.shipmentDate ?? undefined,
+      count: row._count.id ?? 0,
+    });
+  }
+
+  const returnSummaryByCustomerId = new Map<
+    string,
+    { returnAmount: number; lastTransactionDate?: Date; count: number }
+  >();
+  for (const row of returnAggregates) {
+    returnSummaryByCustomerId.set(row.customerId, {
+      returnAmount: Number(row._sum.refundAmount ?? 0),
+      lastTransactionDate: row._max.createdAt ?? undefined,
+      count: row._count.id ?? 0,
+    });
+  }
+
+  const paymentReceivedByCustomerId = new Map<string, number>();
+  const prepaymentReceivedByCustomerId = new Map<string, number>();
+  const paymentCountByCustomerId = new Map<string, number>();
+  const lastPaymentDateByCustomerId = new Map<string, Date>();
+
+  for (const row of paymentAggregates) {
+    paymentCountByCustomerId.set(
+      row.customerId,
+      (paymentCountByCustomerId.get(row.customerId) ?? 0) + (row._count.id ?? 0)
+    );
+
+    const paymentDate = row._max.paymentDate ?? undefined;
+    if (paymentDate instanceof Date) {
+      const existing = lastPaymentDateByCustomerId.get(row.customerId);
+      if (!existing || paymentDate.getTime() > existing.getTime()) {
+        lastPaymentDateByCustomerId.set(row.customerId, paymentDate);
+      }
+    }
+
+    if (row.paymentType === 'order_payment') {
+      paymentReceivedByCustomerId.set(
+        row.customerId,
+        (paymentReceivedByCustomerId.get(row.customerId) ?? 0) +
+          Number(row._sum.paymentAmount ?? 0)
+      );
+      continue;
+    }
+
+    if (row.paymentType === 'prepayment') {
+      prepaymentReceivedByCustomerId.set(
+        row.customerId,
+        (prepaymentReceivedByCustomerId.get(row.customerId) ?? 0) +
+          Number(row._sum.paymentAmount ?? 0)
+      );
+    }
+  }
+
+  const refundPaidByCustomerId = new Map<string, number>();
+  const refundCountByCustomerId = new Map<string, number>();
+  const lastRefundDateByCustomerId = new Map<string, Date>();
+
+  for (const row of refundAggregates) {
+    refundPaidByCustomerId.set(
+      row.customerId,
+      (refundPaidByCustomerId.get(row.customerId) ?? 0) +
+        Number(row._sum.processedAmount ?? 0)
+    );
+    refundCountByCustomerId.set(row.customerId, row._count.id ?? 0);
+
+    const refundDate = row._max.refundDate ?? undefined;
+    if (refundDate instanceof Date) {
+      lastRefundDateByCustomerId.set(row.customerId, refundDate);
+    }
+  }
 
   // 4. 构建客户对账单数据（使用聚合结果，避免逐个查询）
   const statementsWithBalance = customers.map(customer => {
-    // 从聚合结果中获取数据
-    const salesData = salesAggregates.find(s => s.customerId === customer.id);
-    const factoryData = factoryAggregates.find(
-      f => f.customerId === customer.id
-    );
-    const returnData = returnAggregates.find(r => r.customerId === customer.id);
-    const paymentData = paymentAggregates.find(
-      p => p.customerId === customer.id
-    );
-    const refundsForCustomer = refundAggregates.filter(
-      r => r.customerId === customer.id
-    );
+    const salesData = salesSummaryByCustomerId.get(customer.id);
+    const factoryData = factorySummaryByCustomerId.get(customer.id);
+    const returnData = returnSummaryByCustomerId.get(customer.id);
 
-    // 计算汇总数据
-    const salesAmountFromOrders = Number(salesData?._sum.totalAmount ?? 0);
-    const salesAmountFromFactory = Number(
-      factoryData?._sum.receivableAmount ?? 0
-    );
+    const salesAmountFromOrders = salesData?.salesAmount ?? 0;
+    const salesAmountFromFactory = factoryData?.salesAmount ?? 0;
     const salesAmount = salesAmountFromOrders + salesAmountFromFactory;
-    const salesReturnAmount = Number(returnData?._sum.refundAmount ?? 0);
-    const paymentReceived = Number(paymentData?._sum.paymentAmount ?? 0);
-    const prepaymentReceived = Number(paymentData?._sum.appliedAmount ?? 0);
+    const salesReturnAmount = returnData?.returnAmount ?? 0;
+    const paymentReceived = paymentReceivedByCustomerId.get(customer.id) ?? 0;
+    const prepaymentReceived =
+      prepaymentReceivedByCustomerId.get(customer.id) ?? 0;
+    const refundPaid = refundPaidByCustomerId.get(customer.id) ?? 0;
 
-    // 仅统计“补偿退款”(无退货关联)到 refundPaid，避免与退货退款重复计算
-    const refundPaid = refundsForCustomer
-      .filter(r => r.returnOrderId === null)
-      .reduce((sum, r) => sum + Number(r._sum.processedAmount ?? 0), 0);
+    const receivableBalance = computeReceivableBalance({
+      salesAmount,
+      salesReturnAmount,
+      paymentReceived,
+      prepaymentReceived,
+      refundPaid,
+    });
 
-    // 应收账款 = 销售金额 - 销售退货 - 收款 - 预收款 + 退款
-    const receivableBalance =
-      salesAmount -
-      salesReturnAmount -
-      paymentReceived -
-      prepaymentReceived +
-      refundPaid;
+    const supplierId = supplierIdByCustomerId.get(customer.id);
+    const prepaymentPaid = supplierId
+      ? (supplierPrepaymentPaidMap.get(supplierId) ?? 0)
+      : 0;
 
-    // 应付账款（暂时为 0，后续实现客户作为供应商的场景）
-    const payableBalance = 0;
+    const payableBalance = computePayableBalance({
+      purchaseAmount: 0,
+      purchaseReturnAmount: 0,
+      paymentPaid: 0,
+      prepaymentPaid,
+      refundReceived: 0,
+    });
 
-    // 净余额 = 应收 - 应付
-    const netBalance = receivableBalance - payableBalance;
-
-    // 获取最后交易日期
-    const lastRefundDate = refundsForCustomer
-      .map(r => r._max.refundDate)
-      .filter((date): date is Date => date instanceof Date)
-      .sort((a, b) => b.getTime() - a.getTime())[0];
+    const netBalance = roundCurrency(receivableBalance - payableBalance);
 
     const lastTransactionDate = [
-      salesData?._max.createdAt,
-      factoryData?._max.shipmentDate,
-      returnData?._max.createdAt,
-      paymentData?._max.paymentDate,
-      lastRefundDate,
+      salesData?.lastTransactionDate,
+      factoryData?.lastTransactionDate,
+      returnData?.lastTransactionDate,
+      lastPaymentDateByCustomerId.get(customer.id),
+      lastRefundDateByCustomerId.get(customer.id),
     ]
       .filter((date): date is Date => date instanceof Date)
       .sort((a, b) => b.getTime() - a.getTime())[0];
 
-    // 计算交易笔数
-    const refundCount = refundsForCustomer.reduce(
-      (sum, r) => sum + (r._count.id ?? 0),
-      0
-    );
-
     const transactionCount =
-      (salesData?._count.id ?? 0) +
-      (factoryData?._count.id ?? 0) +
-      (returnData?._count.id ?? 0) +
-      (paymentData?._count.id ?? 0) +
-      refundCount;
+      (salesData?.count ?? 0) +
+      (factoryData?.count ?? 0) +
+      (returnData?.count ?? 0) +
+      (paymentCountByCustomerId.get(customer.id) ?? 0) +
+      (refundCountByCustomerId.get(customer.id) ?? 0);
 
     return {
       customerId: customer.id,
@@ -301,7 +470,7 @@ export async function getCustomerStatements(
           purchaseAmount: 0,
           purchaseReturnAmount: 0,
           paymentPaid: 0,
-          prepaymentPaid: 0,
+          prepaymentPaid,
           refundReceived: 0,
           payableBalance,
         },
@@ -311,40 +480,7 @@ export async function getCustomerStatements(
     };
   });
 
-  // ✅ 注意：由于已在 SQL 层分页，这里不需要再次分页
-  // 但如果需要按余额等计算字段排序或筛选，需要在内存中处理
-
-  // 第一步：过滤掉「从来没有任何交易」的客户，避免一进系统就看到一堆 0 元对账单
-  // 规则：
-  // - 如果客户在历史上没有任何交易记录(historyTransactionCount === 0)，并且
-  //   当前筛选区间内交易笔数为 0 & 应收/应付余额都为 0，则不显示
-  // - 如果客户历史上有交易，即使本期没有交易、余额为 0，也保留在列表中，方便查历史
-  let filteredStatements = statementsWithBalance.filter(statement => {
-    const historyTransactionCount =
-      historyTransactionCountMap.get(statement.customerId) ??
-      statement.transactionCount ??
-      0;
-
-    const receivableBalance =
-      statement.summary.receivables.receivableBalance || 0;
-    const payableBalance = statement.summary.payables.payableBalance || 0;
-
-    const hasNonZeroBalance =
-      Math.abs(receivableBalance) > 0 || Math.abs(payableBalance) > 0;
-
-    const hasAnyHistory = historyTransactionCount > 0;
-
-    // 从未发生过任何往来：且当前区间内也没有交易、余额都为 0 → 隐藏
-    if (
-      !hasAnyHistory &&
-      statement.transactionCount === 0 &&
-      !hasNonZeroBalance
-    ) {
-      return false;
-    }
-
-    return true;
-  });
+  let filteredStatements = statementsWithBalance;
 
   // 第二步：根据余额类型筛选（如果需要）
 
@@ -371,12 +507,15 @@ export async function getCustomerStatements(
     );
   }
 
-  // 排序（如果不是按客户名称排序，需要在内存中排序）
-  if (sortBy !== 'customerName') {
+  // 需要按计算字段筛选/排序时：必须全量计算后再分页，否则结果不完整
+  if (needsComputedPagination) {
     filteredStatements.sort((a, b) => {
       let compareValue = 0;
 
       switch (sortBy) {
+        case 'customerName':
+          compareValue = a.customerName.localeCompare(b.customerName);
+          break;
         case 'netBalance':
           compareValue = a.summary.netBalance - b.summary.netBalance;
           break;
@@ -401,12 +540,28 @@ export async function getCustomerStatements(
     });
   }
 
+  if (needsComputedPagination) {
+    const total = filteredStatements.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const pageStatements = filteredStatements.slice(skip, skip + pageSize);
+
+    return {
+      statements: pageStatements,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    };
+  }
+
   return {
     statements: filteredStatements,
     pagination: {
       page,
       pageSize,
-      total: totalCustomers, // ✅ 使用客户总数而非筛选后的数量
+      total: totalCustomers,
       totalPages: Math.ceil(totalCustomers / pageSize),
     },
   };
@@ -474,55 +629,243 @@ export async function getCustomerStatementDetail(
  * 获取客户对账单统计数据
  */
 export async function getCustomerStatementStatistics(): Promise<CustomerStatementStatistics> {
-  const allCustomers = await prisma.customer.findMany({
-    select: { id: true },
-  });
+  const totalCustomers = await prisma.customer.count();
 
-  const totalCustomers = allCustomers.length;
+  const [
+    salesGroups,
+    factoryGroups,
+    returnGroups,
+    paymentGroups,
+    refundGroups,
+  ] = await Promise.all([
+    prisma.salesOrder.groupBy({
+      by: ['customerId'],
+      where: { status: { in: ['confirmed', 'shipped', 'completed'] } },
+      _sum: { totalAmount: true, roundingAdjustment: true },
+    }),
+    prisma.factoryShipmentOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { notIn: ['draft', 'cancelled'] },
+        receivableAmount: { gt: 0 },
+        shipmentDate: { not: null },
+      },
+      _sum: { receivableAmount: true },
+    }),
+    prisma.returnOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+      },
+      _sum: { refundAmount: true },
+    }),
+    prisma.paymentRecord.groupBy({
+      by: ['customerId', 'paymentType'],
+      where: {
+        status: { in: ['confirmed', 'applied'] },
+        paymentType: { in: ['order_payment', 'prepayment'] },
+      },
+      _sum: { paymentAmount: true },
+    }),
+    prisma.refundRecord.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { in: ['pending', 'processing', 'completed'] },
+      },
+      _sum: { processedAmount: true },
+    }),
+  ]);
 
-  // 计算有往来的客户数
-  const activeCustomers = 0; // TODO: 实现逻辑
+  const activeCustomerIds = new Set<string>();
 
-  // 计算总余额
-  let totalReceivableBalance = 0;
-  let totalPayableBalance = 0;
-
-  for (const customer of allCustomers) {
-    const summary = await calculateCustomerStatementSummary(customer.id);
-    totalReceivableBalance += summary.receivables.receivableBalance;
-    totalPayableBalance += summary.payables.payableBalance;
+  const salesAmountByCustomer = new Map<string, number>();
+  for (const row of salesGroups) {
+    activeCustomerIds.add(row.customerId);
+    salesAmountByCustomer.set(
+      row.customerId,
+      Number(row._sum.totalAmount ?? 0) + Number(row._sum.roundingAdjustment ?? 0)
+    );
   }
 
-  const totalNetBalance = totalReceivableBalance - totalPayableBalance;
+  const factoryAmountByCustomer = new Map<string, number>();
+  for (const row of factoryGroups) {
+    activeCustomerIds.add(row.customerId);
+    factoryAmountByCustomer.set(
+      row.customerId,
+      Number(row._sum.receivableAmount ?? 0)
+    );
+  }
+
+  const returnAmountByCustomer = new Map<string, number>();
+  for (const row of returnGroups) {
+    activeCustomerIds.add(row.customerId);
+    returnAmountByCustomer.set(
+      row.customerId,
+      Number(row._sum.refundAmount ?? 0)
+    );
+  }
+
+  const paymentReceivedByCustomer = new Map<string, number>();
+  const prepaymentReceivedByCustomer = new Map<string, number>();
+
+  for (const row of paymentGroups) {
+    activeCustomerIds.add(row.customerId);
+
+    if (row.paymentType === 'order_payment') {
+      paymentReceivedByCustomer.set(
+        row.customerId,
+        Number(row._sum.paymentAmount ?? 0)
+      );
+      continue;
+    }
+
+    if (row.paymentType === 'prepayment') {
+      prepaymentReceivedByCustomer.set(
+        row.customerId,
+        Number(row._sum.paymentAmount ?? 0)
+      );
+    }
+  }
+
+  const refundPaidByCustomer = new Map<string, number>();
+  for (const row of refundGroups) {
+    activeCustomerIds.add(row.customerId);
+    refundPaidByCustomer.set(
+      row.customerId,
+      Number(row._sum.processedAmount ?? 0)
+    );
+  }
+
+  let totalReceivableBalance = 0;
+  let totalPayableBalance = 0;
+  let overdueCustomers = 0;
+
+  for (const customerId of activeCustomerIds) {
+    const salesAmount =
+      (salesAmountByCustomer.get(customerId) ?? 0) +
+      (factoryAmountByCustomer.get(customerId) ?? 0);
+    const salesReturnAmount = returnAmountByCustomer.get(customerId) ?? 0;
+    const paymentReceived = paymentReceivedByCustomer.get(customerId) ?? 0;
+    const prepaymentReceived =
+      prepaymentReceivedByCustomer.get(customerId) ?? 0;
+    const refundPaid = refundPaidByCustomer.get(customerId) ?? 0;
+
+    const receivableBalance = computeReceivableBalance({
+      salesAmount,
+      salesReturnAmount,
+      paymentReceived,
+      prepaymentReceived,
+      refundPaid,
+    });
+
+    totalReceivableBalance += receivableBalance;
+
+    if (receivableBalance > 0.01) {
+      overdueCustomers += 1;
+    }
+  }
+
+  totalReceivableBalance = roundCurrency(totalReceivableBalance);
+  totalPayableBalance = roundCurrency(totalPayableBalance);
+
+  const totalNetBalance = roundCurrency(
+    totalReceivableBalance - totalPayableBalance
+  );
+
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [
+    monthlySales,
+    monthlyFactory,
+    monthlyReturns,
+    monthlyPayments,
+    monthlyRefunds,
+  ] = await Promise.all([
+    prisma.salesOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { in: ['confirmed', 'shipped', 'completed'] },
+        createdAt: { gte: monthStart, lte: now },
+      },
+      _count: { _all: true },
+    }),
+    prisma.factoryShipmentOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { notIn: ['draft', 'cancelled'] },
+        shipmentDate: { gte: monthStart, lte: now },
+      },
+      _count: { _all: true },
+    }),
+    prisma.returnOrder.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+        createdAt: { gte: monthStart, lte: now },
+      },
+      _count: { _all: true },
+    }),
+    prisma.paymentRecord.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { in: ['confirmed', 'applied'] },
+        paymentType: { in: ['order_payment', 'prepayment'] },
+        paymentDate: { gte: monthStart, lte: now },
+      },
+      _count: { _all: true },
+    }),
+    prisma.refundRecord.groupBy({
+      by: ['customerId'],
+      where: {
+        status: { in: ['pending', 'processing', 'completed'] },
+        refundDate: { gte: monthStart, lte: now },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const monthlyActiveSet = new Set<string>();
+  monthlySales.forEach(row => monthlyActiveSet.add(row.customerId));
+  monthlyFactory.forEach(row => monthlyActiveSet.add(row.customerId));
+  monthlyReturns.forEach(row => monthlyActiveSet.add(row.customerId));
+  monthlyPayments.forEach(row => monthlyActiveSet.add(row.customerId));
+  monthlyRefunds.forEach(row => monthlyActiveSet.add(row.customerId));
 
   return {
     totalCustomers,
-    activeCustomers,
+    activeCustomers: activeCustomerIds.size,
     totalReceivableBalance,
     totalPayableBalance,
     totalNetBalance,
-    overdueCustomers: 0, // TODO: 实现逻辑
-    monthlyActiveCustomers: 0, // TODO: 实现逻辑
+    overdueCustomers,
+    monthlyActiveCustomers: monthlyActiveSet.size,
   };
 }
 
 type SupplierIdentifier = { id: string };
 
 async function findSupplierForCustomer(
-  customerId: string
+  customerId: string,
+  customerInfo?: { name?: string | null; phone?: string | null }
 ): Promise<SupplierIdentifier | null> {
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-    select: { name: true, phone: true },
-  });
+  const customer =
+    customerInfo ??
+    (await prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { name: true, phone: true },
+    }));
 
-  if (!customer || (!customer.name && !customer.phone)) {
+  const name = customer?.name ?? null;
+  const phone = customer?.phone ?? null;
+
+  if (!name && !phone) {
     return null;
   }
 
   const orConditions: Prisma.SupplierWhereInput[] = [
-    ...(customer.name ? [{ name: { contains: customer.name } }] : []),
-    ...(customer.phone ? [{ phone: customer.phone }] : []),
+    ...(name ? [{ name: { contains: name } }] : []),
+    ...(phone ? [{ phone }] : []),
   ];
 
   if (orConditions.length === 0) {
@@ -539,18 +882,17 @@ async function findSupplierForCustomer(
  * 计算客户对账单汇总数据
  *
  * 业务逻辑说明：
- * 1. 应收账款 = 销售金额 - 销售退货 - 收款 - 预收款 + 补偿退款
- * 2. 退货退款：退款金额已在ReturnOrder.refundAmount中，不重复计算
- * 3. 补偿退款：无退货关联的退款(returnOrderId=null)，增加应收
- * 4. 当前系统：所有退款都关联退货，补偿退款为0
+ * 1. 应收余额 = 销售金额 - 应退金额 - 已收款 - 预收款 + 已退款
+ * 2. 退货单(ReturnOrder.refundAmount) 代表“应退给客户”的金额，减少应收
+ * 3. 退款单(RefundRecord.processedAmount) 代表“实际已退款”的金额，用于冲回应退余额
  */
 type RefundRecordForStatement = {
-  refundAmount: number | null;
-  processedAmount: number | null;
-  remainingAmount: number | null;
+  refundAmount: unknown | null;
+  processedAmount: unknown | null;
+  remainingAmount: unknown | null;
   status: string;
   returnOrder?: {
-    refundAmount: number | null;
+    refundAmount: unknown | null;
   } | null;
 };
 
@@ -605,7 +947,7 @@ export async function calculateCustomerStatementSummary(
   startDate?: string,
   endDate?: string
 ): Promise<CustomerStatementSummary> {
-  const dateFilter: Record<string, unknown> = {};
+  const dateFilter: Prisma.DateTimeFilter = {};
   if (startDate) {
     dateFilter.gte = new Date(startDate);
   }
@@ -625,19 +967,18 @@ export async function calculateCustomerStatementSummary(
   // confirmed: 已确认
   // shipped: 已发货
   // completed: 已完成
-  const salesOrders = await prisma.salesOrder.findMany({
+  const salesOrderAggregate = await prisma.salesOrder.aggregate({
     where: {
       customerId,
       status: { in: ['confirmed', 'shipped', 'completed'] },
       ...(hasDateFilter && { createdAt: dateFilter }),
     },
-    select: { totalAmount: true },
+    _sum: { totalAmount: true, roundingAdjustment: true },
   });
 
-  const salesAmountFromOrders = salesOrders.reduce(
-    (sum, order) => sum + Number(order.totalAmount),
-    0
-  );
+  const salesAmountFromOrders =
+    Number(salesOrderAggregate._sum.totalAmount ?? 0) +
+    Number(salesOrderAggregate._sum.roundingAdjustment ?? 0);
 
   // 1.1 查询厂家直发订单(应收) - 视为与销售订单同等口径的应收销售
   const factoryWhere: Prisma.FactoryShipmentOrderWhereInput = {
@@ -652,103 +993,111 @@ export async function calculateCustomerStatementSummary(
     factoryWhere.shipmentDate = { not: null };
   }
 
-  const factoryOrders = await prisma.factoryShipmentOrder.findMany({
+  const factoryOrderAggregate = await prisma.factoryShipmentOrder.aggregate({
     where: factoryWhere,
-    select: { receivableAmount: true },
+    _sum: { receivableAmount: true },
   });
 
-  const salesAmountFromFactory = factoryOrders.reduce(
-    (sum, order) => sum + Number(order.receivableAmount ?? 0),
-    0
+  const salesAmountFromFactory = Number(
+    factoryOrderAggregate._sum.receivableAmount ?? 0
   );
 
   const salesAmount = salesAmountFromOrders + salesAmountFromFactory;
 
   // 2. 查询销售退货(冲减应收) - 只包含有效状态的订单用于计算余额
   // 注意：不包含已取消(cancelled)和已拒绝(rejected)的订单
-  const returnOrders = await prisma.returnOrder.findMany({
+  const returnOrderAggregate = await prisma.returnOrder.aggregate({
     where: {
       customerId,
       status: { in: ['submitted', 'approved', 'processing', 'completed'] },
       ...(hasDateFilter && { createdAt: dateFilter }),
     },
-    select: { refundAmount: true },
+    _sum: { refundAmount: true },
   });
 
-  const salesReturnAmount = returnOrders.reduce(
-    (sum, order) => sum + Number(order.refundAmount),
-    0
-  );
+  const salesReturnAmount = Number(returnOrderAggregate._sum.refundAmount ?? 0);
 
   // 3. 查询收款记录
   // ✅ 修正: 分别统计订单付款和预收款已冲抵金额
   // 只统计已完成/已冲抵的收款，待确认收款不减少应收
-  const payments = await prisma.paymentRecord.findMany({
+  const paymentGroups = await prisma.paymentRecord.groupBy({
+    by: ['paymentType'],
     where: {
       customerId,
       status: { in: ['confirmed', 'applied'] },
+      paymentType: { in: ['order_payment', 'prepayment'] },
       ...(hasDateFilter && { paymentDate: dateFilter }),
     },
-    select: {
-      paymentType: true, // ✅ 新增: 用于区分类型
+    _sum: {
       paymentAmount: true,
-      appliedAmount: true, // ✅ 新增: 预收款已冲抵金额
     },
   });
 
-  // 订单付款(直接付款)
-  const orderPayments = payments.filter(p => p.paymentType === 'order_payment');
-  const paymentReceived = orderPayments.reduce(
-    (sum, payment) => sum + Number(payment.paymentAmount),
-    0
-  );
+  let paymentReceived = 0;
+  let prepaymentReceived = 0;
 
-  // 预收款已冲抵金额(减少应收)
-  const prepayments = payments.filter(p => p.paymentType === 'prepayment');
-  const prepaymentReceived = prepayments.reduce(
-    (sum, p) => sum + Number(p.appliedAmount),
-    0
-  );
+  for (const group of paymentGroups) {
+    if (group.paymentType === 'order_payment') {
+      paymentReceived = Number(group._sum.paymentAmount ?? 0);
+    } else if (group.paymentType === 'prepayment') {
+      prepaymentReceived = Number(group._sum.paymentAmount ?? 0);
+    }
+  }
 
   // 4. 查询退款记录(退款给客户)
-  const refundRecords = await prisma.refundRecord.findMany({
-    where: {
-      customerId,
-      status: { in: ['pending', 'processing', 'completed'] },
-      ...(hasDateFilter && { refundDate: dateFilter }),
-    },
-    select: {
-      refundAmount: true,
-      processedAmount: true,
-      remainingAmount: true,
-      returnOrderId: true,
-      status: true,
-      returnOrder: {
-        select: {
-          refundAmount: true,
+  let refundCompensationPaid = 0;
+  let refundProcessed = 0;
+  let refundPending = 0;
+
+  const refundPageSize = 2000;
+  let refundCursor: string | undefined;
+
+  while (true) {
+    const refundPage = await prisma.refundRecord.findMany({
+      where: {
+        customerId,
+        status: { in: ['pending', 'processing', 'completed'] },
+        ...(hasDateFilter && { refundDate: dateFilter }),
+      },
+      select: {
+        id: true,
+        refundAmount: true,
+        processedAmount: true,
+        remainingAmount: true,
+        returnOrderId: true,
+        status: true,
+        returnOrder: {
+          select: {
+            refundAmount: true,
+          },
         },
       },
-    },
-  });
+      orderBy: { id: 'asc' },
+      take: refundPageSize,
+      ...(refundCursor ? { cursor: { id: refundCursor }, skip: 1 } : {}),
+    });
 
-  const refundCompensationPaid = refundRecords
-    .filter(record => record.returnOrderId === null)
-    .reduce((sum, record) => {
-      const { effectiveProcessed } = normalizeRefundAmounts(record);
-      return sum + effectiveProcessed;
-    }, 0);
+    for (const record of refundPage) {
+      const { effectiveProcessed, effectiveRemaining } =
+        normalizeRefundAmounts(record);
+      refundProcessed += effectiveProcessed;
+      refundPending += effectiveRemaining;
+      if (record.returnOrderId === null) {
+        refundCompensationPaid += effectiveProcessed;
+      }
+    }
 
-  const refundProcessed = refundRecords.reduce((sum, record) => {
-    const { effectiveProcessed } = normalizeRefundAmounts(record);
-    return sum + effectiveProcessed;
-  }, 0);
+    if (refundPage.length < refundPageSize) {
+      break;
+    }
 
-  const refundPending = refundRecords.reduce((sum, record) => {
-    const { effectiveRemaining } = normalizeRefundAmounts(record);
-    return sum + effectiveRemaining;
-  }, 0);
+    refundCursor = refundPage[refundPage.length - 1]?.id;
+    if (!refundCursor) {
+      break;
+    }
+  }
 
-  const refundPaid = refundCompensationPaid;
+  const refundPaid = refundProcessed;
 
   // 6. 查询采购订单(应付 - 客户作为供应商)
   // 需要通过supplier表关联到customer
@@ -765,35 +1114,35 @@ export async function calculateCustomerStatementSummary(
 
   let prepaymentPaid = 0;
   if (customerAsSupplier) {
-    const supplierPayments = await prisma.paymentOutRecord.findMany({
+    const supplierPaymentAggregate = await prisma.paymentOutRecord.aggregate({
       where: {
         supplierId: customerAsSupplier.id,
         status: { in: ['confirmed'] },
         ...(hasDateFilter && { paymentDate: dateFilter }),
       },
-      select: { paymentAmount: true },
+      _sum: { paymentAmount: true },
     });
 
-    prepaymentPaid = supplierPayments.reduce(
-      (sum, record) => sum + Number(record.paymentAmount),
-      0
-    );
+    prepaymentPaid = Number(supplierPaymentAggregate._sum.paymentAmount ?? 0);
   }
 
-  // 计算余额
-  const receivableBalance =
-    salesAmount -
-    salesReturnAmount -
-    paymentReceived -
-    prepaymentReceived +
-    refundPaid;
-  const payableBalance =
-    purchaseAmount -
-    purchaseReturnAmount -
-    paymentPaid -
-    prepaymentPaid +
-    refundReceived;
-  const netBalance = receivableBalance - payableBalance;
+  const receivableBalance = computeReceivableBalance({
+    salesAmount,
+    salesReturnAmount,
+    paymentReceived,
+    prepaymentReceived,
+    refundPaid,
+  });
+
+  const payableBalance = computePayableBalance({
+    purchaseAmount,
+    purchaseReturnAmount,
+    paymentPaid,
+    prepaymentPaid,
+    refundReceived,
+  });
+
+  const netBalance = roundCurrency(receivableBalance - payableBalance);
 
   return {
     receivables: {
@@ -843,273 +1192,118 @@ async function getCustomerTransactions(
 
   // 检查客户是否也作为供应商存在
   const customerAsSupplier = await findSupplierForCustomer(customerId);
+  const pageSize = 2000;
 
   // 1. 获取销售订单 - 包含所有有效状态
-  const salesOrders = await prisma.salesOrder.findMany({
-    where: {
-      customerId,
-      status: { in: ['confirmed', 'shipped', 'completed'] },
-      createdAt: dateFilter,
-    },
-    select: {
-      id: true,
-      orderNumber: true,
-      totalAmount: true,
-      createdAt: true,
-      status: true,
-    },
-    orderBy: { createdAt: 'asc' },
-  });
-
-  for (const order of salesOrders) {
-    transactionEntries.push({
-      id: order.id,
-      transactionType: 'sales_order',
-      transactionDate: order.createdAt.toISOString(),
-      referenceNumber: order.orderNumber,
-      referenceId: order.id,
-      description: `销售订单 ${order.orderNumber}`,
-      debitAmount: Number(order.totalAmount),
-      creditAmount: 0,
-      status: order.status,
+  let salesOrderCursor: string | undefined;
+  while (true) {
+    const salesOrders = await prisma.salesOrder.findMany({
+      where: {
+        customerId,
+        status: { in: ['confirmed', 'shipped', 'completed'] },
+        createdAt: dateFilter,
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        totalAmount: true,
+        roundingAdjustment: true,
+        createdAt: true,
+        status: true,
+      },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(salesOrderCursor
+        ? { cursor: { id: salesOrderCursor }, skip: 1 }
+        : {}),
     });
+
+    for (const order of salesOrders) {
+      transactionEntries.push({
+        id: order.id,
+        transactionType: 'sales_order',
+        transactionDate: order.createdAt.toISOString(),
+        referenceNumber: order.orderNumber,
+        referenceId: order.id,
+        description: `销售订单 ${order.orderNumber}`,
+        debitAmount:
+          Number(order.totalAmount ?? 0) + Number(order.roundingAdjustment ?? 0),
+        creditAmount: 0,
+        status: order.status,
+      });
+    }
+
+    if (salesOrders.length < pageSize) {
+      break;
+    }
+
+    salesOrderCursor = salesOrders[salesOrders.length - 1]?.id;
+    if (!salesOrderCursor) {
+      break;
+    }
   }
 
   // 1.1 获取厂家直发订单 - 视为同样的“销售订单”, 使用应收金额作为记账金额
-  const factoryOrders = await prisma.factoryShipmentOrder.findMany({
-    where: {
-      customerId,
-      status: { notIn: ['draft', 'cancelled'] },
-      receivableAmount: { gt: 0 },
-      shipmentDate: dateFilter,
-    },
-    select: {
-      id: true,
-      orderNumber: true,
-      receivableAmount: true,
-      shipmentDate: true,
-      status: true,
-    },
-    orderBy: { shipmentDate: 'asc' },
-  });
-
-  for (const order of factoryOrders) {
-    const shipmentDate =
-      order.shipmentDate instanceof Date
-        ? order.shipmentDate
-        : new Date(order.shipmentDate as unknown as string);
-
-    transactionEntries.push({
-      id: order.id,
-      transactionType: 'sales_order',
-      transactionDate: shipmentDate.toISOString(),
-      referenceNumber: order.orderNumber,
-      referenceId: order.id,
-      description: `厂家直发 ${order.orderNumber}`,
-      debitAmount: Number(order.receivableAmount ?? 0),
-      creditAmount: 0,
-      status: order.status,
+  let factoryOrderCursor: string | undefined;
+  while (true) {
+    const factoryOrders = await prisma.factoryShipmentOrder.findMany({
+      where: {
+        customerId,
+        status: { notIn: ['draft', 'cancelled'] },
+        receivableAmount: { gt: 0 },
+        shipmentDate: dateFilter,
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        receivableAmount: true,
+        shipmentDate: true,
+        status: true,
+      },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(factoryOrderCursor
+        ? { cursor: { id: factoryOrderCursor }, skip: 1 }
+        : {}),
     });
+
+    for (const order of factoryOrders) {
+      const shipmentDate =
+        order.shipmentDate instanceof Date
+          ? order.shipmentDate
+          : new Date(order.shipmentDate as unknown as string);
+
+      transactionEntries.push({
+        id: order.id,
+        transactionType: 'sales_order',
+        transactionDate: shipmentDate.toISOString(),
+        referenceNumber: order.orderNumber,
+        referenceId: order.id,
+        description: `厂家直发 ${order.orderNumber}`,
+        debitAmount: Number(order.receivableAmount ?? 0),
+        creditAmount: 0,
+        status: order.status,
+      });
+    }
+
+    if (factoryOrders.length < pageSize) {
+      break;
+    }
+
+    factoryOrderCursor = factoryOrders[factoryOrders.length - 1]?.id;
+    if (!factoryOrderCursor) {
+      break;
+    }
   }
 
   // 2. 获取收款记录
-  const payments = await prisma.paymentRecord.findMany({
-    where: {
-      customerId,
-      status: { in: ['pending', 'confirmed', 'applied'] },
-      paymentType: 'order_payment',
-      paymentDate: dateFilter,
-    },
-    select: {
-      id: true,
-      paymentNumber: true,
-      paymentAmount: true,
-      paymentDate: true,
-      paymentMethod: true,
-      status: true,
-    },
-    orderBy: { paymentDate: 'asc' },
-  });
-
-  for (const payment of payments) {
-    // 只在对账明细中展示“已完成/已冲抵”的收款
-    // 待确认收款不在对账单中出现，避免给销售造成“已经收款”的错觉
-    const isCompleted =
-      payment.status === 'confirmed' || payment.status === 'applied';
-
-    if (!isCompleted) {
-      continue;
-    }
-
-    const paymentMethodLabel = formatStatementPaymentMethod(
-      payment.paymentMethod
-    );
-
-    transactionEntries.push({
-      id: payment.id,
-      transactionType: 'payment_in',
-      transactionDate: payment.paymentDate.toISOString(),
-      referenceNumber: payment.paymentNumber,
-      referenceId: payment.id,
-      description: `收款 ${payment.paymentNumber} (${paymentMethodLabel})`,
-      debitAmount: 0,
-      creditAmount: Number(payment.paymentAmount),
-      status: payment.status,
-    });
-  }
-
-  // 3. 获取退货订单（包含所有非草稿状态，用于完整的历史记录）
-  // 注意：已取消/已拒绝的订单也会显示，但在计算余额时会被排除
-  const returnOrders = await prisma.returnOrder.findMany({
-    where: {
-      customerId,
-      status: { not: 'draft' }, // 排除草稿，其他所有状态都包含
-      createdAt: dateFilter,
-    },
-    select: {
-      id: true,
-      returnNumber: true,
-      refundAmount: true,
-      createdAt: true,
-      status: true,
-      type: true,
-    },
-    orderBy: { createdAt: 'asc' },
-  });
-
-  for (const returnOrder of returnOrders) {
-    // 已取消或已拒绝的退货订单：显示在明细中但金额为0（不影响余额）
-    const isInvalidStatus = ['cancelled', 'rejected'].includes(
-      returnOrder.status
-    );
-    const effectiveRefundAmount = isInvalidStatus
-      ? 0
-      : Number(returnOrder.refundAmount);
-
-    const description = isInvalidStatus
-      ? `销售退货 ${returnOrder.returnNumber} (已${returnOrder.status === 'cancelled' ? '取消' : '拒绝'})`
-      : `销售退货 ${returnOrder.returnNumber}`;
-
-    transactionEntries.push({
-      id: returnOrder.id,
-      transactionType: 'sales_return',
-      transactionDate: returnOrder.createdAt.toISOString(),
-      referenceNumber: returnOrder.returnNumber,
-      referenceId: returnOrder.id,
-      description,
-      debitAmount: 0,
-      creditAmount: effectiveRefundAmount,
-      status: returnOrder.status,
-    });
-  }
-
-  // 4. 获取退款记录
-  const refunds = await prisma.refundRecord.findMany({
-    where: {
-      customerId,
-      status: { in: ['pending', 'processing', 'completed'] },
-      refundDate: dateFilter,
-      // 只统计无退货关联的补偿退款，避免与退货退款重复影响应收余额
-      returnOrderId: null,
-    },
-    select: {
-      id: true,
-      refundNumber: true,
-      refundAmount: true,
-      processedAmount: true,
-      remainingAmount: true,
-      refundDate: true,
-      refundMethod: true,
-      refundType: true,
-      status: true,
-      returnOrderId: true,
-      returnOrderNumber: true,
-      returnOrder: {
-        select: {
-          refundAmount: true,
-        },
-      },
-    },
-    orderBy: { refundDate: 'asc' },
-  });
-
-  for (const refund of refunds) {
-    const { effectiveProcessed, effectiveRemaining } =
-      normalizeRefundAmounts(refund);
-
-    const refundMethodLabel = formatStatementRefundMethod(refund.refundMethod);
-
-    const descriptionParts = [
-      `退款 ${refund.refundNumber} (${refundMethodLabel})`,
-    ];
-
-    if (effectiveRemaining > 0) {
-      descriptionParts.push(`待退 ${effectiveRemaining.toFixed(2)}`);
-    }
-
-    transactionEntries.push({
-      id: refund.id,
-      transactionType: 'refund_out',
-      transactionDate: refund.refundDate.toISOString(),
-      referenceNumber: refund.refundNumber,
-      referenceId: refund.id,
-      description: descriptionParts.join(' / '),
-      debitAmount: effectiveProcessed,
-      creditAmount: 0,
-      status: refund.status,
-    });
-  }
-
-  // 5. 获取预收款记录
-  const prepaymentRecords = await prisma.paymentRecord.findMany({
-    where: {
-      customerId,
-      paymentType: 'prepayment',
-      status: { in: ['confirmed', 'applied'] },
-      paymentDate: dateFilter,
-    },
-    select: {
-      id: true,
-      paymentNumber: true,
-      paymentAmount: true,
-      appliedAmount: true,
-      paymentDate: true,
-      paymentMethod: true,
-      status: true,
-    },
-    orderBy: { paymentDate: 'asc' },
-  });
-
-  for (const prepayment of prepaymentRecords) {
-    const appliedAmount =
-      prepayment.appliedAmount !== null &&
-      prepayment.appliedAmount !== undefined
-        ? prepayment.appliedAmount
-        : prepayment.paymentAmount;
-
-    const paymentMethodLabel = formatStatementPaymentMethod(
-      prepayment.paymentMethod
-    );
-
-    transactionEntries.push({
-      id: prepayment.id,
-      transactionType: 'prepayment_in',
-      transactionDate: prepayment.paymentDate.toISOString(),
-      referenceNumber: prepayment.paymentNumber,
-      referenceId: prepayment.id,
-      description: `预收款 ${prepayment.paymentNumber} (${paymentMethodLabel})`,
-      debitAmount: 0,
-      creditAmount: Number(appliedAmount), // 减少应收
-      status: prepayment.status,
-    });
-  }
-
-  // 6. 获取预付款记录(客户作为供应商场景)
-  if (customerAsSupplier) {
-    const supplierPrepayments = await prisma.paymentOutRecord.findMany({
+  let paymentCursor: string | undefined;
+  while (true) {
+    const payments = await prisma.paymentRecord.findMany({
       where: {
-        supplierId: customerAsSupplier.id,
-        status: 'confirmed',
+        customerId,
+        status: { in: ['pending', 'confirmed', 'applied'] },
+        paymentType: 'order_payment',
         paymentDate: dateFilter,
       },
       select: {
@@ -1120,25 +1314,285 @@ async function getCustomerTransactions(
         paymentMethod: true,
         status: true,
       },
-      orderBy: { paymentDate: 'asc' },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(paymentCursor ? { cursor: { id: paymentCursor }, skip: 1 } : {}),
     });
 
-    for (const payment of supplierPrepayments) {
+    for (const payment of payments) {
+      // 只在对账明细中展示“已完成/已冲抵”的收款
+      // 待确认收款不在对账单中出现，避免给销售造成“已经收款”的错觉
+      const isCompleted =
+        payment.status === 'confirmed' || payment.status === 'applied';
+
+      if (!isCompleted) {
+        continue;
+      }
+
       const paymentMethodLabel = formatStatementPaymentMethod(
         payment.paymentMethod
       );
 
       transactionEntries.push({
         id: payment.id,
-        transactionType: 'prepayment_out',
+        transactionType: 'payment_in',
         transactionDate: payment.paymentDate.toISOString(),
         referenceNumber: payment.paymentNumber,
         referenceId: payment.id,
-        description: `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`,
-        debitAmount: Number(payment.paymentAmount), // 增加应付
-        creditAmount: 0,
+        description: `收款 ${payment.paymentNumber} (${paymentMethodLabel})`,
+        debitAmount: 0,
+        creditAmount: Number(payment.paymentAmount),
         status: payment.status,
       });
+    }
+
+    if (payments.length < pageSize) {
+      break;
+    }
+
+    paymentCursor = payments[payments.length - 1]?.id;
+    if (!paymentCursor) {
+      break;
+    }
+  }
+
+  // 3. 获取退货订单（包含所有非草稿状态，用于完整的历史记录）
+  // 注意：已取消/已拒绝的订单也会显示，但在计算余额时会被排除
+  let returnOrderCursor: string | undefined;
+  while (true) {
+    const returnOrders = await prisma.returnOrder.findMany({
+      where: {
+        customerId,
+        status: { not: 'draft' }, // 排除草稿，其他所有状态都包含
+        createdAt: dateFilter,
+      },
+      select: {
+        id: true,
+        returnNumber: true,
+        refundAmount: true,
+        createdAt: true,
+        status: true,
+        type: true,
+      },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(returnOrderCursor
+        ? { cursor: { id: returnOrderCursor }, skip: 1 }
+        : {}),
+    });
+
+    for (const returnOrder of returnOrders) {
+      // 已取消或已拒绝的退货订单：显示在明细中但金额为0（不影响余额）
+      const isInvalidStatus = ['cancelled', 'rejected'].includes(
+        returnOrder.status
+      );
+      const effectiveRefundAmount = isInvalidStatus
+        ? 0
+        : Number(returnOrder.refundAmount);
+
+      const description = isInvalidStatus
+        ? `销售退货 ${returnOrder.returnNumber} (已${returnOrder.status === 'cancelled' ? '取消' : '拒绝'})`
+        : `销售退货 ${returnOrder.returnNumber}`;
+
+      transactionEntries.push({
+        id: returnOrder.id,
+        transactionType: 'sales_return',
+        transactionDate: returnOrder.createdAt.toISOString(),
+        referenceNumber: returnOrder.returnNumber,
+        referenceId: returnOrder.id,
+        description,
+        debitAmount: 0,
+        creditAmount: effectiveRefundAmount,
+        status: returnOrder.status,
+      });
+    }
+
+    if (returnOrders.length < pageSize) {
+      break;
+    }
+
+    returnOrderCursor = returnOrders[returnOrders.length - 1]?.id;
+    if (!returnOrderCursor) {
+      break;
+    }
+  }
+
+  // 4. 获取退款记录
+  let refundCursor: string | undefined;
+  while (true) {
+    const refunds = await prisma.refundRecord.findMany({
+      where: {
+        customerId,
+        status: { in: ['pending', 'processing', 'completed'] },
+        refundDate: dateFilter,
+      },
+      select: {
+        id: true,
+        refundNumber: true,
+        refundAmount: true,
+        processedAmount: true,
+        remainingAmount: true,
+        refundDate: true,
+        refundMethod: true,
+        refundType: true,
+        status: true,
+        returnOrderId: true,
+        returnOrderNumber: true,
+        returnOrder: {
+          select: {
+            refundAmount: true,
+          },
+        },
+      },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(refundCursor ? { cursor: { id: refundCursor }, skip: 1 } : {}),
+    });
+
+    for (const refund of refunds) {
+      const { effectiveProcessed, effectiveRemaining } =
+        normalizeRefundAmounts(refund);
+
+      const refundMethodLabel = formatStatementRefundMethod(
+        refund.refundMethod
+      );
+
+      const descriptionParts = [
+        `退款 ${refund.refundNumber} (${refundMethodLabel})`,
+      ];
+
+      if (effectiveRemaining > 0) {
+        descriptionParts.push(`待退 ${effectiveRemaining.toFixed(2)}`);
+      }
+
+      transactionEntries.push({
+        id: refund.id,
+        transactionType: 'refund_out',
+        transactionDate: refund.refundDate.toISOString(),
+        referenceNumber: refund.refundNumber,
+        referenceId: refund.id,
+        description: descriptionParts.join(' / '),
+        debitAmount: effectiveProcessed,
+        creditAmount: 0,
+        status: refund.status,
+      });
+    }
+
+    if (refunds.length < pageSize) {
+      break;
+    }
+
+    refundCursor = refunds[refunds.length - 1]?.id;
+    if (!refundCursor) {
+      break;
+    }
+  }
+
+  // 5. 获取预收款记录
+  let prepaymentCursor: string | undefined;
+  while (true) {
+    const prepaymentRecords = await prisma.paymentRecord.findMany({
+      where: {
+        customerId,
+        paymentType: 'prepayment',
+        status: { in: ['confirmed', 'applied'] },
+        paymentDate: dateFilter,
+      },
+      select: {
+        id: true,
+        paymentNumber: true,
+        paymentAmount: true,
+        paymentDate: true,
+        paymentMethod: true,
+        status: true,
+      },
+      orderBy: { id: 'asc' },
+      take: pageSize,
+      ...(prepaymentCursor
+        ? { cursor: { id: prepaymentCursor }, skip: 1 }
+        : {}),
+    });
+
+    for (const prepayment of prepaymentRecords) {
+      const paymentMethodLabel = formatStatementPaymentMethod(
+        prepayment.paymentMethod
+      );
+
+      transactionEntries.push({
+        id: prepayment.id,
+        transactionType: 'prepayment_in',
+        transactionDate: prepayment.paymentDate.toISOString(),
+        referenceNumber: prepayment.paymentNumber,
+        referenceId: prepayment.id,
+        description: `预收款 ${prepayment.paymentNumber} (${paymentMethodLabel})`,
+        debitAmount: 0,
+        creditAmount: Number(prepayment.paymentAmount), // 减少应收
+        status: prepayment.status,
+      });
+    }
+
+    if (prepaymentRecords.length < pageSize) {
+      break;
+    }
+
+    prepaymentCursor = prepaymentRecords[prepaymentRecords.length - 1]?.id;
+    if (!prepaymentCursor) {
+      break;
+    }
+  }
+
+  // 6. 获取预付款记录(客户作为供应商场景)
+  if (customerAsSupplier) {
+    let supplierPrepaymentCursor: string | undefined;
+    while (true) {
+      const supplierPrepayments = await prisma.paymentOutRecord.findMany({
+        where: {
+          supplierId: customerAsSupplier.id,
+          status: 'confirmed',
+          paymentDate: dateFilter,
+        },
+        select: {
+          id: true,
+          paymentNumber: true,
+          paymentAmount: true,
+          paymentDate: true,
+          paymentMethod: true,
+          status: true,
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(supplierPrepaymentCursor
+          ? { cursor: { id: supplierPrepaymentCursor }, skip: 1 }
+          : {}),
+      });
+
+      for (const payment of supplierPrepayments) {
+        const paymentMethodLabel = formatStatementPaymentMethod(
+          payment.paymentMethod
+        );
+
+        transactionEntries.push({
+          id: payment.id,
+          transactionType: 'prepayment_out',
+          transactionDate: payment.paymentDate.toISOString(),
+          referenceNumber: payment.paymentNumber,
+          referenceId: payment.id,
+          description: `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`,
+          debitAmount: Number(payment.paymentAmount), // 增加应付
+          creditAmount: 0,
+          status: payment.status,
+        });
+      }
+
+      if (supplierPrepayments.length < pageSize) {
+        break;
+      }
+
+      supplierPrepaymentCursor =
+        supplierPrepayments[supplierPrepayments.length - 1]?.id;
+      if (!supplierPrepaymentCursor) {
+        break;
+      }
     }
   }
 
@@ -1176,131 +1630,121 @@ async function calculateOpeningBalance(
   customerId: string,
   beforeDate: string
 ): Promise<number> {
-  const summary = await calculateCustomerStatementSummary(
-    customerId,
-    undefined,
-    new Date(new Date(beforeDate).getTime() - 1).toISOString()
+  const end = new Date(new Date(beforeDate).getTime() - 1);
+  const dateFilter: Prisma.DateTimeFilter = { lte: end };
+
+  const [
+    salesOrderAggregate,
+    factoryOrderAggregate,
+    returnOrderAggregate,
+    paymentGroups,
+    refundAggregate,
+    customerAsSupplier,
+  ] = await Promise.all([
+    prisma.salesOrder.aggregate({
+      where: {
+        customerId,
+        status: { in: ['confirmed', 'shipped', 'completed'] },
+        createdAt: dateFilter,
+      },
+      _sum: { totalAmount: true, roundingAdjustment: true },
+    }),
+    prisma.factoryShipmentOrder.aggregate({
+      where: {
+        customerId,
+        status: { notIn: ['draft', 'cancelled'] },
+        receivableAmount: { gt: 0 },
+        shipmentDate: dateFilter,
+      },
+      _sum: { receivableAmount: true },
+    }),
+    prisma.returnOrder.aggregate({
+      where: {
+        customerId,
+        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+        createdAt: dateFilter,
+      },
+      _sum: { refundAmount: true },
+    }),
+    prisma.paymentRecord.groupBy({
+      by: ['paymentType'],
+      where: {
+        customerId,
+        status: { in: ['confirmed', 'applied'] },
+        paymentType: { in: ['order_payment', 'prepayment'] },
+        paymentDate: dateFilter,
+      },
+      _sum: { paymentAmount: true },
+    }),
+    prisma.refundRecord.aggregate({
+      where: {
+        customerId,
+        status: { in: ['pending', 'processing', 'completed'] },
+        refundDate: dateFilter,
+      },
+      _sum: { processedAmount: true },
+    }),
+    findSupplierForCustomer(customerId),
+  ]);
+
+  const salesAmountFromOrders =
+    Number(salesOrderAggregate._sum.totalAmount ?? 0) +
+    Number(salesOrderAggregate._sum.roundingAdjustment ?? 0);
+
+  const salesAmountFromFactory = Number(
+    factoryOrderAggregate._sum.receivableAmount ?? 0
   );
-  return summary.netBalance;
-}
 
-/**
- * 获取最后交易日期
- */
-async function _getLastTransactionDate(
-  customerId: string,
-  startDate?: string,
-  endDate?: string
-): Promise<string | undefined> {
-  const dateFilter: Record<string, unknown> = {};
-  if (startDate) {
-    dateFilter.gte = new Date(startDate);
-  }
-  if (endDate) {
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-    dateFilter.lte = end;
+  const salesAmount = salesAmountFromOrders + salesAmountFromFactory;
+
+  const salesReturnAmount = Number(returnOrderAggregate._sum.refundAmount ?? 0);
+
+  let paymentReceived = 0;
+  let prepaymentReceived = 0;
+
+  for (const group of paymentGroups) {
+    if (group.paymentType === 'order_payment') {
+      paymentReceived = Number(group._sum.paymentAmount ?? 0);
+      continue;
+    }
+
+    if (group.paymentType === 'prepayment') {
+      prepaymentReceived = Number(group._sum.paymentAmount ?? 0);
+    }
   }
 
-  const [lastSalesOrder, lastPayment, lastReturn, lastRefund] =
-    await Promise.all([
-      prisma.salesOrder.findFirst({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true },
-      }),
-      prisma.paymentRecord.findFirst({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && {
-            paymentDate: dateFilter,
-          }),
-        },
-        orderBy: { paymentDate: 'desc' },
-        select: { paymentDate: true },
-      }),
-      prisma.returnOrder.findFirst({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true },
-      }),
-      prisma.refundRecord.findFirst({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && { refundDate: dateFilter }),
-        },
-        orderBy: { refundDate: 'desc' },
-        select: { refundDate: true },
-      }),
-    ]);
+  const refundPaid = Number(refundAggregate._sum.processedAmount ?? 0);
 
-  const latestDate = [
-    lastSalesOrder?.createdAt,
-    lastPayment?.paymentDate,
-    lastReturn?.createdAt,
-    lastRefund?.refundDate,
-  ]
-    .filter((value): value is Date => value instanceof Date)
-    .sort((a, b) => b.getTime() - a.getTime())[0];
+  const receivableBalance = computeReceivableBalance({
+    salesAmount,
+    salesReturnAmount,
+    paymentReceived,
+    prepaymentReceived,
+    refundPaid,
+  });
 
-  return latestDate?.toISOString();
-}
+  let prepaymentPaid = 0;
 
-/**
- * 获取交易笔数
- */
-async function _getTransactionCount(
-  customerId: string,
-  startDate?: string,
-  endDate?: string
-): Promise<number> {
-  const dateFilter: Record<string, unknown> = {};
-  if (startDate) {
-    dateFilter.gte = new Date(startDate);
-  }
-  if (endDate) {
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-    dateFilter.lte = end;
+  if (customerAsSupplier) {
+    const supplierPaymentAggregate = await prisma.paymentOutRecord.aggregate({
+      where: {
+        supplierId: customerAsSupplier.id,
+        status: { in: ['confirmed'] },
+        paymentDate: dateFilter,
+      },
+      _sum: { paymentAmount: true },
+    });
+
+    prepaymentPaid = Number(supplierPaymentAggregate._sum.paymentAmount ?? 0);
   }
 
-  const [salesCount, paymentCount, returnCount, refundCount] =
-    await Promise.all([
-      prisma.salesOrder.count({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-        },
-      }),
-      prisma.paymentRecord.count({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && {
-            paymentDate: dateFilter,
-          }),
-        },
-      }),
-      prisma.returnOrder.count({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-        },
-      }),
-      prisma.refundRecord.count({
-        where: {
-          customerId,
-          ...(Object.keys(dateFilter).length > 0 && {
-            refundDate: dateFilter,
-          }),
-        },
-      }),
-    ]);
+  const payableBalance = computePayableBalance({
+    purchaseAmount: 0,
+    purchaseReturnAmount: 0,
+    paymentPaid: 0,
+    prepaymentPaid,
+    refundReceived: 0,
+  });
 
-  return salesCount + paymentCount + returnCount + refundCount;
+  return roundCurrency(receivableBalance - payableBalance);
 }

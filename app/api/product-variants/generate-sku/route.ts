@@ -87,6 +87,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       },
       select: { sku: true },
       orderBy: { sku: 'asc' },
+      take: 1000,
     });
 
     const existingSkuSet = new Set(existingSkus.map(v => v.sku));
@@ -181,6 +182,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
 
     // 查询数据库中已存在的SKU
     const allBaseSkus = Array.from(skuCounts.keys());
+    const maxExistingSkuRows = Math.min(allBaseSkus.length * 1000, 100000);
     const existingSkus = await prisma.productVariant.findMany({
       where: {
         OR: allBaseSkus.map(sku => ({
@@ -188,6 +190,8 @@ export const PUT = withAuth(async (request: NextRequest) => {
         })),
       },
       select: { sku: true },
+      orderBy: { sku: 'asc' },
+      take: maxExistingSkuRows,
     });
 
     const existingSkuSet = new Set(existingSkus.map(v => v.sku));

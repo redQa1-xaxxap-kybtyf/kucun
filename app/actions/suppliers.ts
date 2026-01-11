@@ -414,6 +414,7 @@ export async function batchUpdateSupplierStatus(
         name: true,
         status: true,
       },
+      take: supplierIds.length,
     });
 
     if (suppliers.length !== supplierIds.length) {
@@ -487,6 +488,7 @@ export async function batchDeleteSuppliers(
         id: true,
         name: true,
       },
+      take: supplierIds.length,
     });
 
     const foundIds = new Set(suppliers.map(s => s.id));

@@ -21,11 +21,120 @@ import type {
   PaymentOutRecordListResponse,
 } from '@/lib/types/payable';
 import { parseLocalDateString } from '@/lib/utils/datetime';
+import { withIdempotency } from '@/lib/utils/idempotency';
+import { toNumber } from '@/lib/utils/number';
 import { generatePaymentOutNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentOutRecordSchema,
   paymentOutRecordQuerySchema,
 } from '@/lib/validations/payable';
+
+const PAYMENT_OUT_STATUSES = [
+  'pending',
+  'confirmed',
+  'cancelled',
+] as const satisfies ReadonlyArray<PaymentOutRecordDetail['status']>;
+
+const PAYMENT_OUT_METHODS = [
+  'cash',
+  'bank_transfer',
+  'alipay',
+  'wechat',
+  'check',
+  'other',
+] as const satisfies ReadonlyArray<PaymentOutRecordDetail['paymentMethod']>;
+
+type PaymentOutRecordWithInclude = {
+  id: string;
+  paymentNumber: string;
+  payableRecordId: string | null;
+  supplierId: string;
+  userId: string;
+  paymentMethod: string;
+  paymentAmount: unknown;
+  paymentDate: Date;
+  status: string;
+  remarks: string | null;
+  voucherNumber: string | null;
+  bankInfo: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  payableRecord: {
+    id: string;
+    payableNumber: string;
+    payableAmount: unknown;
+    remainingAmount: unknown;
+  } | null;
+  supplier: { id: string; name: string; phone: string | null; address: string | null };
+  user: { id: string; name: string; email: string | null };
+};
+
+function normalizePaymentOutStatus(value: string): PaymentOutRecordDetail['status'] {
+  return (PAYMENT_OUT_STATUSES as readonly string[]).includes(value)
+    ? (value as PaymentOutRecordDetail['status'])
+    : 'pending';
+}
+
+function normalizePaymentOutMethod(value: string): PaymentOutRecordDetail['paymentMethod'] {
+  return (PAYMENT_OUT_METHODS as readonly string[]).includes(value)
+    ? (value as PaymentOutRecordDetail['paymentMethod'])
+    : 'other';
+}
+
+function serializePaymentOutRecordDetail(
+  payment: PaymentOutRecordWithInclude
+): PaymentOutRecordDetail {
+  return {
+    id: payment.id,
+    paymentNumber: payment.paymentNumber,
+    supplierId: payment.supplierId,
+    userId: payment.userId,
+    paymentMethod: normalizePaymentOutMethod(payment.paymentMethod),
+    paymentAmount: toNumber(payment.paymentAmount),
+    paymentDate: payment.paymentDate,
+    status: normalizePaymentOutStatus(payment.status),
+    ...(payment.payableRecordId !== null && payment.payableRecordId !== undefined
+      ? { payableRecordId: payment.payableRecordId }
+      : {}),
+    ...(payment.remarks !== null && payment.remarks !== undefined
+      ? { remarks: payment.remarks }
+      : {}),
+    ...(payment.voucherNumber !== null && payment.voucherNumber !== undefined
+      ? { voucherNumber: payment.voucherNumber }
+      : {}),
+    ...(payment.bankInfo !== null && payment.bankInfo !== undefined
+      ? { bankInfo: payment.bankInfo }
+      : {}),
+    createdAt: payment.createdAt,
+    updatedAt: payment.updatedAt,
+    ...(payment.payableRecord
+      ? {
+          payableRecord: {
+            id: payment.payableRecord.id,
+            payableNumber: payment.payableRecord.payableNumber,
+            payableAmount: toNumber(payment.payableRecord.payableAmount),
+            remainingAmount: toNumber(payment.payableRecord.remainingAmount),
+          },
+        }
+      : {}),
+    supplier: {
+      id: payment.supplier.id,
+      name: payment.supplier.name,
+      ...(payment.supplier.phone !== null && payment.supplier.phone !== undefined
+        ? { phone: payment.supplier.phone }
+        : {}),
+      ...(payment.supplier.address !== null &&
+      payment.supplier.address !== undefined
+        ? { address: payment.supplier.address }
+        : {}),
+    },
+    user: {
+      id: payment.user.id,
+      name: payment.user.name,
+      email: payment.user.email ?? '',
+    },
+  };
+}
 
 /**
  * GET /api/finance/payments-out - 获取付款记录列表
@@ -163,7 +272,9 @@ export const GET = withAuth(
     ]);
 
     const response: PaymentOutRecordListResponse = {
-      data: payments as PaymentOutRecordDetail[],
+      data: payments.map(payment =>
+        serializePaymentOutRecordDetail(payment as PaymentOutRecordWithInclude)
+      ),
       pagination: {
         page,
         limit,
@@ -194,7 +305,7 @@ export const POST = withAuth(
       );
     }
 
-    const data = validationResult.data;
+    const { idempotencyKey, ...data } = validationResult.data;
 
     // 验证供应商是否存在
     const supplier = await prisma.supplier.findUnique({
@@ -229,163 +340,213 @@ export const POST = withAuth(
       }
 
       // 金额验证：检查付款金额是否超过剩余应付金额
-      if (data.paymentAmount > payableRecord.remainingAmount) {
+      const existingRemainingAmount = toNumber(payableRecord.remainingAmount, 0);
+      if (data.paymentAmount > existingRemainingAmount) {
         return errorResponse(
-          `付款金额超过应付金额。应付: ￥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ￥${data.paymentAmount.toFixed(2)}`,
+          `付款金额超过应付金额。应付: ￥${existingRemainingAmount.toFixed(2)}, 本次付款: ￥${data.paymentAmount.toFixed(2)}`,
           400
         );
       }
     }
 
-    // 生成付款单号(使用数据库序列表确保并发安全)
-    const paymentNumber = await generatePaymentOutNumber();
+    const payment = await withIdempotency(
+      idempotencyKey,
+      'payment_out_create',
+      data.payableRecordId ?? data.supplierId,
+      user.id,
+      validationResult.data,
+      async () => {
+        // 生成付款单号(使用数据库序列表确保并发安全)
+        const paymentNumber = await generatePaymentOutNumber();
 
-    // 使用事务创建付款记录并更新应付款
-    const payment = await prisma.$transaction(
-      async tx => {
-        // 创建付款记录
-        const newPayment = await tx.paymentOutRecord.create({
-          data: {
-            ...data,
-            paymentNumber,
-            userId: user.id,
-            paymentDate:
-              parseLocalDateString(data.paymentDate) ??
-              new Date(data.paymentDate),
-          },
-          include: {
-            payableRecord: {
-              select: {
-                id: true,
-                payableNumber: true,
-                payableAmount: true,
-                remainingAmount: true,
+        // 使用事务创建付款记录并更新应付款
+        return await prisma.$transaction(
+          async tx => {
+            // 创建付款记录
+            const newPayment = await tx.paymentOutRecord.create({
+              data: {
+                ...data,
+                paymentNumber,
+                userId: user.id,
+                paymentDate:
+                  parseLocalDateString(data.paymentDate) ??
+                  new Date(data.paymentDate),
               },
-            },
-            supplier: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-                address: true,
+              include: {
+                payableRecord: {
+                  select: {
+                    id: true,
+                    payableNumber: true,
+                    payableAmount: true,
+                    remainingAmount: true,
+                  },
+                },
+                supplier: {
+                  select: {
+                    id: true,
+                    name: true,
+                    phone: true,
+                    address: true,
+                  },
+                },
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
               },
-            },
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        });
+            });
 
-        // 如果关联应付款记录,使用乐观锁更新应付款状态(并发控制)
-        if (payableRecord) {
-          const updateResult = await tx.payableRecord.updateMany({
-            where: {
-              id: data.payableRecordId,
-              remainingAmount: { gte: data.paymentAmount },
-            },
-            data: {
-              paidAmount: { increment: data.paymentAmount },
-              remainingAmount: { decrement: data.paymentAmount },
-              updatedAt: new Date(),
-            },
-          });
-
-          if (updateResult.count === 0) {
-            throw new Error('付款失败,可能是并发冲突或金额超限');
-          }
-
-          // 计算新的剩余金额,判断是否需要更新状态
-          const newRemainingAmount =
-            payableRecord.remainingAmount - data.paymentAmount;
-
-          let newStatus = payableRecord.status;
-          if (newRemainingAmount <= 0) {
-            newStatus = 'paid';
-          } else if (payableRecord.paidAmount + data.paymentAmount > 0) {
-            newStatus = 'partial';
-          }
-
-          // 更新应付款状态
-          await tx.payableRecord.update({
-            where: { id: payableRecord.id },
-            data: {
-              status: newStatus,
-              updatedAt: new Date(),
-            },
-          });
-
-          // 阶段3：付款核销后联动更新关联费用的支付状态
-          if (env.EXPENSE_TO_PAYABLE_ENABLED && data.payableRecordId) {
-            try {
-              await updateExpensePaymentStatusAfterPayment({
-                payableRecordId: data.payableRecordId,
-                paymentAmount: data.paymentAmount,
-                tx,
+            // 如果关联应付款记录,使用乐观锁更新应付款状态(并发控制)
+            if (payableRecord && data.payableRecordId) {
+              const updateResult = await tx.payableRecord.updateMany({
+                where: {
+                  id: data.payableRecordId,
+                  remainingAmount: { gte: data.paymentAmount },
+                },
+                data: {
+                  paidAmount: { increment: data.paymentAmount },
+                  remainingAmount: { decrement: data.paymentAmount },
+                  updatedAt: new Date(),
+                },
               });
+
+              if (updateResult.count === 0) {
+                throw new Error('付款失败,可能是并发冲突或金额超限');
+              }
+
+              const refreshedPayable = await tx.payableRecord.findUnique({
+                where: { id: data.payableRecordId },
+                select: { status: true, paidAmount: true, remainingAmount: true },
+              });
+
+              if (!refreshedPayable) {
+                throw new Error('关联的应付款记录不存在');
+              }
+
+              const remaining = toNumber(refreshedPayable.remainingAmount, 0);
+              const paid = toNumber(refreshedPayable.paidAmount, 0);
+              const computedStatus =
+                remaining <= 0 ? 'paid' : paid > 0 ? 'partial' : 'pending';
+
+              if (computedStatus !== refreshedPayable.status) {
+                await tx.payableRecord.update({
+                  where: { id: data.payableRecordId },
+                  data: {
+                    status: computedStatus,
+                    updatedAt: new Date(),
+                  },
+                });
+              }
+
+              // 阶段3：付款核销后联动更新关联费用的支付状态
+              if (env.EXPENSE_TO_PAYABLE_ENABLED) {
+                try {
+                  await updateExpensePaymentStatusAfterPayment({
+                    payableRecordId: data.payableRecordId,
+                    paymentAmount: data.paymentAmount,
+                    tx,
+                  });
+                } catch (error) {
+                  logger.warn(
+                    'payments-out',
+                    '付款后更新费用状态失败，但不影响付款记录',
+                    undefined,
+                    {
+                      paymentNumber,
+                      payableRecordId: data.payableRecordId,
+                      paymentAmount: data.paymentAmount,
+                      error:
+                        error instanceof Error
+                          ? error.message
+                          : String(error ?? ''),
+                    }
+                  );
+                  // 不抛出错误，允许付款继续完成
+                }
+              }
+            }
+
+            // ✅ 修复问题1：记录供应商往来账本（与付款记录同事务）
+            try {
+              await recordPartnerTransaction(
+                {
+                  partnerId: data.supplierId,
+                  partnerName: supplier.name,
+                  partnerRole: 'supplier',
+                  entityType: 'supplier',
+                  transactionType: 'payment_out',
+                  amount: data.paymentAmount,
+                  referenceId: newPayment.id,
+                  referenceNumber: paymentNumber,
+                  description: `付款 ${paymentNumber} 已确认`,
+                  occurredAt: newPayment.paymentDate,
+                  metadata: {
+                    paymentMethod: data.paymentMethod,
+                    payableRecordId: data.payableRecordId ?? undefined,
+                    voucherNumber: data.voucherNumber ?? undefined,
+                    triggeredBy: 'payment_out:create',
+                  },
+                },
+                tx
+              );
             } catch (error) {
-              logger.warn(
+              logger.error(
                 'payments-out',
-                '付款后更新费用状态失败，但不影响付款记录',
+                '记录供应商往来账失败',
+                error,
                 undefined,
                 {
+                  paymentId: newPayment.id,
                   paymentNumber,
-                  payableRecordId: data.payableRecordId,
-                  paymentAmount: data.paymentAmount,
-                  error:
-                    error instanceof Error
-                      ? error.message
-                      : String(error ?? ''),
+                  supplierId: data.supplierId,
                 }
               );
-              // 不抛出错误，允许付款继续完成
+              // 账本记录失败时回滚整个事务
+              throw new Error('记录供应商往来账失败');
             }
-          }
-        }
 
-        // ✅ 修复问题1：记录供应商往来账本
-        // 在付款单创建成功后，调用 recordPartnerTransaction 记录账本
-        try {
-          await recordPartnerTransaction({
-            partnerId: data.supplierId,
-            partnerName: supplier.name,
-            partnerRole: 'supplier',
-            entityType: 'supplier',
-            transactionType: 'payment_out',
-            amount: data.paymentAmount,
-            referenceId: newPayment.id,
-            referenceNumber: paymentNumber,
-            description: `付款 ${paymentNumber} 已确认`,
-            occurredAt: newPayment.paymentDate,
-            metadata: {
-              paymentMethod: data.paymentMethod,
-              payableRecordId: data.payableRecordId ?? undefined,
-              voucherNumber: data.voucherNumber ?? undefined,
-              triggeredBy: 'payment_out:create',
-            },
-          });
-        } catch (error) {
-          logger.error(
-            'payments-out',
-            '记录供应商往来账失败',
-            error,
-            undefined,
-            {
-              paymentId: newPayment.id,
-              paymentNumber,
-              supplierId: data.supplierId,
+            // 返回最新数据（包含应付款最新状态/金额）
+            const refreshedPayment = await tx.paymentOutRecord.findUnique({
+              where: { id: newPayment.id },
+              include: {
+                payableRecord: {
+                  select: {
+                    id: true,
+                    payableNumber: true,
+                    payableAmount: true,
+                    remainingAmount: true,
+                  },
+                },
+                supplier: {
+                  select: {
+                    id: true,
+                    name: true,
+                    phone: true,
+                    address: true,
+                  },
+                },
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            });
+
+            if (!refreshedPayment) {
+              throw new Error('付款记录创建失败');
             }
-          );
-          // 账本记录失败时回滚整个事务
-          throw new Error('记录供应商往来账失败');
-        }
 
-        return newPayment;
-      },
-      getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
+            return refreshedPayment;
+          },
+          getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
+        );
+      }
     );
 
     // 清除相关缓存

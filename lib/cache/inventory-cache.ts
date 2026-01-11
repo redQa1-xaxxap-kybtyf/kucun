@@ -141,57 +141,41 @@ export async function getBatchCachedInventorySummary(
       },
     });
 
-    // 查询批次明细
-    const inventoryBatches = await prisma.inventory.findMany({
+    // 查询批次明细（按产品+批次聚合，避免拉全量库存记录）
+    const inventoryBatches = await prisma.inventory.groupBy({
+      by: ['productId', 'batchNumber'],
       where: {
         productId: { in: uncachedIds },
         quantity: { gt: 0 }, // 只查询有库存的批次
         batchNumber: { not: null }, // 只查询有批次号的记录
       },
-      select: {
-        productId: true,
-        batchNumber: true,
+      _sum: {
         quantity: true,
-      },
-      orderBy: {
-        batchNumber: 'asc',
       },
     });
 
-    // 按产品ID和批次号分组并汇总数量（处理同一产品同一批次可能有多条记录的情况）
-    const batchesByProduct = inventoryBatches.reduce(
+    const batchesArrayByProduct = inventoryBatches.reduce(
       (acc, item) => {
-        if (!item.batchNumber) return acc; // 跳过没有批次号的记录
+        if (!item.batchNumber) return acc;
 
+        const quantity = item._sum.quantity || 0;
         if (!acc[item.productId]) {
-          acc[item.productId] = {};
+          acc[item.productId] = [];
         }
 
-        // 如果这个批次号已经存在，累加数量；否则创建新记录
-        if (acc[item.productId][item.batchNumber]) {
-          acc[item.productId][item.batchNumber].quantity += item.quantity;
-        } else {
-          acc[item.productId][item.batchNumber] = {
-            batchNumber: item.batchNumber,
-            quantity: item.quantity,
-          };
-        }
+        acc[item.productId].push({
+          batchNumber: item.batchNumber,
+          quantity,
+        });
 
-        return acc;
-      },
-      {} as Record<string, Record<string, InventoryBatch>>
-    );
-
-    // 转换为数组格式
-    const batchesArrayByProduct = Object.entries(batchesByProduct).reduce(
-      (acc, [productId, batchesMap]) => {
-        acc[productId] = Object.values(batchesMap).sort((a, b) =>
-          a.batchNumber.localeCompare(b.batchNumber)
-        );
         return acc;
       },
       {} as Record<string, InventoryBatch[]>
     );
+
+    for (const batches of Object.values(batchesArrayByProduct)) {
+      batches.sort((a, b) => a.batchNumber.localeCompare(b.batchNumber));
+    }
 
     // 处理查询结果并设置缓存
     const setCachePromises = inventorySummary.map(async item => {

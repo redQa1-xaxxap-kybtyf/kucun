@@ -194,6 +194,7 @@ export const POST = withErrorHandling(
                 lastShippingQueryAt: true,
                 shippingQueryStatus: true,
               },
+              take: orderIds.length,
             })
           : await prisma.purchaseOrder.findMany({
               where: {
@@ -208,6 +209,7 @@ export const POST = withErrorHandling(
                 lastShippingQueryAt: true,
                 shippingQueryStatus: true,
               },
+              take: orderIds.length,
             });
 
       // 创建订单 ID 到订单的映射

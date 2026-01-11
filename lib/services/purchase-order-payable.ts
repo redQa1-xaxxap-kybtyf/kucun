@@ -40,6 +40,7 @@ export async function ensurePurchaseOrderPayable(
       sourceType: 'purchase_order',
       sourceId: order.id,
     },
+    take: 10000,
     select: { supplierId: true },
   });
 
@@ -48,22 +49,25 @@ export async function ensurePurchaseOrderPayable(
   );
 
   // 1) 按明细行拆分货款：一个供应商一条应付记录（仅统计产品 totalPrice）
-  const items = await tx.purchaseOrderItem.findMany({
+  const itemGroups = await tx.purchaseOrderItem.groupBy({
+    by: ['supplierId'],
     where: { purchaseOrderId: order.id },
-    select: { supplierId: true, totalPrice: true },
+    _sum: { totalPrice: true },
   });
 
-  if (!items.length) {
+  if (!itemGroups.length) {
     return;
   }
 
   const supplierAmounts = new Map<string, number>();
-  for (const item of items) {
-    if (!item.supplierId) continue;
-    const amount = item.totalPrice ?? 0;
+  for (const item of itemGroups) {
+    const supplierId = item.supplierId;
+    if (!supplierId) continue;
+
+    const amount = Number(item._sum?.totalPrice ?? 0);
     if (amount <= 0) continue;
-    const current = supplierAmounts.get(item.supplierId) ?? 0;
-    supplierAmounts.set(item.supplierId, current + amount);
+    const current = supplierAmounts.get(supplierId) ?? 0;
+    supplierAmounts.set(supplierId, current + amount);
   }
 
   if (supplierAmounts.size === 0) {
@@ -74,23 +78,23 @@ export async function ensurePurchaseOrderPayable(
   // 仅考虑显式设置了 supplierId 的费用，且该供应商在货款明细中不存在时，
   // 为其单独创建应付记录，实现「费用供应商与货物供应商不一致时分开创建应付」
   const expenseSupplierAmounts = new Map<string, number>();
-  const expenses = await tx.expenseRecord.findMany({
+  const expenseGroups = await tx.expenseRecord.groupBy({
+    by: ['supplierId'],
     where: {
       relatedType: 'purchase_order',
       relatedId: order.id,
       supplierId: { not: null },
     },
-    select: {
-      supplierId: true,
+    _sum: {
       expenseAmount: true,
     },
   });
 
-  for (const expense of expenses) {
+  for (const expense of expenseGroups) {
     const supplierId = expense.supplierId;
     if (!supplierId) continue;
 
-    const amount = Number(expense.expenseAmount ?? 0);
+    const amount = Number(expense._sum?.expenseAmount ?? 0);
     if (amount <= 0) continue;
 
     // 只为“纯费用供应商”创建应付：货款明细里没有出现过该供应商

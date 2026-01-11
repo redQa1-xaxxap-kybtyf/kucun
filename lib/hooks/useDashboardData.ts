@@ -53,19 +53,34 @@ const asNumber = (value: unknown): number => {
 
 const DASHBOARD_ORDER_STATUSES: readonly DashboardSalesOrderStatus[] = [
   'draft',
-  'pending',
   'confirmed',
-  'processing',
   'shipped',
-  'delivered',
   'completed',
   'cancelled',
 ] as const;
 
-const toDashboardOrderStatus = (status: unknown): DashboardSalesOrderStatus =>
-  DASHBOARD_ORDER_STATUSES.includes(status as DashboardSalesOrderStatus)
-    ? (status as DashboardSalesOrderStatus)
-    : 'draft';
+const LEGACY_DASHBOARD_ORDER_STATUS_MAP: Record<
+  string,
+  DashboardSalesOrderStatus
+> = {
+  pending: 'draft',
+  processing: 'confirmed',
+  delivered: 'completed',
+};
+
+const toDashboardOrderStatus = (status: unknown): DashboardSalesOrderStatus => {
+  if (typeof status === 'string') {
+    const normalized = status.trim();
+    const mapped = LEGACY_DASHBOARD_ORDER_STATUS_MAP[normalized];
+    if (mapped) {
+      return mapped;
+    }
+    if (DASHBOARD_ORDER_STATUSES.includes(normalized as DashboardSalesOrderStatus)) {
+      return normalized as DashboardSalesOrderStatus;
+    }
+  }
+  return 'draft';
+};
 
 const FACTORY_SHIPMENT_STATUSES = new Set<FactoryShipmentStatus>([
   'draft',

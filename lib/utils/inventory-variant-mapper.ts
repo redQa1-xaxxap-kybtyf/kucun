@@ -7,6 +7,7 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { toNumberOrNull } from '@/lib/utils/number';
 
 /**
  * 库存查询条件构建器
@@ -167,7 +168,14 @@ export async function findAvailableInventory(
     },
   });
 
-  return inventory;
+  if (!inventory) {
+    return null;
+  }
+
+  return {
+    ...inventory,
+    unitCost: toNumberOrNull(inventory.unitCost),
+  };
 }
 
 /**

@@ -261,54 +261,56 @@ export const paymentRecordQuerySchema = z
   );
 
 // 应收账款查询验证规则
-export const accountsReceivableQuerySchema = z
-  .object({
-    page: z.number().int().positive().optional().default(1),
-    limit: z.number().int().positive().max(100).optional().default(10),
-    search: z.string().optional(),
-    customerId: z.string().optional(),
-    paymentStatus: z.enum(['unpaid', 'partial', 'pending', 'paid']).optional(),
-    startDate: z
-      .string()
-      .optional()
-      .refine(date => {
-        if (!date) {
-          return true;
-        }
-        const parsedDate = new Date(date);
-        return !isNaN(parsedDate.getTime());
-      }, '请输入有效的开始日期格式'),
-    endDate: z
-      .string()
-      .optional()
-      .refine(date => {
-        if (!date) {
-          return true;
-        }
-        const parsedDate = new Date(date);
-        return !isNaN(parsedDate.getTime());
-      }, '请输入有效的结束日期格式'),
-    sortBy: z
-      .enum([
-        'createdAt',
-        'updatedAt',
-        'dueDate',
-        'orderNumber',
-        'customerName',
-        'totalAmount',
-        'paidAmount',
-        'remainingAmount',
-      ])
-      .optional()
-      .default('createdAt'),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
-  })
-  .refine(
+const accountsReceivableQuerySchemaObject = z.object({
+  page: z.number().int().positive().optional().default(1),
+  limit: z.number().int().positive().max(100).optional().default(10),
+  search: z.string().optional(),
+  customerId: z.string().optional(),
+  paymentStatus: z.enum(['unpaid', 'partial', 'pending', 'paid']).optional(),
+  startDate: z
+    .string()
+    .optional()
+    .refine(date => {
+      if (!date) {
+        return true;
+      }
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime());
+    }, '请输入有效的开始日期格式'),
+  endDate: z
+    .string()
+    .optional()
+    .refine(date => {
+      if (!date) {
+        return true;
+      }
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime());
+    }, '请输入有效的结束日期格式'),
+  sortBy: z
+    .enum([
+      'createdAt',
+      'updatedAt',
+      'dueDate',
+      'orderNumber',
+      'customerName',
+      'totalAmount',
+      'paidAmount',
+      'remainingAmount',
+    ])
+    .optional()
+    .default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+const addDateRangeValidation = <T extends z.ZodTypeAny>(schema: T) =>
+  schema.refine(
     data => {
       // 验证日期范围
-      if (data.startDate && data.endDate) {
-        const start = new Date(data.startDate);
-        const end = new Date(data.endDate);
+      const dateRange = data as { startDate?: string; endDate?: string };
+      if (dateRange.startDate && dateRange.endDate) {
+        const start = new Date(dateRange.startDate);
+        const end = new Date(dateRange.endDate);
         return start <= end;
       }
       return true;
@@ -318,6 +320,16 @@ export const accountsReceivableQuerySchema = z
       path: ['endDate'],
     }
   );
+
+export const accountsReceivableQuerySchema = addDateRangeValidation(
+  accountsReceivableQuerySchemaObject
+);
+
+export const accountsReceivableExportQuerySchema = addDateRangeValidation(
+  accountsReceivableQuerySchemaObject.extend({
+    limit: z.number().int().positive().max(50000).optional().default(50000),
+  })
+);
 
 // 收款确认验证规则
 export const paymentConfirmationSchema = z.object({

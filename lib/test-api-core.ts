@@ -231,7 +231,11 @@ async function testCoreApis() {
 }
 
 // 如果直接运行此文件，执行测试
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   testCoreApis()
     .then(() => {
       console.log('\n✅ 核心 API 测试成功完成');

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { handleZodError } from '@/lib/api/errors';
+import { ApiError, handleZodError } from '@/lib/api/errors';
 import {
   createInboundRecord,
   getInboundRecords,
@@ -12,6 +12,7 @@ import { requirePermission } from '@/lib/auth/permissions';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { addToFIFOQueue } from '@/lib/services/fifo-cost-service';
 import { calculateTotalCost } from '@/lib/types/inventory-operations';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
@@ -82,6 +83,9 @@ async function postInboundRecordHandler(request: NextRequest) {
       weight,
       variantId,
       unitCost,
+      supplierId,
+      purchaseOrderId,
+      purchaseOrderItemId,
     } = validatedData;
 
     // 期初库存需要额外权限
@@ -98,6 +102,57 @@ async function postInboundRecordHandler(request: NextRequest) {
       validatedData,
       async () =>
         await prisma.$transaction(async tx => {
+          // 期初库存额外校验：不允许重复或与业务入库/库存冲突
+          if (reason === 'opening_balance') {
+            const normalizedVariantId = variantId ?? null;
+            const normalizedBatchNumber = batchNumber ?? null;
+
+            const [
+              existingOpeningBalance,
+              existingInventory,
+              existingBusinessInbound,
+            ] = await Promise.all([
+              tx.inboundRecord.findFirst({
+                where: {
+                  productId,
+                  variantId: normalizedVariantId,
+                  batchNumber: normalizedBatchNumber,
+                  reason: 'opening_balance',
+                },
+                select: { id: true },
+              }),
+              tx.inventory.findFirst({
+                where: {
+                  productId,
+                  variantId: normalizedVariantId,
+                  batchNumber: normalizedBatchNumber,
+                },
+                select: { id: true },
+              }),
+              tx.inboundRecord.findFirst({
+                where: {
+                  productId,
+                  variantId: normalizedVariantId,
+                  batchNumber: normalizedBatchNumber,
+                  reason: { not: 'opening_balance' },
+                },
+                select: { id: true },
+              }),
+            ]);
+
+            if (existingOpeningBalance) {
+              throw ApiError.badRequest(
+                `批次 ${batchNumber} 已有期初库存，如需调整请用“库存调整”`
+              );
+            }
+
+            if (existingInventory || existingBusinessInbound) {
+              throw ApiError.badRequest(
+                `批次 ${batchNumber} 已存在业务入库/库存，不能再作为期初库存`
+              );
+            }
+          }
+
           // 创建入库记录
           const record = await createInboundRecord(
             {
@@ -111,8 +166,25 @@ async function postInboundRecordHandler(request: NextRequest) {
               weight,
               unitCost,
               totalCost: calculateTotalCost(quantity, unitCost),
+              supplierId,
+              purchaseOrderId,
+              purchaseOrderItemId,
             },
             user.id,
+            tx
+          );
+
+          // FIFO 入队：确保 FIFO 队列数量与库存一致
+          await addToFIFOQueue(
+            {
+              productId,
+              variantId: variantId ?? null,
+              batchNumber: batchNumber ?? null,
+              inboundRecordId: record.id,
+              quantity,
+              unitCost,
+              inboundDate: new Date(),
+            },
             tx
           );
 
@@ -140,6 +212,14 @@ async function postInboundRecordHandler(request: NextRequest) {
     // 其他错误：统一返回 500（调试时输出到控制台）
 
     console.error('POST /api/inventory/inbound failed:', error);
+
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.statusCode }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,

@@ -144,24 +144,27 @@ export const POST = withAuth(
       // ✅ 修复问题1：记录供应商往来账本
       // 在应付款创建成功后，调用 recordPartnerTransaction 记录账本
       try {
-        await recordPartnerTransaction({
-          partnerId: data.supplierId,
-          partnerName: supplier.name,
-          partnerRole: 'supplier',
-          entityType: 'supplier',
-          transactionType: 'purchase',
-          amount: data.payableAmount,
-          referenceId: newPayable.id,
-          referenceNumber: payableNumber,
-          description: `应付款 ${payableNumber} 创建`,
-          occurredAt: data.dueDate,
-          dueDate: data.dueDate,
-          metadata: {
-            sourceType: data.sourceType,
-            purchaseOrderId: data.sourceId ?? undefined,
-            triggeredBy: 'payable:create',
+        await recordPartnerTransaction(
+          {
+            partnerId: data.supplierId,
+            partnerName: supplier.name,
+            partnerRole: 'supplier',
+            entityType: 'supplier',
+            transactionType: 'purchase',
+            amount: data.payableAmount,
+            referenceId: newPayable.id,
+            referenceNumber: payableNumber,
+            description: `应付款 ${payableNumber} 创建`,
+            occurredAt: data.dueDate,
+            dueDate: data.dueDate,
+            metadata: {
+              sourceType: data.sourceType,
+              purchaseOrderId: data.sourceId ?? undefined,
+              triggeredBy: 'payable:create',
+            },
           },
-        });
+          tx
+        );
       } catch (error) {
         logger.error('payables', '记录供应商往来账失败', error, {
           payableId: newPayable.id,

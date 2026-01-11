@@ -19,7 +19,8 @@ export type OperationType =
   | 'sales_order_create'
   | 'sales_order_update'
   | 'sales_order_status_change'
-  | 'purchase_order_status_change';
+  | 'purchase_order_status_change'
+  | 'payment_out_create';
 
 export interface IdempotencyResult<T> {
   isNew: boolean;
@@ -31,6 +32,24 @@ export interface IdempotencyResult<T> {
     expiresAt: Date;
   } | null;
 }
+
+const DEFAULT_ENTITY_TYPE_BY_OPERATION: Record<OperationType, string> = {
+  inbound: 'product',
+  outbound: 'product',
+  adjust: 'product',
+  return_order_status_change: 'return_order',
+  factory_shipment_status_change: 'factory_shipment',
+  sales_order_create: 'sales_order',
+  sales_order_update: 'sales_order',
+  sales_order_status_change: 'sales_order',
+  purchase_order_status_change: 'purchase_order',
+  payment_out_create: 'payment_out',
+};
+
+const resolveEntityType = (
+  operationType: OperationType,
+  override?: string
+) => override ?? DEFAULT_ENTITY_TYPE_BY_OPERATION[operationType] ?? 'generic';
 
 // ⚙️ 幂等性控制参数
 // 结合最小化事务 (≈200-500ms) 后, 正常入库应在 < 1秒 完成。
@@ -46,6 +65,28 @@ const sleep = (ms: number) =>
   new Promise<void>(resolve => {
     setTimeout(resolve, ms);
   });
+
+const isIdempotencyKeyUniqueConstraintError = (
+  error: Prisma.PrismaClientKnownRequestError
+) => {
+  if (error.code !== 'P2002') return false;
+
+  const target = (error.meta as { target?: unknown } | undefined)?.target;
+
+  if (Array.isArray(target)) {
+    return target.some(item =>
+      typeof item === 'string' && /idempotency(_key)?|idempotencyKey/i.test(item)
+    );
+  }
+
+  if (typeof target === 'string') {
+    return /idempotency(_key)?|idempotencyKey/i.test(target);
+  }
+
+  return /inventory_operations_idempotency_key_key|idempotency(_key)?/i.test(
+    error.message
+  );
+};
 
 /**
  * 检查幂等性键是否已存在
@@ -131,25 +172,30 @@ export async function checkIdempotency(
  * 创建幂等性记录
  * @param idempotencyKey 幂等性键
  * @param operationType 操作类型
- * @param productId 产品ID
+ * @param entityId 关联实体ID（不再强绑定到产品）
  * @param operatorId 操作人ID
  * @param requestData 请求数据
+ * @param options 可选参数
  * @returns 操作记录ID
  */
 export async function createIdempotencyRecord(
   idempotencyKey: string,
   operationType: OperationType,
-  productId: string,
+  entityId: string,
   operatorId: string,
-  requestData: Record<string, unknown>
+  requestData: Record<string, unknown>,
+  options?: { entityType?: string }
 ): Promise<string> {
   const expiresAt = new Date(Date.now() + PROCESSING_RECORD_TTL_MS);
+
+  const entityType = resolveEntityType(operationType, options?.entityType);
 
   const operation = await prisma.inventoryOperation.create({
     data: {
       idempotencyKey,
       operationType,
-      productId,
+      entityType,
+      entityId,
       operatorId,
       status: 'processing',
       requestData: JSON.stringify(requestData),
@@ -232,10 +278,11 @@ export async function cleanupExpiredIdempotencyRecords(): Promise<number> {
 export async function withIdempotency<T>(
   idempotencyKey: string,
   operationType: OperationType,
-  productId: string,
+  entityId: string,
   operatorId: string,
   requestData: Record<string, unknown>,
-  operation: () => Promise<T>
+  operation: () => Promise<T>,
+  options?: { entityType?: string }
 ): Promise<T> {
   const retryDelayMs = 100; // 初始重试延迟(毫秒)
   const maxRetryDelayMs = 500; // 最大重试延迟(毫秒)
@@ -253,6 +300,8 @@ export async function withIdempotency<T>(
 
   while (Date.now() - startTime <= maxWaitMs) {
     try {
+      const entityType = resolveEntityType(operationType, options?.entityType);
+
       // 策略1：乐观锁 - 先尝试创建记录
       // 优点：在无并发时性能最优，避免了先检查后创建的竞态窗口
       // 如果创建成功，说明是第一个请求，直接执行操作
@@ -260,7 +309,8 @@ export async function withIdempotency<T>(
         data: {
           idempotencyKey,
           operationType,
-          productId,
+          entityType,
+          entityId,
           operatorId,
           status: 'processing',
           requestData: JSON.stringify(requestData),
@@ -291,6 +341,10 @@ export async function withIdempotency<T>(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
+        if (!isIdempotencyKeyUniqueConstraintError(error)) {
+          throw error;
+        }
+
         // 策略2：处理唯一约束冲突 - 说明已有其他请求在处理
         // Prisma唯一约束错误码: P2002
         // 查询现有记录的状态
@@ -360,33 +414,8 @@ export async function withIdempotency<T>(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2003'
       ) {
-        // 尝试记录一条失败的幂等性记录，便于后续排查
-        try {
-          const fallbackProduct = await prisma.product.findFirst({
-            select: { id: true },
-          });
-
-          if (fallbackProduct) {
-            await prisma.inventoryOperation.create({
-              data: {
-                idempotencyKey,
-                operationType,
-                productId: fallbackProduct.id,
-                operatorId,
-                status: 'failed',
-                requestData: JSON.stringify(requestData),
-                errorMessage: '产品不存在',
-                completedAt: new Date(),
-                expiresAt: new Date(Date.now() + FAILED_RECORD_TTL_MS),
-              },
-            });
-          }
-        } catch {
-          // 记录失败不影响主流程
-        }
-
-        // 向上抛出业务错误，由调用方捕获
-        throw new Error('产品不存在');
+        // 幂等性记录已不再强绑定 productId，P2003 一般来自 operatorId 等外键。
+        throw new Error('幂等性记录写入失败：关联数据不存在');
       }
 
       // SQLite 在高并发下可能返回超时/事务关闭错误 (P2024/P2034) 或未知的超时错误

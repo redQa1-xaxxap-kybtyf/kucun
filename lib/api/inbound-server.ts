@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import type { InboundRecord } from '@/lib/types/inbound';
+import { toNumberOrNull } from '@/lib/utils/number';
 
 import { getInboundRecords, parseInboundQueryParams } from './inbound-handlers';
 
@@ -103,8 +104,8 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
     batchNumber: record.batchNumber ?? undefined,
     batchSpecificationId: record.batchSpecificationId ?? undefined,
     quantity: Number(record.quantity),
-    unitCost: record.unitCost ?? undefined,
-    totalCost: record.totalCost ?? undefined,
+    unitCost: toNumberOrNull(record.unitCost) ?? undefined,
+    totalCost: toNumberOrNull(record.totalCost) ?? undefined,
     location: record.location ?? undefined,
     reason: record.reason as InboundRecord['reason'],
     remarks: record.remarks ?? undefined,
@@ -121,7 +122,7 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
           >['unit'],
           specification: record.product.specification ?? undefined,
           piecesPerUnit: record.product.piecesPerUnit ?? 0,
-          weight: record.product.weight ?? undefined,
+          weight: toNumberOrNull(record.product.weight) ?? undefined,
         }
       : undefined,
     variant: record.variant
@@ -152,8 +153,9 @@ export async function getInboundRecordByNumber(recordNumber: string): Promise<
           id: record.batchSpecification.id,
           batchNumber: record.batchSpecification.batchNumber ?? undefined,
           piecesPerUnit: record.batchSpecification.piecesPerUnit ?? undefined,
-          weight: record.batchSpecification.weight ?? undefined,
-          thickness: record.batchSpecification.thickness ?? undefined,
+          weight: toNumberOrNull(record.batchSpecification.weight) ?? undefined,
+          thickness:
+            toNumberOrNull(record.batchSpecification.thickness) ?? undefined,
         }
       : undefined,
     inventoryBalance: inventoryRecord?.quantity ?? undefined,

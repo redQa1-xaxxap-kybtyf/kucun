@@ -169,49 +169,69 @@ export class ExportAuditService {
       }
 
       // 查询所有导出日志
-      const logs = await prisma.systemLog.findMany({
-        where,
-        select: {
-          level: true,
-          action: true,
-          metadata: true,
-        },
-      });
-
       // 统计数据
+      let totalExports = 0;
       let totalRecords = 0;
       const byModule: Record<string, number> = {};
       const byFormat: Record<string, number> = {};
       let successExports = 0;
       let failedExports = 0;
 
-      for (const log of logs) {
-        // 统计成功失败
-        if (log.level === 'info') {
-          successExports++;
-        } else if (log.level === 'error') {
-          failedExports++;
+      let cursor: string | undefined;
+      const batchSize = 1000;
+
+      while (true) {
+        const logs = await prisma.systemLog.findMany({
+          where,
+          select: {
+            id: true,
+            level: true,
+            action: true,
+            metadata: true,
+          },
+          orderBy: {
+            id: 'asc',
+          },
+          take: batchSize,
+          ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+        });
+
+        if (logs.length === 0) {
+          break;
         }
 
-        // 解析metadata
-        try {
-          const meta = JSON.parse(log.metadata || '{}');
-          if (meta.recordCount) {
-            totalRecords += meta.recordCount;
+        totalExports += logs.length;
+
+        for (const log of logs) {
+          // 统计成功失败
+          if (log.level === 'info') {
+            successExports++;
+          } else if (log.level === 'error') {
+            failedExports++;
           }
-          if (meta.module) {
-            byModule[meta.module] = (byModule[meta.module] || 0) + 1;
+
+          // 解析metadata
+          try {
+            const meta = JSON.parse(log.metadata || '{}');
+            if (meta.recordCount) {
+              totalRecords += meta.recordCount;
+            }
+            if (meta.module) {
+              byModule[meta.module] = (byModule[meta.module] || 0) + 1;
+            }
+            if (meta.format) {
+              byFormat[meta.format] = (byFormat[meta.format] || 0) + 1;
+            }
+          } catch {
+            // 忽略解析错误
           }
-          if (meta.format) {
-            byFormat[meta.format] = (byFormat[meta.format] || 0) + 1;
-          }
-        } catch {
-          // 忽略解析错误
         }
+
+        cursor = logs[logs.length - 1].id;
       }
 
       return {
-        totalExports: logs.length,
+        totalExports,
         successExports,
         failedExports,
         totalRecords,

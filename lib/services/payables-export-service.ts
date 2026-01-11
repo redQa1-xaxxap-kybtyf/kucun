@@ -9,6 +9,8 @@
 
 import type { PayableRecord } from '@prisma/client';
 
+import { toNumber } from '@/lib/utils/number';
+
 import { CSVExportService } from './csv-export-service';
 import { EnhancedExcelExportService } from './enhanced-excel-export-service';
 
@@ -86,9 +88,9 @@ export class PayablesExportService {
     return payables.map(item => ({
       应付款编号: item.payableNumber || '',
       供应商名称: item.supplier?.name || '未知供应商',
-      应付金额: item.payableAmount,
-      已付金额: item.paidAmount,
-      剩余金额: item.remainingAmount,
+      应付金额: toNumber(item.payableAmount, 0),
+      已付金额: toNumber(item.paidAmount, 0),
+      剩余金额: toNumber(item.remainingAmount, 0),
       付款状态: STATUS_MAP[item.status] || item.status,
       来源类型: SOURCE_TYPE_MAP[item.sourceType] || item.sourceType,
       来源单号: item.sourceNumber || '',

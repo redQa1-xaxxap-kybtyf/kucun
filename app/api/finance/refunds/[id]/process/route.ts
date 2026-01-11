@@ -27,7 +27,10 @@ export const POST = withAuth(
       const resolvedParams = params ? await Promise.resolve(params) : {};
       refundId = resolvedParams.id;
       if (!refundId) {
-        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: '缺少退款记录ID' },
+          { status: 400 }
+        );
       }
 
       // 先验证退款是否可以处理
@@ -37,6 +40,7 @@ export const POST = withAuth(
       if (!validation.valid) {
         return NextResponse.json(
           {
+            success: false,
             error: validation.reason || '退款无法处理',
           },
           { status: 400 }
@@ -91,6 +95,7 @@ export const POST = withAuth(
       );
       return NextResponse.json(
         {
+          success: false,
           error: error instanceof Error ? error.message : '处理退款失败',
         },
         { status: 500 }

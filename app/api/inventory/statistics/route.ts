@@ -1,8 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { can } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/db';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 构建库存查询条件
@@ -91,20 +93,26 @@ async function fetchInventoryStats(categoryId?: string) {
  * 计算库存总金额
  */
 async function calculateTotalInventoryValue(categoryId?: string) {
-  const inventoryWhere = buildInventoryWhere(categoryId);
+  const conditions: Prisma.Sql[] = [Prisma.sql`p.status = 'active'`];
 
-  const inventoryRecords = await prisma.inventory.findMany({
-    where: inventoryWhere,
-    select: {
-      quantity: true,
-      unitCost: true,
-    },
-  });
+  if (categoryId) {
+    conditions.push(Prisma.sql`p.category_id = ${categoryId}`);
+  }
 
-  const totalValue = inventoryRecords.reduce(
-    (sum, record) => sum + record.quantity * (record.unitCost || 0),
-    0
-  );
+  const row =
+    (
+      await prisma.$queryRaw<Array<{ totalValue: unknown }>>(
+        Prisma.sql`
+          SELECT
+            COALESCE(SUM(i.quantity * COALESCE(i.unit_cost, 0)), 0) AS totalValue
+          FROM inventory i
+          INNER JOIN products p ON p.id = i.product_id
+          WHERE ${Prisma.join(conditions, ' AND ')}
+        `
+      )
+    )[0] ?? null;
+
+  const totalValue = toNumber(row?.totalValue, 0);
 
   return Math.round(totalValue * 100) / 100; // 保留2位小数
 }
@@ -172,7 +180,7 @@ export const GET = withAuth(
 
         statistics.totalValue = totalInventoryValue;
         statistics.openingBalance = {
-          totalCost: openingBalanceStats._sum.totalCost || 0,
+          totalCost: toNumber(openingBalanceStats._sum.totalCost, 0),
           totalQuantity: openingBalanceStats._sum.quantity || 0,
           recordCount: openingBalanceStats._count.id || 0,
         };

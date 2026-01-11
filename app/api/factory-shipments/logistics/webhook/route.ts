@@ -135,7 +135,10 @@ export async function POST(request: NextRequest) {
   try {
     const secret = logisticsConfig.webhookSecret;
     if (!isAuthorized(request, secret)) {
-      return NextResponse.json({ error: '未授权的物流推送' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: '未授权的物流推送' },
+        { status: 401 }
+      );
     }
 
     const payload = (await request.json()) as LogisticsEventPayload;
@@ -144,7 +147,7 @@ export async function POST(request: NextRequest) {
       parsed = ensureValidPayload(payload);
     } catch (e) {
       return NextResponse.json(
-        { error: (e as Error).message },
+        { success: false, error: (e as Error).message },
         { status: 400 }
       );
     }
@@ -153,7 +156,10 @@ export async function POST(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json(
-        { error: `未找到集装箱 ${parsed.containerNumber} 对应的发货单` },
+        {
+          success: false,
+          error: `未找到集装箱 ${parsed.containerNumber} 对应的发货单`,
+        },
         { status: 404 }
       );
     }
@@ -189,7 +195,10 @@ export async function POST(request: NextRequest) {
       );
     } catch (error) {
       if (error instanceof Error && error.message.includes('订单状态不能')) {
-        return NextResponse.json({ error: error.message }, { status: 409 });
+        return NextResponse.json(
+          { success: false, error: error.message },
+          { status: 409 }
+        );
       }
       throw error;
     }
@@ -205,6 +214,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     logger.error('factory-shipments', '物流状态推送处理失败', error);
-    return NextResponse.json({ error: '处理物流推送失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '处理物流推送失败' },
+      { status: 500 }
+    );
   }
 }

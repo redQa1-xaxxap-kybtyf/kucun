@@ -112,52 +112,97 @@ export class ReportGenerationService {
   ): Promise<OrderSummaryReport> {
     const whereClause = this.buildWhereClause(filter);
 
-    const orders = await prisma.salesOrder.findMany({
-      where: whereClause,
-      include: {
-        customer: { select: { id: true, name: true } },
-        items: {
-          include: {
-            product: { select: { id: true, name: true } },
-          },
-        },
-      },
-    });
+    const pageSize = 2000;
+    let cursor: string | undefined;
 
-    const totalOrders = orders.length;
-    const totalAmount = orders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0
-    );
-    const totalProfit = orders.reduce(
-      (sum, order) => sum + (order.profitAmount || 0),
-      0
-    );
-    const averageOrderValue = totalOrders > 0 ? totalAmount / totalOrders : 0;
-    const profitMargin =
-      totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
+    let totalOrders = 0;
+    let totalAmount = 0;
+    let totalProfit = 0;
 
     // 按状态统计订单
     const ordersByStatus: Record<string, number> = {};
-    orders.forEach(order => {
-      ordersByStatus[order.status] = (ordersByStatus[order.status] || 0) + 1;
-    });
 
     // 统计客户排名
     const customerStats = new Map<
       string,
       { name: string; count: number; amount: number }
     >();
-    orders.forEach(order => {
-      const existing = customerStats.get(order.customerId) || {
-        name: order.customer.name,
-        count: 0,
-        amount: 0,
-      };
-      existing.count += 1;
-      existing.amount += order.totalAmount;
-      customerStats.set(order.customerId, existing);
-    });
+
+    // 统计产品排名
+    const productStats = new Map<
+      string,
+      { name: string; quantity: number; revenue: number }
+    >();
+
+    while (true) {
+      const page = await prisma.salesOrder.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          status: true,
+          customerId: true,
+          totalAmount: true,
+          profitAmount: true,
+          customer: { select: { name: true } },
+          items: {
+            select: {
+              quantity: true,
+              subtotal: true,
+              product: { select: { id: true, name: true } },
+            },
+          },
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      totalOrders += page.length;
+
+      for (const order of page) {
+        totalAmount += order.totalAmount;
+        totalProfit += order.profitAmount || 0;
+
+        ordersByStatus[order.status] = (ordersByStatus[order.status] || 0) + 1;
+
+        const existingCustomer = customerStats.get(order.customerId) || {
+          name: order.customer.name,
+          count: 0,
+          amount: 0,
+        };
+        existingCustomer.count += 1;
+        existingCustomer.amount += order.totalAmount;
+        customerStats.set(order.customerId, existingCustomer);
+
+        for (const item of order.items) {
+          if (!item.product) {
+            continue;
+          }
+
+          const existingProduct = productStats.get(item.product.id) || {
+            name: item.product.name,
+            quantity: 0,
+            revenue: 0,
+          };
+          existingProduct.quantity += item.quantity;
+          existingProduct.revenue += item.subtotal;
+          productStats.set(item.product.id, existingProduct);
+        }
+      }
+
+      if (page.length < pageSize) {
+        break;
+      }
+
+      cursor = page[page.length - 1]?.id;
+      if (!cursor) {
+        break;
+      }
+    }
+
+    const averageOrderValue = totalOrders > 0 ? totalAmount / totalOrders : 0;
+    const profitMargin =
+      totalAmount > 0 ? (totalProfit / totalAmount) * 100 : 0;
 
     const topCustomers = Array.from(customerStats.entries())
       .map(([id, stats]) => ({
@@ -168,26 +213,6 @@ export class ReportGenerationService {
       }))
       .sort((a, b) => b.totalAmount - a.totalAmount)
       .slice(0, 10);
-
-    // 统计产品排名
-    const productStats = new Map<
-      string,
-      { name: string; quantity: number; revenue: number }
-    >();
-    orders.forEach(order => {
-      order.items.forEach(item => {
-        if (item.product) {
-          const existing = productStats.get(item.product.id) || {
-            name: item.product.name,
-            quantity: 0,
-            revenue: 0,
-          };
-          existing.quantity += item.quantity;
-          existing.revenue += item.subtotal;
-          productStats.set(item.product.id, existing);
-        }
-      });
-    });
 
     const topProducts = Array.from(productStats.entries())
       .map(([id, stats]) => ({
@@ -217,54 +242,82 @@ export class ReportGenerationService {
   public async generateInventoryReport(
     _filter: ReportFilter
   ): Promise<InventoryReport> {
-    // 获取当前库存
-    const inventory = await prisma.inventory.findMany({
-      include: {
-        product: { select: { id: true, name: true } },
-      },
-    });
-
-    const totalProducts = inventory.length;
-    const totalValue = inventory.reduce(
-      (sum, item) => sum + item.quantity * (item.unitCost || 0),
-      0
-    );
+    const pageSize = 2000;
 
     // 获取安全库存配置
-    const safetyStocks = await prisma.inventorySafetyStock.findMany();
+    const safetyStocks: any[] = [];
+    for (let skip = 0; ; skip += pageSize) {
+      const page = await prisma.inventorySafetyStock.findMany({
+        select: { productId: true, variantId: true, safetyStock: true },
+        skip,
+        take: pageSize,
+      });
+      safetyStocks.push(...page);
+      if (page.length < pageSize) {
+        break;
+      }
+    }
     const safetyStockMap = new Map(
       safetyStocks.map(s => [`${s.productId}-${s.variantId || ''}`, s])
     );
 
-    // 识别低库存商品
-    const lowStockItems = inventory
-      .filter(item => {
-        const key = `${item.productId}-${item.variantId || ''}`;
-        const safetyStock = safetyStockMap.get(key);
-        return safetyStock && item.quantity <= safetyStock.safetyStock;
-      })
-      .map(item => {
-        const key = `${item.productId}-${item.variantId || ''}`;
-        const safetyStock = safetyStockMap.get(key);
-        // 由于前面的 filter 已经确保了 safetyStock 存在，这里应该总是有值
-        // 但为了类型安全，我们提供一个默认值
-        const safetyStockValue = safetyStock?.safetyStock || 0;
-        return {
-          productId: item.productId,
-          productName: item.product.name,
-          currentStock: item.quantity,
-          safetyStock: safetyStockValue,
-          stockValue: item.quantity * (item.unitCost || 0),
-        };
+    // 获取当前库存
+    let cursor: string | undefined;
+    let totalProducts = 0;
+    let totalValue = 0;
+    const lowStockItems: any[] = [];
+    const inventoryTurnover: any[] = [];
+
+    while (true) {
+      const inventory = await prisma.inventory.findMany({
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          quantity: true,
+          unitCost: true,
+          product: { select: { name: true } },
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
 
-    // 计算库存周转率（简化版本）
-    const inventoryTurnover = inventory.map(item => ({
-      productId: item.productId,
-      productName: item.product.name,
-      turnoverRate: 0, // 需要历史数据计算
-      daysInStock: 0, // 需要历史数据计算
-    }));
+      totalProducts += inventory.length;
+
+      for (const item of inventory) {
+        totalValue += item.quantity * (item.unitCost || 0);
+
+        const key = `${item.productId}-${item.variantId || ''}`;
+        const safetyStock = safetyStockMap.get(key);
+        if (safetyStock && item.quantity <= safetyStock.safetyStock) {
+          const safetyStockValue = safetyStock?.safetyStock || 0;
+          lowStockItems.push({
+            productId: item.productId,
+            productName: item.product.name,
+            currentStock: item.quantity,
+            safetyStock: safetyStockValue,
+            stockValue: item.quantity * (item.unitCost || 0),
+          });
+        }
+
+        inventoryTurnover.push({
+          productId: item.productId,
+          productName: item.product.name,
+          turnoverRate: 0, // 需要历史数据计算
+          daysInStock: 0, // 需要历史数据计算
+        });
+      }
+
+      if (inventory.length < pageSize) {
+        break;
+      }
+
+      cursor = inventory[inventory.length - 1]?.id;
+      if (!cursor) {
+        break;
+      }
+    }
 
     // 获取库存变动记录（简化版本）
     const stockMovements = [
@@ -294,58 +347,106 @@ export class ReportGenerationService {
   ): Promise<ProfitAnalysisReport> {
     const whereClause = this.buildWhereClause(filter);
 
-    const orders = await prisma.salesOrder.findMany({
-      where: whereClause,
-      include: {
-        customer: { select: { id: true, name: true } },
-        items: {
-          include: {
-            product: { select: { id: true, name: true } },
-          },
-        },
-        feeItems: true,
-      },
-    });
+    const pageSize = 2000;
+    let cursor: string | undefined;
 
-    const totalRevenue = orders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0
-    );
-    const totalCost = orders.reduce(
-      (sum, order) => sum + (order.costAmount || 0),
-      0
-    );
-    const totalExpenses = orders.reduce(
-      (sum, order) => sum + (order.expenseAmount || 0),
-      0
-    );
-    const grossProfit = totalRevenue - totalCost;
-    const netProfit = grossProfit - totalExpenses;
-    const grossMargin =
-      totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
-    const netMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+    let totalRevenue = 0;
+    let totalCost = 0;
+    let totalExpenses = 0;
 
     // 按产品统计利润
     const productProfitMap = new Map<
       string,
       { name: string; revenue: number; cost: number; profit: number }
     >();
-    orders.forEach(order => {
-      order.items.forEach(item => {
-        if (item.product) {
-          const existing = productProfitMap.get(item.product.id) || {
+
+    // 按客户统计利润
+    const customerProfitMap = new Map<
+      string,
+      { name: string; revenue: number; profit: number }
+    >();
+
+    // 费用分类统计
+    const expenseBreakdown: Record<string, number> = {};
+
+    while (true) {
+      const page = await prisma.salesOrder.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          customerId: true,
+          totalAmount: true,
+          costAmount: true,
+          expenseAmount: true,
+          profitAmount: true,
+          customer: { select: { name: true } },
+          items: {
+            select: {
+              quantity: true,
+              subtotal: true,
+              unitCost: true,
+              product: { select: { id: true, name: true } },
+            },
+          },
+          feeItems: { select: { feeType: true, feeAmount: true } },
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      for (const order of page) {
+        totalRevenue += order.totalAmount;
+        totalCost += order.costAmount || 0;
+        totalExpenses += order.expenseAmount || 0;
+
+        const existingCustomer = customerProfitMap.get(order.customerId) || {
+          name: order.customer.name,
+          revenue: 0,
+          profit: 0,
+        };
+        existingCustomer.revenue += order.totalAmount;
+        existingCustomer.profit += order.profitAmount || 0;
+        customerProfitMap.set(order.customerId, existingCustomer);
+
+        for (const item of order.items) {
+          if (!item.product) {
+            continue;
+          }
+
+          const existingProduct = productProfitMap.get(item.product.id) || {
             name: item.product.name,
             revenue: 0,
             cost: 0,
             profit: 0,
           };
-          existing.revenue += item.subtotal;
-          existing.cost += (item.unitCost || 0) * item.quantity;
-          existing.profit = existing.revenue - existing.cost;
-          productProfitMap.set(item.product.id, existing);
+          existingProduct.revenue += item.subtotal;
+          existingProduct.cost += (item.unitCost || 0) * item.quantity;
+          existingProduct.profit = existingProduct.revenue - existingProduct.cost;
+          productProfitMap.set(item.product.id, existingProduct);
         }
-      });
-    });
+
+        for (const fee of order.feeItems) {
+          expenseBreakdown[fee.feeType] =
+            (expenseBreakdown[fee.feeType] || 0) + fee.feeAmount;
+        }
+      }
+
+      if (page.length < pageSize) {
+        break;
+      }
+
+      cursor = page[page.length - 1]?.id;
+      if (!cursor) {
+        break;
+      }
+    }
+
+    const grossProfit = totalRevenue - totalCost;
+    const netProfit = grossProfit - totalExpenses;
+    const grossMargin =
+      totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+    const netMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
     const profitByProduct = Array.from(productProfitMap.entries()).map(
       ([id, stats]) => ({
@@ -358,22 +459,6 @@ export class ReportGenerationService {
       })
     );
 
-    // 按客户统计利润
-    const customerProfitMap = new Map<
-      string,
-      { name: string; revenue: number; profit: number }
-    >();
-    orders.forEach(order => {
-      const existing = customerProfitMap.get(order.customerId) || {
-        name: order.customer.name,
-        revenue: 0,
-        profit: 0,
-      };
-      existing.revenue += order.totalAmount;
-      existing.profit += order.profitAmount || 0;
-      customerProfitMap.set(order.customerId, existing);
-    });
-
     const profitByCustomer = Array.from(customerProfitMap.entries()).map(
       ([id, stats]) => ({
         customerId: id,
@@ -383,15 +468,6 @@ export class ReportGenerationService {
         margin: stats.revenue > 0 ? (stats.profit / stats.revenue) * 100 : 0,
       })
     );
-
-    // 费用分类统计
-    const expenseBreakdown: Record<string, number> = {};
-    orders.forEach(order => {
-      order.feeItems.forEach(fee => {
-        expenseBreakdown[fee.feeType] =
-          (expenseBreakdown[fee.feeType] || 0) + fee.feeAmount;
-      });
-    });
 
     return {
       totalRevenue,
@@ -415,68 +491,105 @@ export class ReportGenerationService {
   ): Promise<ExpenseReport> {
     const whereClause = this.buildWhereClause(filter);
 
-    const orders = await prisma.salesOrder.findMany({
-      where: whereClause,
-      include: {
-        feeItems: true,
-      },
-    });
+    const pageSize = 2000;
 
-    const approvals = await prisma.expenseApproval.findMany({
-      where: {
-        salesOrder: whereClause,
-      },
-      include: {
-        salesOrder: { select: { orderNumber: true } },
-        expenseType: { select: { typeName: true, category: true } },
-        approver: { select: { name: true } },
-      },
-    });
-
-    const totalExpenses = orders.reduce(
-      (sum, order) =>
-        sum + order.feeItems.reduce((feeSum, fee) => feeSum + fee.feeAmount, 0),
-      0
-    );
-
+    let orderCursor: string | undefined;
+    let totalExpenses = 0;
     const expensesByType: Record<string, number> = {};
-    const expensesByCategory: Record<string, number> = {};
 
-    orders.forEach(order => {
-      order.feeItems.forEach(fee => {
-        expensesByType[fee.feeType] =
-          (expensesByType[fee.feeType] || 0) + fee.feeAmount;
+    while (true) {
+      const orderPage = await prisma.salesOrder.findMany({
+        where: whereClause,
+        select: {
+          id: true,
+          feeItems: { select: { feeType: true, feeAmount: true } },
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(orderCursor ? { cursor: { id: orderCursor }, skip: 1 } : {}),
       });
-    });
 
-    approvals.forEach(approval => {
+      for (const order of orderPage) {
+        for (const fee of order.feeItems) {
+          totalExpenses += fee.feeAmount;
+          expensesByType[fee.feeType] =
+            (expensesByType[fee.feeType] || 0) + fee.feeAmount;
+        }
+      }
+
+      if (orderPage.length < pageSize) {
+        break;
+      }
+
+      orderCursor = orderPage[orderPage.length - 1]?.id;
+      if (!orderCursor) {
+        break;
+      }
+    }
+
+    const approvals: any[] = [];
+    let approvalCursor: string | undefined;
+
+    while (true) {
+      const approvalPage = await prisma.expenseApproval.findMany({
+        where: {
+          salesOrder: whereClause,
+        },
+        select: {
+          id: true,
+          salesOrderId: true,
+          approvalStatus: true,
+          requestedAmount: true,
+          approvedAmount: true,
+          approvedAt: true,
+          salesOrder: { select: { orderNumber: true } },
+          expenseType: { select: { typeName: true, category: true } },
+          approver: { select: { name: true } },
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(approvalCursor ? { cursor: { id: approvalCursor }, skip: 1 } : {}),
+      });
+
+      approvals.push(...approvalPage);
+
+      if (approvalPage.length < pageSize) {
+        break;
+      }
+
+      approvalCursor = approvalPage[approvalPage.length - 1]?.id;
+      if (!approvalCursor) {
+        break;
+      }
+    }
+
+    const expensesByCategory: Record<string, number> = {};
+    let pendingApprovals = 0;
+    let approvedExpenses = 0;
+    let rejectedExpenses = 0;
+
+    const expenseDetails = approvals.map(approval => {
       if (approval.expenseType) {
         const category = approval.expenseType.category;
         const amount = approval.approvedAmount || approval.requestedAmount;
         expensesByCategory[category] =
           (expensesByCategory[category] || 0) + amount;
       }
+
+      if (approval.approvalStatus === 'PENDING') pendingApprovals += 1;
+      if (approval.approvalStatus === 'APPROVED') approvedExpenses += 1;
+      if (approval.approvalStatus === 'REJECTED') rejectedExpenses += 1;
+
+      return {
+        orderId: approval.salesOrderId,
+        orderNumber: approval.salesOrder.orderNumber,
+        expenseType: approval.expenseType?.typeName || '未知',
+        amount: approval.approvedAmount || approval.requestedAmount,
+        status: approval.approvalStatus,
+        approvedBy: approval.approver?.name,
+        approvedAt: approval.approvedAt ?? undefined,
+      };
     });
-
-    const pendingApprovals = approvals.filter(
-      a => a.approvalStatus === 'PENDING'
-    ).length;
-    const approvedExpenses = approvals.filter(
-      a => a.approvalStatus === 'APPROVED'
-    ).length;
-    const rejectedExpenses = approvals.filter(
-      a => a.approvalStatus === 'REJECTED'
-    ).length;
-
-    const expenseDetails = approvals.map(approval => ({
-      orderId: approval.salesOrderId,
-      orderNumber: approval.salesOrder.orderNumber,
-      expenseType: approval.expenseType?.typeName || '未知',
-      amount: approval.approvedAmount || approval.requestedAmount,
-      status: approval.approvalStatus,
-      approvedBy: approval.approver?.name,
-      approvedAt: approval.approvedAt ?? undefined,
-    }));
 
     return {
       totalExpenses,
@@ -501,7 +614,7 @@ export class ReportGenerationService {
     const warnings: string[] = [];
 
     // 检查订单金额一致性
-    const ordersWithInconsistentAmounts = await prisma.salesOrder.findMany({
+    const inconsistentAmountCount = await prisma.salesOrder.count({
       where: {
         OR: [
           { totalAmount: { lt: 0 } },
@@ -511,9 +624,9 @@ export class ReportGenerationService {
       },
     });
 
-    if (ordersWithInconsistentAmounts.length > 0) {
+    if (inconsistentAmountCount > 0) {
       errors.push(
-        `发现 ${ordersWithInconsistentAmounts.length} 个订单金额异常`
+        `发现 ${inconsistentAmountCount} 个订单金额异常`
       );
     }
 
@@ -536,16 +649,16 @@ export class ReportGenerationService {
     }
 
     // 检查利润计算一致性
-    const ordersWithProfitIssues = await prisma.salesOrder.findMany({
+    const profitIssueCount = await prisma.salesOrder.count({
       where: {
         profitAmount: { not: null },
         OR: [{ costAmount: null }, { expenseAmount: null }],
       },
     });
 
-    if (ordersWithProfitIssues.length > 0) {
+    if (profitIssueCount > 0) {
       warnings.push(
-        `发现 ${ordersWithProfitIssues.length} 个订单利润计算可能不完整`
+        `发现 ${profitIssueCount} 个订单利润计算可能不完整`
       );
     }
 

@@ -18,6 +18,7 @@ import {
   calculateTotalExpenses,
   extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
+import { toNumber } from '@/lib/utils/number';
 
 import {
   buildExpenseWhere,
@@ -32,6 +33,8 @@ import {
   generateExpenseAlerts,
   generateProfitAlerts,
 } from './report-helpers';
+
+const REPORT_QUERY_BATCH_SIZE = 1000;
 
 // ==================== 数据查询函数 ====================
 
@@ -77,9 +80,8 @@ async function getRevenueDetail(
     }),
   ]);
 
-  const salesRevenue = salesStats._sum.totalAmount || 0;
-  const factoryShipmentRevenue =
-    (factoryShipmentStats._sum?.receivableAmount as number | null) || 0;
+  const salesRevenue = toNumber(salesStats._sum.totalAmount);
+  const factoryShipmentRevenue = toNumber(factoryShipmentStats._sum?.receivableAmount);
 
   const orderCount =
     (salesStats._count.id || 0) +
@@ -120,7 +122,7 @@ async function getCostDetail(
     },
   });
 
-  const salesCost = salesCostStats._sum.costAmount || 0;
+  const salesCost = toNumber(salesCostStats._sum.costAmount);
 
   // 2) 库存成本变动（仅作为资产变动分析维度，不计入 totalCost）
   //    - 排除期初入库（opening_balance），期初库存不应冲击当期损益
@@ -152,8 +154,8 @@ async function getCostDetail(
     }),
   ]);
 
-  const inboundTotal = inboundCost._sum.totalCost || 0;
-  const outboundTotal = outboundCost._sum.totalCost || 0;
+  const inboundTotal = toNumber(inboundCost._sum.totalCost);
+  const outboundTotal = toNumber(outboundCost._sum.totalCost);
 
   // 保留「入库成本 - 出库成本」的口径，作为库存资产变动的一个近似指标
   const inventoryCost = inboundTotal - outboundTotal;
@@ -358,7 +360,7 @@ export async function getProfitLossAnalysis(
       processedAmount: true,
     },
   });
-  const refundAmount = refundStats._sum.processedAmount || 0;
+  const refundAmount = toNumber(refundStats._sum.processedAmount);
 
   // 并行获取所有数据
   const [revenue, trend] = await Promise.all([
@@ -492,45 +494,50 @@ async function getFactoryShipmentProfitDetail(
   endDate: Date,
   totalRevenue: number
 ): Promise<FactoryShipmentProfitDetail> {
-  // 查询指定时间段的所有已完成厂家发货订单
-  const orders = await prisma.factoryShipmentOrder.findMany({
-    where: {
-      shipmentDate: {
-        gte: startDate,
-        lte: endDate,
-      },
-      status: {
-        in: ['arrived', 'completed'],
-      },
-    },
-    select: {
-      id: true,
-      totalAmount: true,
-      receivableAmount: true,
-      customerProfit: true,
-      selfCostAmount: true,
-      expenseAmount: true,
-      profitAmount: true,
-    },
-  });
+  let customerProfit = 0;
+  let selfCostAmount = 0;
+  let totalExpenses = 0;
+  let factoryRevenue = 0;
 
-  // 统计数据
-  const customerProfit = orders.reduce(
-    (sum, o) => sum + (o.customerProfit || 0),
-    0
-  );
-  const selfCostAmount = orders.reduce(
-    (sum, o) => sum + (o.selfCostAmount || 0),
-    0
-  );
-  const totalExpenses = orders.reduce(
-    (sum, o) => sum + (o.expenseAmount || 0),
-    0
-  );
-  const factoryRevenue = orders.reduce(
-    (sum, o) => sum + (o.receivableAmount || 0),
-    0
-  );
+  let cursor: string | undefined;
+  while (true) {
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where: {
+        shipmentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          in: ['arrived', 'completed'],
+        },
+      },
+      select: {
+        id: true,
+        receivableAmount: true,
+        customerProfit: true,
+        selfCostAmount: true,
+        expenseAmount: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: REPORT_QUERY_BATCH_SIZE,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const order of batch) {
+      customerProfit += toNumber(order.customerProfit);
+      selfCostAmount += toNumber(order.selfCostAmount);
+      totalExpenses += toNumber(order.expenseAmount);
+      factoryRevenue += toNumber(order.receivableAmount);
+    }
+
+    cursor = batch[batch.length - 1].id;
+  }
 
   // 计算利润率
   const profitMargin =

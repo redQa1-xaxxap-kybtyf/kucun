@@ -169,9 +169,10 @@ export async function checkIdempotency(
 export async function createIdempotencyRecord(
   idempotencyKey: string,
   operationType: OperationType,
-  productId: string,
+  entityId: string,
   operatorId: string,
-  requestData: Record<string, unknown>
+  requestData: Record<string, unknown>,
+  options?: { entityType?: string }
 ): Promise<string> {
   const redisKey = getRedisKey(idempotencyKey);
 
@@ -198,9 +199,10 @@ export async function createIdempotencyRecord(
       createIdempotencyMysql(
         idempotencyKey,
         operationType,
-        productId,
+        entityId,
         operatorId,
-        requestData
+        requestData,
+        options
       ).catch(() => {
         // MySQL 异步写入失败,仅记录但不影响主流程
       });
@@ -222,9 +224,10 @@ export async function createIdempotencyRecord(
     return createIdempotencyMysql(
       idempotencyKey,
       operationType,
-      productId,
+      entityId,
       operatorId,
-      requestData
+      requestData,
+      options
     );
   }
 }
@@ -306,10 +309,11 @@ export async function failIdempotencyRecord(
 export async function withIdempotency<T>(
   idempotencyKey: string,
   operationType: OperationType,
-  productId: string,
+  entityId: string,
   operatorId: string,
   requestData: Record<string, unknown>,
-  operation: () => Promise<T>
+  operation: () => Promise<T>,
+  options?: { entityType?: string }
 ): Promise<T> {
   // 复用原有的重试逻辑和等待机制
   // 但使用 Redis 优化的检查和创建方法
@@ -333,9 +337,10 @@ export async function withIdempotency<T>(
       await createIdempotencyRecord(
         idempotencyKey,
         operationType,
-        productId,
+        entityId,
         operatorId,
-        requestData
+        requestData,
+        options
       );
 
       // 创建成功,执行操作

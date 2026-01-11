@@ -1,4 +1,5 @@
 import type { Customer } from '@/lib/types/customer';
+import { toNumber } from '@/lib/utils/number';
 import { parseExtendedInfo } from '@/lib/validations/customer';
 
 export interface PrismaCustomerBase {
@@ -48,15 +49,15 @@ export interface CustomerDetailQueryResult extends PrismaCustomerBase {
   salesOrders: Array<{
     id: string;
     orderNumber: string;
-    totalAmount: number;
-    paidAmount: number;
+    totalAmount: unknown;
+    paidAmount: unknown;
     status: string;
     createdAt: Date;
   }>;
   returnOrders: Array<{
     id: string;
     returnNumber: string;
-    totalAmount: number;
+    totalAmount: unknown;
     status: string;
     createdAt: Date;
   }>;
@@ -70,7 +71,7 @@ export interface CustomerListQueryResult extends PrismaCustomerBase {
   parentCustomer: PrismaCustomerBase | null;
   salesOrders: Array<{
     id: string;
-    totalAmount: number;
+    totalAmount: unknown;
     status: string;
     createdAt: Date;
   }>;
@@ -97,11 +98,15 @@ function summarizeSalesOrders(
   orders: CustomerDetailQueryResult['salesOrders']
 ) {
   const summaries: CustomerOrderSummary[] = orders.map(order => ({
-    ...order,
+    id: order.id,
+    orderNumber: order.orderNumber,
+    totalAmount: toNumber(order.totalAmount, 0),
+    paidAmount: toNumber(order.paidAmount, 0),
+    status: order.status,
     createdAt: order.createdAt.toISOString(),
   }));
   const totalOrders = orders.length;
-  const totalAmount = orders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalAmount = summaries.reduce((sum, order) => sum + order.totalAmount, 0);
   const lastOrderDate = orders[0]?.createdAt.toISOString();
   return { summaries, totalOrders, totalAmount, lastOrderDate };
 }
@@ -110,7 +115,10 @@ function summarizeReturnOrders(
   orders: CustomerDetailQueryResult['returnOrders']
 ): CustomerReturnSummary[] {
   return orders.map(order => ({
-    ...order,
+    id: order.id,
+    returnNumber: order.returnNumber,
+    totalAmount: toNumber(order.totalAmount, 0),
+    status: order.status,
     createdAt: order.createdAt.toISOString(),
   }));
 }
@@ -167,7 +175,7 @@ export function transformCustomerListItem(
   );
   const transactionCount = completedOrders.length;
   const totalAmount = completedOrders.reduce(
-    (sum, order) => sum + order.totalAmount,
+    (sum, order) => sum + toNumber(order.totalAmount, 0),
     0
   );
   const lastOrderDate =

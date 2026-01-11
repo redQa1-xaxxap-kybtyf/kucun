@@ -105,22 +105,41 @@ export const ErrorCode = {
 } as const;
 
 /**
- * 错误信息映射
+ * 错误信息映射（包含恢复建议）
  */
 const ERROR_MESSAGES: Record<string, string> = {
-  [ErrorCode.NETWORK_ERROR]: '网络连接失败，请检查网络设置',
-  [ErrorCode.FETCH_ERROR]: '请求失败，请稍后重试',
-  [ErrorCode.TIMEOUT]: '请求超时，请稍后重试',
-  [ErrorCode.UNAUTHORIZED]: '未登录或登录已过期，请重新登录',
-  [ErrorCode.FORBIDDEN]: '没有权限执行此操作',
-  [ErrorCode.VALIDATION_ERROR]: '输入数据验证失败',
-  [ErrorCode.INVALID_INPUT]: '输入数据格式不正确',
-  [ErrorCode.NOT_FOUND]: '请求的资源不存在',
-  [ErrorCode.ALREADY_EXISTS]: '资源已存在',
-  [ErrorCode.OPERATION_FAILED]: '操作失败，请重试',
-  [ErrorCode.INTERNAL_ERROR]: '服务器内部错误',
-  [ErrorCode.SERVICE_UNAVAILABLE]: '服务暂时不可用，请稍后重试',
-  [ErrorCode.UNKNOWN]: '未知错误，请联系管理员',
+  [ErrorCode.NETWORK_ERROR]: '网络连接失败。请检查网络设置后重试',
+  [ErrorCode.FETCH_ERROR]: '请求失败。请刷新页面后重试',
+  [ErrorCode.TIMEOUT]: '请求超时。请检查网络连接后重试',
+  [ErrorCode.UNAUTHORIZED]: '登录已过期。请重新登录',
+  [ErrorCode.FORBIDDEN]: '没有权限执行此操作。如需权限请联系管理员',
+  [ErrorCode.VALIDATION_ERROR]: '输入数据验证失败。请检查填写的内容',
+  [ErrorCode.INVALID_INPUT]: '输入数据格式不正确。请检查后重新填写',
+  [ErrorCode.NOT_FOUND]: '请求的资源不存在。请检查地址是否正确',
+  [ErrorCode.ALREADY_EXISTS]: '资源已存在。请使用其他名称或标识',
+  [ErrorCode.OPERATION_FAILED]: '操作失败。请稍后重试',
+  [ErrorCode.INTERNAL_ERROR]: '服务器内部错误。请稍后重试或联系管理员',
+  [ErrorCode.SERVICE_UNAVAILABLE]: '服务暂时不可用。请稍后重试',
+  [ErrorCode.UNKNOWN]: '发生未知错误。请刷新页面或联系管理员',
+};
+
+/**
+ * 错误恢复建议映射
+ */
+const ERROR_RECOVERY_HINTS: Record<string, string> = {
+  [ErrorCode.NETWORK_ERROR]: '检查 Wi-Fi 或移动网络连接',
+  [ErrorCode.FETCH_ERROR]: '刷新页面或清除浏览器缓存',
+  [ErrorCode.TIMEOUT]: '检查网络速度，稍后重试',
+  [ErrorCode.UNAUTHORIZED]: '点击右上角重新登录',
+  [ErrorCode.FORBIDDEN]: '联系管理员获取相应权限',
+  [ErrorCode.VALIDATION_ERROR]: '检查必填项和格式要求',
+  [ErrorCode.INVALID_INPUT]: '参考输入提示重新填写',
+  [ErrorCode.NOT_FOUND]: '返回上一页或访问首页',
+  [ErrorCode.ALREADY_EXISTS]: '修改名称或删除现有记录',
+  [ErrorCode.OPERATION_FAILED]: '等待几秒后重试操作',
+  [ErrorCode.INTERNAL_ERROR]: '截图错误信息并联系技术支持',
+  [ErrorCode.SERVICE_UNAVAILABLE]: '等待 1-2 分钟后刷新页面',
+  [ErrorCode.UNKNOWN]: '记录操作步骤并联系管理员',
 };
 
 /**
@@ -347,4 +366,72 @@ export function isAuthError(error: unknown): boolean {
   }
 
   return false;
+}
+
+/**
+ * 错误详情接口
+ */
+export interface ErrorDetails {
+  /** 错误消息 */
+  message: string;
+  /** 恢复建议 */
+  recoveryHint: string;
+  /** 错误码 */
+  code: string;
+  /** 是否为可重试错误 */
+  isRetryable: boolean;
+}
+
+/**
+ * 获取带恢复建议的完整错误信息
+ *
+ * @example
+ * ```ts
+ * const details = getErrorDetails(error);
+ * toast({
+ *   title: details.message,
+ *   description: details.recoveryHint,
+ *   variant: 'destructive',
+ * });
+ * ```
+ */
+export function getErrorDetails(error: unknown): ErrorDetails {
+  const appError = handleApiError(error);
+  const code = appError.code || ErrorCode.UNKNOWN;
+
+  return {
+    message: appError.message || ERROR_MESSAGES[code] || ERROR_MESSAGES[ErrorCode.UNKNOWN],
+    recoveryHint: ERROR_RECOVERY_HINTS[code] || ERROR_RECOVERY_HINTS[ErrorCode.UNKNOWN],
+    code,
+    isRetryable: [
+      'NETWORK_ERROR',
+      'FETCH_ERROR',
+      'TIMEOUT',
+      'OPERATION_FAILED',
+      'SERVICE_UNAVAILABLE',
+    ].includes(code),
+  };
+}
+
+/**
+ * 获取用户友好的错误消息（带上下文）
+ *
+ * @param error - 原始错误
+ * @param context - 操作上下文（如"创建客户"、"保存订单"）
+ *
+ * @example
+ * ```ts
+ * // 代替：error instanceof Error ? error.message : '创建客户失败'
+ * const message = getUserFriendlyError(error, '创建客户');
+ * // 输出："创建客户失败：网络连接失败。请检查网络设置后重试"
+ * ```
+ */
+export function getUserFriendlyError(error: unknown, context?: string): string {
+  const details = getErrorDetails(error);
+
+  if (context) {
+    return `${context}失败：${details.message}`;
+  }
+
+  return details.message;
 }

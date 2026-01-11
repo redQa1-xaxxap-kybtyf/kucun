@@ -6,11 +6,13 @@
 import type { Customer, SalesOrder, Supplier } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 客户订单类型（包含关联数据）
  */
-type CustomerOrderWithRelations = SalesOrder & {
+type CustomerOrderWithRelations = Omit<SalesOrder, 'totalAmount'> & {
+  totalAmount: number;
   payments: Array<{
     id: string;
     paymentNumber: string;
@@ -39,7 +41,8 @@ type CustomerWithOrders = Customer & {
 /**
  * 供应商订单类型（包含关联数据）
  */
-type SupplierOrderWithRelations = SalesOrder & {
+type SupplierOrderWithRelations = Omit<SalesOrder, 'totalAmount'> & {
+  totalAmount: number;
   payments: Array<{
     id: string;
     paymentNumber: string;
@@ -134,6 +137,7 @@ export async function fetchCustomerWithOrders(
     ...customer,
     salesOrders: customer.salesOrders.map(order => ({
       ...order,
+      totalAmount: toNumber(order.totalAmount),
       payments: order.payments.map(payment => ({
         ...payment,
         paymentAmount: Number(payment.paymentAmount ?? 0),
@@ -216,6 +220,7 @@ export async function fetchSupplierWithOrders(
     ...supplier,
     salesOrders: supplier.salesOrders.map(order => ({
       ...order,
+      totalAmount: toNumber(order.totalAmount),
       payments: order.payments.map(payment => ({
         ...payment,
         paymentAmount: Number(payment.paymentAmount ?? 0),

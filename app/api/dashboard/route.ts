@@ -57,49 +57,40 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     };
 
-    // 获取销售订单统计
-    const salesOrders = await prisma.salesOrder.findMany({
-      where: whereConditions,
-      include: {
-        customer: true,
-        items: {
-          include: {
-            product: true,
+    const [salesOrderStats, inventoryStats, productStats, customerStats] =
+      await Promise.all([
+        prisma.salesOrder.aggregate({
+          where: whereConditions,
+          _sum: {
+            totalAmount: true,
           },
-        },
-      },
-    });
-
-    // 获取库存统计
-    const inventoryStats = await prisma.inventory.aggregate({
-      _count: {
-        id: true,
-      },
-      _sum: {
-        quantity: true,
-      },
-    });
-
-    // 获取产品统计
-    const productStats = await prisma.product.aggregate({
-      _count: {
-        id: true,
-      },
-    });
-
-    // 获取客户统计
-    const customerStats = await prisma.customer.aggregate({
-      _count: {
-        id: true,
-      },
-    });
+          _count: {
+            id: true,
+          },
+        }),
+        prisma.inventory.aggregate({
+          _count: {
+            id: true,
+          },
+          _sum: {
+            quantity: true,
+          },
+        }),
+        prisma.product.aggregate({
+          _count: {
+            id: true,
+          },
+        }),
+        prisma.customer.aggregate({
+          _count: {
+            id: true,
+          },
+        }),
+      ]);
 
     // 计算业务指标
-    const totalRevenue = salesOrders.reduce(
-      (sum, order) => sum + (order.totalAmount || 0),
-      0
-    );
-    const totalOrders = salesOrders.length;
+    const totalRevenue = Number(salesOrderStats._sum.totalAmount ?? 0);
+    const totalOrders = salesOrderStats._count.id || 0;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // 构建响应数据

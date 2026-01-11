@@ -33,7 +33,7 @@ const calculateItemTotals = (
   for (const item of data.items) {
     const quantity = item.quantity ?? 0;
     const unitPrice = item.unitPrice ?? 0;
-    const subtotal = item.subtotal ?? quantity * unitPrice;
+    const subtotal = roundCurrency(item.subtotal ?? quantity * unitPrice);
     const effectiveTransferQuantity =
       data.orderType === 'TRANSFER' && transferMode === 'MIXED'
         ? (item.transferQuantity ?? 0)
@@ -78,9 +78,8 @@ export const calculateFinancials = (
     itemsAmount - costAmountWithExpense
   );
 
-  const totalAmount = roundCurrency(
-    itemsAmount + additionalFees + roundingAdjustment
-  );
+  // totalAmount 不包含抹零；实际应收 = totalAmount + roundingAdjustment
+  const totalAmount = roundCurrency(itemsAmount + additionalFees);
 
   return {
     itemsAmount,
@@ -107,7 +106,7 @@ export const buildOrderItemsInput = (
   const allocationSources = data.items.map((item, index) => {
     const quantity = item.quantity ?? 0;
     const unitPrice = item.unitPrice ?? 0;
-    const subtotal = item.subtotal ?? quantity * unitPrice;
+    const subtotal = roundCurrency(item.subtotal ?? quantity * unitPrice);
     const effectiveTransferQuantity =
       data.orderType === 'TRANSFER' && transferMode === 'MIXED'
         ? (item.transferQuantity ?? 0)
@@ -133,7 +132,9 @@ export const buildOrderItemsInput = (
   // 生成用于创建的订单项输入
   return data.items.map((item, index) => {
     const quantity = item.quantity ?? 0;
-    const subtotal = item.subtotal ?? quantity * (item.unitPrice ?? 0);
+    const subtotal = roundCurrency(
+      item.subtotal ?? quantity * (item.unitPrice ?? 0)
+    );
 
     // 本地数量：只有调货订单的混合模式才有本地发货
     const localQuantity =

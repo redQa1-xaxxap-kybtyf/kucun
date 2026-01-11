@@ -201,38 +201,38 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     >();
   }
 
-  // 1. 批量获取所有产品的库存记录（包含批次号）
-  const inventoryRecords = await prisma.inventory.findMany({
+  // 1. 批量获取产品批次库存（按产品+批次聚合，避免拉全量库存记录）
+  const inventoryByProductAndBatch = await prisma.inventory.groupBy({
+    by: ['productId', 'batchNumber'],
     where: {
       productId: { in: productIds },
       batchNumber: { not: null },
     },
-    select: {
-      productId: true,
-      batchNumber: true,
+    _sum: {
       quantity: true,
-      product: {
-        select: {
-          piecesPerUnit: true,
-        },
-      },
     },
   });
 
-  // 2. 批量获取所有批次规格
-  const batchNumbers = [
-    ...new Set(
-      inventoryRecords
-        .map(inv => inv.batchNumber)
-        .filter((bn): bn is string => bn !== null)
-    ),
-  ];
+  const pairs = inventoryByProductAndBatch
+    .filter((row): row is typeof row & { batchNumber: string } => row.batchNumber !== null)
+    .map(row => ({ productId: row.productId, batchNumber: row.batchNumber }));
 
-  // ✅ 防御性编程：只查询有效产品的批次规格，过滤孤儿记录
+  if (pairs.length === 0) {
+    return new Map<
+      string,
+      Array<{
+        batchNumber: string;
+        piecesPerUnit: number;
+        quantity: number;
+        weight?: number | null;
+      }>
+    >();
+  }
+
+  // 2. 批量获取批次规格（按产品+批次精确匹配，避免批次号跨产品误匹配）
   const batchSpecs = await prisma.batchSpecification.findMany({
     where: {
-      batchNumber: { in: batchNumbers },
-      productId: { in: productIds }, // 确保批次规格对应的产品在查询范围内
+      OR: pairs,
     },
     select: {
       batchNumber: true,
@@ -240,22 +240,7 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
       weight: true,
       productId: true, // 用于验证
     },
-  });
-
-  // ✅ 防御性过滤：移除任何可能的孤儿记录
-  const validBatchSpecs = batchSpecs.filter(spec => {
-    if (!spec.productId || !productIds.includes(spec.productId)) {
-      logger.warn(
-        'api:products-list',
-        '批次规格的产品不在查询范围内',
-        {
-          batchNumber: spec.batchNumber,
-          productId: spec.productId ?? undefined,
-        }
-      );
-      return false;
-    }
-    return true;
+    take: pairs.length,
   });
 
   // 3. 构建批次号到每件片数的映射
@@ -263,10 +248,10 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     string,
     { piecesPerUnit: number; weight?: number | null }
   >();
-  validBatchSpecs.forEach(spec => {
-    batchSpecMap.set(spec.batchNumber, {
+  batchSpecs.forEach(spec => {
+    batchSpecMap.set(`${spec.productId}|||${spec.batchNumber}`, {
       piecesPerUnit: spec.piecesPerUnit,
-      weight: spec.weight,
+      weight: spec.weight === null ? null : Number(spec.weight),
     });
   });
 
@@ -284,23 +269,19 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     >
   >();
 
-  inventoryRecords.forEach(inv => {
+  inventoryByProductAndBatch.forEach(inv => {
     if (!inv.batchNumber) return;
 
     // ✅ 修复: 获取该批次的每件片数 - 必须从批次规格表获取
     // 如果批次规格表中没有记录，说明数据不完整，跳过该批次
-    const batchSpec = batchSpecMap.get(inv.batchNumber);
+    const batchSpec = batchSpecMap.get(`${inv.productId}|||${inv.batchNumber}`);
 
     if (!batchSpec) {
       // 批次规格缺失，跳过该批次（防止显示错误的每件片数）
-      logger.warn(
-        'api:products-list',
-        '批次没有批次规格记录',
-        {
-          batchNumber: inv.batchNumber,
-          productId: inv.productId,
-        }
-      );
+      logger.warn('api:products-list', '批次没有批次规格记录', {
+        batchNumber: inv.batchNumber,
+        productId: inv.productId,
+      });
       return;
     }
 
@@ -315,14 +296,15 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     }
 
     const existing = batchMap.get(key);
+    const quantity = inv._sum.quantity ?? 0;
 
     if (existing) {
-      existing.quantity += inv.quantity;
+      existing.quantity += quantity;
     } else {
       batchMap.set(key, {
         batchNumber: inv.batchNumber,
         piecesPerUnit: batchSpec.piecesPerUnit,
-        quantity: inv.quantity,
+        quantity,
         weight: batchSpec.weight,
       });
     }
@@ -444,7 +426,10 @@ export function formatProductList(params: {
     const batchPiecesMap = new Map(
       batchSpecs.map(spec => [
         spec.batchNumber,
-        { piecesPerUnit: spec.piecesPerUnit, weight: spec.weight },
+        {
+          piecesPerUnit: spec.piecesPerUnit,
+          weight: spec.weight === null ? null : Number(spec.weight),
+        },
       ])
     );
 
@@ -478,8 +463,9 @@ export function formatProductList(params: {
       specification: product.specification ?? undefined,
       unit,
       piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight ?? undefined,
-      thickness: product.thickness ?? undefined,
+      weight: product.weight === null ? undefined : Number(product.weight),
+      thickness:
+        product.thickness === null ? undefined : Number(product.thickness),
       status,
       categoryId: product.categoryId,
       category: product.category

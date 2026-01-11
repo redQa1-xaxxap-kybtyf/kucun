@@ -71,7 +71,7 @@ export class InventoryManagementService {
         shortfall: available ? 0 : request.requiredQuantity - availableQuantity,
         message: available
           ? '库存充足'
-          : `库存不足，缺少 ${request.requiredQuantity - availableQuantity} 件`,
+          : `库存不足，缺少 ${request.requiredQuantity - availableQuantity} 片`,
       };
     } catch (error: any) {
       throw new Error(`库存检查失败: ${error.message}`);
@@ -197,36 +197,58 @@ export class InventoryManagementService {
       message: string;
     }>
   > {
-    const safetyStockConfigs = await prisma.inventorySafetyStock.findMany({
-      where: { alertEnabled: true },
-    });
-
     const alerts = [];
+    let cursor: string | undefined;
+    const batchSize = 1000;
 
-    for (const config of safetyStockConfigs) {
-      const inventory = await prisma.inventory.findFirst({
-        where: {
-          productId: config.productId,
-          variantId: config.variantId,
+    while (true) {
+      const safetyStockConfigs = await prisma.inventorySafetyStock.findMany({
+        where: { alertEnabled: true },
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          safetyStock: true,
+          alertThreshold: true,
         },
+        orderBy: {
+          id: 'asc',
+        },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
 
-      if (inventory) {
-        const availableStock = inventory.quantity - inventory.reservedQuantity;
-        const alertThreshold = config.safetyStock * config.alertThreshold;
+      if (safetyStockConfigs.length === 0) {
+        break;
+      }
 
-        if (availableStock <= config.safetyStock) {
-          alerts.push({
+      for (const config of safetyStockConfigs) {
+        const inventory = await prisma.inventory.findFirst({
+          where: {
             productId: config.productId,
-            variantId: config.variantId ?? undefined,
-            currentStock: availableStock,
-            safetyStock: config.safetyStock,
-            alertLevel:
-              availableStock <= alertThreshold ? 'CRITICAL' : 'WARNING',
-            message: `库存低于安全库存线，当前库存: ${availableStock}，安全库存: ${config.safetyStock}`,
-          });
+            variantId: config.variantId,
+          },
+        });
+
+        if (inventory) {
+          const availableStock = inventory.quantity - inventory.reservedQuantity;
+          const alertThreshold = config.safetyStock * config.alertThreshold;
+
+          if (availableStock <= config.safetyStock) {
+            alerts.push({
+              productId: config.productId,
+              variantId: config.variantId ?? undefined,
+              currentStock: availableStock,
+              safetyStock: config.safetyStock,
+              alertLevel:
+                availableStock <= alertThreshold ? 'CRITICAL' : 'WARNING',
+              message: `库存低于安全库存线，当前库存: ${availableStock}，安全库存: ${config.safetyStock}`,
+            });
+          }
         }
       }
+
+      cursor = safetyStockConfigs[safetyStockConfigs.length - 1].id;
     }
 
     return alerts;

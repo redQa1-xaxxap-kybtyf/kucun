@@ -54,14 +54,47 @@ async function processShippingQueryJob(
 
   try {
     // 步骤1: 获取所有活跃的运输站点
-    const activeSites = await prisma.shippingSite.findMany({
-      where: {
-        status: 'active',
-      },
-      orderBy: {
-        createdAt: 'asc', // 按创建时间排序，实现简单的 Round-robin
-      },
-    });
+    const activeSites: Array<{
+      id: string;
+      name: string;
+      url: string;
+      extractSelectors: string | null;
+      searchInputSelector: string | null;
+      searchButtonSelector: string | null;
+      resultContainerSelector: string | null;
+    }> = [];
+    const pageSize = 2000;
+    let cursor: string | undefined;
+
+    while (true) {
+      const page = await prisma.shippingSite.findMany({
+        where: {
+          status: 'active',
+        },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }], // Round-robin
+        select: {
+          id: true,
+          name: true,
+          url: true,
+          extractSelectors: true,
+          searchInputSelector: true,
+          searchButtonSelector: true,
+          resultContainerSelector: true,
+        },
+        take: pageSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      activeSites.push(...page);
+      if (page.length < pageSize) {
+        break;
+      }
+
+      cursor = page[page.length - 1]?.id;
+      if (!cursor) {
+        break;
+      }
+    }
 
     if (activeSites.length === 0) {
       const errorMessage = '没有可用的运输查询站点';
@@ -126,7 +159,7 @@ async function processShippingQueryJob(
 
         // 解析提取选择器配置，兼容新旧格式
         const parsedSelectors = safeJSONParse<Partial<ExtractSelectors>>(
-          site.extractSelectors,
+          site.extractSelectors ?? '{}',
           {},
           {
             logError: true,

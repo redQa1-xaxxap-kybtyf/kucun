@@ -63,7 +63,6 @@ async function clearDemoDataInDatabase() {
 
   // 9. 收款记录（应收、实收）
   await prisma.paymentRecord.deleteMany();
-  await prisma.receivableRecord.deleteMany();
 
   // 10. 库存调整与操作
   await prisma.inventoryAdjustment.deleteMany();
@@ -123,6 +122,7 @@ async function clearDemoDataInDatabase() {
       email: true,
       name: true,
     },
+    take: 1000,
   });
 
   return {
@@ -192,4 +192,3 @@ export const POST = withAuth(
     requireAdmin: true,
   }
 );
-

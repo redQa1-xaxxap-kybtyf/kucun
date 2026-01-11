@@ -24,6 +24,7 @@ import {
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 import type { ValidationIssue } from '@/lib/types/validation';
+import { toNumber } from '@/lib/utils/number';
 import { generatePayableNumber } from '@/lib/utils/payment-number-generator';
 import type {
   PurchaseOrderFormData,
@@ -368,8 +369,9 @@ export async function applyStatusUpdateTransaction(
         supplierId: order.supplierId,
         userId: order.userId,
         orderNumber: order.orderNumber,
-        totalAmount: order.totalAmount,
-        expenseAmount: order.expenseAmount, // ✅ 修复：传递费用金额
+        totalAmount: toNumber(order.totalAmount),
+        expenseAmount:
+          order.expenseAmount == null ? null : toNumber(order.expenseAmount), // ✅ 修复：传递费用金额
       });
     }
 
@@ -421,9 +423,12 @@ async function createArrivalInboundRecords(
     }
 
     const inboundUnitCost = resolveInboundUnitCost({
-      unitCostWithExpense: item.unitCostWithExpense,
-      unitPrice: item.unitPrice ?? null,
-      fallback: item.unitPrice ?? 0,
+      unitCostWithExpense:
+        item.unitCostWithExpense == null
+          ? null
+          : toNumber(item.unitCostWithExpense),
+      unitPrice: item.unitPrice == null ? null : toNumber(item.unitPrice),
+      fallback: toNumber(item.unitPrice),
     });
 
     const inbound = await executeMinimalInboundTransaction(

@@ -457,10 +457,20 @@ export async function batchUpdateCategoryStatus(
     if (status === 'inactive') {
       const categories = await prisma.category.findMany({
         where: { id: { in: categoryIds } },
-        include: {
-          children: true,
-          products: true,
+        select: {
+          id: true,
+          name: true,
+          children: {
+            select: { id: true },
+            take: 1,
+          },
+          products: {
+            where: { status: 'active' },
+            select: { id: true },
+            take: 1,
+          },
         },
+        take: categoryIds.length,
       });
 
       for (const category of categories) {
@@ -471,13 +481,16 @@ export async function batchUpdateCategoryStatus(
           };
         }
 
-        const activeProducts = category.products.filter(
-          p => p.status === 'active'
-        );
-        if (activeProducts.length > 0) {
+        if (category.products.length > 0) {
+          const activeProductCount = await prisma.product.count({
+            where: {
+              categoryId: category.id,
+              status: 'active',
+            },
+          });
           return {
             success: false,
-            error: `分类 "${category.name}" 下有 ${activeProducts.length} 个活跃产品，无法批量停用`,
+            error: `分类 "${category.name}" 下有 ${activeProductCount} 个活跃产品，无法批量停用`,
           };
         }
       }

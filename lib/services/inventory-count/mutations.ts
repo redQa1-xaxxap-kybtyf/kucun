@@ -169,7 +169,7 @@ export async function completeCount(
 
     for (const item of itemsWithDifference) {
       // 2.1.1 生成调整单号
-      const adjustmentNumber = await generateAdjustmentNumber();
+      const adjustmentNumber = await generateAdjustmentNumber(tx);
 
       // 2.1.2 确定调整原因（盘盈或盘亏）
       const reason = item.difference > 0 ? 'surplus' : 'deficit';
@@ -180,8 +180,8 @@ export async function completeCount(
       await tx.inventory.updateMany({
         where: {
           productId: item.productId,
-          ...(item.variantId && { variantId: item.variantId }),
-          ...(item.batchNumber && { batchNumber: item.batchNumber }),
+          variantId: item.variantId ?? null,
+          batchNumber: item.batchNumber ?? null,
         },
         data: {
           quantity: afterQuantity,
@@ -306,6 +306,7 @@ async function applyItemUpdates(
       systemQuantity: true,
       unitCost: true,
     },
+    take: itemIds.length,
   });
 
   if (countItems.length !== itemIds.length) {
@@ -324,7 +325,10 @@ async function applyItemUpdates(
     }
 
     const difference = item.actualQuantity - existingItem.systemQuantity;
-    const unitCost = existingItem.unitCost ?? null;
+    const unitCost =
+      existingItem.unitCost === null || existingItem.unitCost === undefined
+        ? null
+        : Number(existingItem.unitCost);
     const totalCost = unitCost !== null ? difference * unitCost : null;
 
     await tx.inventoryCountItem.update({
@@ -346,20 +350,27 @@ async function refreshCountStatistics(
   tx: Prisma.TransactionClient,
   countId: string
 ) {
-  const items = await tx.inventoryCountItem.findMany({
-    where: { countId },
-    select: {
-      status: true,
-      difference: true,
-    },
-  });
+  const [completedItems, differenceItems, positiveDiff, negativeDiff] =
+    await Promise.all([
+      tx.inventoryCountItem.count({
+        where: { countId, status: 'counted' },
+      }),
+      tx.inventoryCountItem.count({
+        where: { countId, difference: { not: 0 } },
+      }),
+      tx.inventoryCountItem.aggregate({
+        where: { countId, difference: { gt: 0 } },
+        _sum: { difference: true },
+      }),
+      tx.inventoryCountItem.aggregate({
+        where: { countId, difference: { lt: 0 } },
+        _sum: { difference: true },
+      }),
+    ]);
 
-  const completedItems = items.filter(i => i.status === 'counted').length;
-  const differenceItems = items.filter(i => i.difference !== 0).length;
-  const totalDifference = items.reduce(
-    (sum, i) => sum + Math.abs(i.difference),
-    0
-  );
+  const totalDifference =
+    (positiveDiff._sum.difference ?? 0) +
+    Math.abs(negativeDiff._sum.difference ?? 0);
 
   await tx.inventoryCount.update({
     where: { id: countId },

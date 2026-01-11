@@ -17,13 +17,13 @@ export const baseValidations = {
     .string()
     .min(3, '用户名至少3个字符')
     .max(20, '用户名不能超过20个字符')
-    .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
+    .regex(/^[a-zA-Z0-9_-]+$/, '用户名只能包含字母、数字、下划线和短横线'),
 
   // 密码验证 - 增强版
   password: z
     .string()
     .min(8, '密码至少8个字符')
-    .max(32, '密码最多32个字符')
+    .max(100, '密码不能超过100个字符')
     .regex(/[A-Z]/, '密码必须包含至少一个大写字母')
     .regex(/[a-z]/, '密码必须包含至少一个小写字母')
     .regex(/[0-9]/, '密码必须包含至少一个数字')
@@ -33,7 +33,7 @@ export const baseValidations = {
   simplePassword: z
     .string()
     .min(8, '密码至少8个字符')
-    .max(50, '密码不能超过50个字符'),
+    .max(100, '密码不能超过100个字符'),
 
   // 邮箱验证
   email: z.string().email('邮箱格式不正确'),
@@ -41,8 +41,24 @@ export const baseValidations = {
   // 手机号验证
   phone: z
     .string()
-    .regex(/^1[3-9]\d{9}$/, '手机号格式不正确')
-    .optional(),
+    .refine(
+      val => {
+        if (!val || val === '') return true;
+        // 支持多种电话格式：
+        // 手机号：1[3-9]\d{9}
+        // 固话：区号-号码 或 区号号码 (如 010-12345678、01012345678)
+        // 400/800：400-xxx-xxxx、800-xxx-xxxx
+        const patterns = [
+          /^1[3-9]\d{9}$/, // 手机号
+          /^0\d{2,3}-?\d{7,8}$/, // 固话
+          /^[48]00-?\d{3,4}-?\d{4}$/, // 400/800
+        ];
+        return patterns.some(pattern => pattern.test(val));
+      },
+      { message: '请输入正确的电话号码（支持手机号、固话、400电话）' }
+    )
+    .optional()
+    .or(z.literal('')),
 
   // 姓名验证
   name: z.string().min(1, '姓名不能为空').max(50, '姓名不能超过50个字符'),

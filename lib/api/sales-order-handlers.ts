@@ -409,7 +409,12 @@ export async function createSalesOrder(
       },
       include: {
         customer: true,
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         supplier: true,
         items: {
           include: {

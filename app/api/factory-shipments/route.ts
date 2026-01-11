@@ -8,7 +8,17 @@ import {
   buildTemporaryProductDataFromOrderItem,
   findOrCreateTemporaryProduct,
 } from '@/lib/api/handlers/sales-orders/temporary-products';
+import {
+  ensureCustomersExistByIds,
+  ensureProductsExistFromItems,
+  ensureSuppliersExistByIds,
+} from '@/lib/api/entity-existence';
+import {
+  buildDateTimeRangeFromDates,
+  parseDateRangeFromSearchParams,
+} from '@/lib/api/date-range';
 import { parseOffsetPagination } from '@/lib/api/pagination';
+import { ApiError } from '@/lib/api/errors';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env, paginationConfig } from '@/lib/env';
@@ -37,6 +47,7 @@ type ListParams = {
   limit: number;
   status?: FactoryShipmentStatus;
   customerId?: string;
+  search?: string;
   containerNumber?: string;
   orderNumber?: string;
   startDate?: Date;
@@ -46,19 +57,17 @@ type ListParams = {
 function parseAndValidateListParams(request: NextRequest): ListParams {
   const { searchParams } = request.nextUrl;
   const { page, limit } = parseOffsetPagination(searchParams);
+  const { startDate, endDate } = parseDateRangeFromSearchParams(searchParams);
   const raw = {
     page,
     limit,
     status: searchParams.get('status') || undefined,
     customerId: searchParams.get('customerId') || undefined,
+    search: searchParams.get('search') || undefined,
     containerNumber: searchParams.get('containerNumber') || undefined,
     orderNumber: searchParams.get('orderNumber') || undefined,
-    startDate: searchParams.get('startDate')
-      ? new Date(searchParams.get('startDate') || '')
-      : undefined,
-    endDate: searchParams.get('endDate')
-      ? new Date(searchParams.get('endDate') || '')
-      : undefined,
+    startDate,
+    endDate,
   };
 
   const parsed = factoryShipmentOrderListParamsSchema.parse(raw);
@@ -67,6 +76,7 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
     limit: parsed.limit ?? paginationConfig.defaultPageSize,
     status: parsed.status as FactoryShipmentStatus | undefined,
     customerId: parsed.customerId,
+    search: parsed.search,
     containerNumber: parsed.containerNumber,
     orderNumber: parsed.orderNumber,
     startDate: parsed.startDate,
@@ -79,9 +89,13 @@ function buildWhere(params: ListParams): Prisma.FactoryShipmentOrderWhereInput {
   if (params.status) where.status = params.status;
   if (params.customerId) where.customerId = params.customerId;
 
-  // ✅ 搜索逻辑：如果同时提供了 containerNumber 和 orderNumber，使用 OR 条件
-  // 这样可以搜索船公司名称或订单号
-  if (params.containerNumber && params.orderNumber) {
+  // ✅ 搜索逻辑：优先使用统一 search 参数
+  if (params.search) {
+    where.OR = [
+      { containerNumber: { contains: params.search } },
+      { orderNumber: { contains: params.search } },
+    ];
+  } else if (params.containerNumber && params.orderNumber) {
     where.OR = [
       { containerNumber: { contains: params.containerNumber } },
       { orderNumber: { contains: params.orderNumber } },
@@ -92,10 +106,12 @@ function buildWhere(params: ListParams): Prisma.FactoryShipmentOrderWhereInput {
     where.orderNumber = { contains: params.orderNumber };
   }
 
-  if (params.startDate || params.endDate) {
-    where.createdAt = {};
-    if (params.startDate) where.createdAt.gte = params.startDate;
-    if (params.endDate) where.createdAt.lte = params.endDate;
+  const createdAt = buildDateTimeRangeFromDates(
+    params.startDate,
+    params.endDate
+  );
+  if (createdAt) {
+    where.createdAt = createdAt;
   }
   return where;
 }
@@ -200,58 +216,7 @@ function ensureProductCode(code?: string | null) {
 }
 
 async function ensureCustomerExists(customerId: string) {
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
-    select: { id: true },
-  });
-  if (!customer) {
-    throw new NextResponse(JSON.stringify({ error: '客户不存在' }), {
-      status: 400,
-    }) as unknown as Error;
-  }
-}
-
-async function ensureProductsExist(
-  items: Array<{ isManualProduct?: boolean; productId?: string | null }>
-) {
-  const inventoryItems = items.filter(
-    item => !item.isManualProduct && item.productId
-  );
-  if (inventoryItems.length === 0) return;
-  const productIds = inventoryItems.map(item => item.productId || '');
-  const existing = await prisma.product.findMany({
-    where: { id: { in: productIds } },
-    select: { id: true },
-  });
-  const existingIds = new Set(existing.map(p => p.id));
-  const missing = productIds.filter(id => !existingIds.has(id));
-  if (missing.length > 0) {
-    throw new NextResponse(
-      JSON.stringify({ error: `产品不存在: ${missing.join(', ')}` }),
-      { status: 400 }
-    ) as unknown as Error;
-  }
-}
-
-async function ensureSuppliersExist(
-  items: Array<{ supplierId?: string | null }>
-) {
-  const supplierIds = [
-    ...new Set(items.map(i => i.supplierId).filter(Boolean)),
-  ] as string[];
-  if (supplierIds.length === 0) return;
-  const existing = await prisma.supplier.findMany({
-    where: { id: { in: supplierIds } },
-    select: { id: true },
-  });
-  const existingIds = new Set(existing.map(s => s.id));
-  const missing = supplierIds.filter(id => !existingIds.has(id));
-  if (missing.length > 0) {
-    throw new NextResponse(
-      JSON.stringify({ error: `供应商不存在: ${missing.join(', ')}` }),
-      { status: 400 }
-    ) as unknown as Error;
-  }
+  await ensureCustomersExistByIds(prisma, [customerId]);
 }
 
 // eslint-disable-next-line max-lines-per-function -- Helper kept in-route for now; can be moved to service layer
@@ -549,83 +514,9 @@ async function createInitialReceivableForShipment(
 // 获取厂家发货订单列表
 export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // Preview typed params to satisfy helper usage and future refactor
-    const _paramsPreview = parseAndValidateListParams(request);
-    const _wherePreview = buildWhere(_paramsPreview);
-    void _wherePreview;
-    // 解析查询参数
-    const { searchParams } = request.nextUrl;
-    const { page: parsedPage, limit: parsedLimit } =
-      parseOffsetPagination(searchParams);
-    const queryParams = {
-      page: parsedPage,
-      limit: parsedLimit,
-      status: searchParams.get('status') || undefined,
-      customerId: searchParams.get('customerId') || undefined,
-      search: searchParams.get('search') || undefined, // ✅ 新增：提取 search 参数
-      containerNumber: searchParams.get('containerNumber') || undefined,
-      orderNumber: searchParams.get('orderNumber') || undefined,
-      startDate: searchParams.get('startDate')
-        ? new Date(searchParams.get('startDate') || '')
-        : undefined,
-      endDate: searchParams.get('endDate')
-        ? new Date(searchParams.get('endDate') || '')
-        : undefined,
-    };
-
-    // 验证查询参数
-    const validatedParams =
-      factoryShipmentOrderListParamsSchema.parse(queryParams);
-    const {
-      page = 1,
-      limit = paginationConfig.defaultPageSize,
-      status,
-      customerId,
-      search,
-      containerNumber,
-      orderNumber,
-      startDate,
-      endDate,
-    } = validatedParams;
-
-    // 构建查询条件
-    const where: Prisma.FactoryShipmentOrderWhereInput = {};
-    if (status) {
-      where.status = status;
-    }
-    if (customerId) {
-      where.customerId = customerId;
-    }
-
-    // ✅ 搜索逻辑：与服务端函数保持一致
-    // 如果提供了 search 参数，使用 OR 逻辑同时匹配 containerNumber 和 orderNumber
-    if (search) {
-      where.OR = [
-        { containerNumber: { contains: search } },
-        { orderNumber: { contains: search } },
-      ];
-    } else {
-      // 如果没有 search 参数，保留独立的 containerNumber 和 orderNumber 筛选
-      if (containerNumber) {
-        where.containerNumber = { contains: containerNumber };
-      }
-      if (orderNumber) {
-        where.orderNumber = { contains: orderNumber };
-      }
-    }
-
-    if (startDate || endDate) {
-      where.createdAt = {};
-      if (startDate) {
-        where.createdAt.gte = startDate;
-      }
-      if (endDate) {
-        where.createdAt.lte = endDate;
-      }
-    }
-
-    // 分页计算
-    const skip = (page - 1) * limit;
+    const params = parseAndValidateListParams(request);
+    const where = buildWhere(params);
+    const skip = (params.page - 1) * params.limit;
 
     // ✅ 优化关联查询,只查询必要字段,减少数据传输量
     // 从查询所有字段改为 select 指定字段
@@ -633,7 +524,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       prisma.factoryShipmentOrder.findMany({
         where,
         skip,
-        take: limit,
+        take: params.limit,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         select: orderListSelect,
       }),
@@ -647,15 +538,18 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     return NextResponse.json({
       data: enrichedOrders,
       total: totalCount,
-      page,
-      limit,
+      page: params.page,
+      limit: params.limit,
     });
   } catch (error) {
     logger.error('factory-shipments', '获取厂家发货订单列表失败', error, {
       userId: user.id,
       url: request.url,
     });
-    return NextResponse.json({ error: '获取订单列表失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '获取订单列表失败' },
+      { status: 500 }
+    );
   }
 });
 
@@ -684,6 +578,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
       return NextResponse.json(
         {
+          success: false,
           error: '参数验证失败',
           details,
         },
@@ -709,10 +604,13 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     await ensureCustomerExists(customerId);
 
     // 验证库存产品是否存在（排除手动输入的产品）
-    await ensureProductsExist(items);
+    await ensureProductsExistFromItems(prisma, items);
 
     // 验证供应商是否存在
-    await ensureSuppliersExist(items);
+    await ensureSuppliersExistByIds(
+      prisma,
+      items.map(item => item.supplierId)
+    );
 
     // 生成订单编号 - 使用安全的订单号生成服务
     const { generateFactoryShipmentNumber } = await import(
@@ -728,6 +626,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     if (totalAmount && Math.abs(totalAmount - calculatedTotalAmount) > 0.01) {
       return NextResponse.json(
         {
+          success: false,
           error: `订单总金额计算错误。前端: ${totalAmount}, 服务器: ${calculatedTotalAmount}`,
         },
         { status: 400 }
@@ -783,10 +682,35 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
   } catch (error) {
     logger.error('factory-shipments', '创建厂家发货订单失败', error);
 
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json({ error: '集装箱号码已存在' }, { status: 400 });
+    if (error instanceof ApiError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+          code: error.type,
+          errorId: error.errorId,
+          ...(env.NODE_ENV === 'development' && error.details !== undefined
+            ? {
+                details: Array.isArray(error.details)
+                  ? error.details
+                  : [error.details],
+              }
+            : {}),
+        },
+        { status: error.statusCode }
+      );
     }
 
-    return NextResponse.json({ error: '创建订单失败' }, { status: 500 });
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json(
+        { success: false, error: '集装箱号码已存在' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { success: false, error: '创建订单失败' },
+      { status: 500 }
+    );
   }
 });

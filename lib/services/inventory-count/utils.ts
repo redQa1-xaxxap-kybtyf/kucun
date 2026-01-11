@@ -9,6 +9,7 @@ import {
   type InventoryCountItem,
   type InventoryCountListItem,
 } from '@/lib/types/inventory-count';
+import { toNumberOrNull } from '@/lib/utils/number';
 
 export const INVENTORY_COUNT_RELATIONS = {
   creator: {
@@ -135,8 +136,8 @@ export function toInventoryCountItem(
     actualQuantity: item.actualQuantity || undefined,
     difference: item.difference,
     status: item.status as InventoryCountItem['status'],
-    unitCost: item.unitCost || undefined,
-    totalCost: item.totalCost || undefined,
+    unitCost: toNumberOrNull(item.unitCost) ?? undefined,
+    totalCost: toNumberOrNull(item.totalCost) ?? undefined,
     location: item.location || undefined,
     remarks: item.remarks || undefined,
     countedBy: item.countedBy || undefined,

@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { parseLocalDateString } from '@/lib/utils/datetime';
+import { toNumber } from '@/lib/utils/number';
 
 // cspell:words payables
 
@@ -146,22 +147,16 @@ export async function createPaymentRecord(
         throw new Error('销售订单不存在');
       }
 
-      const salesOrderFinancial = salesOrder as {
-        paidAmount?: number | null;
-        totalAmount: number;
-      };
-      const currentPaidAmount = salesOrderFinancial.paidAmount ?? 0;
+      const currentPaidAmount = toNumber(salesOrder.paidAmount, 0);
+      const totalAmount = toNumber(salesOrder.totalAmount, 0);
       const computedPaidAmount = currentPaidAmount + data.paymentAmount;
-      const cappedPaidAmount = Math.min(
-        computedPaidAmount,
-        salesOrderFinancial.totalAmount
-      );
+      const cappedPaidAmount = Math.min(computedPaidAmount, totalAmount);
 
       await tx.salesOrder.update({
         where: { id: data.salesOrderId },
         data: {
           paidAmount: cappedPaidAmount,
-        } as Prisma.SalesOrderUpdateInput,
+        },
       });
 
       return payment;
@@ -357,16 +352,11 @@ export async function createPaymentOutRecord(
         },
       });
 
-      const currentPaidAmount = payableRecord.paidAmount ?? 0;
+      const payableAmount = toNumber(payableRecord.payableAmount, 0);
+      const currentPaidAmount = toNumber(payableRecord.paidAmount, 0);
       const computedPaidAmount = currentPaidAmount + data.paymentAmount;
-      const updatedPaidAmount = Math.min(
-        computedPaidAmount,
-        payableRecord.payableAmount
-      );
-      const remainingAmount = Math.max(
-        payableRecord.payableAmount - updatedPaidAmount,
-        0
-      );
+      const updatedPaidAmount = Math.min(computedPaidAmount, payableAmount);
+      const remainingAmount = Math.max(payableAmount - updatedPaidAmount, 0);
       const updatedStatus =
         remainingAmount <= 0
           ? 'paid'

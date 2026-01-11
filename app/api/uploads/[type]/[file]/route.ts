@@ -133,9 +133,13 @@ export async function GET(
       return NextResponse.json({ success: false, error: '无效的文件路径' }, { status: 400 });
     }
 
-    const bytes = await fs.readFile(absolutePath);
+    const buffer = await fs.readFile(absolutePath);
+    const arrayBuffer = (buffer.buffer as ArrayBuffer).slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength
+    );
 
-    return new NextResponse(bytes, {
+    return new NextResponse(arrayBuffer, {
       status: 200,
       headers: {
         'Content-Type': contentTypeForFileName(file),

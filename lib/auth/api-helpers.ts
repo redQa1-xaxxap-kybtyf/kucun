@@ -11,9 +11,10 @@
 import { cookies } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { ApiError } from '@/lib/api/errors';
+import { ApiError, generateErrorId } from '@/lib/api/errors';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { validateAndTouchUserSession } from '@/lib/services/user-session-service';
 
 import { getApiAuthContext, type AuthUser } from './context';
 import { can, requirePermission, type Permission } from './permissions';
@@ -183,60 +184,87 @@ export function withAuth(
         // 因此对标记为 mini-program 的请求跳过 CSRF/Origin 校验。
         const clientFrom = request.headers.get('x-client-from');
         if (clientFrom !== 'mini-program') {
-        // 0.1 同源检查：Origin 必须在允许列表中（如果存在 Origin）
-        const origin = request.headers.get('origin');
+          // 0.1 同源检查：Origin 必须在允许列表中（如果存在 Origin）
+          const origin = request.headers.get('origin');
 
-        // 当前应用内部看到的 Origin（通常是 http://127.0.0.1:3000）
-        const internalOrigin = request.nextUrl.origin;
+          // 当前应用内部看到的 Origin（通常是 http://127.0.0.1:3000）
+          const internalOrigin = request.nextUrl.origin;
 
-        // 根据 NEXTAUTH_URL 推导出的「外部访问域名」
-        const externalOrigin = env.NEXTAUTH_URL
-          ? new URL(env.NEXTAUTH_URL).origin
-          : null;
+          // 根据 NEXTAUTH_URL 推导出的「外部访问域名」
+          const externalOrigin = env.NEXTAUTH_URL
+            ? new URL(env.NEXTAUTH_URL).origin
+            : null;
 
-        // 允许的 Origin 列表：内部 Origin + 外部 Origin（如配置）
-        const allowedOrigins = new Set<string>();
-        allowedOrigins.add(internalOrigin);
-        if (externalOrigin) {
-          allowedOrigins.add(externalOrigin);
-        }
+          // 允许的 Origin 列表：内部 Origin + 外部 Origin（如配置）
+          const allowedOrigins = new Set<string>();
+          allowedOrigins.add(internalOrigin);
+          if (externalOrigin) {
+            allowedOrigins.add(externalOrigin);
+          }
 
-        if (origin && !allowedOrigins.has(origin)) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: '无效请求来源（可能存在 CSRF 风险）',
-            },
-            { status: 403 }
-          );
-        }
-
-        // 0.2 双提交 Cookie 校验：X-CSRF-Token 需与 csrf_token Cookie 一致
-        const csrfHeader =
-          request.headers.get('x-csrf-token') ||
-          request.headers.get('X-CSRF-Token');
-
-        const cookieStore = await cookies();
-        const csrfCookie = cookieStore.get('csrf_token')?.value;
-
-        // 只有在服务器已下发 csrf_token Cookie 的情况下才严格执行双提交校验
-        // 避免首次请求时「边设置 Cookie 边校验」导致的误报
-        if (csrfCookie) {
-          if (!csrfHeader || csrfHeader !== csrfCookie) {
+          if (origin && !allowedOrigins.has(origin)) {
             return NextResponse.json(
               {
                 success: false,
-                error: 'CSRF 校验失败，请刷新页面后重试',
+                error: '无效请求来源（可能存在 CSRF 风险）',
               },
               { status: 403 }
             );
           }
-        }
+
+          // 0.2 双提交 Cookie 校验：X-CSRF-Token 需与 csrf_token Cookie 一致
+          const csrfHeader =
+            request.headers.get('x-csrf-token') ||
+            request.headers.get('X-CSRF-Token');
+
+          const cookieStore = await cookies();
+          const csrfCookie = cookieStore.get('csrf_token')?.value;
+
+          // 只有在服务器已下发 csrf_token Cookie 的情况下才严格执行双提交校验
+          // 避免首次请求时「边设置 Cookie 边校验」导致的误报
+          if (csrfCookie) {
+            if (!csrfHeader || csrfHeader !== csrfCookie) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  error: 'CSRF 校验失败，请刷新页面后重试',
+                },
+                { status: 403 }
+              );
+            }
+          }
         }
       }
 
       // 1. 认证检查
       const user = requireAuth(request);
+
+      // 1.1 会话并发/空闲超时校验（仅对带 sessionId 的会话生效）
+      if (user.sessionId) {
+        try {
+           const sessionResult = await validateAndTouchUserSession({
+             userId: user.id,
+             sessionId: user.sessionId,
+             idleTimeoutSeconds: env.USER_SESSION_TIMEOUT * 60,
+           });
+
+          if (!sessionResult.valid) {
+            return unauthorizedResponse(sessionResult.reason || '会话已失效');
+          }
+        } catch (sessionError) {
+          logger.warn(
+            'api-auth',
+            '会话校验失败(忽略)',
+            { userId: user.id },
+            {
+              error:
+                sessionError instanceof Error
+                  ? sessionError.message
+                  : String(sessionError),
+            }
+          );
+        }
+      }
 
       // 2. 管理员权限检查
       const isAdmin = user.role === 'admin';
@@ -310,6 +338,7 @@ export function withAuth(
           { status: error.statusCode }
         );
       }
+
       // 认证错误
       if (error instanceof Error && error.message.includes('未授权')) {
         // 🚀 性能优化：401 错误是正常流程，不记录日志（避免控制台污染）
@@ -321,13 +350,15 @@ export function withAuth(
         );
       }
 
+      const errorId = generateErrorId();
+
       // 其他错误才记录详细日志
-      logger.error('api-auth', '请求处理失败', error);
+      logger.error('api-auth', '请求处理失败', error, { errorId });
 
       // 权限错误
       if (error instanceof Error && error.message.includes('权限不足')) {
         return NextResponse.json(
-          { success: false, error: error.message },
+          { success: false, error: error.message, errorId },
           { status: 403 }
         );
       }
@@ -337,6 +368,7 @@ export function withAuth(
         {
           success: false,
           error: error instanceof Error ? error.message : '服务器内部错误',
+          errorId,
         },
         { status: 500 }
       );
@@ -398,7 +430,15 @@ export function successResponse<T>(
  * 返回错误响应
  */
 export function errorResponse(message: string, status = 400) {
-  return NextResponse.json({ success: false, error: message }, { status });
+  const errorId = status >= 500 ? generateErrorId() : undefined;
+  return NextResponse.json(
+    {
+      success: false,
+      error: message,
+      ...(errorId && { errorId }),
+    },
+    { status }
+  );
 }
 
 // ==================== 使用示例 ====================

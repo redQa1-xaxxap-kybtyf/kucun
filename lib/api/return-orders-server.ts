@@ -122,7 +122,22 @@ export async function getReturnOrdersServer(
             orderNumber: true,
           },
         },
-        items: true,
+        items: {
+          select: {
+            id: true,
+            returnOrderId: true,
+            salesOrderItemId: true,
+            productId: true,
+            colorCode: true,
+            productionDate: true,
+            returnQuantity: true,
+            damagedQuantity: true,
+            originalQuantity: true,
+            unitPrice: true,
+            subtotal: true,
+            reason: true,
+          },
+        },
         refunds: {
           select: {
             id: true,
@@ -151,6 +166,7 @@ export async function getReturnOrdersServer(
       code: true,
       unit: true,
     },
+    take: productIds.length,
   });
 
   const productsMap = new Map(products.map(p => [p.id, p]));

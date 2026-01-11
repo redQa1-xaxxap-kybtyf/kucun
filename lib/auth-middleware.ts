@@ -195,7 +195,9 @@ export async function authMiddleware(request: NextRequest) {
         });
 
         if (payload && typeof payload === 'object') {
-          const userId = String((payload as any).sub || (payload as any).id || '');
+          const userId = String(
+            (payload as any).sub || (payload as any).id || ''
+          );
           const username = String((payload as any).username || '');
           if (userId && username) {
             token = {
@@ -332,6 +334,7 @@ export async function authMiddleware(request: NextRequest) {
     requestHeaders.set('x-user-username', token.username || '');
     requestHeaders.set('x-user-role', token.role || 'user');
     requestHeaders.set('x-user-status', token.status || 'active');
+    requestHeaders.set('x-session-id', token.sessionId || '');
 
     // 使用新的请求头创建响应，并确保设置 CSRF Token Cookie（双提交 Cookie 模式）
     const response = NextResponse.next({

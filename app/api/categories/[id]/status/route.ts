@@ -49,14 +49,14 @@ export const PATCH = withAuth(
 
       // 如果要禁用分类，检查是否有启用的子分类
       if (validatedData.status === 'inactive') {
-        const activeChildren = await prisma.category.findMany({
+        const activeChildrenCount = await prisma.category.count({
           where: {
             parentId: id,
             status: 'active',
           },
         });
 
-        if (activeChildren.length > 0) {
+        if (activeChildrenCount > 0) {
           throw ApiError.badRequest('该分类下还有启用的子分类，请先禁用子分类');
         }
       }

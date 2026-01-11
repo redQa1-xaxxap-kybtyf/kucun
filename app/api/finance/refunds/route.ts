@@ -9,6 +9,7 @@ import {
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { publishFinanceEvent } from '@/lib/events';
+import { toNumber } from '@/lib/utils/number';
 import {
   createRefundRecordSchema,
   refundQuerySchema,
@@ -377,12 +378,13 @@ export const POST = withAuth(
         _sum: { refundAmount: true },
       });
 
-      const totalRefundAmount =
-        (existingRefunds._sum.refundAmount || 0) + validatedData.refundAmount;
+      const orderTotalAmount = toNumber(salesOrderWithRefunds.totalAmount, 0);
+      const existingRefundAmount = toNumber(existingRefunds._sum.refundAmount, 0);
+      const totalRefundAmount = existingRefundAmount + validatedData.refundAmount;
 
-      if (totalRefundAmount > salesOrderWithRefunds.totalAmount) {
+      if (totalRefundAmount > orderTotalAmount) {
         throw new Error(
-          `退款总额(￥${totalRefundAmount.toFixed(2)})不能超过订单金额(￥${salesOrderWithRefunds.totalAmount.toFixed(2)})`
+          `退款总额(￥${totalRefundAmount.toFixed(2)})不能超过订单金额(￥${orderTotalAmount.toFixed(2)})`
         );
       }
 
@@ -442,7 +444,7 @@ export const POST = withAuth(
       recordType: 'refund',
       recordId: newRefund.id,
       recordNumber: newRefund.refundNumber,
-      amount: newRefund.refundAmount,
+      amount: toNumber(newRefund.refundAmount),
       customerId: newRefund.customerId,
       customerName: newRefund.customer.name,
       userId: user.id,

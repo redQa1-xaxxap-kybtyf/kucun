@@ -11,11 +11,13 @@ import type { ApiHandler } from '@/lib/auth/api-helpers';
 import { invalidateSalesOrderAndReceivables } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   createTransferPayableRecord,
   validateStatusTransition,
 } from '@/lib/services/sales-order-service';
 import { withIdempotency } from '@/lib/utils/idempotency';
+import { toNumber } from '@/lib/utils/number';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
 async function resolveId(
@@ -124,16 +126,11 @@ export const putSalesOrderRoute: ApiHandler = async (
     }
   }
 
-  // 选取一个真实存在的产品ID用于幂等性记录，避免将订单ID误用为产品ID导致外键错误
-  const primaryProductId =
-    existingOrder.items.find(item => item.productId)?.productId ??
-    existingOrder.id;
-
   // 幂等包装状态更新
   const result = await withIdempotency(
     idempotencyKey,
     'sales_order_status_change',
-    primaryProductId,
+    existingOrder.id,
     userId,
     { status, remarks },
     async () =>
@@ -162,13 +159,14 @@ export const putSalesOrderRoute: ApiHandler = async (
     status === 'confirmed' &&
     existingOrder.orderType === 'TRANSFER' &&
     existingOrder.supplierId &&
-    (existingOrder.costAmount || 0) > 0
+    toNumber(existingOrder.costAmount, 0) > 0
   ) {
+    const transferCostAmount = toNumber(existingOrder.costAmount, 0);
     await createTransferPayableRecord(
       existingOrder.id,
       existingOrder.orderNumber,
       existingOrder.supplierId,
-      existingOrder.costAmount || 0,
+      transferCostAmount,
       userId
     );
   }
@@ -180,6 +178,43 @@ export const putSalesOrderRoute: ApiHandler = async (
 
   // 统一响应：返回最新详情
   const data = await getSalesOrderDetailWithPayments(id);
+
+  // 草稿->确认：补齐往来账台账（与“创建即确认”保持一致）
+  if (existingOrder.status === 'draft' && status === 'confirmed' && data) {
+    const totalAmount = toNumber(
+      (data as { totalAmount?: unknown }).totalAmount,
+      0
+    );
+    const roundingAdjustment = toNumber(
+      (data as { roundingAdjustment?: unknown }).roundingAdjustment,
+      0
+    );
+    const due = Number((totalAmount + roundingAdjustment).toFixed(2));
+
+    if (due > 0) {
+      recordPartnerTransaction({
+        partnerId: data.customerId,
+        partnerRole: 'customer',
+        entityType: 'customer',
+        transactionType: 'sale',
+        amount: due,
+        referenceId: data.id,
+        referenceNumber: data.orderNumber,
+        description: `销售订单 ${data.orderNumber} 确认应收`,
+        occurredAt: new Date(),
+        metadata: {
+          status: data.status,
+          triggeredBy: 'order:confirm',
+        },
+      }).catch(error => {
+        logger.error('sales-orders', '记录往来账失败', error, {
+          orderId: data.id,
+          orderNumber: data.orderNumber,
+        });
+      });
+    }
+  }
+
   const message =
     status === 'confirmed'
       ? '销售订单已确认'
@@ -225,6 +260,18 @@ export const patchSalesOrderRoute: ApiHandler = async (
     );
   }
 
+  // 草稿更新接口仅允许编辑草稿内容，不允许通过 PATCH 修改状态（避免绕过库存预留/台账逻辑）。
+  if (parsed.data.status !== undefined && parsed.data.status !== 'draft') {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          '草稿更新不允许修改订单状态，请使用“更新状态”接口进行确认/发货/取消。',
+      },
+      { status: 400 }
+    );
+  }
+
   const existingOrder = (await prisma.salesOrder.findUnique({
     where: { id },
     select: {
@@ -234,6 +281,7 @@ export const patchSalesOrderRoute: ApiHandler = async (
       orderType: true,
       transferMode: true,
       supplierId: true,
+      updatedAt: true,
     },
   })) as {
     id: string;
@@ -242,6 +290,7 @@ export const patchSalesOrderRoute: ApiHandler = async (
     orderType: 'NORMAL' | 'TRANSFER' | null;
     transferMode: 'SUPPLIER_ONLY' | 'MIXED' | null;
     supplierId: string | null;
+    updatedAt: Date;
   } | null;
   if (!existingOrder) {
     return NextResponse.json(
@@ -351,8 +400,11 @@ async function maybeAutoCompleteAfterShipped(id: string, orderNumber: string) {
       {
         orderId: id,
         orderNumber,
-        totalAmount: o.totalAmount,
-        roundingAdjustment: o.roundingAdjustment,
+        totalAmount: Number(o.totalAmount),
+        roundingAdjustment:
+          o.roundingAdjustment === null || o.roundingAdjustment === undefined
+            ? null
+            : Number(o.roundingAdjustment),
         paidAmount: paid,
         remainingAmount: remaining,
       }

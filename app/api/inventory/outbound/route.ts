@@ -9,9 +9,11 @@ import { paginationConfig } from '@/lib/env';
 import { publishInventoryChange } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
-import { consumeFIFOQueue } from '@/lib/services/fifo-cost-service';
+import { consumeFIFOQueueByBatch } from '@/lib/services/fifo-cost-service';
+import type { OutboundType } from '@/lib/types/inventory';
 import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { withIdempotency } from '@/lib/utils/idempotency';
+import { toNumber } from '@/lib/utils/number';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 
 type OutboundWhereClause = {
@@ -54,10 +56,10 @@ function buildOutboundWhereClause(params: {
   if (params.startDate || params.endDate) {
     where.createdAt = {};
     if (params.startDate) {
-      where.createdAt.gte = new Date(params.startDate);
+      where.createdAt.gte = new Date(`${params.startDate}T00:00:00.000`);
     }
     if (params.endDate) {
-      where.createdAt.lte = new Date(params.endDate);
+      where.createdAt.lte = new Date(`${params.endDate}T23:59:59.999`);
     }
   }
 
@@ -79,7 +81,6 @@ type OutboundRecordWithProduct = {
     name: string;
     specification: string | null;
     piecesPerUnit: number;
-    weight: number | null;
   };
 };
 
@@ -247,6 +248,7 @@ const getOutboundRecordsHandler = withAuth(
             batchNumber: true,
             piecesPerUnit: true,
           },
+          take: batchQueries.length,
         });
 
         batchSpecs.forEach(spec => {
@@ -291,23 +293,27 @@ export const GET = withRateLimit(RateLimitType.READ)(getOutboundRecordsHandler);
  */
 async function executeOutboundTransaction(
   data: {
+    type: OutboundType;
     productId: string;
     quantity: number;
     batchNumber?: string;
     variantId?: string;
     reason?: string;
     notes?: string;
+    remarks?: string;
     customerId?: string;
   },
   userId: string
 ) {
   const {
+    type,
     productId,
     quantity,
     batchNumber,
     variantId,
     reason,
     notes,
+    remarks,
     customerId,
   } = data;
 
@@ -328,6 +334,7 @@ async function executeOutboundTransaction(
           batchNumber: true,
         },
         distinct: ['batchNumber'],
+        take: 1000,
       });
 
       if (existingOutbounds.length > 0) {
@@ -407,9 +414,10 @@ async function executeOutboundTransaction(
     let totalCost: number | undefined;
 
     try {
-      const fifoCost = await consumeFIFOQueue(
+      const fifoCost = await consumeFIFOQueueByBatch(
         productId,
         availableInventory.variantId,
+        availableInventory.batchNumber,
         outboundQty,
         tx
       );
@@ -432,7 +440,7 @@ async function executeOutboundTransaction(
         }
       );
 
-      const fallbackUnitCost = availableInventory.unitCost || 0;
+      const fallbackUnitCost = toNumber(availableInventory.unitCost, 0);
       unitCost = fallbackUnitCost;
       totalCost = calculateTotalCost(quantity, fallbackUnitCost);
     }
@@ -449,6 +457,10 @@ async function executeOutboundTransaction(
 
     // 4. 创建出库记录（包含成本信息）
     const recordNumber = `OUT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
+    const notesParts = [reason, notes, remarks]
+      .map(value => (typeof value === 'string' ? value.trim() : ''))
+      .filter(value => value.length > 0);
+    const mergedNotes = notesParts.length > 0 ? notesParts.join(' | ') : null;
 
     await tx.outboundRecord.create({
       data: {
@@ -458,11 +470,14 @@ async function executeOutboundTransaction(
         quantity,
         unitCost, // FIFO 或库存单位成本
         totalCost, // FIFO 或库存总成本
-        reason: reason || 'manual_outbound',
+        reason: type,
         batchNumber: availableInventory.batchNumber,
         variantId: availableInventory.variantId,
-        notes,
-        customerId,
+        notes: mergedNotes,
+        customerId:
+          typeof customerId === 'string' && customerId.trim().length > 0
+            ? customerId.trim()
+            : null,
         operatorId: userId,
       },
     });

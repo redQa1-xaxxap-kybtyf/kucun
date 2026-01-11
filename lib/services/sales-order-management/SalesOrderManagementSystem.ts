@@ -221,12 +221,13 @@ export class SalesOrderManagementSystem {
       );
 
       // 待审核费用检查
-      const pendingApprovals = await this.expenseService.getPendingApprovals();
-      checks.pendingApprovals = pendingApprovals.length < 10; // 假设超过10个待审核为异常
-      if (pendingApprovals.length >= 10) {
+      const pendingApprovalsCount =
+        await this.expenseService.countPendingApprovals();
+      checks.pendingApprovals = pendingApprovalsCount < 10; // 假设超过10个待审核为异常
+      if (pendingApprovalsCount >= 10) {
         alerts.push({
           type: 'warning',
-          message: `有 ${pendingApprovals.length} 个费用待审核`,
+          message: `有 ${pendingApprovalsCount} 个费用待审核`,
         });
       }
 

@@ -21,6 +21,14 @@ export interface QiniuConfig {
 let cachedConfig: QiniuConfig | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
+const QINIU_SETTING_KEYS = [
+  'qiniu_access_key',
+  'qiniu_secret_key',
+  'qiniu_bucket',
+  'qiniu_domain',
+  'qiniu_region',
+  'qiniu_path_format',
+] as const;
 
 /**
  * 上传结果接口
@@ -60,16 +68,14 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
     const settings = await prisma.systemSetting.findMany({
       where: {
         key: {
-          in: [
-            'qiniu_access_key',
-            'qiniu_secret_key',
-            'qiniu_bucket',
-            'qiniu_domain',
-            'qiniu_region',
-            'qiniu_path_format',
-          ],
+          in: [...QINIU_SETTING_KEYS],
         },
       },
+      select: {
+        key: true,
+        value: true,
+      },
+      take: QINIU_SETTING_KEYS.length,
     });
 
     const config: Partial<QiniuConfig> = {};

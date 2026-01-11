@@ -42,6 +42,19 @@ export const GET = withErrorHandling(
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
+      select: {
+        id: true,
+        name: true,
+        url: true,
+        description: true,
+        searchInputSelector: true,
+        searchButtonSelector: true,
+        resultContainerSelector: true,
+        extractSelectors: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     // 🔒 根据用户角色过滤 URL 字段

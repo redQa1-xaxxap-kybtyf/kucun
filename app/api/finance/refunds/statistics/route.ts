@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 计算处理率百分比
@@ -34,68 +35,69 @@ function buildStatisticsResponse(
     status: string;
     _count: number;
     _sum: {
-      refundAmount: number | null;
-      processedAmount: number | null;
+      refundAmount: unknown | null;
+      processedAmount: unknown | null;
     } | null;
   }>,
   recentRefunds: Array<{
     id: string;
     refundNumber: string;
-    refundAmount: number;
+    refundAmount: unknown;
     status: string;
     createdAt: Date;
     salesOrder: { customer: { name: string } } | null;
   }>
 ) {
+  const todayTotalAmount = toNumber(todayStats._sum.refundAmount);
+  const todayProcessedAmount = toNumber(todayStats._sum.processedAmount);
+  const monthTotalAmount = toNumber(monthStats._sum.refundAmount);
+  const monthProcessedAmount = toNumber(monthStats._sum.processedAmount);
+  const yearTotalAmount = toNumber(yearStats._sum.refundAmount);
+  const yearProcessedAmount = toNumber(yearStats._sum.processedAmount);
+
   return {
     today: {
-      totalAmount: todayStats._sum.refundAmount || 0,
-      processedAmount: todayStats._sum.processedAmount || 0,
-      pendingAmount:
-        (todayStats._sum.refundAmount || 0) -
-        (todayStats._sum.processedAmount || 0),
+      totalAmount: todayTotalAmount,
+      processedAmount: todayProcessedAmount,
+      pendingAmount: todayTotalAmount - todayProcessedAmount,
       count: todayStats._count,
       processingRate: calculateProcessingRate(
-        todayStats._sum.processedAmount || 0,
-        todayStats._sum.refundAmount || 0
+        todayProcessedAmount,
+        todayTotalAmount
       ),
     },
     month: {
-      totalAmount: monthStats._sum.refundAmount || 0,
-      processedAmount: monthStats._sum.processedAmount || 0,
-      pendingAmount:
-        (monthStats._sum.refundAmount || 0) -
-        (monthStats._sum.processedAmount || 0),
+      totalAmount: monthTotalAmount,
+      processedAmount: monthProcessedAmount,
+      pendingAmount: monthTotalAmount - monthProcessedAmount,
       count: monthStats._count,
       processingRate: calculateProcessingRate(
-        monthStats._sum.processedAmount || 0,
-        monthStats._sum.refundAmount || 0
+        monthProcessedAmount,
+        monthTotalAmount
       ),
     },
     year: {
-      totalAmount: yearStats._sum.refundAmount || 0,
-      processedAmount: yearStats._sum.processedAmount || 0,
-      pendingAmount:
-        (yearStats._sum.refundAmount || 0) -
-        (yearStats._sum.processedAmount || 0),
+      totalAmount: yearTotalAmount,
+      processedAmount: yearProcessedAmount,
+      pendingAmount: yearTotalAmount - yearProcessedAmount,
       count: yearStats._count,
       processingRate: calculateProcessingRate(
-        yearStats._sum.processedAmount || 0,
-        yearStats._sum.refundAmount || 0
+        yearProcessedAmount,
+        yearTotalAmount
       ),
     },
     urgent: urgentCount,
     statusBreakdown: statusStats.map(stat => ({
       status: stat.status,
       count: stat._count,
-      totalAmount: stat._sum?.refundAmount || 0,
-      processedAmount: stat._sum?.processedAmount || 0,
+      totalAmount: toNumber(stat._sum?.refundAmount),
+      processedAmount: toNumber(stat._sum?.processedAmount),
     })),
     recentRefunds: recentRefunds.map(refund => ({
       id: refund.id,
       refundNumber: refund.refundNumber,
       customerName: refund.salesOrder?.customer?.name || '未知客户',
-      refundAmount: refund.refundAmount,
+      refundAmount: toNumber(refund.refundAmount),
       status: refund.status,
       createdAt: refund.createdAt,
     })),
@@ -194,7 +196,10 @@ const getRefundStatisticsHandler = withAuth(async () => {
     });
   } catch (error) {
     logger.error('finance-refunds', '获取退款统计数据失败', error);
-    return NextResponse.json({ error: '获取统计数据失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '获取统计数据失败' },
+      { status: 500 }
+    );
   }
 });
 

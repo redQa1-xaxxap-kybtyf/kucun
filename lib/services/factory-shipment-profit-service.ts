@@ -17,6 +17,7 @@ import type {
   ItemProfitResult,
   OrderProfitSummary,
 } from '@/lib/types/factory-shipment';
+import { toNumber } from '@/lib/utils/number';
 
 import { roundToTwoDecimals } from './factory-shipment-expense-service';
 
@@ -319,37 +320,57 @@ export async function getFactoryShipmentExpenses(
     amount: number;
     description?: string;
   }>;
-}> {
+  }> {
   const { prisma } = await import('@/lib/db');
 
-  // 查询关联到该发货单的所有费用
-  const expenseRecords = await prisma.expenseRecord.findMany({
-    where: {
-      relatedType: 'factory_shipment',
-      relatedId: factoryShipmentOrderId,
-    },
-    select: {
-      id: true,
-      expenseType: true,
-      expenseAmount: true,
-      expenseName: true,
-      remarks: true,
-    },
-  });
+  let totalExpenses = 0;
+  const expenses: Array<{
+    id: string;
+    type: string;
+    amount: number;
+    description?: string;
+  }> = [];
 
-  // 计算费用总额
-  const totalExpenses = expenseRecords.reduce(
-    (sum, record) => sum + record.expenseAmount,
-    0
-  );
+  let cursor: string | undefined;
+  const batchSize = 1000;
 
-  // 转换为返回格式
-  const expenses = expenseRecords.map(record => ({
-    id: record.id,
-    type: record.expenseType,
-    amount: record.expenseAmount,
-    description: record.expenseName || record.remarks || undefined,
-  }));
+  while (true) {
+    const batch = await prisma.expenseRecord.findMany({
+      where: {
+        relatedType: 'factory_shipment',
+        relatedId: factoryShipmentOrderId,
+      },
+      select: {
+        id: true,
+        expenseType: true,
+        expenseAmount: true,
+        expenseName: true,
+        remarks: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: batchSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const record of batch) {
+      const amount = toNumber(record.expenseAmount, 0);
+      totalExpenses += amount;
+      expenses.push({
+        id: record.id,
+        type: record.expenseType,
+        amount,
+        description: record.expenseName || record.remarks || undefined,
+      });
+    }
+
+    cursor = batch[batch.length - 1].id;
+  }
 
   return {
     totalExpenses: roundToTwoDecimals(totalExpenses),

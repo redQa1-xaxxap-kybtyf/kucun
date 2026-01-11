@@ -20,7 +20,10 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
-import { consumeFIFOQueue, type FIFOCostResult } from './fifo-cost-service';
+import {
+  consumeFIFOQueueByBatch,
+  type FIFOCostResult,
+} from './fifo-cost-service';
 
 // 事务类型定义：与 fifo-cost-service 保持一致，显式使用 TransactionClient
 type PrismaTransaction = Prisma.TransactionClient;
@@ -72,9 +75,10 @@ export async function executeFIFOOutbound(
 ): Promise<FIFOOutboundResult> {
   try {
     // 🎯 步骤1: FIFO成本计算并消耗队列
-    const fifoCost = await consumeFIFOQueue(
+    const fifoCost = await consumeFIFOQueueByBatch(
       params.productId,
       params.variantId,
+      params.batchNumber,
       params.quantity,
       tx
     );
@@ -227,21 +231,18 @@ export async function checkFIFOInventoryAvailable(
 }> {
   try {
     // 查询FIFO队列总可用数量
-    const queueEntries = await prisma.inventoryCostQueue.findMany({
+    const aggregateResult = await prisma.inventoryCostQueue.aggregate({
       where: {
         productId,
         variantId,
         remainingQty: { gt: 0 },
       },
-      select: {
+      _sum: {
         remainingQty: true,
       },
     });
 
-    const availableQty = queueEntries.reduce(
-      (sum, entry) => sum + entry.remainingQty,
-      0
-    );
+    const availableQty = Number(aggregateResult._sum.remainingQty ?? 0);
 
     const available = availableQty >= requiredQty;
     const shortage = available ? 0 : requiredQty - availableQty;

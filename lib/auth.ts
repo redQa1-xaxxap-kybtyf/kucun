@@ -12,6 +12,10 @@ import {
   logLoginFailure,
   logLoginSuccess,
 } from './services/login-log-service';
+import {
+  registerUserSession,
+  validateAndTouchUserSession,
+} from './services/user-session-service';
 import { userValidations } from './validations/base';
 import { validatePassword } from './validations/user';
 
@@ -48,6 +52,7 @@ declare module 'next-auth/jwt' {
     role: string;
     status: string;
     rememberMe?: boolean;
+    sessionId?: string;
     exp?: number;
   }
 }
@@ -341,32 +346,99 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+
       // 首次登录时，将用户信息添加到 token
       if (user) {
         token.id = user.id;
         token.username = user.username;
         token.role = user.role;
         token.status = user.status;
+
         // 根据 rememberMe 设置自定义过期时间
         const rememberMe = (user as { rememberMe?: boolean }).rememberMe;
         token.rememberMe = rememberMe ?? false;
-        const nowInSeconds = Math.floor(Date.now() / 1000);
+
         const maxAgeSeconds = token.rememberMe
           ? 30 * 24 * 60 * 60 // 30 天
           : 24 * 60 * 60; // 24 小时
-        token.exp = nowInSeconds + maxAgeSeconds;
+
+        const expiresAtSeconds = nowInSeconds + maxAgeSeconds;
+        token.exp = expiresAtSeconds;
+
+        const sessionId =
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `sid_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+
+        token.sessionId = sessionId;
+
+        try {
+          await registerUserSession({
+            userId: token.id,
+            sessionId,
+            expiresAtMs: expiresAtSeconds * 1000,
+          });
+        } catch (error) {
+          // Redis 故障不应阻断登录，只降级并发/空闲超时能力
+          token.sessionId = undefined;
+          logger.warn(
+            'security',
+            '注册用户会话失败(忽略)',
+            { userId: token.id, username: token.username },
+            { error: error instanceof Error ? error.message : String(error) }
+          );
+        }
+
+        return token;
+      }
+
+      // 非首次：校验并刷新会话活跃时间（并发登录限制/空闲超时）
+      const userId = token.id || token.sub;
+      const sessionId = token.sessionId;
+      if (userId && sessionId) {
+        try {
+          const sessionResult = await validateAndTouchUserSession({
+            userId,
+            sessionId,
+            idleTimeoutSeconds: env.USER_SESSION_TIMEOUT * 60,
+          });
+
+          if (!sessionResult.valid) {
+            // 让 token 立刻过期，确保 middleware/getToken 也会判定为未登录
+            token.exp = nowInSeconds - 10;
+            token.sessionId = undefined;
+            token.id = '';
+            token.username = '';
+            token.role = '';
+            token.status = '';
+            token.rememberMe = false;
+            token.sub = '';
+          }
+        } catch (error) {
+          // Redis 故障不应阻断访问，只降级并发/空闲超时能力
+          logger.warn(
+            'security',
+            '会话校验失败(忽略)',
+            { userId, username: token.username },
+            { error: error instanceof Error ? error.message : String(error) }
+          );
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      // 将 token 中的信息添加到 session
-      if (token) {
-        session.user.id = token.id;
-        session.user.username = token.username;
-        session.user.role = token.role;
-        session.user.status = token.status;
-        session.user.rememberMe = token.rememberMe;
+      if (!token?.id) {
+        return null as unknown as typeof session;
       }
+
+      // 将 token 中的信息添加到 session
+      session.user.id = token.id;
+      session.user.username = token.username;
+      session.user.role = token.role;
+      session.user.status = token.status;
+      session.user.rememberMe = token.rememberMe;
+
       return session;
     },
   },

@@ -233,12 +233,24 @@ export async function getOptimizedInventoryList(
     LIMIT ${limit} OFFSET ${offset}
   `;
 
+  // ✅ 将 Decimal 类型转换为 number，确保可以序列化到客户端
+  const records = rawRecords.map((record: any) => ({
+    ...record,
+    quantity: Number(record.quantity),
+    reservedQuantity: Number(record.reservedQuantity),
+    unitCost: record.unitCost != null ? Number(record.unitCost) : null,
+    product_piecesPerUnit: Number(record.product_piecesPerUnit),
+    product_weight: record.product_weight != null ? Number(record.product_weight) : null,
+    batch_piecesPerUnit: record.batch_piecesPerUnit != null ? Number(record.batch_piecesPerUnit) : null,
+    batch_weight: record.batch_weight != null ? Number(record.batch_weight) : null,
+  }));
+
   // ✅ 性能优化：仅在开发环境进行抽样验证（验证第一条和随机一条）
   // 生产环境跳过 Zod 验证以提升性能（节省 ~50ms）
-  if (process.env.NODE_ENV === 'development' && rawRecords.length > 0) {
+  if (process.env.NODE_ENV === 'development' && records.length > 0) {
     try {
       // 验证第一条记录
-      const firstResult = inventoryQueryResultSchema.safeParse(rawRecords[0]);
+      const firstResult = inventoryQueryResultSchema.safeParse(records[0]);
       if (!firstResult.success) {
         logger.error(
           'inventory-query',
@@ -251,10 +263,10 @@ export async function getOptimizedInventoryList(
       }
 
       // 验证随机一条记录（如果有多条）
-      if (rawRecords.length > 1) {
-        const randomIndex = Math.floor(Math.random() * rawRecords.length);
+      if (records.length > 1) {
+        const randomIndex = Math.floor(Math.random() * records.length);
         const randomResult = inventoryQueryResultSchema.safeParse(
-          rawRecords[randomIndex]
+          records[randomIndex]
         );
         if (!randomResult.success) {
           logger.error(
@@ -272,7 +284,7 @@ export async function getOptimizedInventoryList(
   }
 
   // 直接返回原始记录（类型已由 TypeScript 保证）
-  return rawRecords as InventoryQueryResult[];
+  return records as InventoryQueryResult[];
 }
 
 /**

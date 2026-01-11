@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
 import type { CreateInventoryCountRequest } from '@/lib/types/inventory-count';
+import { toNumberOrNull } from '@/lib/utils/number';
 
 type InventoryItemBaseInput = {
   productId: string;
@@ -48,12 +49,20 @@ export async function buildInventoryItems(
       unitCost: true,
       location: true,
     },
+    take: items.length,
   });
 
   const inventoryMap = new Map<string, InventoryRecord>(
     inventoryRecords.map(inv => [
       buildInventoryKey(inv.productId, inv.variantId, inv.batchNumber),
-      inv,
+      {
+        productId: inv.productId,
+        variantId: inv.variantId,
+        batchNumber: inv.batchNumber,
+        quantity: inv.quantity,
+        unitCost: toNumberOrNull(inv.unitCost),
+        location: inv.location,
+      },
     ])
   );
 

@@ -10,8 +10,8 @@ import { publishInventoryChange } from '@/lib/events';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   addToFIFOQueue,
-  consumeFIFOQueue,
-  getWeightedAverageCostFromFIFO,
+  consumeFIFOQueueByBatch,
+  getWeightedAverageCostFromFIFOByBatch,
 } from '@/lib/services/fifo-cost-service';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
@@ -130,9 +130,10 @@ export async function executeAdjustmentTransaction(
 
       if (adjustQuantity > 0) {
         // 增加库存：优先使用 FIFO 队列的加权平均成本，其次使用库存单价
-        const fifoAvg = await getWeightedAverageCostFromFIFO(
+        const fifoAvg = await getWeightedAverageCostFromFIFOByBatch(
           productId,
-          variantId || null
+          variantId || null,
+          batchNumber?.trim() || null
         );
 
         if (fifoAvg > 0) {
@@ -152,9 +153,10 @@ export async function executeAdjustmentTransaction(
         const absQty = Math.abs(adjustQuantity);
 
         try {
-          const fifoCost = await consumeFIFOQueue(
+          const fifoCost = await consumeFIFOQueueByBatch(
             productId,
             variantId || null,
+            batchNumber?.trim() || null,
             absQty,
             tx
           );
@@ -170,9 +172,10 @@ export async function executeAdjustmentTransaction(
             error.message.includes('FIFO队列为空')
           ) {
             // FIFO 队列为空时退回到加权平均/库存单价
-            const fifoAvg = await getWeightedAverageCostFromFIFO(
+            const fifoAvg = await getWeightedAverageCostFromFIFOByBatch(
               productId,
-              variantId || null
+              variantId || null,
+              batchNumber?.trim() || null
             );
 
             if (fifoAvg > 0) {

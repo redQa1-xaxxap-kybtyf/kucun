@@ -26,6 +26,7 @@ export interface AuthUser {
   name: string;
   role: string;
   status: string;
+  sessionId?: string;
 }
 
 /**
@@ -72,6 +73,7 @@ export function getApiAuthContext(request: NextRequest): ApiAuthResult {
   const userEmail = request.headers.get('x-user-email');
   const userName = request.headers.get('x-user-name');
   const userStatus = request.headers.get('x-user-status');
+  const sessionId = request.headers.get('x-session-id');
 
   // 验证必需的认证头是否存在
   if (!userId || !username || !userRole) {
@@ -92,6 +94,7 @@ export function getApiAuthContext(request: NextRequest): ApiAuthResult {
     name: decodedUserName,
     role: userRole,
     status: userStatus || 'active',
+    sessionId: sessionId || undefined,
   };
 
   return {

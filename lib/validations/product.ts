@@ -131,7 +131,7 @@ const baseValidations = {
 // 产品创建表单验证 - 移除重量、每单位片数和计量单位字段
 export const productCreateSchema = z.object({
   code: baseValidations.code, // 必填
-  name: baseValidations.name, // 选填
+  name: baseValidations.name, // 必填
   specification: baseValidations.specification, // 必填
   description: baseValidations.description, // 选填
   thickness: baseValidations.thickness, // 选填

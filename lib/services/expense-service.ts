@@ -24,6 +24,7 @@ import {
   type ExpenseStatisticsParams,
   type UpdateExpenseRequest,
 } from '@/lib/types/expense';
+import { toNumber } from '@/lib/utils/number';
 import { validateExpenseType } from '@/lib/validations/expense';
 
 function parseLocalDateString(dateString: string): Date | null {
@@ -43,6 +44,7 @@ async function getPurchaseOrderContainerMap(
 
   const orders = await prisma.purchaseOrder.findMany({
     where: { id: { in: orderIds } },
+    take: orderIds.length,
     select: {
       id: true,
       containerNumber: true,
@@ -207,7 +209,7 @@ export async function createExpenseRecord(
     expenseNumber: expense.expenseNumber,
     expenseType: safeExpenseType as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
-    expenseAmount: expense.expenseAmount,
+    expenseAmount: toNumber(expense.expenseAmount),
     expenseDate: expense.expenseDate.toISOString(),
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
@@ -412,7 +414,7 @@ export async function approveExpenseRecord(
       expenseNumber: approvedExpense.expenseNumber,
       expenseType: safeExpenseType as ExpenseRecord['expenseType'],
       expenseName: approvedExpense.expenseName,
-      expenseAmount: approvedExpense.expenseAmount,
+      expenseAmount: toNumber(approvedExpense.expenseAmount),
       expenseDate: approvedExpense.expenseDate.toISOString(),
       relatedType: approvedExpense.relatedType as ExpenseRecord['relatedType'],
       relatedId: approvedExpense.relatedId || undefined,
@@ -471,13 +473,13 @@ export async function approveExpenseRecord(
     if (
       env.EXPENSE_TO_PAYABLE_ENABLED &&
       updatedExpense.supplierId &&
-      updatedExpense.expenseAmount > 0
+      toNumber(updatedExpense.expenseAmount) > 0
     ) {
       try {
         await createOrMergePayableFromExpense({
           expenseId: updatedExpense.id,
           expenseNumber: updatedExpense.expenseNumber,
-          expenseAmount: updatedExpense.expenseAmount,
+          expenseAmount: toNumber(updatedExpense.expenseAmount),
           supplierId: updatedExpense.supplierId,
           sourceType: updatedExpense.relatedType as
             | 'sales_order'
@@ -521,7 +523,7 @@ export async function approveExpenseRecord(
     expenseNumber: expense.expenseNumber,
     expenseType: safeExpenseType as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
-    expenseAmount: expense.expenseAmount,
+    expenseAmount: toNumber(expense.expenseAmount),
     expenseDate: expense.expenseDate.toISOString(),
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
@@ -655,7 +657,7 @@ export async function getExpenseRecords(
       expenseNumber: expense.expenseNumber,
       expenseType: safeExpenseType as ExpenseRecord['expenseType'],
       expenseName: expense.expenseName,
-      expenseAmount: expense.expenseAmount,
+      expenseAmount: toNumber(expense.expenseAmount),
       expenseDate: expense.expenseDate.toISOString(),
       relatedType: expense.relatedType as ExpenseRecord['relatedType'],
       relatedId: expense.relatedId || undefined,
@@ -739,7 +741,7 @@ export async function getExpenseRecordById(
     expenseNumber: expense.expenseNumber,
     expenseType: safeExpenseType as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
-    expenseAmount: expense.expenseAmount,
+    expenseAmount: toNumber(expense.expenseAmount),
     expenseDate: expense.expenseDate.toISOString(),
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
@@ -841,7 +843,7 @@ export async function updateExpenseRecord(
       ? expense.expenseType
       : 'other') as ExpenseRecord['expenseType'],
     expenseName: expense.expenseName,
-    expenseAmount: expense.expenseAmount,
+    expenseAmount: toNumber(expense.expenseAmount),
     expenseDate: expense.expenseDate.toISOString(),
     relatedType: expense.relatedType as ExpenseRecord['relatedType'],
     relatedId: expense.relatedId || undefined,
@@ -934,9 +936,9 @@ export async function getExpenseStatistics(
     },
   });
 
-  const totalAmount = aggregateResult._sum.expenseAmount || 0;
+  const totalAmount = toNumber(aggregateResult._sum.expenseAmount);
   const totalCount = aggregateResult._count.id || 0;
-  const averageAmount = aggregateResult._avg.expenseAmount || 0;
+  const averageAmount = toNumber(aggregateResult._avg.expenseAmount);
 
   // 2. 按费用类型分组统计
   const byTypeRaw = await prisma.expenseRecord.groupBy({
@@ -954,11 +956,11 @@ export async function getExpenseStatistics(
     expenseType: item.expenseType as ExpenseRecord['expenseType'],
     expenseTypeName:
       EXPENSE_TYPE_LABELS[item.expenseType as ExpenseRecord['expenseType']],
-    totalAmount: Math.round((item._sum.expenseAmount || 0) * 100) / 100,
+    totalAmount: Math.round(toNumber(item._sum.expenseAmount) * 100) / 100,
     count: item._count.id,
     percentage:
       totalAmount > 0
-        ? Math.round(((item._sum.expenseAmount || 0) / totalAmount) * 10000) /
+        ? Math.round((toNumber(item._sum.expenseAmount) / totalAmount) * 10000) /
           100
         : 0,
   }));
@@ -969,18 +971,6 @@ export async function getExpenseStatistics(
 
   if (groupBy === 'date') {
     // 按日期分组统计
-    const expenses = await prisma.expenseRecord.findMany({
-      where,
-      select: {
-        expenseDate: true,
-        expenseType: true,
-        expenseAmount: true,
-      },
-      orderBy: {
-        expenseDate: 'asc',
-      },
-    });
-
     // 按日期分组
     const dateMap = new Map<
       string,
@@ -994,38 +984,65 @@ export async function getExpenseStatistics(
       }
     >();
 
-    expenses.forEach(expense => {
-      const dateStr = expense.expenseDate.toISOString().split('T')[0]; // YYYY-MM-DD
-      const typeStr = expense.expenseType;
+    let cursor: string | undefined;
+    const batchSize = 1000;
 
-      if (!dateMap.has(dateStr)) {
-        dateMap.set(dateStr, {
-          totalAmount: 0,
-          count: 0,
-          byType: new Map(),
-        });
+    while (true) {
+      const expenses = await prisma.expenseRecord.findMany({
+        where,
+        select: {
+          id: true,
+          expenseDate: true,
+          expenseType: true,
+          expenseAmount: true,
+        },
+        orderBy: {
+          id: 'asc',
+        },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      if (expenses.length === 0) {
+        break;
       }
 
-      const dateData = dateMap.get(dateStr);
-      if (!dateData) return;
+      expenses.forEach(expense => {
+        const dateStr = expense.expenseDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        const typeStr = expense.expenseType;
 
-      dateData.totalAmount += expense.expenseAmount;
-      dateData.count += 1;
+        if (!dateMap.has(dateStr)) {
+          dateMap.set(dateStr, {
+            totalAmount: 0,
+            count: 0,
+            byType: new Map(),
+          });
+        }
 
-      if (!dateData.byType.has(typeStr)) {
-        dateData.byType.set(typeStr, {
-          expenseType: typeStr,
-          totalAmount: 0,
-          count: 0,
-        });
-      }
+        const dateData = dateMap.get(dateStr);
+        if (!dateData) return;
 
-      const typeData = dateData.byType.get(typeStr);
-      if (!typeData) return;
+        const expenseAmount = toNumber(expense.expenseAmount);
+        dateData.totalAmount += expenseAmount;
+        dateData.count += 1;
 
-      typeData.totalAmount += expense.expenseAmount;
-      typeData.count += 1;
-    });
+        if (!dateData.byType.has(typeStr)) {
+          dateData.byType.set(typeStr, {
+            expenseType: typeStr,
+            totalAmount: 0,
+            count: 0,
+          });
+        }
+
+        const typeData = dateData.byType.get(typeStr);
+        if (!typeData) return;
+
+        typeData.totalAmount += expenseAmount;
+        typeData.count += 1;
+      });
+
+      cursor = expenses[expenses.length - 1].id;
+    }
 
     byDate = Array.from(dateMap.entries()).map(([date, data]) => ({
       date,
@@ -1041,18 +1058,6 @@ export async function getExpenseStatistics(
     }));
   } else if (groupBy === 'month') {
     // 按月份分组统计
-    const expenses = await prisma.expenseRecord.findMany({
-      where,
-      select: {
-        expenseDate: true,
-        expenseType: true,
-        expenseAmount: true,
-      },
-      orderBy: {
-        expenseDate: 'asc',
-      },
-    });
-
     // 按月份分组
     const monthMap = new Map<
       string,
@@ -1066,41 +1071,68 @@ export async function getExpenseStatistics(
       }
     >();
 
-    expenses.forEach(expense => {
-      const date = expense.expenseDate;
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const monthStr = `${year}-${month}`; // YYYY-MM
-      const typeStr = expense.expenseType;
+    let cursor: string | undefined;
+    const batchSize = 1000;
 
-      if (!monthMap.has(monthStr)) {
-        monthMap.set(monthStr, {
-          totalAmount: 0,
-          count: 0,
-          byType: new Map(),
-        });
+    while (true) {
+      const expenses = await prisma.expenseRecord.findMany({
+        where,
+        select: {
+          id: true,
+          expenseDate: true,
+          expenseType: true,
+          expenseAmount: true,
+        },
+        orderBy: {
+          id: 'asc',
+        },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      if (expenses.length === 0) {
+        break;
       }
 
-      const monthData = monthMap.get(monthStr);
-      if (!monthData) return;
+      expenses.forEach(expense => {
+        const date = expense.expenseDate;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const monthStr = `${year}-${month}`; // YYYY-MM
+        const typeStr = expense.expenseType;
 
-      monthData.totalAmount += expense.expenseAmount;
-      monthData.count += 1;
+        if (!monthMap.has(monthStr)) {
+          monthMap.set(monthStr, {
+            totalAmount: 0,
+            count: 0,
+            byType: new Map(),
+          });
+        }
 
-      if (!monthData.byType.has(typeStr)) {
-        monthData.byType.set(typeStr, {
-          expenseType: typeStr,
-          totalAmount: 0,
-          count: 0,
-        });
-      }
+        const monthData = monthMap.get(monthStr);
+        if (!monthData) return;
 
-      const typeData = monthData.byType.get(typeStr);
-      if (!typeData) return;
+        const expenseAmount = toNumber(expense.expenseAmount);
+        monthData.totalAmount += expenseAmount;
+        monthData.count += 1;
 
-      typeData.totalAmount += expense.expenseAmount;
-      typeData.count += 1;
-    });
+        if (!monthData.byType.has(typeStr)) {
+          monthData.byType.set(typeStr, {
+            expenseType: typeStr,
+            totalAmount: 0,
+            count: 0,
+          });
+        }
+
+        const typeData = monthData.byType.get(typeStr);
+        if (!typeData) return;
+
+        typeData.totalAmount += expenseAmount;
+        typeData.count += 1;
+      });
+
+      cursor = expenses[expenses.length - 1].id;
+    }
 
     byMonth = Array.from(monthMap.entries()).map(([month, data]) => ({
       month,

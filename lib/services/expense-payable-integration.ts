@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 费用到应付款参数
@@ -102,6 +103,7 @@ async function mergeStrategy(
     expenseAmount,
     supplierId,
     sourceType,
+    sourceId,
     sourceNumber,
     userId,
   } = params;
@@ -140,16 +142,16 @@ async function mergeStrategy(
         payableId: existingPayable.id,
         payableNumber: existingPayable.payableNumber,
         action: 'skipped',
-        previousAmount: existingPayable.payableAmount,
-        newAmount: existingPayable.payableAmount,
+        previousAmount: toNumber(existingPayable.payableAmount),
+        newAmount: toNumber(existingPayable.payableAmount),
       };
     }
 
     // 累加金额
-    const previousAmount = existingPayable.payableAmount;
+    const previousAmount = toNumber(existingPayable.payableAmount);
     const newPayableAmount = roundCurrency(previousAmount + expenseAmount);
     const newRemainingAmount = roundCurrency(
-      existingPayable.remainingAmount + expenseAmount
+      toNumber(existingPayable.remainingAmount) + expenseAmount
     );
 
     await db.payableRecord.update({
@@ -224,7 +226,7 @@ async function mergeStrategy(
     payableId: newPayable.id,
     payableNumber,
     action: 'created',
-    newAmount: newPayable.payableAmount,
+    newAmount: toNumber(newPayable.payableAmount),
   };
 }
 
@@ -270,7 +272,7 @@ async function standaloneStrategy(
         payableId: existingPayable.id,
         payableNumber: existingPayable.payableNumber,
         action: 'skipped',
-        newAmount: existingPayable.payableAmount,
+        newAmount: toNumber(existingPayable.payableAmount),
       };
     }
   }
@@ -315,7 +317,7 @@ async function standaloneStrategy(
     payableId: newPayable.id,
     payableNumber,
     action: 'created',
-    newAmount: newPayable.payableAmount,
+    newAmount: toNumber(newPayable.payableAmount),
   };
 }
 
@@ -391,10 +393,13 @@ export async function updateExpensePaymentStatusAfterPayment(params: {
       return;
     }
 
+    const paidAmount = toNumber(payable.paidAmount);
+    const remainingAmount = toNumber(payable.remainingAmount);
+
     // 更新应付款金额
-    const newPaidAmount = roundCurrency(payable.paidAmount + paymentAmount);
+    const newPaidAmount = roundCurrency(paidAmount + paymentAmount);
     const newRemainingAmount = roundCurrency(
-      Math.max(0, payable.remainingAmount - paymentAmount)
+      Math.max(0, remainingAmount - paymentAmount)
     );
 
     await db.payableRecord.update({

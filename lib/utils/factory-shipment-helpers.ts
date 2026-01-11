@@ -2,18 +2,25 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 
 import {
-  FACTORY_SHIPMENT_STATUS,
-  type FactoryShipmentStatus,
+    FACTORY_SHIPMENT_STATUS,
+    type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
 /**
  * 格式化金额 - 使用人民币符号和千分位分隔符
+ * ✅ 支持处理 Prisma Decimal 类型
  */
-export const formatAmount = (amount: number): string =>
-  `￥${amount.toLocaleString('zh-CN', {
+export const formatAmount = (amount: number | unknown): string => {
+  // 确保转换为 JavaScript number 类型（处理 Prisma Decimal）
+  const numAmount = Number(amount);
+  if (isNaN(numAmount)) {
+    return '￥0.00';
+  }
+  return `￥${numAmount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
+};
 
 /**
  * 格式化日期 - 统一使用 YYYY-MM-DD 格式

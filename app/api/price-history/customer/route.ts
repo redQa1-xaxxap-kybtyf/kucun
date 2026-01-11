@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
@@ -83,44 +84,87 @@ export const GET = withAuth(async (request: NextRequest) => {
     }
 
     // 如果没有指定产品ID，返回该客户所有产品的最新价格
-    // 使用 Prisma 查询替代原始 SQL（兼容 SQLite 和 MySQL）
-    const allPrices = await prisma.customerProductPrice.findMany({
-      where,
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
-            unit: true,
-          },
-        },
-      },
-    });
+    const latestConditions: Prisma.Sql[] = [
+      Prisma.sql`customer_id = ${customerId}`,
+    ];
 
-    // 在内存中进行分组，获取每个产品+价格类型组合的最新价格
-    type PriceRecord = (typeof allPrices)[0];
-    const latestPricesMap = new Map<string, PriceRecord>();
-    for (const price of allPrices) {
-      const key = `${price.productId}-${price.priceType}`;
-      const existing = latestPricesMap.get(key);
-      if (
-        !existing ||
-        new Date(price.createdAt) > new Date(existing.createdAt)
-      ) {
-        latestPricesMap.set(key, price);
-      }
+    const outerConditions: Prisma.Sql[] = [
+      Prisma.sql`cpp.customer_id = ${customerId}`,
+    ];
+
+    if (priceType) {
+      latestConditions.push(Prisma.sql`price_type = ${priceType}`);
+      outerConditions.push(Prisma.sql`cpp.price_type = ${priceType}`);
     }
 
-    const latestPrices = Array.from(latestPricesMap.values());
+    const latestPrices = await prisma.$queryRaw<
+      Array<{
+        id: string;
+        customerId: string;
+        productId: string;
+        priceType: string;
+        unitPrice: unknown;
+        orderId: string | null;
+        orderType: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+      }>
+    >(
+      Prisma.sql`
+        SELECT
+          cpp.id as id,
+          cpp.customer_id as customerId,
+          cpp.product_id as productId,
+          cpp.price_type as priceType,
+          cpp.unit_price as unitPrice,
+          cpp.order_id as orderId,
+          cpp.order_type as orderType,
+          cpp.created_at as createdAt,
+          cpp.updated_at as updatedAt
+        FROM customer_product_prices cpp
+        INNER JOIN (
+          SELECT product_id, price_type, MAX(created_at) as max_created_at
+          FROM customer_product_prices
+          WHERE ${Prisma.join(latestConditions, ' AND ')}
+          GROUP BY product_id, price_type
+        ) latest
+          ON cpp.product_id = latest.product_id
+          AND cpp.price_type = latest.price_type
+          AND cpp.created_at = latest.max_created_at
+        WHERE ${Prisma.join(outerConditions, ' AND ')}
+        ORDER BY cpp.created_at DESC
+      `
+    );
+
+    const productIds = latestPrices.map(price => price.productId);
+    const products =
+      productIds.length > 0
+        ? await prisma.product.findMany({
+            where: {
+              id: { in: productIds },
+            },
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              specification: true,
+              unit: true,
+            },
+            take: productIds.length,
+          })
+        : [];
+
+    const productsById = new Map(products.map(product => [product.id, product]));
+
+    const result = latestPrices.map(price => ({
+      ...price,
+      unitPrice: Number(price.unitPrice ?? 0),
+      product: productsById.get(price.productId),
+    }));
 
     return NextResponse.json({
       success: true,
-      data: latestPrices,
+      data: result,
     });
   } catch (error) {
     logger.error('price-history', '获取客户价格历史失败', error, {
@@ -128,6 +172,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
     return NextResponse.json(
       {
+        success: false,
         error: '获取价格历史失败',
         details: error instanceof Error ? error.message : '未知错误',
       },
@@ -158,13 +203,16 @@ export const POST = withAuth(async (request: NextRequest) => {
 
     // 验证必填字段
     if (!customerId || !productId || !priceType || unitPrice === undefined) {
-      return NextResponse.json({ error: '缺少必填字段' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: '缺少必填字段' },
+        { status: 400 }
+      );
     }
 
     // 验证价格类型
     if (priceType !== 'SALES' && priceType !== 'FACTORY') {
       return NextResponse.json(
-        { error: '价格类型必须是 SALES 或 FACTORY' },
+        { success: false, error: '价格类型必须是 SALES 或 FACTORY' },
         { status: 400 }
       );
     }
@@ -206,6 +254,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     logger.error('price-history', '记录客户价格历史失败', error);
     return NextResponse.json(
       {
+        success: false,
         error: '记录价格历史失败',
         details: error instanceof Error ? error.message : '未知错误',
       },

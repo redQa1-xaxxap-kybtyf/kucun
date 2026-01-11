@@ -9,10 +9,10 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import { csrfFetch } from '@/lib/utils/csrf';
 import type {
-  CreateFactoryShipmentOrderData,
-  FactoryShipmentOrderListParams,
-  UpdateFactoryShipmentOrderData,
-  UpdateFactoryShipmentOrderStatusData,
+    CreateFactoryShipmentOrderData,
+    FactoryShipmentOrderListParams,
+    UpdateFactoryShipmentOrderData,
+    UpdateFactoryShipmentOrderStatusData,
 } from '@/lib/validations/factory-shipment';
 
 export type FactoryShipmentValidationIssue = {
@@ -205,8 +205,6 @@ export async function updateFactoryShipmentOrderStatus(
   id: string,
   data: UpdateFactoryShipmentOrderStatusData
 ): Promise<FactoryShipmentOrder> {
-  console.log('[DEBUG] 更新订单状态 - 请求数据:', { id, data });
-
   const response = await csrfFetch(`/api/factory-shipments/${id}/status`, {
     method: 'PATCH',
     headers: {
@@ -217,16 +215,10 @@ export async function updateFactoryShipmentOrderStatus(
 
   if (!response.ok) {
     const error = await response.json();
-    console.error('[DEBUG] 更新订单状态 - 服务器错误响应:', {
-      status: response.status,
-      statusText: response.statusText,
-      error,
-    });
     throw new Error(error.error || error.message || '更新厂家发货订单状态失败');
   }
 
   const result = await response.json();
-  console.log('[DEBUG] 更新订单状态 - 成功响应:', result);
   return result;
 }
 

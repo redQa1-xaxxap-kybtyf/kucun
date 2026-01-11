@@ -9,6 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { allocateExpenses } from '@/lib/services/factory-shipment-expense-service';
+import { toNumber } from '@/lib/utils/number';
 import {
   calculateOrderProfit,
   extractItemUpdates,
@@ -384,10 +385,9 @@ export async function updateFactoryShipment(
 
       const itemsPayload = await resolveShipmentItems(tx, data.items);
       const receivableAmount = data.receivableAmount ?? grandTotal;
-      const depositAmount = Math.min(
-        data.depositAmount ?? existingShipment.depositAmount ?? 0,
-        receivableAmount
-      );
+      const baseDepositAmount =
+        data.depositAmount ?? toNumber(existingShipment.depositAmount);
+      const depositAmount = Math.min(baseDepositAmount, receivableAmount);
       const updateData: Prisma.FactoryShipmentOrderUncheckedUpdateInput = {
         customerId: data.customerId,
         status: data.status ?? existingShipment.status,
@@ -487,21 +487,32 @@ export async function recalculateProfitAndCost(
     );
 
     // 4. 分摊费用
-    const normalizedItems: FactoryShipmentOrderItem[] = order.items.map(
-      item => ({
-        ...item,
-        ownership: (item.ownership ||
-          FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) as FactoryShipmentItemOwnership,
-        customerDeliveryStatus: (item.customerDeliveryStatus ?? undefined) as
-          | FactoryShipmentItemDeliveryStatus
-          | undefined,
-        selfInboundStatus: (item.selfInboundStatus ?? undefined) as
-          | FactoryShipmentItemInboundStatus
-          | undefined,
-        ownershipRemarks: item.ownershipRemarks ?? undefined,
-        isManualProduct: item.isManualProduct ?? undefined,
-      })
-    );
+    const normalizedItems: FactoryShipmentOrderItem[] = order.items.map(item => ({
+      ...item,
+      quantity: Number(item.quantity),
+      unitPrice: toNumber(item.unitPrice),
+      totalPrice: toNumber(item.totalPrice),
+      manualWeight:
+        item.manualWeight == null ? null : toNumber(item.manualWeight),
+      piecesPerUnit:
+        item.piecesPerUnit == null ? null : toNumber(item.piecesPerUnit),
+      weight: item.weight == null ? null : toNumber(item.weight),
+      unitCost: item.unitCost == null ? null : toNumber(item.unitCost),
+      allocatedExpense:
+        item.allocatedExpense == null ? null : toNumber(item.allocatedExpense),
+      profitAmount: item.profitAmount == null ? null : toNumber(item.profitAmount),
+      profitMargin: item.profitMargin == null ? null : toNumber(item.profitMargin),
+      ownership: (item.ownership ||
+        FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) as FactoryShipmentItemOwnership,
+      customerDeliveryStatus: (item.customerDeliveryStatus ?? undefined) as
+        | FactoryShipmentItemDeliveryStatus
+        | undefined,
+      selfInboundStatus: (item.selfInboundStatus ?? undefined) as
+        | FactoryShipmentItemInboundStatus
+        | undefined,
+      ownershipRemarks: item.ownershipRemarks ?? undefined,
+      isManualProduct: item.isManualProduct ?? undefined,
+    }));
 
     const expenseAllocation = allocateExpenses(
       normalizedItems,
@@ -516,7 +527,7 @@ export async function recalculateProfitAndCost(
     // 5. 计算利润
     const profitSummary = calculateOrderProfit(
       normalizedItems,
-      order.receivableAmount || 0,
+      toNumber(order.receivableAmount),
       expenseMap
     );
 

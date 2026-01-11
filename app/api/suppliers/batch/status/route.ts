@@ -19,6 +19,7 @@ export const PUT = withAuth(
     const suppliersToUpdate = await prisma.supplier.findMany({
       where: { id: { in: supplierIds } },
       select: { id: true, name: true, status: true },
+      take: supplierIds.length,
     });
 
     const foundIds = suppliersToUpdate.map(s => s.id);

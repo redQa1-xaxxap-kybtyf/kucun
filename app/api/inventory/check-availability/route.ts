@@ -5,6 +5,7 @@ import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import {
   inventoryAvailabilityCheckSchema,
   type InventoryAvailabilityCheckInput,
@@ -109,10 +110,13 @@ async function checkInventoryAvailability(
           name: true,
           code: true,
           status: true,
+          unit: true,
+          piecesPerUnit: true,
         },
       },
     },
     orderBy: [{ updatedAt: 'asc' }],
+    take: 5000,
   });
 
   // 检查产品是否存在且状态正常
@@ -173,6 +177,29 @@ async function checkInventoryAvailability(
     ? calculateAllocationPlan(inventoryRecords, quantity)
     : [];
 
+  const product = inventoryRecords[0]?.product;
+  const unitLabel =
+    typeof product?.unit === 'string' && product.unit.trim() === 'piece'
+      ? '件'
+      : typeof product?.unit === 'string' && product.unit.trim() === 'sheet'
+        ? '片'
+        : typeof product?.unit === 'string' && product.unit.trim()
+          ? product.unit.trim()
+          : '片';
+  const piecesPerUnit =
+    typeof product?.piecesPerUnit === 'number' && product.piecesPerUnit > 0
+      ? product.piecesPerUnit
+      : 0;
+
+  const formatForMessage = (value: number) =>
+    piecesPerUnit > 0
+      ? formatPieceSummary(value, piecesPerUnit, {
+          fallbackUnit: '片',
+          zeroDisplay: '0片',
+          includeApprox: unitLabel === '件',
+        })
+      : `${value}片`;
+
   return {
     available,
     currentStock: totalStock,
@@ -181,7 +208,7 @@ async function checkInventoryAvailability(
     requestedQuantity: quantity,
     message: available
       ? '库存充足'
-      : `库存不足，需要 ${quantity} 件，可用 ${availableStock} 件`,
+      : `库存不足，需要 ${formatForMessage(quantity)}，可用 ${formatForMessage(availableStock)}`,
     details: allocationPlan,
   };
 }

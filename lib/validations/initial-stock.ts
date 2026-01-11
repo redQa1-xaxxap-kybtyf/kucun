@@ -60,7 +60,8 @@ export const initialStockRowSchema = z.object({
         .regex(/^-?\d+(\.\d+)?$/, '数量必须为数字')
         .transform(val => Number(val)),
     ])
-    .refine(val => val > 0, '数量必须大于0'),
+    .refine(val => val > 0, '数量必须大于0')
+    .refine(val => Number.isInteger(val), '数量必须是整数'),
   单位成本: z
     .union([
       z.number({ invalid_type_error: '单位成本必须为数字' } as any),

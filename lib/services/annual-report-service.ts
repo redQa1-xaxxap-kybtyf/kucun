@@ -14,6 +14,7 @@ import type {
   MonthlyTrendData,
   QuarterlyData,
 } from '@/lib/types/report';
+import { toNumber } from '@/lib/utils/number';
 import {
   getExpenseTypeName,
   isValidExpenseType,
@@ -31,6 +32,8 @@ import {
   getMonthDateRange,
   getYearDateRange,
 } from './report-helpers';
+
+const REPORT_QUERY_BATCH_SIZE = 1000;
 
 // ==================== 数据查询函数 ====================
 
@@ -67,9 +70,9 @@ async function getAnnualSummary(year: number): Promise<AnnualSummary> {
     }),
   ]);
 
-  const totalRevenue = salesStats._sum.totalAmount || 0;
-  const totalCost = salesStats._sum.costAmount || 0;
-  const totalExpenses = expenseStats._sum.expenseAmount || 0;
+  const totalRevenue = toNumber(salesStats._sum.totalAmount);
+  const totalCost = toNumber(salesStats._sum.costAmount);
+  const totalExpenses = toNumber(expenseStats._sum.expenseAmount);
   const orderCount = salesStats._count.id || 0;
 
   // 计算利润
@@ -200,9 +203,9 @@ async function getMonthData(
     }),
   ]);
 
-  const revenue = salesStats._sum.totalAmount || 0;
-  const cost = salesStats._sum.costAmount || 0;
-  const expenses = expenseStats._sum.expenseAmount || 0;
+  const revenue = toNumber(salesStats._sum.totalAmount);
+  const cost = toNumber(salesStats._sum.costAmount);
+  const expenses = toNumber(expenseStats._sum.expenseAmount);
   const orderCount = salesStats._count.id || 0;
 
   const grossProfit = revenue - cost;
@@ -280,13 +283,13 @@ async function getExpenseDistribution(
 
   // 计算总费用
   const totalExpenses = expensesByType.reduce(
-    (sum, item) => sum + (item._sum.expenseAmount || 0),
+    (sum, item) => sum + toNumber(item._sum.expenseAmount),
     0
   );
 
   // 构建分布数据（使用工具函数获取费用类型名称）
   const distribution: ExpenseDistribution[] = expensesByType.map(item => {
-    const amount = item._sum.expenseAmount || 0;
+    const amount = toNumber(item._sum.expenseAmount);
     const percentage = totalExpenses > 0 ? (amount / totalExpenses) * 100 : 0;
 
     const expenseType = isValidExpenseType(item.expenseType)
@@ -316,22 +319,38 @@ async function getAnnualInventoryTurnover(
   const { startDate, endDate } = getYearDateRange(year);
 
   // 获取期末库存价值（当前库存）
-  const currentInventory = await prisma.inventory.findMany({
-    where: {
-      quantity: {
-        gt: 0,
-      },
-    },
-    select: {
-      quantity: true,
-      unitCost: true,
-    },
-  });
+  let endingValue = 0;
+  let inventoryCursor: string | undefined;
 
-  const endingValue = currentInventory.reduce(
-    (sum, inv) => sum + inv.quantity * (inv.unitCost || 0),
-    0
-  );
+  while (true) {
+    const batch = await prisma.inventory.findMany({
+      where: {
+        quantity: {
+          gt: 0,
+        },
+      },
+      select: {
+        id: true,
+        quantity: true,
+        unitCost: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: REPORT_QUERY_BATCH_SIZE,
+      ...(inventoryCursor ? { cursor: { id: inventoryCursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const inv of batch) {
+      endingValue += inv.quantity * toNumber(inv.unitCost);
+    }
+
+    inventoryCursor = batch[batch.length - 1].id;
+  }
 
   // 计算期初库存价值
   // 期初库存 = 期末库存 - 本年入库 + 本年出库
@@ -364,8 +383,8 @@ async function getAnnualInventoryTurnover(
     }),
   ]);
 
-  const inboundCost = inboundStats._sum.totalCost || 0;
-  const outboundCost = outboundStats._sum.totalCost || 0;
+  const inboundCost = toNumber(inboundStats._sum.totalCost);
+  const outboundCost = toNumber(outboundStats._sum.totalCost);
 
   // 期初库存 = 期末库存 - 入库成本 + 出库成本
   const beginningValue = endingValue - inboundCost + outboundCost;
@@ -499,48 +518,75 @@ export async function getAnnualFactoryShipmentProfit(
 ): Promise<AnnualFactoryShipmentProfit> {
   const { startDate, endDate } = getYearDateRange(year);
 
-  // 查询指定年份的所有已完成厂家发货订单
-  const orders = await prisma.factoryShipmentOrder.findMany({
-    where: {
-      shipmentDate: {
-        gte: startDate,
-        lte: endDate,
-      },
-      status: {
-        in: ['arrived', 'completed'],
-      },
-    },
-    select: {
-      id: true,
-      shipmentDate: true,
-      totalAmount: true,
-      receivableAmount: true,
-      customerProfit: true,
-      selfCostAmount: true,
-      expenseAmount: true,
-      profitAmount: true,
-    },
-  });
+  let totalOrders = 0;
+  let totalAmount = 0;
+  let totalRevenue = 0;
+  let customerProfit = 0;
+  let selfCostAmount = 0;
+  let totalExpenses = 0;
 
-  // 统计年度总数据
-  const totalOrders = orders.length;
-  const totalAmount = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
-  const totalRevenue = orders.reduce(
-    (sum, o) => sum + (o.receivableAmount || 0),
-    0
-  );
-  const customerProfit = orders.reduce(
-    (sum, o) => sum + (o.customerProfit || 0),
-    0
-  );
-  const selfCostAmount = orders.reduce(
-    (sum, o) => sum + (o.selfCostAmount || 0),
-    0
-  );
-  const totalExpenses = orders.reduce(
-    (sum, o) => sum + (o.expenseAmount || 0),
-    0
-  );
+  const monthlyOrdersCount = Array.from({ length: 12 }, () => 0);
+  const monthlyProfit = Array.from({ length: 12 }, () => 0);
+  const monthlyRevenue = Array.from({ length: 12 }, () => 0);
+
+  let orderCursor: string | undefined;
+  while (true) {
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where: {
+        shipmentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          in: ['arrived', 'completed'],
+        },
+      },
+      select: {
+        id: true,
+        shipmentDate: true,
+        totalAmount: true,
+        receivableAmount: true,
+        customerProfit: true,
+        selfCostAmount: true,
+        expenseAmount: true,
+        profitAmount: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: REPORT_QUERY_BATCH_SIZE,
+      ...(orderCursor ? { cursor: { id: orderCursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    for (const order of batch) {
+      totalOrders += 1;
+
+      const amount = toNumber(order.totalAmount);
+      const revenue = toNumber(order.receivableAmount);
+      const profit = toNumber(order.customerProfit);
+      const selfCost = toNumber(order.selfCostAmount);
+      const expenses = toNumber(order.expenseAmount);
+
+      totalAmount += amount;
+      totalRevenue += revenue;
+      customerProfit += profit;
+      selfCostAmount += selfCost;
+      totalExpenses += expenses;
+
+      const monthIndex = order.shipmentDate ? order.shipmentDate.getMonth() : -1;
+      if (monthIndex >= 0 && monthIndex < 12) {
+        monthlyOrdersCount[monthIndex] += 1;
+        monthlyProfit[monthIndex] += profit;
+        monthlyRevenue[monthIndex] += revenue;
+      }
+    }
+
+    orderCursor = batch[batch.length - 1].id;
+  }
 
   // 计算平均利润率
   const averageProfitMargin =
@@ -557,19 +603,9 @@ export async function getAnnualFactoryShipmentProfit(
   }> = [];
 
   for (let month = 1; month <= 12; month++) {
-    const monthOrders = orders.filter(o => {
-      const orderMonth = o.shipmentDate ? o.shipmentDate.getMonth() + 1 : 0;
-      return orderMonth === month;
-    });
-
-    const monthProfit = monthOrders.reduce(
-      (sum, o) => sum + (o.customerProfit || 0),
-      0
-    );
-    const monthRevenue = monthOrders.reduce(
-      (sum, o) => sum + (o.receivableAmount || 0),
-      0
-    );
+    const index = month - 1;
+    const monthProfit = monthlyProfit[index] ?? 0;
+    const monthRevenue = monthlyRevenue[index] ?? 0;
     const monthProfitMargin =
       monthRevenue > 0
         ? roundToTwoDecimals((monthProfit / monthRevenue) * 100)
@@ -577,7 +613,7 @@ export async function getAnnualFactoryShipmentProfit(
 
     monthlyData.push({
       month,
-      orders: monthOrders.length,
+      orders: monthlyOrdersCount[index] ?? 0,
       profit: roundToTwoDecimals(monthProfit),
       profitMargin: monthProfitMargin,
     });

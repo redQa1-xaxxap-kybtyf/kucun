@@ -12,6 +12,7 @@ import type {
   PayableRecordQuery,
   PayableStatistics,
 } from '@/lib/types/payable';
+import { toNumber } from '@/lib/utils/number';
 
 const getCurrentMonthRange = () => {
   const now = new Date();
@@ -175,14 +176,14 @@ const buildStatistics = ({
 }: Awaited<ReturnType<typeof fetchPayablesAggregates>>): PayableStatistics => {
   const statusCountMap = createStatusCountMap(statusCounts);
   return {
-    totalPayables: totalPayablesResult._sum.payableAmount || 0,
-    totalPaidAmount: totalPaidAmountResult._sum.paidAmount || 0,
-    totalRemainingAmount: totalRemainingAmountResult._sum.remainingAmount || 0,
+    totalPayables: toNumber(totalPayablesResult._sum.payableAmount),
+    totalPaidAmount: toNumber(totalPaidAmountResult._sum.paidAmount),
+    totalRemainingAmount: toNumber(totalRemainingAmountResult._sum.remainingAmount),
     pendingCount: statusCountMap.pending || 0,
     partialCount: statusCountMap.partial || 0,
     paidCount: statusCountMap.paid || 0,
-    thisMonthPayables: thisMonthPayablesResult._sum.payableAmount || 0,
-    thisMonthPayments: thisMonthPaymentsResult._sum.paymentAmount || 0,
+    thisMonthPayables: toNumber(thisMonthPayablesResult._sum.payableAmount),
+    thisMonthPayments: toNumber(thisMonthPaymentsResult._sum.paymentAmount),
     // 采购相关统计在下方构建时补充
   };
 };
@@ -250,7 +251,7 @@ export const GET = withAuth(async (request: Request) => {
       where: freightWhere,
     });
 
-    const rawFreightAmount = freightAggregate._sum.expenseAmount || 0;
+    const rawFreightAmount = toNumber(freightAggregate._sum.expenseAmount);
 
     let purchaseFreightAmount = rawFreightAmount;
     let purchaseTotalCost: number;

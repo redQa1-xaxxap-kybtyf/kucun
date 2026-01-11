@@ -8,6 +8,7 @@ import type { Prisma } from '@prisma/client';
 
 import { generateExpenseIdempotencyKey } from '@/lib/services/expense-idempotency';
 import { generateExpenseNumber } from '@/lib/services/expense-service';
+import { toNumber } from '@/lib/utils/number';
 
 export interface PurchaseOrderFeeItem {
   feeType: string;
@@ -103,7 +104,7 @@ export async function createPurchaseOrderExpenses(
     if (existing) {
       // 已存在，跳过创建但计入总金额
       skipped += 1;
-      totalAmount += existing.expenseAmount;
+      totalAmount += toNumber(existing.expenseAmount, 0);
       continue;
     }
 

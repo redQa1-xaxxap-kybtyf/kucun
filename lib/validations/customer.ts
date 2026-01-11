@@ -56,7 +56,11 @@ export const customerQuerySchema = z.object({
 
   level: z.enum(CUSTOMER_LEVEL_VALUES).optional(),
 
-  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal('')),
 
   region: z.string().max(50, '区域不能超过50个字符').optional(),
 });
@@ -161,7 +165,11 @@ export const customerCreateSchema = z.object({
   name: baseValidations.name,
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal('')),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
@@ -170,7 +178,11 @@ export const customerQuickAddSchema = z.object({
   name: baseValidations.name,
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal('')),
   extendedInfo: z.object(extendedInfoValidations).optional(),
   notes: z.string().optional(),
 });
@@ -181,14 +193,22 @@ export const customerUpdateSchema = z.object({
   name: baseValidations.name.optional(),
   phone: baseValidations.phone,
   address: baseValidations.address,
-  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal('')),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
 // 客户搜索表单验证
 export const customerSearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
-  parentCustomerId: z.string().uuid('上级客户ID格式不正确').optional(),
+  parentCustomerId: z
+    .string()
+    .uuid('上级客户ID格式不正确')
+    .optional()
+    .or(z.literal('')),
   customerType: z.enum(CUSTOMER_TYPE_VALUES).optional(),
   level: z.enum(CUSTOMER_LEVEL_VALUES).optional(),
   region: z.string().max(50, '区域不能超过50个字符').optional(),

@@ -77,7 +77,7 @@ const createSalesOrderSchema = z.object({
   supplierId: z.string().optional(),
   orderType: z.enum(['NORMAL', 'TRANSFER']).default('NORMAL'),
   status: z
-    .enum(['draft', 'confirmed', 'shipped', 'delivered', 'cancelled'])
+    .enum(['draft', 'confirmed', 'shipped', 'completed', 'cancelled'])
     .default('draft'),
   items: z.array(salesOrderItemSchema).min(1, '至少需要一个订单项'),
   remarks: z.string().optional(),
@@ -85,7 +85,7 @@ const createSalesOrderSchema = z.object({
 
 const updateSalesOrderStatusSchema = z.object({
   orderId: z.string().min(1, '订单 ID 不能为空'),
-  status: z.enum(['draft', 'confirmed', 'shipped', 'delivered', 'cancelled']),
+  status: z.enum(['draft', 'confirmed', 'shipped', 'completed', 'cancelled']),
   cancelReason: z.string().max(500, '取消原因不能超过500个字符').optional(),
   idempotencyKey: z.string().uuid('幂等性键格式不正确').optional(),
 });
@@ -205,7 +205,7 @@ export async function updateSalesOrderStatus(
     | 'draft'
     | 'confirmed'
     | 'shipped'
-    | 'delivered'
+    | 'completed'
     | 'cancelled'
     | undefined;
 
@@ -310,10 +310,7 @@ export async function updateSalesOrderStatus(
                 continue;
               }
 
-              const unitCost =
-                typeof inventory?.unitCost === 'number'
-                  ? inventory.unitCost
-                  : (item.unitCost ?? 0);
+              const unitCost = Number(inventory?.unitCost ?? item.unitCost ?? 0);
 
               const inboundRecord = await executeMinimalInboundTransaction(
                 {
@@ -413,6 +410,7 @@ export async function deleteSalesOrder(orderId: string): Promise<ActionResult> {
       if (
         order.status === 'confirmed' ||
         order.status === 'shipped' ||
+        order.status === 'completed' ||
         order.status === 'delivered'
       ) {
         throw new Error('不能删除已确认或已完成的订单');
@@ -592,7 +590,7 @@ export async function updateSalesOrder(
       }
 
       // 不能修改已完成的订单
-      if (existingOrder.status === 'delivered') {
+      if (existingOrder.status === 'completed' || existingOrder.status === 'delivered') {
         throw new Error('不能修改已完成的订单');
       }
 

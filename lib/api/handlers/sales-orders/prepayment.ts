@@ -1,14 +1,41 @@
 import type { Tx } from './types';
 
 const fetchAvailablePrepayments = async (tx: Tx, customerId: string) => {
-  const records = await tx.paymentRecord.findMany({
-    where: {
-      customerId,
-      paymentType: 'prepayment',
-      status: { in: ['confirmed', 'applied'] },
-    },
-    orderBy: { paymentDate: 'asc' },
-  });
+  const records: Array<{
+    id: string;
+    paymentAmount: unknown;
+    appliedAmount: unknown;
+  }> = [];
+  const pageSize = 2000;
+  let cursor: string | undefined;
+
+  while (true) {
+    const page = await tx.paymentRecord.findMany({
+      where: {
+        customerId,
+        paymentType: 'prepayment',
+        status: { in: ['confirmed', 'applied'] },
+      },
+      orderBy: [{ paymentDate: 'asc' }, { id: 'asc' }],
+      select: {
+        id: true,
+        paymentAmount: true,
+        appliedAmount: true,
+      },
+      take: pageSize,
+      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    });
+
+    records.push(...page);
+    if (page.length < pageSize) {
+      break;
+    }
+
+    cursor = page[page.length - 1]?.id;
+    if (!cursor) {
+      break;
+    }
+  }
 
   return records.filter(record => {
     const paymentAmount = Number(record.paymentAmount ?? 0);

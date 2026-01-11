@@ -390,20 +390,47 @@ export async function fetchReceivableBaseOrders(
   skip?: number,
   take?: number
 ): Promise<BaseReceivableOrder[]> {
-  return prisma.salesOrder.findMany({
-    where,
-    select: {
-      id: true,
-      orderNumber: true,
-      customerId: true,
-      totalAmount: true,
-      roundingAdjustment: true,
-      createdAt: true,
-    },
-    orderBy,
-    ...(skip !== undefined && { skip }),
-    ...(take !== undefined && { take }),
-  });
+  const select = {
+    id: true,
+    orderNumber: true,
+    customerId: true,
+    totalAmount: true,
+    roundingAdjustment: true,
+    createdAt: true,
+  } satisfies Prisma.SalesOrderSelect;
+
+  const effectiveSkip = skip ?? 0;
+
+  if (take !== undefined) {
+    return prisma.salesOrder.findMany({
+      where,
+      select,
+      orderBy,
+      skip: effectiveSkip,
+      take,
+    });
+  }
+
+  // 未传 take 时按批次拉取，避免一次性拉全量导致内存/响应风险
+  const pageSize = 2000;
+  const orders: BaseReceivableOrder[] = [];
+
+  for (let offset = effectiveSkip; ; offset += pageSize) {
+    const batch = await prisma.salesOrder.findMany({
+      where,
+      select,
+      orderBy,
+      skip: offset,
+      take: pageSize,
+    });
+
+    orders.push(...batch);
+    if (batch.length < pageSize) {
+      break;
+    }
+  }
+
+  return orders;
 }
 
 export async function aggregatePaymentsByOrder(
@@ -550,11 +577,17 @@ export async function fetchReceivableDetails(orderIds: string[]) {
         orderBy: { paymentDate: 'desc' },
       },
     },
+    take: orderIds.length,
   });
 
   // 将 Decimal 类型金额转换为 number，便于后续计算
   return orders.map(order => ({
     ...order,
+    totalAmount: Number(order.totalAmount ?? 0),
+    roundingAdjustment:
+      order.roundingAdjustment === null || order.roundingAdjustment === undefined
+        ? null
+        : Number(order.roundingAdjustment),
     payments: order.payments.map(payment => ({
       ...payment,
       actualPaymentAmount: Number(payment.actualPaymentAmount ?? 0),

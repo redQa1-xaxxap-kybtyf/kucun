@@ -26,6 +26,7 @@ import type {
   CustomerQueryParams,
   CustomerUpdateInput,
 } from '@/lib/types/customer';
+import { toNumber } from '@/lib/utils/number';
 import {
   parseExtendedInfo,
   processExtendedInfo,
@@ -651,7 +652,7 @@ export async function getCustomerList(params: CustomerQueryParams) {
     salesOrderStats.map(stat => [
       stat.customerId,
       {
-        totalAmount: stat._sum.totalAmount || 0,
+        totalAmount: toNumber(stat._sum.totalAmount, 0),
         transactionCount: stat._count.id || 0,
       },
     ])
@@ -694,7 +695,7 @@ export async function getCustomerList(params: CustomerQueryParams) {
       ...baseCustomer,
       parentCustomer,
       totalOrders: customer._count.salesOrders,
-      totalAmount: salesStats?.totalAmount || 0,
+      totalAmount: salesStats?.totalAmount ?? 0,
       lastOrderDate: orderDates?.lastOrderDate?.toISOString(),
       transactionCount: salesStats?.transactionCount || 0,
       cooperationDays: calculateCooperationDays(

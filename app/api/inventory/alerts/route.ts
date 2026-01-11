@@ -117,6 +117,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
             id: true,
             minStock: true, // ✅ 修复：读取产品级阈值
           },
+          take: productIds.length,
         });
 
         // 创建产品阈值映射
@@ -164,6 +165,7 @@ const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
               },
             },
           },
+          take: lowStockProductIds.length,
         });
 
         // 第五步：计算每个产品的库存统计

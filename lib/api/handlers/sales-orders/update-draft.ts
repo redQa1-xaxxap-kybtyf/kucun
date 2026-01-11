@@ -9,6 +9,11 @@ import {
   ensureCompanyExpenses,
   type CompanyFeeItemLike,
 } from '@/lib/services/expense-service';
+import {
+  buildFeeItemsInput,
+  buildOrderItemsInput,
+  calculateFinancials,
+} from './financials';
 
 // 复用临时产品相关工具
 
@@ -26,9 +31,22 @@ export async function updateSalesOrderDraft(
     orderType: 'NORMAL' | 'TRANSFER' | null;
     transferMode?: 'SUPPLIER_ONLY' | 'MIXED' | null;
     supplierId?: string | null;
+    updatedAt: Date;
   },
   userId: string
 ) {
+  // 草稿更新只允许修改草稿内容，不允许通过该接口变更状态。
+  // 状态流转必须走专用接口，以保证库存预留/收款台账等副作用一致。
+  if (
+    updateData.status !== undefined &&
+    updateData.status !== null &&
+    String(updateData.status) !== 'draft'
+  ) {
+    throw new Error(
+      '草稿更新不允许修改订单状态，请使用“更新状态”接口进行确认/发货/取消。'
+    );
+  }
+
   const orderType = (updateData.orderType ??
     existingOrder.orderType ??
     'NORMAL') as 'NORMAL' | 'TRANSFER';
@@ -39,21 +57,39 @@ export async function updateSalesOrderDraft(
           'SUPPLIER_ONLY') as 'SUPPLIER_ONLY' | 'MIXED')
       : 'SUPPLIER_ONLY';
 
-  const { itemsAmount, costAmount } = computeItemsAndCost(
-    updateData.items ?? [],
+  const normalizedInput = {
     orderType,
-    transferMode
-  );
+    transferMode,
+    items: Array.isArray(updateData.items) ? updateData.items : [],
+    feeItems: Array.isArray(updateData.feeItems) ? updateData.feeItems : [],
+    roundingAdjustment: updateData.roundingAdjustment ?? 0,
+  };
 
-  const additionalFees = round2(sumFeeByPayer(updateData.feeItems, 'customer'));
-  const expenseAmount = round2(sumFeeByPayer(updateData.feeItems, 'company'));
-  const roundingAdjustment = round2(updateData.roundingAdjustment ?? 0);
-  const totalAmount = round2(itemsAmount + additionalFees + roundingAdjustment);
-  const profitAmount =
-    orderType === 'TRANSFER' ? round2(itemsAmount - costAmount) : 0;
+  const financials = calculateFinancials(
+    normalizedInput as any,
+    transferMode as any
+  );
 
   // 事务内更新（删除旧明细、创建新明细、同步临时产品）
   const updatedOrder = await prisma.$transaction(async tx => {
+    const locked = (
+      await tx.$queryRaw<
+        Array<{ updatedAt: Date; status: string }>
+      >`SELECT updated_at as updatedAt, status FROM sales_orders WHERE id = ${id} FOR UPDATE`
+    )[0];
+
+    if (!locked) {
+      throw new Error('销售订单不存在');
+    }
+
+    if (locked.status !== 'draft') {
+      throw new Error('只能更新草稿状态的订单');
+    }
+
+    if (locked.updatedAt.getTime() !== existingOrder.updatedAt.getTime()) {
+      throw new Error('订单已被其他用户修改，请刷新后重试');
+    }
+
     await tx.salesOrderItem.deleteMany({ where: { salesOrderId: id } });
     await tx.salesOrderFeeItem.deleteMany({ where: { salesOrderId: id } });
 
@@ -104,35 +140,26 @@ export async function updateSalesOrderDraft(
               ? (existingOrder.supplierId ?? null)
               : updateData.supplierId || null
             : null,
-        costAmount: orderType === 'TRANSFER' ? costAmount : null,
-        profitAmount: orderType === 'TRANSFER' ? profitAmount : null,
-        itemsAmount,
-        additionalFees,
-        expenseAmount,
-        roundingAdjustment,
-        totalAmount,
+        costAmount: financials.costAmount,
+        profitAmount: financials.profitAmount,
+        itemsAmount: financials.itemsAmount,
+        additionalFees: financials.additionalFees,
+        expenseAmount: financials.expenseAmount,
+        roundingAdjustment: financials.roundingAdjustment,
+        totalAmount: financials.totalAmount,
         remarks: updateData.remarks || null,
         items: updateData.items
           ? {
-              create: updateData.items.map((item: any, index: number) =>
-                buildOrderItemPayload(
-                  item,
-                  orderType,
-                  transferMode,
-                  temporaryProductIds.get(index) ?? null
-                )
+              create: buildOrderItemsInput(
+                normalizedInput as any,
+                transferMode as any,
+                temporaryProductIds
               ),
             }
           : undefined,
         feeItems: updateData.feeItems
           ? {
-              create: updateData.feeItems.map((fee: any) => ({
-                feeType: fee.feeType,
-                feeName: fee.feeName,
-                feeAmount: fee.feeAmount,
-                paidBy: fee.paidBy ?? 'customer',
-                remarks: fee.remarks ?? null,
-              })),
+              create: buildFeeItemsInput(normalizedInput as any),
             }
           : undefined,
       },
@@ -211,113 +238,6 @@ export async function updateSalesOrderDraft(
       status: order.status,
       createdAt: order.createdAt.toISOString(),
     })),
-  };
-}
-
-function round2(v: number) {
-  return Math.round(v * 100) / 100;
-}
-
-function sumFeeByPayer(
-  feeItems: Array<{ feeAmount?: number; paidBy?: string }> | undefined,
-  payer: 'customer' | 'company'
-): number {
-  if (!Array.isArray(feeItems)) {
-    return 0;
-  }
-
-  return feeItems
-    .filter(fee => (fee.paidBy ?? 'customer') === payer)
-    .reduce((sum, fee) => sum + (Number(fee.feeAmount) || 0), 0);
-}
-
-function computeItemsAndCost(
-  items: any[],
-  orderType: 'NORMAL' | 'TRANSFER',
-  transferMode: 'SUPPLIER_ONLY' | 'MIXED'
-) {
-  let itemsAmount = 0;
-  let costAmount = 0;
-
-  for (const item of items) {
-    const quantity = item.quantity ?? 0;
-    const unitPrice = item.unitPrice ?? 0;
-    const subtotal = item.subtotal ?? round2(quantity * unitPrice);
-    itemsAmount += subtotal;
-
-    const effectiveTransferQuantity =
-      orderType === 'TRANSFER' && transferMode === 'MIXED'
-        ? (item.transferQuantity ?? 0)
-        : quantity;
-    const unitCost = item.unitCost ?? 0;
-    costAmount += unitCost * effectiveTransferQuantity;
-  }
-
-  return { itemsAmount: round2(itemsAmount), costAmount: round2(costAmount) };
-}
-
-function buildOrderItemPayload(
-  item: any,
-  orderType: 'NORMAL' | 'TRANSFER',
-  transferMode: 'SUPPLIER_ONLY' | 'MIXED',
-  temporaryProductId: string | null
-) {
-  const quantity = item.quantity ?? 0;
-  const unitPrice = item.unitPrice ?? 0;
-  const subtotal = item.subtotal ?? round2(quantity * unitPrice);
-
-  const localQuantity =
-    orderType === 'TRANSFER' && transferMode === 'MIXED'
-      ? (item.localQuantity ?? 0)
-      : 0;
-  const transferQuantity =
-    orderType === 'TRANSFER'
-      ? transferMode === 'MIXED'
-        ? (item.transferQuantity ?? 0)
-        : quantity
-      : 0;
-  const effectiveCostQuantity =
-    orderType === 'TRANSFER'
-      ? transferMode === 'MIXED'
-        ? (item.transferQuantity ?? 0)
-        : quantity
-      : 0;
-
-  const unitCost = item.unitCost === undefined ? undefined : item.unitCost;
-  const costSubtotal =
-    unitCost !== undefined && orderType === 'TRANSFER'
-      ? round2(unitCost * effectiveCostQuantity)
-      : undefined;
-  const profitSubtotal =
-    orderType === 'TRANSFER' && costSubtotal !== undefined
-      ? round2(subtotal - costSubtotal)
-      : undefined;
-
-  return {
-    productId: item.productId,
-    temporaryProductId,
-    productCode: item.productCode,
-    batchNumber: item.batchNumber,
-    colorCode: item.colorCode,
-    productionDate: item.productionDate,
-    quantity,
-    unitPrice,
-    subtotal,
-    unitCost,
-    localQuantity,
-    transferQuantity,
-    costSubtotal,
-    profitAmount: profitSubtotal,
-    isManualProduct: item.isManualProduct,
-    manualProductName: item.manualProductName,
-    manualSpecification: item.manualSpecification,
-    manualWeight: item.manualWeight,
-    manualUnit: item.manualUnit,
-    displayUnit: item.displayUnit,
-    displayQuantity: item.displayQuantity ?? quantity,
-    piecesPerUnit: item.piecesPerUnit ?? null,
-    specification: item.specification,
-    remarks: item.remarks,
   };
 }
 

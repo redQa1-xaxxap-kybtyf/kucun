@@ -111,10 +111,13 @@ async function validateEntities({
       item => !item.isManualProduct && item.productId
     );
     if (inventoryItems.length > 0) {
-      const productIds = inventoryItems.map(i => i.productId || '');
+      const productIds = Array.from(
+        new Set(inventoryItems.map(i => i.productId || ''))
+      );
       const existingProducts = await prisma.product.findMany({
         where: { id: { in: productIds } },
         select: { id: true },
+        take: productIds.length,
       });
       const existingSet = new Set(existingProducts.map(p => p.id));
       const missing = productIds.filter(id => !existingSet.has(id));
@@ -140,6 +143,7 @@ async function validateEntities({
       const existingSuppliers = await prisma.supplier.findMany({
         where: { id: { in: supplierIds } },
         select: { id: true },
+        take: supplierIds.length,
       });
       const existingSupplierSet = new Set(existingSuppliers.map(s => s.id));
       const missingSuppliers = supplierIds.filter(
@@ -372,7 +376,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!order) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '订单不存在' },
+        { status: 404 }
+      );
     }
 
     const responsePayload = {
@@ -380,10 +387,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       fulfillmentSummary: {
         customerOwnedAmount: order.items
           .filter(item => item.ownership === 'customer')
-          .reduce((sum, item) => sum + item.totalPrice, 0),
+          .reduce((sum, item) => sum + Number(item.totalPrice), 0),
         selfOwnedAmount: order.items
           .filter(item => item.ownership === 'self')
-          .reduce((sum, item) => sum + item.totalPrice, 0),
+          .reduce((sum, item) => sum + Number(item.totalPrice), 0),
       },
     };
 
@@ -392,7 +399,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     logger.error('factory-shipments', '获取厂家发货订单详情失败', error, {
       orderId: id,
     });
-    return NextResponse.json({ error: '获取订单详情失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '获取订单详情失败' },
+      { status: 500 }
+    );
   }
 }
 
@@ -407,7 +417,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingOrder) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '订单不存在' },
+        { status: 404 }
+      );
     }
 
     // 解析请求体
@@ -440,7 +453,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const validationError = await validateEntities({ items, customerId });
     if (validationError) {
       return NextResponse.json(
-        { error: validationError.message },
+        { success: false, error: validationError.message },
         { status: validationError.code }
       );
     }
@@ -463,7 +476,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         data: buildUpdateData(
           validatedData,
           calculatedTotalAmount,
-          existingOrder.depositAmount
+          existingOrder.depositAmount === null
+            ? undefined
+            : Number(existingOrder.depositAmount)
         ),
       });
     });
@@ -475,13 +490,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!updatedOrder) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '订单不存在' },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json({
       ...updatedOrder,
       fulfillmentSummary: fulfillmentSummary(
-        updatedOrder.items as Array<{ ownership: string; totalPrice: number }>
+        updatedOrder.items.map(item => ({
+          ownership: item.ownership,
+          totalPrice: Number(item.totalPrice),
+        }))
       ),
     });
   } catch (error) {
@@ -490,10 +511,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     });
 
     if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json({ error: '集装箱号码已存在' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: '集装箱号码已存在' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ error: '更新订单失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '更新订单失败' },
+      { status: 500 }
+    );
   }
 }
 
@@ -513,7 +540,10 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     });
 
     if (!existingOrder) {
-      return NextResponse.json({ error: '订单不存在' }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: '订单不存在' },
+        { status: 404 }
+      );
     }
 
     // 验证订单状态是否允许删除
@@ -521,6 +551,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     if (!allowedStatuses.includes(existingOrder.status)) {
       return NextResponse.json(
         {
+          success: false,
           error: '只能删除草稿或已取消的订单',
           currentStatus: existingOrder.status,
         },
@@ -544,6 +575,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     logger.error('factory-shipments', '删除厂家发货订单失败', error, {
       orderId: id,
     });
-    return NextResponse.json({ error: '删除订单失败' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: '删除订单失败' },
+      { status: 500 }
+    );
   }
 }

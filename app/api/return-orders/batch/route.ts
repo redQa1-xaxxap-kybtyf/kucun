@@ -41,6 +41,7 @@ export const POST = withAuth(
         returnNumber: true,
         status: true,
       },
+      take: ids.length,
     });
 
     if (existingReturnOrders.length !== ids.length) {

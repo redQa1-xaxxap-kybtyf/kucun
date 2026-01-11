@@ -9,6 +9,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import { toNumber } from '@/lib/utils/number';
 import {
   createReturnOrderSchema,
   returnOrderQuerySchema,
@@ -121,12 +122,17 @@ export const GET = withAuth(
     }
 
     if (startDate || endDate) {
+      const dateOnlyRegex = /^\d{4}-\d{2}-\d{2}$/;
       where.createdAt = {};
       if (startDate) {
-        where.createdAt.gte = new Date(startDate);
+        where.createdAt.gte = dateOnlyRegex.test(startDate)
+          ? new Date(`${startDate}T00:00:00.000`)
+          : new Date(startDate);
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        where.createdAt.lte = dateOnlyRegex.test(endDate)
+          ? new Date(`${endDate}T23:59:59.999`)
+          : new Date(endDate);
       }
     }
 
@@ -157,7 +163,24 @@ export const GET = withAuth(
               orderNumber: true,
             },
           },
-          items: true,
+          items: {
+            select: {
+              id: true,
+              returnOrderId: true,
+              salesOrderItemId: true,
+              productId: true,
+              colorCode: true,
+              productionDate: true,
+              returnQuantity: true,
+              damagedQuantity: true,
+              originalQuantity: true,
+              unitPrice: true,
+              subtotal: true,
+              reason: true,
+              createdAt: true,
+              updatedAt: true,
+            },
+          },
           refunds: {
             select: {
               id: true,
@@ -186,6 +209,7 @@ export const GET = withAuth(
         code: true,
         unit: true,
       },
+      take: productIds.length,
     });
 
     const productsMap = new Map(products.map(p => [p.id, p]));
@@ -307,6 +331,7 @@ export const POST = withAuth(
               },
             },
           },
+          take: salesOrderItemIds.length,
         });
 
         // 验证所有产品都找到了
@@ -411,7 +436,7 @@ export const POST = withAuth(
           const returnsMap = new Map(
             existingReturnsMap.map(r => [
               r.salesOrderItemId,
-              r._sum.returnQuantity || 0,
+              Number(r._sum.returnQuantity ?? 0),
             ])
           );
 
@@ -428,7 +453,7 @@ export const POST = withAuth(
             }
 
             // ✅ 修复：校验前端传来的单价是否与数据库中的真实单价一致
-            const dbUnitPrice = salesOrderItem.unitPrice;
+            const dbUnitPrice = toNumber(salesOrderItem.unitPrice, 0);
             if (Math.abs(returnItem.unitPrice - dbUnitPrice) > 0.01) {
               const productName =
                 (
@@ -445,7 +470,7 @@ export const POST = withAuth(
             const alreadyReturnedQuantity: number =
               returnsMap.get(returnItem.salesOrderItemId) || 0;
             const remainingQuantity: number =
-              salesOrderItem.quantity - alreadyReturnedQuantity;
+              Number(salesOrderItem.quantity) - alreadyReturnedQuantity;
 
             // 验证退货数量
             if (returnItem.returnQuantity > remainingQuantity) {
@@ -457,7 +482,7 @@ export const POST = withAuth(
                 ).product?.name || '未知产品';
               throw new Error(
                 `产品 ${productName} 退货数量超过可退数量。` +
-                  `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
+                  `已购买: ${Number(salesOrderItem.quantity)}, 已退货: ${alreadyReturnedQuantity}, ` +
                   `可退: ${remainingQuantity}, 本次退货: ${returnItem.returnQuantity}`
               );
             }
@@ -558,6 +583,7 @@ export const POST = withAuth(
           code: true,
           unit: true,
         },
+        take: productIds.length,
       });
 
       const productsMap = new Map(products.map(p => [p.id, p]));

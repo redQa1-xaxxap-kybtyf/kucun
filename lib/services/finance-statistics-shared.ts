@@ -3,6 +3,7 @@ import type {
   Prisma,
 } from '@prisma/client';
 
+import { toNumber } from '@/lib/utils/number';
 import type {
   PartnerRole,
   StatementStatus,
@@ -158,13 +159,26 @@ function formatDate(value?: Date | null): string | null {
 }
 
 export function mapAccountStatementToSummary(
-  statement: AccountStatementModel,
+  statement: Pick<
+    AccountStatementModel,
+    | 'entityId'
+    | 'entityName'
+    | 'entityType'
+    | 'partnerRole'
+    | 'status'
+    | 'totalOrders'
+    | 'totalAmount'
+    | 'paidAmount'
+    | 'currentBalance'
+    | 'lastTransactionDate'
+    | 'lastPaymentDate'
+  >,
   overrideType?: StatementType
 ): StatementSummary {
   const partnerRole = normalisePartnerRole(statement.partnerRole);
   const type =
     overrideType ?? resolveStatementType(partnerRole, statement.entityType);
-  const currentBalance = statement.currentBalance ?? 0;
+  const currentBalance = toNumber(statement.currentBalance);
 
   return {
     id: statement.entityId,
@@ -173,8 +187,8 @@ export function mapAccountStatementToSummary(
     partnerRole,
     status: normaliseStatementStatus(statement.status),
     totalOrders: statement.totalOrders,
-    totalAmount: statement.totalAmount,
-    paidAmount: statement.paidAmount,
+    totalAmount: toNumber(statement.totalAmount),
+    paidAmount: toNumber(statement.paidAmount),
     pendingAmount: Math.abs(currentBalance),
     currentBalance,
     lastTransactionDate: formatDate(statement.lastTransactionDate),
