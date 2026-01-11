@@ -75,25 +75,25 @@ export function StatementTransactions({
 
   return (
     <Card>
-      <CardHeader className="bg-slate-900 border-b border-slate-800 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 italic">
+      <CardHeader className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-500 italic">
           <FileText className="h-4 w-4" />
-          全业务往来明细账 (Transaction Ledger)
+          全业务往来明细账
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <Table>
-          <TableHeader className="bg-slate-50/80">
-            <TableRow className="border-b-2 border-slate-900 hover:bg-transparent">
-              <TableHead className="py-4 font-black text-slate-900">业务类型</TableHead>
-              <TableHead className="py-4 font-black text-slate-900">参考单号</TableHead>
-              <TableHead className="py-4 font-black text-slate-900">摘要说明</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-900">应收 (+) / 应付 (-)</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-900">回款 / 付讫</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-900">期后余额</TableHead>
-              <TableHead className="py-4 font-black text-slate-900">发生时间</TableHead>
-              <TableHead className="py-4 font-black text-slate-900">核销状态</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-900">操作</TableHead>
+          <TableHeader className="bg-slate-50/50">
+            <TableRow className="border-b border-slate-200 hover:bg-transparent">
+              <TableHead className="py-4 font-black text-slate-700">业务类型</TableHead>
+              <TableHead className="py-4 font-black text-slate-700">单据编号</TableHead>
+              <TableHead className="py-4 font-black text-slate-700">科目摘要</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">借方 (应收+)</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">贷方 (应收-)</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">余额 (元)</TableHead>
+              <TableHead className="py-4 font-black text-slate-700">记账时间</TableHead>
+              <TableHead className="py-4 font-black text-slate-700">核销状态</TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

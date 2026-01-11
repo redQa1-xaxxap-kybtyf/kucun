@@ -29,11 +29,11 @@ export function StatementBasicInfo({
   lastPaymentDate,
 }: StatementBasicInfoProps) {
   return (
-    <Card className="overflow-hidden border-slate-200/60 transition-all hover:shadow-lg">
-      <CardHeader className="bg-slate-900 border-b border-slate-800 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 italic">
+    <Card className="overflow-hidden border-slate-200 transition-all hover:shadow-lg">
+      <CardHeader className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-500 italic">
           <Contact2 className="h-4 w-4" />
-          伙伴关系名片 (Entity Profile)
+          往来伙伴关系名片
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">

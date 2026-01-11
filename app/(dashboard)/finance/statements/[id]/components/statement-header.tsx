@@ -40,48 +40,48 @@ export function StatementHeader({
   const statusInfo = STATUS_BADGE_MAP[status] ?? STATUS_BADGE_MAP.active;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[hsl(var(--color-border-primary))] bg-slate-900 shadow-2xl">
-      {/* 装饰背景 */}
-      <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
-      <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/10 blur-3xl" />
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+      {/* 装饰背景 - 调淡 */}
+      <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/5 blur-3xl" />
 
       <CardContent className="relative z-10 p-6 sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-5 sm:items-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/10">
               <FileText className="h-8 w-8 text-white" />
             </div>
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+                <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                   往来明细账
                 </h1>
-                <Badge className="bg-blue-500/20 text-blue-300 hover:bg-blue-500/30">
+                <Badge className="bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
                   {TYPE_LABEL_MAP[type]}
                 </Badge>
                 <Badge
                   variant={statusInfo.variant}
                   className={
                     statusInfo.variant === 'outline'
-                      ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-400'
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
                       : ''
                   }
                 >
                   {statusInfo.label}
                 </Badge>
               </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-400">
-                <span className="text-lg font-bold text-slate-200">{name}</span>
-                <span className="h-4 w-px bg-slate-700 hidden sm:block" />
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500">
+                <span className="text-lg font-bold text-slate-800">{name}</span>
+                <span className="h-4 w-px bg-slate-200 hidden sm:block" />
                 <div className="flex items-center gap-1.5 text-sm">
-                  <span>当前账面余额：</span>
+                  <span className="font-medium">账面余额：</span>
                   <span
                     className={`font-black tracking-wider ${
                       currentBalance > 0
-                        ? 'text-orange-400'
+                        ? 'text-orange-600'
                         : currentBalance < 0
-                          ? 'text-rose-400'
-                          : 'text-emerald-400'
+                          ? 'text-rose-600'
+                          : 'text-emerald-600'
                     }`}
                   >
                     {formatCurrency(Math.abs(currentBalance))}
@@ -89,7 +89,7 @@ export function StatementHeader({
                       ? '（应收）'
                       : currentBalance < 0
                         ? '（应付）'
-                        : '（持平）'}
+                        : '（结清）'}
                   </span>
                 </div>
               </div>
@@ -101,25 +101,25 @@ export function StatementHeader({
               variant="outline"
               size="lg"
               onClick={() => router.back()}
-              className="h-12 border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white"
+              className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               返回
             </Button>
-            <div className="h-8 w-px bg-slate-700 hidden sm:block" />
+            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
             <Button
               variant="outline"
               size="lg"
-              className="h-12 border-slate-700 bg-slate-800/50 text-slate-200 hover:bg-slate-700 hover:text-white"
+              className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-slate-50 hover:text-slate-900"
             >
               <Download className="mr-2 h-4 w-4" />
-              导出明细账
+              导出账单
             </Button>
             <Button
-              className="h-12 bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:shadow-blue-500/30 active:scale-95"
+              className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 hover:scale-105 active:scale-95"
             >
               <Receipt className="mr-2 h-4 w-4" />
-              核销操作
+              核销处理
             </Button>
           </div>
         </div>

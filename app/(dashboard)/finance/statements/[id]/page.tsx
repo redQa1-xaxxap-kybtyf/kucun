@@ -263,7 +263,7 @@ export default function StatementDetailPage() {
                   <span className="text-2xl font-black tracking-tight text-slate-900">
                     {formatCurrency(Math.abs(statement.totalAmount)).replace('¥', '')}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">CNY</span>
+                  <span className="text-[10px] font-bold text-slate-400">元</span>
                 </div>
                 <div className="absolute inset-y-6 right-0 w-px bg-slate-100 hidden lg:block" />
               </div>
@@ -280,7 +280,7 @@ export default function StatementDetailPage() {
                   <span className="text-2xl font-black tracking-tight text-slate-900">
                     {formatCurrency(Math.abs(statement.paidAmount)).replace('¥', '')}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">CNY</span>
+                  <span className="text-[10px] font-bold text-slate-400">元</span>
                 </div>
                 <div className="absolute inset-y-6 right-0 w-px bg-slate-100 hidden lg:block" />
               </div>
@@ -307,7 +307,7 @@ export default function StatementDetailPage() {
                   }`}>
                     {formatCurrency(Math.abs(statement.currentBalance)).replace('¥', '')}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">CNY</span>
+                  <span className="text-[10px] font-bold text-slate-400">元</span>
                 </div>
               </div>
             </div>

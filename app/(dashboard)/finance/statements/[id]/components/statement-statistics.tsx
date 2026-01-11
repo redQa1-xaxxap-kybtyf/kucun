@@ -24,11 +24,11 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
     summary.currentMonthAmount > summary.lastMonthAmount ? 'up' : 'down';
 
   return (
-    <Card className="overflow-hidden border-slate-200/60 transition-all hover:shadow-lg">
-      <CardHeader className="bg-slate-900 border-b border-slate-800 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-400 italic">
+    <Card className="overflow-hidden border-slate-200 transition-all hover:shadow-lg">
+      <CardHeader className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-500 italic">
           <Activity className="h-4 w-4" />
-          经营绩效看板 (Performance KPI)
+          经营往来绩效看板
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
@@ -61,7 +61,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
             <div className="text-xl font-black font-mono text-slate-900">
-              {summary.averagePaymentDays} <span className="text-[10px] font-bold text-slate-400">DAYS</span>
+              {summary.averagePaymentDays} <span className="text-[10px] font-bold text-slate-400">天</span>
             </div>
             <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
                <div 
