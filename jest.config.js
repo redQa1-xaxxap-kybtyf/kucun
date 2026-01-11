@@ -68,8 +68,10 @@ const customJestConfig = {
   // 忽略的模块路径（避免 bushu 目录中的 __mocks__ 与主工程重复）
   modulePathIgnorePatterns: ['<rootDir>/bushu/'],
 
-  // Transform忽略模式 - 需要转换faker-js和其他ES模块
-  transformIgnorePatterns: ['/node_modules/(?!@faker-js)'],
+  // Transform忽略模式 - 允许转译少量 ESM 依赖（MSW 及其依赖、faker）
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@faker-js|msw|@mswjs|until-async|headers-polyfill|geist))',
+  ],
 
   // 转换配置
   transform: {
