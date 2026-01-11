@@ -47,6 +47,8 @@ export interface Product {
     totalPurchases: number;
     averagePrice: number;
   };
+  // 浏览量（部分接口可能不返回）
+  viewCount?: number;
 }
 
 /**

@@ -3,7 +3,24 @@
 
 import { API_ENDPOINTS } from '../config/api';
 import type { Category } from '../types/category';
-import { get } from '../utils/request';
+import { del, get, patch, post, put } from '../utils/request';
+
+export interface CreateCategoryParams {
+  name: string;
+  code?: string;
+  description?: string;
+  parentId?: string;
+  sortOrder?: number;
+  status?: 'active' | 'inactive';
+}
+
+export interface UpdateCategoryParams {
+  name?: string;
+  code?: string;
+  description?: string;
+  parentId?: string;
+  sortOrder?: number;
+}
 
 /**
  * 分类服务类
@@ -32,6 +49,37 @@ class CategoryService {
     return get<Category>(API_ENDPOINTS.CATEGORIES.DETAIL(id), undefined, {
       autoRedirectOn401: false,
     });
+  }
+
+  /**
+   * 创建分类
+   */
+  async createCategory(params: CreateCategoryParams): Promise<Category> {
+    return post<Category>(API_ENDPOINTS.CATEGORIES.LIST, params);
+  }
+
+  /**
+   * 更新分类
+   */
+  async updateCategory(id: string, params: UpdateCategoryParams): Promise<Category> {
+    return put<Category>(API_ENDPOINTS.CATEGORIES.DETAIL(id), params);
+  }
+
+  /**
+   * 更新分类状态
+   */
+  async updateCategoryStatus(
+    id: string,
+    status: 'active' | 'inactive'
+  ): Promise<Category> {
+    return patch<Category>(`${API_ENDPOINTS.CATEGORIES.DETAIL(id)}/status`, { status });
+  }
+
+  /**
+   * 删除分类
+   */
+  async deleteCategory(id: string): Promise<void> {
+    await del(API_ENDPOINTS.CATEGORIES.DETAIL(id));
   }
 }
 

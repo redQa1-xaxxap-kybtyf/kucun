@@ -23,16 +23,16 @@ Page({
         // 每次显示页面时重新加载用户信息
         this.loadUserInfo();
     },
-  // 初始化自定义导航栏高度（适配不同机型/状态栏）
-  initCustomNav() {
-    try {
-      // 使用新推荐 API，避免 wx.getSystemInfoSync 的弃用警告
-      const windowInfo = wx.getWindowInfo();
-      const statusBarHeight = windowInfo.statusBarHeight || 0;
-      // 胶囊按钮仅在非 tab 首页等场景可靠，这里拿不到也能回退到 44
-      let navBarHeight = 44;
-      try {
-        const menu = wx.getMenuButtonBoundingClientRect?.();
+    // 初始化自定义导航栏高度（适配不同机型/状态栏）
+    initCustomNav() {
+        try {
+            // 使用新推荐 API，避免 wx.getSystemInfoSync 的弃用警告
+            const windowInfo = wx.getWindowInfo();
+            const statusBarHeight = windowInfo.statusBarHeight || 0;
+            // 胶囊按钮仅在非 tab 首页等场景可靠，这里拿不到也能回退到 44
+            let navBarHeight = 44;
+            try {
+                const menu = wx.getMenuButtonBoundingClientRect?.();
                 if (menu && menu.top && menu.bottom) {
                     navBarHeight = menu.bottom + menu.top - statusBarHeight;
                 }

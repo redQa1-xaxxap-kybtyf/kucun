@@ -82,7 +82,7 @@ Page({
                 displayImages = mainImages;
             }
             this.setData({
-                displayImages: displayImages,
+                displayImages,
                 totalImages: displayImages.length,
                 currentImageIndex: 0,
             });

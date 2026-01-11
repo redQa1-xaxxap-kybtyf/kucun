@@ -2,7 +2,14 @@
 
 // 微信小程序运行环境默认没有 URLSearchParams
 // 这里做一个非常轻量的兼容实现，避免第三方/旧代码调用时报错
-if (typeof URLSearchParams === 'undefined') {
+const globalObj: any =
+  typeof globalThis !== 'undefined'
+    ? globalThis
+    : typeof wx !== 'undefined'
+      ? wx
+      : {};
+
+if (typeof globalObj.URLSearchParams === 'undefined') {
   class SimpleURLSearchParams {
     private params: [string, string][] = [];
 
@@ -28,15 +35,6 @@ if (typeof URLSearchParams === 'undefined') {
     }
   }
 
-  const globalObj: any =
-    typeof globalThis !== 'undefined'
-      ? globalThis
-      : typeof global !== 'undefined'
-        ? global
-        : typeof wx !== 'undefined'
-          ? wx
-          : {};
-
   globalObj.URLSearchParams = SimpleURLSearchParams;
 }
 
@@ -50,7 +48,7 @@ App<IAppOption>({
 
     // 登录
     wx.login({
-      success: res => {
+      success: () => {
         // 预留：可在此处调用后端接口，用 res.code 换取 openId/sessionKey
       },
     });

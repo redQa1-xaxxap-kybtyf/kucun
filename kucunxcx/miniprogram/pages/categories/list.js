@@ -93,6 +93,7 @@ Page({
                 ...child,
                 expanded: false,
                 productCount: child.productCount || (child._count?.products ?? 0),
+                children: [],
             })),
         }));
         return treeData;
@@ -125,7 +126,7 @@ Page({
                 child.code.toLowerCase().includes(keyword)) || [];
             // 如果父级匹配，保留所有子分类；否则只保留匹配的子分类
             if (matchParent) {
-                return { ...cat, expanded: cat.children && cat.children.length > 0 };
+                return { ...cat, expanded: (cat.children?.length ?? 0) > 0 };
             }
             else if (matchedChildren.length > 0) {
                 return { ...cat, children: matchedChildren, expanded: true };

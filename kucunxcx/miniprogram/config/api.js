@@ -93,6 +93,10 @@ exports.API_ENDPOINTS = {
         FAVORITES: '/profile/favorites',
         HISTORY: '/profile/history',
     },
+    // 上传相关
+    UPLOAD: {
+        QINIU_TOKEN: '/upload/qiniu-token', // 获取七牛云上传 Token
+    },
 };
 /**
  * 请求头配置

@@ -2,8 +2,8 @@
 // 网络请求封装
 // 统一处理微信小程序的 wx.request
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.hideGlobalLoading = hideGlobalLoading;
 exports.showGlobalLoading = showGlobalLoading;
+exports.hideGlobalLoading = hideGlobalLoading;
 exports.request = request;
 exports.get = get;
 exports.post = post;
@@ -13,14 +13,14 @@ exports.patch = patch;
 const api_1 = require("../config/api");
 /**
  * 全局 loading 计数器
- * 用于管理多个并发请求/上传时的 loading 状态，避免「showLoading/hideLoading 必须配对」警告
+ * 用于管理多个并发请求时的 loading 状态
  */
 let loadingCount = 0;
 let loadingVisible = false;
 let loadingTitle = '加载中...';
 let loadingMask = true;
 /**
- * 显示全局 loading（支持计数）
+ * 显示全局 loading（支持计数，避免与其他 showLoading/hideLoading 冲突）
  */
 function showGlobalLoading(options) {
     const title = options && typeof options.title === 'string' && options.title.trim()
@@ -30,15 +30,17 @@ function showGlobalLoading(options) {
     loadingCount++;
     loadingTitle = title;
     loadingMask = mask;
+    // 仅在首次显示时真正调用 showLoading；后续只更新标题（不强制）
     if (!loadingVisible) {
         loadingVisible = true;
         wx.showLoading({ title: loadingTitle, mask: loadingMask });
         return;
     }
+    // 更新标题（不改变计数）
     try {
         wx.showLoading({ title: loadingTitle, mask: loadingMask });
     }
-    catch (_a) {
+    catch (_error) {
         // ignore
     }
 }
@@ -46,6 +48,7 @@ function showGlobalLoading(options) {
  * 隐藏全局 loading（支持计数）
  */
 function hideGlobalLoading() {
+    // 防止被多次调用导致计数器为负、触发「hideLoading 必须配对」警告
     if (loadingCount <= 0) {
         loadingCount = 0;
         return;
@@ -120,12 +123,13 @@ function request(config) {
                 requestHeaders['x-mini-token'] = token;
             }
         }
-        // 显示加载提示（全局计数器管理）
+        // 显示加载提示（使用计数器管理）
         showGlobalLoading({ title: '加载中...', mask: true });
         // 发起请求
         const requestOptions = {
             url: fullURL,
-            method,
+            // 微信类型定义不包含 PATCH，但后端 API 支持；这里保持运行时行为不变，仅做类型兼容
+            method: method,
             data,
             header: requestHeaders,
             success(res) {
@@ -261,7 +265,7 @@ function request(config) {
                 reject(new Error(errorMessage));
             },
             complete() {
-                // 始终关闭加载中提示（全局计数器管理）
+                // 始终关闭加载中提示（使用计数器管理）
                 hideGlobalLoading();
             },
         };

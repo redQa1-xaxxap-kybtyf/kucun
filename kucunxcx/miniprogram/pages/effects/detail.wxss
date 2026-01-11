@@ -1,0 +1,99 @@
+/* 效果图详情页样式 - Apple Style */
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg,
+    #f5f5f7 0%,
+    #ffffff 30%,
+    #fafafa 100%);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 100rpx;
+}
+
+/* 图片轮播区域 */
+.image-swiper {
+  width: 100%;
+  height: 65vh;
+  background: #000;
+}
+
+.effect-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 图片指示器 */
+.image-indicator {
+  position: absolute;
+  top: 24rpx;
+  right: 24rpx;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 24rpx;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  z-index: 10;
+}
+
+/* 产品信息区域 */
+.info-section {
+  padding: 32rpx;
+  background: #fff;
+}
+
+.info-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+}
+
+.info-left {
+  flex: 1;
+}
+
+.view-product-btn {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 14rpx 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 32rpx;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+}
+
+.view-product-btn text {
+  font-size: 24rpx;
+  font-weight: 500;
+  color: #fff;
+}
+
+.product-code {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: #1D1D1F;
+  margin-bottom: 8rpx;
+}
+
+.product-name {
+  font-size: 28rpx;
+  color: #86868B;
+}
+
+.product-meta {
+  display: flex;
+  align-items: center;
+  gap: 32rpx;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.meta-item text {
+  font-size: 24rpx;
+  color: #86868B;
+}

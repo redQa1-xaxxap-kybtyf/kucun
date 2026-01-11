@@ -335,9 +335,7 @@ class ProductService {
             thumbnailUrl: payload.thumbnailUrl ?? '',
             images,
         };
-        return (0, request_1.post)(api_1.API_ENDPOINTS.PRODUCTS.DETAIL(id), body, {
-            method: 'PUT',
-        });
+        return (0, request_1.put)(api_1.API_ENDPOINTS.PRODUCTS.DETAIL(id), body);
     }
 }
 // 导出单例

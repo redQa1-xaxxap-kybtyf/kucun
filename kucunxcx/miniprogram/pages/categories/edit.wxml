@@ -1,0 +1,195 @@
+<!-- 分类编辑页 -->
+<view class="container">
+  <!-- 加载状态 -->
+  <view wx:if="{{ loading }}" class="loading-container">
+    <van-icon name="loading" size="48px" color="#667eea" class="loading-spin" />
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 编辑表单 -->
+  <view wx:else class="form-card">
+    <!-- 分类名称 -->
+    <view class="form-item">
+      <view class="input-wrapper {{ (name || focusStates.name) ? 'has-value' : '' }}">
+        <text class="label-float">分类名称</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced"
+            placeholder="请输入分类名称"
+            placeholder-class="input-placeholder"
+            value="{{ name }}"
+            data-field="name"
+            bindinput="onNameInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+          />
+        </view>
+      </view>
+    </view>
+
+    <!-- 分类编码（只读） -->
+    <view class="form-item">
+      <view class="input-wrapper has-value">
+        <text class="label-float">分类编码</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced input-readonly"
+            value="{{ code }}"
+            disabled
+          />
+        </view>
+        <view class="input-hint">编码由系统自动生成，不可修改</view>
+      </view>
+    </view>
+
+    <!-- 父级分类选择 -->
+    <view class="form-item">
+      <view class="input-wrapper {{ parentName ? 'has-value' : '' }}">
+        <text class="label-float">父级分类（可选）</text>
+        <picker
+          mode="selector"
+          range="{{ parentOptions }}"
+          range-key="name"
+          bindchange="onParentChange"
+        >
+          <view class="picker-container">
+            <view class="picker-value-enhanced">
+              {{ parentName || '选择父级分类（顶级分类可不选）' }}
+            </view>
+            <text class="picker-arrow">›</text>
+          </view>
+        </picker>
+        <view class="input-hint">不选择则为顶级分类</view>
+        <view wx:if="{{ parentName }}" class="clear-parent" bindtap="onClearParent">
+          <van-icon name="close" size="14px" color="#999" />
+          <text>清除</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 排序号 -->
+    <view class="form-item">
+      <view class="input-wrapper {{ (sortOrder || focusStates.sortOrder) ? 'has-value' : '' }}">
+        <text class="label-float">排序号</text>
+        <view class="input-container">
+          <input
+            class="input-enhanced"
+            type="number"
+            placeholder="数字越小越靠前，默认0"
+            placeholder-class="input-placeholder"
+            value="{{ sortOrder }}"
+            data-field="sortOrder"
+            bindinput="onSortOrderInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+          />
+        </view>
+        <view class="input-hint">可选，用于控制显示顺序</view>
+      </view>
+    </view>
+
+    <!-- 分类描述 -->
+    <view class="form-item">
+      <view class="textarea-wrapper {{ (description || focusStates.description) ? 'has-value' : '' }}">
+        <text class="label-float">分类描述</text>
+        <view class="textarea-container">
+          <textarea
+            class="textarea-enhanced"
+            placeholder="用于补充说明分类用途等信息"
+            placeholder-class="input-placeholder"
+            value="{{ description }}"
+            data-field="description"
+            bindinput="onDescInput"
+            bindfocus="onInputFocus"
+            bindblur="onInputBlur"
+            maxlength="500"
+          />
+          <view class="char-count">{{ description ? description.length : 0 }}/500</view>
+        </view>
+        <view class="input-hint">可选，最多500字</view>
+      </view>
+    </view>
+
+    <!-- 分类状态 -->
+    <view class="form-item">
+      <view class="status-wrapper">
+        <text class="status-label">分类状态</text>
+        <view class="status-toggle">
+          <view
+            class="status-option {{ status === 'active' ? 'active' : '' }}"
+            bindtap="onStatusChange"
+            data-status="active"
+          >
+            <van-icon name="checked" size="16px" wx:if="{{ status === 'active' }}" />
+            <text>启用</text>
+          </view>
+          <view
+            class="status-option {{ status === 'inactive' ? 'active inactive' : '' }}"
+            bindtap="onStatusChange"
+            data-status="inactive"
+          >
+            <van-icon name="checked" size="16px" wx:if="{{ status === 'inactive' }}" />
+            <text>禁用</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 分类信息 -->
+    <view class="info-section">
+      <view class="info-item">
+        <text class="info-label">产品数量</text>
+        <text class="info-value">{{ productCount }} 个</text>
+      </view>
+      <view class="info-item" wx:if="{{ childrenCount > 0 }}">
+        <text class="info-label">子分类数</text>
+        <text class="info-value">{{ childrenCount }} 个</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view wx:if="{{ !loading }}" class="action-bar">
+    <button
+      class="delete-btn"
+      bindtap="onDelete"
+      disabled="{{ submitting || hasChildren || hasProducts }}"
+    >
+      <van-icon name="delete-o" size="18px" />
+      <text>删除</text>
+    </button>
+    <button
+      class="submit-btn"
+      type="primary"
+      loading="{{ submitting }}"
+      disabled="{{ submitting }}"
+      bindtap="onSubmit"
+    >
+      保存修改
+    </button>
+  </view>
+
+  <!-- 删除提示 -->
+  <view wx:if="{{ hasChildren || hasProducts }}" class="delete-hint">
+    <van-icon name="info-o" size="14px" color="#ff976a" />
+    <text wx:if="{{ hasChildren }}">该分类下有子分类，无法删除</text>
+    <text wx:elif="{{ hasProducts }}">该分类下有产品，无法删除</text>
+  </view>
+</view>
+
+<!-- 删除确认对话框 -->
+<van-dialog
+  id="van-dialog"
+  use-slot
+  title="确认删除"
+  show="{{ showDeleteDialog }}"
+  show-cancel-button
+  confirm-button-color="#ee0a24"
+  bind:confirm="onConfirmDelete"
+  bind:cancel="onCancelDelete"
+>
+  <view class="dialog-content">
+    <text>确定要删除分类「{{ name }}」吗？</text>
+    <text class="dialog-warning">此操作不可恢复</text>
+  </view>
+</van-dialog>

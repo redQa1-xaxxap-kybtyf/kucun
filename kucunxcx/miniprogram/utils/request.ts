@@ -60,21 +60,6 @@ export function hideGlobalLoading() {
 }
 
 /**
- * 显示 loading（支持计数）
- * 兼容旧实现：内部改用全局计数器
- */
-function showLoadingWithCount() {
-  showGlobalLoading({ title: '加载中...', mask: true });
-}
-
-/**
- * 隐藏 loading（支持计数）
- */
-function hideLoadingWithCount() {
-  hideGlobalLoading();
-}
-
-/**
  * API 响应格式
  */
 export interface ApiResponse<T = any> {
@@ -192,7 +177,8 @@ export function request<T = any>(config: RequestConfig): Promise<T> {
     // 发起请求
     const requestOptions: WechatMiniprogram.RequestOption = {
       url: fullURL,
-      method,
+      // 微信类型定义不包含 PATCH，但后端 API 支持；这里保持运行时行为不变，仅做类型兼容
+      method: method as unknown as WechatMiniprogram.RequestOption['method'],
       data,
       header: requestHeaders,
       success(res) {

@@ -1,0 +1,116 @@
+<!-- 效果图列表页 -->
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-section">
+    <van-search
+      value="{{ searchValue }}"
+      placeholder="搜索产品编码或名称"
+      bind:change="onSearchChange"
+      bind:search="onSearch"
+      bind:clear="onClearSearch"
+    />
+  </view>
+
+  <!-- 效果图列表 -->
+  <scroll-view
+    class="effect-scroll"
+    scroll-y
+    enhanced
+    show-scrollbar="{{ false }}"
+    bindscrolltolower="loadMore"
+  >
+    <!-- 加载中骨架屏 -->
+    <view wx:if="{{ loading && effectList.length === 0 }}" class="effect-grid">
+      <view class="effect-card skeleton-card" wx:for="{{ [1,2,3,4,5,6] }}" wx:key="*this">
+        <view class="effect-img-box skeleton-img"></view>
+        <view class="effect-info">
+          <view class="skeleton-text skeleton-code"></view>
+          <view class="skeleton-text skeleton-name"></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 操作提示 -->
+    <view wx:if="{{ effectList.length > 0 && showTip }}" class="action-tip">
+      <van-icon name="info-o" size="12px" color="#86868B" />
+      <text>长按图片可分享或收藏</text>
+      <van-icon name="cross" size="12px" color="#86868B" bindtap="hideTip" />
+    </view>
+
+    <!-- 效果图网格 -->
+    <view wx:if="{{ effectList.length > 0 }}" class="effect-grid">
+      <view
+        class="effect-card {{ item.isFavorite ? 'is-favorite' : '' }}"
+        wx:for="{{ effectList }}"
+        wx:key="index"
+        bindtap="previewImage"
+        bindlongpress="onLongPress"
+        data-url="{{ item.imageUrl }}"
+        data-index="{{ index }}"
+        data-item="{{ item }}"
+      >
+        <view class="effect-img-box">
+          <image
+            src="{{ item.imageUrl }}"
+            mode="aspectFill"
+            lazy-load
+            webp
+          />
+          <!-- 收藏标记 -->
+          <view wx:if="{{ item.isFavorite }}" class="favorite-badge">
+            <van-icon name="star" size="14px" color="#FFD700" />
+          </view>
+        </view>
+        <view class="effect-info">
+          <!-- 产品编号 -->
+          <text class="effect-code">{{ item.productCode }}</text>
+          <!-- 产品名称 -->
+          <text class="effect-name">{{ item.productName }}</text>
+          <!-- 浏览量 -->
+          <view class="effect-stats">
+            <view class="stat-item">
+              <van-icon name="eye-o" size="12px" color="#86868B" />
+              <text>{{ item.viewCount || 0 }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <van-empty
+      wx:if="{{ !loading && effectList.length === 0 }}"
+      description="暂无效果图"
+      image="search"
+    />
+
+    <!-- 加载更多 -->
+    <view wx:if="{{ effectList.length > 0 }}" class="load-more-footer">
+      <van-loading wx:if="{{ loadingMore }}" size="24px" />
+      <text wx:elif="{{ !hasMore }}" class="no-more-text">已加载全部</text>
+    </view>
+
+    <!-- 底部安全区 -->
+    <view class="safe-area-bottom"></view>
+  </scroll-view>
+
+  <!-- 分享弹窗 -->
+  <van-popup
+    show="{{ showSharePopup }}"
+    position="bottom"
+    round
+    bind:close="closeSharePopup"
+  >
+    <view class="share-popup">
+      <view class="share-title">分享效果图</view>
+      <view class="share-info">
+        <text>{{ currentItem.productCode }} - {{ currentItem.productName }}</text>
+      </view>
+      <button class="share-btn" open-type="share">
+        <van-icon name="share-o" size="20px" color="#fff" />
+        <text>分享给好友</text>
+      </button>
+      <view class="share-cancel" bindtap="closeSharePopup">取消</view>
+    </view>
+  </van-popup>
+</view>

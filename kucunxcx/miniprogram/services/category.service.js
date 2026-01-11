@@ -28,6 +28,30 @@ class CategoryService {
             autoRedirectOn401: false,
         });
     }
+    /**
+     * 创建分类
+     */
+    async createCategory(params) {
+        return (0, request_1.post)(api_1.API_ENDPOINTS.CATEGORIES.LIST, params);
+    }
+    /**
+     * 更新分类
+     */
+    async updateCategory(id, params) {
+        return (0, request_1.put)(api_1.API_ENDPOINTS.CATEGORIES.DETAIL(id), params);
+    }
+    /**
+     * 更新分类状态
+     */
+    async updateCategoryStatus(id, status) {
+        return (0, request_1.patch)(`${api_1.API_ENDPOINTS.CATEGORIES.DETAIL(id)}/status`, { status });
+    }
+    /**
+     * 删除分类
+     */
+    async deleteCategory(id) {
+        await (0, request_1.del)(api_1.API_ENDPOINTS.CATEGORIES.DETAIL(id));
+    }
 }
 // 导出单例
 exports.categoryService = new CategoryService();

@@ -4,8 +4,10 @@
 import categoryService from '../../services/category.service';
 import type { Category } from '../../types/category';
 
-interface CategoryWithExpanded extends Category {
-  expanded?: boolean;
+type CategoryWithoutChildren = Omit<Category, 'children'>;
+
+interface CategoryWithExpanded extends CategoryWithoutChildren {
+  expanded: boolean;
   children?: CategoryWithExpanded[];
 }
 
@@ -112,6 +114,7 @@ Page({
           ...child,
           expanded: false,
           productCount: child.productCount || (child._count?.products ?? 0),
+          children: [],
         })),
     }));
 
@@ -155,7 +158,7 @@ Page({
 
         // 如果父级匹配，保留所有子分类；否则只保留匹配的子分类
         if (matchParent) {
-          return { ...cat, expanded: cat.children && cat.children.length > 0 };
+          return { ...cat, expanded: (cat.children?.length ?? 0) > 0 };
         } else if (matchedChildren.length > 0) {
           return { ...cat, children: matchedChildren, expanded: true };
         }
