@@ -136,6 +136,7 @@ export async function findAvailableInventory(
   batchNumber: string | null;
   quantity: number;
   reservedQuantity: number;
+  updatedAt: Date;
   unitCost: number | null;
   location: string | null;
 } | null> {
@@ -163,6 +164,7 @@ export async function findAvailableInventory(
       batchNumber: true,
       quantity: true,
       reservedQuantity: true,
+      updatedAt: true,
       unitCost: true,
       location: true,
     },

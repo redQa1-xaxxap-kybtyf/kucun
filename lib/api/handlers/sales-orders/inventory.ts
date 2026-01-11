@@ -12,6 +12,7 @@ const inventoryReservationSelect = {
   batchNumber: true,
   quantity: true,
   reservedQuantity: true,
+  updatedAt: true,
 } satisfies Prisma.InventorySelect;
 
 type InventoryRecord = Prisma.InventoryGetPayload<{
@@ -205,7 +206,8 @@ const processReservation = async (
   transferMode: CreateInput['transferMode'],
   inventories: Map<string, InventoryRecord[]>,
   cache: Map<string, InventoryRecord>,
-  localReservation: Map<string, number>
+  localReservation: Map<string, number>,
+  localUpdatedAt: Map<string, Date>
 ): Promise<ReservationOutcome | null> => {
   if (!isProductItem(item)) {
     return null;
@@ -237,6 +239,7 @@ const processReservation = async (
     inventory.batchNumber
   );
   const pendingReservation = localReservation.get(reservationKey) ?? 0;
+  const expectedUpdatedAt = localUpdatedAt.get(reservationKey) ?? inventory.updatedAt;
   const effectiveReserved = inventory.reservedQuantity + pendingReservation;
   const itemQuantity =
     transferMode === 'MIXED' ? (item.localQuantity ?? 0) : (item.quantity ?? 0);
@@ -254,14 +257,22 @@ const processReservation = async (
     );
   }
 
+  const candidateUpdatedAt = new Date();
+  const nextUpdatedAt =
+    candidateUpdatedAt.getTime() <= expectedUpdatedAt.getTime()
+      ? new Date(expectedUpdatedAt.getTime() + 1)
+      : candidateUpdatedAt;
+
   const updatedCount = await tx.inventory.updateMany({
     where: {
       id: inventory.id,
+      updatedAt: expectedUpdatedAt,
       reservedQuantity: effectiveReserved,
       quantity: { gte: effectiveReserved + itemQuantity },
     },
     data: {
       reservedQuantity: { increment: itemQuantity },
+      updatedAt: nextUpdatedAt,
     },
   });
 
@@ -274,6 +285,7 @@ const processReservation = async (
   }
 
   localReservation.set(reservationKey, pendingReservation + itemQuantity);
+  localUpdatedAt.set(reservationKey, nextUpdatedAt);
 
   const salesOrderItemId = normalizeText(
     (item as unknown as { id?: string }).id
@@ -313,6 +325,7 @@ export const reserveInventory = async (
   const inventories = await loadInventory(tx, productItems);
   const cache = new Map<string, InventoryRecord>();
   const localReservation = new Map<string, number>();
+  const localUpdatedAt = new Map<string, Date>();
   const outcomes: ReservationOutcome[] = [];
 
   for (const item of data.items) {
@@ -322,7 +335,8 @@ export const reserveInventory = async (
       transferMode,
       inventories,
       cache,
-      localReservation
+      localReservation,
+      localUpdatedAt
     );
     if (outcome) {
       outcomes.push(outcome);

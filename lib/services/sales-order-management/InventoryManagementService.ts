@@ -18,6 +18,8 @@ export interface InventoryCheckResult {
   availableQuantity: number;
   reservedQuantity: number;
   totalQuantity: number;
+  inventoryId?: string;
+  inventoryUpdatedAt?: Date;
   shortfall?: number;
   message: string;
 }
@@ -38,10 +40,12 @@ export class InventoryManagementService {
    * 检查库存可用性
    */
   public async checkInventoryAvailability(
-    request: InventoryCheckRequest
+    request: InventoryCheckRequest,
+    tx?: PrismaClient
   ): Promise<InventoryCheckResult> {
     try {
-      const inventory = await prisma.inventory.findFirst({
+      const db = tx ?? prisma;
+      const inventory = await db.inventory.findFirst({
         where: {
           productId: request.productId,
           variantId: request.variantId || null,
@@ -68,6 +72,8 @@ export class InventoryManagementService {
         availableQuantity,
         reservedQuantity: inventory.reservedQuantity,
         totalQuantity: inventory.quantity,
+        inventoryId: inventory.id,
+        inventoryUpdatedAt: inventory.updatedAt,
         shortfall: available ? 0 : request.requiredQuantity - availableQuantity,
         message: available
           ? '库存充足'
@@ -87,22 +93,27 @@ export class InventoryManagementService {
     return prisma.$transaction(async tx => {
       // 检查库存可用性
       const checkResult = await this.checkInventoryAvailability({
-        productId: request.productId,
-        variantId: request.variantId,
-        batchNumber: request.batchNumber,
-        requiredQuantity: request.quantity,
-      });
+          productId: request.productId,
+          variantId: request.variantId,
+          batchNumber: request.batchNumber,
+          requiredQuantity: request.quantity,
+      }, tx as unknown as PrismaClient);
 
       if (!checkResult.available) {
         throw new Error(`库存不足: ${checkResult.message}`);
       }
 
+      if (!checkResult.inventoryId || !checkResult.inventoryUpdatedAt) {
+        throw new Error('库存记录不存在');
+      }
+
       // 更新库存预留量
-      await tx.inventory.updateMany({
+      const inventoryUpdate = await tx.inventory.updateMany({
         where: {
-          productId: request.productId,
-          variantId: request.variantId || null,
-          batchNumber: request.batchNumber || null,
+          id: checkResult.inventoryId,
+          updatedAt: checkResult.inventoryUpdatedAt,
+          quantity: checkResult.totalQuantity,
+          reservedQuantity: checkResult.reservedQuantity,
         },
         data: {
           reservedQuantity: {
@@ -111,6 +122,10 @@ export class InventoryManagementService {
         },
       });
 
+      if (inventoryUpdate.count === 0) {
+        throw new Error('库存预留失败，库存已被其他事务修改，请重试');
+      }
+
       // 创建预留记录
       const expiresAt = request.expirationHours
         ? new Date(Date.now() + request.expirationHours * 60 * 60 * 1000)
@@ -118,7 +133,7 @@ export class InventoryManagementService {
 
       const reservation = await tx.inventoryReservation.create({
         data: {
-          reservationNumber: await this.generateReservationNumber(),
+          reservationNumber: await this.generateReservationNumber(tx as any),
           salesOrderId: request.salesOrderId,
           salesOrderItemId: request.salesOrderItemId,
           productId: request.productId,
@@ -157,12 +172,33 @@ export class InventoryManagementService {
         throw new Error('预留记录状态不正确，无法释放');
       }
 
-      // 更新库存预留量
-      await tx.inventory.updateMany({
+      const inventory = await tx.inventory.findFirst({
         where: {
           productId: reservation.productId,
           variantId: reservation.variantId,
           batchNumber: reservation.batchNumber,
+        },
+        select: {
+          id: true,
+          reservedQuantity: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!inventory) {
+        throw new Error('库存记录不存在');
+      }
+
+      if (inventory.reservedQuantity < reservation.reservedQuantity) {
+        throw new Error('库存预留量不足，可能已被其他事务修改，请刷新后重试');
+      }
+
+      // 更新库存预留量
+      const inventoryUpdate = await tx.inventory.updateMany({
+        where: {
+          id: inventory.id,
+          updatedAt: inventory.updatedAt,
+          reservedQuantity: inventory.reservedQuantity,
         },
         data: {
           reservedQuantity: {
@@ -170,6 +206,10 @@ export class InventoryManagementService {
           },
         },
       });
+
+      if (inventoryUpdate.count === 0) {
+        throw new Error('释放预留失败，库存已被其他事务修改，请重试');
+      }
 
       // 更新预留记录状态
       await tx.inventoryReservation.update({
@@ -257,9 +297,9 @@ export class InventoryManagementService {
   /**
    * 生成预留编号
    */
-  private async generateReservationNumber(): Promise<string> {
+  private async generateReservationNumber(tx: any): Promise<string> {
     const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const sequence = await prisma.orderSequence.upsert({
+    const sequence = await tx.orderSequence.upsert({
       where: {
         sequenceType_dateKey: {
           sequenceType: 'RESERVATION',

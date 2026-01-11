@@ -626,6 +626,7 @@ async function executeOrderStatusUpdateWithInventory(
       const updatedCount = await tx.inventory.updateMany({
         where: {
           id: inventory.id,
+          updatedAt: inventory.updatedAt,
           quantity: { gte: outboundQuantity }, // 再次确认库存足够
           reservedQuantity: { gte: decrementReservedQty },
         },

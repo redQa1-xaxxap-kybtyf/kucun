@@ -57,118 +57,127 @@ export async function updateInventoryWithNotification(
     orderId?: string;
   }
 ): Promise<boolean> {
+  if ((type === 'reserve' || type === 'release') && quantity <= 0) {
+    throw new Error('预留/释放库存时，数量必须为正数');
+  }
+
+  let beforeQuantity = 0;
+  let afterQuantity = 0;
+  let reservedQuantity = 0;
+
   try {
-    if ((type === 'reserve' || type === 'release') && quantity <= 0) {
-      throw new Error('预留/释放库存时，数量必须为正数');
-    }
-
-    const { beforeQuantity, afterQuantity, reservedQuantity } =
-      await prisma.$transaction(async tx => {
-        const inventory = await tx.inventory.findFirst({
-          where: {
-            productId,
-            variantId: variantId || null,
-          },
-          select: {
-            id: true,
-            quantity: true,
-            reservedQuantity: true,
-          },
-        });
-
-        if (!inventory) {
-          throw new Error('库存记录不存在');
-        }
-
-        const quantityDelta =
-          type === 'reserve' || type === 'release' ? 0 : quantity;
-
-        const updatedInventory = await tx.inventory.update({
-          where: { id: inventory.id },
-          data: {
-            ...(type !== 'reserve' &&
-              type !== 'release' && {
-                quantity: { increment: quantity },
-              }),
-            ...(type === 'reserve' && {
-              reservedQuantity: { increment: quantity },
-            }),
-            ...(type === 'release' && {
-              reservedQuantity: { decrement: quantity },
-            }),
-          },
-          select: {
-            quantity: true,
-            reservedQuantity: true,
-          },
-        });
-
-        if (updatedInventory.quantity < 0) {
-          throw new Error(
-            `并发更新导致库存为负数。当前库存: ${updatedInventory.quantity}, 请重试`
-          );
-        }
-
-        if (updatedInventory.reservedQuantity < 0) {
-          throw new Error(
-            `并发更新导致预留数量为负数。当前预留: ${updatedInventory.reservedQuantity}, 请重试`
-          );
-        }
-
-        if (updatedInventory.quantity < updatedInventory.reservedQuantity) {
-          throw new Error(
-            `并发更新导致可用库存(${updatedInventory.quantity})低于预留数量(${updatedInventory.reservedQuantity}), 请重试`
-          );
-        }
-
-        return {
-          beforeQuantity: updatedInventory.quantity - quantityDelta,
-          afterQuantity: updatedInventory.quantity,
-          reservedQuantity: updatedInventory.reservedQuantity,
-        };
+    const result = await prisma.$transaction(async tx => {
+      const inventory = await tx.inventory.findFirst({
+        where: {
+          productId,
+          variantId: variantId || null,
+        },
+        select: {
+          id: true,
+          quantity: true,
+          reservedQuantity: true,
+        },
       });
 
-    // 6. 使用 Redis 事务更新缓存
-    const cacheKey = variantId
-      ? `inventory:${productId}:${variantId}`
-      : `inventory:${productId}`;
+      if (!inventory) {
+        throw new Error('库存记录不存在');
+      }
 
-    await redis.transaction(async pipeline => {
-      // 更新库存数量
-      pipeline.hset(cacheKey, 'quantity', afterQuantity);
+      const quantityDelta = type === 'reserve' || type === 'release' ? 0 : quantity;
 
-      // 更新预留数量
-      pipeline.hset(cacheKey, 'reserved', reservedQuantity.toString());
+      const updatedInventory = await tx.inventory.update({
+        where: { id: inventory.id },
+        data: {
+          ...(type !== 'reserve' &&
+            type !== 'release' && {
+              quantity: { increment: quantity },
+            }),
+          ...(type === 'reserve' && {
+            reservedQuantity: { increment: quantity },
+          }),
+          ...(type === 'release' && {
+            reservedQuantity: { decrement: quantity },
+          }),
+        },
+        select: {
+          quantity: true,
+          reservedQuantity: true,
+        },
+      });
 
-      // 更新最后修改时间
-      pipeline.hset(cacheKey, 'updatedAt', new Date().toISOString());
+      if (updatedInventory.quantity < 0) {
+        throw new Error(
+          `并发更新导致库存为负数。当前库存: ${updatedInventory.quantity}, 请重试`
+        );
+      }
 
-      return pipeline.exec();
+      if (updatedInventory.reservedQuantity < 0) {
+        throw new Error(
+          `并发更新导致预留数量为负数。当前预留: ${updatedInventory.reservedQuantity}, 请重试`
+        );
+      }
+
+      if (updatedInventory.quantity < updatedInventory.reservedQuantity) {
+        throw new Error(
+          `并发更新导致可用库存(${updatedInventory.quantity})低于预留数量(${updatedInventory.reservedQuantity}), 请重试`
+        );
+      }
+
+      return {
+        beforeQuantity: updatedInventory.quantity - quantityDelta,
+        afterQuantity: updatedInventory.quantity,
+        reservedQuantity: updatedInventory.reservedQuantity,
+      };
     });
 
-    // 7. 构建变更事件
-    const event: InventoryChangeEvent = {
+    beforeQuantity = result.beforeQuantity;
+    afterQuantity = result.afterQuantity;
+    reservedQuantity = result.reservedQuantity;
+  } catch (error) {
+    logger.error('inventory-realtime', 'Failed to update inventory (db)', error, {
       productId,
       variantId: variantId || undefined,
-      type,
       quantity,
-      beforeQuantity,
-      afterQuantity,
-      reason: metadata?.reason,
-      userId: metadata?.userId,
-      orderId: metadata?.orderId,
-      timestamp: new Date().toISOString(),
-    };
+      type,
+    });
+    return false;
+  }
 
-    // 8. 发布 Pub/Sub 通知
+  const cacheKey = variantId
+    ? `inventory:${productId}:${variantId}`
+    : `inventory:${productId}`;
+
+  try {
+    await redis.transaction(async pipeline => {
+      pipeline.hset(cacheKey, 'quantity', afterQuantity);
+      pipeline.hset(cacheKey, 'reserved', reservedQuantity.toString());
+      pipeline.hset(cacheKey, 'updatedAt', new Date().toISOString());
+      return pipeline.exec();
+    });
+  } catch (error) {
+    logger.error('inventory-realtime', 'Failed to update inventory cache', error, {
+      productId,
+      variantId: variantId || undefined,
+    });
+  }
+
+  const event: InventoryChangeEvent = {
+    productId,
+    variantId: variantId || undefined,
+    type,
+    quantity,
+    beforeQuantity,
+    afterQuantity,
+    reason: metadata?.reason,
+    userId: metadata?.userId,
+    orderId: metadata?.orderId,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
     await Promise.all([
-      // 产品级别通知
       publish(`inventory:${productId}:updated`, event),
-
-      // 全局库存更新通知
       publish('inventory:updated', event),
-
-      // 如果库存低于阈值，发布预警
       afterQuantity < 10 &&
         publish('inventory:low-stock', {
           productId,
@@ -177,20 +186,23 @@ export async function updateInventoryWithNotification(
           threshold: 10,
         }),
     ]);
-
-    // 9. 失效缓存
-    await revalidateInventory(productId);
-
-    return true;
   } catch (error) {
-    logger.error('inventory-realtime', 'Failed to update inventory', error, {
+    logger.error('inventory-realtime', 'Failed to publish inventory events', error, {
       productId,
       variantId: variantId || undefined,
-      quantity,
-      type,
     });
-    return false;
   }
+
+  try {
+    await revalidateInventory(productId);
+  } catch (error) {
+    logger.error('inventory-realtime', 'Failed to revalidate inventory cache', error, {
+      productId,
+      variantId: variantId || undefined,
+    });
+  }
+
+  return true;
 }
 
 /**
@@ -206,64 +218,96 @@ export async function batchUpdateInventory(
     reason?: string;
   }>
 ): Promise<{ success: boolean; failed: string[] }> {
-  const failed: string[] = [];
+  const failed = new Set<string>();
 
   try {
-    // 1. 使用 Redis 事务批量更新缓存
-    await redis.transaction(async pipeline => {
+    const now = new Date();
+    const nowIso = now.toISOString();
+
+    await prisma.$transaction(async tx => {
       for (const update of updates) {
-        const cacheKey = update.variantId
-          ? `inventory:${update.productId}:${update.variantId}`
-          : `inventory:${update.productId}`;
-
-        pipeline.hincrby(cacheKey, 'quantity', update.quantity);
-        pipeline.hset(cacheKey, 'updatedAt', new Date().toISOString());
-      }
-
-      return pipeline.exec();
-    });
-
-    // 2. 批量更新数据库
-    for (const update of updates) {
-      try {
-        await prisma.inventory.updateMany({
+        const inventory = await tx.inventory.findFirst({
           where: {
             productId: update.productId,
             variantId: update.variantId || null,
           },
-          data: {
-            quantity: {
-              increment: update.quantity,
-            },
-            updatedAt: new Date(),
+          select: {
+            id: true,
+            quantity: true,
+            reservedQuantity: true,
+            updatedAt: true,
           },
         });
-      } catch (error) {
-        logger.error(
-          'inventory-realtime',
-          'Failed to update inventory',
-          error,
-          {
-            productId: update.productId,
-            variantId: update.variantId || undefined,
-            quantity: update.quantity,
-            type: update.type,
-          }
-        );
-        failed.push(update.productId);
-      }
-    }
 
-    // 3. 发布批量更新通知
-    await publish('inventory:batch:updated', {
-      count: updates.length,
-      failed: failed.length,
-      timestamp: new Date().toISOString(),
+        if (!inventory) {
+          failed.add(update.productId);
+          throw new Error('库存记录不存在');
+        }
+
+        const nextQuantity = inventory.quantity + update.quantity;
+        if (nextQuantity < 0) {
+          failed.add(update.productId);
+          throw new Error('库存不足，无法执行批量更新');
+        }
+
+        if (nextQuantity < inventory.reservedQuantity) {
+          failed.add(update.productId);
+          throw new Error('可用库存不足，无法执行批量更新');
+        }
+
+        const updateResult = await tx.inventory.updateMany({
+          where: {
+            id: inventory.id,
+            updatedAt: inventory.updatedAt,
+            quantity: inventory.quantity,
+            reservedQuantity: inventory.reservedQuantity,
+          },
+          data: {
+            quantity: nextQuantity,
+          },
+        });
+
+        if (updateResult.count === 0) {
+          failed.add(update.productId);
+          throw new Error('库存并发冲突，请重试');
+        }
+      }
     });
 
+    try {
+      await redis.transaction(async pipeline => {
+        for (const update of updates) {
+          const cacheKey = update.variantId
+            ? `inventory:${update.productId}:${update.variantId}`
+            : `inventory:${update.productId}`;
+
+          pipeline.hincrby(cacheKey, 'quantity', update.quantity);
+          pipeline.hset(cacheKey, 'updatedAt', nowIso);
+        }
+
+        return pipeline.exec();
+      });
+    } catch (error) {
+      logger.error('inventory-realtime', 'Failed to update batch inventory cache', error, {
+        count: updates.length,
+      });
+    }
+
+    try {
+      await publish('inventory:batch:updated', {
+        count: updates.length,
+        failed: failed.size,
+        timestamp: nowIso,
+      });
+    } catch (error) {
+      logger.error('inventory-realtime', 'Failed to publish batch inventory event', error, {
+        count: updates.length,
+      });
+    }
+
     return {
-      success: failed.length === 0,
-      failed,
+      success: true,
+      failed: [],
     };
   } catch (error) {
     logger.error('inventory-realtime', 'Batch update failed', error, {
@@ -271,7 +315,7 @@ export async function batchUpdateInventory(
     });
     return {
       success: false,
-      failed: updates.map(u => u.productId),
+      failed: failed.size > 0 ? Array.from(failed) : updates.map(u => u.productId),
     };
   }
 }
