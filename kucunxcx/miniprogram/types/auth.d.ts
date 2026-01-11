@@ -12,8 +12,8 @@ export interface LoginRequest {
  * 登录响应
  */
 export interface LoginResponse {
-  success: boolean;
   token: string;
+  tokenType?: 'Bearer';
   user: UserInfo;
   expiresIn?: number;
 }
@@ -34,11 +34,12 @@ export interface RegisterRequest {
 export interface UserInfo {
   id: string;
   username: string;
+  name?: string;
   email?: string;
   phone?: string;
   role: string;
   avatar?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 /**

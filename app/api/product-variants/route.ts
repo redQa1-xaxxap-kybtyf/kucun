@@ -11,7 +11,8 @@ import {
 } from '@/lib/validations/product';
 
 // 获取产品变体列表
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(
+  async (request: NextRequest) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     let page: number;
@@ -169,10 +170,13 @@ export const GET = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['products:view'] }
+);
 
 // 创建产品变体
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -297,4 +301,6 @@ export const POST = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['products:edit'] }
+);

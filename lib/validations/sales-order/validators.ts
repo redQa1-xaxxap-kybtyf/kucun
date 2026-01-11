@@ -134,6 +134,12 @@ export function validateRequiredFields(
         message: '非草稿订单的明细必须填写数量',
         path: ['items', index, 'quantity'],
       });
+    } else if (item.quantity <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '订单明细数量必须大于0',
+        path: ['items', index, 'quantity'],
+      });
     }
 
     if (typeof item.unitPrice !== 'number' || Number.isNaN(item.unitPrice)) {

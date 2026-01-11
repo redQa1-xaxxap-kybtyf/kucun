@@ -36,7 +36,8 @@ const serializeError = (error: unknown) =>
  * GET /api/payments - 获取收款记录列表
  * 支持分页、搜索、筛选等查询参数
  */
-export const GET = withAuth(async (request: NextRequest, { user }) => {
+export const GET = withAuth(
+  async (request: NextRequest, { user }) => {
   try {
     // 解析查询参数
     const { searchParams } = request.nextUrl;
@@ -206,12 +207,16 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['finance:view'] }
+);
+
 
 /**
  * POST /api/payments - 创建收款记录
  */
-export const POST = withAuth(async (request: NextRequest, { user }) => {
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
   const userId = user.id;
   let data: any = null;
 
@@ -555,4 +560,6 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['finance:manage'] }
+);

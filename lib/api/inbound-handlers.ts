@@ -8,6 +8,7 @@ import { randomBytes } from 'node:crypto';
 import { getServerSession } from 'next-auth';
 
 import { upsertBatchSpecification } from '@/lib/api/batch-specification-handlers';
+import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { ApiError } from '@/lib/api/errors';
 import {
   INBOUND_RECORD_SELECT,
@@ -150,16 +151,12 @@ export function buildInboundWhereClause(queryData: {
   }
 
   // 日期范围筛选 - 简化逻辑,移除类型断言
-  if (queryData.startDate || queryData.endDate) {
-    where.createdAt = {};
-    if (queryData.startDate) {
-      where.createdAt.gte = new Date(queryData.startDate);
-    }
-    if (queryData.endDate) {
-      const endDate = new Date(queryData.endDate);
-      endDate.setHours(23, 59, 59, 999);
-      where.createdAt.lte = endDate;
-    }
+  const createdAtRange = buildDateTimeRangeFromDateStrings(
+    queryData.startDate,
+    queryData.endDate
+  );
+  if (createdAtRange) {
+    where.createdAt = createdAtRange;
   }
 
   return where;

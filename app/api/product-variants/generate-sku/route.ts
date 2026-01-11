@@ -31,7 +31,8 @@ interface BatchGenerateSkuResult {
 type PreparedSkuItem = BatchGenerateSkuItem & { baseSku: string };
 
 // SKU生成服务
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -137,10 +138,13 @@ export const POST = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['products:view'] }
+);
 
 // 批量生成SKU
-export const PUT = withAuth(async (request: NextRequest) => {
+export const PUT = withAuth(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -273,4 +277,6 @@ export const PUT = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['products:view'] }
+);

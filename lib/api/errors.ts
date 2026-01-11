@@ -209,7 +209,14 @@ export function handleZodError(error: ZodError): ApiError {
     code: err.code,
   }));
 
-  return ApiError.validationError('数据验证失败', details);
+  const firstIssue = error.issues[0];
+  const message = firstIssue
+    ? firstIssue.path.length > 0
+      ? `${firstIssue.path.join('.')}: ${firstIssue.message}`
+      : firstIssue.message
+    : '数据验证失败';
+
+  return ApiError.validationError(message, details);
 }
 
 /**

@@ -27,7 +27,8 @@ interface BatchSkuCheckResult {
 }
 
 // SKU可用性检查服务
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(
+  async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const queryParams = {
@@ -117,10 +118,13 @@ export const GET = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['products:view'] }
+);
 
 // 批量SKU可用性检查
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -226,7 +230,9 @@ export const POST = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { permissions: ['products:view'] }
+);
 
 // 生成SKU建议的辅助函数
 async function generateSkuSuggestions(baseSku: string): Promise<string[]> {

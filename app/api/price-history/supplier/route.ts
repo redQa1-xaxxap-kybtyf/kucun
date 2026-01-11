@@ -13,7 +13,8 @@ import { supplierPriceHistoryQuerySchema } from '@/lib/validations/price-history
  * - supplierId: 供应商ID (必填)
  * - productId: 产品ID (可选，不传则返回该供应商所有产品的最新价格)
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(
+  async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
 
@@ -144,7 +145,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { allPermissions: ['suppliers:view', 'products:view'] }
+);
 
 /**
  * POST /api/price-history/supplier
@@ -158,7 +161,8 @@ export const GET = withAuth(async (request: NextRequest) => {
  *   orderId?: string;
  * }
  */
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { supplierId, productId, unitPrice, orderId } = body;
@@ -213,4 +217,6 @@ export const POST = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { allPermissions: ['suppliers:view', 'products:manage_price'] }
+);

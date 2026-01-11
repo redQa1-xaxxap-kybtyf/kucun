@@ -123,7 +123,8 @@ export const GET = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['products:view'] }
 );
 
 // 更新产品变体
@@ -285,7 +286,8 @@ export const PUT = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['products:edit'] }
 );
 
 // 删除产品变体
@@ -369,5 +371,6 @@ export const DELETE = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['products:delete'] }
 );

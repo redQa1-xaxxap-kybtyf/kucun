@@ -235,5 +235,6 @@ export const POST = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['finance:manage'] }
 );

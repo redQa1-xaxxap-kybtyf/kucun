@@ -84,7 +84,8 @@ export const GET = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['finance:view'] }
 );
 
 /**
@@ -223,7 +224,8 @@ export const PUT = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['finance:manage'] }
 );
 
 /**
@@ -283,5 +285,6 @@ export const DELETE = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['finance:manage'] }
 );

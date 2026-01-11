@@ -15,7 +15,8 @@ import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history
  * - productId: 产品ID (可选，不传则返回该客户所有产品的最新价格)
  * - priceType: 价格类型 (可选: SALES | FACTORY，不传则返回所有类型)
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(
+  async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
 
@@ -179,7 +180,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { allPermissions: ['customers:view', 'products:view'] }
+);
 
 /**
  * POST /api/price-history/customer
@@ -195,7 +198,8 @@ export const GET = withAuth(async (request: NextRequest) => {
  *   orderType?: 'SALES_ORDER' | 'FACTORY_SHIPMENT';
  * }
  */
-export const POST = withAuth(async (request: NextRequest) => {
+export const POST = withAuth(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { customerId, productId, priceType, unitPrice, orderId, orderType } =
@@ -261,4 +265,6 @@ export const POST = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+  },
+  { allPermissions: ['customers:view', 'products:manage_price'] }
+);

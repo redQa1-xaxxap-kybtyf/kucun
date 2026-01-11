@@ -74,15 +74,17 @@ function getClientIp(request: NextRequest): string {
  * 响应：
  * {
  *   "success": true,
- *   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
- *   "user": {
- *     "id": "...",
- *     "username": "admin",
- *     "name": "管理员",
- *     "email": "admin@example.com",
- *     "role": "admin"
- *   },
- *   "expiresIn": 86400
+ *   "data": {
+ *     "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+ *     "tokenType": "Bearer",
+ *     "expiresIn": 86400,
+ *     "user": {
+ *       "id": "...",
+ *       "username": "admin",
+ *       "name": "管理员",
+ *       "role": "admin"
+ *     }
+ *   }
  * }
  */
 export async function POST(request: NextRequest) {
@@ -288,15 +290,17 @@ export async function POST(request: NextRequest) {
     // 10. 返回成功响应
     return NextResponse.json({
       success: true,
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+      data: {
+        token,
+        tokenType: 'Bearer',
+        expiresIn: MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS, // 单位：秒
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          role: user.role,
+        },
       },
-      expiresIn: MINI_PROGRAM_TOKEN_MAX_AGE_SECONDS, // 单位：秒
     });
   } catch (error) {
     logger.error('auth', '小程序登录失败', error);

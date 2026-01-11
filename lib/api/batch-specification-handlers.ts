@@ -5,6 +5,7 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { ApiError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 import type {
@@ -164,17 +165,12 @@ function buildBatchSpecificationWhereClause(queryData: {
   }
 
   // 日期范围筛选
-  if (queryData.startDate || queryData.endDate) {
-    where.createdAt = {};
-    if (queryData.startDate) {
-      where.createdAt.gte = new Date(queryData.startDate);
-    }
-    if (queryData.endDate) {
-      // 结束日期包含当天，所以加1天
-      const endDate = new Date(queryData.endDate);
-      endDate.setDate(endDate.getDate() + 1);
-      where.createdAt.lt = endDate;
-    }
+  const createdAtRange = buildDateTimeRangeFromDateStrings(
+    queryData.startDate,
+    queryData.endDate
+  );
+  if (createdAtRange) {
+    where.createdAt = createdAtRange;
   }
 
   return where;

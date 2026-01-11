@@ -59,10 +59,17 @@ export function handleValidationError(
     code: err.code,
   }));
 
+  const firstIssue = error.issues[0];
+  const message = firstIssue
+    ? firstIssue.path.length > 0
+      ? `${firstIssue.path.join('.')}: ${firstIssue.message}`
+      : firstIssue.message
+    : '数据验证失败';
+
   return NextResponse.json(
     {
       success: false,
-      error: '数据验证失败',
+      error: message,
       details: errors,
     },
     { status: 400 }

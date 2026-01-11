@@ -240,5 +240,6 @@ export const GET = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['inventory:view'] }
 );
