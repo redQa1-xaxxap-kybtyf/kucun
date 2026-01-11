@@ -3,12 +3,14 @@
  * 确保 Prisma 关系定义正确，类型推导正常
  */
 
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import {
   INVENTORY_SELECT,
   type InventoryWithRelations,
 } from '@/lib/api/selectors/inventory-selectors';
+
+const decimal = (value: number) => new Prisma.Decimal(value);
 
 console.log('🧪 验证库存选择器类型定义');
 console.log('='.repeat(80));
@@ -39,7 +41,7 @@ try {
     quantity: 100,
     reservedQuantity: 10,
     location: 'A-01',
-    unitCost: 50.0,
+    unitCost: decimal(50.0),
     updatedAt: new Date(),
     product: {
       id: 'product-id',
@@ -48,7 +50,7 @@ try {
       specification: '规格',
       unit: '件',
       piecesPerUnit: 100,
-      weight: 10.5,
+      weight: decimal(10.5),
       status: 'active',
       categoryId: 'category-id',
       category: {
@@ -96,7 +98,7 @@ try {
       specification: '规格',
       unit: '件',
       piecesPerUnit: 100,
-      weight: 10.5,
+      weight: decimal(10.5),
       status: 'active',
       categoryId: null,
       category: null,

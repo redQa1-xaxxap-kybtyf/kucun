@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '../lib/db';
+import { Prisma } from '@prisma/client';
 
 async function verifyPhase1() {
   console.log('🔍 开始验证 Phase 1 数据库Schema修改...\n');
@@ -163,6 +164,7 @@ async function verifyPhase1() {
     >;
 
     // 验证新字段存在于类型中
+    const decimal = (value: number) => new Prisma.Decimal(value);
     const _orderTypeCheck: OrderType = {
       id: '',
       orderNumber: '',
@@ -170,10 +172,10 @@ async function verifyPhase1() {
       customerId: '',
       userId: '',
       status: '',
-      totalAmount: 0,
-      receivableAmount: 0,
-      depositAmount: 0,
-      paidAmount: 0,
+      totalAmount: decimal(0),
+      receivableAmount: decimal(0),
+      depositAmount: decimal(0),
+      paidAmount: decimal(0),
       remarks: null,
       plan_date: null,
       shipmentDate: null,
@@ -189,11 +191,11 @@ async function verifyPhase1() {
       shippingQueryError: null,
       preferredSiteId: null,
       // 新增字段
-      costAmount: 0,
-      expenseAmount: 0,
-      profitAmount: 0,
-      customerProfit: 0,
-      selfCostAmount: 0,
+      costAmount: decimal(0),
+      expenseAmount: decimal(0),
+      profitAmount: decimal(0),
+      customerProfit: decimal(0),
+      selfCostAmount: decimal(0),
     };
 
     console.log('✅ TypeScript 类型定义验证成功');

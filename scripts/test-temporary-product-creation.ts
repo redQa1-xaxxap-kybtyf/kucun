@@ -96,9 +96,25 @@ async function main() {
       where: {
         salesOrderId: result.id,
       },
-      include: {
-        temporaryProduct: true,
+      select: {
+        id: true,
+        isManualProduct: true,
+        productCode: true,
+        manualProductName: true,
+        temporaryProductId: true,
+        temporaryProduct: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            usageCount: true,
+          },
+        },
       },
+      orderBy: {
+        id: 'asc',
+      },
+      take: 1000,
     });
 
     console.log(`订单项数量: ${orderItems.length}`);
@@ -129,6 +145,11 @@ async function main() {
     const tempProducts = await prisma.temporaryProduct.findMany({
       where: {
         supplierId: supplier.id,
+      },
+      select: {
+        code: true,
+        name: true,
+        usageCount: true,
       },
       orderBy: {
         createdAt: 'desc',

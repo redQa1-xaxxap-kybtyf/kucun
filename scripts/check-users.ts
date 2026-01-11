@@ -9,8 +9,13 @@ async function checkUsers() {
   try {
     console.log('🔍 检查数据库中的用户...');
 
-    // 查找所有用户
+    const totalUsers = await prisma.user.count();
+
+    // 查找一部分用户（避免一次性拉取全量用户导致内存/输出失控）
+    const sampleTake = 50;
     const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: sampleTake,
       select: {
         id: true,
         email: true,
@@ -23,7 +28,7 @@ async function checkUsers() {
       },
     });
 
-    console.log(`\n📊 找到 ${users.length} 个用户:`);
+    console.log(`\n📊 找到 ${totalUsers} 个用户（显示最近 ${users.length} 个）:`);
 
     for (const user of users) {
       console.log(`\n👤 用户: ${user.name}`);
@@ -34,21 +39,25 @@ async function checkUsers() {
       console.log(`   状态: ${user.status}`);
       console.log(`   创建时间: ${user.createdAt}`);
       console.log(`   密码哈希: ${user.passwordHash.substring(0, 20)}...`);
-
-      // 测试密码
-      if (user.username === 'admin') {
-        console.log('\n🔐 测试admin密码:');
-        const testPasswords = ['admin123456', 'admin123', 'admin'];
-
-        for (const password of testPasswords) {
-          const isValid = await bcrypt.compare(password, user.passwordHash);
-          console.log(`   ${password}: ${isValid ? '✅ 正确' : '❌ 错误'}`);
-        }
-      }
     }
 
-    // 如果没有admin用户，创建一个
-    const adminUser = users.find(u => u.username === 'admin');
+    const adminUser = await prisma.user.findFirst({
+      where: { username: 'admin' },
+      select: { id: true, username: true, passwordHash: true },
+    });
+
+    if (adminUser) {
+      console.log('\n🔐 测试 admin 密码:');
+      const testPasswords = ['admin123456', 'admin123', 'admin'];
+
+      for (const password of testPasswords) {
+        const isValid = await bcrypt.compare(password, adminUser.passwordHash);
+        console.log(`   ${password}: ${isValid ? '✅ 正确' : '❌ 错误'}`);
+      }
+      return;
+    }
+
+    // 如果没有 admin 用户，创建一个
     if (!adminUser) {
       console.log('\n🔧 没有找到admin用户，创建一个...');
 

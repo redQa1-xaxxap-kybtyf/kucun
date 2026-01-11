@@ -10,11 +10,18 @@ async function main() {
   console.log('🔍 检查应收款数据...\n');
 
   try {
-    // 查询所有销售订单
+    const where = {
+      status: { in: ['confirmed', 'shipped', 'completed'] },
+    };
+
+    const take = 50;
+    const totalOrders = await prisma.salesOrder.count({ where });
+
+    // 查询销售订单（默认只展示最近一部分，避免脚本输出/内存失控）
     const orders = await prisma.salesOrder.findMany({
-      where: {
-        status: { in: ['confirmed', 'shipped', 'completed'] },
-      },
+      where,
+      orderBy: { createdAt: 'desc' },
+      take,
       select: {
         id: true,
         orderNumber: true,
@@ -37,7 +44,9 @@ async function main() {
       },
     });
 
-    console.log(`📊 找到 ${orders.length} 个订单\n`);
+    console.log(
+      `📊 找到 ${totalOrders} 个订单（展示最近 ${orders.length} 个）\n`
+    );
 
     orders.forEach((order, index) => {
       const confirmedPayments = order.payments.filter(

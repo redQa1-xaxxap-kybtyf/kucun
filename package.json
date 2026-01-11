@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" next dev",
-    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "start": "cross-env NODE_OPTIONS=\"--max-old-space-size=4096\" next start",
     "dev:with-scheduler": "tsx scripts/start-with-scheduler.ts dev",
     "start:with-scheduler": "cross-env NODE_ENV=production tsx scripts/start-with-scheduler.ts prod",
@@ -161,6 +161,7 @@
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "lint-staged": "^15.0.0",
+    "msw": "^2.12.7",
     "pinyin-pro": "^3.27.0",
     "postcss": "^8.4.0",
     "prettier": "^3.0.0",

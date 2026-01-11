@@ -604,7 +604,9 @@ async function main() {
       const returnRatio = randomFloat(0.1, 0.8);
       const returnQuantity = Math.floor(item.quantity * returnRatio);
       const damagedQuantity = Math.floor(returnQuantity * randomFloat(0, 0.2));
-      const subtotal = Number((returnQuantity * item.unitPrice).toFixed(2));
+      const subtotal = Number(
+        (returnQuantity * Number(item.unitPrice)).toFixed(2)
+      );
       totalReturnAmount += subtotal;
 
       returnItemsData.push({
@@ -696,7 +698,7 @@ async function main() {
       if (!relatedInventory) continue;
 
       const outQuantity = Math.min(item.quantity, relatedInventory.quantity);
-      const unitCostValue = relatedInventory.unitCost ?? 0;
+      const unitCostValue = Number(relatedInventory.unitCost ?? 0);
 
       await prisma.outboundRecord.create({
         data: {

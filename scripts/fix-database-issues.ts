@@ -126,20 +126,20 @@ async function fixOrderAmounts() {
   for (const order of inconsistentOrders) {
     try {
       // 重新计算订单金额
-      const items = await prisma.salesOrderItem.findMany({
+      const itemsAgg = await prisma.salesOrderItem.aggregate({
         where: { salesOrderId: order.id },
-        select: { subtotal: true },
+        _sum: { subtotal: true },
       });
 
-      const correctTotal = items.reduce((sum, item) => sum + item.subtotal, 0);
+      const correctTotal = Number(itemsAgg._sum.subtotal ?? 0);
 
       // 获取费用项
-      const feeItems = await prisma.salesOrderFeeItem.findMany({
+      const feeAgg = await prisma.salesOrderFeeItem.aggregate({
         where: { salesOrderId: order.id },
-        select: { feeAmount: true },
+        _sum: { feeAmount: true },
       });
 
-      const totalFees = feeItems.reduce((sum, fee) => sum + fee.feeAmount, 0);
+      const totalFees = Number(feeAgg._sum.feeAmount ?? 0);
       const finalTotal = correctTotal + totalFees;
 
       await prisma.salesOrder.update({

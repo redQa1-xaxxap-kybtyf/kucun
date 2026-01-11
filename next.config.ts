@@ -1,6 +1,9 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Jest / Next.js 依赖中存在 ESM-only 包（如 MSW 相关依赖），需要在 Next 编译链中转译
+  transpilePackages: ['msw', '@mswjs/interceptors', 'until-async', 'headers-polyfill'],
+
   // 图片优化配置
   images: {
     domains: ['localhost', 'xcx.0595t.com'],

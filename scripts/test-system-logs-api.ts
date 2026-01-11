@@ -126,6 +126,10 @@ async function testSystemLogsQuery() {
         userId: null,
       },
       take: 3,
+      select: {
+        action: true,
+        description: true,
+      },
     });
 
     console.log(`   ✅ 找到 ${systemLogs.length} 条系统日志（无用户关联）`);

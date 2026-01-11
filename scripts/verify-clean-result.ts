@@ -71,6 +71,8 @@ async function main() {
     // 显示保留的用户
     console.log('\n👥 保留的用户:');
     const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'asc' },
+      take: 50,
       select: {
         id: true,
         username: true,
@@ -89,6 +91,10 @@ async function main() {
         console.log(`      角色: ${user.role}, 状态: ${user.status}`);
         console.log(`      邮箱: ${user.email}`);
       });
+
+      if (baseData.users > users.length) {
+        console.log(`   ... 还有 ${baseData.users - users.length} 个用户未显示`);
+      }
     }
 
     // 显示保留的客户

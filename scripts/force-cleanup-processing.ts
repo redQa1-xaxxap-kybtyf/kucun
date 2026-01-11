@@ -7,10 +7,14 @@ import { prisma } from '../lib/db';
 async function forceCleanup() {
   console.log('查找所有 processing 状态的记录...\n');
 
+  const where = { status: 'processing' } as const;
+  const totalProcessing = await prisma.inventoryOperation.count({ where });
+
+  const take = 100;
   const processingRecords = await prisma.inventoryOperation.findMany({
-    where: {
-      status: 'processing',
-    },
+    where,
+    orderBy: { createdAt: 'asc' },
+    take,
     select: {
       id: true,
       idempotencyKey: true,
@@ -21,7 +25,10 @@ async function forceCleanup() {
     },
   });
 
-  console.log(`找到 ${processingRecords.length} 条 processing 记录\n`);
+  console.log(`找到 ${totalProcessing} 条 processing 记录\n`);
+  if (totalProcessing > processingRecords.length) {
+    console.log(`（仅展示前 ${processingRecords.length} 条）\n`);
+  }
 
   if (processingRecords.length > 0) {
     processingRecords.forEach((record, index) => {
@@ -41,9 +48,7 @@ async function forceCleanup() {
     console.log('正在删除所有 processing 记录...');
 
     const result = await prisma.inventoryOperation.deleteMany({
-      where: {
-        status: 'processing',
-      },
+      where,
     });
 
     console.log(`✅ 已删除 ${result.count} 条记录\n`);

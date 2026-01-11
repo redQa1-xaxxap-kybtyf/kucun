@@ -49,16 +49,20 @@ async function checkMissingSupplierId(): Promise<void> {
   const relatedOrderIds = expensesWithoutSupplierId
     .map(e => e.relatedId)
     .filter(Boolean) as string[];
-  const orders = await prisma.purchaseOrder.findMany({
-    where: {
-      id: { in: relatedOrderIds },
-    },
-    select: {
-      id: true,
-      orderNumber: true,
-      supplierId: true,
-    },
-  });
+  const orders =
+    relatedOrderIds.length > 0
+      ? await prisma.purchaseOrder.findMany({
+          where: {
+            id: { in: relatedOrderIds },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            supplierId: true,
+          },
+          take: relatedOrderIds.length,
+        })
+      : [];
 
   const orderMap = new Map(orders.map(o => [o.id, o]));
 
@@ -110,17 +114,21 @@ async function checkPayableAmountAccuracy(): Promise<void> {
   });
 
   const orderIds = payables.map(p => p.sourceId).filter(Boolean) as string[];
-  const orders = await prisma.purchaseOrder.findMany({
-    where: {
-      id: { in: orderIds },
-    },
-    select: {
-      id: true,
-      orderNumber: true,
-      totalAmount: true,
-      expenseAmount: true,
-    },
-  });
+  const orders =
+    orderIds.length > 0
+      ? await prisma.purchaseOrder.findMany({
+          where: {
+            id: { in: orderIds },
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            totalAmount: true,
+            expenseAmount: true,
+          },
+          take: orderIds.length,
+        })
+      : [];
 
   const orderMap = new Map(orders.map(o => [o.id, o]));
 

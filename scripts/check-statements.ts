@@ -3,8 +3,27 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const statements = await prisma.accountStatement.findMany();
-  console.log('账单总数:', statements.length);
+  const total = await prisma.accountStatement.count();
+  console.log('账单总数:', total);
+
+  const take = 100;
+  const statements = await prisma.accountStatement.findMany({
+    orderBy: { id: 'asc' },
+    take,
+    select: {
+      entityName: true,
+      entityType: true,
+      totalAmount: true,
+      paidAmount: true,
+      pendingAmount: true,
+      currentBalance: true,
+    },
+  });
+
+  if (total > statements.length) {
+    console.log(`（仅显示前 ${statements.length} 条）`);
+  }
+
   console.log('账单详情:');
   statements.forEach(s => {
     console.log(

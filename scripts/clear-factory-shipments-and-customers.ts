@@ -107,24 +107,61 @@ async function clearData() {
     console.log('\n📍 步骤 4/4: 删除客户...');
 
     // 先检查是否有其他关联数据
-    const customersWithRelations = await prisma.customer.findMany({
-      include: {
-        salesOrders: true,
-        outboundRecords: true,
-        paymentRecords: true,
-        returnOrders: true,
-        refundRecords: true,
-      },
-    });
+    const customersWithData: Array<{
+      id: string;
+      name: string;
+      _count: {
+        salesOrders: number;
+        outboundRecords: number;
+        paymentRecords: number;
+        returnOrders: number;
+        refundRecords: number;
+      };
+    }> = [];
 
-    const customersWithData = customersWithRelations.filter(
-      c =>
-        c.salesOrders.length > 0 ||
-        c.outboundRecords.length > 0 ||
-        c.paymentRecords.length > 0 ||
-        c.returnOrders.length > 0 ||
-        c.refundRecords.length > 0
-    );
+    const relationWhere = {
+      OR: [
+        { salesOrders: { some: {} } },
+        { outboundRecords: { some: {} } },
+        { paymentRecords: { some: {} } },
+        { returnOrders: { some: {} } },
+        { refundRecords: { some: {} } },
+      ],
+    };
+
+    let cursor: string | undefined;
+    const batchSize = 1000;
+
+    while (true) {
+      const batch = await prisma.customer.findMany({
+        where: relationWhere,
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              salesOrders: true,
+              outboundRecords: true,
+              paymentRecords: true,
+              returnOrders: true,
+              refundRecords: true,
+            },
+          },
+        },
+        orderBy: {
+          id: 'asc',
+        },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
+
+      if (batch.length === 0) {
+        break;
+      }
+
+      customersWithData.push(...batch);
+      cursor = batch[batch.length - 1].id;
+    }
 
     if (customersWithData.length > 0) {
       console.log(
@@ -132,20 +169,20 @@ async function clearData() {
       );
       customersWithData.forEach(c => {
         console.log(`    - ${c.name}:`);
-        if (c.salesOrders.length > 0) {
-          console.log(`      · 销售订单: ${c.salesOrders.length}`);
+        if (c._count.salesOrders > 0) {
+          console.log(`      · 销售订单: ${c._count.salesOrders}`);
         }
-        if (c.outboundRecords.length > 0) {
-          console.log(`      · 出库记录: ${c.outboundRecords.length}`);
+        if (c._count.outboundRecords > 0) {
+          console.log(`      · 出库记录: ${c._count.outboundRecords}`);
         }
-        if (c.paymentRecords.length > 0) {
-          console.log(`      · 付款记录: ${c.paymentRecords.length}`);
+        if (c._count.paymentRecords > 0) {
+          console.log(`      · 付款记录: ${c._count.paymentRecords}`);
         }
-        if (c.returnOrders.length > 0) {
-          console.log(`      · 退货订单: ${c.returnOrders.length}`);
+        if (c._count.returnOrders > 0) {
+          console.log(`      · 退货订单: ${c._count.returnOrders}`);
         }
-        if (c.refundRecords.length > 0) {
-          console.log(`      · 退款记录: ${c.refundRecords.length}`);
+        if (c._count.refundRecords > 0) {
+          console.log(`      · 退款记录: ${c._count.refundRecords}`);
         }
       });
       console.log('');

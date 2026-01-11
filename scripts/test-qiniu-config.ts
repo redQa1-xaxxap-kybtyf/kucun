@@ -75,6 +75,11 @@ async function testQiniuConfig() {
           ],
         },
       },
+      select: {
+        key: true,
+        value: true,
+      },
+      take: 10,
     });
 
     console.log(`找到 ${settings.length} 个配置项\n`);

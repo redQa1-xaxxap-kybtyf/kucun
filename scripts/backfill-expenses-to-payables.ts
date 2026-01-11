@@ -228,30 +228,16 @@ async function backfillExpensesToPayables(
   };
 
   try {
-    // 查询所有已审批但未关联应付款的费用
-    const expenses = await prisma.expenseRecord.findMany({
-      where: {
-        status: 'approved',
-        payableId: null,
-        expenseAmount: { gt: 0 },
-        supplierId: { not: null },
-      },
-      orderBy: {
-        approvedAt: 'asc',
-      },
-      select: {
-        id: true,
-        expenseNumber: true,
-        expenseAmount: true,
-        supplierId: true,
-        relatedType: true,
-        relatedId: true,
-        relatedNumber: true,
-        userId: true,
-      },
-    });
+    const expenseWhere = {
+      status: 'approved',
+      payableId: null,
+      expenseAmount: { gt: 0 },
+      supplierId: { not: null },
+    } as const;
 
-    stats.totalExpenses = expenses.length;
+    stats.totalExpenses = await prisma.expenseRecord.count({
+      where: expenseWhere,
+    });
 
     console.log(`📦 找到 ${stats.totalExpenses} 条符合条件的费用记录\n`);
 
@@ -261,20 +247,48 @@ async function backfillExpensesToPayables(
     }
 
     // 批量处理
-    const batches = Math.ceil(expenses.length / options.batchSize);
+    const batches = Math.ceil(stats.totalExpenses / options.batchSize);
+    let cursor: string | undefined;
+    let processed = 0;
+    let batchIndex = 0;
 
-    for (let batchIndex = 0; batchIndex < batches; batchIndex++) {
-      const start = batchIndex * options.batchSize;
-      const end = Math.min(start + options.batchSize, expenses.length);
-      const batch = expenses.slice(start, end);
+    while (true) {
+      const currentBatch = await prisma.expenseRecord.findMany({
+        where: expenseWhere,
+        orderBy: [{ approvedAt: 'asc' }, { id: 'asc' }],
+        select: {
+          id: true,
+          expenseNumber: true,
+          expenseAmount: true,
+          supplierId: true,
+          relatedType: true,
+          relatedId: true,
+          relatedNumber: true,
+          userId: true,
+        },
+        take: options.batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      });
 
+      if (currentBatch.length === 0) {
+        break;
+      }
+
+      batchIndex++;
+      const start = processed + 1;
+      processed += currentBatch.length;
+      const end = processed;
       console.log(
-        `\n📦 处理批次 ${batchIndex + 1}/${batches} (${start + 1}-${end}/${expenses.length})`
+        `\n📦 处理批次 ${batchIndex}/${batches} (${start}-${end}/${stats.totalExpenses})`
       );
 
-      for (const expense of batch) {
+      for (const expense of currentBatch) {
+        const normalizedExpense = {
+          ...expense,
+          expenseAmount: Number(expense.expenseAmount ?? 0),
+        };
         try {
-          const result = await backfillExpense(expense, options);
+          const result = await backfillExpense(normalizedExpense, options);
 
           if (result) {
             stats.processed++;
@@ -288,10 +302,10 @@ async function backfillExpensesToPayables(
             }
 
             stats.results.push({
-              expenseId: expense.id,
-              expenseNumber: expense.expenseNumber,
-              expenseAmount: expense.expenseAmount,
-              supplierId: expense.supplierId,
+              expenseId: normalizedExpense.id,
+              expenseNumber: normalizedExpense.expenseNumber,
+              expenseAmount: normalizedExpense.expenseAmount,
+              supplierId: normalizedExpense.supplierId,
               action: result.action,
               payableId: result.payableId,
               payableNumber: result.payableNumber,
@@ -304,7 +318,7 @@ async function backfillExpensesToPayables(
                   ? '🔗'
                   : '⏭️';
             console.log(
-              `  ${actionSymbol} ${expense.expenseNumber}: ${result.action} → ${result.payableNumber}`
+              `  ${actionSymbol} ${normalizedExpense.expenseNumber}: ${result.action} → ${result.payableNumber}`
             );
           }
         } catch (error) {
@@ -313,27 +327,27 @@ async function backfillExpensesToPayables(
             error instanceof Error ? error.message : String(error);
 
           stats.errors.push({
-            expenseId: expense.id,
-            expenseNumber: expense.expenseNumber,
+            expenseId: normalizedExpense.id,
+            expenseNumber: normalizedExpense.expenseNumber,
             error: errorMessage,
           });
 
           stats.results.push({
-            expenseId: expense.id,
-            expenseNumber: expense.expenseNumber,
-            expenseAmount: expense.expenseAmount,
-            supplierId: expense.supplierId,
+            expenseId: normalizedExpense.id,
+            expenseNumber: normalizedExpense.expenseNumber,
+            expenseAmount: normalizedExpense.expenseAmount,
+            supplierId: normalizedExpense.supplierId,
             action: 'failed',
             error: errorMessage,
           });
 
           console.error(
-            `  ❌ ${expense.expenseNumber}: 失败 - ${errorMessage}`
+            `  ❌ ${normalizedExpense.expenseNumber}: 失败 - ${errorMessage}`
           );
 
           logger.error('backfill', '回填费用失败', error, {
-            expenseId: expense.id,
-            expenseNumber: expense.expenseNumber,
+            expenseId: normalizedExpense.id,
+            expenseNumber: normalizedExpense.expenseNumber,
           });
 
           if (!options.continueOnError) {
@@ -341,6 +355,8 @@ async function backfillExpensesToPayables(
           }
         }
       }
+
+      cursor = currentBatch[currentBatch.length - 1].id;
     }
 
     // 打印统计摘要

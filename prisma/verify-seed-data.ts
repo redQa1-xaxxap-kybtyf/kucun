@@ -2,247 +2,297 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+function formatDate(date: Date) {
+  return date.toISOString().split('T')[0];
+}
+
 async function verifySeedData() {
   console.log('🔍 开始验证测试数据...\n');
 
   try {
     // 1. 验证用户数据
     console.log('👤 验证用户数据...');
-    const users = await prisma.user.findMany();
-    console.log(`   总用户数: ${users.length}`);
-    console.log(`   管理员: ${users.filter(u => u.role === 'admin').length}`);
-    console.log(`   销售员: ${users.filter(u => u.role === 'sales').length}`);
+    const [totalUsers, adminUsers, salesUsers] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { role: 'admin' } }),
+      prisma.user.count({ where: { role: 'sales' } }),
+    ]);
+    console.log(`   总用户数: ${totalUsers}`);
+    console.log(`   管理员: ${adminUsers}`);
+    console.log(`   销售员: ${salesUsers}`);
 
     // 2. 验证产品数据
     console.log('\n📦 验证产品数据...');
-    const products = await prisma.product.findMany({
-      include: { category: true },
-    });
-    console.log(`   总产品数: ${products.length}`);
-    console.log(
-      `   有分类的产品: ${products.filter(p => p.categoryId).length}`
-    );
-    console.log(
-      `   激活状态: ${products.filter(p => p.status === 'active').length}`
-    );
+    const [totalProducts, productsWithCategory, activeProducts] =
+      await Promise.all([
+        prisma.product.count(),
+        prisma.product.count({ where: { categoryId: { not: null } } }),
+        prisma.product.count({ where: { status: 'active' } }),
+      ]);
+    console.log(`   总产品数: ${totalProducts}`);
+    console.log(`   有分类的产品: ${productsWithCategory}`);
+    console.log(`   激活状态: ${activeProducts}`);
 
     // 3. 验证产品变体
     console.log('\n🎨 验证产品变体...');
-    const variants = await prisma.productVariant.findMany();
-    console.log(`   总变体数: ${variants.length}`);
-    console.log(
-      `   激活状态: ${variants.filter(v => v.status === 'active').length}`
-    );
+    const [totalVariants, activeVariants] = await Promise.all([
+      prisma.productVariant.count(),
+      prisma.productVariant.count({ where: { status: 'active' } }),
+    ]);
+    console.log(`   总变体数: ${totalVariants}`);
+    console.log(`   激活状态: ${activeVariants}`);
 
     // 4. 验证客户数据
     console.log('\n👥 验证客户数据...');
-    const customers = await prisma.customer.findMany();
-    console.log(`   总客户数: ${customers.length}`);
-    console.log(`   有电话的客户: ${customers.filter(c => c.phone).length}`);
-    console.log(`   有地址的客户: ${customers.filter(c => c.address).length}`);
+    const [totalCustomers, customersWithPhone, customersWithAddress] =
+      await Promise.all([
+        prisma.customer.count(),
+        prisma.customer.count({ where: { phone: { not: null } } }),
+        prisma.customer.count({ where: { address: { not: null } } }),
+      ]);
+    console.log(`   总客户数: ${totalCustomers}`);
+    console.log(`   有电话的客户: ${customersWithPhone}`);
+    console.log(`   有地址的客户: ${customersWithAddress}`);
 
     // 5. 验证供应商数据
     console.log('\n🏭 验证供应商数据...');
-    const suppliers = await prisma.supplier.findMany();
-    console.log(`   总供应商数: ${suppliers.length}`);
-    console.log(
-      `   激活状态: ${suppliers.filter(s => s.status === 'active').length}`
-    );
-    console.log(
-      `   有编码的供应商: ${suppliers.filter(s => s.supplierCode).length}`
-    );
+    const [totalSuppliers, activeSuppliers, suppliersWithCode] =
+      await Promise.all([
+        prisma.supplier.count(),
+        prisma.supplier.count({ where: { status: 'active' } }),
+        prisma.supplier.count({ where: { supplierCode: { not: null } } }),
+      ]);
+    console.log(`   总供应商数: ${totalSuppliers}`);
+    console.log(`   激活状态: ${activeSuppliers}`);
+    console.log(`   有编码的供应商: ${suppliersWithCode}`);
 
     // 6. 验证库存数据
     console.log('\n📊 验证库存数据...');
-    const inventory = await prisma.inventory.findMany();
-    console.log(`   总库存记录: ${inventory.length}`);
-    const totalQuantity = inventory.reduce((sum, inv) => sum + inv.quantity, 0);
-    console.log(`   总库存数量: ${totalQuantity}`);
-    console.log(
-      `   有批次号的记录: ${inventory.filter(i => i.batchNumber).length}`
+    const [inventoryCount, inventorySum, inventoryWithBatch] = await Promise.all(
+      [
+        prisma.inventory.count(),
+        prisma.inventory.aggregate({ _sum: { quantity: true } }),
+        prisma.inventory.count({ where: { batchNumber: { not: null } } }),
+      ]
     );
+    console.log(`   总库存记录: ${inventoryCount}`);
+    console.log(`   总库存数量: ${inventorySum._sum.quantity ?? 0}`);
+    console.log(`   有批次号的记录: ${inventoryWithBatch}`);
 
     // 7. 验证入库记录
     console.log('\n📥 验证入库记录...');
-    const inboundRecords = await prisma.inboundRecord.findMany();
-    console.log(`   总入库记录: ${inboundRecords.length}`);
-    const totalInbound = inboundRecords.reduce((sum, r) => sum + r.quantity, 0);
-    console.log(`   总入库数量: ${totalInbound.toFixed(0)}`);
+    const [inboundCount, inboundSum] = await Promise.all([
+      prisma.inboundRecord.count(),
+      prisma.inboundRecord.aggregate({ _sum: { quantity: true } }),
+    ]);
+    console.log(`   总入库记录: ${inboundCount}`);
+    console.log(`   总入库数量: ${(inboundSum._sum.quantity ?? 0).toFixed(0)}`);
 
     // 8. 验证销售订单
     console.log('\n🛒 验证销售订单...');
-    const salesOrders = await prisma.salesOrder.findMany({
-      include: { items: true },
-    });
-    console.log(`   总订单数: ${salesOrders.length}`);
+    const [
+      totalSalesOrders,
+      confirmedOrders,
+      shippedOrders,
+      completedOrders,
+      transferOrders,
+      salesOrderAmountSum,
+    ] = await Promise.all([
+      prisma.salesOrder.count(),
+      prisma.salesOrder.count({ where: { status: 'confirmed' } }),
+      prisma.salesOrder.count({ where: { status: 'shipped' } }),
+      prisma.salesOrder.count({ where: { status: 'completed' } }),
+      prisma.salesOrder.count({ where: { orderType: 'TRANSFER' } }),
+      prisma.salesOrder.aggregate({ _sum: { totalAmount: true } }),
+    ]);
+    console.log(`   总订单数: ${totalSalesOrders}`);
+    console.log(`   已确认: ${confirmedOrders}`);
+    console.log(`   已发货: ${shippedOrders}`);
+    console.log(`   已完成: ${completedOrders}`);
+    console.log(`   调货订单: ${transferOrders}`);
     console.log(
-      `   已确认: ${salesOrders.filter(o => o.status === 'confirmed').length}`
+      `   订单总金额: ￥${Number(salesOrderAmountSum._sum.totalAmount ?? 0).toFixed(2)}`
     );
-    console.log(
-      `   已发货: ${salesOrders.filter(o => o.status === 'shipped').length}`
-    );
-    console.log(
-      `   已完成: ${salesOrders.filter(o => o.status === 'completed').length}`
-    );
-    console.log(
-      `   调货订单: ${salesOrders.filter(o => o.orderType === 'TRANSFER').length}`
-    );
-    const totalOrderAmount = salesOrders.reduce(
-      (sum, o) => sum + o.totalAmount,
-      0
-    );
-    console.log(`   订单总金额: ￥${totalOrderAmount.toFixed(2)}`);
 
     // 9. 验证收款记录
     console.log('\n💰 验证收款记录...');
-    const paymentRecords = await prisma.paymentRecord.findMany();
-    console.log(`   总收款记录: ${paymentRecords.length}`);
-    const totalPayment = paymentRecords.reduce(
-      (sum, p) => sum + Number(p.paymentAmount ?? 0),
-      0
-    );
-    console.log(`   收款总金额: ￥${totalPayment.toFixed(2)}`);
+    const [
+      totalPayments,
+      paymentAmountSum,
+      cashPayments,
+      bankTransferPayments,
+    ] = await Promise.all([
+      prisma.paymentRecord.count(),
+      prisma.paymentRecord.aggregate({ _sum: { paymentAmount: true } }),
+      prisma.paymentRecord.count({ where: { paymentMethod: 'cash' } }),
+      prisma.paymentRecord.count({ where: { paymentMethod: 'bank_transfer' } }),
+    ]);
+    console.log(`   总收款记录: ${totalPayments}`);
     console.log(
-      `   现金: ${paymentRecords.filter(p => p.paymentMethod === 'cash').length}`
+      `   收款总金额: ￥${Number(paymentAmountSum._sum.paymentAmount ?? 0).toFixed(2)}`
     );
-    console.log(
-      `   转账: ${paymentRecords.filter(p => p.paymentMethod === 'bank_transfer').length}`
-    );
+    console.log(`   现金: ${cashPayments}`);
+    console.log(`   转账: ${bankTransferPayments}`);
 
     // 10. 验证应付款记录
     console.log('\n📋 验证应付款记录...');
-    const payableRecords = await prisma.payableRecord.findMany();
-    console.log(`   总应付款记录: ${payableRecords.length}`);
-    const totalPayable = payableRecords.reduce(
-      (sum, p) => sum + Number(p.payableAmount ?? 0),
-      0
-    );
-    console.log(`   应付款总金额: ￥${totalPayable.toFixed(2)}`);
-    const totalPaid = payableRecords.reduce(
-      (sum, p) => sum + Number(p.paidAmount ?? 0),
-      0
-    );
-    console.log(`   已付款金额: ￥${totalPaid.toFixed(2)}`);
+    const [
+      totalPayables,
+      payableAmountSum,
+      paidAmountSum,
+      pendingPayables,
+      partialPayables,
+      paidPayables,
+    ] = await Promise.all([
+      prisma.payableRecord.count(),
+      prisma.payableRecord.aggregate({ _sum: { payableAmount: true } }),
+      prisma.payableRecord.aggregate({ _sum: { paidAmount: true } }),
+      prisma.payableRecord.count({ where: { status: 'pending' } }),
+      prisma.payableRecord.count({ where: { status: 'partial' } }),
+      prisma.payableRecord.count({ where: { status: 'paid' } }),
+    ]);
+    console.log(`   总应付款记录: ${totalPayables}`);
     console.log(
-      `   待付款: ${payableRecords.filter(p => p.status === 'pending').length}`
+      `   应付款总金额: ￥${Number(payableAmountSum._sum.payableAmount ?? 0).toFixed(2)}`
     );
     console.log(
-      `   部分付款: ${payableRecords.filter(p => p.status === 'partial').length}`
+      `   已付款金额: ￥${Number(paidAmountSum._sum.paidAmount ?? 0).toFixed(2)}`
     );
-    console.log(
-      `   已付清: ${payableRecords.filter(p => p.status === 'paid').length}`
-    );
+    console.log(`   待付款: ${pendingPayables}`);
+    console.log(`   部分付款: ${partialPayables}`);
+    console.log(`   已付清: ${paidPayables}`);
 
     // 11. 验证付款记录
     console.log('\n💸 验证付款记录...');
-    const paymentOutRecords = await prisma.paymentOutRecord.findMany();
-    console.log(`   总付款记录: ${paymentOutRecords.length}`);
-    const totalPaymentOut = paymentOutRecords.reduce(
-      (sum, p) => sum + Number(p.paymentAmount ?? 0),
-      0
+    const [totalPaymentOutRecords, paymentOutAmountSum] = await Promise.all([
+      prisma.paymentOutRecord.count(),
+      prisma.paymentOutRecord.aggregate({ _sum: { paymentAmount: true } }),
+    ]);
+    console.log(`   总付款记录: ${totalPaymentOutRecords}`);
+    console.log(
+      `   付款总金额: ￥${Number(paymentOutAmountSum._sum.paymentAmount ?? 0).toFixed(2)}`
     );
-    console.log(`   付款总金额: ￥${totalPaymentOut.toFixed(2)}`);
 
     // 12. 验证厂家发货订单
     console.log('\n🚚 验证厂家发货订单...');
-    const factoryOrders = await prisma.factoryShipmentOrder.findMany({
-      include: { items: true },
-    });
-    console.log(`   总订单数: ${factoryOrders.length}`);
+    const [
+      totalFactoryOrders,
+      confirmedFactoryOrders,
+      shippedFactoryOrders,
+      arrivedFactoryOrders,
+      completedFactoryOrders,
+      factoryOrderAmountSum,
+    ] = await Promise.all([
+      prisma.factoryShipmentOrder.count(),
+      prisma.factoryShipmentOrder.count({ where: { status: 'confirmed' } }),
+      prisma.factoryShipmentOrder.count({ where: { status: 'shipped' } }),
+      prisma.factoryShipmentOrder.count({ where: { status: 'arrived' } }),
+      prisma.factoryShipmentOrder.count({ where: { status: 'completed' } }),
+      prisma.factoryShipmentOrder.aggregate({ _sum: { totalAmount: true } }),
+    ]);
+    console.log(`   总订单数: ${totalFactoryOrders}`);
+    console.log(`   已确认: ${confirmedFactoryOrders}`);
+    console.log(`   已发货: ${shippedFactoryOrders}`);
+    console.log(`   已到港: ${arrivedFactoryOrders}`);
+    console.log(`   已完成: ${completedFactoryOrders}`);
     console.log(
-      `   已确认: ${factoryOrders.filter(o => o.status === 'confirmed').length}`
+      `   订单总金额: ￥${Number(factoryOrderAmountSum._sum.totalAmount ?? 0).toFixed(2)}`
     );
-    console.log(
-      `   已发货: ${factoryOrders.filter(o => o.status === 'shipped').length}`
-    );
-    console.log(
-      `   已到港: ${factoryOrders.filter(o => o.status === 'arrived').length}`
-    );
-    console.log(
-      `   已完成: ${factoryOrders.filter(o => o.status === 'completed').length}`
-    );
-    const totalFactoryAmount = factoryOrders.reduce(
-      (sum, o) => sum + o.totalAmount,
-      0
-    );
-    console.log(`   订单总金额: ￥${totalFactoryAmount.toFixed(2)}`);
 
     // 13. 验证退货订单
     console.log('\n↩️  验证退货订单...');
-    const returnOrders = await prisma.returnOrder.findMany({
-      include: { items: true },
-    });
-    console.log(`   总退货订单: ${returnOrders.length}`);
-    console.log(
-      `   已提交: ${returnOrders.filter(o => o.status === 'submitted').length}`
-    );
-    console.log(
-      `   已批准: ${returnOrders.filter(o => o.status === 'approved').length}`
-    );
-    console.log(
-      `   处理中: ${returnOrders.filter(o => o.status === 'processing').length}`
-    );
-    console.log(
-      `   已完成: ${returnOrders.filter(o => o.status === 'completed').length}`
-    );
+    const [
+      totalReturnOrders,
+      submittedReturnOrders,
+      approvedReturnOrders,
+      processingReturnOrders,
+      completedReturnOrders,
+    ] = await Promise.all([
+      prisma.returnOrder.count(),
+      prisma.returnOrder.count({ where: { status: 'submitted' } }),
+      prisma.returnOrder.count({ where: { status: 'approved' } }),
+      prisma.returnOrder.count({ where: { status: 'processing' } }),
+      prisma.returnOrder.count({ where: { status: 'completed' } }),
+    ]);
+    console.log(`   总退货订单: ${totalReturnOrders}`);
+    console.log(`   已提交: ${submittedReturnOrders}`);
+    console.log(`   已批准: ${approvedReturnOrders}`);
+    console.log(`   处理中: ${processingReturnOrders}`);
+    console.log(`   已完成: ${completedReturnOrders}`);
 
     // 14. 验证退款记录
     console.log('\n💵 验证退款记录...');
-    const refundRecords = await prisma.refundRecord.findMany();
-    console.log(`   总退款记录: ${refundRecords.length}`);
-    const totalRefund = refundRecords.reduce(
-      (sum, r) => sum + r.refundAmount,
-      0
-    );
-    console.log(`   退款总金额: ￥${totalRefund.toFixed(2)}`);
+    const [totalRefunds, refundAmountSum, completedRefunds] = await Promise.all([
+      prisma.refundRecord.count(),
+      prisma.refundRecord.aggregate({ _sum: { refundAmount: true } }),
+      prisma.refundRecord.count({ where: { status: 'completed' } }),
+    ]);
+    console.log(`   总退款记录: ${totalRefunds}`);
     console.log(
-      `   已完成: ${refundRecords.filter(r => r.status === 'completed').length}`
+      `   退款总金额: ￥${Number(refundAmountSum._sum.refundAmount ?? 0).toFixed(2)}`
     );
+    console.log(`   已完成: ${completedRefunds}`);
 
     // 15. 验证系统日志
     console.log('\n📝 验证系统日志...');
-    const systemLogs = await prisma.systemLog.findMany();
-    console.log(`   总日志数: ${systemLogs.length}`);
-    console.log(
-      `   用户操作: ${systemLogs.filter(l => l.type === 'user_action').length}`
-    );
-    console.log(
-      `   业务操作: ${systemLogs.filter(l => l.type === 'business_operation').length}`
-    );
-    console.log(
-      `   系统事件: ${systemLogs.filter(l => l.type === 'system_event').length}`
-    );
+    const [totalLogs, userActionLogs, businessLogs, systemEventLogs] =
+      await Promise.all([
+        prisma.systemLog.count(),
+        prisma.systemLog.count({ where: { type: 'user_action' } }),
+        prisma.systemLog.count({ where: { type: 'business_operation' } }),
+        prisma.systemLog.count({ where: { type: 'system_event' } }),
+      ]);
+    console.log(`   总日志数: ${totalLogs}`);
+    console.log(`   用户操作: ${userActionLogs}`);
+    console.log(`   业务操作: ${businessLogs}`);
+    console.log(`   系统事件: ${systemEventLogs}`);
 
     // 16. 验证数据关联性
     console.log('\n🔗 验证数据关联性...');
-    const ordersWithItems = salesOrders.filter(o => o.items.length > 0);
+    const [salesOrdersWithItems, factoryOrdersWithItems, returnOrdersWithItems] =
+      await Promise.all([
+        prisma.salesOrder.count({ where: { items: { some: {} } } }),
+        prisma.factoryShipmentOrder.count({ where: { items: { some: {} } } }),
+        prisma.returnOrder.count({ where: { items: { some: {} } } }),
+      ]);
     console.log(
-      `   有明细的订单: ${ordersWithItems.length}/${salesOrders.length}`
-    );
-
-    const factoryOrdersWithItems = factoryOrders.filter(
-      o => o.items.length > 0
+      `   有明细的订单: ${salesOrdersWithItems}/${totalSalesOrders}`
     );
     console.log(
-      `   有明细的厂家订单: ${factoryOrdersWithItems.length}/${factoryOrders.length}`
+      `   有明细的厂家订单: ${factoryOrdersWithItems}/${totalFactoryOrders}`
     );
-
-    const returnOrdersWithItems = returnOrders.filter(o => o.items.length > 0);
     console.log(
-      `   有明细的退货订单: ${returnOrdersWithItems.length}/${returnOrders.length}`
+      `   有明细的退货订单: ${returnOrdersWithItems}/${totalReturnOrders}`
     );
 
     // 17. 验证数据时间范围
     console.log('\n📅 验证数据时间范围...');
-    const allDates = [
-      ...salesOrders.map(o => o.createdAt),
-      ...paymentRecords.map(p => p.createdAt),
-      ...inboundRecords.map(r => r.createdAt),
-    ];
-    const minDate = new Date(Math.min(...allDates.map(d => d.getTime())));
-    const maxDate = new Date(Math.max(...allDates.map(d => d.getTime())));
-    console.log(`   最早日期: ${minDate.toISOString().split('T')[0]}`);
-    console.log(`   最晚日期: ${maxDate.toISOString().split('T')[0]}`);
+    const [salesOrderDates, paymentDates, inboundDates] = await Promise.all([
+      prisma.salesOrder.aggregate({ _min: { createdAt: true }, _max: { createdAt: true } }),
+      prisma.paymentRecord.aggregate({ _min: { createdAt: true }, _max: { createdAt: true } }),
+      prisma.inboundRecord.aggregate({ _min: { createdAt: true }, _max: { createdAt: true } }),
+    ]);
+
+    const candidateMinDates = [
+      salesOrderDates._min.createdAt,
+      paymentDates._min.createdAt,
+      inboundDates._min.createdAt,
+    ].filter(Boolean) as Date[];
+
+    const candidateMaxDates = [
+      salesOrderDates._max.createdAt,
+      paymentDates._max.createdAt,
+      inboundDates._max.createdAt,
+    ].filter(Boolean) as Date[];
+
+    if (candidateMinDates.length > 0 && candidateMaxDates.length > 0) {
+      const minDate = new Date(Math.min(...candidateMinDates.map(d => d.getTime())));
+      const maxDate = new Date(Math.max(...candidateMaxDates.map(d => d.getTime())));
+      console.log(`   最早日期: ${formatDate(minDate)}`);
+      console.log(`   最晚日期: ${formatDate(maxDate)}`);
+    } else {
+      console.log('   暂无时间范围可用数据');
+    }
 
     console.log('\n✅ 数据验证完成！所有数据看起来都正常。');
     console.log('\n💡 提示：');

@@ -11,11 +11,19 @@ async function batchFixPiecesPerUnit() {
   console.log('开始批量修复产品的 piecesPerUnit 字段...\n');
 
   try {
-    // 查询 piecesPerUnit 为 1 的产品
-    const abnormalProducts = await prisma.product.findMany({
-      where: {
-        piecesPerUnit: 1,
-      },
+    const abnormalWhere = { piecesPerUnit: 1 } as const;
+    const totalAbnormal = await prisma.product.count({ where: abnormalWhere });
+
+    if (totalAbnormal === 0) {
+      console.log('✅ 没有需要修复的产品！');
+      return;
+    }
+
+    const sampleSize = 50;
+    const abnormalSample = await prisma.product.findMany({
+      where: abnormalWhere,
+      orderBy: { id: 'asc' },
+      take: sampleSize,
       select: {
         id: true,
         code: true,
@@ -24,21 +32,18 @@ async function batchFixPiecesPerUnit() {
       },
     });
 
-    if (abnormalProducts.length === 0) {
-      console.log('✅ 没有需要修复的产品！');
-      return;
-    }
-
-    console.log(`找到 ${abnormalProducts.length} 个需要修复的产品：\n`);
-    abnormalProducts.forEach(p => {
+    console.log(`找到 ${totalAbnormal} 个需要修复的产品：\n`);
+    abnormalSample.forEach(p => {
       console.log(`  - ${p.code} (${p.name})`);
     });
 
+    if (totalAbnormal > abnormalSample.length) {
+      console.log(`  ... 还有 ${totalAbnormal - abnormalSample.length} 个未显示`);
+    }
+
     // 批量更新为 10
     const result = await prisma.product.updateMany({
-      where: {
-        piecesPerUnit: 1,
-      },
+      where: abnormalWhere,
       data: {
         piecesPerUnit: 10,
       },
@@ -63,10 +68,10 @@ async function batchFixPiecesPerUnit() {
     console.log('\n更新后的产品信息：');
     const updatedProducts = await prisma.product.findMany({
       where: {
-        code: {
-          in: abnormalProducts.map(p => p.code),
-        },
+        id: { in: abnormalSample.map(p => p.id) },
       },
+      orderBy: { id: 'asc' },
+      take: sampleSize,
       select: {
         code: true,
         name: true,

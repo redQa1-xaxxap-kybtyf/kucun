@@ -58,25 +58,21 @@ async function main() {
     console.log('🚀 开始清理数据...\n');
 
     // 按照依赖关系顺序删除数据
-    // 1. 获取所有客户的往来账单ID
+    // 1. 获取所有客户的往来账单统计
     console.log('1️⃣ 获取客户往来账单...');
-    const customerStatements = await prisma.accountStatement.findMany({
+    const customerStatementCount = await prisma.accountStatement.count({
       where: {
         entityType: 'customer',
       },
-      select: {
-        id: true,
-      },
     });
-    const statementIds = customerStatements.map(s => s.id);
-    console.log(`   找到 ${statementIds.length} 条客户往来账单`);
+    console.log(`   找到 ${customerStatementCount} 条客户往来账单`);
 
     // 2. 清空往来账单交易记录
     console.log('\n2️⃣ 清空往来账单交易记录...');
     const deletedTransactions = await prisma.statementTransaction.deleteMany({
       where: {
-        statementId: {
-          in: statementIds,
+        statement: {
+          entityType: 'customer',
         },
       },
     });

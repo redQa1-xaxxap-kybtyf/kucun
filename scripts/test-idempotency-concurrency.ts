@@ -300,7 +300,11 @@ async function runTests() {
 }
 
 // 运行测试
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   runTests().catch(console.error);
 }
 

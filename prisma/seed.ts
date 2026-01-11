@@ -29,9 +29,9 @@ const INVENTORY_LOCATIONS = ['A-01', 'A-03', 'B-05', 'C-02', 'D-04', 'E-01'];
 const ORDER_STATUSES = [
   'draft',
   'confirmed',
-  'processing',
   'shipped',
   'completed',
+  'cancelled',
 ];
 const RETURN_TYPES = [
   'quality_issue',
@@ -370,7 +370,9 @@ async function generateBulkTestData({
           2
         )
       );
-      const subtotal = Number((returnQuantity * item.unitPrice).toFixed(2));
+      const subtotal = Number(
+        (returnQuantity * Number(item.unitPrice)).toFixed(2)
+      );
       return {
         salesOrderItemId: item.id,
         productId: item.productId ?? allProducts[0].id,
@@ -462,8 +464,11 @@ async function generateBulkTestData({
     }
 
     const refundStatus = faker.helpers.arrayElement(REFUND_STATUSES);
+    const orderRefundAmount = Number(returnOrder.refundAmount ?? 0);
+    const baseRefundAmount =
+      orderRefundAmount > 0 ? orderRefundAmount : randomFloat(80, 600);
     const refundAmount = Number(
-      Math.max(20, returnOrder.refundAmount || randomFloat(80, 600)).toFixed(2)
+      Math.max(20, baseRefundAmount).toFixed(2)
     );
     const processedAmount =
       refundStatus === 'completed'

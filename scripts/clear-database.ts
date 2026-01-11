@@ -171,6 +171,8 @@ async function clearDatabase() {
       where: {
         role: 'admin',
       },
+      orderBy: { id: 'asc' },
+      take: 50,
       select: {
         id: true,
         username: true,

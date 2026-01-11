@@ -16,6 +16,17 @@ async function cleanupStuckRecords() {
         lt: new Date(),
       },
     },
+    select: {
+      id: true,
+      idempotencyKey: true,
+      operationType: true,
+      createdAt: true,
+      expiresAt: true,
+    },
+    orderBy: {
+      id: 'asc',
+    },
+    take: 10000,
   });
 
   console.log(`找到 ${stuckRecords.length} 条卡住的记录`);

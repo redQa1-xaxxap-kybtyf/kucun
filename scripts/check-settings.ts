@@ -16,6 +16,12 @@ async function checkSettings() {
       orderBy: {
         key: 'asc',
       },
+      take: 2000,
+      select: {
+        key: true,
+        value: true,
+        dataType: true,
+      },
     });
 
     console.log('\n📋 当前基本设置:');

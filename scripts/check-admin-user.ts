@@ -20,6 +20,10 @@ async function checkAdminUser() {
       where: {
         role: 'admin',
       },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      take: 1000,
       select: {
         id: true,
         username: true,
@@ -69,22 +73,14 @@ async function checkAdminUser() {
     }
 
     // 3. 查找所有用户并显示角色分布
-    const allUsers = await prisma.user.findMany({
-      select: {
-        role: true,
-      },
+    const roleStats = await prisma.user.groupBy({
+      by: ['role'],
+      _count: { _all: true },
     });
 
-    const roleStats = allUsers.reduce(
-      (acc, user) => {
-        acc[user.role] = (acc[user.role] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
     console.log('📈 用户角色分布:');
-    Object.entries(roleStats).forEach(([role, count]) => {
+    roleStats.forEach(({ role, _count }) => {
+      const count = _count._all;
       const emoji =
         role === 'admin'
           ? '👑'

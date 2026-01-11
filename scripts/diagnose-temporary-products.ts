@@ -124,8 +124,15 @@ async function main() {
         not: null,
       },
     },
-    include: {
-      temporaryProduct: true,
+    select: {
+      temporaryProductId: true,
+      temporaryProduct: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+        },
+      },
       salesOrder: {
         select: {
           orderNumber: true,

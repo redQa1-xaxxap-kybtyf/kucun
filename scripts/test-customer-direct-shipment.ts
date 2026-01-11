@@ -198,14 +198,13 @@ async function testCreateCustomerDirectShipment(
             {
               productId: testData.product.id,
               productCode: testData.product.code,
-              displayName: testData.product.name,
               specification: testData.product.specification || '',
-              unit: testData.product.unit,
+              displayUnit: testData.product.unit,
               quantity: 10,
               unitPrice: 100,
               unitCost: 80,
-              totalPrice: 1000,
-              totalCost: 800,
+              subtotal: 1000,
+              costSubtotal: 800,
             },
           ],
         },
@@ -251,15 +250,22 @@ async function testPurchaseOrderCreation(
     // 等待一小段时间，确保采购订单创建完成
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 查询采购订单
-    const purchaseOrders = await prisma.purchaseOrder.findMany({
+    // 查询采购订单（只需要找到一条即可）
+    const purchaseOrder = await prisma.purchaseOrder.findFirst({
       where: {
         salesOrderId: testData.salesOrderId,
       },
+      select: {
+        id: true,
+        orderNumber: true,
+        salesOrderId: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
     });
 
-    if (purchaseOrders.length > 0) {
-      const purchaseOrder = purchaseOrders[0];
+    if (purchaseOrder) {
       results.push({
         name: '采购订单自动创建',
         passed: true,

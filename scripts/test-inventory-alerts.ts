@@ -158,6 +158,8 @@ async function testInventoryAlerts() {
           startsWith: 'TEST-',
         },
       },
+      orderBy: { id: 'asc' },
+      take: 1000,
       include: {
         inventory: {
           select: {

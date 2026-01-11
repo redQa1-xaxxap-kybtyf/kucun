@@ -19,6 +19,8 @@ async function verifyAdmin() {
       where: {
         role: 'admin',
       },
+      orderBy: { createdAt: 'asc' },
+      take: 1000,
       select: {
         id: true,
         username: true,

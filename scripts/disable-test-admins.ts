@@ -37,6 +37,7 @@ async function main() {
         name: true,
         status: true,
       },
+      take: 1000,
     });
 
     if (testAdmins.length === 0) {
@@ -72,6 +73,7 @@ async function main() {
         name: true,
         status: true,
       },
+      take: 2000,
     });
 
     remainingAdmins.forEach((admin, index) => {

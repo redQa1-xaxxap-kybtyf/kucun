@@ -211,6 +211,7 @@ async function testDataIntegrity() {
     try {
       const categories = await prisma.category.findMany({
         select: { id: true, parentId: true, name: true },
+        take: 100000,
       });
 
       const categoryMap = new Map(categories.map(c => [c.id, c]));
@@ -293,6 +294,7 @@ async function testDataIntegrity() {
           },
         },
         select: { id: true, name: true, status: true },
+        take: 10000,
       });
 
       if (invalidStatuses.length > 0) {
@@ -1030,7 +1032,11 @@ async function runComprehensiveTests() {
 }
 
 // 如果直接运行此脚本
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   runComprehensiveTests()
     .then(report => {
       console.log('\n🎉 测试执行完成');

@@ -177,6 +177,8 @@ async function main() {
     // 显示管理员信息
     const admins = await prisma.user.findMany({
       where: { role: 'admin' },
+      orderBy: { id: 'asc' },
+      take: 50,
       select: {
         id: true,
         username: true,

@@ -15,15 +15,22 @@ async function testCustomerDelete() {
     // 1. 查找所有客户
     const customers = await prisma.customer.findMany({
       take: 5,
-      include: {
-        salesOrders: true,
-        outboundRecords: true,
-        paymentRecords: true,
-        returnOrders: true,
-        refundRecords: true,
-        factoryShipmentOrders: true,
-        childCustomers: true,
-        productPrices: true,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            salesOrders: true,
+            outboundRecords: true,
+            paymentRecords: true,
+            returnOrders: true,
+            refundRecords: true,
+            factoryShipmentOrders: true,
+            childCustomers: true,
+            productPrices: true,
+          },
+        },
       },
     });
 
@@ -31,24 +38,24 @@ async function testCustomerDelete() {
 
     for (const customer of customers) {
       console.log(`\n客户: ${customer.name} (ID: ${customer.id})`);
-      console.log(`  - 销售订单: ${customer.salesOrders.length}`);
-      console.log(`  - 出库记录: ${customer.outboundRecords.length}`);
-      console.log(`  - 付款记录: ${customer.paymentRecords.length}`);
-      console.log(`  - 退货订单: ${customer.returnOrders.length}`);
-      console.log(`  - 退款记录: ${customer.refundRecords.length}`);
-      console.log(`  - 厂家发货订单: ${customer.factoryShipmentOrders.length}`);
-      console.log(`  - 子客户: ${customer.childCustomers.length}`);
-      console.log(`  - 产品价格记录: ${customer.productPrices.length}`);
+      console.log(`  - 销售订单: ${customer._count.salesOrders}`);
+      console.log(`  - 出库记录: ${customer._count.outboundRecords}`);
+      console.log(`  - 付款记录: ${customer._count.paymentRecords}`);
+      console.log(`  - 退货订单: ${customer._count.returnOrders}`);
+      console.log(`  - 退款记录: ${customer._count.refundRecords}`);
+      console.log(`  - 厂家发货订单: ${customer._count.factoryShipmentOrders}`);
+      console.log(`  - 子客户: ${customer._count.childCustomers}`);
+      console.log(`  - 产品价格记录: ${customer._count.productPrices}`);
 
       const hasRelations =
-        customer.salesOrders.length > 0 ||
-        customer.outboundRecords.length > 0 ||
-        customer.paymentRecords.length > 0 ||
-        customer.returnOrders.length > 0 ||
-        customer.refundRecords.length > 0 ||
-        customer.factoryShipmentOrders.length > 0 ||
-        customer.childCustomers.length > 0 ||
-        customer.productPrices.length > 0;
+        customer._count.salesOrders > 0 ||
+        customer._count.outboundRecords > 0 ||
+        customer._count.paymentRecords > 0 ||
+        customer._count.returnOrders > 0 ||
+        customer._count.refundRecords > 0 ||
+        customer._count.factoryShipmentOrders > 0 ||
+        customer._count.childCustomers > 0 ||
+        customer._count.productPrices > 0;
 
       if (hasRelations) {
         console.log(`  ❌ 无法删除（有关联数据）`);

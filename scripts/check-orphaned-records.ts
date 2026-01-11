@@ -11,40 +11,70 @@ async function checkOrphanedRecords() {
 
   try {
     // 1. 检查入库记录
-    const inboundRecords = await prisma.inboundRecord.findMany({
-      select: {
-        id: true,
-        recordNumber: true,
-        userId: true,
-        createdAt: true,
-      },
-    });
-
-    console.log(`📊 总入库记录数: ${inboundRecords.length}`);
+    const totalInboundRecords = await prisma.inboundRecord.count();
+    console.log(`📊 总入库记录数: ${totalInboundRecords}`);
 
     // 2. 检查每个记录的用户是否存在
     let orphanedCount = 0;
-    const orphanedRecords = [];
+    const orphanedRecords: Array<{
+      id: string;
+      recordNumber: string;
+      userId: string;
+      createdAt: Date;
+    }> = [];
 
-    for (const record of inboundRecords) {
-      const user = await prisma.user.findUnique({
-        where: { id: record.userId },
-        select: { id: true, name: true },
+    const batchSize = 1000;
+    let cursor: string | undefined;
+
+    while (true) {
+      const inboundRecords = await prisma.inboundRecord.findMany({
+        select: {
+          id: true,
+          recordNumber: true,
+          userId: true,
+          createdAt: true,
+        },
+        orderBy: { id: 'asc' },
+        take: batchSize,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
 
-      if (!user) {
+      if (inboundRecords.length === 0) {
+        break;
+      }
+
+      const userIds = Array.from(new Set(inboundRecords.map(r => r.userId)));
+      const existingUsers =
+        userIds.length > 0
+          ? await prisma.user.findMany({
+              where: {
+                id: { in: userIds },
+              },
+              select: { id: true },
+              take: userIds.length,
+            })
+          : [];
+      const existingUserIdSet = new Set(existingUsers.map(u => u.id));
+
+      for (const record of inboundRecords) {
+        if (existingUserIdSet.has(record.userId)) {
+          continue;
+        }
+
         orphanedCount++;
         orphanedRecords.push(record);
         console.log(
           `❌ 孤儿记录: ${record.recordNumber} (userId: ${record.userId})`
         );
       }
+
+      cursor = inboundRecords[inboundRecords.length - 1].id;
     }
 
     console.log(`\n📈 统计结果:`);
-    console.log(`  总记录数: ${inboundRecords.length}`);
+    console.log(`  总记录数: ${totalInboundRecords}`);
     console.log(`  孤儿记录数: ${orphanedCount}`);
-    console.log(`  正常记录数: ${inboundRecords.length - orphanedCount}`);
+    console.log(`  正常记录数: ${totalInboundRecords - orphanedCount}`);
 
     if (orphanedCount > 0) {
       console.log(`\n⚠️  发现 ${orphanedCount} 条孤儿记录需要修复！`);

@@ -107,8 +107,8 @@ async function verifyQueryAccuracy(params: CustomerQueryParams): Promise<{
         _sum: { totalAmount: true },
       });
 
-      const expectedTotalAmount = orderStats._sum.totalAmount || 0;
-      const actualTotalAmount = customer.totalAmount || 0;
+      const expectedTotalAmount = Number(orderStats._sum.totalAmount ?? 0);
+      const actualTotalAmount = Number(customer.totalAmount ?? 0);
 
       if (Math.abs(expectedTotalAmount - actualTotalAmount) > 0.01) {
         issues.push(

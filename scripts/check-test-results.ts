@@ -32,6 +32,7 @@ async function main() {
     orderBy: {
       createdAt: 'desc',
     },
+    take: 1000,
   });
 
   console.log(`\n找到 ${testOrders.length} 个测试订单:\n`);
@@ -61,9 +62,21 @@ async function main() {
         in: testOrders.map(o => o.id),
       },
     },
+    select: {
+      id: true,
+      siteId: true,
+      trackingNumber: true,
+      queriedAt: true,
+      queryStatus: true,
+      status: true,
+      destination: true,
+      estimatedArrival: true,
+      errorMessage: true,
+    },
     orderBy: {
       queriedAt: 'desc',
     },
+    take: 2000,
   });
 
   console.log(`\n找到 ${queryRecords.length} 条查询记录:\n`);

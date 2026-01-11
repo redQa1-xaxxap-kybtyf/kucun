@@ -36,6 +36,12 @@ async function fixShippingSelectors() {
           { name: { contains: '船讯' } },
         ],
       },
+      select: {
+        id: true,
+        name: true,
+        url: true,
+      },
+      take: 10000,
     });
 
     console.log(`📋 找到 ${shipxySites.length} 个shipxy相关站点`);
@@ -66,6 +72,12 @@ async function fixShippingSelectors() {
           { searchInputSelector: { contains: 'input[name*="tracking"]' } },
         ],
       },
+      select: {
+        id: true,
+        name: true,
+        url: true,
+      },
+      take: 10000,
     });
 
     console.log(
@@ -145,7 +157,11 @@ async function fixShippingSelectors() {
 }
 
 // 如果直接运行此脚本
-if (require.main === module) {
+if (
+  typeof require !== 'undefined' &&
+  typeof module !== 'undefined' &&
+  (require as any).main === module
+) {
   fixShippingSelectors()
     .then(() => {
       console.log('✅ 脚本执行完成');

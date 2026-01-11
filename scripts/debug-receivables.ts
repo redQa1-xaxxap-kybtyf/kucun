@@ -41,7 +41,7 @@ async function main() {
       `   状态: ${order.status} ${order.status === 'confirmed' ? '✅' : order.status === 'draft' ? '⚠️' : '✅'}`
     );
     console.log(`   客户: ${order.customer.name}`);
-    console.log(`   金额: ¥${order.totalAmount.toFixed(2)}`);
+    console.log(`   金额: ¥${Number(order.totalAmount ?? 0).toFixed(2)}`);
     console.log(`   创建时间: ${order.createdAt.toISOString()}`);
   });
 
@@ -92,19 +92,21 @@ async function main() {
   console.log(`\n总计: ${receivableOrders.length} 个订单\n`);
 
   receivableOrders.forEach((order, index) => {
-    const unpaidAmount = order.totalAmount - order.paidAmount;
+    const totalAmount = Number(order.totalAmount ?? 0);
+    const paidAmount = Number(order.paidAmount ?? 0);
+    const unpaidAmount = totalAmount - paidAmount;
     const paymentStatus =
       unpaidAmount <= 0
         ? '已付清'
-        : unpaidAmount < order.totalAmount
+        : unpaidAmount < totalAmount
           ? '部分支付'
           : '未支付';
 
     console.log(`${index + 1}. ${order.orderNumber}`);
     console.log(`   客户: ${order.customer.name}`);
     console.log(`   状态: ${order.status}`);
-    console.log(`   总额: ¥${order.totalAmount.toFixed(2)}`);
-    console.log(`   已付: ¥${order.paidAmount.toFixed(2)}`);
+    console.log(`   总额: ¥${totalAmount.toFixed(2)}`);
+    console.log(`   已付: ¥${paidAmount.toFixed(2)}`);
     console.log(`   未付: ¥${unpaidAmount.toFixed(2)} (${paymentStatus})`);
     console.log(`   创建: ${order.createdAt.toISOString()}`);
     console.log('');
@@ -122,6 +124,7 @@ async function main() {
       },
     },
     orderBy: { createdAt: 'desc' },
+    take: 50,
     select: {
       orderNumber: true,
       status: true,
@@ -148,7 +151,7 @@ async function main() {
         `   状态: ${order.status} ${isReceivable ? '✅ (应收货款)' : '⚠️  (不在应收货款)'}`
       );
       console.log(`   客户: ${order.customer.name}`);
-      console.log(`   金额: ¥${order.totalAmount.toFixed(2)}`);
+      console.log(`   金额: ¥${Number(order.totalAmount ?? 0).toFixed(2)}`);
       console.log(`   创建: ${order.createdAt.toISOString()}`);
       console.log('');
     });
@@ -183,7 +186,7 @@ async function main() {
     draftOrders.forEach((order, index) => {
       console.log(`${index + 1}. ${order.orderNumber}`);
       console.log(`   客户: ${order.customer.name}`);
-      console.log(`   金额: ¥${order.totalAmount.toFixed(2)}`);
+      console.log(`   金额: ¥${Number(order.totalAmount ?? 0).toFixed(2)}`);
       console.log(`   创建: ${order.createdAt.toISOString()}`);
       console.log('');
     });

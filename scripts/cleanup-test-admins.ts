@@ -20,55 +20,63 @@ async function main() {
   try {
     // 在事务中执行
     const result = await prisma.$transaction(async tx => {
+      const testAdminWhere = {
+        role: 'ADMIN',
+        OR: [
+          { email: { contains: 'test_' } },
+          { email: { contains: 'fifo_tester_' } },
+        ],
+      };
+
       // 查找所有测试管理员
+      const totalTestAdmins = await tx.user.count({
+        where: testAdminWhere,
+      });
       const testAdmins = await tx.user.findMany({
-        where: {
-          role: 'ADMIN',
-          OR: [
-            { email: { contains: 'test_' } },
-            { email: { contains: 'fifo_tester_' } },
-          ],
-        },
+        where: testAdminWhere,
         select: {
           id: true,
           email: true,
           name: true,
         },
+        orderBy: { id: 'asc' },
+        take: 50,
       });
 
-      console.log(`\n📍 找到 ${testAdmins.length} 个测试管理员账户：\n`);
+      console.log(`\n📍 找到 ${totalTestAdmins} 个测试管理员账户：\n`);
       testAdmins.forEach((admin, index) => {
         console.log(`   ${index + 1}. ${admin.name} (${admin.email})`);
       });
 
-      if (testAdmins.length === 0) {
-        console.log('\n✅ 没有找到测试管理员账户，无需清理');
-        return { deleted: 0 };
+      if (totalTestAdmins > testAdmins.length) {
+        console.log(
+          `   ... 还有 ${totalTestAdmins - testAdmins.length} 个未显示（将仍会被清理）`
+        );
       }
 
-      // 删除这些测试管理员的关联数据
-      const testAdminIds = testAdmins.map(a => a.id);
+      if (totalTestAdmins === 0) {
+        console.log('\n✅ 没有找到测试管理员账户，无需清理');
+        return { deleted: 0, loginLogs: 0, systemLogs: 0 };
+      }
 
       console.log('\n📍 删除测试管理员的关联数据...\n');
 
       // 删除登录日志
       const loginLogs = await tx.loginLog.deleteMany({
-        where: { userId: { in: testAdminIds } },
+        where: { user: { is: testAdminWhere } },
       });
       console.log(`   ✓ 删除登录日志: ${loginLogs.count} 条`);
 
       // 删除系统日志
       const systemLogs = await tx.systemLog.deleteMany({
-        where: { userId: { in: testAdminIds } },
+        where: { user: { is: testAdminWhere } },
       });
       console.log(`   ✓ 删除系统日志: ${systemLogs.count} 条`);
 
       // 删除测试管理员账户
       console.log('\n📍 删除测试管理员账户...\n');
       const deletedUsers = await tx.user.deleteMany({
-        where: {
-          id: { in: testAdminIds },
-        },
+        where: testAdminWhere,
       });
 
       console.log(`   ✓ 删除测试管理员: ${deletedUsers.count} 个`);
@@ -82,12 +90,19 @@ async function main() {
 
     // 验证保留的管理员
     console.log('\n📍 验证保留的管理员账户：\n');
+    const remainingAdminCount = await prisma.user.count({
+      where: { role: 'ADMIN' },
+    });
     const remainingAdmins = await prisma.user.findMany({
       where: { role: 'ADMIN' },
       select: { id: true, email: true, username: true, name: true },
+      orderBy: { id: 'asc' },
+      take: 50,
     });
 
-    console.log(`✅ 保留的管理员账户 (${remainingAdmins.length} 个):\n`);
+    console.log(
+      `✅ 保留的管理员账户（展示 ${remainingAdmins.length}/${remainingAdminCount} 个）:\n`
+    );
     remainingAdmins.forEach((admin, index) => {
       console.log(`   ${index + 1}. ${admin.name} (${admin.email})`);
     });

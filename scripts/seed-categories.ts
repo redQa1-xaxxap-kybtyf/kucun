@@ -157,6 +157,7 @@ async function seedCategories() {
         },
       },
       orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
+      take: 1000,
     });
 
     console.log('\n创建的分类列表：');

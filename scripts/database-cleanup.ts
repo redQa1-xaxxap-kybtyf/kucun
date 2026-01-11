@@ -209,6 +209,7 @@ async function verifyRemainingData(): Promise<void> {
   const remainingAdmins = await prisma.user.findMany({
     where: { role: 'ADMIN' },
     select: { id: true, email: true, username: true, name: true },
+    take: 1000,
   });
 
   console.log(`\n✅ 保留的管理员账户 (${remainingAdmins.length} 个):`);
@@ -238,6 +239,7 @@ async function main() {
         const adminUsers = await tx.user.findMany({
           where: { role: 'ADMIN' },
           select: { id: true, email: true, username: true, name: true },
+          take: 1000,
         });
 
         console.log(`✅ 找到 ${adminUsers.length} 个管理员账户：`);

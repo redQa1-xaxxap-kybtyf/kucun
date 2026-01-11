@@ -17,8 +17,8 @@ console.log('📋 Bug 1: 验证排序选项与后端匹配');
 console.log('─'.repeat(60));
 
 // 从 Schema 获取支持的排序字段
-const sortByEnum = inventoryParamsSchema.shape.sortBy;
-const schemaSortFields = sortByEnum._def.values as string[];
+const sortByEnum = inventoryParamsSchema.shape.sortBy.unwrap();
+const schemaSortFields = sortByEnum.options as string[];
 
 console.log('✅ Schema 定义的排序字段:', schemaSortFields);
 
@@ -159,4 +159,3 @@ console.log('3. 启动开发服务器手动测试功能');
 console.log('4. 测试所有排序选项是否正常工作');
 console.log('5. 测试重置筛选按钮是否清空所有条件（包括搜索）');
 console.log('6. 测试单字符搜索是否返回正确结果');
-

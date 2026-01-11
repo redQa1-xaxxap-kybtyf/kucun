@@ -3,17 +3,23 @@
  * 用于应用启动时的初始化逻辑
  * https://nextjs.org/docs/app/building-your-application/optimizing/instrumentation
  *
- * 注意: 当前禁用 memory-monitor 以避免 ioredis 导致的构建错误
- * ioredis 依赖 Node.js 模块(stream, crypto, dns, net)在客户端构建时不可用
+ * 注意: 内存监控依赖 Node.js API（process.memoryUsage 等），必须仅在 Node runtime 下执行
  */
 
 export async function register() {
-  // 仅在服务器端运行
+  // 仅在 Node.js runtime 下运行
   if (process.env.NEXT_RUNTIME !== 'nodejs') {
     return;
   }
 
-  // 暂时禁用 memory monitor，防止构建阶段解析到 ioredis 的 Node-only 依赖
-  // TODO: 将监控逻辑迁移到仅在 Node 运行时载入的入口（例如自定义 server）
-  return;
+  try {
+    // 使用 require + 运行时分流，避免 edge-instrumentation 构建解析到 Node-only 逻辑/依赖
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { registerNodeInstrumentation } = require('./instrumentation.node');
+    registerNodeInstrumentation();
+  } catch (error) {
+    // instrumentation 早期执行，避免引入 logger/prisma 等重量依赖导致 edge 构建问题
+    // eslint-disable-next-line no-console
+    console.error('[instrumentation] failed to start memory monitor', error);
+  }
 }

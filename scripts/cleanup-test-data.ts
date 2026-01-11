@@ -13,25 +13,23 @@ async function main() {
   // 步骤 1: 删除测试订单的查询记录
   console.log('\n📍 步骤 1: 删除测试订单的查询记录');
 
-  const testOrders = await prisma.factoryShipmentOrder.findMany({
-    where: {
-      orderNumber: {
-        startsWith: 'FS-TEST-',
-      },
+  const testOrderWhere = {
+    orderNumber: {
+      startsWith: 'FS-TEST-',
     },
-    select: {
-      id: true,
-      orderNumber: true,
-    },
+  } as const;
+
+  const testOrderCount = await prisma.factoryShipmentOrder.count({
+    where: testOrderWhere,
   });
 
-  console.log(`找到 ${testOrders.length} 个测试订单`);
+  console.log(`找到 ${testOrderCount} 个测试订单`);
 
-  if (testOrders.length > 0) {
+  if (testOrderCount > 0) {
     const deletedQueries = await prisma.shippingQuery.deleteMany({
       where: {
-        factoryShipmentOrderId: {
-          in: testOrders.map(o => o.id),
+        factoryShipmentOrder: {
+          is: testOrderWhere,
         },
       },
     });
@@ -42,12 +40,10 @@ async function main() {
   // 步骤 2: 删除测试订单明细
   console.log('\n📍 步骤 2: 删除测试订单明细');
 
-  if (testOrders.length > 0) {
+  if (testOrderCount > 0) {
     const deletedItems = await prisma.factoryShipmentOrderItem.deleteMany({
       where: {
-        factoryShipmentOrderId: {
-          in: testOrders.map(o => o.id),
-        },
+        factoryShipmentOrder: testOrderWhere,
       },
     });
 
@@ -58,11 +54,7 @@ async function main() {
   console.log('\n📍 步骤 3: 删除测试订单');
 
   const deletedOrders = await prisma.factoryShipmentOrder.deleteMany({
-    where: {
-      orderNumber: {
-        startsWith: 'FS-TEST-',
-      },
-    },
+    where: testOrderWhere,
   });
 
   console.log(`✅ 删除了 ${deletedOrders.count} 个测试订单`);

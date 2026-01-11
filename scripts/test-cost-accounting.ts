@@ -5,6 +5,7 @@
 
 import { executeMinimalInboundTransaction } from '@/lib/api/minimal-inbound-transaction';
 import { prisma } from '@/lib/db';
+import { toNumber } from '@/lib/utils/number';
 
 interface TestResult {
   name: string;
@@ -83,8 +84,9 @@ async function testCostAccounting() {
       addResult('测试1 - 入库记录', false, '未找到入库记录');
     } else {
       const expectedTotalCost = 100 * 10.5;
-      const totalCostMatch = inboundRecord1.totalCost === expectedTotalCost;
-      const unitCostMatch = inboundRecord1.unitCost === 10.5;
+      const totalCostMatch =
+        toNumber(inboundRecord1.totalCost) === expectedTotalCost;
+      const unitCostMatch = toNumber(inboundRecord1.unitCost) === 10.5;
 
       addResult(
         '测试1 - 入库记录成本',
@@ -111,7 +113,7 @@ async function testCostAccounting() {
     if (!inventory1) {
       addResult('测试1 - 库存成本', false, '未找到库存记录');
     } else {
-      const unitCostMatch = inventory1.unitCost === 10.5;
+      const unitCostMatch = toNumber(inventory1.unitCost) === 10.5;
       addResult(
         '测试1 - 库存单位成本',
         unitCostMatch,
@@ -147,8 +149,9 @@ async function testCostAccounting() {
       addResult('测试2 - 入库记录', false, '未找到入库记录');
     } else {
       const expectedTotalCost = 50 * 12.0;
-      const totalCostMatch = inboundRecord2.totalCost === expectedTotalCost;
-      const unitCostMatch = inboundRecord2.unitCost === 12.0;
+      const totalCostMatch =
+        toNumber(inboundRecord2.totalCost) === expectedTotalCost;
+      const unitCostMatch = toNumber(inboundRecord2.unitCost) === 12.0;
 
       addResult(
         '测试2 - 入库记录成本',
@@ -178,7 +181,7 @@ async function testCostAccounting() {
       // 加权平均成本 = (100 * 10.5 + 50 * 12.0) / (100 + 50) = 11.0
       const expectedUnitCost = 11.0;
       const expectedQuantity = 150;
-      const unitCostMatch = inventory2.unitCost === expectedUnitCost;
+      const unitCostMatch = toNumber(inventory2.unitCost) === expectedUnitCost;
       const quantityMatch = inventory2.quantity === expectedQuantity;
 
       addResult(
@@ -220,7 +223,7 @@ async function testCostAccounting() {
     if (!currentInventory) {
       addResult('测试3 - 出库', false, '未找到库存记录');
     } else {
-      const currentUnitCost = currentInventory.unitCost || 0;
+      const currentUnitCost = toNumber(currentInventory.unitCost, 0);
       const totalCost = 30 * currentUnitCost;
 
       const outboundRecord = await prisma.outboundRecord.create({
@@ -247,8 +250,9 @@ async function testCostAccounting() {
       // 验证出库记录成本
       const expectedUnitCost = 11.0;
       const expectedTotalCost = 30 * 11.0;
-      const unitCostMatch = outboundRecord.unitCost === expectedUnitCost;
-      const totalCostMatch = outboundRecord.totalCost === expectedTotalCost;
+      const unitCostMatch = toNumber(outboundRecord.unitCost) === expectedUnitCost;
+      const totalCostMatch =
+        toNumber(outboundRecord.totalCost) === expectedTotalCost;
 
       addResult(
         '测试3 - 出库成本记录',
@@ -278,7 +282,7 @@ async function testCostAccounting() {
       });
 
       if (inventory3) {
-        const unitCostUnchanged = inventory3.unitCost === 11.0;
+        const unitCostUnchanged = toNumber(inventory3.unitCost) === 11.0;
         const quantityCorrect = inventory3.quantity === 120; // 150 - 30
 
         addResult(

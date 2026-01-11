@@ -154,6 +154,12 @@ async function main() {
             queriedAt: 'desc',
           },
           take: 1,
+          select: {
+            queriedAt: true,
+            queryStatus: true,
+            trackingNumber: true,
+            status: true,
+          },
         });
 
         if (queryRecords.length > 0) {
