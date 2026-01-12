@@ -316,7 +316,8 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
           salesOrderId: salesOrder.id,
           salesOrderNumber: salesOrder.orderNumber,
         });
-        // 不抛出错误，避免影响销售订单创建
+        // 调货直发订单必须成功创建采购订单，否则会造成事务不一致（订单已确认但缺采购单）
+        throw new Error('创建采购订单失败，已回滚订单创建，请重试');
       }
     }
 
