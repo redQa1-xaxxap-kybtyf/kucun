@@ -231,6 +231,7 @@ export async function getCustomerStatements(
     returnAggregates,
     paymentAggregates,
     refundAggregates,
+    refundProcessedFallbackAggregates,
     suppliersForCustomers,
   ] = await Promise.all([
     prisma.salesOrder.groupBy({
@@ -284,6 +285,16 @@ export async function getCustomerStatements(
       _sum: { processedAmount: true },
       _max: { refundDate: true },
       _count: { id: true },
+    }),
+    prisma.refundRecord.groupBy({
+      by: ['customerId'],
+      where: {
+        customerId: { in: customerIds },
+        status: 'completed',
+        processedAmount: 0,
+        ...(hasDateFilter && { refundDate: dateFilter }),
+      },
+      _sum: { refundAmount: true },
     }),
     Promise.all(
       customers.map(customer =>
@@ -418,6 +429,16 @@ export async function getCustomerStatements(
     if (refundDate instanceof Date) {
       lastRefundDateByCustomerId.set(row.customerId, refundDate);
     }
+  }
+
+  // ✅ 兼容历史数据：已完成退款但 processedAmount 仍为 0（用 refundAmount 兜底）
+  for (const row of refundProcessedFallbackAggregates) {
+    const fallbackAmount = Number(row._sum.refundAmount ?? 0);
+    if (fallbackAmount <= 0) continue;
+    refundPaidByCustomerId.set(
+      row.customerId,
+      (refundPaidByCustomerId.get(row.customerId) ?? 0) + fallbackAmount
+    );
   }
 
   // 4. 构建客户对账单数据（使用聚合结果，避免逐个查询）
@@ -631,7 +652,7 @@ export async function getCustomerStatementDetail(
   );
 
   // 计算期末余额
-  const closingBalance = openingBalance + summary.netBalance;
+  const closingBalance = roundCurrency(openingBalance + summary.netBalance);
 
   return {
     customerId: customer.id,
@@ -660,6 +681,7 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
     returnGroups,
     paymentGroups,
     refundGroups,
+    refundProcessedFallbackGroups,
   ] = await Promise.all([
     prisma.salesOrder.groupBy({
       by: ['customerId'],
@@ -696,6 +718,14 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
         status: { in: ['pending', 'processing', 'completed'] },
       },
       _sum: { processedAmount: true },
+    }),
+    prisma.refundRecord.groupBy({
+      by: ['customerId'],
+      where: {
+        status: 'completed',
+        processedAmount: 0,
+      },
+      _sum: { refundAmount: true },
     }),
   ]);
 
@@ -757,6 +787,17 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
       row.customerId,
       Number(row._sum.processedAmount ?? 0)
     );
+  }
+
+  // ✅ 兼容历史数据：已完成退款但 processedAmount 仍为 0（用 refundAmount 兜底）
+  for (const row of refundProcessedFallbackGroups) {
+    const fallbackAmount = Number(row._sum.refundAmount ?? 0);
+    if (fallbackAmount <= 0) continue;
+    refundPaidByCustomer.set(
+      row.customerId,
+      (refundPaidByCustomer.get(row.customerId) ?? 0) + fallbackAmount
+    );
+    activeCustomerIds.add(row.customerId);
   }
 
   let totalReceivableBalance = 0;
@@ -1594,18 +1635,18 @@ async function getCustomerTransactions(
           payment.paymentMethod
         );
 
-        transactionEntries.push({
-          id: payment.id,
-          transactionType: 'prepayment_out',
-          transactionDate: payment.paymentDate.toISOString(),
-          referenceNumber: payment.paymentNumber,
-          referenceId: payment.id,
-          description: `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`,
-          debitAmount: Number(payment.paymentAmount), // 增加应付
-          creditAmount: 0,
-          status: payment.status,
-        });
-      }
+      transactionEntries.push({
+        id: payment.id,
+        transactionType: 'prepayment_out',
+        transactionDate: payment.paymentDate.toISOString(),
+        referenceNumber: payment.paymentNumber,
+        referenceId: payment.id,
+        description: `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`,
+        debitAmount: Number(payment.paymentAmount), // ✅ 预付款会减少应付/增加预付
+        creditAmount: 0,
+        status: payment.status,
+      });
+    }
 
       if (supplierPrepayments.length < pageSize) {
         break;
@@ -1637,8 +1678,11 @@ async function getCustomerTransactions(
   let runningBalance = openingBalance;
 
   return sortedTransactions.map(transaction => {
-    runningBalance +=
-      Number(transaction.debitAmount) - Number(transaction.creditAmount);
+    runningBalance = roundCurrency(
+      runningBalance +
+        Number(transaction.debitAmount) -
+        Number(transaction.creditAmount)
+    );
     return {
       ...transaction,
       balance: runningBalance,
@@ -1662,6 +1706,7 @@ async function calculateOpeningBalance(
     returnOrderAggregate,
     paymentGroups,
     refundAggregate,
+    refundAggregateFallback,
     customerAsSupplier,
   ] = await Promise.all([
     prisma.salesOrder.aggregate({
@@ -1707,6 +1752,15 @@ async function calculateOpeningBalance(
       },
       _sum: { processedAmount: true },
     }),
+    prisma.refundRecord.aggregate({
+      where: {
+        customerId,
+        status: 'completed',
+        processedAmount: 0,
+        refundDate: dateFilter,
+      },
+      _sum: { refundAmount: true },
+    }),
     findSupplierForCustomer(customerId),
   ]);
 
@@ -1736,7 +1790,9 @@ async function calculateOpeningBalance(
     }
   }
 
-  const refundPaid = Number(refundAggregate._sum.processedAmount ?? 0);
+  const refundPaid =
+    Number(refundAggregate._sum.processedAmount ?? 0) +
+    Number(refundAggregateFallback._sum.refundAmount ?? 0);
 
   const receivableBalance = computeReceivableBalance({
     salesAmount,
