@@ -200,107 +200,6 @@ const resolveVariantId = async (
   return variant?.id ?? null;
 };
 
-const processReservation = async (
-  tx: Tx,
-  item: OrderItemInput,
-  transferMode: CreateInput['transferMode'],
-  inventories: Map<string, InventoryRecord[]>,
-  cache: Map<string, InventoryRecord>,
-  localReservation: Map<string, number>,
-  localUpdatedAt: Map<string, Date>
-): Promise<ReservationOutcome | null> => {
-  if (!isProductItem(item)) {
-    return null;
-  }
-
-  if (
-    transferMode === 'MIXED' &&
-    item.localQuantity !== undefined &&
-    item.localQuantity <= 0
-  ) {
-    return null;
-  }
-
-  const variantId = await resolveVariantId(tx, item);
-  const inventory = resolveInventory(
-    {
-      productId: item.productId,
-      variantId,
-      batchNumber: item.batchNumber ?? null,
-      productionDate: (item as { productionDate?: string | null }).productionDate ?? null,
-    },
-    inventories,
-    cache
-  );
-
-  const reservationKey = buildInventoryKey(
-    inventory.productId,
-    inventory.variantId,
-    inventory.batchNumber
-  );
-  const pendingReservation = localReservation.get(reservationKey) ?? 0;
-  const expectedUpdatedAt = localUpdatedAt.get(reservationKey) ?? inventory.updatedAt;
-  const effectiveReserved = inventory.reservedQuantity + pendingReservation;
-  const itemQuantity =
-    transferMode === 'MIXED' ? (item.localQuantity ?? 0) : (item.quantity ?? 0);
-
-  if (itemQuantity <= 0) {
-    return null;
-  }
-
-  const availableQuantity = inventory.quantity - effectiveReserved;
-  if (availableQuantity < itemQuantity) {
-    const batchLabel = (inventory.batchNumber ?? '').trim();
-    const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
-    throw new Error(
-      `产品ID ${inventory.productId}${batchMessage} 可用库存不足。可用: ${availableQuantity}, 需要: ${itemQuantity}`
-    );
-  }
-
-  const candidateUpdatedAt = new Date();
-  const nextUpdatedAt =
-    candidateUpdatedAt.getTime() <= expectedUpdatedAt.getTime()
-      ? new Date(expectedUpdatedAt.getTime() + 1)
-      : candidateUpdatedAt;
-
-  const updatedCount = await tx.inventory.updateMany({
-    where: {
-      id: inventory.id,
-      updatedAt: expectedUpdatedAt,
-      reservedQuantity: effectiveReserved,
-      quantity: { gte: effectiveReserved + itemQuantity },
-    },
-    data: {
-      reservedQuantity: { increment: itemQuantity },
-      updatedAt: nextUpdatedAt,
-    },
-  });
-
-  if (updatedCount.count === 0) {
-    const batchLabel = (inventory.batchNumber ?? '').trim();
-    const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
-    throw new Error(
-      `产品ID ${inventory.productId}${batchMessage} 库存预留失败,可能已被其他订单占用,请重试`
-    );
-  }
-
-  localReservation.set(reservationKey, pendingReservation + itemQuantity);
-  localUpdatedAt.set(reservationKey, nextUpdatedAt);
-
-  const salesOrderItemId = normalizeText(
-    (item as unknown as { id?: string }).id
-  );
-
-  return {
-    salesOrderItemId: salesOrderItemId.length > 0 ? salesOrderItemId : undefined,
-    inventoryId: inventory.id,
-    productId: inventory.productId,
-    variantId: inventory.variantId ?? null,
-    batchNumber: inventory.batchNumber ?? null,
-    reservedQuantity: itemQuantity,
-  };
-};
-
 export const shouldReserveInventory = (
   data: CreateInput,
   transferMode: CreateInput['transferMode']
@@ -324,22 +223,131 @@ export const reserveInventory = async (
 
   const inventories = await loadInventory(tx, productItems);
   const cache = new Map<string, InventoryRecord>();
-  const localReservation = new Map<string, number>();
-  const localUpdatedAt = new Map<string, Date>();
   const outcomes: ReservationOutcome[] = [];
 
+  const aggregated = new Map<
+    string,
+    {
+      inventory: InventoryRecord;
+      totalQuantity: number;
+      items: Array<{ salesOrderItemId?: string; quantity: number }>;
+    }
+  >();
+
   for (const item of data.items) {
-    const outcome = await processReservation(
-      tx,
-      item,
-      transferMode,
+    if (!isProductItem(item)) {
+      continue;
+    }
+
+    if (
+      transferMode === 'MIXED' &&
+      item.localQuantity !== undefined &&
+      item.localQuantity <= 0
+    ) {
+      continue;
+    }
+
+    const itemQuantity =
+      transferMode === 'MIXED'
+        ? (item.localQuantity ?? 0)
+        : (item.quantity ?? 0);
+
+    if (itemQuantity <= 0) {
+      continue;
+    }
+
+    const variantId = await resolveVariantId(tx, item);
+    const inventory = resolveInventory(
+      {
+        productId: item.productId,
+        variantId,
+        batchNumber: item.batchNumber ?? null,
+        productionDate:
+          (item as { productionDate?: string | null }).productionDate ?? null,
+      },
       inventories,
-      cache,
-      localReservation,
-      localUpdatedAt
+      cache
     );
-    if (outcome) {
-      outcomes.push(outcome);
+
+    const bucket =
+      aggregated.get(inventory.id) ??
+      ({
+        inventory,
+        totalQuantity: 0,
+        items: [],
+      } as const);
+
+    const salesOrderItemId = normalizeText(
+      (item as unknown as { id?: string }).id
+    );
+
+    aggregated.set(inventory.id, {
+      inventory: bucket.inventory,
+      totalQuantity: bucket.totalQuantity + itemQuantity,
+      items: [
+        ...bucket.items,
+        {
+          salesOrderItemId:
+            salesOrderItemId.length > 0 ? salesOrderItemId : undefined,
+          quantity: itemQuantity,
+        },
+      ],
+    });
+  }
+
+  const sortedReservations = Array.from(aggregated.values()).sort((a, b) =>
+    a.inventory.id.localeCompare(b.inventory.id)
+  );
+
+  for (const reservation of sortedReservations) {
+    const { inventory } = reservation;
+    const totalQuantity = reservation.totalQuantity;
+
+    const availableQuantity = inventory.quantity - inventory.reservedQuantity;
+    if (availableQuantity < totalQuantity) {
+      const batchLabel = (inventory.batchNumber ?? '').trim();
+      const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
+      throw new Error(
+        `产品ID ${inventory.productId}${batchMessage} 可用库存不足。可用: ${availableQuantity}, 需要: ${totalQuantity}`
+      );
+    }
+
+    const candidateUpdatedAt = new Date();
+    const nextUpdatedAt =
+      candidateUpdatedAt.getTime() <= inventory.updatedAt.getTime()
+        ? new Date(inventory.updatedAt.getTime() + 1)
+        : candidateUpdatedAt;
+
+    const updatedCount = await tx.inventory.updateMany({
+      where: {
+        id: inventory.id,
+        updatedAt: inventory.updatedAt,
+        reservedQuantity: inventory.reservedQuantity,
+        quantity: { gte: inventory.reservedQuantity + totalQuantity },
+      },
+      data: {
+        reservedQuantity: { increment: totalQuantity },
+        updatedAt: nextUpdatedAt,
+      },
+    });
+
+    if (updatedCount.count === 0) {
+      const batchLabel = (inventory.batchNumber ?? '').trim();
+      const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
+      throw new Error(
+        `产品ID ${inventory.productId}${batchMessage} 库存预留失败,可能已被其他订单占用,请重试`
+      );
+    }
+
+    for (const item of reservation.items) {
+      outcomes.push({
+        salesOrderItemId: item.salesOrderItemId,
+        inventoryId: inventory.id,
+        productId: inventory.productId,
+        variantId: inventory.variantId ?? null,
+        batchNumber: inventory.batchNumber ?? null,
+        reservedQuantity: item.quantity,
+      });
     }
   }
 
