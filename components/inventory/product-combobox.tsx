@@ -4,12 +4,12 @@ import { Check, X } from 'lucide-react';
 import React from 'react';
 
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
 } from '@/components/ui/command';
 import { Popover } from '@/components/ui/popover';
 import { useProductSearch } from '@/lib/api/inbound';
@@ -188,11 +188,11 @@ export function ProductCombobox({
                         />
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-gray-900">
-                              {product.label}
-                            </span>
-                            <span className="text-xs font-medium text-[hsl(var(--color-primary))]">
+                            <span className="text-sm font-black text-slate-900">
                               {product.code}
+                            </span>
+                            <span className="text-xs font-bold text-slate-400">
+                              {product.label}
                             </span>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-gray-600">

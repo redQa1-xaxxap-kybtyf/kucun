@@ -4,19 +4,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
     BarChart3,
     ChevronDown,
-    ChevronRight,
-    Package,
-    Plus,
+    ChevronRight
 } from 'lucide-react';
-import Link from 'next/link';
 import * as React from 'react';
 import { Suspense } from 'react';
 
 import { ErrorBoundaryFallback } from '@/components/common/error-boundary-fallback';
-import { PageHeader } from '@/components/common/page-header';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
+import { InventoryPageOverviewHeader } from '@/components/inventory/inventory-page-overview-header';
 import { InventoryStatisticsCards } from '@/components/inventory/inventory-statistics-cards';
-import { Button } from '@/components/ui/button';
 import { InventoryListSkeleton } from '@/components/ui/skeleton-compositions';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
@@ -398,25 +394,9 @@ function InventoryContent(props: {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="flex flex-col gap-6">
         {/* 统一标题区域，所有端都在最上方 */}
+        {/* 旗舰级头部区域 */}
         <div className="order-1">
-          <PageHeader
-            title="库存管理"
-            description="实时监控库存水平和库存变动"
-            icon={<Package className="h-6 w-6 text-white" />}
-            iconBgColor="hsl(var(--color-primary))"
-            actions={
-              <Button
-                size="lg"
-                asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-              >
-                <Link href="/inventory/adjust">
-                  <Plus className="mr-2 h-4 w-4" />
-                  库存调整
-                </Link>
-              </Button>
-            }
-          />
+          <InventoryPageOverviewHeader />
         </div>
 
         {/* 统计概览：PC 端紧跟标题，移动端排在列表之后 */}

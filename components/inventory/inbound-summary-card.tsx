@@ -1,12 +1,12 @@
 'use client';
 
 import {
-  BadgeCheck,
-  Boxes,
-  CalendarDays,
-  ClipboardList,
-  Package,
-  Warehouse,
+    BadgeCheck,
+    Boxes,
+    CalendarDays,
+    ClipboardList,
+    Package,
+    Warehouse,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
@@ -38,16 +38,16 @@ function DetailStat({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-[var(--shadow-light)]">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]">
+    <div className="group rounded-xl border border-slate-100 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md">
+      <div className="flex items-center gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-blue-600 shadow-inner group-hover:bg-blue-50">
           {icon}
         </div>
-        <div>
-          <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">
             {label}
           </div>
-          <div className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+          <div className="mt-0.5 truncate text-base font-black text-slate-900 leading-tight">
             {value ?? '—'}
           </div>
         </div>
@@ -150,24 +150,32 @@ export function InboundSummaryCard({
         : 'xl:grid-cols-4';
 
   return (
-    <Card className="border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-medium)]">
-      <CardHeader className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-xl font-semibold text-[hsl(var(--color-text-primary))]">
-            <Package className="h-5 w-5 text-[hsl(var(--color-primary))]" />
-            入库单 {record.recordNumber}
+    <Card className="overflow-hidden border-slate-200 bg-white transition-all hover:shadow-lg">
+      <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-1.5 text-center md:text-left">
+          <CardTitle className="flex items-center justify-center gap-2 text-xl font-black tracking-tight text-slate-900 md:justify-start">
+            <Package className="h-5 w-5 text-blue-600" />
+            数字入库单 {record.recordNumber}
           </CardTitle>
-          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-            创建时间：{createdAt}
-            {updatedAt ? ` ｜ 最近更新：${updatedAt}` : ''}
+          <p className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-400 md:justify-start">
+            <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {createdAt}</span>
+            {updatedAt && (
+              <>
+                <span className="h-3 w-px bg-slate-200" />
+                <span>最后修订：{updatedAt}</span>
+              </>
+            )}
           </p>
         </div>
-        <Badge variant={reasonVariant} className="w-fit">
+        <Badge 
+          variant={reasonVariant} 
+          className="mx-auto w-fit px-3 py-1 text-[11px] font-black uppercase tracking-widest md:mx-0"
+        >
           {reasonLabel}
         </Badge>
       </CardHeader>
       <CardContent
-        className={`grid gap-4 pt-6 md:grid-cols-2 ${gridColsClass}`}
+        className={`grid gap-5 p-6 md:grid-cols-2 ${gridColsClass}`}
       >
         {stats.map(stat => (
           <DetailStat key={stat.label} {...stat} />

@@ -20,18 +20,18 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from '@/components/ui/popover';
 import type { InboundFormData } from '@/lib/types/inbound';
 
@@ -98,7 +98,7 @@ export function InboundCostFieldWithCalculator({
                   <div className="space-y-2">
                     <h4 className="text-sm font-medium">单位成本计算器</h4>
                     <p className="text-xs text-gray-500">
-                      输入每件成本和每件片数，自动计算每片成本
+                      输入每件成本和装箱数，自动计算每片成本
                     </p>
                   </div>
 
@@ -123,7 +123,7 @@ export function InboundCostFieldWithCalculator({
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-medium text-gray-700">
-                        每件片数
+                        装箱数
                       </label>
                       <Input
                         type="number"

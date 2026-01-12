@@ -5,11 +5,11 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import { ProductSelector } from '@/components/inventory/product-selector';
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { type InboundFormData, type ProductOption } from '@/lib/types/inbound';
 import { cn } from '@/lib/utils';
@@ -162,7 +162,7 @@ export function InboundProductSection({
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-gray-600">每件片数</span>
+              <span className="text-gray-600">装箱数</span>
               <span
                 className={cn(
                   'font-medium',
@@ -182,7 +182,7 @@ export function InboundProductSection({
               <div className="col-span-5 flex flex-col gap-1.5 border-t border-green-200 pt-2">
                 <span className="font-medium text-gray-600">现有批次规格</span>
                 <p className="text-muted-foreground text-xs">
-                  点击批次可快速切换入库批次，并同步每件片数。
+                  点击批次可快速切换入库批次，并同步装箱数。
                 </p>
                 <div className="flex flex-col gap-1.5">
                   {batchSpecs.map((spec, index) => {
@@ -219,7 +219,7 @@ export function InboundProductSection({
                         </span>
                         <span className="text-gray-400">|</span>
                         <span className="text-xs text-gray-700">
-                          每件{' '}
+                          装箱数{' '}
                           <span className="font-semibold text-[hsl(var(--color-primary))]">
                             {spec.piecesPerUnit}
                           </span>{' '}

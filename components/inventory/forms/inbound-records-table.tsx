@@ -11,16 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import {
-  INBOUND_REASON_LABELS,
-  type InboundRecord as BaseInboundRecord,
+    INBOUND_REASON_LABELS,
+    type InboundRecord as BaseInboundRecord,
 } from '@/lib/types/inbound';
 
 interface InboundRecordWithProduct
@@ -136,7 +136,7 @@ const getActualPiecesPerUnit = (record: InboundRecordWithProduct) =>
 const getActualWeight = (record: InboundRecordWithProduct) => {
   const weight =
     record.batchSpecification?.weight ?? record.product?.weight ?? null;
-  return weight ? `${weight.toFixed(2)}kg` : '-';
+  return weight ? `${weight.toFixed(2)} KG` : '-';
 };
 
 /**
@@ -181,14 +181,14 @@ export function InboundRecordsTable({
             return (
               <div
                 key={record.id}
-                className="card-shadow-light rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-3"
+                className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div className="text-sm font-black text-[hsl(var(--color-text-primary))]">
                       {record.product?.code || record.productId}
                     </div>
-                    <div className="mt-0.5 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
                       {record.product?.name || '未知产品'}
                     </div>
                     <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
@@ -196,9 +196,16 @@ export function InboundRecordsTable({
                       {formatSpecification(record.product?.specification) ||
                         '-'}
                     </div>
-                    <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      <span>批次：{record.batchNumber || '-'}</span>
-                      <span>每件：{piecesPerUnit || '-'}片</span>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-2 text-[11px] text-[hsl(var(--color-text-secondary))]">
+                      <span className="flex items-center gap-1">
+                        批次：
+                        <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold border-amber-100 bg-amber-50 text-amber-600">
+                           {record.batchNumber || '-'}
+                        </Badge>
+                      </span>
+                      <span className="flex items-center gap-1">
+                         包装：<span className="font-bold text-slate-600">{piecesPerUnit}</span> 片/件
+                      </span>
                       <span>重量：{getActualWeight(record)}</span>
                     </div>
                   </div>
@@ -216,16 +223,18 @@ export function InboundRecordsTable({
                   </div>
                 </div>
 
-                <div className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
-                  入库数量：
-                  <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                <div className="mt-3 flex items-center justify-between border-t border-slate-50 pt-3 text-xs">
+                  <span className="font-bold text-slate-500">入库总量</span>
+                  <span className="font-black text-blue-600">
                     {formatQuantity(record.quantity, piecesPerUnit)}
                   </span>
                 </div>
 
-                <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                  备注：{record.remarks || '-'}
-                </div>
+                {record.remarks && (
+                  <div className="mt-2 text-[11px] text-slate-400 italic">
+                    备注：{record.remarks}
+                  </div>
+                )}
               </div>
             );
           })
@@ -264,18 +273,17 @@ function TableHeading({ count }: { count: number }) {
 function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
   return (
     <Table>
-      <TableHeader className="card-shadow-light">
-        <TableRow>
-          <TableHead>产品编码</TableHead>
-          <TableHead>产品名称</TableHead>
-          <TableHead>规格</TableHead>
-          <TableHead>每件片数</TableHead>
-          <TableHead>批次号</TableHead>
-          <TableHead>重量</TableHead>
-          <TableHead>入库数量</TableHead>
-          <TableHead>操作类型</TableHead>
-          <TableHead>操作时间</TableHead>
-          <TableHead>备注</TableHead>
+      <TableHeader className="bg-slate-50">
+        <TableRow className="border-b border-slate-200 hover:bg-transparent">
+          <TableHead className="py-4 font-black text-slate-700">单据编号</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">产品编码/名称</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">产品批次</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">规格型号</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">装箱数</TableHead>
+          <TableHead className="py-4 text-right font-black text-slate-700">入库总量</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">业务类型</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">记账时间</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">备注说明</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -309,49 +317,68 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
   const piecesPerUnit = getActualPiecesPerUnit(record);
 
   return (
-    <TableRow className="h-12 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]">
-      <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
+    <TableRow className="h-14 border-b border-slate-100 transition-colors hover:bg-blue-50/30">
+      <TableCell className="max-w-[120px] truncate font-mono text-[11px] font-bold tracking-tight text-slate-400">
         {record.product?.code ? (
           <CopyableText text={record.product.code} />
         ) : (
           record.productId
         )}
       </TableCell>
-      <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
-        {record.product?.name || '未知产品'}
+      <TableCell>
+        <div className="flex flex-col py-1">
+          <span className="text-sm font-black text-slate-900 leading-tight">
+            {record.product?.code || record.productId}
+          </span>
+          <span className="text-[11px] font-bold text-slate-400 mt-1">
+            {record.product?.name || '未知产品'}
+          </span>
+        </div>
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {formatSpecification(record.product?.specification) || '-'}
+      <TableCell>
+        {record.batchNumber ? (
+          <Badge variant="outline" className="border-amber-100 bg-amber-50 px-2 py-0.5 font-mono text-[11px] font-black text-amber-600">
+             <CopyableText text={record.batchNumber} />
+          </Badge>
+        ) : (
+          <span className="text-slate-300">-</span>
+        )}
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {piecesPerUnit || '-'}
+      <TableCell className="text-xs font-medium text-slate-500">
+        <div className="flex flex-col gap-1">
+           <span>{formatSpecification(record.product?.specification) || '-'}</span>
+           <span className="text-[10px] text-slate-400 font-bold">{getActualWeight(record)}</span>
+        </div>
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {record.batchNumber ? <CopyableText text={record.batchNumber} /> : '-'}
+      <TableCell className="text-xs font-bold text-slate-500">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-black text-slate-700">{piecesPerUnit}</span>
+          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-black text-blue-500">片/件</span>
+        </div>
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        {getActualWeight(record)}
-      </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
-        <span className="font-medium">
+      <TableCell className="text-right">
+        <span className="text-sm font-black text-blue-600">
           {formatQuantity(record.quantity, piecesPerUnit)}
         </span>
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+      <TableCell>
         <Badge
           variant={getOperationTypeVariant(record.reason)}
-          className="text-xs font-medium"
+          className="text-[10px] font-black uppercase tracking-wider"
         >
           {getOperationTypeLabel(record.reason)}
         </Badge>
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-        <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
-          <User className="h-3 w-3" />
+      <TableCell className="text-xs text-slate-500">
+        <div className="flex flex-col gap-1">
           <RelativeTime date={record.createdAt} />
+          <div className="flex items-center gap-1 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+            <User className="h-2.5 w-2.5" />
+            操作员
+          </div>
         </div>
       </TableCell>
-      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+      <TableCell className="max-w-[150px] truncate text-xs text-slate-400 italic">
         {record.remarks || '-'}
       </TableCell>
     </TableRow>

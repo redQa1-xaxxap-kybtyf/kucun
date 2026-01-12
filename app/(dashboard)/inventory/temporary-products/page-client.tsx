@@ -12,19 +12,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useDebouncedCallback } from '@/hooks/use-debounced-search';
 import { useSuppliers } from '@/hooks/use-suppliers';
@@ -283,7 +283,7 @@ export function TemporaryProductsClient() {
                         单位
                       </TableHead>
                       <TableHead className="h-9 text-center text-xs">
-                        每件片数
+                        装箱数
                       </TableHead>
                       <TableHead className="h-9 text-center text-xs">
                         使用次数

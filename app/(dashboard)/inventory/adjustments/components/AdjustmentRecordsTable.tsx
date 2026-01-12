@@ -146,7 +146,7 @@ export function AdjustmentRecordsTable({
               <TableHead>产品名称</TableHead>
               <TableHead>规格</TableHead>
               <TableHead>批次号</TableHead>
-              <TableHead>每件片数</TableHead>
+              <TableHead>装箱数</TableHead>
               <TableHead>调整数量</TableHead>
               <TableHead>调整原因</TableHead>
               <TableHead>操作时间</TableHead>

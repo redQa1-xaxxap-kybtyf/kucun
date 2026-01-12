@@ -1,17 +1,18 @@
 'use client';
 
 import {
-  AlertTriangle,
-  DollarSign,
-  Package,
-  TrendingUp,
-  Wallet,
+    AlertTriangle,
+    DollarSign,
+    Download,
+    Package,
+    TrendingUp,
+    Wallet,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CountUp } from '@/components/ui/count-up';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
@@ -68,9 +69,9 @@ function buildStatCards(
           separator=","
         />
       ),
-      description: '当前库存总价值',
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      description: '当前全仓库存总评估价值',
+      color: 'text-emerald-600',
+      bgColor: 'bg-emerald-500/10',
     });
   }
 
@@ -87,9 +88,9 @@ function buildStatCards(
           separator=","
         />
       ),
-      description: `${statistics.openingBalance.recordCount} 条期初记录`,
-      color: 'text-[hsl(var(--color-primary))]',
-      bgColor: 'bg-[hsl(var(--color-primary-light))]',
+      description: `${statistics.openingBalance.recordCount} 条期初结转记录`,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-500/10',
     });
   }
 
@@ -100,18 +101,18 @@ function buildStatCards(
       title: '库存产品数',
       icon: Package,
       value: <CountUp end={statistics.totalProducts} separator="," />,
-      description: 'SKU 数量',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      description: '当前在库 SKU 种类',
+      color: 'text-violet-600',
+      bgColor: 'bg-violet-500/10',
     },
     {
       id: 'totalQuantity',
       title: '库存总数量',
       icon: TrendingUp,
       value: <CountUp end={statistics.totalQuantity} separator="," />,
-      description: '片',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50',
+      description: '当前库存总片数',
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-500/10',
     }
   );
 
@@ -128,8 +129,9 @@ function buildStatCards(
         separator=","
       />
     ),
-    description: `${statistics.lowStockCount} 个低库存产品`,
-    ...healthColors,
+    description: `${statistics.lowStockCount} 个产品库存告急`,
+    color: healthColors.color,
+    bgColor: healthColors.bgColor.replace('50', '500/10'),
   });
 
   return cards;
@@ -235,36 +237,48 @@ export function InventoryStatisticsCards({
   const gridColsClass = getGridColsClass(cards.length);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="text-muted-foreground text-sm">库存统计概览</div>
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-1">
+        <div className="text-sm font-black tracking-wide text-slate-400 uppercase">实时库存指标集</div>
         <Button
           size="sm"
-          variant="outline"
+          variant="ghost"
+          className="h-8 text-xs font-bold text-slate-500 hover:bg-slate-100"
           onClick={handleExportExcel}
           disabled={!statistics}
         >
-          导出统计 Excel
+          <Download className="mr-1.5 h-3.5 w-3.5" />
+          导出统计概览
         </Button>
       </div>
 
-      <div className={`grid gap-4 md:grid-cols-2 ${gridColsClass}`}>
+      <div className={`grid gap-4 sm:grid-cols-2 ${gridColsClass}`}>
         {cards.map(
           ({ id, title, icon: Icon, value, description, color, bgColor }) => (
-            <Card key={id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                <div className={`rounded-lg p-2 ${bgColor}`}>
-                  <Icon className={`h-4 w-4 ${color}`} />
+            <div 
+              key={id}
+              className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
+            >
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-xs font-black text-slate-400">{title}</p>
+                  <div className={`text-2xl font-black tracking-tight ${color}`}>
+                    {value}
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-bold ${color}`}>{value}</div>
-                <p className="text-muted-foreground mt-1 text-xs">
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${bgColor} transition-transform group-hover:scale-110`}>
+                  <Icon className={`h-6 w-6 ${color}`} />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-[11px] font-bold text-slate-400">
                   {description}
                 </p>
-              </CardContent>
-            </Card>
+                <div className="h-1 w-12 rounded-full bg-slate-50 overflow-hidden">
+                   <div className={`h-full w-2/3 ${color.replace('text', 'bg').split(' ')[0]}`} />
+                </div>
+              </div>
+            </div>
           )
         )}
       </div>

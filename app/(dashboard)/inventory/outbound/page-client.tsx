@@ -1,15 +1,14 @@
 'use client';
 
 import { ERPOutboundRecords } from '@/components/inventory/erp-outbound-records';
+import { OutboundPageHeader } from '@/components/inventory/outbound-page-header';
 import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
 
 /**
  * 出库记录客户端组件
- *
- * ✅ Next.js 15.4 最佳实践：
- * - Server Component 通过 HydrationBoundary 预取数据
- * - Client Component 从缓存读取数据（staleTime=Infinity）
- * - 首屏渲染时间从 800ms 优化到 200ms
+ * 
+ * ✅ 已修复页面标题丢失问题
+ * ✅ 结构已与入库页面（Inbound）完成对齐
  */
 interface OutboundRecordsPageClientProps {
   initialParams: OutboundRecordQueryParams;
@@ -18,5 +17,14 @@ interface OutboundRecordsPageClientProps {
 export function OutboundRecordsPageClient({
   initialParams,
 }: OutboundRecordsPageClientProps) {
-  return <ERPOutboundRecords initialParams={initialParams} />;
+  return (
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="mb-6 flex-shrink-0">
+        <OutboundPageHeader />
+      </div>
+      <div className="flex-1">
+        <ERPOutboundRecords initialParams={initialParams} />
+      </div>
+    </div>
+  );
 }

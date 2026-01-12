@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getInboundRecordByNumber } from '@/lib/api/inbound-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 import {
-  INBOUND_REASON_LABELS,
-  type InboundRecordDetail,
+    INBOUND_REASON_LABELS,
+    type InboundRecordDetail,
 } from '@/lib/types/inbound';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 
@@ -54,26 +54,26 @@ function BackToInboundListButton() {
 
 function ProductInfoCard({ record }: { record: InboundRecordDetail }) {
   return (
-    <Card className="shadow-[var(--shadow-light)]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
-        <CardTitle className="text-base text-[hsl(var(--color-text-primary))]">
-          产品信息
+    <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+      <CardHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4">
+        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 italic">
+          核心产品参数
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 pt-6 text-sm">
         <div className="grid grid-cols-[120px_1fr] gap-2">
           <span className="text-[hsl(var(--color-text-secondary))]">
-            产品名称
+            产品编码
           </span>
-          <span className="font-medium text-[hsl(var(--color-text-primary))]">
-            {record.product?.name || '—'}
+          <span className="font-bold text-[hsl(var(--color-text-primary))]">
+            {record.product?.code || '—'}
           </span>
         </div>
         <div className="grid grid-cols-[120px_1fr] gap-2">
           <span className="text-[hsl(var(--color-text-secondary))]">
-            产品编码
+            产品名称
           </span>
-          <span>{record.product?.code || '—'}</span>
+          <span>{record.product?.name || '—'}</span>
         </div>
         <div className="grid grid-cols-[120px_1fr] gap-2">
           <span className="text-[hsl(var(--color-text-secondary))]">规格</span>
@@ -95,9 +95,9 @@ function ProductInfoCard({ record }: { record: InboundRecordDetail }) {
         </div>
         <div className="grid grid-cols-[120px_1fr] gap-2">
           <span className="text-[hsl(var(--color-text-secondary))]">
-            批次规格
+            包装规格
           </span>
-          <span>
+          <span className="font-bold text-blue-600">
             {record.batchSpecification
               ? `${record.batchSpecification.piecesPerUnit} 片/件`
               : '—'}
@@ -120,43 +120,45 @@ function OperationRecordCard({
   updatedAt,
 }: OperationRecordCardProps) {
   return (
-    <Card className="shadow-[var(--shadow-light)]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
-        <CardTitle className="text-base text-[hsl(var(--color-text-primary))]">
-          操作记录
+    <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+      <CardHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4">
+        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 italic">
+          系统记账存证
         </CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-4 pt-6 text-sm">
-        <div className="grid grid-cols-[120px_1fr] gap-2">
-          <span className="text-[hsl(var(--color-text-secondary))]">
-            创建人
+      <CardContent className="grid gap-4 p-6 text-sm">
+        <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            经办人员
           </span>
-          <span>{record.user?.name || '—'}</span>
+          <span className="font-bold text-slate-900">{record.user?.name || '—'}</span>
         </div>
-        <div className="grid grid-cols-[120px_1fr] gap-2">
-          <span className="text-[hsl(var(--color-text-secondary))]">
-            创建时间
+        <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            初始记账
           </span>
-          <span>{createdAt}</span>
+          <span className="font-mono text-xs text-slate-500">{createdAt}</span>
         </div>
         {updatedAt && (
-          <div className="grid grid-cols-[120px_1fr] gap-2">
-            <span className="text-[hsl(var(--color-text-secondary))]">
-              更新时间
+          <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+              最后变更
             </span>
-            <span>{updatedAt}</span>
+            <span className="font-mono text-xs text-slate-500">{updatedAt}</span>
           </div>
         )}
-        <div className="grid grid-cols-[120px_1fr] gap-2">
-          <span className="text-[hsl(var(--color-text-secondary))]">
-            仓库位置
+        <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            库位指引
           </span>
-          <span>{record.location || '—'}</span>
+          <span className="font-bold text-slate-700">{record.location || '—'}</span>
         </div>
-        <div className="grid grid-cols-[120px_1fr] gap-2">
-          <span className="text-[hsl(var(--color-text-secondary))]">备注</span>
-          <span className="text-[hsl(var(--color-text-primary))]">
-            {record.remarks || '—'}
+        <div className="grid grid-cols-[100px_1fr] gap-2 pt-2 border-t border-slate-50">
+          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            备注摘要
+          </span>
+          <span className="text-xs text-slate-500 italic">
+            {record.remarks || '（无备注内容）'}
           </span>
         </div>
       </CardContent>
@@ -166,26 +168,31 @@ function OperationRecordCard({
 
 function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
   return (
-    <Card className="shadow-[var(--shadow-light)]">
-      <CardHeader className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] md:flex-row md:items-center md:justify-between">
+    <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
+      <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <CardTitle className="text-base text-[hsl(var(--color-text-primary))]">
-            批次追溯
+          <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 italic">
+            批次效期追溯
           </CardTitle>
-          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-            查看批次 {batchNumber} 的完整库存流水
+          <p className="mt-1 text-xs font-bold text-slate-400">
+            追踪批次 {batchNumber} 的完整库存生命周期流水
           </p>
         </div>
-        <Button variant="outline" asChild>
+        <Button 
+          variant="outline" 
+          size="sm"
+          asChild
+          className="h-9 border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600"
+        >
           <Link
             href={`/inventory/batch/${encodeURIComponent(batchNumber)}/history`}
           >
-            查看批次历史
+            查看全链路流水
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="pt-6 text-sm text-[hsl(var(--color-text-secondary))]">
-        如需追溯该批次的完整入库、出库、调整轨迹，请使用上方链接跳转至批次库存流水页面。
+      <CardContent className="p-6 text-xs text-slate-400 italic">
+        通过点击右上角链接，您可以多维度追溯该批次产品的入库、出库、调拨及库存调整轨迹。
       </CardContent>
     </Card>
   );

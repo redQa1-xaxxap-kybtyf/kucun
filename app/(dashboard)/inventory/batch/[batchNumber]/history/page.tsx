@@ -1,28 +1,27 @@
-/* eslint-disable max-lines */
-import { ActivitySquare, ArrowLeft, Clock, PackageSearch } from 'lucide-react';
-import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { Clock, Package, Tag } from 'lucide-react';
 
+import { CopyableText } from '@/components/common/copyable-text';
+import { BatchHistoryHeader } from '@/components/inventory/batch-history-header';
+import { BatchHistorySummary } from '@/components/inventory/batch-history-summary';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { getBatchHistoryByNumber } from '@/lib/api/batch-history-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 import { INBOUND_REASON_LABELS, type InboundReason } from '@/lib/types/inbound';
 import {
-  OUTBOUND_REASON_LABELS,
-  getAdjustmentReasonLabel,
-  type BatchHistoryResult,
-  type BatchMovementGroup,
-  type InventoryMovementEntry,
+    OUTBOUND_REASON_LABELS,
+    getAdjustmentReasonLabel,
+    type BatchHistoryResult,
+    type BatchMovementGroup,
+    type InventoryMovementEntry,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { formatNumber } from '@/lib/utils/format';
@@ -153,6 +152,22 @@ export default async function BatchHistoryPage({
   return <BatchHistoryScreen history={history} view={view} />;
 }
 
+function resolveMovementReason(entry: InventoryMovementEntry) {
+  if (!entry.reason) {
+    return undefined;
+  }
+
+  if (entry.type === 'inbound') {
+    return INBOUND_REASON_LABELS[entry.reason as InboundReason] ?? entry.reason;
+  }
+
+  if (entry.type === 'outbound') {
+    return OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason;
+  }
+
+  return getAdjustmentReasonLabel(entry.reason);
+}
+
 function BatchHistoryScreen({
   history,
   view,
@@ -161,178 +176,28 @@ function BatchHistoryScreen({
   view: BatchViewModel;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
-      <div className="space-y-6">
-        <BatchHeader
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6 lg:p-8 bg-slate-50/30">
+      <div className="max-w-7xl mx-auto w-full space-y-8">
+        <BatchHistoryHeader
           batchNumber={view.effectiveBatchNumber}
           filteredInventoryId={history.filteredBy?.inventoryId}
         />
-        <SummaryCards summary={view.summary} />
-        <ProductInfoCard
-          batchNumber={view.effectiveBatchNumber}
-          product={view.product}
-          variant={view.variant}
-        />
-        <MovementHistoryCard groups={history.groups} />
-      </div>
-    </div>
-  );
-}
-
-function BatchHeader({
-  batchNumber,
-  filteredInventoryId,
-}: {
-  batchNumber: string;
-  filteredInventoryId?: string;
-}) {
-  return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-lg">
-              <PackageSearch className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                批次库存变动历史
-              </h1>
-              <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                <span className="font-medium">批次号：{batchNumber}</span>
-                {filteredInventoryId && (
-                  <Badge variant="outline">库存ID：{filteredInventoryId}</Badge>
-                )}
-              </div>
-            </div>
+        
+        <BatchHistorySummary summary={view.summary} />
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <ProductInfoCard
+              batchNumber={view.effectiveBatchNumber}
+              product={view.product}
+              variant={view.variant}
+            />
           </div>
-          <Button variant="outline" size="lg" asChild className="h-11">
-            <Link href="/inventory">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              返回
-            </Link>
-          </Button>
+          <div className="lg:col-span-2">
+            <MovementHistoryCard groups={history.groups} />
+          </div>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function SummaryCards({ summary }: { summary: BatchSummary }) {
-  return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      <SummaryCard
-        title="期初库存"
-        value={
-          summary.openingBalance !== undefined
-            ? formatNumber(summary.openingBalance)
-            : '—'
-        }
-        valueClassName="text-[hsl(var(--color-primary))]"
-        caption="片"
-      />
-      <SummaryCard
-        title="当前库存"
-        value={
-          summary.currentQuantity !== undefined
-            ? formatNumber(summary.currentQuantity)
-            : '—'
-        }
-        valueClassName="text-green-600"
-        containerClassName="border-green-200 bg-green-50/50"
-        caption="片"
-      />
-      <SummaryCard
-        title="净变动"
-        value={
-          summary.netChange !== undefined
-            ? formatChange(summary.netChange)
-            : '—'
-        }
-        valueClassName="text-blue-600"
-        containerClassName="border-blue-200 bg-blue-50/50"
-        caption="片"
-      />
-      <SummaryCard title="变动汇总">
-        <div className="mt-2 space-y-1 text-xs">
-          <SummaryRow
-            label="入库"
-            value={`+${formatNumber(summary.totalInbound)}`}
-            valueClassName="text-green-600"
-          />
-          <SummaryRow
-            label="出库"
-            value={`-${formatNumber(summary.totalOutbound)}`}
-            valueClassName="text-red-600"
-          />
-          <SummaryRow
-            label="调整"
-            value={formatChange(summary.totalAdjustment)}
-            valueClassName="text-orange-600"
-          />
-        </div>
-      </SummaryCard>
-    </div>
-  );
-}
-
-function SummaryCard({
-  title,
-  value,
-  caption,
-  valueClassName,
-  containerClassName,
-  children,
-}: {
-  title: string;
-  value?: string;
-  caption?: string;
-  valueClassName?: string;
-  containerClassName?: string;
-  children?: ReactNode;
-}) {
-  return (
-    <Card
-      className={`card-shadow-light border border-[hsl(var(--color-border-primary))] ${containerClassName ?? ''}`}
-    >
-      <CardContent className="p-4">
-        <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-          {title}
-        </div>
-        {value !== undefined ? (
-          <>
-            <div
-              className={`mt-2 text-2xl font-bold ${valueClassName ?? 'text-[hsl(var(--color-text-primary))]'}`}
-            >
-              {value}
-            </div>
-            {caption ? (
-              <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                {caption}
-              </div>
-            ) : null}
-          </>
-        ) : (
-          children
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function SummaryRow({
-  label,
-  value,
-  valueClassName,
-}: {
-  label: string;
-  value: string;
-  valueClassName: string;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-[hsl(var(--color-text-secondary))]">{label}</span>
-      <span className={`font-semibold ${valueClassName}`}>{value}</span>
+      </div>
     </div>
   );
 }
@@ -355,18 +220,19 @@ function ProductInfoCard({
     : '—';
 
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
-        <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
-          <ActivitySquare className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
-          产品信息
+    <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
+        <CardTitle className="flex items-center text-sm font-black uppercase tracking-wider text-slate-500">
+          <Tag className="mr-2 h-4 w-4 text-violet-500" />
+          核心产品参数
         </CardTitle>
       </CardHeader>
-      <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
-        <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-          <InfoField label="产品编码" value={product?.code || '—'} />
+      <CardContent className="p-6">
+        <div className="space-y-6">
+          <InfoField label="产品编码" value={product?.code || '—'} isPrimary />
           <InfoField label="产品名称" value={product?.name || '—'} />
-          <InfoField label="批次号" value={batchNumber || '—'} />
+          <InfoField label="规格" value={product?.specification || '—'} />
+          <InfoField label="批次号" value={batchNumber || '—'} isBatch />
           {variant ? (
             <InfoField label="色号/变体" value={variantDisplay} />
           ) : null}
@@ -376,41 +242,45 @@ function ProductInfoCard({
   );
 }
 
-function InfoField({ label, value }: { label: string; value: string }) {
+function InfoField({ label, value, isPrimary = false, isBatch = false }: { label: string; value: string; isPrimary?: boolean; isBatch?: boolean }) {
   return (
-    <div>
-      <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+    <div className="flex flex-col gap-1.5">
+      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
         {label}
       </div>
-      <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
-        {value}
+      <div className={`font-black tracking-tight ${
+        isPrimary ? 'text-lg text-slate-900' : 
+        isBatch ? 'text-sm text-amber-600' : 'text-sm text-slate-700'
+      }`}>
+        {isPrimary ? <CopyableText text={value} /> : value}
       </div>
     </div>
   );
 }
 
 function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
+  const totalCount = groups.reduce((sum, group) => sum + group.movements.length, 0);
+  
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
+    <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4 px-6">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
-            <Clock className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
-            变动历史
+          <CardTitle className="flex items-center text-sm font-black uppercase tracking-wider text-slate-500">
+            <Clock className="mr-2 h-4 w-4 text-emerald-500" />
+            全量变动流水
           </CardTitle>
-          <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-            共{' '}
-            <strong className="text-[hsl(var(--color-primary))]">
-              {groups.reduce((sum, group) => sum + group.movements.length, 0)}
-            </strong>{' '}
-            条记录
-          </div>
+          <Badge className="bg-slate-900 text-[10px] font-black uppercase tracking-widest text-white">
+            {totalCount} RECORDS
+          </Badge>
         </div>
       </CardHeader>
-      <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+      <CardContent className="p-0">
         {groups.length === 0 ? (
-          <div className="py-20 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-            当前批次尚未产生任何入库、出库或调整记录
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="rounded-full bg-slate-50 p-4 mb-4">
+               <Package className="h-8 w-8 text-slate-200" />
+            </div>
+            <p className="text-sm font-bold text-slate-400">当前批次尚未产生任何变动记录</p>
           </div>
         ) : (
           <MovementTable groups={groups} />
@@ -420,55 +290,21 @@ function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
   );
 }
 
-function resolveMovementReason(entry: InventoryMovementEntry) {
-  if (!entry.reason) {
-    return undefined;
-  }
-
-  if (entry.type === 'inbound') {
-    return INBOUND_REASON_LABELS[entry.reason as InboundReason] ?? entry.reason;
-  }
-
-  if (entry.type === 'outbound') {
-    return OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason;
-  }
-
-  return getAdjustmentReasonLabel(entry.reason);
-}
-
 function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
   return (
     <div className="overflow-x-auto">
       <Table>
-        <TableHeader className="card-shadow-light border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
-          <TableRow className="text-xs text-[hsl(var(--color-text-secondary))]">
-            <TableHead className="px-4 py-3 text-left font-medium">
-              时间
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">
-              类型
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">
-              单据编号
-            </TableHead>
-            <TableHead className="px-4 py-3 text-right font-medium">
-              变动数量
-            </TableHead>
-            <TableHead className="px-4 py-3 text-right font-medium">
-              操作前
-            </TableHead>
-            <TableHead className="px-4 py-3 text-right font-medium">
-              操作后
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">
-              操作人
-            </TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">
-              原因/备注
-            </TableHead>
+        <TableHeader className="bg-slate-50/50">
+          <TableRow className="border-b border-slate-100">
+            <TableHead className="py-4 pl-6 font-black text-slate-500">时间</TableHead>
+            <TableHead className="py-4 font-black text-slate-500">类型</TableHead>
+            <TableHead className="py-4 font-black text-slate-500">单据编号</TableHead>
+            <TableHead className="py-4 font-black text-slate-500 text-right">变动</TableHead>
+            <TableHead className="py-4 font-black text-slate-500 text-right">余量</TableHead>
+            <TableHead className="py-4 font-black text-slate-500 text-right pr-6">操作人</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="divide-y">
+        <TableBody>
           {groups.flatMap(group =>
             group.movements.map(entry => (
               <MovementRow
@@ -485,74 +321,57 @@ function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
 
 function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
   const meta = MOVEMENT_META[entry.type];
-  // 优先使用批次级别的 piecesPerUnit，回退到产品级别，最后默认为 0
-  // 批次级别：来自 BatchSpecification 表，更准确反映该批次的实际规格
-  // 产品级别：来自 Product 表，作为默认值
-  const piecesPerUnit =
-    entry.batchPiecesPerUnit ?? entry.product?.piecesPerUnit ?? 0;
+  const piecesPerUnit = entry.batchPiecesPerUnit ?? entry.product?.piecesPerUnit ?? 0;
   const absChange = Math.abs(entry.quantityChange);
-  const changePrefix =
-    entry.quantityChange > 0 ? '+' : entry.quantityChange < 0 ? '-' : '';
+  const changePrefix = entry.quantityChange > 0 ? '+' : entry.quantityChange < 0 ? '-' : '';
+  const changeColor = entry.quantityChange > 0 ? 'text-emerald-600' : entry.quantityChange < 0 ? 'text-rose-600' : 'text-slate-900';
 
-  const changeDisplay =
-    piecesPerUnit > 0
+  const changeDisplay = piecesPerUnit > 0
       ? formatPieceSummary(absChange, piecesPerUnit, { fallbackUnit: '片' })
       : `${formatNumber(absChange)}片`;
 
   const formatBalance = (value?: number) => {
-    if (value === undefined) {
-      return '—';
-    }
+    if (value === undefined) return '—';
     return piecesPerUnit > 0
       ? formatPieceSummary(value, piecesPerUnit, { fallbackUnit: '片' })
       : `${formatNumber(value)}片`;
   };
+  
   const reasonLabel = resolveMovementReason(entry);
 
   return (
-    <TableRow className="transition-colors hover:bg-gray-50/50">
-      <TableCell className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
-        {formatDateTimeCN(entry.createdAt)}
+    <TableRow className="group border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+      <TableCell className="py-4 pl-6">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-bold text-slate-900">{formatDateTimeCN(entry.createdAt).split(' ')[0]}</span>
+          <span className="text-[10px] font-medium text-slate-400">{formatDateTimeCN(entry.createdAt).split(' ')[1]}</span>
+        </div>
       </TableCell>
-      <TableCell className="px-4 py-3">
-        <Badge variant={meta.badge} className="text-xs">
+      <TableCell className="py-4">
+        <Badge variant={meta.badge} className="rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
           {meta.label}
         </Badge>
       </TableCell>
-      <TableCell className="px-4 py-3">
-        <code className="font-mono text-sm text-[hsl(var(--color-primary))]">
-          {entry.recordNumber}
-        </code>
+      <TableCell className="py-4">
+        <div className="flex flex-col gap-1">
+          <code className="text-[11px] font-black text-blue-600 tracking-tight">
+            {entry.recordNumber}
+          </code>
+          {reasonLabel && (
+            <span className="text-[10px] font-bold text-slate-400 truncate max-w-[120px]">
+              {reasonLabel}
+            </span>
+          )}
+        </div>
       </TableCell>
-      <TableCell className="px-4 py-3 text-right font-semibold text-gray-900">
-        {changePrefix}
-        {changeDisplay}
+      <TableCell className={`py-4 text-right tabular-nums text-xs font-black ${changeColor}`}>
+        {changePrefix}{changeDisplay}
       </TableCell>
-      <TableCell className="px-4 py-3 text-right text-gray-700">
-        {formatBalance(entry.balanceBefore)}
-      </TableCell>
-      <TableCell className="px-4 py-3 text-right text-gray-700">
+      <TableCell className="py-4 text-right tabular-nums text-[11px] font-bold text-slate-600">
         {formatBalance(entry.balanceAfter)}
       </TableCell>
-      <TableCell className="px-4 py-3 text-sm text-gray-700">
+      <TableCell className="py-4 text-right pr-6 font-bold text-slate-500 text-xs">
         {entry.operator?.name || '—'}
-      </TableCell>
-      <TableCell className="px-4 py-3">
-        <div className="max-w-xs">
-          <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-            {reasonLabel ?? entry.reason ?? '—'}
-          </div>
-          {entry.referenceNumber ? (
-            <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-              关联：{entry.referenceNumber}
-            </div>
-          ) : null}
-          {entry.remarks ? (
-            <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-              {entry.remarks}
-            </div>
-          ) : null}
-        </div>
       </TableCell>
     </TableRow>
   );

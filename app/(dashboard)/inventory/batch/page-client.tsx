@@ -1,39 +1,37 @@
 'use client';
 
-import { PackageSearch, Plus, RefreshCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { PageHeader } from '@/components/common/page-header';
+import { BatchPageHeader } from '@/components/inventory/batch-page-header';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  useBatchSpecifications,
-  useCreateBatchSpecification,
-  useDeleteBatchSpecification,
-  useUpdateBatchSpecification,
+    useBatchSpecifications,
+    useCreateBatchSpecification,
+    useDeleteBatchSpecification,
+    useUpdateBatchSpecification,
 } from '@/lib/api/batch-specifications';
 import type {
-  BatchSpecification,
-  BatchSpecificationListResponse,
-  BatchSpecificationQueryParams,
-  CreateBatchSpecificationRequest,
+    BatchSpecification,
+    BatchSpecificationListResponse,
+    BatchSpecificationQueryParams,
+    CreateBatchSpecificationRequest,
 } from '@/lib/types/batch-specification';
 
 import { BatchRecordsFilters } from './components/BatchRecordsFilters';
@@ -291,22 +289,10 @@ export function BatchSpecificationPageClient({
     return (
       <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <div className="space-y-6">
-          <PageHeader
-            title="批次管理"
-            description="管理产品的批次规格参数，维护库存批次信息"
-            icon={<PackageSearch className="h-6 w-6 text-white" />}
-            iconBgColor="hsl(var(--color-primary))"
-            actions={
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-11 gap-2"
-                onClick={handleRefresh}
-              >
-                <RefreshCcw className="h-4 w-4" />
-                重新加载
-              </Button>
-            }
+          <BatchPageHeader
+            isError
+            onRefresh={handleRefresh}
+            onCreate={handleCreate}
           />
           <div className="text-muted-foreground rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-6 text-center text-sm">
             加载批次规格数据时发生错误，请稍后重试。
@@ -319,22 +305,7 @@ export function BatchSpecificationPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-6">
-        <PageHeader
-          title="批次管理"
-          description="管理每个产品批次的规格参数，确保库存数据准确"
-          icon={<PackageSearch className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-primary))"
-          actions={
-            <Button
-              size="lg"
-              className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-              onClick={handleCreate}
-            >
-              <Plus className="h-4 w-4" />
-              新建批次规格
-            </Button>
-          }
-        />
+        <BatchPageHeader onCreate={handleCreate} />
 
         <BatchRecordsFilters
           filters={queryParams}

@@ -5,10 +5,10 @@
 
 'use client';
 
-import { Eye, ImageIcon, Package } from 'lucide-react';
+import { Eye, Package } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
@@ -17,12 +17,12 @@ import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
@@ -79,26 +79,18 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
 
   // 计算每个分组的总计
   groups.forEach(group => {
-    let totalPieces = 0;
-    let totalUnits = 0;
-    let remainingPieces = 0;
-
-    group.items.forEach(item => {
-      const packaging =
-        item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 1;
-      totalPieces += item.quantity;
-
-      if (packaging > 0) {
-        totalUnits += Math.floor(item.quantity / packaging);
-        remainingPieces += item.quantity % packaging;
-      } else {
-        remainingPieces += item.quantity;
-      }
-    });
+    const totalPieces = group.items.reduce((sum, item) => sum + item.quantity, 0);
+    const firstItem = group.items[0];
+    const packaging = firstItem.batchPiecesPerUnit ?? firstItem.product?.piecesPerUnit ?? 0;
 
     group.totalPieces = totalPieces;
-    group.totalUnits = totalUnits;
-    group.remainingPieces = remainingPieces;
+    if (packaging > 0) {
+      group.totalUnits = Math.floor(totalPieces / packaging);
+      group.remainingPieces = totalPieces % packaging;
+    } else {
+      group.totalUnits = 0;
+      group.remainingPieces = totalPieces;
+    }
   });
 
   return Array.from(groups.values());
@@ -152,31 +144,22 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             : ''
         }
       >
-        <TableHeader className="card-shadow-light sticky top-0 z-20 bg-[hsl(var(--color-bg-card))]">
-          <TableRow>
-            <TableHead className="w-12 whitespace-nowrap">缩略图</TableHead>
-            <TableHead className="whitespace-nowrap">产品编码</TableHead>
-            <TableHead className="whitespace-nowrap">产品名称</TableHead>
-            <TableHead className="whitespace-nowrap">规格</TableHead>
-            <TableHead className="whitespace-nowrap">包装信息</TableHead>
-            <TableHead className="whitespace-nowrap">批次号</TableHead>
-            <TableHead className="text-right whitespace-nowrap">
-              库存数量
-            </TableHead>
-            <TableHead className="text-right whitespace-nowrap">
-              预留数量
-            </TableHead>
-            <TableHead className="text-right whitespace-nowrap">
-              可用数量
-            </TableHead>
+        <TableHeader className="card-shadow-light sticky top-0 z-20 bg-white/95 backdrop-blur-md">
+          <TableRow className="border-b border-slate-200 hover:bg-transparent">
+            <TableHead className="w-16 py-4 font-black text-slate-700">预览图</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">产品编码 / SKU</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">产品名称</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">批次/规格</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">装箱数</TableHead>
+            <TableHead className="py-4 text-right font-black text-slate-700">库存总量</TableHead>
+            <TableHead className="py-4 text-right font-black text-slate-700">预留/可用</TableHead>
             {hasFinancePermission && (
-              <TableHead className="text-right whitespace-nowrap">
-                成本（单价/总价）
+              <TableHead className="py-4 text-right font-black text-slate-700">
+                单位成本/货值评估
               </TableHead>
             )}
-            <TableHead className="whitespace-nowrap">库存状态</TableHead>
-            <TableHead className="whitespace-nowrap">最后更新</TableHead>
-            <TableHead className="text-right whitespace-nowrap">操作</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">健康度</TableHead>
+            <TableHead className="py-4 font-black text-slate-700 text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -220,9 +203,6 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             </TableRow>
           ) : (
             groups.map((group, groupIndex) => {
-              const isEvenGroup = groupIndex % 2 === 0;
-              const groupBgClass = isEvenGroup ? 'bg-white' : 'bg-muted/20';
-
               return group.items.map((item, index) => {
                 const isFirstInGroup = index === 0;
                 const isLastInGroup = index === group.items.length - 1;
@@ -238,7 +218,6 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                   item.quantity,
                   packaging,
                   {
-                    prefix: '总计',
                     fallbackUnit: unitLabel,
                   }
                 );
@@ -252,18 +231,14 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                 );
                 const reservedDisplay = (() => {
                   const reserved = item.reservedQuantity ?? 0;
-                  if (reserved <= 0) {
-                    return '0';
-                  }
+                  if (reserved <= 0) return '0';
                   return formatPieceSummary(reserved, packaging, {
                     fallbackUnit: unitLabel,
                     zeroDisplay: '0',
                   });
                 })();
                 const availableDisplay = (() => {
-                  if (availableQuantity <= 0) {
-                    return '0';
-                  }
+                  if (availableQuantity <= 0) return '0';
                   return formatPieceSummary(availableQuantity, packaging, {
                     fallbackUnit: unitLabel,
                     zeroDisplay: '0',
@@ -273,172 +248,149 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                 return (
                   <TableRow
                     key={item.id}
-                    className={`cursor-pointer text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] ${groupBgClass} ${
+                    className={`group transition-all hover:bg-slate-50/80 ${
                       isLastInGroup
-                        ? 'border-b-2 border-[hsl(var(--color-border-primary))]' // 组最后一行加粗下边框
-                        : 'border-b-0' // 组内无边框
-                    } ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))]' : ''}`}
+                        ? 'border-b border-slate-200'
+                        : 'border-b-0'
+                    }`}
                     onDoubleClick={() => onAdjust(item.id)}
                   >
-                    {/* 产品缩略图 - 只在分组第一行显示 */}
-                    <TableCell className="w-12">
+                    {/* 产品预览区 */}
+                    <TableCell className="py-3">
                       {isFirstInGroup ? (
-                        group.thumbnailUrl ? (
-                          <div className="relative h-10 w-10 overflow-hidden rounded border border-[hsl(var(--color-border-secondary))] bg-white">
+                        <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm transition-transform group-hover:scale-105">
+                          {group.thumbnailUrl ? (
                             <Image
                               src={group.thumbnailUrl}
                               alt={group.productName}
                               fill
                               className="object-cover"
-                              sizes="40px"
+                              sizes="48px"
                             />
-                          </div>
-                        ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-                            <ImageIcon className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
-                          </div>
-                        )
-                      ) : null}
-                    </TableCell>
-
-                    {/* 产品编码 */}
-                    <TableCell
-                      className={`${
-                        isFirstInGroup
-                          ? 'font-semibold text-[hsl(var(--color-primary))]'
-                          : 'pl-6 text-[hsl(var(--color-text-tertiary))]'
-                      }`}
-                    >
-                      {isFirstInGroup ? (
-                        <div className="flex flex-col gap-0.5">
-                          <CopyableText text={group.productCode} />
-                          {group.items.length > 1 && (
-                            <span className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
-                              共 {group.items.length} 个批次
-                            </span>
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-slate-50">
+                              <Package className="h-5 w-5 text-slate-300" />
+                            </div>
                           )}
                         </div>
                       ) : (
-                        <CopyableText
-                          text={group.productCode}
-                          displayText={`└ ${group.productCode}`}
-                        />
-                      )}
-                    </TableCell>
-
-                    {/* 产品名称 - 单行显示，过长时省略号 */}
-                    <TableCell
-                      className={`max-w-[260px] truncate ${
-                        isFirstInGroup
-                          ? 'font-medium text-[hsl(var(--color-text-primary))]'
-                          : 'text-[hsl(var(--color-text-secondary))]'
-                      }`}
-                    >
-                      {group.productName}
-                    </TableCell>
-
-                    {/* 规格 */}
-                    <TableCell
-                      className={`${
-                        isFirstInGroup
-                          ? 'text-[hsl(var(--color-text-secondary))]'
-                          : 'text-[hsl(var(--color-text-tertiary))]'
-                      }`}
-                    >
-                      {isFirstInGroup && group.items.length > 1 ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span>{group.specification}</span>
-                          <span className="text-xs font-semibold text-[hsl(var(--color-primary))]">
-                            总计: {group.totalUnits}件
-                            {group.remainingPieces > 0
-                              ? `+${group.remainingPieces}片`
-                              : ''}
-                          </span>
+                        <div className="flex justify-center">
+                          <div className="h-6 w-0.5 rounded-full bg-slate-100" />
                         </div>
-                      ) : (
-                        group.specification
                       )}
                     </TableCell>
 
-                    {/* 包装信息（含重量） */}
-                    <TableCell
-                      className={`${
-                        isFirstInGroup
-                          ? 'font-medium text-[hsl(var(--color-text-primary))]'
-                          : 'text-[hsl(var(--color-text-secondary))]'
-                      }`}
-                    >
-                      <div className="flex flex-col gap-0.5">
-                        {packaging > 0 ? (
-                          <span className="font-semibold">
-                            {packaging}
-                            <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-                              片/件
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-[hsl(var(--color-text-tertiary))]">
-                            -
-                          </span>
-                        )}
+                    {/* 产品编码 / 批次 */}
+                    <TableCell className="py-3">
+                      <div className="flex flex-col gap-1">
+                        <div className={`text-sm font-black tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}>
+                          <CopyableText text={group.productCode} />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                           <Badge variant="outline" className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600">
+                             {item.batchNumber ? item.batchNumber.toUpperCase().slice(-8) : '常规'}
+                           </Badge>
+                           {isFirstInGroup && group.items.length > 1 && (
+                             <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-black text-white shadow-sm shadow-indigo-200">
+                               共 {group.items.length} 批次
+                             </Badge>
+                           )}
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    {/* 产品名称 */}
+                    <TableCell className="py-3">
+                      <div className={`max-w-[200px] truncate text-xs font-bold transition-colors ${isFirstInGroup ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400'}`}>
+                        {group.productName}
+                      </div>
+                    </TableCell>
+
+                    {/* 批次规格 */}
+                    <TableCell className="py-3">
+                       <div className="flex flex-col gap-1">
+                         <div className="max-w-[150px] truncate text-xs font-medium text-slate-500">
+                           {group.specification}
+                         </div>
+                         <div className="text-[10px] font-bold text-slate-300">
+                            最后更新: <RelativeTime date={item.updatedAt} />
+                         </div>
+                       </div>
+                    </TableCell>
+
+                    {/* 包装信息 */}
+                    <TableCell className="py-3">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1">
+                           <span className="text-sm font-black text-slate-700">{packaging}</span>
+                           <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500 uppercase">
+                             片/件
+                           </span>
+                        </div>
                         {item.weight ? (
-                          <span className="text-xs tabular-nums text-[hsl(var(--color-text-secondary))]">
-                            {item.weight.toFixed(2)}
-                            <span className="ml-0.5 font-normal text-[hsl(var(--color-text-tertiary))]">
-                              kg
-                            </span>
-                          </span>
+                          <div className="text-[11px] font-bold text-slate-400 tabular-nums">
+                            {item.weight.toFixed(2)} KG
+                          </div>
                         ) : null}
                       </div>
                     </TableCell>
 
-                    {/* 批次号 */}
-                    <TableCell className="font-mono font-medium text-[hsl(var(--color-primary))]">
-                      {item.batchNumber ? (
-                        <CopyableText text={item.batchNumber} />
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-
-                    {/* 库存数量 */}
-                    <TableCell className="text-right font-semibold whitespace-nowrap text-[hsl(var(--color-success))] tabular-nums">
-                      {quantityDisplay}
-                    </TableCell>
-
-                    {/* 预留数量 */}
-                    <TableCell className="text-right font-medium whitespace-nowrap text-[hsl(var(--color-warning))] tabular-nums">
-                      {reservedDisplay}
-                    </TableCell>
-
-                    {/* 可用数量 */}
-                    <TableCell className="text-right font-medium whitespace-nowrap text-[hsl(var(--color-primary))] tabular-nums">
-                      {availableDisplay}
-                    </TableCell>
-
-                    {/* 成本信息（合并显示） */}
-                    {hasFinancePermission && (
-                      <TableCell className="text-right tabular-nums">
-                        {item.unitCost ? (
-                          <div className="space-y-0.5">
-                            <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                              {formatCurrency(item.unitCost)}
+                    {/* 库存总量 */}
+                    <TableCell className="py-3 text-right">
+                       <div className="flex flex-col items-end gap-1.5">
+                         {isFirstInGroup && group.items.length > 1 && (
+                            <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white shadow-md ring-2 ring-white">
+                               汇总: {group.totalUnits}件{group.remainingPieces > 0 ? `+${group.remainingPieces}片` : ''}
                             </div>
-                            <div className="font-semibold text-[hsl(var(--color-primary))]">
+                         )}
+                         <div className={`text-sm font-black ${isFirstInGroup ? 'text-emerald-600' : 'text-slate-400'}`}>
+                           {quantityDisplay}
+                         </div>
+                       </div>
+                    </TableCell>
+
+                    {/* 预留/可用 */}
+                    <TableCell className="py-3 text-right">
+                       <div className="flex flex-col items-end gap-1">
+                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                            <span>预留 {reservedDisplay}</span>
+                         </div>
+                         <div className="flex flex-col items-end gap-1.5">
+                            {isFirstInGroup && group.items.length > 1 && (
+                               <div className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600 border border-slate-200">
+                                  总可用: {availableDisplay.replace('总计', '').trim()}
+                               </div>
+                            )}
+                            <div className={`text-sm font-black ${isFirstInGroup ? 'text-indigo-600' : 'text-slate-400'}`}>
+                               {availableDisplay}
+                            </div>
+                         </div>
+                       </div>
+                    </TableCell>
+
+                    {/* 货值评估 */}
+                    {hasFinancePermission && (
+                      <TableCell className="py-3 text-right">
+                        {item.unitCost ? (
+                          <div className="flex flex-col items-end gap-0.5">
+                            <div className="text-[10px] font-bold text-slate-400">
+                              成本单价: {formatCurrency(item.unitCost)}
+                            </div>
+                            <div className="text-sm font-black text-slate-900">
                               {formatCurrency(item.quantity * item.unitCost)}
                             </div>
                           </div>
                         ) : (
-                          '-'
+                          <span className="text-slate-300">-</span>
                         )}
                       </TableCell>
                     )}
 
-                    {/* 库存状态 */}
-                    <TableCell>
+                    {/* 健康状态 */}
+                    <TableCell className="py-3">
                       <Badge
                         variant={variant}
-                        className={`px-3 text-xs font-medium whitespace-nowrap ${
+                        className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider ${
                           variant === 'destructive' || variant === 'warning'
                             ? 'animate-breathe'
                             : ''
@@ -448,37 +400,19 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       </Badge>
                     </TableCell>
 
-                    {/* 最后更新 */}
-                    <TableCell className="text-xs">
-                      <RelativeTime date={item.updatedAt} />
-                    </TableCell>
-
                     {/* 操作 */}
-                    <TableCell className="text-right">
-                      {item.batchNumber ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="group h-8 w-8 rounded-md p-0 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                          onClick={e => {
-                            e.stopPropagation();
-                            onAdjust(item.id);
-                          }}
-                          title="查看库存变动详情"
-                        >
-                          <Eye className="h-4 w-4 text-[hsl(var(--color-text-secondary))] transition-colors group-hover:text-[hsl(var(--color-primary))]" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="group h-8 w-8 cursor-not-allowed rounded-md p-0 text-[hsl(var(--color-text-tertiary))]"
-                          disabled
-                          title="暂无批次信息，无法查看详情"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
+                    <TableCell className="py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 w-9 rounded-xl text-slate-400 hover:bg-indigo-50 hover:text-indigo-600"
+                        onClick={e => {
+                          e.stopPropagation();
+                          onAdjust(item.id);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );

@@ -17,18 +17,18 @@ import { HelpCircle } from 'lucide-react';
 import { type UseFormReturn } from 'react-hook-form';
 
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { InboundFormData } from '@/lib/types/inbound';
 
@@ -56,14 +56,14 @@ export function InboundCostFieldWithTooltip({
                   <div className="space-y-1.5">
                     <p className="font-medium">请填写每片的成本</p>
                     <p className="text-xs text-gray-300">
-                      如果知道每件成本，请先除以每件片数
+                      如果知道每件成本，请先除以装箱数
                     </p>
                     <div className="border-t border-gray-700 pt-1.5">
                       <p className="text-xs font-medium text-[hsl(var(--color-info))]">
                         示例：
                       </p>
                       <p className="text-xs text-gray-300">
-                        每件100元，每件10片
+                        每件100元，装箱数10
                         <br />→ 单位成本 = 100 ÷ 10 = 10元/片
                       </p>
                     </div>

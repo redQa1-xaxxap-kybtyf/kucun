@@ -6,27 +6,27 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { can } from '@/lib/auth/permissions';
 import {
-  type InboundFormData,
-  INBOUND_REASON_OPTIONS,
-  INBOUND_UNIT_OPTIONS,
+    type InboundFormData,
+    INBOUND_REASON_OPTIONS,
+    INBOUND_UNIT_OPTIONS,
 } from '@/lib/types/inbound';
 
 // ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver
@@ -127,14 +127,14 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-semibold text-gray-900">
-              每件片数 *
+              装箱数 *
             </FormLabel>
             <FormControl>
               <Input
                 type="number"
                 min="1"
                 step="1"
-                placeholder="请输入每件片数"
+                placeholder="请输入装箱数"
                 className="h-9"
                 {...field}
                 value={field.value ?? ''}
@@ -151,8 +151,8 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         name="weight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-semibold text-gray-900">
-              每件重量(kg) *
+            <FormLabel className="text-sm font-black text-slate-700">
+              每件重量 (KG) *
             </FormLabel>
             <FormControl>
               <Input
@@ -224,8 +224,8 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
       name="unitCost"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-sm font-semibold text-gray-900">
-            单位成本（元/片） *
+          <FormLabel className="text-sm font-black text-slate-700">
+            单位成本 (元/片) *
           </FormLabel>
           <FormControl>
             <Input
@@ -239,7 +239,7 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
             />
           </FormControl>
           <FormDescription className="text-xs text-gray-500">
-            请填写每片的成本。例如：每件100元，每件10片，则填写10元
+            请填写每片的成本。例如：每件100元，装箱数10，则单位成本为10元
           </FormDescription>
           <FormMessage />
         </FormItem>
@@ -296,8 +296,8 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
       name="totalCost"
       render={() => (
         <FormItem>
-          <FormLabel className="text-sm font-medium text-gray-600">
-            总价（元）
+          <FormLabel className="text-sm font-black text-slate-500">
+            合规总价 (元)
           </FormLabel>
           <FormControl>
             <Input
