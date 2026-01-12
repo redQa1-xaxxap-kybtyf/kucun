@@ -4,12 +4,12 @@ import { Package } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 
 import { TemporaryProductForm } from './components/TemporaryProductForm';
@@ -48,7 +48,7 @@ export function AddTemporaryProductDialog(
             variant="secondary"
             className="bg-accent text-accent-foreground"
           >
-            支持快速录入产品规格、单位及每件片数信息
+            支持快速录入产品规格、单位及装箱数信息
           </Badge>
           <TemporaryProductForm
             form={form}

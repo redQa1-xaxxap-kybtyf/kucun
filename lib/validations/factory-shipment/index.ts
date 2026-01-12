@@ -8,15 +8,15 @@ import { z } from 'zod';
 import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
 
 import {
-  factoryShipmentFeeItemSchema,
-  factoryShipmentOrderItemSchema,
-  factoryShipmentOrderListParamsSchema,
-  factoryShipmentStatusSchema,
-  updateFactoryShipmentOrderStatusSchema,
+    factoryShipmentFeeItemSchema,
+    factoryShipmentOrderItemSchema,
+    factoryShipmentOrderListParamsSchema,
+    factoryShipmentStatusSchema,
+    updateFactoryShipmentOrderStatusSchema,
 } from './schemas';
 import {
-  validateFactoryShipmentItems,
-  validateStatusFieldRequirements,
+    validateFactoryShipmentItems,
+    validateStatusFieldRequirements,
 } from './validators';
 
 /**
@@ -241,7 +241,7 @@ const factoryShipmentOrderItemFormSchema = z.object({
     .or(z.literal('')),
   // 与 factoryShipmentOrderItemSchema 保持一致：单位来自产品数据，允许任意字符串
   unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
-  piecesPerUnit: z.number().positive('每件片数必须大于0').optional(),
+  piecesPerUnit: z.number().positive('装箱数必须大于0').optional(),
   weight: z.number().positive('重量必须大于0').optional(),
   remarks: z
     .string()
@@ -345,10 +345,10 @@ export * from './schemas';
 
 // 导出验证函数（供测试使用）
 export {
-  validateFactoryShipmentItems,
-  validateManualProductFields,
-  validateRequiredFieldsByStatus,
-  validateStatusFieldRequirements,
+    validateFactoryShipmentItems,
+    validateManualProductFields,
+    validateRequiredFieldsByStatus,
+    validateStatusFieldRequirements
 } from './validators';
 
 // 导出类型
@@ -365,8 +365,8 @@ export type FactoryShipmentOrderFormData = z.input<
 
 // 兼容性导出（用于现有代码）
 export {
-  factoryShipmentOrderListParamsSchema,
-  updateFactoryShipmentOrderStatusSchema,
+    factoryShipmentOrderListParamsSchema,
+    updateFactoryShipmentOrderStatusSchema
 };
 export type FactoryShipmentOrderListParams = z.infer<
   typeof factoryShipmentOrderListParamsSchema

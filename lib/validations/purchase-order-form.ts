@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import {
-  PURCHASE_ORDER_STATUS,
-  type PurchaseOrderStatus,
+    PURCHASE_ORDER_STATUS,
+    type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 import {
-  updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema,
+    updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema,
 } from '@/lib/validations/purchase-order';
 
 const PURCHASE_ORDER_STATUS_VALUES = Object.values(
@@ -40,9 +40,9 @@ export const purchaseOrderItemSchema = z
     weight: z.number().nonnegative('重量不能为负数').optional(),
     piecesPerUnit: z
       .number()
-      .int('每件片数必须为整数')
-      .min(1, '每件片数必须大于 0')
-      .max(10000, '每件片数不能超过 10000')
+      .int('装箱数必须为整数')
+      .min(1, '装箱数必须大于 0')
+      .max(10000, '装箱数不能超过 10000')
       .optional(),
     quantity: z.number().positive('数量必须大于 0'),
     unitPrice: z.number().nonnegative('单价不能为负'),

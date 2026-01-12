@@ -33,9 +33,9 @@ const baseTemporaryProductSchema = z.object({
     .transform(value => (value ?? '').trim()),
   piecesPerUnit: z
     .number()
-    .int('每件片数必须为整数')
-    .min(1, '每件片数必须大于0')
-    .max(9999, '每件片数不能超过9999')
+    .int('装箱数必须为整数')
+    .min(1, '装箱数必须大于0')
+    .max(9999, '装箱数不能超过9999')
     .optional(),
 });
 

@@ -6,11 +6,11 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -169,7 +169,7 @@ function ProductCard({ product, onSelect }: ProductCardProps) {
           {/* 单位和重量 */}
           <div className="text-muted-foreground flex items-center gap-4 text-sm">
             <span>单位: {product.unit}</span>
-            <span>每件片数: {product.piecesPerUnit}</span>
+            <span>装箱数: {product.piecesPerUnit}</span>
             {product.weight && <span>重量: {product.weight}kg</span>}
           </div>
         </div>

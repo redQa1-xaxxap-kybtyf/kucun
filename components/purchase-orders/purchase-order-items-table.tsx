@@ -7,11 +7,11 @@ import type { UseFormReturn } from 'react-hook-form';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import type { Product } from '@/lib/types/product';
@@ -246,7 +246,7 @@ function PurchaseOrderItemsTableView({
                 数量 <span className="text-destructive">*</span>
               </TableHead>
               <TableHead className="text-foreground h-10 w-[90px] border-r py-2 text-right text-xs font-medium">
-                每件片数
+                装箱数
               </TableHead>
               <TableHead className="text-foreground h-10 w-[120px] border-r py-2 text-right text-xs font-medium">
                 采购单价 <span className="text-destructive">*</span>

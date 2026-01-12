@@ -6,8 +6,8 @@ import { z } from 'zod';
 import { PRODUCT_UNIT_VALUES } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 import {
-  PURCHASE_ORDER_STATUS,
-  type PurchaseOrderStatus,
+    PURCHASE_ORDER_STATUS,
+    type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 
 // 采购订单费用项验证（复用厂家发货的费用项验证）
@@ -109,9 +109,9 @@ export const purchaseOrderItemSchema = z
     weight: z.number().min(0, '重量不能为负数').optional(),
     piecesPerUnit: z
       .number()
-      .int('每件片数必须为整数')
-      .min(1, '每件片数必须大于0')
-      .max(10000, '每件片数不能超过10000')
+      .int('装箱数必须为整数')
+      .min(1, '装箱数必须大于0')
+      .max(10000, '装箱数不能超过10000')
       .optional(),
 
     remarks: z

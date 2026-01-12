@@ -7,8 +7,8 @@ import { z } from 'zod';
 
 import { paginationConfig } from '@/lib/env';
 import {
-  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
-  FACTORY_SHIPMENT_STATUS,
+    FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+    FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
 
 /**
@@ -135,9 +135,9 @@ export const factoryShipmentOrderItemSchema = z.object({
   unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
   piecesPerUnit: z
     .number()
-    .int('每件片数必须为整数')
-    .min(1, '每件片数必须大于0')
-    .max(100000, '每件片数不能超过100000')
+    .int('装箱数必须为整数')
+    .min(1, '装箱数必须大于0')
+    .max(100000, '装箱数不能超过100000')
     .optional(),
   weight: z.number().min(0, '重量不能为负数').optional(),
 

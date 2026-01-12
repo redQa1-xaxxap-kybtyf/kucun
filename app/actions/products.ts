@@ -56,7 +56,7 @@ const createProductSchema = z.object({
   categoryId: z.string().optional(),
   specification: z.string().optional(),
   description: z.string().optional(),
-  piecesPerUnit: z.number().int().positive('每件片数必须为正整数').optional(),
+  piecesPerUnit: z.number().int().positive('装箱数必须为正整数').optional(),
   weight: z.number().nonnegative('重量不能为负').optional(),
   thickness: z.number().nonnegative('厚度不能为负').optional(),
   thumbnailUrl: z

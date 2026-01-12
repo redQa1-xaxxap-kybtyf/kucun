@@ -2,12 +2,12 @@ import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 
@@ -172,13 +172,13 @@ function PiecesPerUnitField({
       name="piecesPerUnit"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>每件片数</FormLabel>
+          <FormLabel>装箱数</FormLabel>
           <FormControl>
             <Input
               type="number"
               min="1"
               step="1"
-              placeholder="请输入每件片数"
+              placeholder="请输入装箱数"
               value={field.value ?? ''}
               onChange={event => {
                 const value = event.target.value;

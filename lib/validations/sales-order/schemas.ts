@@ -132,8 +132,8 @@ export const salesOrderItemSchema = z
 
     piecesPerUnit: z
       .number()
-      .min(1, '每件片数必须大于0')
-      .max(9999, '每件片数不能超过9999')
+      .min(1, '装箱数必须大于0')
+      .max(9999, '装箱数不能超过9999')
       .optional(),
 
     remarks: z

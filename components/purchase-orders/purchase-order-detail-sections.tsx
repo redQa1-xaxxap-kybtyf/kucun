@@ -1,51 +1,51 @@
 'use client';
 
 import {
-  ArrowLeft,
-  Calendar,
-  Edit,
-  Package,
-  Printer,
-  Trash2,
-  User,
-  Warehouse,
+    ArrowLeft,
+    Calendar,
+    Edit,
+    Package,
+    Printer,
+    Trash2,
+    User,
+    Warehouse,
 } from 'lucide-react';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 
 import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import {
-  PURCHASE_ORDER_STATUS,
-  type PurchaseOrderStatus,
+    PURCHASE_ORDER_STATUS,
+    type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 
 import {
-  EXPENSE_TYPE_LABELS,
-  STATUS_ACTION_LABELS,
-  STATUS_CONFIG,
-  formatCurrency,
+    EXPENSE_TYPE_LABELS,
+    STATUS_ACTION_LABELS,
+    STATUS_CONFIG,
+    formatCurrency,
 } from './purchase-order-detail-constants';
 import type { PurchaseOrderDetailData } from './purchase-order-detail.types';
 import { PurchaseOrderPrintContent } from './PurchaseOrderPrintContent';
@@ -287,7 +287,7 @@ export function ProductDetailsCard({
                     <TableHead>单位</TableHead>
                     <TableHead>供应商</TableHead>
                     <TableHead className="text-right">数量</TableHead>
-                    <TableHead className="text-right">每件片数</TableHead>
+                    <TableHead className="text-right">装箱数</TableHead>
                     <TableHead className="text-right">采购单价</TableHead>
                     <TableHead className="text-right">总价</TableHead>
                     <TableHead>备注</TableHead>

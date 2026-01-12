@@ -113,7 +113,7 @@ export function SalesOrderPrintTemplate({ order }: Props) {
             <th style={tableHeaderStyle}>规格型号</th>
             <th style={tableHeaderStyle}>单位</th>
             <th style={tableHeaderStyle}>数量</th>
-            <th style={tableHeaderStyle}>每件片数</th>
+            <th style={tableHeaderStyle}>装箱数</th>
             <th style={tableHeaderStyle}>单价</th>
             <th style={tableHeaderStyle}>金额</th>
             <th style={tableHeaderStyle}>备注</th>

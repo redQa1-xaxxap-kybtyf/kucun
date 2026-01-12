@@ -9,20 +9,20 @@ import { useQuery } from '@tanstack/react-query';
 import type { Control, FieldPath, FieldValues } from 'react-hook-form';
 
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
@@ -139,11 +139,11 @@ export function ProductPiecesPerUnitField<T extends FieldValues>({
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>每件片数 *</FormLabel>
+          <FormLabel>装箱数 *</FormLabel>
           <FormControl>
             <NumberInput
               {...field}
-              placeholder="请输入每件片数"
+              placeholder="请输入装箱数"
               disabled={disabled}
               min={1}
               max={10000}

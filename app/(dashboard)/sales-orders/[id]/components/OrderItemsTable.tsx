@@ -325,7 +325,7 @@ export function OrderItemsTable({
                   </th>
                 )}
                 <th className="min-w-[90px] px-3 py-2.5 text-center font-medium whitespace-nowrap">
-                  每件片数
+                  装箱数
                 </th>
                 <th className="px-3 py-2.5 text-center font-medium whitespace-nowrap">
                   单位
@@ -714,7 +714,7 @@ export function OrderItemsTable({
                     </div>
                   </div>
                   <div className="space-y-0.5 text-right">
-                    <div className="text-[10px] text-gray-500">单位 / 每件片数</div>
+                    <div className="text-[10px] text-gray-500">单位 / 装箱数</div>
                     <div>
                       <span className="mr-1">{unitLabel}</span>
                       {typeof piecesPerUnitDisplay === 'number' && (

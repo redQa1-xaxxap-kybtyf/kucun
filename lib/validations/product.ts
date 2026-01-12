@@ -9,8 +9,8 @@
 import { z } from 'zod';
 
 import {
-  PRODUCT_STATUS_VALUES,
-  PRODUCT_UNIT_VALUES,
+    PRODUCT_STATUS_VALUES,
+    PRODUCT_UNIT_VALUES,
 } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 
@@ -73,10 +73,10 @@ const baseValidations = {
 
   /** 每件片数验证：可选正整数，范围1-10000，入库时确定 */
   piecesPerUnit: z
-    .number({ message: '每件片数必须是数字' })
-    .int({ error: '每件片数必须是整数' })
-    .min(1, { error: '每件片数至少为1' })
-    .max(10000, { error: '每件片数不能超过10000' })
+    .number({ message: '装箱数必须是数字' })
+    .int({ error: '装箱数必须是整数' })
+    .min(1, { error: '装箱数至少为1' })
+    .max(10000, { error: '装箱数不能超过10000' })
     .optional(),
 
   /** 重量验证：可选正数，最大100000kg */

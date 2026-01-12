@@ -500,7 +500,7 @@ export function FactoryShipmentOrderDetail({
                       单位
                     </TableHead>
                     <TableHead className="w-[110px] py-2 text-right text-xs font-semibold">
-                      每件片数
+                      装箱数
                     </TableHead>
                     <TableHead className="w-[110px] py-2 text-right text-xs font-semibold">
                       进货价
