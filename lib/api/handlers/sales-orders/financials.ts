@@ -7,6 +7,38 @@ import type { CreateInput } from './types';
 
 const roundCurrency = (value: number) => Math.round((value ?? 0) * 100) / 100;
 
+type AllocationSource = {
+  id: string;
+  subtotal: number;
+  costSubtotal: number;
+  unitCost: number;
+  quantity: number;
+};
+
+const buildAllocationSources = (
+  data: CreateInput,
+  transferMode: CreateInput['transferMode']
+): AllocationSource[] =>
+  data.items.map((item, index) => {
+    const quantity = item.quantity ?? 0;
+    const unitPrice = item.unitPrice ?? 0;
+    const subtotal = roundCurrency(item.subtotal ?? quantity * unitPrice);
+    const effectiveTransferQuantity =
+      data.orderType === 'TRANSFER' && transferMode === 'MIXED'
+        ? (item.transferQuantity ?? 0)
+        : quantity;
+    const unitCost = item.unitCost ?? 0;
+    const costSubtotal = unitCost * effectiveTransferQuantity;
+
+    return {
+      id: String(index),
+      subtotal,
+      costSubtotal,
+      unitCost,
+      quantity,
+    };
+  });
+
 export function calculateCustomerPaidFees(
   feeItems: SalesOrderFeeItem[] = []
 ): number {
@@ -27,28 +59,16 @@ const calculateItemTotals = (
   data: CreateInput,
   transferMode: CreateInput['transferMode']
 ) => {
-  let itemsAmount = 0;
-  let costAmount = 0;
-
-  for (const item of data.items) {
-    const quantity = item.quantity ?? 0;
-    const unitPrice = item.unitPrice ?? 0;
-    const subtotal = roundCurrency(item.subtotal ?? quantity * unitPrice);
-    const effectiveTransferQuantity =
-      data.orderType === 'TRANSFER' && transferMode === 'MIXED'
-        ? (item.transferQuantity ?? 0)
-        : quantity;
-    const unitCost = item.unitCost ?? 0;
-
-    itemsAmount += subtotal;
-    costAmount += unitCost * effectiveTransferQuantity;
-  }
-
-  itemsAmount = roundCurrency(itemsAmount);
-  costAmount = roundCurrency(costAmount);
+  const allocationSources = buildAllocationSources(data, transferMode);
+  const itemsAmount = roundCurrency(
+    allocationSources.reduce((sum, item) => sum + item.subtotal, 0)
+  );
+  const costAmount = roundCurrency(
+    allocationSources.reduce((sum, item) => sum + item.costSubtotal, 0)
+  );
   const profitAmount = roundCurrency(itemsAmount - costAmount);
 
-  return { itemsAmount, costAmount, profitAmount };
+  return { itemsAmount, costAmount, profitAmount, allocationSources };
 };
 
 export const normalizeTransferMode = (data: CreateInput) =>
@@ -60,7 +80,10 @@ export const calculateFinancials = (
   data: CreateInput,
   transferMode: CreateInput['transferMode']
 ) => {
-  const { itemsAmount, costAmount } = calculateItemTotals(data, transferMode);
+  const { itemsAmount, costAmount, allocationSources } = calculateItemTotals(
+    data,
+    transferMode
+  );
   const customerPaidFees = roundCurrency(
     calculateCustomerPaidFees(data.feeItems || [])
   );
@@ -72,11 +95,16 @@ export const calculateFinancials = (
   const additionalFees = customerPaidFees;
   const roundingAdjustment = roundCurrency(data.roundingAdjustment ?? 0);
 
-  // ✅ 修复：公司承担费用计入成本
-  const costAmountWithExpense = roundCurrency(costAmount + companyPaidFees);
-  const profitAmountWithExpense = roundCurrency(
-    itemsAmount - costAmountWithExpense
+  // ✅ 修复：利润口径与明细一致（避免舍入误差累积）
+  // 明细利润已在 allocateExpensesByValue 内做了“最后一项差额兜底”，这里按明细汇总口径回填订单利润
+  const allocationResults = allocateExpensesByValue(
+    allocationSources,
+    companyPaidFees
   );
+  const profitAmountWithExpense = roundCurrency(
+    allocationResults.reduce((sum, row) => sum + (row.profitAmount ?? 0), 0)
+  );
+  const costAmountWithExpense = roundCurrency(itemsAmount - profitAmountWithExpense);
 
   // totalAmount 不包含抹零；实际应收 = totalAmount + roundingAdjustment
   const totalAmount = roundCurrency(itemsAmount + additionalFees);
@@ -103,25 +131,7 @@ export const buildOrderItemsInput = (
   );
 
   // 组装用于费用分摊的临时项（保持顺序一致）
-  const allocationSources = data.items.map((item, index) => {
-    const quantity = item.quantity ?? 0;
-    const unitPrice = item.unitPrice ?? 0;
-    const subtotal = roundCurrency(item.subtotal ?? quantity * unitPrice);
-    const effectiveTransferQuantity =
-      data.orderType === 'TRANSFER' && transferMode === 'MIXED'
-        ? (item.transferQuantity ?? 0)
-        : quantity;
-    const unitCost = item.unitCost ?? 0;
-    const costSubtotal = unitCost * effectiveTransferQuantity;
-
-    return {
-      id: String(index),
-      subtotal,
-      costSubtotal,
-      unitCost,
-      quantity,
-    };
-  });
+  const allocationSources = buildAllocationSources(data, transferMode);
 
   // 执行按销售金额分摊（若费用为0则结果全为0）
   const allocationResults = allocateExpensesByValue(
