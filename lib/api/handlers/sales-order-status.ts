@@ -4,23 +4,24 @@
  * 遵循全局约定规范和唯一真理原则
  */
 
+import {
+    reserveInventory,
+    shouldReserveInventory,
+} from '@/lib/api/handlers/sales-orders/inventory';
 import { prisma, withTransaction } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { consumeFIFOQueueByBatch } from '@/lib/services/fifo-cost-service';
-import { toNumber } from '@/lib/utils/number';
 import {
-  generateUniqueOrderNumber,
-  type OrderNumberConfig,
+    generateUniqueOrderNumber,
+    type OrderNumberConfig,
 } from '@/lib/services/order-number-generator';
 import {
-  reserveInventory,
-  shouldReserveInventory,
-} from '@/lib/api/handlers/sales-orders/inventory';
-import {
-  findAvailableInventory,
-  mapProductionDateToBatchNumber,
+    findAvailableInventory,
+    mapProductionDateToBatchNumber,
 } from '@/lib/utils/inventory-variant-mapper';
+import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+
 
 /**
  * 出库单号配置
@@ -866,28 +867,28 @@ async function executeOrderCancellation(
   orderId: string,
   remarks?: string
 ): Promise<OrderStatusUpdateResult> {
-  // 先查询订单信息
-  const existingOrder = await prisma.salesOrder.findUnique({
-    where: { id: orderId },
-    include: {
-      items: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
+  return await withTransaction(async tx => {
+    // 在事务内读取订单与明细，避免使用过期快照导致预留释放不完整
+    const existingOrder = await tx.salesOrder.findUnique({
+      where: { id: orderId },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 
-  if (!existingOrder) {
-    throw new Error('销售订单不存在');
-  }
+    if (!existingOrder) {
+      throw new Error('销售订单不存在');
+    }
 
-  return await withTransaction(async tx => {
     const statusUpdate = await tx.salesOrder.updateMany({
       where: { id: orderId, status: 'confirmed' },
       data: {
