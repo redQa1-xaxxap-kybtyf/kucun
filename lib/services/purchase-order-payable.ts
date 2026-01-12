@@ -31,7 +31,7 @@ export async function ensurePurchaseOrderPayable(
     userId: string;
     orderNumber: string;
     totalAmount: number;
-    expenseAmount?: number | null; // 运费等费用，这里不再计入应付金额
+    expenseAmount?: number | null; // 运费等费用（可能来自费用记录汇总/兜底字段）
   }
 ): Promise<void> {
   // 查询该采购订单已有的应付记录（可能已经为货款创建过）
@@ -74,9 +74,9 @@ export async function ensurePurchaseOrderPayable(
     return;
   }
 
-  // 2) 统计与采购订单关联且有独立供应商的费用（例如运费物流公司）
-  // 仅考虑显式设置了 supplierId 的费用，且该供应商在货款明细中不存在时，
-  // 为其单独创建应付记录，实现「费用供应商与货物供应商不一致时分开创建应付」
+  // 2) 统计与采购订单关联的费用：
+  // - 若费用供应商=货款供应商：合并进对应应付金额（✅ 修复：应付包含费用）
+  // - 若费用供应商独立：为其单独创建应付记录（如运费物流公司）
   const expenseSupplierAmounts = new Map<string, number>();
   const expenseGroups = await tx.expenseRecord.groupBy({
     by: ['supplierId'],
@@ -90,15 +90,20 @@ export async function ensurePurchaseOrderPayable(
     },
   });
 
+  let expenseAmountWithSupplierTotal = 0;
   for (const expense of expenseGroups) {
     const supplierId = expense.supplierId;
     if (!supplierId) continue;
 
     const amount = Number(expense._sum?.expenseAmount ?? 0);
     if (amount <= 0) continue;
+    expenseAmountWithSupplierTotal += amount;
 
-    // 只为“纯费用供应商”创建应付：货款明细里没有出现过该供应商
     if (supplierAmounts.has(supplierId)) {
+      supplierAmounts.set(
+        supplierId,
+        (supplierAmounts.get(supplierId) ?? 0) + amount
+      );
       continue;
     }
 
@@ -106,10 +111,22 @@ export async function ensurePurchaseOrderPayable(
     expenseSupplierAmounts.set(supplierId, current + amount);
   }
 
+  // 2.1 兜底：存在费用但没有 supplierId（或旧数据未同步费用记录）时，把差额计入订单主供应商
+  const fallbackExpenseAmount = Math.max(
+    0,
+    Number(order.expenseAmount ?? 0) - expenseAmountWithSupplierTotal
+  );
+  if (fallbackExpenseAmount > 0) {
+    supplierAmounts.set(
+      order.supplierId,
+      (supplierAmounts.get(order.supplierId) ?? 0) + fallbackExpenseAmount
+    );
+  }
+
   // 3) 综合货款和费用供应商，按供应商创建缺失的应付记录
   const dueDateBase = new Date();
 
-  // 3.1 先为有货款的供应商创建应付（只包含货款）
+  // 3.1 先为有货款(含费用合并/兜底)的供应商创建应付
   for (const [supplierId, amount] of supplierAmounts.entries()) {
     if (!supplierId || amount <= 0) continue;
 
@@ -128,7 +145,7 @@ export async function ensurePurchaseOrderPayable(
         sourceType: 'purchase_order',
         sourceId: order.id,
         sourceNumber: order.orderNumber,
-        payableAmount: amount, // 只包含该供应商的货款
+        payableAmount: amount,
         paidAmount: 0,
         remainingAmount: amount,
         dueDate,

@@ -372,8 +372,8 @@ async function getInventoryTurnover(
   const inboundCost = toNumber(inboundStats._sum.totalCost);
   const outboundCost = toNumber(outboundStats._sum.totalCost);
 
-  // 期初库存 = 期末库存 - 入库成本 + 出库成本
-  const beginningValue = endingValue - inboundCost + outboundCost;
+  // 期初库存 = 期末库存 + 出库成本 - 入库成本
+  const beginningValue = endingValue + outboundCost - inboundCost;
 
   // 计算平均库存价值
   const averageInventoryValue = (beginningValue + endingValue) / 2;
