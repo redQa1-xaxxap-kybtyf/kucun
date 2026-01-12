@@ -9,11 +9,12 @@ import { paginationConfig } from '@/lib/env';
 import { publishInventoryChange } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
-import { consumeFIFOQueueByBatch } from '@/lib/services/fifo-cost-service';
+import {
+  consumeFIFOQueueByBatch,
+  ensureFIFOQueueMatchesInventory,
+} from '@/lib/services/fifo-cost-service';
 import type { OutboundType } from '@/lib/types/inventory';
-import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { withIdempotency } from '@/lib/utils/idempotency';
-import { toNumber } from '@/lib/utils/number';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 
 type OutboundWhereClause = {
@@ -408,42 +409,38 @@ async function executeOutboundTransaction(
       throw new Error('库存不足或已被其他操作占用,请重试');
     }
 
-    // 2.1 使用 FIFO 队列计算成本；仅在 FIFO 队列为空时回退到库存单位成本
+    // 2.1 使用 FIFO 队列计算成本（若发现 FIFO 缺失则在事务内补齐，避免账实不一致）
     const outboundQty = quantity;
-    let unitCost: number | undefined;
-    let totalCost: number | undefined;
+    const unitCostHint =
+      availableInventory.unitCost !== null && availableInventory.unitCost !== undefined
+        ? Number(availableInventory.unitCost)
+        : null;
 
-    try {
-      const fifoCost = await consumeFIFOQueueByBatch(
+    await ensureFIFOQueueMatchesInventory(
+      {
+        inventoryId: availableInventory.id,
         productId,
-        availableInventory.variantId,
-        availableInventory.batchNumber,
-        outboundQty,
-        tx
-      );
+        variantId: availableInventory.variantId,
+        batchNumber: availableInventory.batchNumber,
+        expectedInventoryQty: oldQuantity,
+        unitCostHint,
+        userId,
+        source: 'inventory-outbound',
+      },
+      tx
+    );
 
-      // FIFO 服务已在内部做四舍五入
-      unitCost = fifoCost.averageUnitCost;
-      totalCost = fifoCost.totalCost;
-    } catch (error) {
-      if (error instanceof Error && !error.message.includes('FIFO队列为空')) {
-        // 非队列为空的错误（例如 FIFO 队列库存不足）直接抛出
-        throw error;
-      }
+    const fifoCost = await consumeFIFOQueueByBatch(
+      productId,
+      availableInventory.variantId,
+      availableInventory.batchNumber,
+      outboundQty,
+      tx
+    );
 
-      logger.warn(
-        'inventory-outbound',
-        'FIFO队列为空, 回退到库存单位成本计算出库成本',
-        {
-          productId,
-          batchNumber,
-        }
-      );
-
-      const fallbackUnitCost = toNumber(availableInventory.unitCost, 0);
-      unitCost = fallbackUnitCost;
-      totalCost = calculateTotalCost(quantity, fallbackUnitCost);
-    }
+    // FIFO 服务已在内部做四舍五入
+    const unitCost = fifoCost.averageUnitCost;
+    const totalCost = fifoCost.totalCost;
 
     // 3. 获取更新后的库存记录
     const updatedInventory = await tx.inventory.findUnique({

@@ -79,6 +79,226 @@ export async function addToFIFOQueue(
   }
 }
 
+function normalizeNullableString(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function roundCurrency(value: number): number {
+  return Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
+}
+
+function buildFifoBackfillRecordNumber(inventoryId: string): string {
+  return `INBF${inventoryId.replace(/-/g, '')}`;
+}
+
+/**
+ * 确保 FIFO 队列可用量与库存数量一致（仅补齐缺口，不处理 FIFO 过量）
+ * - 用于修复历史/异常链路导致的：Inventory.quantity > FIFO sum(remainingQty)
+ * - 通过创建/复用“系统补录”入库记录 + FIFO 队列条目实现
+ * - 必须在事务中调用
+ */
+export async function ensureFIFOQueueMatchesInventory(
+  params: {
+    inventoryId: string;
+    productId: string;
+    variantId?: string | null;
+    batchNumber?: string | null;
+    expectedInventoryQty: number;
+    unitCostHint?: number | null;
+    userId: string;
+    source?: string;
+  },
+  tx: PrismaTransaction
+): Promise<{
+  backfilledQty: number;
+  usedUnitCost: number;
+}> {
+  const variantId = normalizeNullableString(params.variantId);
+  const batchNumber = normalizeNullableString(params.batchNumber);
+
+  const expectedInventoryQty = params.expectedInventoryQty;
+  if (!Number.isFinite(expectedInventoryQty) || expectedInventoryQty <= 0) {
+    return { backfilledQty: 0, usedUnitCost: 0 };
+  }
+
+  const aggregateResult = await tx.inventoryCostQueue.aggregate({
+    where: {
+      productId: params.productId,
+      variantId,
+      batchNumber,
+      remainingQty: { gt: 0 },
+    },
+    _sum: { remainingQty: true },
+  });
+
+  const fifoAvailableQty = Number(aggregateResult._sum.remainingQty ?? 0);
+  const backfilledQty = expectedInventoryQty - fifoAvailableQty;
+
+  if (backfilledQty <= 0) {
+    return { backfilledQty: 0, usedUnitCost: 0 };
+  }
+
+  let usedUnitCost =
+    typeof params.unitCostHint === 'number' && Number.isFinite(params.unitCostHint)
+      ? params.unitCostHint
+      : 0;
+
+  if (!(usedUnitCost > 0)) {
+    usedUnitCost = await getWeightedAverageCostFromFIFOByBatch(
+      params.productId,
+      variantId,
+      batchNumber,
+      tx
+    );
+  }
+
+  if (!(usedUnitCost > 0)) {
+    throw new Error(
+      `FIFO队列缺失且无法推断成本，无法自动补齐 FIFO（productId=${params.productId}, variantId=${variantId ?? 'null'}, batchNumber=${batchNumber ?? 'null'}）`
+    );
+  }
+
+  const recordNumber = buildFifoBackfillRecordNumber(params.inventoryId);
+
+  let inboundRecord = await tx.inboundRecord.findUnique({
+    where: { recordNumber },
+    select: {
+      id: true,
+      productId: true,
+      variantId: true,
+      batchNumber: true,
+      quantity: true,
+      unitCost: true,
+      createdAt: true,
+    },
+  });
+
+  if (!inboundRecord) {
+    try {
+      inboundRecord = await tx.inboundRecord.create({
+        data: {
+          recordNumber,
+          productId: params.productId,
+          variantId,
+          batchNumber,
+          batchSpecificationId: null,
+          quantity: backfilledQty,
+          unitCost: usedUnitCost,
+          totalCost: roundCurrency(backfilledQty * usedUnitCost),
+          reason: 'other',
+          remarks: `系统自动补录 FIFO 队列（source=${params.source ?? 'unknown'}, inventoryId=${params.inventoryId}）`,
+          userId: params.userId,
+          purchaseOrderId: null,
+          purchaseOrderItemId: null,
+          supplierId: null,
+        },
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          batchNumber: true,
+          quantity: true,
+          unitCost: true,
+          createdAt: true,
+        },
+      });
+    } catch (error) {
+      inboundRecord = await tx.inboundRecord.findUnique({
+        where: { recordNumber },
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          batchNumber: true,
+          quantity: true,
+          unitCost: true,
+          createdAt: true,
+        },
+      });
+      if (!inboundRecord) {
+        throw error;
+      }
+    }
+  }
+
+  if (
+    inboundRecord.productId !== params.productId ||
+    inboundRecord.variantId !== variantId ||
+    inboundRecord.batchNumber !== batchNumber
+  ) {
+    throw new Error(
+      `FIFO补录入库记录与当前库存不匹配（recordNumber=${recordNumber}）`
+    );
+  }
+
+  const recordUnitCost =
+    inboundRecord.unitCost !== null && inboundRecord.unitCost !== undefined
+      ? toNumber(inboundRecord.unitCost)
+      : usedUnitCost;
+
+  const costEntries = await tx.inventoryCostQueue.findMany({
+    where: { inboundRecordId: inboundRecord.id },
+    select: { id: true, remainingQty: true },
+    take: 2,
+  });
+
+  if (costEntries.length > 1) {
+    throw new Error(
+      `FIFO补录入库记录存在多条成本队列记录，无法自动补齐（recordNumber=${recordNumber}）`
+    );
+  }
+
+  if (costEntries.length === 0) {
+    await tx.inventoryCostQueue.create({
+      data: {
+        productId: params.productId,
+        variantId,
+        batchNumber,
+        inboundRecordId: inboundRecord.id,
+        remainingQty: backfilledQty,
+        unitCost: recordUnitCost,
+        inboundDate: inboundRecord.createdAt,
+      },
+    });
+  } else {
+    await tx.inventoryCostQueue.update({
+      where: { id: costEntries[0].id },
+      data: {
+        remainingQty: { increment: backfilledQty },
+      },
+    });
+
+    const newQuantity = inboundRecord.quantity + backfilledQty;
+    await tx.inboundRecord.update({
+      where: { id: inboundRecord.id },
+      data: {
+        quantity: newQuantity,
+        unitCost:
+          inboundRecord.unitCost !== null && inboundRecord.unitCost !== undefined
+            ? inboundRecord.unitCost
+            : recordUnitCost,
+        totalCost: roundCurrency(newQuantity * recordUnitCost),
+      },
+    });
+  }
+
+  logger.warn('fifo-cost-service', '检测到 FIFO 队列缺失，已自动补齐', {
+    source: params.source ?? 'unknown',
+    inventoryId: params.inventoryId,
+    productId: params.productId,
+    variantId,
+    batchNumber,
+    expectedInventoryQty,
+    fifoAvailableQty,
+    backfilledQty,
+    unitCost: recordUnitCost,
+  });
+
+  return { backfilledQty, usedUnitCost: recordUnitCost };
+}
+
 /**
  * 获取FIFO成本(只计算,不消耗库存)
  * 用于查询出库成本,不修改数据

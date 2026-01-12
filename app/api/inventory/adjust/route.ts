@@ -11,6 +11,7 @@ import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   addToFIFOQueue,
   consumeFIFOQueueByBatch,
+  ensureFIFOQueueMatchesInventory,
   getWeightedAverageCostFromFIFOByBatch,
 } from '@/lib/services/fifo-cost-service';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
@@ -153,50 +154,39 @@ export async function executeAdjustmentTransaction(
         // 减少库存：按 FIFO 队列逐批消耗计算成本
         const absQty = Math.abs(adjustQuantity);
 
-        try {
-          const fifoCost = await consumeFIFOQueueByBatch(
+        const unitCostHint =
+          existingInventory?.unitCost !== null &&
+          existingInventory?.unitCost !== undefined
+            ? Number(existingInventory.unitCost)
+            : null;
+
+        await ensureFIFOQueueMatchesInventory(
+          {
+            inventoryId: existingInventory?.id ?? updatedInventory.id,
             productId,
-            variantId || null,
-            batchNumber?.trim() || null,
-            absQty,
-            tx
-          );
+            variantId: variantId || null,
+            batchNumber: batchNumber?.trim() || null,
+            expectedInventoryQty: beforeQuantity,
+            unitCostHint,
+            userId,
+            source: `inventory-adjust:${adjustmentNumber}`,
+          },
+          tx
+        );
 
-          if (absQty > 0) {
-            unitCost = roundCurrency(fifoCost.totalCost / absQty);
-          }
-          // 调整数量为负数，成本也为负
-          totalCost = -roundCurrency(fifoCost.totalCost);
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message.includes('FIFO队列为空')
-          ) {
-            // FIFO 队列为空时退回到加权平均/库存单价
-            const fifoAvg = await getWeightedAverageCostFromFIFOByBatch(
-              productId,
-              variantId || null,
-              batchNumber?.trim() || null,
-              tx
-            );
+        const fifoCost = await consumeFIFOQueueByBatch(
+          productId,
+          variantId || null,
+          batchNumber?.trim() || null,
+          absQty,
+          tx
+        );
 
-            if (fifoAvg > 0) {
-              unitCost = fifoAvg;
-            } else if (
-              existingInventory?.unitCost !== null &&
-              existingInventory?.unitCost !== undefined
-            ) {
-              unitCost = Number(existingInventory.unitCost);
-            }
-
-            if (unitCost !== null) {
-              totalCost = roundCurrency(adjustQuantity * unitCost);
-            }
-          } else {
-            // 其它 FIFO 错误（如库存不足）直接抛出，避免账实不符
-            throw error;
-          }
+        if (absQty > 0) {
+          unitCost = roundCurrency(fifoCost.totalCost / absQty);
         }
+        // 调整数量为负数，成本也为负
+        totalCost = -roundCurrency(fifoCost.totalCost);
       }
 
       // 3.1 所有正向调整统一补录 FIFO 队列（视为一笔入库），保持 FIFO 队列数量与库存一致

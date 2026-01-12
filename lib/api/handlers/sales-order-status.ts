@@ -10,7 +10,10 @@ import {
 } from '@/lib/api/handlers/sales-orders/inventory';
 import { prisma, withTransaction } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { consumeFIFOQueueByBatch } from '@/lib/services/fifo-cost-service';
+import {
+  consumeFIFOQueueByBatch,
+  ensureFIFOQueueMatchesInventory,
+} from '@/lib/services/fifo-cost-service';
 import {
     generateUniqueOrderNumber,
     type OrderNumberConfig,
@@ -645,56 +648,39 @@ async function executeOrderStatusUpdateWithInventory(
 
       const itemQuantity = outboundQuantity;
 
-      // 使用 FIFO 队列计算成本；仅在 FIFO 队列为空时回退到库存单位成本
-      let baseUnitCost: number | undefined;
-      let baseTotalCost: number | undefined;
+      const unitCostHint =
+        item.unitCost !== undefined && item.unitCost !== null
+          ? Number(item.unitCost)
+          : inventory.unitCost !== undefined && inventory.unitCost !== null
+            ? Number(inventory.unitCost)
+            : null;
 
-      try {
-        const fifoCost = await consumeFIFOQueueByBatch(
+      await ensureFIFOQueueMatchesInventory(
+        {
+          inventoryId: inventory.id,
           productId,
-          inventory.variantId,
-          inventory.batchNumber,
-          itemQuantity,
-          tx
-        );
-        baseTotalCost = roundCurrency(fifoCost.totalCost);
-        baseUnitCost =
-          itemQuantity > 0
-            ? roundCurrency(fifoCost.totalCost / itemQuantity)
-            : fifoCost.averageUnitCost;
-      } catch (error) {
-        const message = error instanceof Error ? error.message : '';
-        const isFifoEmpty = message.includes('FIFO队列为空');
-        const isFifoInsufficient = message.includes('库存不足: 需要');
+          variantId: inventory.variantId,
+          batchNumber: inventory.batchNumber,
+          expectedInventoryQty: inventory.quantity,
+          unitCostHint,
+          userId: finalOperatorId,
+          source: `sales-order-outbound:${existingOrder.orderNumber}`,
+        },
+        tx
+      );
 
-        if (!isFifoEmpty && !isFifoInsufficient) {
-          // 非队列为空/队列库存不足的错误（例如并发冲突）直接抛出
-          throw error;
-        }
-
-        logger.warn(
-          'sales-order-status',
-          'FIFO队列不可用(为空或数量不足), 回退到库存单位成本计算出库成本',
-          {
-            orderId: existingOrder.id,
-            orderNumber: existingOrder.orderNumber,
-            salesOrderItemId: item.id,
-            productId,
-            fifoError: message,
-          }
-        );
-
-        baseUnitCost =
-          item.unitCost !== undefined && item.unitCost !== null
-            ? Number(item.unitCost)
-            : inventory.unitCost !== undefined && inventory.unitCost !== null
-              ? Number(inventory.unitCost)
-              : undefined;
-        baseTotalCost =
-          baseUnitCost !== undefined
-            ? roundCurrency(baseUnitCost * itemQuantity)
-            : undefined;
-      }
+      const fifoCost = await consumeFIFOQueueByBatch(
+        productId,
+        inventory.variantId,
+        inventory.batchNumber,
+        itemQuantity,
+        tx
+      );
+      const baseTotalCost = roundCurrency(fifoCost.totalCost);
+      const baseUnitCost =
+        itemQuantity > 0
+          ? roundCurrency(fifoCost.totalCost / itemQuantity)
+          : fifoCost.averageUnitCost;
 
       const mappedBatchNumber = item.productionDate
         ? mapProductionDateToBatchNumber(item.productionDate)
