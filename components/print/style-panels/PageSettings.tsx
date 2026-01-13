@@ -73,7 +73,7 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
           <SelectContent>
             <SelectItem value="A4">A4 (210 × 297 mm)</SelectItem>
             <SelectItem value="A5">A5 (148 × 210 mm)</SelectItem>
-            <SelectItem value="Letter">Letter (216 × 279 mm)</SelectItem>
+            <SelectItem value="Letter">信纸 (216 × 279 mm)</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-muted-foreground text-xs">
@@ -94,8 +94,8 @@ export function PageSettings({ value, onChange }: PageSettingsProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="portrait">纵向 (Portrait)</SelectItem>
-            <SelectItem value="landscape">横向 (Landscape)</SelectItem>
+            <SelectItem value="portrait">纵向（竖版）</SelectItem>
+            <SelectItem value="landscape">横向（横版）</SelectItem>
           </SelectContent>
         </Select>
         <p className="text-muted-foreground text-xs">

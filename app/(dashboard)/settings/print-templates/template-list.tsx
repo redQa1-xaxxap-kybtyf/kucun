@@ -4,10 +4,10 @@
 
 'use client';
 
+import { useToast } from '@/components/ui/use-toast';
 import { Copy, Edit, MoreHorizontal, Plus, Star, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +59,7 @@ const typeLabels: Record<string, string> = {
 
 export function TemplateList() {
   const router = useRouter();
+  const { toast } = useToast();
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [filterType, setFilterType] = useState<string>('all');
   const [isPending, startTransition] = useTransition();
@@ -72,7 +73,7 @@ export function TemplateList() {
       if (result.success && result.data) {
         setTemplates(result.data);
       } else {
-        toast.error(result.error ?? '加载模板失败');
+        toast({ title: '加载失败', description: result.error ?? '加载模板列表失败', variant: 'destructive' });
       }
     });
   };
@@ -95,30 +96,30 @@ export function TemplateList() {
 
     const result = await deleteTemplate(id);
     if (result.success) {
-      toast.success('模板已删除');
+      toast({ title: '删除成功', description: '模板已删除', variant: 'success' });
       loadTemplates();
     } else {
-      toast.error(result.error ?? '删除失败');
+      toast({ title: '删除失败', description: result.error ?? '删除模板失败', variant: 'destructive' });
     }
   };
 
   const handleDuplicate = async (id: string) => {
     const result = await duplicateTemplate(id);
     if (result.success) {
-      toast.success('模板已复制');
+      toast({ title: '复制成功', description: '模板已复制', variant: 'success' });
       loadTemplates();
     } else {
-      toast.error(result.error ?? '复制失败');
+      toast({ title: '复制失败', description: result.error ?? '复制模板失败', variant: 'destructive' });
     }
   };
 
   const handleSetDefault = async (id: string, type: string) => {
     const result = await setDefaultTemplate(id, type);
     if (result.success) {
-      toast.success('已设为默认模板');
+      toast({ title: '设置成功', description: '已设为默认模板', variant: 'success' });
       loadTemplates();
     } else {
-      toast.error(result.error ?? '设置失败');
+      toast({ title: '设置失败', description: result.error ?? '设置默认模板失败', variant: 'destructive' });
     }
   };
 

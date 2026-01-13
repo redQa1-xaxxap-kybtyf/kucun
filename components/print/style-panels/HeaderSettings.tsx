@@ -2,7 +2,7 @@
  * HeaderSettings - 表头设置面板
  *
  * 功能：
- * - Logo 显示和配置
+ * - 标志显示和配置
  * - 公司名称和副标题
  * - 字体样式和对齐
  * - 边框和背景色
@@ -58,10 +58,10 @@ export interface HeaderSettingsProps {
 export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
   return (
     <div className="space-y-6">
-      {/* Logo 设置 */}
+      {/* 标志设置 */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label htmlFor="show-logo">显示 Logo</Label>
+          <Label htmlFor="show-logo">显示标志</Label>
           <Switch
             id="show-logo"
             checked={value.showLogo}
@@ -72,7 +72,7 @@ export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
         {value.showLogo && (
           <div className="border-muted space-y-4 border-l-2 pl-4">
             <div className="space-y-2">
-              <Label htmlFor="logo-url">Logo URL</Label>
+              <Label htmlFor="logo-url">标志链接</Label>
               <Input
                 id="logo-url"
                 type="url"
@@ -87,7 +87,7 @@ export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="logo-width">Logo 宽度 (px)</Label>
+                <Label htmlFor="logo-width">标志宽度 (px)</Label>
                 <NumberInput
                   id="logo-width"
                   value={value.logoWidth || 120}
@@ -99,7 +99,7 @@ export function HeaderSettings({ value, onChange }: HeaderSettingsProps) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="logo-height">Logo 高度 (px)</Label>
+                <Label htmlFor="logo-height">标志高度 (px)</Label>
                 <NumberInput
                   id="logo-height"
                   value={value.logoHeight || 60}

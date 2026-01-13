@@ -86,7 +86,7 @@ export function PropertiesPanel() {
                 <SelectContent>
                   <SelectItem value="A4">A4 (210×297mm)</SelectItem>
                   <SelectItem value="A5">A5 (148×210mm)</SelectItem>
-                  <SelectItem value="Letter">Letter (216×279mm)</SelectItem>
+                  <SelectItem value="Letter">信纸 (216×279mm)</SelectItem>
                   <SelectItem value="Custom">自定义</SelectItem>
                 </SelectContent>
               </Select>

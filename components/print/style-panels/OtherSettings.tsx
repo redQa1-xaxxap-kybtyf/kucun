@@ -168,8 +168,8 @@ export function OtherSettings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="normal">Normal</SelectItem>
-                <SelectItem value="bold">Bold</SelectItem>
+                <SelectItem value="normal">常规</SelectItem>
+                <SelectItem value="bold">加粗</SelectItem>
               </SelectContent>
             </Select>
           </div>

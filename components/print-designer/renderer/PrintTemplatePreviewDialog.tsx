@@ -6,27 +6,27 @@
 
 'use client';
 
+import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Printer } from 'lucide-react';
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import {
-  getDefaultTemplate,
-  getPrintDataForTemplate,
+    getDefaultTemplate,
+    getPrintDataForTemplate,
 } from '@/lib/print-designer/actions';
 import type { PrintTemplate, TemplateType } from '@/lib/print-designer/schemas';
 
@@ -64,6 +64,7 @@ export function PrintTemplatePreviewDialog({
   documentId,
   title,
 }: PrintTemplatePreviewDialogProps) {
+  const { toast } = useToast();
   const [template, setTemplate] = useState<PrintTemplate | null>(null);
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [error, setError] = useState<string>('');
@@ -90,21 +91,21 @@ export function PrintTemplatePreviewDialog({
       if (!templateResult.success) {
         const msg = templateResult.error ?? '获取默认模板失败';
         setError(msg);
-        toast.error(msg);
+        toast({ title: '加载失败', description: msg, variant: 'destructive' });
         return;
       }
 
       if (!templateResult.data) {
         const msg = '该单据类型未配置默认打印模板，请联系管理员在系统设置中配置。';
         setError(msg);
-        toast.error(msg);
+        toast({ title: '模板未配置', description: msg, variant: 'destructive' });
         return;
       }
 
       if (!printData) {
         const msg = '未找到可打印的数据';
         setError(msg);
-        toast.error(msg);
+        toast({ title: '数据加载失败', description: msg, variant: 'destructive' });
         return;
       }
 
@@ -119,7 +120,7 @@ export function PrintTemplatePreviewDialog({
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      toast.error('无法打开打印窗口，请检查浏览器拦截设置');
+      toast({ title: '打印失败', description: '无法打开打印窗口，请检查浏览器拦截设置', variant: 'destructive' });
       return;
     }
 
