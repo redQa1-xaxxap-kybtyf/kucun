@@ -85,7 +85,7 @@ export function CustomerStatsGrid({
                    stat.color === 'rose' && "text-rose-500/80",
                    stat.color === 'amber' && "text-amber-500/80"
                  )}>
-                   {stat.trend} PRO DATA
+                   {stat.trend} 专业数据
                  </div>
               </div>
             </div>

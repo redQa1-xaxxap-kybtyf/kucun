@@ -267,7 +267,7 @@ export function SupplierDetailPageClient({
                             <p className="text-lg font-black tracking-tighter text-slate-900">
                               {formatCurrency(shipment.totalAmount)}
                             </p>
-                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 italic">Shipment Value</span>
+                            <span className="text-xs font-bold uppercase tracking-widest text-slate-400 italic">出货金额</span>
                           </div>
                           <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-slate-900 transition-all group-hover:translate-x-1" />
                         </div>

@@ -190,7 +190,7 @@ function OrderCard({
           <p className={cn("text-lg font-black tracking-tighter text-slate-900", amountClass)}>
             {amountPrefix}{formatCurrency(amount)}
           </p>
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Transaction Value</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">交易金额</span>
         </div>
         <ChevronRight className="h-5 w-5 text-slate-200 group-hover:text-slate-900 transition-all group-hover:translate-x-1" />
       </div>

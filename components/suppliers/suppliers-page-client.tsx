@@ -270,7 +270,7 @@ export function SuppliersPageClient({
               <SearchFilterCard
                  searchValue={searchInput}
                  onSearchChange={handleSearch}
-                 searchPlaceholder="搜索供应商名称、证照 ID 或联系人..."
+                searchPlaceholder="搜索供应商名称、证照编号或联系人..."
                  filters={[
                    {
                      key: 'status',
@@ -352,7 +352,7 @@ export function SuppliersPageClient({
                                 合作始于 {formatDate(supplier.createdAt)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="uppercase text-xs font-bold tracking-widest text-slate-400">ID: {supplier.id.slice(-6)}</span>
+                          <span className="uppercase text-xs font-bold tracking-widest text-slate-400">编号：{supplier.id.slice(-6)}</span>
                         </div>
                       </div>
                     </div>
@@ -375,14 +375,14 @@ export function SuppliersPageClient({
                           <span className="text-xs font-black uppercase tracking-widest text-amber-600 mb-1">供应频次</span>
                           <div className="flex items-center gap-1 text-amber-700">
                              <Truck className="h-3 w-3" />
-                             <span className="text-sm font-black text-amber-900/40">ACTIVE DATA</span>
+                             <span className="text-sm font-black text-amber-900/40">活跃数据</span>
                           </div>
                        </div>
                        <div className="flex flex-col items-center justify-center rounded-2xl bg-blue-50/50 px-4 py-3 border border-blue-100/50">
                           <span className="text-xs font-black uppercase tracking-widest text-blue-600 mb-1">结算信用</span>
                           <div className="flex items-center gap-1 text-blue-700">
                              <TrendingUp className="h-3 w-3" />
-                             <span className="text-sm font-black text-blue-900/40">EXCELLENT</span>
+                             <span className="text-sm font-black text-blue-900/40">优秀</span>
                           </div>
                        </div>
                     </div>
