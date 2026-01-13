@@ -143,10 +143,18 @@ temp_*.diff
 # AI工具配置和记忆
 .gemini/
 .serena/memories/
+.mcp.json
 
 # Augment 自动生成的报告文件
 .augment/reports/
 type-check-result.txt
+
+# 本地审计/类型检查临时输出（不提交到仓库）
+.audit-*.txt
+.tmp-*.txt
+.tmp-*.json
+jest-*.json
+prisma/*.bak-*
 
 # 微信小程序依赖目录（仅本地安装使用，不提交到仓库）
 /kucunxcx/node_modules/
