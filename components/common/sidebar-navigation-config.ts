@@ -16,6 +16,7 @@ import {
     PackageCheck,
     PackageSearch,
     Plus,
+    Printer,
     Receipt,
     RotateCcw,
     Search,
@@ -285,6 +286,13 @@ export const navigationItems: NavigationItem[] = [
         title: '系统日志',
         href: '/settings/logs',
         icon: Receipt,
+        requiredRoles: ['admin'],
+      },
+      {
+        id: 'settings-print',
+        title: '打印',
+        href: '/settings/print-templates',
+        icon: Printer,
         requiredRoles: ['admin'],
       },
       {
