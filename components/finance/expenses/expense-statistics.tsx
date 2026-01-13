@@ -79,7 +79,7 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
               <ChineseYuan className="h-5 w-5" />
             </div>
-            <span className="text-sm font-black uppercase tracking-widest text-slate-400">全额累计支出 / TOTAL PAID</span>
+            <span className="text-sm font-black uppercase tracking-widest text-slate-400">全额累计支出</span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-black tracking-tighter text-slate-900">
@@ -103,7 +103,7 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
               <FileText className="h-5 w-5" />
             </div>
-            <span className="text-sm font-black uppercase tracking-widest text-slate-400">账目条数统计 / ENTRIES</span>
+            <span className="text-sm font-black uppercase tracking-widest text-slate-400">账目条数统计</span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black tracking-tighter text-slate-900">
@@ -132,7 +132,7 @@ export function ExpenseStatistics({ params }: ExpenseStatisticsProps) {
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
               <TrendingUp className="h-5 w-5" />
             </div>
-            <span className="text-sm font-black uppercase tracking-widest text-slate-400">单笔均值开支 / AVERAGE</span>
+            <span className="text-sm font-black uppercase tracking-widest text-slate-400">单笔均值开支</span>
           </div>
           <div className="flex items-baseline gap-1">
             <span className="text-3xl font-black tracking-tighter text-amber-600">

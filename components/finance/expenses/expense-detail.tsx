@@ -314,7 +314,7 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
 
               {expense.relatedId && (
                 <div className="space-y-2">
-                  <div className="text-muted-foreground text-sm">业务ID</div>
+                  <div className="text-muted-foreground text-sm">业务编号</div>
                   <div className="text-muted-foreground font-mono text-sm">
                     <CopyableText text={expense.relatedId} />
                   </div>

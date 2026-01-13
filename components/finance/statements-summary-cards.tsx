@@ -106,7 +106,7 @@ function SummaryCard({
               <span className={cn("h-2 w-2 rounded-full", variant === 'emerald' ? "bg-emerald-500" : variant === 'amber' ? "bg-amber-500" : variant === 'blue' ? "bg-blue-500" : "bg-purple-500")} />
               <p className="text-[11px] font-black text-slate-500 uppercase tracking-normal">{footer}</p>
            </div>
-           <div className="px-2 py-0.5 rounded-md bg-slate-50 text-[9px] font-black text-slate-400 uppercase">Live</div>
+           <div className="px-2 py-0.5 rounded-md bg-slate-50 text-[9px] font-black text-slate-400 uppercase">实时</div>
         </div>
       </div>
     </div>

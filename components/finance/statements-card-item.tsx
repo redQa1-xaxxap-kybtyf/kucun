@@ -71,16 +71,16 @@ export function StatementCardItem({ statement }: StatementCardItemProps) {
         {/* Middle: Professional Metrics Grid */}
         <div className="grid flex-1 grid-cols-2 gap-8 border-slate-50 lg:border-x lg:px-10 xl:grid-cols-4">
           <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">往来账项项数 / ENTRIES</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">往来账项项数</span>
             <p className="text-lg font-black text-slate-900">{statement.totalOrders} <span className="text-xs font-bold text-slate-400 ml-1">项流水</span></p>
           </div>
           <div className="space-y-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">本期累计流水 / TURNOVER</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">本期累计流水</span>
             <p className="text-lg font-black text-slate-900">{formatCurrency(Math.abs(statement.totalAmount))}</p>
           </div>
           <div className="space-y-1 lg:col-span-2 xl:col-span-2">
             <div className="flex items-center justify-between mb-1.5">
-               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">对账结算百分比 / CLEARANCE</span>
+               <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">对账结算百分比</span>
                <span className="text-xs font-black text-blue-600">{paymentRate.toFixed(1)}%</span>
             </div>
             <div className="h-2 w-full overflow-hidden rounded-full bg-slate-50">
@@ -95,7 +95,7 @@ export function StatementCardItem({ statement }: StatementCardItemProps) {
         {/* Right: Balance & Action */}
         <div className="flex items-center gap-8 lg:min-w-[300px] lg:justify-end">
           <div className="text-right space-y-1">
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{balanceLabel} / BALANCE</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-300">{balanceLabel}</span>
             <div className="flex items-baseline justify-end gap-1">
                <span className={cn("text-xs font-black", balance > 0 ? "text-emerald-500" : balance < 0 ? "text-rose-500" : "text-slate-200")}>¥</span>
                <p className={cn(

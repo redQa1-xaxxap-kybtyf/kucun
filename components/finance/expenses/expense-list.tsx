@@ -561,7 +561,7 @@ function ExpenseCard({
       <div className="relative z-10">
         <div className="flex items-start justify-between mb-4">
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">流水编号 / ID</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">流水编号</div>
             <div className="font-mono text-xs font-black text-slate-900 leading-none">
               <CopyableText text={expense.expenseNumber} />
             </div>
@@ -593,11 +593,11 @@ function ExpenseCard({
 
         <div className="grid grid-cols-2 gap-4 mb-6 pt-4 border-t border-slate-50">
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">收支金额 / AMOUNT</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">收支金额</div>
             <div className="font-mono text-lg font-black text-slate-900">{formatCurrency(expense.expenseAmount)}</div>
           </div>
           <div className="space-y-1">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">业务日期 / DATE</div>
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">业务日期</div>
             <div className="text-xs font-black text-slate-600">
                <RelativeTime date={expense.expenseDate} />
             </div>

@@ -598,9 +598,9 @@ export function AnnualReportClient() {
                <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <div className="h-10 w-10 bg-slate-900 flex items-center justify-center rounded text-white font-black italic text-xl">AG</div>
+                      <div className="h-10 w-10 bg-slate-900 flex items-center justify-center rounded text-white font-black italic text-xl">反</div>
                       <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900">
-                        ANTIGRAVITY <span className="font-light text-slate-500">ERP</span>
+                        反重力 <span className="font-light text-slate-500">系统</span>
                       </h1>
                     </div>
                     <div className="text-xs font-bold tracking-[0.3em] text-slate-500">集团财务报告中心</div>
@@ -673,7 +673,7 @@ export function AnnualReportClient() {
                                <div className="text-3xl font-black font-mono text-slate-900">{formatCurrency(report.factoryShipmentProfit?.customerProfit)}</div>
                             </div>
                             <div className="text-right">
-                               <div className="text-[10px] font-black text-slate-400 uppercase">Margin</div>
+                               <div className="text-[10px] font-black text-slate-400 uppercase">利润率</div>
                                <div className="text-base font-black text-slate-600">{report.factoryShipmentProfit?.averageProfitMargin.toFixed(2)}%</div>
                             </div>
                          </div>
@@ -694,10 +694,10 @@ export function AnnualReportClient() {
             <div className="mt-16 flex items-end justify-between border-t border-slate-200 pt-6">
                <div className="space-y-1">
                   <div className="text-[10px] font-black text-slate-900 font-mono tracking-widest uppercase">已验证财务数据资产</div>
-                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">数字签名: AG-SEC-{year}-FS-{new Date().getTime().toString(16).toUpperCase()}</div>
+                  <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">数字签名：反重力-安全-{year}-财报-{new Date().getTime().toString()}</div>
                </div>
                <div className="text-right space-y-1">
-                  <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">© 2026 ANTIGRAVITY ERP 系统</div>
+                  <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">© 2026 反重力系统</div>
                   <div className="text-[9px] font-bold text-slate-400 italic uppercase">第 01 页 / 年度经营分析</div>
                </div>
             </div>
@@ -796,7 +796,7 @@ function StatCard({
                  <MinusIcon className="h-3 w-3" />}
                 {Math.abs(comparison.changeRate).toFixed(1)}%
               </div>
-              <span className="text-[11px] font-medium text-slate-400">vs 上期</span>
+              <span className="text-[11px] font-medium text-slate-400">较上期</span>
             </div>
           )}
           {subtitle && (

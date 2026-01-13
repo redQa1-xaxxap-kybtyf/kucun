@@ -479,16 +479,16 @@ export function MonthlyReportClient() {
             <div className="mb-8 flex items-end justify-between border-b-2 border-slate-900 pb-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 bg-slate-900 flex items-center justify-center rounded text-white font-black italic">AG</div>
+                  <div className="h-8 w-8 bg-slate-900 flex items-center justify-center rounded text-white font-black italic">反</div>
                   <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-900">
-                    ANTIGRAVITY <span className="font-light text-slate-500">SYSTEMS</span>
+                    反重力 <span className="font-light text-slate-500">系统</span>
                   </h1>
                 </div>
-                <div className="text-[10px] font-bold tracking-widest text-slate-500">ERP FINANCIAL REPORTING UNIT</div>
+                <div className="text-[10px] font-bold tracking-widest text-slate-500">财务报表中心</div>
               </div>
               <div className="text-right space-y-0.5">
                 <h2 className="text-xl font-black tracking-tight">{year}年{month}月度财务分析报表</h2>
-                <div className="text-[10px] uppercase font-bold text-slate-400">REPORT NO: FS-{year}{month.toString().padStart(2, '0')}-001</div>
+                <div className="text-[10px] uppercase font-bold text-slate-400">报告编号：财报-{year}{month.toString().padStart(2, '0')}-001</div>
               </div>
             </div>
 
@@ -497,7 +497,7 @@ export function MonthlyReportClient() {
               {[
                 { label: '报表类型', value: '月度经营分析' },
                 { label: '统计周期', value: `${report.period.startDate} / ${report.period.endDate}` },
-                { label: '币种', value: '人民币 (CNY)' },
+                { label: '币种', value: '人民币（元）' },
                 { label: '保密级别', value: '内部机密' },
               ].map((item) => (
                 <div key={item.label}>
@@ -511,7 +511,7 @@ export function MonthlyReportClient() {
             <div className="mb-8">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-1 w-8 bg-slate-900" />
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900">Section I: Operating Performance Summary</h3>
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900">第一部分：经营业绩汇总</h3>
               </div>
               <div className="grid grid-cols-4 gap-px bg-slate-200 border border-slate-200">
                 {[
@@ -535,13 +535,13 @@ export function MonthlyReportClient() {
               <div>
                 <div className="mb-3 flex items-center gap-2">
                   <div className="h-1 w-4 bg-slate-400" />
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">Section II: Expense Distribution</h3>
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">第二部分：费用分布</h3>
                 </div>
                 <table className="w-full text-left text-[11px]">
                   <thead className="border-b-2 border-slate-900">
                     <tr>
                       <th className="py-2 font-black">费用类别</th>
-                      <th className="py-2 text-right font-black">金额 (CNY)</th>
+                      <th className="py-2 text-right font-black">金额（元）</th>
                       <th className="py-2 text-right font-black">占比 (%)</th>
                     </tr>
                   </thead>
@@ -574,7 +574,7 @@ export function MonthlyReportClient() {
                 <div>
                   <div className="mb-3 flex items-center gap-2">
                     <div className="h-1 w-4 bg-slate-400" />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">Section III: Cash Flow & Turnover</h3>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">第三部分：现金流与周转</h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded border border-slate-200 p-3">
@@ -587,7 +587,7 @@ export function MonthlyReportClient() {
                     <div className="rounded border border-slate-200 p-3">
                       <div className="text-[9px] font-black text-slate-400 uppercase">库存周转周期 (天)</div>
                       <div className="text-lg font-black font-mono">
-                        {report.inventoryTurnover?.turnoverDays.toFixed(0) || '0'} DAYS
+                        {report.inventoryTurnover?.turnoverDays.toFixed(0) || '0'} 天
                       </div>
                       <div className="text-[9px] text-slate-400 mt-1">周转率: {report.inventoryTurnover?.turnoverRate.toFixed(2)}x</div>
                     </div>
@@ -597,7 +597,7 @@ export function MonthlyReportClient() {
                 <div className="rounded bg-slate-900 p-4 text-white">
                   <div className="flex justify-between items-start mb-2">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">直发业务绩效汇报</div>
-                    <span className="text-[9px] bg-slate-700 px-1.5 py-0.5 rounded">DIRECT FULFILLMENT</span>
+                    <span className="text-[9px] bg-slate-700 px-1.5 py-0.5 rounded">厂家直发</span>
                   </div>
                   <div className="flex justify-between items-baseline">
                     <div className="text-2xl font-black font-mono">
@@ -616,7 +616,7 @@ export function MonthlyReportClient() {
               <div className="bg-slate-50 border-2 border-slate-900 rounded-lg p-5">
                 <div className="mb-3 flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
-                  <h3 className="text-xs font-black uppercase tracking-widest">Management Audit & Warnings</h3>
+                  <h3 className="text-xs font-black uppercase tracking-widest">管理审计与预警</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                   {report.alerts.map((alert, idx) => (
@@ -635,10 +635,10 @@ export function MonthlyReportClient() {
             {/* 页脚 - 报表鉴真 */}
             <div className="mt-12 flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
               <div className="flex gap-4">
-                <span>Generated by: AI Financial Module</span>
-                <span>Timestamp: {new Date().toLocaleString()}</span>
+                <span>生成模块：智能财务模块</span>
+                <span>生成时间：{new Date().toLocaleString('zh-CN')}</span>
               </div>
-              <div>© 2026 ANTIGRAVITY ERP SYSTEMS - ALL RIGHTS RESERVED</div>
+              <div>© 2026 反重力系统 - 保留所有权利</div>
             </div>
           </Card>
         </div>
@@ -742,7 +742,7 @@ function StatCard({
                 {comparison.trend === 'stable' && <MinusIcon className="mr-0.5 h-3 w-3" />}
                 {Math.abs(comparison.changeRate).toFixed(1)}%
               </div>
-              <span className="text-[10px] font-medium text-slate-500 italic">vs 上月</span>
+              <span className="text-[10px] font-medium text-slate-500 italic">较上月</span>
             </div>
           )}
           {subtitle && (

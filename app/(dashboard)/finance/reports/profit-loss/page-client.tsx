@@ -183,7 +183,7 @@ export function ProfitLossClient() {
                 </div>
                 <div>
                   <h1 className="text-lg font-bold tracking-tight text-white sm:text-2xl">
-                    盈亏多维分析 <span className="ml-2 text-xs font-normal opacity-60 sm:text-sm">Profit & Loss Analysis</span>
+                    盈亏多维分析 <span className="ml-2 text-xs font-normal opacity-60 sm:text-sm">利润与亏损分析</span>
                   </h1>
                   <p className="mt-1 text-xs text-slate-300 sm:text-sm">
                     经营状况深度透视 · 实时财务健康看板
@@ -646,7 +646,7 @@ export function ProfitLossClient() {
             <div className="flex items-start justify-between border-b-4 border-slate-900 pb-8 relative z-10">
                 <div>
                   <div className="flex items-center gap-3 mb-4">
-                     <div className="bg-slate-900 text-white p-2 font-black italic tracking-tighter text-xl">ANTIGRAVITY</div>
+                     <div className="bg-slate-900 text-white p-2 font-black italic tracking-tighter text-xl">反重力</div>
                      <div className="h-8 w-px bg-slate-300 mx-2" />
                      <div className="text-slate-500 font-black uppercase tracking-[0.3em] text-xs">财务智能分析系统</div>
                   </div>
@@ -746,7 +746,7 @@ export function ProfitLossClient() {
                   </div>
                </div>
                <div className="text-right">
-                  <div className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1">© 2026 ANTIGRAVITY 财务服务中心</div>
+                  <div className="text-xs font-black text-slate-900 uppercase tracking-widest mb-1">© 2026 反重力财务服务中心</div>
                   <div className="text-xs font-bold text-slate-500 uppercase">内部评审版本 0.1 / 盈亏分析汇总报告</div>
                </div>
             </div>
@@ -845,7 +845,7 @@ function StatCard({
                  <MinusIcon className="h-3 w-3" />}
                 {Math.abs(comparison.changeRate).toFixed(1)}%
               </div>
-              <span className="text-xs font-medium text-slate-400">vs 上期</span>
+              <span className="text-xs font-medium text-slate-400">较上期</span>
             </div>
           )}
           {subtitle && (

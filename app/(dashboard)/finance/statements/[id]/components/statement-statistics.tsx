@@ -52,7 +52,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
                )}>
                  {monthTrend === 'up' ? '+' : ''}{((summary.currentMonthAmount / (summary.lastMonthAmount || 1) - 1) * 100).toFixed(1)}%
                </span>
-               <span className="text-[9px] font-bold text-slate-300 uppercase">vs 上月同期</span>
+               <span className="text-[9px] font-bold text-slate-300 uppercase">较上月同期</span>
             </div>
           </div>
           <div className="bg-white p-6">
