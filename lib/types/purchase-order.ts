@@ -247,6 +247,25 @@ export type PurchaseExpenseAllocationMethod =
   | 'by_weight' // 按重量比例分摊
   | 'by_quantity'; // 按数量比例分摊
 
+// 费用分摊方式中文标签映射
+export const PURCHASE_EXPENSE_ALLOCATION_METHOD_LABELS: Record<
+  PurchaseExpenseAllocationMethod,
+  string
+> = {
+  by_value: '按货值比例分摊',
+  by_weight: '按重量比例分摊',
+  by_quantity: '按数量比例分摊',
+};
+
+// 费用分摊方式选项列表
+export const PURCHASE_EXPENSE_ALLOCATION_METHOD_OPTIONS = Object.entries(
+  PURCHASE_EXPENSE_ALLOCATION_METHOD_LABELS
+).map(([value, label]) => ({
+  value: value as PurchaseExpenseAllocationMethod,
+  label,
+}));
+
+
 /**
  * 费用分摊结果（单个明细）
  */
@@ -299,3 +318,4 @@ export interface OrderCostSummary {
   itemResults: ItemCostResult[]; // 各明细成本
 }
 import type { ExpenseRecord } from './expense';
+
