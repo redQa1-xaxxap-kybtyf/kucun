@@ -58,31 +58,30 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2">
-            <PiggyBank className="h-5 w-5 text-amber-600" />
-            预收款抵扣明细
-          </CardTitle>
-          <p className="text-muted-foreground text-sm">
-            展示该订单使用的预收款来源及冲抵金额，便于财务追溯与审计。
-          </p>
+    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1.5">
+            <CardTitle className="flex items-center gap-2.5 text-sm font-black uppercase tracking-widest text-slate-900">
+              <PiggyBank className="h-4 w-4 text-amber-600" />
+              预收款冲抵记录
+            </CardTitle>
+            <p className="text-[11px] font-medium text-slate-500">
+              追溯本笔业务所消耗的客户账户预存资金。
+            </p>
+          </div>
+          <Badge variant="secondary" className="hidden sm:inline-flex rounded-lg px-2.5 py-1 font-black">
+            合计抵扣：{formatCurrency(totalApplied)}
+          </Badge>
         </div>
-        <Badge variant="outline">
-          合计冲抵：{formatCurrency(totalApplied)}
-        </Badge>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="rounded-lg bg-amber-50/80 p-3 text-sm text-amber-800">
-          本订单合计使用 {usages.length} 笔预收款，共冲抵{' '}
-          <span className="font-semibold">
-            {formatCurrency(totalApplied)}
-          </span>
-          。
+      <CardContent className="space-y-5 py-6">
+        <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-4 text-[11px] font-bold text-amber-700 flex items-center gap-3">
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] text-white">i</div>
+          <span>当前订单已执行 {usages.length} 笔预收款对冲，金额已从往来账户余额中扣除。</span>
         </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {usages.map(usage => {
             const statusConfig =
               STATUS_BADGE[usage.paymentStatus] ?? STATUS_BADGE.confirmed;
@@ -90,43 +89,45 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
             return (
               <div
                 key={usage.id}
-                className="border-border/60 bg-card/40 flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                className="group relative flex flex-col gap-4 rounded-xl border border-slate-100 bg-white p-5 transition-all hover:bg-slate-50/50 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
               >
-                <div className="space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant={statusConfig.variant}>
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Badge 
+                      variant={statusConfig.variant}
+                      className="rounded-lg px-2 py-0.5 font-bold"
+                    >
                       {statusConfig.label}
                     </Badge>
-                    <span className="font-medium">
-                      预收款 {usage.paymentNumber} ·{' '}
+                    <span className="font-mono text-sm font-bold text-slate-700">
+                      {usage.paymentNumber}
+                    </span>
+                    <div className="h-3 w-px bg-slate-200" />
+                    <span className="text-xs font-bold text-slate-500">
                       {formatPaymentMethod(usage.paymentMethod)}
                     </span>
                   </div>
-                  <p className="text-muted-foreground text-xs sm:text-sm">
-                    收款时间：
-                    {formatDateTime(usage.paymentDate)}
-                  </p>
-                  <p className="text-muted-foreground text-xs sm:text-sm">
-                    冲抵记录创建时间：
-                    {formatDateTime(usage.createdAt)}
-                  </p>
+                  <div className="flex flex-col gap-1 text-[10px] font-medium text-slate-400">
+                    <p>原始收款时间：{formatDateTime(usage.paymentDate)}</p>
+                    <p>冲抵生效时间：{formatDateTime(usage.createdAt)}</p>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0 sm:gap-2">
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">本单冲抵金额</p>
-                    <p className="text-lg font-semibold text-emerald-600">
+                    <p className="text-[9px] font-black uppercase tracking-tighter text-slate-400">Current Deduction</p>
+                    <p className="font-mono text-lg font-black tracking-tighter text-emerald-600">
                       -{formatCurrency(usage.appliedAmount)}
                     </p>
                   </div>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     asChild
-                    className="h-7 text-xs"
+                    className="h-8 rounded-lg px-3 text-xs font-black text-blue-600 hover:bg-blue-50"
                   >
                     <Link href={`/finance/payments/${usage.paymentRecordId}`}>
-                      查看预收款
-                      <ArrowRight className="ml-1 h-3 w-3" />
+                      溯源记录
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Link>
                   </Button>
                 </div>

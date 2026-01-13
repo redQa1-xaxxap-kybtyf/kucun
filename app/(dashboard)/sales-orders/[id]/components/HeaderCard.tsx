@@ -1,35 +1,33 @@
 'use client';
 
 import {
-  ArrowLeft,
-  Download,
-  Edit,
-  MoreHorizontal,
-  Printer,
-  Truck,
+    ArrowLeft,
+    Download,
+    Edit,
+    MoreHorizontal,
+    Printer,
+    Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
-import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
+import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
-import { salesOrderPrintConfig } from '@/lib/config/print-fields/sales-order-fields';
 import {
-  SALES_ORDER_STATUS_LABELS,
-  TRANSFER_MODE_LABELS,
+    SALES_ORDER_STATUS_LABELS,
+    TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
-import { SalesOrderPrintContent } from './SalesOrderPrintContent';
 import type { SalesOrderDetail } from './types';
 
 interface Props {
@@ -102,18 +100,23 @@ const getTransferModeBadge = (mode: string | undefined) => {
 
 function SalesOrderMeta({ order }: SalesOrderMetaProps) {
   return (
-    <div className="flex items-center gap-4">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-lg">
-        {/* Icon space kept for visual parity */}
-        <Truck className="h-6 w-6 text-white" />
+    <div className="flex items-center gap-5">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-100/40 text-blue-600 transition-colors hover:bg-blue-100/60">
+        <Truck className="h-7 w-7" />
       </div>
-      <div>
-        <h1 className="text-lg font-bold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl">
-          销售订单详情
+      <div className="min-w-0">
+        <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+          销售订单
         </h1>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-          <span className="font-medium">订单号：{order.orderNumber}</span>
-          <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
+          <span className="text-sm font-bold uppercase tracking-wider text-slate-500">
+            {order.orderNumber}
+          </span>
+          <div className="h-3.5 w-px bg-slate-200" />
+          <Badge 
+            variant={getSalesOrderStatusBadgeVariant(order.status)}
+            className="rounded-lg px-2 py-0.5"
+          >
             {SALES_ORDER_STATUS_LABELS[
               order.status as keyof typeof SALES_ORDER_STATUS_LABELS
             ] || order.status}
@@ -185,27 +188,43 @@ function HeaderActions({
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onPrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            打印订单
+        <DropdownMenuContent align="end" className="w-56 rounded-xl border-slate-100 shadow-xl">
+          <DropdownMenuItem onClick={onPrint} className="cursor-pointer py-2.5">
+            <Printer className="mr-3 h-4 w-4 text-slate-500" />
+            <span className="font-semibold text-slate-700">打印订单单据</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onExportImage} disabled={isExportingImage}>
-            <Download className="mr-2 h-4 w-4" />
-            {isExportingImage ? '生成图片中...' : '导出为图片'}
+          <DropdownMenuItem 
+            onClick={onExportImage} 
+            disabled={isExportingImage}
+            className="cursor-pointer py-2.5"
+          >
+            <Download className="mr-3 h-4 w-4 text-slate-500" />
+            <span className="font-semibold text-slate-700">
+              {isExportingImage ? '正在生成报表...' : '导出为专业图片'}
+            </span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onExportExcel} disabled={isExportingExcel}>
-            <Download className="mr-2 h-4 w-4" />
-            {isExportingExcel ? '生成Excel中...' : '导出Excel'}
+          <DropdownMenuItem 
+            onClick={onExportExcel} 
+            disabled={isExportingExcel}
+            className="cursor-pointer py-2.5"
+          >
+            <Download className="mr-3 h-4 w-4 text-slate-500" />
+            <span className="font-semibold text-slate-700">
+              {isExportingExcel ? '正在生成Excel...' : '导出经营数据报表'}
+            </span>
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={onExportCompleteExcel}
             disabled={isExportingExcel}
+            className="cursor-pointer py-2.5"
           >
-            <Download className="mr-2 h-4 w-4" />
-            {isExportingExcel ? '生成Excel中...' : '导出完整Excel'}
+            <Download className="mr-3 h-4 w-4 text-slate-500" />
+            <span className="font-semibold text-slate-700">导出完整业务明细</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>复制订单</DropdownMenuItem>
+          <div className="my-1.5 h-px bg-slate-100" />
+          <DropdownMenuItem className="cursor-pointer py-2.5 text-blue-600 font-bold focus:text-blue-700 focus:bg-blue-50">
+            复制并创建新订单
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
@@ -271,10 +290,11 @@ export function HeaderCard({
   }, []);
 
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-4 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
+      <CardContent className="bg-white p-6 sm:p-8">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <SalesOrderMeta order={order} />
+          <div className="h-px w-full bg-slate-100 lg:hidden" />
           <HeaderActions
             canEditOrder={canEditOrder}
             isConfirmed={order.status === 'confirmed'}
@@ -292,18 +312,11 @@ export function HeaderCard({
         </div>
       </CardContent>
       {isPrintDialogOpen && (
-        <PrintPreviewDialog
+        <PrintTemplatePreviewDialog
           open={isPrintDialogOpen}
-          onClose={() => setIsPrintDialogOpen(false)}
-          documentType="sales-order"
-          printConfig={salesOrderPrintConfig}
-          renderContent={(styleConfig, fieldSelection) => (
-            <SalesOrderPrintContent
-              order={order}
-              styleConfig={styleConfig}
-              fieldSelection={fieldSelection}
-            />
-          )}
+          onOpenChange={setIsPrintDialogOpen}
+          templateType="sales-order"
+          documentId={id}
           title="销售订单打印"
         />
       )}

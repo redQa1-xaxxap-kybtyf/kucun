@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  RETURN_ORDER_STATUS_LABELS,
-  RETURN_ORDER_STATUS_VARIANTS,
-  type ReturnOrderStatus,
+    RETURN_ORDER_STATUS_LABELS,
+    RETURN_ORDER_STATUS_VARIANTS,
+    type ReturnOrderStatus,
 } from '@/lib/types/return-order';
 import { formatDate } from '@/lib/utils/datetime';
 
@@ -28,25 +28,25 @@ export function RelatedReturnOrdersCard({
     typeof value === 'string' && value in RETURN_ORDER_STATUS_LABELS;
 
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
-        <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
-          <Receipt className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
-          关联退货单
+    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
+        <CardTitle className="flex items-center text-sm font-black uppercase tracking-widest text-slate-900">
+          <Receipt className="mr-2.5 h-4 w-4 text-rose-500" />
+          关联退货业务单项
         </CardTitle>
       </CardHeader>
-      <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+      <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] text-xs text-[hsl(var(--color-text-secondary))]">
+            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500 backdrop-blur-md">
               <tr>
-                <th className="px-4 py-3 text-left font-medium">退货单号</th>
-                <th className="px-4 py-3 text-left font-medium">状态</th>
-                <th className="px-4 py-3 text-left font-medium">创建时间</th>
-                <th className="px-4 py-3 text-center font-medium">操作</th>
+                <th className="px-4 py-3 text-left font-medium">退货业务单号</th>
+                <th className="px-4 py-3 text-left font-medium">执行状态</th>
+                <th className="px-4 py-3 text-left font-medium">档案建立日</th>
+                <th className="px-4 py-3 text-center font-medium">追踪管理</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
+            <tbody className="divide-y divide-slate-50">
               {relatedReturnOrders.map(returnOrder => {
                 const status = isReturnOrderStatus(returnOrder.status)
                   ? returnOrder.status
@@ -54,34 +54,34 @@ export function RelatedReturnOrdersCard({
                 return (
                   <tr
                     key={returnOrder.id}
-                    className="text-[hsl(var(--color-text-primary))]"
+                    className="group transition-colors hover:bg-slate-50/50"
                   >
-                    <td className="px-4 py-3 font-mono text-[hsl(var(--color-primary))]">
+                    <td className="px-4 py-3.5 font-mono text-sm font-black text-rose-600">
                       {returnOrder.returnNumber}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5">
                       <Badge
                         variant={
                           RETURN_ORDER_STATUS_VARIANTS[status] ?? 'secondary'
                         }
-                        className="text-xs"
+                        className="rounded-lg px-2 py-0.5 font-bold uppercase tracking-tighter"
                       >
                         {RETURN_ORDER_STATUS_LABELS[status] ?? status}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
+                    <td className="px-4 py-3.5 text-xs font-medium text-slate-400">
                       {formatDate(returnOrder.createdAt)}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3.5 text-center">
                       <Button
-                        variant="link"
+                        variant="ghost"
                         size="sm"
-                        className="px-0 text-[hsl(var(--color-primary))]"
+                        className="h-8 rounded-lg font-black text-blue-600 hover:bg-blue-50"
                         onClick={() =>
                           router.push(`/return-orders/${returnOrder.id}`)
                         }
                       >
-                        查看详情
+                        追溯详情
                       </Button>
                     </td>
                   </tr>

@@ -15,6 +15,7 @@ import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
+import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -207,6 +208,7 @@ export function ReturnOrderDetailPageClient({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const {
     data: order,
@@ -335,7 +337,12 @@ export function ReturnOrderDetailPageClient({
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <Button variant="outline" size="sm" className="h-8 px-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-3"
+                  onClick={() => setIsPrintDialogOpen(true)}
+                >
                   <Printer className="mr-2 h-4 w-4" />
                   打印
                 </Button>
@@ -811,6 +818,16 @@ export function ReturnOrderDetailPageClient({
           </div>
         </div>
       </div>
+
+      {isPrintDialogOpen && (
+        <PrintTemplatePreviewDialog
+          open={isPrintDialogOpen}
+          onOpenChange={setIsPrintDialogOpen}
+          templateType="return-order"
+          documentId={id}
+          title="退货订单打印"
+        />
+      )}
 
       {/* 取消确认对话框 */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>

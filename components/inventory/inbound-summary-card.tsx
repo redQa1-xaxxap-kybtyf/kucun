@@ -6,12 +6,15 @@ import {
     CalendarDays,
     ClipboardList,
     Package,
+    Printer,
     Warehouse,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
 import type { InboundRecordDetail } from '@/lib/types/inbound';
@@ -64,6 +67,7 @@ export function InboundSummaryCard({
   reasonVariant,
 }: InboundSummaryCardProps) {
   const { data: session } = useSession();
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = React.useState(false);
 
   // 检查用户是否有财务查看权限
   const hasFinancePermission = React.useMemo(
@@ -150,37 +154,60 @@ export function InboundSummaryCard({
         : 'xl:grid-cols-4';
 
   return (
-    <Card className="overflow-hidden border-slate-200 bg-white transition-all hover:shadow-lg">
-      <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1.5 text-center md:text-left">
-          <CardTitle className="flex items-center justify-center gap-2 text-xl font-black tracking-tight text-slate-900 md:justify-start">
-            <Package className="h-5 w-5 text-blue-600" />
-            数字入库单 {record.recordNumber}
-          </CardTitle>
-          <p className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-400 md:justify-start">
-            <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {createdAt}</span>
-            {updatedAt && (
-              <>
-                <span className="h-3 w-px bg-slate-200" />
-                <span>最后修订：{updatedAt}</span>
-              </>
-            )}
-          </p>
-        </div>
-        <Badge 
-          variant={reasonVariant} 
-          className="mx-auto w-fit px-3 py-1 text-[11px] font-black uppercase tracking-widest md:mx-0"
+    <>
+      <Card className="overflow-hidden border-slate-200 bg-white transition-all hover:shadow-lg">
+        <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1.5 text-center md:text-left">
+            <CardTitle className="flex items-center justify-center gap-2 text-xl font-black tracking-tight text-slate-900 md:justify-start">
+              <Package className="h-5 w-5 text-blue-600" />
+              数字入库单 {record.recordNumber}
+            </CardTitle>
+            <p className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-400 md:justify-start">
+              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {createdAt}</span>
+              {updatedAt && (
+                <>
+                  <span className="h-3 w-px bg-slate-200" />
+                  <span>最后修订：{updatedAt}</span>
+                </>
+              )}
+            </p>
+          </div>
+          <div className="mx-auto flex items-center gap-2 md:mx-0">
+            <Badge
+              variant={reasonVariant}
+              className="w-fit px-3 py-1 text-[11px] font-black uppercase tracking-widest"
+            >
+              {reasonLabel}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-3"
+              onClick={() => setIsPrintDialogOpen(true)}
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              打印
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent
+          className={`grid gap-5 p-6 md:grid-cols-2 ${gridColsClass}`}
         >
-          {reasonLabel}
-        </Badge>
-      </CardHeader>
-      <CardContent
-        className={`grid gap-5 p-6 md:grid-cols-2 ${gridColsClass}`}
-      >
-        {stats.map(stat => (
-          <DetailStat key={stat.label} {...stat} />
-        ))}
-      </CardContent>
-    </Card>
+          {stats.map(stat => (
+            <DetailStat key={stat.label} {...stat} />
+          ))}
+        </CardContent>
+      </Card>
+
+      {isPrintDialogOpen && (
+        <PrintTemplatePreviewDialog
+          open={isPrintDialogOpen}
+          onOpenChange={setIsPrintDialogOpen}
+          templateType="inbound-record"
+          documentId={record.recordNumber}
+          title="入库记录打印"
+        />
+      )}
+    </>
   );
 }

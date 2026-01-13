@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 
-import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
+import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -34,7 +34,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { purchaseOrderPrintConfig } from '@/lib/config/print-fields/purchase-order-fields';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import {
     PURCHASE_ORDER_STATUS,
@@ -48,7 +47,6 @@ import {
     formatCurrency,
 } from './purchase-order-detail-constants';
 import type { PurchaseOrderDetailData } from './purchase-order-detail.types';
-import { PurchaseOrderPrintContent } from './PurchaseOrderPrintContent';
 
 interface OrderSummaryCardProps {
   order: PurchaseOrderDetailData;
@@ -145,18 +143,11 @@ export function OrderSummaryCard({
         </CardContent>
       </Card>
       {isPrintDialogOpen && (
-        <PrintPreviewDialog
+        <PrintTemplatePreviewDialog
           open={isPrintDialogOpen}
-          onClose={() => setIsPrintDialogOpen(false)}
-          documentType="purchase-order"
-          printConfig={purchaseOrderPrintConfig}
-          renderContent={(styleConfig, fieldSelection) => (
-            <PurchaseOrderPrintContent
-              order={order}
-              styleConfig={styleConfig}
-              fieldSelection={fieldSelection}
-            />
-          )}
+          onOpenChange={setIsPrintDialogOpen}
+          templateType="purchase-order"
+          documentId={order.id}
           title="采购订单打印"
         />
       )}

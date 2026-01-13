@@ -19,11 +19,10 @@ import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
 import { ConfirmArrivalDialog } from '@/components/factory-shipments/confirm-arrival-dialog';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
-import { FactoryShipmentPrintContent } from '@/components/factory-shipments/FactoryShipmentPrintContent';
 import { FeeItemsSection } from '@/components/factory-shipments/fee-items-section';
 import { SupplementShippingInfoDialog } from '@/components/factory-shipments/supplement-shipping-info-dialog';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-import { PrintPreviewDialog } from '@/components/print/PrintPreviewDialog';
+import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,7 +37,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { getFactoryShipmentOrder } from '@/lib/api/factory-shipments';
-import { factoryShipmentPrintConfig } from '@/lib/config/print-fields/factory-shipment-fields';
 import { queryKeys } from '@/lib/queryKeys';
 import {
     FACTORY_SHIPMENT_STATUS_LABELS,
@@ -650,18 +648,11 @@ export function FactoryShipmentOrderDetail({
       />
 
       {isPrintDialogOpen && (
-        <PrintPreviewDialog
+        <PrintTemplatePreviewDialog
           open={isPrintDialogOpen}
-          onClose={() => setIsPrintDialogOpen(false)}
-          documentType="factory-shipment"
-          printConfig={factoryShipmentPrintConfig}
-          renderContent={(styleConfig, fieldSelection) => (
-            <FactoryShipmentPrintContent
-              order={order}
-              styleConfig={styleConfig}
-              fieldSelection={fieldSelection}
-            />
-          )}
+          onOpenChange={setIsPrintDialogOpen}
+          templateType="factory-shipment"
+          documentId={orderId}
           title="厂家发货单打印"
         />
       )}

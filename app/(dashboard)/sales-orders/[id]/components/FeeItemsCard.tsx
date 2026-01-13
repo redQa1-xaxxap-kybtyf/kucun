@@ -24,124 +24,124 @@ export function FeeItemsCard({
     .reduce((sum, fee) => sum + (fee.feeAmount || 0), 0);
 
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
-        <CardTitle className="flex items-center justify-between text-base text-[hsl(var(--color-text-primary))]">
+    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
+        <CardTitle className="flex items-center justify-between text-sm font-black uppercase tracking-widest text-slate-900">
           <div className="flex items-center">
-            <ChineseYuan className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
-            额外费用明细
+            <ChineseYuan className="mr-2.5 h-4 w-4 text-blue-600" />
+            业务附加费用明细
           </div>
-          <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-            共 {feeItems.length} 项
+          <span className="text-[10px] font-bold text-slate-400">
+            RECORDED {feeItems.length} ITEMS
           </span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+      <CardContent className="bg-white p-0">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="border-b-2 border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
-              <tr className="text-xs font-semibold text-[hsl(var(--color-text-secondary))]">
-                <th className="px-4 py-3 text-center font-medium">序号</th>
-                <th className="px-4 py-3 text-left font-medium">费用类型</th>
-                <th className="px-4 py-3 text-left font-medium">费用名称</th>
-                <th className="px-4 py-3 text-right font-medium">费用金额</th>
-                <th className="px-4 py-3 text-center font-medium">承担方</th>
-                <th className="px-4 py-3 text-left font-medium">备注</th>
+            <thead className="border-b border-slate-100 bg-slate-50/80 text-[10px] font-bold uppercase tracking-wider text-slate-500 backdrop-blur-md">
+              <tr className="text-xs font-semibold text-slate-500">
+                <th className="px-4 py-3 text-center font-medium">#</th>
+                <th className="px-4 py-3 text-left font-medium">费项类别</th>
+                <th className="px-4 py-3 text-left font-medium">内容说明</th>
+                <th className="px-4 py-3 text-right font-medium">核算金额</th>
+                <th className="px-4 py-3 text-center font-medium">支出方</th>
+                <th className="px-4 py-3 text-left font-medium">业务备注</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
+            <tbody className="divide-y divide-slate-50">
               {feeItems.map((fee, index) => (
                 <tr
                   key={fee.id}
-                  className="transition-colors hover:bg-[hsl(var(--color-bg-secondary))]/50"
+                  className="group transition-colors hover:bg-slate-50/50"
                 >
                   <td className="px-4 py-3.5 text-center">
-                    <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
+                    <span className="text-xs font-medium text-slate-400">
                       {index + 1}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className="inline-flex rounded-md border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] px-2 py-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                    <span className="inline-flex rounded-lg border border-slate-100 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-600">
                       {fee.feeType}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                    <span className="text-sm font-semibold text-slate-900">
                       {fee.feeName}
                     </span>
                   </td>
-                  <td className="px-4 py-3.5 text-right">
-                    <span className="text-sm font-bold text-[hsl(var(--color-primary))]">
+                  <td className="px-4 py-3.5 text-right font-mono">
+                    <span className="text-sm font-bold text-slate-900">
                       {formatCurrency(fee.feeAmount)}
                     </span>
                   </td>
                   <td className="px-4 py-3.5 text-center">
                     <span
-                      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                      className={`inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold ${
                         fee.paidBy === 'company'
-                          ? 'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]'
-                          : 'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]'
+                          ? 'bg-amber-100/50 text-amber-600 ring-1 ring-amber-600/10'
+                          : 'bg-emerald-100/50 text-emerald-600 ring-1 ring-emerald-600/10'
                       }`}
                     >
                       {FEE_PAID_BY_LABELS[fee.paidBy] ?? '客户承担'}
                     </span>
                   </td>
                   <td className="px-4 py-3.5">
-                    <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                    <span className="text-xs text-slate-400">
                       {fee.remarks || '-'}
                     </span>
                   </td>
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] font-semibold">
+            <tfoot className="border-t-2 border-slate-200 bg-slate-50/50">
+              <tr className="font-bold">
                 <td
                   colSpan={4}
-                  className="px-4 py-3 text-right text-[hsl(var(--color-text-primary))]"
+                  className="px-4 py-4 text-right text-slate-500"
                 >
-                  <span className="text-sm">客户承担费用小计</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">客户承担小计</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                  <span className="font-mono text-sm font-black text-slate-900">
                     {formatCurrency(customerPaidTotal)}
                   </span>
                 </td>
                 <td className="px-4 py-3"></td>
               </tr>
-              <tr className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] font-semibold">
+              <tr className="border-t border-slate-100 font-bold">
                 <td
                   colSpan={4}
-                  className="px-4 py-3 text-right text-[hsl(var(--color-text-primary))]"
+                  className="px-4 py-4 text-right text-slate-500"
                 >
-                  <span className="text-sm">公司承担费用小计</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest">公司承担小计</span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <span className="text-sm font-bold text-[hsl(var(--color-text-secondary))]">
+                  <span className="font-mono text-sm font-semibold text-slate-500">
                     {formatCurrency(companyPaidTotal)}
                   </span>
                 </td>
                 <td className="px-4 py-3"></td>
               </tr>
-              <tr className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] font-bold">
+              <tr className="border-t border-slate-200 bg-slate-100/20 font-black">
                 <td
                   colSpan={4}
-                  className="px-4 py-4 text-right text-[hsl(var(--color-text-primary))]"
+                  className="px-4 py-5 text-right text-slate-900"
                 >
-                  <div className="flex items-center justify-end gap-2">
-                    <span className="text-base">订单总金额</span>
-                    <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-                      (产品 {formatCurrency(productSubtotal)} + 客户费用{' '}
+                  <div className="flex items-center justify-end gap-3">
+                    <span className="text-xs font-bold uppercase tracking-widest">业务应收总额</span>
+                    <span className="text-[10px] font-medium text-slate-400">
+                      (PROD {formatCurrency(productSubtotal)} + FEES{' '}
                       {formatCurrency(order.additionalFees)})
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-4 text-right">
-                  <span className="text-lg font-bold text-[hsl(var(--color-primary))]">
+                <td className="px-4 py-5 text-right">
+                  <span className="font-mono text-xl font-black text-blue-600">
                     {formatCurrency(order.totalAmount)}
                   </span>
                 </td>
-                <td className="px-4 py-4"></td>
+                <td className="px-4 py-5"></td>
               </tr>
             </tfoot>
           </table>

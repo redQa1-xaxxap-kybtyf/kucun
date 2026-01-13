@@ -259,14 +259,14 @@ export function OrderItemsTable({
   }, 0);
 
   return (
-    <Card className="card-shadow-medium overflow-hidden border border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-blue-50 to-indigo-50 py-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="flex items-center gap-2 text-base font-semibold text-[hsl(var(--color-text-primary))]">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-sm">
-              <ShoppingCart className="h-4 w-4 text-white" />
+    <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
+      <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <CardTitle className="flex items-center gap-3 text-sm font-black uppercase tracking-widest text-slate-900">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/50 text-blue-600 shadow-sm">
+              <ShoppingCart className="h-5 w-5" />
             </div>
-            订单明细
+            业务订购明细
           </CardTitle>
           <div className="flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--color-text-tertiary))] sm:justify-end sm:text-sm">
             <span>产品种类</span>
@@ -306,9 +306,9 @@ export function OrderItemsTable({
       </CardHeader>
       <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
         {/* 桌面端：表格视图 */}
-        <div className="hidden overflow-x-auto rounded-b-xl border-t border-[hsl(var(--color-border-secondary))] md:block">
-          <table className="w-full text-sm text-[hsl(var(--color-text-secondary))]">
-            <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50 text-xs font-medium text-gray-600">
+        <div className="hidden overflow-x-auto md:block">
+          <table className="w-full text-sm text-slate-600">
+            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-[11px] font-black uppercase tracking-widest text-slate-500 backdrop-blur-md">
               <tr>
                 <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
                   产品编码
@@ -365,8 +365,8 @@ export function OrderItemsTable({
                     </th>
                   </>
                 )}
-                <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
-                  备注
+                <th className="min-w-[120px] px-3 py-2.5 text-left font-medium whitespace-nowrap">
+                  备注说明
                 </th>
               </tr>
             </thead>
@@ -443,13 +443,13 @@ export function OrderItemsTable({
                       </div>
                     </td>
                     {order.orderType !== 'TRANSFER' && (
-                      <td className="px-3 py-2.5 text-center align-top whitespace-nowrap">
-                        <div className="inline-flex flex-col items-center gap-0.5">
-                          <span className="text-xs font-medium text-purple-600">
+                      <td className="px-3 py-4 text-center align-middle whitespace-nowrap">
+                        <div className="inline-flex flex-col items-center gap-1">
+                          <span className="rounded bg-slate-100/50 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-500">
                             {item.batchNumber || '-'}
                           </span>
                           {item.productionDate && (
-                            <span className="text-[10px] text-gray-500">
+                            <span className="text-[9px] font-medium text-slate-400">
                               {formatDate(item.productionDate)}
                             </span>
                           )}
@@ -527,14 +527,14 @@ export function OrderItemsTable({
                         </td>
                       </>
                     )}
-                    <td className="px-3 py-2.5 align-top">
-                      <div className="max-w-xs text-xs text-gray-500">
+                    <td className="px-3 py-2.5 align-top whitespace-nowrap">
+                      <div className="flex h-full min-w-[100px] items-center text-xs text-gray-500">
                         {remarkText !== '-' ? (
-                          <div className="rounded border border-gray-200 bg-gray-50 px-2 py-1 break-words whitespace-normal">
+                          <div className="inline-flex rounded border border-blue-100 bg-blue-50/50 px-2 py-0.5 font-bold tracking-tight text-blue-600 whitespace-nowrap">
                             {remarkText}
                           </div>
                         ) : (
-                          <span className="text-gray-400">-</span>
+                          <span className="text-gray-300">/</span>
                         )}
                       </div>
                     </td>
@@ -542,27 +542,27 @@ export function OrderItemsTable({
                 );
               })}
             </tbody>
-            <tfoot className="border-t-2 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
-              <tr className="font-semibold">
+            <tfoot className="border-t border-slate-100 bg-slate-50/30">
+              <tr className="font-bold">
                 <td
                   colSpan={order.orderType === 'TRANSFER' ? 3 : 4}
-                  className="px-3 py-3 text-right text-[hsl(var(--color-text-primary))]"
+                  className="px-4 py-5 text-right text-slate-500"
                 >
-                  <span className="text-sm">产品小计</span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">合计统计</span>
                 </td>
-                <td className="px-3 py-3 text-center whitespace-nowrap">
-                  <span className="text-xs text-gray-400">-</span>
+                <td className="px-3 py-5 text-center whitespace-nowrap">
+                  <span className="text-[10px] font-bold text-slate-300">-</span>
                 </td>
-                <td className="px-3 py-3 text-center whitespace-nowrap">
-                  <span className="text-xs text-gray-400">-</span>
+                <td className="px-3 py-5 text-center whitespace-nowrap">
+                  <span className="text-[10px] font-bold text-slate-300">-</span>
                 </td>
-                <td className="px-3 py-3 text-right whitespace-nowrap">
-                  <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                <td className="px-3 py-5 text-right whitespace-nowrap">
+                  <span className="font-mono text-base font-black text-slate-900">
                     {formatDecimal(totalDisplayQuantity)}
                   </span>
                 </td>
-                <td className="px-3 py-3 text-right whitespace-nowrap">
-                  <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                <td className="px-3 py-5 text-right whitespace-nowrap">
+                  <span className="font-mono text-sm font-bold text-slate-600">
                     {totalWeightKg > 0
                       ? `${formatDecimal(totalWeightKg)}kg`
                       : '-'}
@@ -570,45 +570,45 @@ export function OrderItemsTable({
                 </td>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-600">
+                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                      <span className="font-mono text-sm font-medium text-slate-600">
                         {formatDecimal(totalLocalQuantity)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-600">
+                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                      <span className="font-mono text-sm font-medium text-slate-600">
                         {formatDecimal(totalTransferQuantity)}
                       </span>
                     </td>
                   </>
                 )}
-                <td className="px-3 py-3 text-right whitespace-nowrap">
-                  <span className="text-xs text-gray-400">-</span>
+                <td className="px-3 py-5 text-right whitespace-nowrap">
+                  <span className="text-[10px] font-bold text-slate-300">-</span>
                 </td>
-                <td className="px-3 py-3 text-right whitespace-nowrap">
-                  <span className="text-base font-bold text-[hsl(var(--color-primary))]">
+                <td className="px-3 py-5 text-right whitespace-nowrap">
+                  <span className="font-mono text-xl font-black text-blue-700">
                     {formatCurrency(productSubtotal)}
                   </span>
                 </td>
                 {order.orderType === 'TRANSFER' && (
                   <>
-                    <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <span className="text-xs text-gray-400">-</span>
+                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                      <span className="text-[10px] font-bold text-slate-300">-</span>
                     </td>
-                    <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-700">
+                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                      <span className="font-mono text-sm font-semibold text-slate-700">
                         {formatCurrency(order.costAmount)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-right whitespace-nowrap">
-                      <span className="text-base font-bold text-[hsl(var(--color-success))]">
+                    <td className="px-3 py-5 text-right whitespace-nowrap">
+                      <span className="font-mono text-lg font-black text-emerald-600">
                         {formatCurrency(order.profitAmount)}
                       </span>
                     </td>
                   </>
                 )}
-                <td className="px-3 py-3">
-                  <span className="text-xs text-gray-400">-</span>
+                <td className="px-3 py-5">
+                  <span className="text-[10px] font-bold text-slate-200">#</span>
                 </td>
               </tr>
             </tfoot>

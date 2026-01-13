@@ -23,7 +23,6 @@ import { OrderReconciliationSummaryCard } from './components/OrderReconciliation
 import { PaymentsCard } from './components/PaymentsCard';
 import { PrepaymentUsageCard } from './components/PrepaymentUsageCard';
 import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
-import { SalesOrderPrintTemplate } from './components/SalesOrderPrintTemplate';
 import { TransferModeInfoCard } from './components/TransferModeInfoCard';
 import type { SalesOrderDetail } from './components/types';
 
@@ -185,8 +184,11 @@ export default function SalesOrderDetailPage() {
   const canEditOrder = order.status === 'draft';
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
-      <div id="sales-order-export-content" className="space-y-4 sm:space-y-6">
+    <div className="flex h-full flex-col overflow-auto bg-slate-50/30">
+      <div 
+        id="sales-order-export-content" 
+        className="mx-auto w-full max-w-[1680px] space-y-8 p-4 lg:p-10 xl:p-14"
+      >
         <HeaderCard
           order={order}
           id={id}
@@ -214,8 +216,8 @@ export default function SalesOrderDetailPage() {
 
         <OrderReconciliationSummaryCard order={order} />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
-          <div className="space-y-4 lg:col-span-2">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8">
+          <div className="space-y-6 lg:col-span-3">
             <BasicInfoCard order={order} />
             <RelatedReturnOrdersCard order={order} />
             <OrderItemsTable
@@ -234,14 +236,6 @@ export default function SalesOrderDetailPage() {
             <OperationHistoryCard order={order} userName={userName} />
           </div>
         </div>
-      </div>
-
-      {/* 隐藏的打印模板 - 用于生成专业的销售单据 */}
-      <div
-        id="sales-order-print-template"
-        style={{ position: 'absolute', left: '-9999px', top: 0 }}
-      >
-        <SalesOrderPrintTemplate order={order} />
       </div>
     </div>
   );
