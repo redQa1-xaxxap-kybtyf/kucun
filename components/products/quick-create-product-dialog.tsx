@@ -1,38 +1,38 @@
 'use client';
 
+import { useToast } from '@/components/ui/use-toast';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { createProduct } from '@/app/actions/products';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PRODUCT_UNIT_OPTIONS } from '@/lib/config/product';
@@ -82,6 +82,7 @@ export function QuickCreateProductDialog({
   onSuccess,
   defaultCode,
 }: QuickCreateProductDialogProps) {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const form = useForm<QuickCreateProductFormData>({
@@ -123,7 +124,7 @@ export function QuickCreateProductDialog({
     },
     onSuccess: async result => {
       if (result.success && result.data) {
-        toast.success('产品创建成功');
+        toast({ title: '创建成功', description: '产品已创建并自动选中', variant: 'success' });
 
         // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
         await queryClient.refetchQueries({
@@ -153,11 +154,11 @@ export function QuickCreateProductDialog({
         // 关闭对话框
         onOpenChange(false);
       } else {
-        toast.error(result.error || '创建产品失败');
+        toast({ title: '创建失败', description: result.error || '创建产品失败', variant: 'destructive' });
       }
     },
     onError: () => {
-      toast.error('创建产品失败，请重试');
+      toast({ title: '创建失败', description: '创建产品失败，请重试', variant: 'destructive' });
     },
   });
 
