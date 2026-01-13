@@ -101,7 +101,7 @@ export function StatCard({
                 {comparison.trend === 'stable' && <MinusIcon className="mr-0.5 h-3 w-3" />}
                 {Math.abs(comparison.changeRate).toFixed(1)}%
               </div>
-              <span className="text-xs font-bold text-slate-500 italic">vs 上次记录</span>
+              <span className="text-xs font-bold text-slate-500 italic">较上次记录</span>
             </div>
           )}
           {subtitle && (

@@ -21,7 +21,7 @@ export function DashboardTodoBar({
   const todos = [
     {
       id: 'low-stock',
-      title: '库存异常 / STOCK ALERT',
+      title: '库存异常',
       count: lowStockItems,
       label: '个产品触发预警',
       icon: Package,
@@ -33,7 +33,7 @@ export function DashboardTodoBar({
     },
     {
       id: 'pending-orders',
-      title: '待处理 / PENDING',
+      title: '待处理',
       count: pendingOrderCount,
       label: '个订单等待出库',
       icon: ShoppingCart,
@@ -101,5 +101,4 @@ export function DashboardTodoBar({
     </div>
   );
 }
-
 

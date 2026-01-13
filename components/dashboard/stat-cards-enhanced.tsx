@@ -197,7 +197,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
     const statCards: StatCardProps[] = React.useMemo(
       () => [
         {
-          title: '累计营收 / REVENUE',
+          title: '累计营收',
           value: dashboardUtils.formatCurrency(
             overview?.sales?.totalRevenue || 0
           ),
@@ -215,7 +215,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '成交订单 / ORDERS',
+          title: '成交订单',
           value: overview?.sales?.totalOrders || 0,
           change: {
             value: overview?.sales?.ordersGrowth || 0,
@@ -231,7 +231,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '产品库容 / PRODUCTS',
+          title: '产品库容',
           value: overview?.inventory?.totalProducts || 0,
           change: {
             value: overview?.inventory?.stockHealth || 0,
@@ -249,7 +249,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '退货统计 / RETURNS',
+          title: '退货统计',
           value: overview?.returns?.pendingReturns || 0,
           change: {
             value: overview?.returns?.returnRate || 0,
@@ -296,4 +296,3 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
 StatCardsGrid.displayName = 'StatCardsGrid';
 
 export { StatCard, StatCardsGrid };
-
