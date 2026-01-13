@@ -136,7 +136,7 @@ const getActualPiecesPerUnit = (record: InboundRecordWithProduct) =>
 const getActualWeight = (record: InboundRecordWithProduct) => {
   const weight =
     record.batchSpecification?.weight ?? record.product?.weight ?? null;
-  return weight ? `${weight.toFixed(2)} KG` : '-';
+  return weight ? `${weight.toFixed(2)} kg` : '-';
 };
 
 /**

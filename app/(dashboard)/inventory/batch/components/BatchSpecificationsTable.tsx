@@ -75,7 +75,7 @@ export function BatchSpecificationsTable({
                   <TableHead className="py-4 font-black text-slate-500">批次号</TableHead>
                   <TableHead className="py-4 font-black text-slate-500">规格</TableHead>
                   <TableHead className="py-4 font-black text-slate-500 text-right">装箱数</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500 text-right">重量 (KG)</TableHead>
+                  <TableHead className="py-4 font-black text-slate-500 text-right">重量 (kg)</TableHead>
                   <TableHead className="py-4 font-black text-slate-500">创建时间</TableHead>
                   <TableHead className="py-4 font-black text-slate-500 text-right pr-6">操作</TableHead>
                 </TableRow>
@@ -136,7 +136,7 @@ export function BatchSpecificationsTable({
                           {formatNumber(spec.piecesPerUnit)}
                         </TableCell>
                         <TableCell className="py-4 text-right tabular-nums text-xs font-bold text-slate-700">
-                          {spec.weight ? `${formatNumber(spec.weight, 2)} KG` : '-'}
+                          {spec.weight ? `${formatNumber(spec.weight, 2)} kg` : '-'}
                         </TableCell>
                         <TableCell className="py-4 text-xs font-medium text-slate-400">
                           <div className="flex items-center gap-1.5">
@@ -246,7 +246,7 @@ export function BatchSpecificationsTable({
                 <div className="flex flex-col gap-4">
                   <div>
                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
-                      PRODUCT CODE
+                      产品编码
                     </div>
                     <div className="text-base font-black tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
                       {spec.product?.code || '-'}
@@ -266,7 +266,7 @@ export function BatchSpecificationsTable({
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">重量</span>
-                      <span className="text-sm font-black tabular-nums text-slate-700">{spec.weight ? `${formatNumber(spec.weight, 2)} KG` : '-'}</span>
+                      <span className="text-sm font-black tabular-nums text-slate-700">{spec.weight ? `${formatNumber(spec.weight, 2)} kg` : '-'}</span>
                     </div>
                   </div>
 

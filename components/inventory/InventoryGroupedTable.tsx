@@ -56,7 +56,7 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
   const groups = new Map<string, ProductGroup>();
 
   inventories.forEach(inventory => {
-    const code = inventory.product?.code || 'UNKNOWN';
+    const code = inventory.product?.code || '未知';
 
     const existingGroup = groups.get(code);
 
@@ -146,7 +146,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
         <TableHeader className="card-shadow-light sticky top-0 z-20 bg-white/95 backdrop-blur-md">
           <TableRow className="border-b border-slate-200 hover:bg-transparent">
             <TableHead className="w-16 py-4 font-black text-slate-700">预览图</TableHead>
-            <TableHead className="py-4 font-black text-slate-700">产品编码 / SKU</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">产品编码</TableHead>
             <TableHead className="py-4 font-black text-slate-700">产品名称</TableHead>
             <TableHead className="py-4 font-black text-slate-700">批次/规格</TableHead>
             <TableHead className="py-4 font-black text-slate-700">装箱数</TableHead>
@@ -330,7 +330,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                         </div>
                         {item.weight ? (
                           <div className="text-[11px] font-bold text-slate-400 tabular-nums">
-                            {item.weight.toFixed(2)} KG
+                            {item.weight.toFixed(2)} kg
                           </div>
                         ) : null}
                       </div>

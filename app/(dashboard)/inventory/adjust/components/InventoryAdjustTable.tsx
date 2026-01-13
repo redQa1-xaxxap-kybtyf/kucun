@@ -152,7 +152,7 @@ export function InventoryAdjustTable({
                     )}
                     {record.variant?.sku && (
                       <span className="text-muted-foreground text-sm">
-                        SKU: {record.variant.sku}
+                        产品编码：{record.variant.sku}
                       </span>
                     )}
                   </div>
@@ -215,7 +215,7 @@ export function InventoryAdjustTable({
                 )}
                 {record.variant?.sku && (
                   <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                    SKU: {record.variant.sku}
+                    产品编码：{record.variant.sku}
                   </div>
                 )}
                 <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">

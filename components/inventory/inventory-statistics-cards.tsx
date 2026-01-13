@@ -101,7 +101,7 @@ function buildStatCards(
       title: '库存产品数',
       icon: Package,
       value: <CountUp end={statistics.totalProducts} separator="," />,
-      description: '当前在库 SKU 种类',
+      description: '当前在库产品种类数',
       color: 'text-violet-600',
       bgColor: 'bg-violet-500/10',
     },
@@ -195,7 +195,7 @@ export function InventoryStatisticsCards({
       }
 
       // 所有人可见字段
-      row['库存产品数（SKU）'] = statistics.totalProducts;
+      row['库存产品种类数'] = statistics.totalProducts;
       row['库存总数量（片）'] = statistics.totalQuantity;
       row['低库存产品数'] = statistics.lowStockCount;
       row['库存健康度（%）'] = statistics.stockHealthPercentage;

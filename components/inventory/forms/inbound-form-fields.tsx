@@ -152,7 +152,7 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         render={({ field }) => (
           <FormItem>
             <FormLabel className="text-sm font-black text-slate-700">
-              每件重量 (KG) *
+              每件重量 (kg) *
             </FormLabel>
             <FormControl>
               <Input

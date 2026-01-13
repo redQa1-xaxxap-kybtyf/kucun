@@ -70,7 +70,7 @@ const formatSpecification = (specification?: string) => {
 // 获取记录的重量显示
 const getActualWeight = (record: OutboundRecord) => {
   const weight = record.totalWeight ?? record.weightPerUnit ?? null;
-  return weight ? `${Number(weight).toFixed(2)} KG` : '-';
+  return weight ? `${Number(weight).toFixed(2)} kg` : '-';
 };
 
 // 格式化数量显示
