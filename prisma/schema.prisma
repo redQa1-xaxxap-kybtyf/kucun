@@ -44,6 +44,8 @@ model User {
   sessions                 Session[]
   productFavorites         ProductFavorite[]
   productViewHistory       ProductViewHistory[]
+  createdPrintTemplates    PrintTemplate[]        @relation("PrintTemplateCreator")
+  updatedPrintTemplates    PrintTemplate[]        @relation("PrintTemplateUpdater")
 
   @@index([email])
   @@index([username])
@@ -1455,4 +1457,45 @@ model ProductViewHistory {
   @@index([userId, viewedAt], map: "idx_product_view_history_user_time")
   @@index([productId], map: "idx_product_view_history_product")
   @@map("product_view_history")
+}
+
+// 打印模板表 - 存储可视化设计器创建的打印模板
+model PrintTemplate {
+  id          String   @id @default(uuid()) @db.Char(36)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(500)
+
+  /// 模板类型: sales-order, purchase-order, factory-shipment, delivery-note, custom
+  type String @map("template_type") @db.VarChar(50)
+
+  /// 是否为该类型的默认模板
+  isDefault Boolean @default(false) @map("is_default")
+
+  /// 模板配置 JSON (Zod Schema 验证)
+  content Json @map("content")
+
+  /// 缩略图 (base64 或 URL)
+  thumbnail String? @db.Text
+
+  /// 状态: active, disabled, deleted
+  status String @default("active") @db.VarChar(20)
+
+  /// 是否为系统内置模板 (不可删除)
+  isSystem Boolean @default(false) @map("is_system")
+
+  /// 审计字段
+  createdBy String   @map("created_by") @db.Char(36)
+  updatedBy String   @map("updated_by") @db.Char(36)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关系
+  creator User @relation("PrintTemplateCreator", fields: [createdBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  updater User @relation("PrintTemplateUpdater", fields: [updatedBy], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([type, status], map: "idx_print_template_type_status")
+  @@index([isDefault], map: "idx_print_template_default")
+  @@index([createdBy], map: "idx_print_template_creator")
+  @@index([status], map: "idx_print_template_status")
+  @@map("print_templates")
 }
