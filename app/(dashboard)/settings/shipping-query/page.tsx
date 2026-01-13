@@ -179,7 +179,7 @@ export default function ShippingQueryPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                    运输智能查询 <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm uppercase tracking-widest">Inquiry Center</span>
+                    运输智能查询 <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm uppercase tracking-widest">查询中心</span>
                   </h1>
                   <p className="mt-1 text-sm font-medium text-slate-400">
                     全网快递实时追踪 · 节点信息深度同步
@@ -221,7 +221,7 @@ export default function ShippingQueryPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-[11px] font-bold text-slate-400">※ 系统将自动调用该站点的实时 API 接口</p>
+                <p className="text-[11px] font-bold text-slate-400">※ 系统将自动调用该站点的实时接口</p>
               </div>
 
               <div className="lg:col-span-7 space-y-2">
@@ -286,21 +286,21 @@ export default function ShippingQueryPage() {
                   {currentResult.queryStatus === 'success' ? (
                     <div className="grid gap-8 md:grid-cols-3">
                       <div className="space-y-4">
-                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">追踪单号 / TRACKING NO.</div>
+                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">追踪单号</div>
                         <div className="font-mono text-xl font-black text-slate-900 leading-none">{currentResult.trackingNumber}</div>
-                        <div className="text-xs font-bold text-slate-500">目的地: {currentResult.destination || '未知'}</div>
+                        <div className="text-xs font-bold text-slate-500">目的地：{currentResult.destination || '未知'}</div>
                       </div>
                       <div className="space-y-4 md:border-x md:border-slate-200 md:px-8">
-                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">当前物流节点 / CURRENT STATUS</div>
+                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">当前物流节点</div>
                         <div className="text-lg font-black text-slate-900 leading-none">{currentResult.status || '准备中'}</div>
-                        <div className="text-xs font-bold text-slate-500">最后更新: {currentResult.lastUpdateTime ? new Date(currentResult.lastUpdateTime).toLocaleString('zh-CN') : '-'}</div>
+                        <div className="text-xs font-bold text-slate-500">最后更新：{currentResult.lastUpdateTime ? new Date(currentResult.lastUpdateTime).toLocaleString('zh-CN') : '-'}</div>
                       </div>
                       <div className="space-y-4">
-                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">预计送达日期 / ESTIMATED ARRIVAL</div>
+                        <div className="text-[11px] font-black uppercase tracking-tighter text-slate-400">预计送达日期</div>
                         <div className="text-lg font-black text-blue-600 leading-none">
                           {currentResult.estimatedArrival ? new Date(currentResult.estimatedArrival).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }) : '计算中...'}
                         </div>
-                        <div className="text-xs font-bold text-slate-500">优先级: 标准空运</div>
+                        <div className="text-xs font-bold text-slate-500">优先级：标准空运</div>
                       </div>
                     </div>
                   ) : (
@@ -327,7 +327,7 @@ export default function ShippingQueryPage() {
                   查询历史资源池
                 </CardTitle>
                 <CardDescription className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                  RECENT 50 INQUIRY ASSETS · 自动保存
+                  最近 50 条查询记录 · 自动保存
                 </CardDescription>
               </div>
               <Button variant="ghost" size="icon" className="text-slate-300 hover:text-slate-900 transition-colors">
@@ -367,7 +367,7 @@ export default function ShippingQueryPage() {
                       <TableCell className="py-4">
                          <div className="flex flex-col">
                            <span className="text-xs font-bold text-slate-900">{query.status || '暂无更新'}</span>
-                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{query.destination || 'DEST: UNKNOWN'}</span>
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter mt-0.5">{query.destination || '目的地：未知'}</span>
                          </div>
                       </TableCell>
                       <TableCell className="text-right py-4">

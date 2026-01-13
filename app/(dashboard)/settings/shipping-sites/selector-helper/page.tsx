@@ -422,7 +422,7 @@ export default function SelectorHelperPage() {
                 步骤 1: 粘贴 HTML 源码
               </h3>
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step 01 / Input</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">步骤 01 / 输入</span>
           </div>
           
           <div className="space-y-6">
@@ -650,7 +650,7 @@ export default function SelectorHelperPage() {
       <div className="rounded-[32px] border border-white bg-slate-900 shadow-2xl p-8 transition-transform hover:scale-[1.01]">
         <div className="mb-8 border-b border-slate-800 pb-6 text-center">
           <h2 className="text-xl font-black tracking-tight text-white mb-2">配置使用指南</h2>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest text-center">Integration Workflow</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest text-center">接入流程</p>
         </div>
 
         <div className="space-y-12">
@@ -697,13 +697,13 @@ export default function SelectorHelperPage() {
               </h3>
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-600/80">XPath Path (Recommended)</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-amber-600/80">XPath 路径（推荐）</span>
                   <p className="text-xs font-bold leading-relaxed text-amber-100/80">
                     支持 `contains()` 模糊匹配。即使样式类名随机或包含空格，也能通过文本特征定位。
                   </p>
                 </div>
                 <div className="space-y-1 border-t border-amber-500/10 pt-4">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-emerald-600/80">CSS Selector</span>
+                  <span className="text-[11px] font-black uppercase tracking-widest text-emerald-600/80">CSS 选择器</span>
                   <p className="text-xs font-bold leading-relaxed text-emerald-100/80">
                     运行效率极高。在有 ID 或稳定属性值的简单页面中是最佳选择。
                   </p>
@@ -719,9 +719,9 @@ export default function SelectorHelperPage() {
               </h3>
               <div className="rounded-xl bg-slate-800 p-4 border border-slate-700">
                 <code className="block font-mono text-[10px] space-y-1">
-                  <div className="text-slate-500 opacity-50">&lt;!-- Input --&gt;</div>
+                  <div className="text-slate-500 opacity-50">&lt;!-- 输入 --&gt;</div>
                   <div className="text-slate-300">&lt;span title="状态"&gt;航行中&lt;/span&gt;</div>
-                  <div className="text-slate-500 opacity-50 mt-2">&lt;!-- Result --&gt;</div>
+                  <div className="text-slate-500 opacity-50 mt-2">&lt;!-- 结果 --&gt;</div>
                   <div className="text-emerald-400 font-bold">.//span[@title='状态']</div>
                 </code>
               </div>

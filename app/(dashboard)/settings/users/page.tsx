@@ -361,8 +361,8 @@ export default function UsersSettingsPage() {
           <Users className="h-10 w-10" />
         </div>
         <div className="space-y-2">
-            <h2 className="text-xl font-black text-slate-900">权限受限 / ACCESS DENIED</h2>
-            <p className="text-sm font-medium text-slate-500">此区域仅限系统管理员 (ADMIN) 访问与配置。</p>
+            <h2 className="text-xl font-black text-slate-900">权限受限</h2>
+            <p className="text-sm font-medium text-slate-500">此区域仅限系统管理员访问与配置。</p>
         </div>
         <Button 
           variant="outline" 
