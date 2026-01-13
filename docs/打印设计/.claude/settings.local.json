@@ -1,0 +1,6 @@
+{
+  "enabledMcpjsonServers": [
+    "augment-context-engine"
+  ],
+  "enableAllProjectMcpServers": true
+}
