@@ -301,15 +301,15 @@ export default function StorageSettingsPage() {
                <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
                   <div className="space-y-6">
                     <div className="space-y-2">
-                       <span className="text-[11px] font-black text-slate-900">获取秘钥 (AK/SK)</span>
+                       <span className="text-[11px] font-black text-slate-900">获取密钥</span>
                        <p className="text-[11px] leading-relaxed text-slate-400 font-medium">
-                          进入七牛云控制台，点击“个人中心” -{'>'} “秘钥管理”获取您的 AccessKey 与 SecretKey。
+                          进入七牛云控制台，点击“个人中心” → “密钥管理”，获取您的访问密钥与私有密钥。
                        </p>
                     </div>
                     <div className="space-y-2">
-                       <span className="text-[11px] font-black text-slate-900">存储空间 (Bucket)</span>
+                       <span className="text-[11px] font-black text-slate-900">存储空间</span>
                        <p className="text-[11px] leading-relaxed text-slate-400 font-medium">
-                          请确保该空间具有公共读或私有读权限，并已正确配置跨域 (CORS) 设置。
+                          请确保该空间具有公共读或私有读权限，并已正确配置跨域设置。
                        </p>
                     </div>
                   </div>

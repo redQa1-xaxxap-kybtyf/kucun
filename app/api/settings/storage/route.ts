@@ -203,14 +203,14 @@ export const PUT = withAuth(
           value: encrypt(validatedData.accessKey),
           category: 'storage',
           dataType: 'string',
-          description: '七牛云Access Key（加密存储）',
+          description: '七牛云访问密钥（AK，加密存储）',
         },
         {
           key: 'qiniu_secret_key',
           value: encrypt(validatedData.secretKey),
           category: 'storage',
           dataType: 'string',
-          description: '七牛云Secret Key（加密存储）',
+          description: '七牛云私有密钥（SK，加密存储）',
         },
         {
           key: 'qiniu_bucket',

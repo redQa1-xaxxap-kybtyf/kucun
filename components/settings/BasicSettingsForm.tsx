@@ -298,7 +298,7 @@ export function BasicSettingsForm() {
                   </div>
                   <FormControl>
                     <Input 
-                      placeholder="如: Antigravity ERP" 
+                      placeholder="如：反重力系统" 
                       className="h-11 border-slate-100 bg-slate-50/50 px-4 font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all" 
                       {...field} 
                     />
@@ -327,8 +327,8 @@ export function BasicSettingsForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="zh" className="font-medium">简体中文 (Chinese)</SelectItem>
-                      <SelectItem value="en" className="font-medium">English (United States)</SelectItem>
+                      <SelectItem value="zh" className="font-medium">简体中文</SelectItem>
+                      <SelectItem value="en" className="font-medium">英语（美国）</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="absolute -bottom-6 left-2" />
@@ -419,7 +419,7 @@ export function BasicSettingsForm() {
                         "text-xs font-black uppercase tracking-tighter transition-colors",
                         field.value ? "text-blue-600" : "text-slate-300"
                     )}>
-                      {field.value ? 'Active / 已开启' : 'Disabled / 已关闭'}
+                      {field.value ? '已开启' : '已关闭'}
                     </span>
                   </div>
                 </FormItem>
@@ -443,7 +443,7 @@ export function BasicSettingsForm() {
                     <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900 uppercase">
                       订单唯一识别前缀
                     </FormLabel>
-                    <p className="text-[11px] font-medium text-slate-400">如: SO (Sales Order)</p>
+                    <p className="text-[11px] font-medium text-slate-400">如：销售订单（SO）</p>
                   </div>
                   <FormControl>
                     <Input 

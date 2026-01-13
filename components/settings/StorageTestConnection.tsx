@@ -46,7 +46,7 @@ export const StorageTestConnection = ({
           </div>
           <div className="text-center">
             <h4 className="text-sm font-black text-slate-900">正在执行连接诊断</h4>
-            <p className="text-xs font-medium text-slate-500 mt-1">正在验证 AK/SK 密钥与 Bucket 可访问性，请稍候...</p>
+            <p className="text-xs font-medium text-slate-500 mt-1">正在验证访问密钥与存储空间可访问性，请稍候...</p>
           </div>
         </div>
       </div>
@@ -77,9 +77,9 @@ export const StorageTestConnection = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider">排难建议 (Checkpoint)</h5>
+              <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider">排难建议（检查点）</h5>
               <ul className="space-y-1.5">
-                {['检查 AK/SK 是否包含多余空格', '确认 Bucket 名称与区域是否匹配', '检查域名是否带有 http/https 协议'].map((item, i) => (
+                {['检查访问密钥是否包含多余空格', '确认存储空间名称与区域是否匹配', '检查域名是否带有网址协议（http/https）'].map((item, i) => (
                   <li key={i} className="flex items-center gap-2 text-xs font-medium text-slate-600">
                     <div className="h-1 w-1 rounded-full bg-rose-300" />
                     {item}

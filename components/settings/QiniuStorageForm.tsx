@@ -127,9 +127,9 @@ export const QiniuStorageForm = ({
           type: 'manual',
           message:
             field === 'accessKey'
-              ? 'Access Key不能为空'
+              ? '访问密钥（AK）不能为空'
               : field === 'secretKey'
-                ? 'Secret Key不能为空'
+                ? '私有密钥（SK）不能为空'
                 : field === 'bucket'
                   ? '存储空间名称不能为空'
                   : '访问域名不能为空',
@@ -209,7 +209,7 @@ export const QiniuStorageForm = ({
         className="space-y-10"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Access Key */}
+          {/* 访问密钥 */}
           <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
             <FormField
               control={form.control}
@@ -217,15 +217,15 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">Access Key (AK)</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">七牛云账户的公钥，用于 API 调用鉴权</span>
+                    <FormLabel className="text-sm font-black text-slate-900">访问密钥（AK）</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">七牛云账户的公钥，用于接口调用鉴权</span>
                   </div>
                   <FormControl>
                     <div className="relative">
                       <Input
                         {...field}
                         type={showAccessKey ? 'text' : 'password'}
-                        placeholder="请输入 Access Key"
+                        placeholder="请输入访问密钥（AK）"
                         className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                         disabled={isFormDisabled}
                       />
@@ -251,7 +251,7 @@ export const QiniuStorageForm = ({
             />
           </div>
 
-          {/* Secret Key */}
+          {/* 私有密钥 */}
           <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
             <FormField
               control={form.control}
@@ -259,7 +259,7 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">Secret Key (SK)</FormLabel>
+                    <FormLabel className="text-sm font-black text-slate-900">私有密钥（SK）</FormLabel>
                     <span className="text-[11px] font-medium text-slate-400">七牛云账户的私钥，请妥善保管</span>
                   </div>
                   <FormControl>
@@ -267,7 +267,7 @@ export const QiniuStorageForm = ({
                       <Input
                         {...field}
                         type={showSecretKey ? 'text' : 'password'}
-                        placeholder="请输入 Secret Key"
+                        placeholder="请输入私有密钥（SK）"
                         className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                         disabled={isFormDisabled}
                       />
@@ -301,13 +301,13 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">存储空间名称 (Bucket)</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">在对象存储中创建的 Bucket 唯一名称</span>
+                    <FormLabel className="text-sm font-black text-slate-900">存储空间名称</FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">在对象存储中创建的存储空间唯一名称</span>
                   </div>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="例如: kucun-assets"
+                      placeholder="例如：kucun-assets"
                       className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                       disabled={isFormDisabled}
                     />
@@ -327,12 +327,12 @@ export const QiniuStorageForm = ({
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
                     <FormLabel className="text-sm font-black text-slate-900">外部访问域名</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">已绑定至 Bucket 的 CDN 域名或临时域名</span>
+                    <span className="text-[11px] font-medium text-slate-400">已绑定至存储空间的加速域名或临时域名</span>
                   </div>
                   <FormControl>
                     <Input
                       {...field}
-                      placeholder="https://cdn.example.com"
+                      placeholder="例如：https://你的域名"
                       className="h-9 border-none bg-slate-50/50 px-3 font-bold transition-all focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                       disabled={isFormDisabled}
                     />
@@ -352,7 +352,7 @@ export const QiniuStorageForm = ({
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
                     <FormLabel className="text-sm font-black text-slate-900">物理存储区域</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">Bucket 所在的地理机房位置</span>
+                    <span className="text-[11px] font-medium text-slate-400">存储空间所在的地理机房位置</span>
                   </div>
                   <Select
                     onValueChange={field.onChange}
