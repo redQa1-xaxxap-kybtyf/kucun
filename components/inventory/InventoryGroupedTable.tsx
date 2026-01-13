@@ -13,7 +13,6 @@ import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
-import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -280,21 +279,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       )}
                     </TableCell>
 
-                    {/* 产品编码 / 批次 */}
+                    {/* 产品编码 */}
                     <TableCell className="py-3">
                       <div className="flex flex-col gap-1">
                         <div className={`text-sm font-black tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}>
                           <CopyableText text={group.productCode} />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                           <Badge variant="outline" className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600">
-                             {item.batchNumber ? item.batchNumber.toUpperCase().slice(-8) : '常规'}
-                           </Badge>
-                           {isFirstInGroup && group.items.length > 1 && (
-                             <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-black text-white shadow-sm shadow-indigo-200">
-                               共 {group.items.length} 批次
-                             </Badge>
-                           )}
                         </div>
                       </div>
                     </TableCell>
@@ -312,8 +301,20 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                          <div className="max-w-[150px] truncate text-xs font-medium text-slate-500">
                            {group.specification}
                          </div>
-                         <div className="text-[10px] font-bold text-slate-300">
-                            最后更新: <RelativeTime date={item.updatedAt} />
+                         <div className="flex items-center gap-1.5">
+                           <Badge
+                             variant="outline"
+                             className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600"
+                           >
+                             {item.batchNumber
+                               ? item.batchNumber.toUpperCase().slice(-8)
+                               : '常规'}
+                           </Badge>
+                           {isFirstInGroup && group.items.length > 1 && (
+                             <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-black text-white shadow-sm shadow-indigo-200">
+                               共 {group.items.length} 批次
+                             </Badge>
+                           )}
                          </div>
                        </div>
                     </TableCell>

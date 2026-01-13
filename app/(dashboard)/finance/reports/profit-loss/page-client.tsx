@@ -413,7 +413,7 @@ export function ProfitLossClient() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                  <StatCard
-                   title="销售货品成本"
+                   title="销售产品成本"
                    value={analysis.costs.salesCost}
                    icon={<ChineseYuan className="h-4 w-4" />}
                    variant="warning"

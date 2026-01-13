@@ -279,7 +279,7 @@ export default function ShippingQueryPage() {
                         ? "bg-emerald-500 text-white" 
                         : "bg-rose-500 text-white"
                     )}>
-                      {currentResult.queryStatus === 'success' ? 'SYNC SUCCESS' : 'SYNC FAILED'}
+                      {currentResult.queryStatus === 'success' ? '同步成功' : '同步失败'}
                     </span>
                   </div>
 
@@ -381,7 +381,7 @@ export default function ShippingQueryPage() {
                                 : 'bg-slate-50 text-slate-500 border border-slate-200'
                           )}
                         >
-                          {query.queryStatus === 'success' ? 'SUCCESS' : query.queryStatus === 'failed' ? 'FAILED' : 'SYNCING'}
+                          {query.queryStatus === 'success' ? '成功' : query.queryStatus === 'failed' ? '失败' : '同步中'}
                         </span>
                       </TableCell>
                     </TableRow>

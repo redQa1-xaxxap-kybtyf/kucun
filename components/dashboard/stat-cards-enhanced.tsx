@@ -231,7 +231,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '商品库容 / PRODUCTS',
+          title: '产品库容 / PRODUCTS',
           value: overview?.inventory?.totalProducts || 0,
           change: {
             value: overview?.inventory?.stockHealth || 0,

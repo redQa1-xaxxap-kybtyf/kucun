@@ -23,7 +23,7 @@ export function OrderSummaryCard({ orderInfo }: OrderSummaryCardProps) {
         <SummaryItem label="客户名称" value={orderInfo.customerName} />
         <Separator />
         <SummaryItem
-          label="商品总额"
+          label="产品总额"
           value={formatCurrency(orderInfo.totalAmount)}
           valueClassName="text-base font-bold text-[hsl(var(--color-text-primary))]"
         />
