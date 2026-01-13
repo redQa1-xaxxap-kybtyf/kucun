@@ -114,7 +114,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0 sm:gap-2">
                   <div className="text-right">
-                    <p className="text-[9px] font-black uppercase tracking-tighter text-slate-400">Current Deduction</p>
+                    <p className="text-[9px] font-black uppercase tracking-tighter text-slate-400">本次抵扣</p>
                     <p className="font-mono text-lg font-black tracking-tighter text-emerald-600">
                       -{formatCurrency(usage.appliedAmount)}
                     </p>
