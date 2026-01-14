@@ -6,8 +6,7 @@
 
 import { useEffect, useState } from 'react';
 
-import type { PrintTemplate } from '@/lib/print-designer/schemas';
-import { createEmptyTemplate } from '@/lib/print-designer/schemas';
+import { createEmptyTemplate, type PrintTemplate } from '@/lib/print-designer/schemas';
 
 import {
     ComponentToolbar,

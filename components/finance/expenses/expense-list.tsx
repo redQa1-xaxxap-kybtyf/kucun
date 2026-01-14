@@ -51,20 +51,6 @@ import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
 
-// 顶层工具函数：表格视图和移动端卡片公用，避免作用域问题导致运行时错误
-const getExpenseTypeBadgeVariant = (type: string) => {
-  const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-    shipping: 'default',
-    storage: 'secondary',
-    labor: 'outline',
-    travel: 'default',
-    living: 'secondary',
-    loading_unloading: 'outline',
-    other: 'secondary',
-  };
-  return variants[type] || 'default';
-};
-
 const getStatusBadgeVariant = (status: string) => {
   const variants: Record<string, string> = {
     draft: 'bg-slate-100 text-slate-600 border-slate-200',
@@ -543,8 +529,8 @@ export function ExpenseList({
 function ExpenseCard({
   expense,
   hasManagePermission,
-  onDelete,
-  onApprove,
+  onDelete: _onDelete,
+  onApprove: _onApprove,
 }: {
   expense: ExpenseRecord;
   hasManagePermission: boolean;

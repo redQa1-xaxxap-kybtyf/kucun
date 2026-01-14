@@ -1,6 +1,5 @@
 'use server';
 
-import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';

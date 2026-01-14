@@ -8,12 +8,12 @@ import { Minus, Plus } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
-import type { DesignElement } from '@/lib/print-designer/schemas';
 import {
-    createDefaultPlaceholderElement,
-    createDefaultTableElement,
-    createDefaultTextElement,
-    getPaperDimensions,
+  createDefaultPlaceholderElement,
+  createDefaultTableElement,
+  createDefaultTextElement,
+  getPaperDimensions,
+  type DesignElement,
 } from '@/lib/print-designer/schemas';
 import {
     createDefaultBarcodeElement,
@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 import { mmToPx } from '../../renderer/utils';
 import { useAlignmentGuides, type AlignmentGuide } from '../hooks';
 import { useDesignerStore, useElements, usePageSettings } from '../stores';
+
 import { TableElementPreview } from './TableElementPreview';
 
 // ============================================================================
@@ -38,8 +39,8 @@ interface AlignmentGuidesOverlayProps {
 }
 
 function AlignmentGuidesOverlay({
-  pageWidth,
-  pageHeight,
+  pageWidth: _pageWidth,
+  pageHeight: _pageHeight,
   zoom,
   guides = [],
 }: AlignmentGuidesOverlayProps) {

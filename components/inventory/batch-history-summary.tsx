@@ -1,7 +1,8 @@
 'use client';
 
-import { formatNumber } from '@/lib/utils/format';
 import { ArrowDownToLine, ArrowUpFromLine, Layers, TrendingUp } from 'lucide-react';
+
+import { formatNumber } from '@/lib/utils/format';
 
 interface BatchSummaryData {
   openingBalance?: number;

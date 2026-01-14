@@ -1,6 +1,5 @@
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -35,6 +34,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { PRODUCT_UNIT_OPTIONS } from '@/lib/config/product';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Product } from '@/lib/types/product';

@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
-import { parseOffsetPagination } from '@/lib/api/pagination';
 import { resolveParams } from '@/lib/api/middleware';
+import { parseOffsetPagination } from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { logger } from '@/lib/logger';

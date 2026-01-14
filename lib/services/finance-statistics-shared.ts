@@ -3,12 +3,12 @@ import type {
   Prisma,
 } from '@prisma/client';
 
-import { toNumber } from '@/lib/utils/number';
 import type {
   PartnerRole,
   StatementStatus,
   StatementType,
 } from '@/lib/types/statement';
+import { toNumber } from '@/lib/utils/number';
 
 export interface FinanceOverview {
   totalReceivable: number;

@@ -9,7 +9,6 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { allocateExpenses } from '@/lib/services/factory-shipment-expense-service';
-import { toNumber } from '@/lib/utils/number';
 import {
   calculateOrderProfit,
   extractItemUpdates,
@@ -25,6 +24,7 @@ import {
   type FactoryShipmentOrderItem,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { toNumber } from '@/lib/utils/number';
 
 import {
   createFactoryShipmentSchema,
@@ -493,15 +493,33 @@ export async function recalculateProfitAndCost(
       unitPrice: toNumber(item.unitPrice),
       totalPrice: toNumber(item.totalPrice),
       manualWeight:
-        item.manualWeight == null ? null : toNumber(item.manualWeight),
+        item.manualWeight === null || item.manualWeight === undefined
+          ? null
+          : toNumber(item.manualWeight),
       piecesPerUnit:
-        item.piecesPerUnit == null ? null : toNumber(item.piecesPerUnit),
-      weight: item.weight == null ? null : toNumber(item.weight),
-      unitCost: item.unitCost == null ? null : toNumber(item.unitCost),
+        item.piecesPerUnit === null || item.piecesPerUnit === undefined
+          ? null
+          : toNumber(item.piecesPerUnit),
+      weight:
+        item.weight === null || item.weight === undefined
+          ? null
+          : toNumber(item.weight),
+      unitCost:
+        item.unitCost === null || item.unitCost === undefined
+          ? null
+          : toNumber(item.unitCost),
       allocatedExpense:
-        item.allocatedExpense == null ? null : toNumber(item.allocatedExpense),
-      profitAmount: item.profitAmount == null ? null : toNumber(item.profitAmount),
-      profitMargin: item.profitMargin == null ? null : toNumber(item.profitMargin),
+        item.allocatedExpense === null || item.allocatedExpense === undefined
+          ? null
+          : toNumber(item.allocatedExpense),
+      profitAmount:
+        item.profitAmount === null || item.profitAmount === undefined
+          ? null
+          : toNumber(item.profitAmount),
+      profitMargin:
+        item.profitMargin === null || item.profitMargin === undefined
+          ? null
+          : toNumber(item.profitMargin),
       ownership: (item.ownership ||
         FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) as FactoryShipmentItemOwnership,
       customerDeliveryStatus: (item.customerDeliveryStatus ?? undefined) as

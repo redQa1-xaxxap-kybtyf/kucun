@@ -371,7 +371,9 @@ export async function applyStatusUpdateTransaction(
         orderNumber: order.orderNumber,
         totalAmount: toNumber(order.totalAmount),
         expenseAmount:
-          order.expenseAmount == null ? null : toNumber(order.expenseAmount), // ✅ 修复：传递费用金额
+          order.expenseAmount === null || order.expenseAmount === undefined
+            ? null
+            : toNumber(order.expenseAmount), // ✅ 修复：传递费用金额
       });
     }
 
@@ -424,10 +426,13 @@ async function createArrivalInboundRecords(
 
     const inboundUnitCost = resolveInboundUnitCost({
       unitCostWithExpense:
-        item.unitCostWithExpense == null
+        item.unitCostWithExpense === null || item.unitCostWithExpense === undefined
           ? null
           : toNumber(item.unitCostWithExpense),
-      unitPrice: item.unitPrice == null ? null : toNumber(item.unitPrice),
+      unitPrice:
+        item.unitPrice === null || item.unitPrice === undefined
+          ? null
+          : toNumber(item.unitPrice),
       fallback: toNumber(item.unitPrice),
     });
 

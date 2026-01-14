@@ -1,10 +1,11 @@
 'use client';
 
+import * as React from 'react';
+
 import { OutboundRecordsTable } from '@/components/inventory/forms/outbound-records-table';
 import { OutboundRecordsSearchToolbar } from '@/components/inventory/outbound-records-search-toolbar';
 import { useOutboundRecords } from '@/hooks/use-outbound-records';
 import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
-import * as React from 'react';
 
 interface ERPOutboundRecordsProps {
   initialParams?: OutboundRecordQueryParams;

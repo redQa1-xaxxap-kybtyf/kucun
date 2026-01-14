@@ -9,8 +9,7 @@
 
 import { useMemo } from 'react';
 
-import type { PrintTemplate } from '@/lib/print-designer/schemas';
-import { getPaperDimensions } from '@/lib/print-designer/schemas';
+import { getPaperDimensions, type PrintTemplate } from '@/lib/print-designer/schemas';
 
 import { ElementRenderer } from './ElementRenderer';
 import { mmToPx } from './utils';

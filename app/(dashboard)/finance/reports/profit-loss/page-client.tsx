@@ -668,11 +668,11 @@ export function ProfitLossClient() {
                  { label: '营业总成本', value: analysis.costs.totalCost, sub: `成本率: ${analysis.costs.costRate.toFixed(1)}%` },
                  { label: '经营总费用', value: analysis.expenses.totalExpenses, sub: `费用率: ${analysis.expenses.expenseRate.toFixed(1)}%` },
                  { label: '核心净利润', value: analysis.profit.netProfit, sub: `净利率: ${analysis.profit.netProfitMargin.toFixed(2)}%`, highlight: true }
-               ].map((item, idx) => (
-                 <div key={item.label} className={cn(
-                   "p-8 border-r border-slate-200 last:border-r-0",
-                   item.highlight && "bg-slate-900 text-white border-r-slate-900"
-                 )}>
+                ].map(item => (
+                  <div key={item.label} className={cn(
+                    "p-8 border-r border-slate-200 last:border-r-0",
+                    item.highlight && "bg-slate-900 text-white border-r-slate-900"
+                  )}>
                     <div className={cn("text-xs font-black uppercase tracking-[0.2em] mb-4", item.highlight ? "text-slate-400" : "text-slate-500")}>{item.label}</div>
                     <div className="text-3xl font-black font-mono tracking-tighter mb-2">{formatCurrency(item.value)}</div>
                     <div className={cn("text-xs font-bold uppercase", item.highlight ? "text-blue-400" : "text-slate-600")}>{item.sub}</div>

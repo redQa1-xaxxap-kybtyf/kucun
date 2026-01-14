@@ -14,11 +14,11 @@ import type {
   MonthlyTrendData,
   QuarterlyData,
 } from '@/lib/types/report';
-import { toNumber } from '@/lib/utils/number';
 import {
   getExpenseTypeName,
   isValidExpenseType,
 } from '@/lib/utils/expense-type-helpers';
+import { toNumber } from '@/lib/utils/number';
 
 import {
   buildExpenseWhere,

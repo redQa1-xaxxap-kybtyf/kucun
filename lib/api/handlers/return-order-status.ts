@@ -197,7 +197,7 @@ export async function updateReturnOrderStatus(
       }
 
       // 更新订单状态
-      let order = await tx.returnOrder.update({
+      const order = await tx.returnOrder.update({
         where: { id: orderId },
         data: updateData,
         select: {

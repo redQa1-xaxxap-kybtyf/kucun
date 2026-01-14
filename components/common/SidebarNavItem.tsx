@@ -33,7 +33,6 @@ interface SubMenuItemProps {
 
 const SubMenuItem = React.memo(
   ({ item, pathname, isActive, level, nodeKey }: SubMenuItemProps) => {
-    const Icon = item.icon;
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     const hasChildren = item.children && item.children.length > 0;

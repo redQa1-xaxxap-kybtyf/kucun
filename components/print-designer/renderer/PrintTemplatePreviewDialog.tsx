@@ -6,7 +6,6 @@
 
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Printer } from 'lucide-react';
 import { useEffect, useRef, useState, useTransition } from 'react';
 
@@ -24,6 +23,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
 import {
     getDefaultTemplate,
     getPrintDataForTemplate,

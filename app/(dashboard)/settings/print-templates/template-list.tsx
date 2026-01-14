@@ -4,7 +4,6 @@
 
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
 import { Copy, Edit, MoreHorizontal, Plus, Star, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
@@ -31,6 +30,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
 import {
     deleteTemplate,
     duplicateTemplate,

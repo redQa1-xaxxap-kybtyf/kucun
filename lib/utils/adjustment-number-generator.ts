@@ -3,8 +3,9 @@
  * 生成格式：TZ-YYYYMMDD-序号
  */
 
-import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
+
+import { prisma } from '@/lib/db';
 
 /**
  * 生成库存调整单号

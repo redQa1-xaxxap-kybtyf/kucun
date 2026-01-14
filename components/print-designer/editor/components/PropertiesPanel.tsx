@@ -16,14 +16,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import type { TableElement } from '@/lib/print-designer/schemas';
-import { getPaperDimensions } from '@/lib/print-designer/schemas';
+import { getPaperDimensions, type TableElement } from '@/lib/print-designer/schemas';
 
 import {
     useDesignerStore,
     usePageSettings,
     useSelectedElement,
 } from '../stores';
+
 import { DataBindingSection } from './DataBindingSection';
 import { TableColumnManager } from './TableColumnManager';
 import { TableStyleSection } from './TableStyleSection';
@@ -413,7 +413,6 @@ export function PropertiesPanel() {
             <Separator className="my-4" />
           </>
         )}
-
 
 
         {/* 表格列管理 (仅表格) */}

@@ -87,13 +87,6 @@ function getUserRoleLabel(role: string): string {
   return role;
 }
 
-function getUserStatusLabel(status: string): string {
-  if (status === 'active') return '正常';
-  if (status === 'inactive') return '停用';
-  if (status === 'suspended') return '已冻结';
-  return status;
-}
-
 function getInitials(name: string) {
   if (!name) return 'U';
   const parts = name.trim().split(/\s+/);

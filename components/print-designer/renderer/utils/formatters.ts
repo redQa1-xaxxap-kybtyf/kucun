@@ -14,7 +14,7 @@ import type { PlaceholderFormat } from '@/lib/print-designer/schemas';
  * @returns 格式化后的字符串
  */
 export function formatValue(value: unknown, format: PlaceholderFormat): string {
-  if (value == null) {
+  if (value === null || value === undefined) {
     return '';
   }
 
@@ -140,7 +140,7 @@ export function numberToChineseCurrency(value: unknown): string {
       }
     }
 
-    result = result.replace(/零+$/, '') + '元';
+    result = `${result.replace(/零+$/, '')}元`;
   }
 
   // 处理小数部分

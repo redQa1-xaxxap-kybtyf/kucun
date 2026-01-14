@@ -402,13 +402,13 @@ export default function CustomerStatementDetailPage() {
              { label: '核心应收', value: summary.receivables.receivableBalance, subValue: `净销流动 ${formatCurrency(receivableOverview.netSales)}`, color: 'emerald', icon: TrendingUp },
              { label: '负债应付', value: summary.payables.payableBalance, subValue: `生成债务 ${formatCurrency(payableOverview.totalGenerated)}`, color: 'rose', icon: TrendingDown },
              { label: '审计结余', value: statementDetail.closingBalance, subValue: `审计净值 ${formatCurrency(summary.netBalance)}`, color: 'slate', icon: Wallet },
-           ].map((metric, i) => (
-             <div key={metric.label} className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:bg-white">
-                <div className="relative z-10 space-y-3">
-                   <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{metric.label}</span>
-                      <metric.icon className={cn("h-4 w-4", `text-${metric.color}-500/50`)} />
-                   </div>
+            ].map(metric => (
+              <div key={metric.label} className="group relative overflow-hidden rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:bg-white">
+                 <div className="relative z-10 space-y-3">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{metric.label}</span>
+                       <metric.icon className={cn("h-4 w-4", `text-${metric.color}-500/50`)} />
+                    </div>
                    <div className={cn("text-2xl font-black tracking-tighter", metric.color === 'emerald' ? 'text-emerald-600' : metric.color === 'rose' ? 'text-rose-600' : 'text-slate-900')}>
                       {formatCurrency(metric.value)}
                    </div>

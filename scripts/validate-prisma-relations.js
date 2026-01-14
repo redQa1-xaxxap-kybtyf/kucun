@@ -143,6 +143,8 @@ function validateRelations(models) {
       // 排除 id 主键本身以及白名单中的字段
       if (!name.endsWith('Id')) continue;
       if (name === 'id') continue;
+      // 排除主键字段（如 runId @id），避免误报
+      if (attributes.includes('@id')) continue;
       if (SPECIAL_FOREIGN_KEYS.has(name)) continue;
 
       // 只检查标量外键字段（String / Int / BigInt 等），忽略关系字段本身

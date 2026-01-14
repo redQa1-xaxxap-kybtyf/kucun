@@ -454,7 +454,7 @@ export function ERPSalesOrderList({
 
   // 格式化金额 - 处理 Prisma Decimal 类型
   const formatAmount = (amount?: number | unknown) => {
-    if (amount == null) {
+    if (amount === null || amount === undefined) {
       return '￥0.00';
     }
     // 确保转换为 JavaScript number 类型（处理 Prisma Decimal）

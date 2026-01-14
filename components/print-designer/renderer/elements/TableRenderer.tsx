@@ -50,7 +50,7 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
   // 渲染单元格内容
   const renderCellContent = (item: unknown, column: TableColumn): string => {
     const value = getNestedValue(item, column.key);
-    if (value == null) return '';
+    if (value === null || value === undefined) return '';
     return formatValue(value, column.format);
   };
 

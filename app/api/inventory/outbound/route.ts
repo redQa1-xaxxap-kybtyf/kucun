@@ -7,7 +7,6 @@ import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { publishInventoryChange } from '@/lib/events';
-import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   consumeFIFOQueueByBatch,

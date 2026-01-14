@@ -4,9 +4,10 @@
  * 需要使用 MONITORING_TOKEN 进行身份验证
  */
 
+import { timingSafeEqual } from 'crypto';
+
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { timingSafeEqual } from 'crypto';
 
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';

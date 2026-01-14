@@ -38,25 +38,13 @@ export function BatchSpecificationsTable({
   data,
   pagination,
   isLoading,
-  isFetching,
+  isFetching: _isFetching,
   onPageChange,
   onEdit,
   onDelete,
 }: BatchSpecificationsTableProps) {
   const showSkeleton = isLoading && !data.length;
   const showEmptyState = !isLoading && data.length === 0;
-
-  const formatMeasurement = (
-    value: number | null | undefined,
-    unit: string,
-    precision: number = 2
-  ) => {
-    if (value === undefined || value === null) {
-      return '-';
-    }
-
-    return `${formatNumber(value, precision)}${unit}`;
-  };
 
   const formatDate = (dateString: string) =>
     format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });

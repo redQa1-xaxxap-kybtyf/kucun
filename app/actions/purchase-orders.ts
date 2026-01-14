@@ -22,8 +22,8 @@ import {
   type PurchaseOrderItem,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
-import { toNumber } from '@/lib/utils/number';
 import type { ValidationIssue } from '@/lib/types/validation';
+import { toNumber } from '@/lib/utils/number';
 import {
   createPurchaseOrderSchema,
   updatePurchaseOrderSchema,
@@ -614,26 +614,36 @@ function mapPurchaseOrderItem(
     manualProductName: item.manualProductName ?? undefined,
     manualSpecification: item.manualSpecification ?? undefined,
     manualWeight:
-      item.manualWeight == null ? undefined : toNumber(item.manualWeight),
+      item.manualWeight === null || item.manualWeight === undefined
+        ? undefined
+        : toNumber(item.manualWeight),
     manualUnit: item.manualUnit ?? undefined,
     receivedQuantity,
     executionRate,
     displayName: item.displayName,
     specification: item.specification ?? undefined,
     unit: item.unit,
-    weight: item.weight == null ? undefined : toNumber(item.weight),
+    weight:
+      item.weight === null || item.weight === undefined
+        ? undefined
+        : toNumber(item.weight),
     piecesPerUnit:
-      item.piecesPerUnit == null ? undefined : toNumber(item.piecesPerUnit),
+      item.piecesPerUnit === null || item.piecesPerUnit === undefined
+        ? undefined
+        : toNumber(item.piecesPerUnit),
     remarks: item.remarks ?? undefined,
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
-    unitCost: item.unitCost == null ? undefined : toNumber(item.unitCost),
+    unitCost:
+      item.unitCost === null || item.unitCost === undefined
+        ? undefined
+        : toNumber(item.unitCost),
     allocatedExpense:
-      item.allocatedExpense == null
+      item.allocatedExpense === null || item.allocatedExpense === undefined
         ? undefined
         : toNumber(item.allocatedExpense),
     unitCostWithExpense:
-      item.unitCostWithExpense == null
+      item.unitCostWithExpense === null || item.unitCostWithExpense === undefined
         ? undefined
         : toNumber(item.unitCostWithExpense),
     product: item.product
@@ -642,11 +652,13 @@ function mapPurchaseOrderItem(
           code: item.product.code,
           name: item.product.name,
           specification: item.product.specification ?? undefined,
-          unit: item.product.unit,
-          weight:
-            item.product.weight == null ? undefined : toNumber(item.product.weight),
-        }
-      : undefined,
+           unit: item.product.unit,
+           weight:
+             item.product.weight === null || item.product.weight === undefined
+               ? undefined
+               : toNumber(item.product.weight),
+         }
+       : undefined,
     supplier: {
       id: item.supplier.id,
       name: item.supplier.name,

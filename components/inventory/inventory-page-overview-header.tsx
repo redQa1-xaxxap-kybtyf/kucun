@@ -6,7 +6,6 @@
  * 集成库存管理核心操作入口
  */
 
-import { Button } from '@/components/ui/button';
 import {
     ArrowDownToLine,
     ArrowUpFromLine,
@@ -14,6 +13,8 @@ import {
     Settings
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+import { Button } from '@/components/ui/button';
 
 export function InventoryPageOverviewHeader() {
   const router = useRouter();

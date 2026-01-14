@@ -18,12 +18,6 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
   const customerPhone = order.customer?.phone ?? '-';
   const userName = order.user?.name ?? '-';
 
-  const getOrderTypeBadge = (orderType: string) =>
-    orderType === 'TRANSFER' ? (
-      <Badge variant="secondary">调货销售</Badge>
-    ) : (
-      <Badge variant="outline">正常销售</Badge>
-    );
   const getTransferModeBadge = (mode: string | undefined) => {
     const label =
       mode === 'MIXED'

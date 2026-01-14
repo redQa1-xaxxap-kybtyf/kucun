@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type {
     SystemLog,
-    SystemLogLevel,
     SystemLogType,
 } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
@@ -48,21 +47,6 @@ const LOG_TYPE_CONFIG: Record<
   system_event: { label: '系统事件', variant: 'outline' },
   error: { label: '错误日志', variant: 'destructive' },
   security: { label: '安全日志', variant: 'destructive' },
-};
-
-// 日志级别配置
-const LOG_LEVEL_CONFIG: Record<
-  SystemLogLevel,
-  { label: string; className: string }
-> = {
-  info: {
-    label: '信息',
-    className:
-      'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]',
-  },
-  warning: { label: '警告', className: 'text-yellow-600 bg-yellow-50' },
-  error: { label: '错误', className: 'text-red-600 bg-red-50' },
-  critical: { label: '严重', className: 'text-red-800 bg-red-100' },
 };
 
 /**
@@ -201,7 +185,7 @@ export const SystemLogsTable = ({
 
           <div className="flex items-center gap-1">
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-              let pageNum = totalPages <= 5 || page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
+              const pageNum = totalPages <= 5 || page <= 3 ? i + 1 : page >= totalPages - 2 ? totalPages - 4 + i : page - 2 + i;
               return (
                 <Button
                   key={pageNum}

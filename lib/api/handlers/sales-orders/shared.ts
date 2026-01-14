@@ -89,7 +89,7 @@ export function mapSalesOrderItem(
 ) {
   // ✅ 将 Decimal 类型字段转换为 number，避免序列化到客户端时报错
   const toNumber = (value: unknown) =>
-    value != null ? Number(value) : undefined;
+    value !== null && value !== undefined ? Number(value) : undefined;
 
   return {
     ...item,
@@ -141,7 +141,7 @@ export function mapOrderBaseFields<
 >(order: T) {
   // ✅ 将所有 Decimal 类型字段转换为 number，避免序列化到客户端时报错
   const toNumber = (value: Prisma.Decimal | number | null | undefined) =>
-    value != null ? Number(value) : undefined;
+    value !== null && value !== undefined ? Number(value) : undefined;
 
   return {
     ...order,

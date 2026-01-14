@@ -144,7 +144,10 @@ async function fetchBatchSpecifications(
       const key = `${spec.productId}-${spec.batchNumber}`;
       batchSpecMap.set(key, {
         piecesPerUnit: spec.piecesPerUnit ?? undefined,
-        weight: spec.weight == null ? undefined : toNumber(spec.weight),
+        weight:
+          spec.weight === null || spec.weight === undefined
+            ? undefined
+            : toNumber(spec.weight),
       });
     });
   }
@@ -186,7 +189,9 @@ function formatRecordWithBatchInfo(
     batchOverride?.piecesPerUnit ?? record.product.piecesPerUnit ?? undefined;
   const weightPerUnitRaw = batchOverride?.weight ?? record.product.weight;
   const weightPerUnit =
-    weightPerUnitRaw == null ? undefined : toNumber(weightPerUnitRaw);
+    weightPerUnitRaw === null || weightPerUnitRaw === undefined
+      ? undefined
+      : toNumber(weightPerUnitRaw);
 
   let totalWeight: number | undefined;
   if (weightPerUnit !== undefined) {
@@ -304,8 +309,14 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
     productId: record.productId,
     batchNumber: record.batchNumber ?? undefined,
     quantity: Number(record.quantity),
-    unitCost: record.unitCost == null ? undefined : toNumber(record.unitCost),
-    totalCost: record.totalCost == null ? undefined : toNumber(record.totalCost),
+    unitCost:
+      record.unitCost === null || record.unitCost === undefined
+        ? undefined
+        : toNumber(record.unitCost),
+    totalCost:
+      record.totalCost === null || record.totalCost === undefined
+        ? undefined
+        : toNumber(record.totalCost),
     customerId: record.customerId ?? undefined,
     salesOrderId: record.salesOrderId ?? undefined,
     userId: record.operatorId,
@@ -322,7 +333,7 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
           >['unit'],
           piecesPerUnit: record.product.piecesPerUnit ?? 0,
           weight:
-            record.product.weight == null
+            record.product.weight === null || record.product.weight === undefined
               ? undefined
               : toNumber(record.product.weight),
         } satisfies NonNullable<OutboundRecord['product']>)

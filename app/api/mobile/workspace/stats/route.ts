@@ -1,7 +1,8 @@
 // 工作台统计数据 API
-import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/db';
+import type { NextRequest } from 'next/server';
+
 import { errorResponse, successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,6 +82,4 @@ async function handleGetStats(_request: NextRequest, userRole: string) {
   });
 }
 
-export const GET = withAuth(async (request: NextRequest, { user }) => {
-  return handleGetStats(request, user.role);
-});
+export const GET = withAuth(async (request: NextRequest, { user }) => handleGetStats(request, user.role));

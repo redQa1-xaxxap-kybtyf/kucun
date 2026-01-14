@@ -52,7 +52,7 @@ export function CustomerStatementsPageClient({
     useState<CustomerStatementQuery>(initialParams);
 
   // 使用TanStack Query获取数据
-  const { data, isLoading, error } = useCustomerStatements(queryParams, {
+  const { data, isLoading, error: _error } = useCustomerStatements(queryParams, {
     enabled: true,
   });
 
@@ -62,7 +62,7 @@ export function CustomerStatementsPageClient({
   const {
     data: statisticsData,
     isLoading: statisticsLoading,
-    error: statisticsError,
+    error: _statisticsError,
   } = useCustomerStatementStatistics();
 
   const getRefundMetrics = (summary: CustomerStatementSummary) => {
@@ -145,7 +145,7 @@ export function CustomerStatementsPageClient({
   const totalNetBalance = statisticsData?.totalNetBalance ?? fallbackTotals.net;
   const totalPendingRefundBalance =
     statisticsData?.totalPendingRefundBalance ?? fallbackTotals.refundPending;
-  const totalReturnAmount =
+  const _totalReturnAmount =
     statisticsData?.totalReturnAmount ?? fallbackTotals.returnAmount;
   const totalRefundPaidAmount =
     statisticsData?.totalRefundPaidAmount ?? fallbackTotals.refundPaid;

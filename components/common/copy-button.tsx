@@ -31,13 +31,11 @@ export function CopyButton({
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // 清理 timeout，防止内存泄漏
-  React.useEffect(() => {
-    return () => {
+  React.useEffect(() => () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   const resetCopiedState = React.useCallback(() => {
     // 清除之前的 timeout

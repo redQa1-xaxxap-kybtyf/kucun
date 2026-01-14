@@ -80,7 +80,7 @@ export const calculateFinancials = (
   data: CreateInput,
   transferMode: CreateInput['transferMode']
 ) => {
-  const { itemsAmount, costAmount, allocationSources } = calculateItemTotals(
+  const { itemsAmount, allocationSources } = calculateItemTotals(
     data,
     transferMode
   );

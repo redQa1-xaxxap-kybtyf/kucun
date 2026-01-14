@@ -4,11 +4,11 @@
 
 'use client';
 
-import { useToast } from '@/components/ui/use-toast';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, useTransition } from 'react';
 
 import { PrintDesignerEditor } from '@/components/print-designer';
+import { useToast } from '@/components/ui/use-toast';
 import { getTemplate, saveTemplate } from '@/lib/print-designer/actions';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
 
@@ -20,7 +20,7 @@ function PrintDesignerContent() {
 
   const [template, setTemplate] = useState<PrintTemplate | undefined>();
   const [isLoading, setIsLoading] = useState(!!templateId);
-  const [isPending, startTransition] = useTransition();
+  const [_isPending, startTransition] = useTransition();
 
   // 加载已存在的模板
   useEffect(() => {

@@ -1,8 +1,8 @@
 'use client';
 
 import { Package, RefreshCw, ShoppingCart, Users } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 import { DashboardTodoBar } from '@/components/dashboard/dashboard-todo-bar';
 import { DashboardTrendChart } from '@/components/dashboard/dashboard-trend-chart';

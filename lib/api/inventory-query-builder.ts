@@ -238,11 +238,23 @@ export async function getOptimizedInventoryList(
     ...record,
     quantity: Number(record.quantity),
     reservedQuantity: Number(record.reservedQuantity),
-    unitCost: record.unitCost != null ? Number(record.unitCost) : null,
+    unitCost:
+      record.unitCost !== null && record.unitCost !== undefined
+        ? Number(record.unitCost)
+        : null,
     product_piecesPerUnit: Number(record.product_piecesPerUnit),
-    product_weight: record.product_weight != null ? Number(record.product_weight) : null,
-    batch_piecesPerUnit: record.batch_piecesPerUnit != null ? Number(record.batch_piecesPerUnit) : null,
-    batch_weight: record.batch_weight != null ? Number(record.batch_weight) : null,
+    product_weight:
+      record.product_weight !== null && record.product_weight !== undefined
+        ? Number(record.product_weight)
+        : null,
+    batch_piecesPerUnit:
+      record.batch_piecesPerUnit !== null && record.batch_piecesPerUnit !== undefined
+        ? Number(record.batch_piecesPerUnit)
+        : null,
+    batch_weight:
+      record.batch_weight !== null && record.batch_weight !== undefined
+        ? Number(record.batch_weight)
+        : null,
   }));
 
   // ✅ 性能优化：仅在开发环境进行抽样验证（验证第一条和随机一条）

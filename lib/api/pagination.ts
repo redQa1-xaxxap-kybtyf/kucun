@@ -32,7 +32,7 @@ export interface ParseOffsetPaginationOptions {
 }
 
 function parseSafeInt(value: string | null | undefined): number | null {
-  if (value == null) return null;
+  if (value === null || value === undefined) return null;
   const trimmed = value.trim();
   if (!trimmed) return null;
   const parsed = Number.parseInt(trimmed, 10);

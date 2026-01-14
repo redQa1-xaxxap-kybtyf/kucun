@@ -28,7 +28,9 @@ export function PlaceholderRenderer({
 
   // 格式化显示
   const displayValue =
-    rawValue != null ? formatValue(rawValue, format) : fallback;
+    rawValue !== null && rawValue !== undefined
+      ? formatValue(rawValue, format)
+      : fallback;
 
   const textStyle: React.CSSProperties = {
     width: '100%',

@@ -17,8 +17,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import type { TableColumn } from '@/lib/print-designer/schemas';
 import type { FieldDefinition } from '@/lib/print-designer/field-registry';
+import type { TableColumn } from '@/lib/print-designer/schemas';
 
 import { FieldPicker } from './FieldPicker';
 
@@ -127,7 +127,7 @@ export function TableColumnManager({
 
   const handleDragOver =
     (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
-      if (draggingIndex == null) return;
+      if (draggingIndex === null) return;
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       setDragOverIndex(index);
@@ -323,7 +323,7 @@ export function TableColumnManager({
               <Trash2 className="h-3 w-3 text-slate-400" />
             </Button>
 
-            {draggingIndex != null && dragOverIndex === index && (
+            {draggingIndex !== null && dragOverIndex === index && (
               <div className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary/40" />
             )}
           </div>

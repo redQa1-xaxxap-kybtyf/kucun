@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
         secret: env.NEXTAUTH_SECRET,
         salt: MINI_PROGRAM_JWT_SALT,
       });
-    } catch (decodeError) {
+    } catch (_decodeError) {
       return NextResponse.json(
         { success: false, error: 'Invalid or expired token' },
         { status: 401 }

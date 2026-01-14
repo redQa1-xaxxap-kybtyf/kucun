@@ -353,7 +353,7 @@ export default function ShippingQueryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {queriesData?.data.map((query, index) => (
+                  {queriesData?.data.map(query => (
                     <TableRow key={query.id} className="hover:bg-slate-50/30 transition-colors group">
                       <TableCell className="text-xs font-bold text-slate-500 py-4">
                         {new Date(query.queriedAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}

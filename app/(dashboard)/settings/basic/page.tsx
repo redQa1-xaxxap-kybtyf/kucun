@@ -7,8 +7,8 @@
 'use client';
 
 import { ArrowLeft, Settings } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 import { BasicSettingsForm } from '@/components/settings/BasicSettingsForm';
 import { SettingsLayout } from '@/components/settings/SettingsLayout';

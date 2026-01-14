@@ -61,9 +61,6 @@ interface BatchViewModel {
   summary: BatchSummary;
 }
 
-const formatChange = (value: number) =>
-  `${value > 0 ? '+' : ''}${formatNumber(value)}`;
-
 const getSingleParam = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value[0] : value;
 

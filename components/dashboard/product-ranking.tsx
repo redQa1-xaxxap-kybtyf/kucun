@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ProductSalesRanking } from '@/lib/types/dashboard';
 import { cn, formatCurrency } from '@/lib/utils';
@@ -68,31 +67,9 @@ function RankingItem({ item }: { item: ProductSalesRanking }) {
   );
 }
 
-// 骨架加载组件
-function RankingSkeleton() {
-  return (
-    <div className="space-y-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 rounded-2xl border border-dashed border-slate-100 p-3">
-          <Skeleton className="h-10 w-10 rounded-xl" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-3 w-24" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-3 w-16" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // 空状态组件
 function EmptyState({ source }: { source: 'warehouse' | 'factory' }) {
   const Icon = source === 'warehouse' ? Warehouse : Factory;
-  const text = source === 'warehouse' ? 'WAREHOUSE' : 'FACTORY';
 
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">

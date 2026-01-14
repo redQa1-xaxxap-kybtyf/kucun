@@ -11,8 +11,8 @@ import { logger } from '@/lib/logger';
 import { ensureCompanyExpenses } from '@/lib/services/expense-service';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
-import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import { toNumber } from '@/lib/utils/number';
+import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 import {

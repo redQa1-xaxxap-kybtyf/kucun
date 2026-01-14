@@ -720,9 +720,9 @@ export default function SelectorHelperPage() {
               <div className="rounded-xl bg-slate-800 p-4 border border-slate-700">
                 <code className="block font-mono text-[10px] space-y-1">
                   <div className="text-slate-500 opacity-50">&lt;!-- 输入 --&gt;</div>
-                  <div className="text-slate-300">&lt;span title="状态"&gt;航行中&lt;/span&gt;</div>
+                  <div className="text-slate-300">&lt;span title=&quot;状态&quot;&gt;航行中&lt;/span&gt;</div>
                   <div className="text-slate-500 opacity-50 mt-2">&lt;!-- 结果 --&gt;</div>
-                  <div className="text-emerald-400 font-bold">.//span[@title='状态']</div>
+                  <div className="text-emerald-400 font-bold">.//span[@title=&apos;状态&apos;]</div>
                 </code>
               </div>
             </div>

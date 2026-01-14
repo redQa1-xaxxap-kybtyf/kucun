@@ -3,9 +3,10 @@
  * GET /api/monitoring/memory - 获取内存使用情况
  */
 
+import { timingSafeEqual } from 'crypto';
+
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { timingSafeEqual } from 'crypto';
 
 import { logger } from '@/lib/logger';
 import { getMemoryStats } from '@/lib/monitoring/memory-monitor';

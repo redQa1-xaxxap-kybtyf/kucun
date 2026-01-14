@@ -12,23 +12,22 @@ import {
     Search,
     User
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import * as React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
-import { useSystemVersion } from '@/hooks/use-system-version';
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
@@ -68,23 +67,10 @@ function HeaderComponent({
   // 直接使用传递的用户信息，避免重复的会话请求
   const currentUser = user;
 
-  // 系统版本信息
-  const { version } = useSystemVersion();
-
   // 通知系统（轮询方式 - 更简单可靠）
   // 注意：必须在所有条件语句之前调用 Hooks
-  const {
-    notifications,
-    unreadCount,
-    loadingState: notificationsLoadingState,
-    markAsRead,
-    markAllAsRead,
-  } = usePollingNotifications();
-
-  // 主题状态
-  const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
-    'light'
-  );
+  const { notifications, unreadCount, markAsRead, markAllAsRead } =
+    usePollingNotifications();
 
   // 数据刷新回调 - 必须在条件返回之前定义
   const handleRefreshData = React.useCallback(() => {
@@ -152,12 +138,6 @@ function HeaderComponent({
     } else if (notification.href) {
       router.push(notification.href);
     }
-  };
-
-  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
-    setTheme(newTheme);
-    // 实际项目中应该保存到localStorage或用户设置
-    localStorage.setItem('theme', newTheme);
   };
 
   // 获取用户姓名首字母作为头像占位符

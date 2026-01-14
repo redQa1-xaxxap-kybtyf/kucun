@@ -51,7 +51,7 @@ export const GET = withAuth(
     try {
       // 解析查询参数
       const { searchParams } = request.nextUrl;
-      const { page, limit, skip } = parseOffsetPagination(searchParams);
+      const { page, limit } = parseOffsetPagination(searchParams);
       const queryParams = {
         page,
         limit,

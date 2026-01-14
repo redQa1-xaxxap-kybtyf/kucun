@@ -695,7 +695,7 @@ export async function getPartnerStatementDetail(
   const paidAmount = toNumber(statement.paidAmount);
   const currentBalance = toNumber(statement.currentBalance);
   const pendingAmount =
-    statement.pendingAmount == null
+    statement.pendingAmount === null || statement.pendingAmount === undefined
       ? Math.abs(currentBalance)
       : toNumber(statement.pendingAmount);
   const overdueAmount = toNumber(statement.overdueAmount);

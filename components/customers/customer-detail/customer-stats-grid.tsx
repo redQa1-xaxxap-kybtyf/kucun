@@ -1,7 +1,8 @@
 'use client';
 
-import { cn } from '@/lib/utils';
 import { ArrowUpRight, RotateCcw, ShoppingCart, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+
+import { cn } from '@/lib/utils';
 
 interface CustomerStatsGridProps {
   salesOrderCount: number;

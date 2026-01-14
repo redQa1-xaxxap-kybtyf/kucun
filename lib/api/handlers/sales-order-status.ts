@@ -749,7 +749,9 @@ async function executeOrderStatusUpdateWithInventory(
 
       // 将分配的费用和成本写回销售订单明细（利润仍按销售金额 - 成本计算）
       const itemSubtotal =
-        item.subtotal == null ? undefined : toNumber(item.subtotal);
+        item.subtotal === null || item.subtotal === undefined
+          ? undefined
+          : toNumber(item.subtotal);
       await tx.salesOrderItem.update({
         where: { id: item.id },
         data: {

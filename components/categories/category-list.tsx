@@ -175,10 +175,10 @@ export function CategoryList({
 }: CategoryListProps) {
   const router = useRouter();
 
-  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(() => {
+  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(() => 
     // 按父子层级顺序展开，避免所有二级分类挤在一起
-    return buildCategoriesWithLevel(categories);
-  }, [categories]);
+     buildCategoriesWithLevel(categories)
+  , [categories]);
 
   const handleEdit = useMemo(
     () => (categoryId: string) => router.push(`/categories/${categoryId}/edit`),

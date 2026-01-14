@@ -411,19 +411,19 @@ export function AnnualReportClient() {
                     dataKey="monthLabel" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} 
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }} 
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}}
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
                     tickFormatter={(val) => `¥${val/10000}w`}
                   />
                   <Tooltip 
-                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [formatCurrency(value), '']} 
                   />
-                  <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '11px', fontWeight: 600}} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 600 }} />
                   <Line
                     type="monotone"
                     dataKey="revenue"
@@ -460,19 +460,19 @@ export function AnnualReportClient() {
                     dataKey="quarterLabel" 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}} 
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }} 
                   />
                   <YAxis 
                     axisLine={false} 
                     tickLine={false} 
-                    tick={{fill: '#64748b', fontSize: 11, fontWeight: 600}}
+                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 600 }}
                   />
                   <Tooltip 
-                    cursor={{fill: '#f8fafc'}}
-                    contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                    cursor={{ fill: '#f8fafc' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                     formatter={(value: number) => [formatCurrency(value), '']} 
                   />
-                  <Legend iconType="circle" wrapperStyle={{paddingTop: '20px', fontSize: '11px', fontWeight: 600}} />
+                  <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px', fontSize: '11px', fontWeight: 600 }} />
                   <Bar
                     dataKey="revenue"
                     fill={CHART_COLORS.revenue}
@@ -524,15 +524,15 @@ export function AnnualReportClient() {
                       tickFormatter={month => `${month}月`}
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{fill: '#3b82f6', fontSize: 10, fontWeight: 700}} 
+                      tick={{ fill: '#3b82f6', fontSize: 10, fontWeight: 700 }} 
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{fill: '#3b82f6', fontSize: 10, fontWeight: 700}}
+                      tick={{ fill: '#3b82f6', fontSize: 10, fontWeight: 700 }}
                     />
                     <Tooltip 
-                      contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                       formatter={(value: number) => [formatCurrency(value), '利润']} 
                     />
                     <Line
@@ -576,7 +576,7 @@ export function AnnualReportClient() {
                  {report.expenseDistribution.map((item, index) => (
                    <div key={item.type} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                         <div className="h-2 w-2 rounded-full" style={{backgroundColor: PIE_COLORS[index % PIE_COLORS.length]}} />
+                         <div className="h-2 w-2 rounded-full" style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }} />
                          <span className="font-bold text-slate-600">{item.typeName}</span>
                       </div>
                       <span className="font-mono font-black text-slate-400">{item.percentage.toFixed(1)}%</span>
@@ -684,22 +684,26 @@ export function AnnualReportClient() {
                    </div>
                    <div className="rounded-lg bg-slate-50 p-5 border border-slate-200">
                       <div className="text-[10px] font-black text-slate-400 uppercase mb-3">审计摘要说明</div>
-                       <div className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
-                          "本年度报表确认了稳定的增长轨迹。资产周转率保持在最优范围内，多元化的费用管理成功降低了经营风险。"
-                       </div>
-                   </div>
-               </div>
-            </div>
+                        <div className="text-[11px] font-bold text-slate-700 leading-relaxed italic">
+                          &quot;本年度报表确认了稳定的增长轨迹。资产周转率保持在最优范围内，多元化的费用管理成功降低了经营风险。&quot;
+                        </div>
+                    </div>
+                </div>
+             </div>
             {/* 页脚 - 报表鉴真 */}
             <div className="mt-16 flex items-end justify-between border-t border-slate-200 pt-6">
                <div className="space-y-1">
                   <div className="text-[10px] font-black text-slate-900 font-mono tracking-widest uppercase">已验证财务数据资产</div>
                   <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">数字签名：反重力-安全-{year}-财报-{new Date().getTime().toString()}</div>
                </div>
-               <div className="text-right space-y-1">
-                  <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">© 2026 反重力系统</div>
-                  <div className="text-[9px] font-bold text-slate-400 italic uppercase">第 01 页 / 年度经营分析</div>
-               </div>
+              <div className="text-right space-y-1">
+                <div className="text-[10px] font-black text-slate-900 uppercase tracking-widest">
+                  © 2026 反重力系统
+                </div>
+                <div className="text-[9px] font-bold text-slate-400 italic uppercase">
+                  第 01 页 / 年度经营分析
+                </div>
+              </div>
             </div>
           </Card>
         </div>

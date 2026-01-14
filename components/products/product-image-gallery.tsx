@@ -5,8 +5,8 @@ import Image from 'next/image';
 import { useMemo } from 'react';
 import { PhotoProvider, PhotoView } from 'react-photo-view';
 
+import type { ProductImage } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
-import type { ProductImage, ProductImageType } from '@/lib/types/product';
 
 import 'react-photo-view/dist/react-photo-view.css';
 

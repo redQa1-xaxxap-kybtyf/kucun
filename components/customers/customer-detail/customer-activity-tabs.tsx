@@ -1,13 +1,9 @@
 'use client';
 
+import { AlertCircle, CheckCircle2, ChevronRight, History, Package } from 'lucide-react';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn, formatCurrency } from '@/lib/utils';
-import {
-    getReturnOrderStatusBadgeVariant,
-    getSalesOrderStatusBadgeVariant,
-    type BadgeVariant,
-} from '@/lib/utils/badge-helpers';
-import { AlertCircle, CheckCircle2, ChevronRight, History, Package } from 'lucide-react';
 
 import type { CustomerReturnOrder, CustomerSalesOrder } from './types';
 
@@ -68,17 +64,16 @@ export function CustomerActivityTabs({
         {salesOrders.length > 0 ? (
           <div className="grid gap-4">
             {salesOrders.map(order => (
-              <OrderCard
-                key={order.id}
-                orderNumber={order.orderNumber}
-                status={order.status}
-                createdAt={order.createdAt}
-                amount={order.totalAmount}
-                statusVariant={getSalesOrderStatusBadgeVariant(order.status)}
-                formatDateTime={formatDateTime}
-                onClick={() => onNavigateToOrder(order.id)}
-                icon={<Package className="h-4 w-4" />}
-              />
+                <OrderCard
+                  key={order.id}
+                  orderNumber={order.orderNumber}
+                  status={order.status}
+                  createdAt={order.createdAt}
+                  amount={order.totalAmount}
+                  formatDateTime={formatDateTime}
+                  onClick={() => onNavigateToOrder(order.id)}
+                  icon={<Package className="h-4 w-4" />}
+                />
             ))}
           </div>
         ) : (
@@ -90,19 +85,18 @@ export function CustomerActivityTabs({
         {returnOrders.length > 0 ? (
           <div className="grid gap-4">
             {returnOrders.map(order => (
-              <OrderCard
-                key={order.id}
-                orderNumber={order.returnNumber}
-                status={order.status}
-                createdAt={order.createdAt}
-                amount={order.totalAmount}
-                amountPrefix="-"
-                amountClass="text-rose-600"
-                statusVariant={getReturnOrderStatusBadgeVariant(order.status)}
-                formatDateTime={formatDateTime}
-                onClick={() => onNavigateToReturnOrder(order.id)}
-                icon={<History className="h-4 w-4" />}
-              />
+                <OrderCard
+                  key={order.id}
+                  orderNumber={order.returnNumber}
+                  status={order.status}
+                  createdAt={order.createdAt}
+                  amount={order.totalAmount}
+                  amountPrefix="-"
+                  amountClass="text-rose-600"
+                  formatDateTime={formatDateTime}
+                  onClick={() => onNavigateToReturnOrder(order.id)}
+                  icon={<History className="h-4 w-4" />}
+                />
             ))}
           </div>
         ) : (
@@ -119,10 +113,7 @@ export function CustomerActivityTabs({
                 <UnpaidOrderCard
                   key={order.id}
                   orderNumber={order.orderNumber}
-                  status={order.status}
                   createdAt={order.createdAt}
-                  totalAmount={order.totalAmount}
-                  paidAmount={order.paidAmount}
                   unpaidAmount={unpaidAmount}
                   formatDateTime={formatDateTime}
                   onClick={() => onNavigateToOrder(order.id)}
@@ -145,7 +136,6 @@ function OrderCard({
   amount,
   amountPrefix = '',
   amountClass,
-  statusVariant,
   formatDateTime,
   onClick,
   icon
@@ -156,7 +146,6 @@ function OrderCard({
   amount: number;
   amountPrefix?: string;
   amountClass?: string;
-  statusVariant: BadgeVariant;
   formatDateTime: (value: string) => string;
   onClick: () => void;
   icon: React.ReactNode;
@@ -200,19 +189,13 @@ function OrderCard({
 
 function UnpaidOrderCard({
   orderNumber,
-  status,
   createdAt,
-  totalAmount,
-  paidAmount,
   unpaidAmount,
   formatDateTime,
   onClick,
 }: {
   orderNumber: string;
-  status: string;
   createdAt: string;
-  totalAmount: number;
-  paidAmount: number;
   unpaidAmount: number;
   formatDateTime: (value: string) => string;
   onClick: () => void;

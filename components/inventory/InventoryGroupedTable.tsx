@@ -6,9 +6,9 @@
 'use client';
 
 import { Eye, Package } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
@@ -201,8 +201,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
               </TableCell>
             </TableRow>
           ) : (
-            groups.map((group, groupIndex) => {
-              return group.items.map((item, index) => {
+            groups.map(group => group.items.map((item, index) => {
                 const isFirstInGroup = index === 0;
                 const isLastInGroup = index === group.items.length - 1;
 
@@ -417,8 +416,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
                   </TableRow>
                 );
-              });
-            })
+              }))
           )}
         </TableBody>
       </Table>

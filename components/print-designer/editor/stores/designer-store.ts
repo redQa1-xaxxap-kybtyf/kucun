@@ -271,23 +271,17 @@ export const useDesignerStore = create<DesignerStore>()(
 const EMPTY_ELEMENTS: DesignElement[] = [];
 
 /** 获取当前选中的元素 */
-export const useSelectedElement = (): DesignElement | null | undefined => {
-  return useDesignerStore((state: DesignerStore) => {
+export const useSelectedElement = (): DesignElement | null | undefined => useDesignerStore((state: DesignerStore) => {
     if (!state.template || !state.selectedElementId) return null;
     return state.template.elements.find(
       (el) => el.id === state.selectedElementId
     );
   });
-};
 
 /** 获取所有元素 */
-export const useElements = (): DesignElement[] => {
-  return useDesignerStore(
+export const useElements = (): DesignElement[] => useDesignerStore(
     (state: DesignerStore) => state.template?.elements ?? EMPTY_ELEMENTS
   );
-};
 
 /** 获取页面设置 */
-export const usePageSettings = (): PageSettings | undefined => {
-  return useDesignerStore((state: DesignerStore) => state.template?.pageSettings);
-};
+export const usePageSettings = (): PageSettings | undefined => useDesignerStore((state: DesignerStore) => state.template?.pageSettings);
