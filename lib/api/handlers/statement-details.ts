@@ -21,6 +21,11 @@ type CustomerOrderWithRelations = Omit<SalesOrder, 'totalAmount'> & {
     paymentMethod: string;
     status: string;
   }>;
+  prepaymentUsages: Array<{
+    id: string;
+    appliedAmount: number;
+    createdAt: Date;
+  }>;
   refundRecords: Array<{
     id: string;
     refundNumber: string;
@@ -92,6 +97,7 @@ export async function fetchCustomerWithOrders(
           payments: {
             where: {
               status: 'confirmed',
+              paymentType: 'order_payment',
             },
             select: {
               id: true,
@@ -103,6 +109,16 @@ export async function fetchCustomerWithOrders(
             },
             orderBy: {
               paymentDate: 'desc',
+            },
+          },
+          prepaymentUsages: {
+            select: {
+              id: true,
+              appliedAmount: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
             },
           },
           refundRecords: {
@@ -141,6 +157,10 @@ export async function fetchCustomerWithOrders(
       payments: order.payments.map(payment => ({
         ...payment,
         paymentAmount: Number(payment.paymentAmount ?? 0),
+      })),
+      prepaymentUsages: order.prepaymentUsages.map(usage => ({
+        ...usage,
+        appliedAmount: Number(usage.appliedAmount ?? 0),
       })),
       refundRecords: order.refundRecords.map(refund => ({
         ...refund,
@@ -254,7 +274,11 @@ export function calculateCustomerFinancials(customer: CustomerWithOrders) {
       (paySum, payment) => paySum + payment.paymentAmount,
       0
     );
-    return sum + orderPaidAmount;
+    const prepaymentAppliedAmount = order.prepaymentUsages.reduce(
+      (preSum, usage) => preSum + usage.appliedAmount,
+      0
+    );
+    return sum + orderPaidAmount + prepaymentAppliedAmount;
   }, 0);
 
   const refundAmount = customer.salesOrders.reduce((sum, order) => {
@@ -342,6 +366,19 @@ export function buildCustomerTransactions(customer: CustomerWithOrders) {
         amount: -payment.paymentAmount,
         balance: runningBalance,
         description: `收款`,
+        orderId: order.id,
+      });
+    });
+
+    order.prepaymentUsages.forEach(usage => {
+      runningBalance -= usage.appliedAmount;
+      transactions.push({
+        id: usage.id,
+        date: usage.createdAt,
+        type: 'payment',
+        amount: -usage.appliedAmount,
+        balance: runningBalance,
+        description: `预收冲抵`,
         orderId: order.id,
       });
     });

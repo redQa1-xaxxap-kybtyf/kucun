@@ -213,7 +213,16 @@ export class SalesOrderExportService {
       0
     );
     const totalAmount = order.totalAmount || 0;
-    const paidAmount = order.paidAmount || 0;
+    const paidAgainstOrder = (order.paymentRecords || [])
+      .filter(record => record.status === 'confirmed')
+      .reduce((sum, record) => sum + Number(record.paymentAmount || 0), 0);
+    const prepaymentApplied =
+      order.prepaymentTotalApplied ??
+      (order.prepaymentUsages || []).reduce(
+        (sum, usage) => sum + Number(usage.appliedAmount || 0),
+        0
+      );
+    const paidAmount = paidAgainstOrder + prepaymentApplied;
     const unpaidAmount = totalAmount - paidAmount;
 
     return {

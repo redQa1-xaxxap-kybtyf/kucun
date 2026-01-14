@@ -38,7 +38,8 @@ export const GET = withAuth(async (request: NextRequest) => {
     }
 
     // 获取销售订单统计
-    const [salesOrderStats, paymentStats] = await Promise.all([
+    const [salesOrderStats, paymentStats, prepaymentUsageStats] =
+      await Promise.all([
       prisma.salesOrder.aggregate({
         where: whereConditions,
         _sum: {
@@ -51,6 +52,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       prisma.paymentRecord.aggregate({
         where: {
           status: 'confirmed',
+          paymentType: 'order_payment',
           salesOrder: whereConditions,
         },
         _sum: {
@@ -60,11 +62,23 @@ export const GET = withAuth(async (request: NextRequest) => {
           id: true,
         },
       }),
+      prisma.prepaymentUsage.aggregate({
+        where: {
+          salesOrder: whereConditions,
+        },
+        _sum: {
+          appliedAmount: true,
+        },
+      }),
     ]);
 
     // 计算基础统计数据（注意 Prisma Decimal 类型统一转为 number）
     const totalReceivable = Number(salesOrderStats._sum.totalAmount ?? 0);
-    const totalReceived = Number(paymentStats._sum.paymentAmount ?? 0);
+    const totalReceivedPayments = Number(paymentStats._sum.paymentAmount ?? 0);
+    const totalPrepaymentApplied = Number(
+      prepaymentUsageStats._sum.appliedAmount ?? 0
+    );
+    const totalReceived = totalReceivedPayments + totalPrepaymentApplied;
     const totalPending = totalReceivable - totalReceived;
     const receivableCount = salesOrderStats._count.id || 0;
     const receivedCount = paymentStats._count.id || 0;
@@ -88,13 +102,13 @@ export const GET = withAuth(async (request: NextRequest) => {
             SELECT
               COALESCE(SUM(
                 CASE
-                  WHEN (so.total_amount - COALESCE(paid.paidAmount, 0)) > 0 THEN (so.total_amount - COALESCE(paid.paidAmount, 0))
+                  WHEN (so.total_amount - COALESCE(paid.paidAmount, 0) - COALESCE(prepay.appliedAmount, 0)) > 0 THEN (so.total_amount - COALESCE(paid.paidAmount, 0) - COALESCE(prepay.appliedAmount, 0))
                   ELSE 0
                 END
               ), 0) AS totalOverdue,
               COALESCE(SUM(
                 CASE
-                  WHEN (so.total_amount - COALESCE(paid.paidAmount, 0)) > 0 THEN 1
+                  WHEN (so.total_amount - COALESCE(paid.paidAmount, 0) - COALESCE(prepay.appliedAmount, 0)) > 0 THEN 1
                   ELSE 0
                 END
               ), 0) AS overdueCount
@@ -102,9 +116,14 @@ export const GET = withAuth(async (request: NextRequest) => {
             LEFT JOIN (
               SELECT sales_order_id, SUM(payment_amount) AS paidAmount
               FROM payment_records
-              WHERE status = 'confirmed'
+              WHERE status = 'confirmed' AND payment_type = 'order_payment'
               GROUP BY sales_order_id
             ) paid ON paid.sales_order_id = so.id
+            LEFT JOIN (
+              SELECT sales_order_id, SUM(applied_amount) AS appliedAmount
+              FROM prepayment_usages
+              GROUP BY sales_order_id
+            ) prepay ON prepay.sales_order_id = so.id
             WHERE ${Prisma.join(overdueConditions, ' AND ')}
           `
         )
@@ -197,8 +216,11 @@ export const GET = withAuth(async (request: NextRequest) => {
           select: {
             totalAmount: true,
             payments: {
-              where: { status: 'confirmed' },
+              where: { status: 'confirmed', paymentType: 'order_payment' },
               select: { paymentAmount: true },
+            },
+            prepaymentUsages: {
+              select: { appliedAmount: true },
             },
           },
         },
@@ -218,7 +240,11 @@ export const GET = withAuth(async (request: NextRequest) => {
             (paySum, payment) => paySum + Number(payment.paymentAmount ?? 0),
             0
           );
-          return sum + orderPaid;
+          const prepaymentApplied = order.prepaymentUsages.reduce(
+            (preSum, usage) => preSum + Number(usage.appliedAmount ?? 0),
+            0
+          );
+          return sum + orderPaid + prepaymentApplied;
         }, 0);
         const pendingAmount = totalAmount - paidAmount;
 

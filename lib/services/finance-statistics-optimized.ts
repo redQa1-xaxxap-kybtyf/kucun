@@ -366,8 +366,11 @@ export async function generateSupplierStatementsOptimized(
               select: {
                 id: true,
                 totalAmount: true,
-                paidAmount: true,
                 createdAt: true,
+                payments: {
+                  where: { status: 'confirmed', paymentType: 'order_payment' },
+                  select: { paymentAmount: true },
+                },
               },
             },
           },
@@ -415,7 +418,10 @@ export async function generateSupplierStatementsOptimized(
           if (!uniqueFactoryOrders.has(order.id)) {
             uniqueFactoryOrders.set(order.id, {
               totalAmount: toNumber(order.totalAmount),
-              paidAmount: toNumber(order.paidAmount),
+              paidAmount: order.payments.reduce(
+                (sum, payment) => sum + Number(payment.paymentAmount ?? 0),
+                0
+              ),
               createdAt: order.createdAt,
             });
           }

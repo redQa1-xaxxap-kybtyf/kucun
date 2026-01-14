@@ -18,11 +18,23 @@ export function calculatePaymentStatus(
   _orderDate: Date,
   pendingAmount = 0
 ): PaymentStatus {
-  if (pendingAmount > 0) return 'pending';
-  if (totalAmount <= 0) return 'paid';
-  const paidRatio = paidAmount / totalAmount;
-  if (paidRatio >= 0.9999) return 'paid';
-  if (paidAmount > 0) return 'partial';
+  const MIN_UNIT = 0.01;
+  const toCents = (value: number) => Math.round(Number(value || 0) * 100);
+
+  const pendingCents = toCents(pendingAmount);
+  if (pendingCents > 0) return 'pending';
+
+  const totalCents = toCents(totalAmount);
+  if (totalCents <= 0) return 'paid';
+
+  const paidCents = toCents(paidAmount);
+  const remainingHalfCents = (totalCents - paidCents) * 2;
+  const minUnitCents = toCents(MIN_UNIT);
+
+  // ✅ 到分结清（允许四舍五入容差）
+  if (remainingHalfCents <= minUnitCents) return 'paid';
+
+  if (paidCents > 0) return 'partial';
   return 'unpaid';
 }
 
@@ -294,6 +306,9 @@ export function transformToReceivable(order: {
     paymentDate: Date;
     status: string;
   }>;
+  prepaymentUsages?: Array<{
+    appliedAmount: number;
+  }>;
 }): ReceivableItem {
   const confirmedPayments =
     order.payments?.filter(p => p.status === 'confirmed') || [];
@@ -326,10 +341,14 @@ export function transformToReceivable(order: {
   const orderDue = totalAmountNum + orderRounding;
   const paidAgainstOrder = confirmedActual + confirmedRounding;
   const pendingAgainstOrder = pendingActual + pendingRounding;
-  const remainingAmount = Math.max(0, orderDue - paidAgainstOrder);
+  const prepaymentApplied =
+    order.prepaymentUsages?.reduce((sum, usage) => sum + usage.appliedAmount, 0) ??
+    0;
+  const paidTotal = paidAgainstOrder + prepaymentApplied;
+  const remainingAmount = Math.max(0, orderDue - paidTotal);
 
   const paymentStatus = calculatePaymentStatus(
-    paidAgainstOrder,
+    paidTotal,
     orderDue,
     order.createdAt,
     pendingAgainstOrder
@@ -350,7 +369,7 @@ export function transformToReceivable(order: {
     roundingAdjustment: orderRounding,
     paymentRoundingAmount: confirmedRounding,
     pendingRoundingAmount: pendingRounding,
-    paidAmount: confirmedActual,
+    paidAmount: confirmedActual + prepaymentApplied,
     pendingAmount: pendingActual,
     remainingAmount,
     paymentStatus,
@@ -372,6 +391,7 @@ export interface BaseReceivableOrder {
 type PaymentTotals = {
   confirmed: { actual: number; rounding: number };
   pending: { actual: number; rounding: number };
+  prepaymentApplied: number;
 };
 
 /**
@@ -444,27 +464,43 @@ export async function aggregatePaymentsByOrder(
     batches.push(orderIds.slice(i, i + batchSize));
   }
 
-  const allAggregations = await Promise.all(
-    batches.map(batch =>
-      prisma.paymentRecord.groupBy({
-        by: ['salesOrderId', 'status'],
-        where: {
-          salesOrderId: { in: batch },
-          status: { in: ['confirmed', 'pending'] },
-        },
-        _sum: { actualPaymentAmount: true, roundingAmount: true },
-      })
-    )
-  );
+  const [allPaymentAggregations, allPrepaymentAggregations] = await Promise.all([
+    Promise.all(
+      batches.map(batch =>
+        prisma.paymentRecord.groupBy({
+          by: ['salesOrderId', 'status'],
+          where: {
+            salesOrderId: { in: batch },
+            status: { in: ['confirmed', 'pending'] },
+            paymentType: 'order_payment',
+          },
+          _sum: { actualPaymentAmount: true, roundingAmount: true },
+        })
+      )
+    ),
+    Promise.all(
+      batches.map(batch =>
+        prisma.prepaymentUsage.groupBy({
+          by: ['salesOrderId'],
+          where: {
+            salesOrderId: { in: batch },
+          },
+          _sum: { appliedAmount: true },
+        })
+      )
+    ),
+  ]);
 
-  const paymentAggregations = allAggregations.flat();
+  const paymentAggregations = allPaymentAggregations.flat();
+  const prepaymentAggregations = allPrepaymentAggregations.flat();
 
-  return paymentAggregations.reduce<Record<string, PaymentTotals>>(
+  const totalsByOrder = paymentAggregations.reduce<Record<string, PaymentTotals>>(
     (acc, item) => {
       if (!item.salesOrderId) return acc;
       const existing = acc[item.salesOrderId] ?? {
         confirmed: { actual: 0, rounding: 0 },
         pending: { actual: 0, rounding: 0 },
+        prepaymentApplied: 0,
       };
       const amount = Number(item._sum.actualPaymentAmount ?? 0);
       const rounding = Number(item._sum.roundingAmount ?? 0);
@@ -480,6 +516,20 @@ export async function aggregatePaymentsByOrder(
     },
     {}
   );
+
+  prepaymentAggregations.forEach(item => {
+    if (!item.salesOrderId) return;
+    const existing = totalsByOrder[item.salesOrderId] ?? {
+      confirmed: { actual: 0, rounding: 0 },
+      pending: { actual: 0, rounding: 0 },
+      prepaymentApplied: 0,
+    };
+
+    existing.prepaymentApplied += Number(item._sum.appliedAmount ?? 0);
+    totalsByOrder[item.salesOrderId] = existing;
+  });
+
+  return totalsByOrder;
 }
 
 export function createSummaryReceivables(
@@ -490,6 +540,7 @@ export function createSummaryReceivables(
     const amounts = paymentsByOrder[order.id] ?? {
       confirmed: { actual: 0, rounding: 0 },
       pending: { actual: 0, rounding: 0 },
+      prepaymentApplied: 0,
     };
 
     const totalAmount = Number(order.totalAmount ?? 0);
@@ -498,15 +549,17 @@ export function createSummaryReceivables(
     const confirmedRounding = amounts.confirmed.rounding;
     const pendingActual = amounts.pending.actual;
     const pendingRounding = amounts.pending.rounding;
+    const prepaymentApplied = amounts.prepaymentApplied ?? 0;
 
     // ✅ P1修复: 剩余金额只扣除已确认的收款和抹零
     // 待确认的抹零不参与剩余金额计算，仅用于状态展示
     const orderDue = totalAmount + roundingAdjustment;
     const paidAgainstOrder = confirmedActual + confirmedRounding;
     const pendingAgainstOrder = pendingActual;
-    const remainingAmount = Math.max(0, orderDue - paidAgainstOrder);
+    const paidTotal = paidAgainstOrder + prepaymentApplied;
+    const remainingAmount = Math.max(0, orderDue - paidTotal);
     const statusDerived = calculatePaymentStatus(
-      paidAgainstOrder,
+      paidTotal,
       orderDue,
       order.createdAt,
       pendingAgainstOrder
@@ -523,7 +576,7 @@ export function createSummaryReceivables(
       roundingAdjustment,
       paymentRoundingAmount: confirmedRounding, // 只包含已确认的抹零
       pendingRoundingAmount: pendingRounding, // 待确认的抹零单独返回
-      paidAmount: confirmedActual,
+      paidAmount: confirmedActual + prepaymentApplied,
       pendingAmount: pendingActual,
       remainingAmount,
       paymentStatus: statusDerived,
@@ -566,8 +619,16 @@ export async function fetchReceivableDetails(orderIds: string[]) {
       roundingAdjustment: true,
       createdAt: true,
       customer: { select: { id: true, name: true, phone: true } },
+      prepaymentUsages: {
+        select: {
+          appliedAmount: true,
+        },
+      },
       payments: {
-        where: { status: { in: ['confirmed', 'pending'] } },
+        where: {
+          status: { in: ['confirmed', 'pending'] },
+          paymentType: 'order_payment',
+        },
         select: {
           actualPaymentAmount: true,
           roundingAmount: true,
@@ -588,6 +649,11 @@ export async function fetchReceivableDetails(orderIds: string[]) {
       order.roundingAdjustment === null || order.roundingAdjustment === undefined
         ? null
         : Number(order.roundingAdjustment),
+    prepaymentUsages:
+      order.prepaymentUsages?.map(usage => ({
+        ...usage,
+        appliedAmount: Number(usage.appliedAmount ?? 0),
+      })) ?? [],
     payments: order.payments.map(payment => ({
       ...payment,
       actualPaymentAmount: Number(payment.actualPaymentAmount ?? 0),
