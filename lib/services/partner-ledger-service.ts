@@ -4,9 +4,7 @@
  */
 /* eslint-disable max-lines-per-function, max-lines */
 
-import type {
-  Prisma,
-} from '@prisma/client';
+import { Prisma, type StatementTransaction } from '@prisma/client';
 
 import { publishFinanceChange } from '@/lib/cache/pubsub';
 import { prisma } from '@/lib/db';
@@ -379,28 +377,6 @@ export async function recordPartnerTransaction(
     'completed';
 
   const execute = async (db: Prisma.TransactionClient) => {
-    // ✅ 防重复: 检查是否已经记录过相同的referenceId和transactionType
-    const existingTransaction = await db.statementTransaction.findFirst({
-      where: {
-        referenceId: input.referenceId,
-        transactionType: input.transactionType,
-      },
-    });
-
-    if (existingTransaction) {
-      logger.warn(
-        'partner-ledger',
-        '检测到重复的往来账交易记录,跳过创建',
-        undefined,
-        {
-          referenceId: input.referenceId,
-          transactionType: input.transactionType,
-          existingTransactionId: existingTransaction.id,
-        }
-      );
-      return existingTransaction;
-    }
-
     const partner = await resolvePartnerEntity(input.partnerId);
     const incomingRole = input.partnerRole ?? partner.role;
     const existingStatement = await db.accountStatement.findUnique({
@@ -456,26 +432,56 @@ export async function recordPartnerTransaction(
     const debitAmount = rule.direction === 'debit' ? input.amount : 0;
     const creditAmount = rule.direction === 'credit' ? input.amount : 0;
 
-    const transaction = await db.statementTransaction.create({
-      data: {
-        statementId: statement.id,
-        transactionType: input.transactionType,
-        direction: rule.direction,
-        referenceId: input.referenceId,
-        referenceNumber,
-        debitAmount,
-        creditAmount,
-        amount: input.amount,
-        beforeBalance,
-        balance: afterBalance,
-        afterBalance,
-        description: input.description,
-        transactionDate,
-        dueDate,
-        status: transactionStatus,
-        metadata,
-      },
-    });
+    let transaction: StatementTransaction;
+    try {
+      transaction = await db.statementTransaction.create({
+        data: {
+          statementId: statement.id,
+          transactionType: input.transactionType,
+          direction: rule.direction,
+          referenceId: input.referenceId,
+          referenceNumber,
+          debitAmount,
+          creditAmount,
+          amount: input.amount,
+          beforeBalance,
+          balance: afterBalance,
+          afterBalance,
+          description: input.description,
+          transactionDate,
+          dueDate,
+          status: transactionStatus,
+          metadata,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const existingTransaction = await prisma.statementTransaction.findFirst({
+          where: {
+            referenceId: input.referenceId,
+            transactionType: input.transactionType,
+          },
+        });
+
+        if (existingTransaction) {
+          logger.warn(
+            'partner-ledger',
+            '检测到重复的往来账交易记录,按幂等返回',
+            undefined,
+            {
+              referenceId: input.referenceId,
+              transactionType: input.transactionType,
+              existingTransactionId: existingTransaction.id,
+            }
+          );
+          return existingTransaction;
+        }
+      }
+      throw error;
+    }
 
     const updateData: Prisma.AccountStatementUpdateInput = {
       entityName: partnerName,
