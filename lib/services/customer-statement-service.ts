@@ -6,6 +6,7 @@ import type { Prisma } from '@prisma/client';
 import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { REFUND_METHOD_LABELS } from '@/lib/config/finance';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import type {
   CustomerStatementDetail,
   CustomerStatementListItem,
@@ -256,11 +257,15 @@ export async function getCustomerStatements(
       by: ['customerId'],
       where: {
         customerId: { in: customerIds },
-        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
-        ...(hasDateFilter && { createdAt: dateFilter }),
+        status: 'completed',
+        // 统一口径：仅“退款型退货”(processType='refund') 冲减应收余额
+        processType: 'refund',
+        ...(hasDateFilter
+          ? { completedAt: dateFilter }
+          : { completedAt: { not: null } }),
       },
       _sum: { refundAmount: true },
-      _max: { createdAt: true },
+      _max: { completedAt: true },
       _count: { id: true },
     }),
     prisma.paymentRecord.groupBy({
@@ -371,7 +376,7 @@ export async function getCustomerStatements(
   for (const row of returnAggregates) {
     returnSummaryByCustomerId.set(row.customerId, {
       returnAmount: Number(row._sum.refundAmount ?? 0),
-      lastTransactionDate: row._max.createdAt ?? undefined,
+      lastTransactionDate: row._max.completedAt ?? undefined,
       count: row._count.id ?? 0,
     });
   }
@@ -700,7 +705,9 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
     prisma.returnOrder.groupBy({
       by: ['customerId'],
       where: {
-        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
+        status: 'completed',
+        processType: 'refund',
+        completedAt: { not: null },
       },
       _sum: { refundAmount: true },
     }),
@@ -1073,8 +1080,11 @@ export async function calculateCustomerStatementSummary(
   const returnOrderAggregate = await prisma.returnOrder.aggregate({
     where: {
       customerId,
-      status: { in: ['submitted', 'approved', 'processing', 'completed'] },
-      ...(hasDateFilter && { createdAt: dateFilter }),
+      status: 'completed',
+      processType: 'refund',
+      ...(hasDateFilter
+        ? { completedAt: dateFilter }
+        : { completedAt: { not: null } }),
     },
     _sum: { refundAmount: true },
   });
@@ -1428,15 +1438,26 @@ async function getCustomerTransactions(
       where: {
         customerId,
         status: { not: 'draft' }, // 排除草稿，其他所有状态都包含
-        createdAt: dateFilter,
+        OR: [
+          // 历史展示：按创建时间归属
+          { createdAt: dateFilter },
+          // 余额影响：按完成时间归属（跨期退货也能在当期明细中解释余额变化）
+          {
+            status: 'completed',
+            processType: 'refund',
+            completedAt: dateFilter,
+          },
+        ],
       },
       select: {
         id: true,
         returnNumber: true,
         refundAmount: true,
         createdAt: true,
+        completedAt: true,
         status: true,
         type: true,
+        processType: true,
       },
       orderBy: { id: 'asc' },
       take: pageSize,
@@ -1446,28 +1467,50 @@ async function getCustomerTransactions(
     });
 
     for (const returnOrder of returnOrders) {
-      // 已取消或已拒绝的退货订单：显示在明细中但金额为0（不影响余额）
-      const isInvalidStatus = ['cancelled', 'rejected'].includes(
-        returnOrder.status
-      );
-      const effectiveRefundAmount = isInvalidStatus
-        ? 0
-        : Number(returnOrder.refundAmount);
+      const status = returnOrder.status;
+      const processType = returnOrder.processType;
+      const completedAt = returnOrder.completedAt;
+      const isBalanceEffective =
+        status === 'completed' && processType === 'refund' && Boolean(completedAt);
 
-      const description = isInvalidStatus
-        ? `销售退货 ${returnOrder.returnNumber} (已${returnOrder.status === 'cancelled' ? '取消' : '拒绝'})`
-        : `销售退货 ${returnOrder.returnNumber}`;
+      // ✅ P0 口径统一：退货仅在 completed 时冲减余额（历史记录可展示多状态）
+      const rawRefundAmount = Number(returnOrder.refundAmount);
+      const effectiveRefundAmount = isBalanceEffective ? rawRefundAmount : 0;
+
+      const descriptionParts = [`销售退货 ${returnOrder.returnNumber}`];
+      if (status === 'cancelled') {
+        descriptionParts.push('(已取消)');
+      } else if (status === 'rejected') {
+        descriptionParts.push('(已拒绝)');
+      } else if (status === 'completed' && processType === 'refund' && !completedAt) {
+        descriptionParts.push('(completedAt缺失)');
+        logger.warn(
+          'customer-statement',
+          '退货状态为 completed 但 completedAt 为空，已排除出余额口径',
+          undefined,
+          {
+            returnOrderId: returnOrder.id,
+            returnNumber: returnOrder.returnNumber,
+            customerId,
+          }
+        );
+      } else if (!isBalanceEffective && rawRefundAmount > 0) {
+        descriptionParts.push(`(待生效 ${rawRefundAmount.toFixed(2)})`);
+      }
+      const description = descriptionParts.join(' ');
+
+      const transactionDate = isBalanceEffective ? completedAt! : returnOrder.createdAt;
 
       transactionEntries.push({
         id: returnOrder.id,
         transactionType: 'sales_return',
-        transactionDate: returnOrder.createdAt.toISOString(),
+        transactionDate: transactionDate.toISOString(),
         referenceNumber: returnOrder.returnNumber,
         referenceId: returnOrder.id,
         description,
         debitAmount: 0,
         creditAmount: effectiveRefundAmount,
-        status: returnOrder.status,
+        status,
       });
     }
 
@@ -1729,8 +1772,9 @@ async function calculateOpeningBalance(
     prisma.returnOrder.aggregate({
       where: {
         customerId,
-        status: { in: ['submitted', 'approved', 'processing', 'completed'] },
-        createdAt: dateFilter,
+        status: 'completed',
+        processType: 'refund',
+        completedAt: dateFilter,
       },
       _sum: { refundAmount: true },
     }),

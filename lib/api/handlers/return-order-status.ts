@@ -7,6 +7,8 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { toNumber } from '@/lib/utils/number';
 
 const roundCurrency = (value: number): number =>
@@ -325,6 +327,54 @@ export async function updateReturnOrderStatus(
             await tx.refundRecord.create({ data: refundData });
 
             refundCreated = true;
+          }
+
+          // ✅ 往来账入账：退货完成后同步一笔「销售退货」流水
+          // 备注：用于在应收应付总账/往来明细中体现退货冲减；退款结算仍通过 refund 流水体现
+          if (
+            newStatus === 'completed' &&
+            order.customerId &&
+            computedRefundAmount > 0
+          ) {
+            try {
+              await recordPartnerTransaction(
+                {
+                  partnerId: order.customerId,
+                  partnerRole: 'customer',
+                  entityType: 'customer',
+                  transactionType: 'sales_return',
+                  amount: roundCurrency(computedRefundAmount),
+                  referenceId: order.id,
+                  referenceNumber: order.returnNumber,
+                  description: `销售退货 ${order.returnNumber} 入账`,
+                  occurredAt: updateData.completedAt ?? updateData.updatedAt,
+                  metadata: {
+                    source: 'return_order',
+                    processType,
+                    status: newStatus,
+                    salesOrderId: order.salesOrderId ?? undefined,
+                    triggeredBy: 'return_order:status_change',
+                  },
+                },
+                tx
+              );
+            } catch (error) {
+              logger.error(
+                'return-order-status',
+                '退货完成后同步往来账失败',
+                error,
+                {
+                  orderId: order.id,
+                  returnNumber: order.returnNumber,
+                  customerId: order.customerId,
+                }
+              );
+              throw new Error(
+                `退货完成后同步往来账失败: ${
+                  error instanceof Error ? error.message : '未知错误'
+                }`
+              );
+            }
           }
 
           // ✅ 只有在退货完成时,按退款金额比例回退原销售订单利润
