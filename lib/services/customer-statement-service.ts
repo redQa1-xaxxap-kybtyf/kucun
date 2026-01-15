@@ -44,7 +44,7 @@ function computeReceivableBalance(params: {
     params.salesAmount -
       params.salesReturnAmount -
       params.paymentReceived -
-      params.prepaymentReceived +
+      params.prepaymentReceived -
       params.refundPaid
   );
 }
@@ -946,9 +946,9 @@ async function findSupplierForCustomer(
  * 计算客户对账单汇总数据
  *
  * 业务逻辑说明：
- * 1. 应收余额 = 销售金额 - 应退金额 - 已收款 - 预收款 + 已退款
+ * 1. 应收余额 = 销售金额 - 应退金额 - 已收款 - 预收款 - 已退款
  * 2. 退货单(ReturnOrder.refundAmount) 代表“应退给客户”的金额，减少应收
- * 3. 退款单(RefundRecord.processedAmount) 代表“实际已退款”的金额，用于冲回应退余额
+ * 3. 退款单(RefundRecord.processedAmount) 代表“实际已退款”的金额，计入应收余额减项
  */
 type RefundRecordForStatement = {
   refundAmount: unknown | null;
@@ -1536,8 +1536,8 @@ async function getCustomerTransactions(
         referenceNumber: refund.refundNumber,
         referenceId: refund.id,
         description: descriptionParts.join(' / '),
-        debitAmount: effectiveProcessed,
-        creditAmount: 0,
+        debitAmount: 0,
+        creditAmount: effectiveProcessed,
         status: refund.status,
       });
     }

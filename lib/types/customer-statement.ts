@@ -47,7 +47,7 @@ export interface CustomerStatementSummary {
     refundProcessed?: number; // 实际已退款金额（含退货退款）
     refundPending?: number; // 待退金额
     refundCompensation?: number; // 补偿性退款金额
-    receivableBalance: number; // 应收余额 = 销售 - 应退 - 收款 - 预收 + 已退款
+    receivableBalance: number; // 应收余额 = 销售 - 应退 - 收款 - 预收 - 已退款
   };
 
   // 应付账款汇总
