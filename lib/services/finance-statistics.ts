@@ -211,17 +211,29 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
   const skip = (page - 1) * limit;
 
   if (startDate || endDate) {
-    const updatedAtFilter: Prisma.DateTimeFilter = {};
+    const transactionDateFilter: Prisma.DateTimeFilter = {};
     if (startDate) {
-      updatedAtFilter.gte = new Date(startDate);
+      transactionDateFilter.gte = new Date(startDate);
     }
     if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      updatedAtFilter.lte = end;
+      transactionDateFilter.lte = end;
     }
-    if (Object.keys(updatedAtFilter).length > 0) {
-      where.updatedAt = updatedAtFilter;
+    if (Object.keys(transactionDateFilter).length > 0) {
+      const dateWhere: Prisma.AccountStatementWhereInput = {
+        OR: [
+          { lastTransactionDate: transactionDateFilter },
+          { lastTransactionDate: null, lastPaymentDate: transactionDateFilter },
+        ],
+      };
+
+      const existingAnd = Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : [];
+      where.AND = [...existingAnd, dateWhere];
     }
   }
 
