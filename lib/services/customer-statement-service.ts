@@ -322,20 +322,58 @@ export async function getCustomerStatements(
     .filter((supplier): supplier is SupplierIdentifier => Boolean(supplier))
     .map(supplier => supplier.id);
 
+  const supplierPurchaseAmountMap = new Map<string, number>();
+  const supplierPaymentPaidMap = new Map<string, number>();
   const supplierPrepaymentPaidMap = new Map<string, number>();
 
   if (supplierIds.length > 0) {
-    const supplierPayments = await prisma.paymentOutRecord.groupBy({
-      by: ['supplierId'],
-      where: {
-        supplierId: { in: supplierIds },
-        status: 'confirmed',
-        ...(hasDateFilter && { paymentDate: dateFilter }),
-      },
-      _sum: { paymentAmount: true },
-    });
+    const [supplierPayables, supplierPayments, supplierPrepayments] =
+      await Promise.all([
+        prisma.payableRecord.groupBy({
+          by: ['supplierId'],
+          where: {
+            supplierId: { in: supplierIds },
+            ...(hasDateFilter && { createdAt: dateFilter }),
+          },
+          _sum: { payableAmount: true },
+        }),
+        prisma.paymentOutRecord.groupBy({
+          by: ['supplierId'],
+          where: {
+            supplierId: { in: supplierIds },
+            status: 'confirmed',
+            payableRecordId: { not: null },
+            ...(hasDateFilter && { paymentDate: dateFilter }),
+          },
+          _sum: { paymentAmount: true },
+        }),
+        prisma.paymentOutRecord.groupBy({
+          by: ['supplierId'],
+          where: {
+            supplierId: { in: supplierIds },
+            status: 'confirmed',
+            payableRecordId: null,
+            ...(hasDateFilter && { paymentDate: dateFilter }),
+          },
+          _sum: { paymentAmount: true },
+        }),
+      ]);
+
+    for (const row of supplierPayables) {
+      supplierPurchaseAmountMap.set(
+        row.supplierId,
+        Number(row._sum.payableAmount ?? 0)
+      );
+    }
 
     for (const row of supplierPayments) {
+      supplierPaymentPaidMap.set(
+        row.supplierId,
+        Number(row._sum.paymentAmount ?? 0)
+      );
+    }
+
+    for (const row of supplierPrepayments) {
       supplierPrepaymentPaidMap.set(
         row.supplierId,
         Number(row._sum.paymentAmount ?? 0)
@@ -470,14 +508,20 @@ export async function getCustomerStatements(
     });
 
     const supplierId = supplierIdByCustomerId.get(customer.id);
+    const purchaseAmount = supplierId
+      ? (supplierPurchaseAmountMap.get(supplierId) ?? 0)
+      : 0;
+    const paymentPaid = supplierId
+      ? (supplierPaymentPaidMap.get(supplierId) ?? 0)
+      : 0;
     const prepaymentPaid = supplierId
       ? (supplierPrepaymentPaidMap.get(supplierId) ?? 0)
       : 0;
 
     const payableBalance = computePayableBalance({
-      purchaseAmount: 0,
+      purchaseAmount,
       purchaseReturnAmount: 0,
-      paymentPaid: 0,
+      paymentPaid,
       prepaymentPaid,
       refundReceived: 0,
     });
@@ -516,9 +560,9 @@ export async function getCustomerStatements(
           receivableBalance,
         },
         payables: {
-          purchaseAmount: 0,
+          purchaseAmount,
           purchaseReturnAmount: 0,
-          paymentPaid: 0,
+          paymentPaid,
           prepaymentPaid,
           refundReceived: 0,
           payableBalance,
@@ -808,7 +852,6 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
   }
 
   let totalReceivableBalance = 0;
-  let totalPayableBalance = 0;
   let overdueCustomers = 0;
 
   for (const customerId of activeCustomerIds) {
@@ -835,6 +878,38 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
       overdueCustomers += 1;
     }
   }
+
+  const [
+    payableAggregate,
+    paymentPaidAggregate,
+    prepaymentPaidAggregate,
+  ] = await Promise.all([
+    prisma.payableRecord.aggregate({
+      _sum: { payableAmount: true },
+    }),
+    prisma.paymentOutRecord.aggregate({
+      where: {
+        status: 'confirmed',
+        payableRecordId: { not: null },
+      },
+      _sum: { paymentAmount: true },
+    }),
+    prisma.paymentOutRecord.aggregate({
+      where: {
+        status: 'confirmed',
+        payableRecordId: null,
+      },
+      _sum: { paymentAmount: true },
+    }),
+  ]);
+
+  let totalPayableBalance = computePayableBalance({
+    purchaseAmount: Number(payableAggregate._sum.payableAmount ?? 0),
+    purchaseReturnAmount: 0,
+    paymentPaid: Number(paymentPaidAggregate._sum.paymentAmount ?? 0),
+    prepaymentPaid: Number(prepaymentPaidAggregate._sum.paymentAmount ?? 0),
+    refundReceived: 0,
+  });
 
   totalReceivableBalance = roundCurrency(totalReceivableBalance);
   totalPayableBalance = roundCurrency(totalPayableBalance);
@@ -1173,31 +1248,53 @@ export async function calculateCustomerStatementSummary(
 
   const refundPaid = refundProcessed;
 
-  // 6. 查询采购订单(应付 - 客户作为供应商)
-  // 需要通过supplier表关联到customer
-  // 暂时设为0,后续实现客户-供应商双重身份关联
-  const purchaseAmount = 0;
+  // 6. 查询应付记录(应付 - 客户作为供应商)
+  // 通过 supplier 表关联到 customer，形成“双向往来”口径
+  let purchaseAmount = 0;
   const purchaseReturnAmount = 0;
-  const paymentPaid = 0;
+  let paymentPaid = 0;
   const refundReceived = 0;
 
-  // 7. 查询预付款(向客户作为供应商时预付)
-  // 通过供应商表查找是否有客户作为供应商的预付款
-  // 首先查找是否有对应的供应商记录
+  // 7. 查询付款记录(客户作为供应商场景)
+  // - payableRecordId != null：冲减应付(付款)
+  // - payableRecordId == null：预付款(预付/押金)
   const customerAsSupplier = await findSupplierForCustomer(customerId);
 
   let prepaymentPaid = 0;
   if (customerAsSupplier) {
-    const supplierPaymentAggregate = await prisma.paymentOutRecord.aggregate({
-      where: {
-        supplierId: customerAsSupplier.id,
-        status: { in: ['confirmed'] },
-        ...(hasDateFilter && { paymentDate: dateFilter }),
-      },
-      _sum: { paymentAmount: true },
-    });
+    const supplierId = customerAsSupplier.id;
+    const [payableAggregate, paymentPaidAggregate, prepaymentPaidAggregate] =
+      await Promise.all([
+        prisma.payableRecord.aggregate({
+          where: {
+            supplierId,
+            ...(hasDateFilter && { createdAt: dateFilter }),
+          },
+          _sum: { payableAmount: true },
+        }),
+        prisma.paymentOutRecord.aggregate({
+          where: {
+            supplierId,
+            status: 'confirmed',
+            payableRecordId: { not: null },
+            ...(hasDateFilter && { paymentDate: dateFilter }),
+          },
+          _sum: { paymentAmount: true },
+        }),
+        prisma.paymentOutRecord.aggregate({
+          where: {
+            supplierId,
+            status: 'confirmed',
+            payableRecordId: null,
+            ...(hasDateFilter && { paymentDate: dateFilter }),
+          },
+          _sum: { paymentAmount: true },
+        }),
+      ]);
 
-    prepaymentPaid = Number(supplierPaymentAggregate._sum.paymentAmount ?? 0);
+    purchaseAmount = Number(payableAggregate._sum.payableAmount ?? 0);
+    paymentPaid = Number(paymentPaidAggregate._sum.paymentAmount ?? 0);
+    prepaymentPaid = Number(prepaymentPaidAggregate._sum.paymentAmount ?? 0);
   }
 
   const receivableBalance = computeReceivableBalance({
@@ -1648,11 +1745,76 @@ async function getCustomerTransactions(
     }
   }
 
-  // 6. 获取预付款记录(客户作为供应商场景)
   if (customerAsSupplier) {
-    let supplierPrepaymentCursor: string | undefined;
+    // 6. 获取应付生成记录(客户作为供应商场景)
+    let supplierPayableCursor: string | undefined;
     while (true) {
-      const supplierPrepayments = await prisma.paymentOutRecord.findMany({
+      const supplierPayables = await prisma.payableRecord.findMany({
+        where: {
+          supplierId: customerAsSupplier.id,
+          createdAt: dateFilter,
+        },
+        select: {
+          id: true,
+          payableNumber: true,
+          payableAmount: true,
+          createdAt: true,
+          sourceType: true,
+          sourceNumber: true,
+          status: true,
+        },
+        orderBy: { id: 'asc' },
+        take: pageSize,
+        ...(supplierPayableCursor
+          ? { cursor: { id: supplierPayableCursor }, skip: 1 }
+          : {}),
+      });
+
+      for (const payable of supplierPayables) {
+        const amount = Number(payable.payableAmount ?? 0);
+        if (amount <= 0) {
+          continue;
+        }
+
+        const sourceLabel =
+          payable.sourceType === 'purchase_order'
+            ? '采购'
+            : payable.sourceType === 'factory_shipment'
+              ? '直发'
+              : payable.sourceType === 'manual'
+                ? '手工'
+                : '应付';
+        const description = payable.sourceNumber
+          ? `${sourceLabel}应付 ${payable.payableNumber} / ${payable.sourceNumber}`
+          : `${sourceLabel}应付 ${payable.payableNumber}`;
+
+        transactionEntries.push({
+          id: payable.id,
+          transactionType: 'purchase_order',
+          transactionDate: payable.createdAt.toISOString(),
+          referenceNumber: payable.payableNumber,
+          referenceId: payable.id,
+          description,
+          debitAmount: 0,
+          creditAmount: amount, // ✅ 应付生成会增加应付/减少净余额
+          status: payable.status,
+        });
+      }
+
+      if (supplierPayables.length < pageSize) {
+        break;
+      }
+
+      supplierPayableCursor = supplierPayables[supplierPayables.length - 1]?.id;
+      if (!supplierPayableCursor) {
+        break;
+      }
+    }
+
+    // 7. 获取付款记录(客户作为供应商场景)
+    let supplierPaymentCursor: string | undefined;
+    while (true) {
+      const supplierPayments = await prisma.paymentOutRecord.findMany({
         where: {
           supplierId: customerAsSupplier.id,
           status: 'confirmed',
@@ -1660,6 +1822,7 @@ async function getCustomerTransactions(
         },
         select: {
           id: true,
+          payableRecordId: true,
           paymentNumber: true,
           paymentAmount: true,
           paymentDate: true,
@@ -1668,36 +1831,48 @@ async function getCustomerTransactions(
         },
         orderBy: { id: 'asc' },
         take: pageSize,
-        ...(supplierPrepaymentCursor
-          ? { cursor: { id: supplierPrepaymentCursor }, skip: 1 }
+        ...(supplierPaymentCursor
+          ? { cursor: { id: supplierPaymentCursor }, skip: 1 }
           : {}),
       });
 
-      for (const payment of supplierPrepayments) {
+      for (const payment of supplierPayments) {
+        const amount = Number(payment.paymentAmount ?? 0);
+        if (amount <= 0) {
+          continue;
+        }
+
         const paymentMethodLabel = formatStatementPaymentMethod(
           payment.paymentMethod
         );
 
-      transactionEntries.push({
-        id: payment.id,
-        transactionType: 'prepayment_out',
-        transactionDate: payment.paymentDate.toISOString(),
-        referenceNumber: payment.paymentNumber,
-        referenceId: payment.id,
-        description: `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`,
-        debitAmount: Number(payment.paymentAmount), // ✅ 预付款会减少应付/增加预付
-        creditAmount: 0,
-        status: payment.status,
-      });
-    }
+        const transactionType = payment.payableRecordId
+          ? 'payment_out'
+          : 'prepayment_out';
+        const description =
+          transactionType === 'payment_out'
+            ? `付款 ${payment.paymentNumber} (${paymentMethodLabel})`
+            : `预付款 ${payment.paymentNumber} (${paymentMethodLabel})`;
 
-      if (supplierPrepayments.length < pageSize) {
+        transactionEntries.push({
+          id: payment.id,
+          transactionType,
+          transactionDate: payment.paymentDate.toISOString(),
+          referenceNumber: payment.paymentNumber,
+          referenceId: payment.id,
+          description,
+          debitAmount: amount, // ✅ 付款/预付款会减少应付/增加净余额
+          creditAmount: 0,
+          status: payment.status,
+        });
+      }
+
+      if (supplierPayments.length < pageSize) {
         break;
       }
 
-      supplierPrepaymentCursor =
-        supplierPrepayments[supplierPrepayments.length - 1]?.id;
-      if (!supplierPrepaymentCursor) {
+      supplierPaymentCursor = supplierPayments[supplierPayments.length - 1]?.id;
+      if (!supplierPaymentCursor) {
         break;
       }
     }
@@ -1846,25 +2021,50 @@ async function calculateOpeningBalance(
     refundPaid,
   });
 
+  let purchaseAmount = 0;
+  let paymentPaid = 0;
   let prepaymentPaid = 0;
 
   if (customerAsSupplier) {
-    const supplierPaymentAggregate = await prisma.paymentOutRecord.aggregate({
-      where: {
-        supplierId: customerAsSupplier.id,
-        status: { in: ['confirmed'] },
-        paymentDate: dateFilter,
-      },
-      _sum: { paymentAmount: true },
-    });
+    const supplierId = customerAsSupplier.id;
+    const [payableAggregate, paymentPaidAggregate, prepaymentPaidAggregate] =
+      await Promise.all([
+        prisma.payableRecord.aggregate({
+          where: {
+            supplierId,
+            createdAt: dateFilter,
+          },
+          _sum: { payableAmount: true },
+        }),
+        prisma.paymentOutRecord.aggregate({
+          where: {
+            supplierId,
+            status: 'confirmed',
+            payableRecordId: { not: null },
+            paymentDate: dateFilter,
+          },
+          _sum: { paymentAmount: true },
+        }),
+        prisma.paymentOutRecord.aggregate({
+          where: {
+            supplierId,
+            status: 'confirmed',
+            payableRecordId: null,
+            paymentDate: dateFilter,
+          },
+          _sum: { paymentAmount: true },
+        }),
+      ]);
 
-    prepaymentPaid = Number(supplierPaymentAggregate._sum.paymentAmount ?? 0);
+    purchaseAmount = Number(payableAggregate._sum.payableAmount ?? 0);
+    paymentPaid = Number(paymentPaidAggregate._sum.paymentAmount ?? 0);
+    prepaymentPaid = Number(prepaymentPaidAggregate._sum.paymentAmount ?? 0);
   }
 
   const payableBalance = computePayableBalance({
-    purchaseAmount: 0,
+    purchaseAmount,
     purchaseReturnAmount: 0,
-    paymentPaid: 0,
+    paymentPaid,
     prepaymentPaid,
     refundReceived: 0,
   });
