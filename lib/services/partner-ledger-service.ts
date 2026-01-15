@@ -76,6 +76,7 @@ type TransactionRule = {
   balanceDelta: (amount: number) => number;
   increaseOrderCount?: boolean;
   affectsPaidAmount?: boolean;
+  paidDelta?: (amount: number) => number;
   affectsTotalAmount?: boolean;
   affectsPendingAmount?: boolean;
   updateLastPaymentDate?: boolean;
@@ -105,6 +106,7 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     direction: 'credit',
     balanceDelta: amount => -amount,
     affectsPaidAmount: true,
+    paidDelta: amount => amount,
     affectsPendingAmount: true,
     updateLastPaymentDate: true,
   },
@@ -112,6 +114,7 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     direction: 'debit',
     balanceDelta: amount => amount,
     affectsPaidAmount: true,
+    paidDelta: amount => amount,
     affectsPendingAmount: true,
     updateLastPaymentDate: true,
   },
@@ -119,16 +122,19 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     direction: 'credit',
     balanceDelta: amount => -amount,
     affectsPaidAmount: true,
+    paidDelta: amount => amount,
   },
   prepayment_out: {
     direction: 'debit',
     balanceDelta: amount => amount,
     affectsPaidAmount: true,
+    paidDelta: amount => amount,
   },
   refund: {
     direction: 'credit',
     balanceDelta: amount => -amount,
     affectsPaidAmount: true,
+    paidDelta: amount => -amount,
     updateLastPaymentDate: true,
   },
   purchase: {
@@ -504,7 +510,10 @@ export async function recordPartnerTransaction(
     }
 
     if (rule.affectsPaidAmount) {
-      updateData.paidAmount = { increment: input.amount };
+      const paidDelta = rule.paidDelta ? rule.paidDelta(input.amount) : input.amount;
+      if (paidDelta !== 0) {
+        updateData.paidAmount = { increment: paidDelta };
+      }
     }
 
     if (rule.updateLastPaymentDate) {
