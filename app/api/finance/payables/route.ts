@@ -155,7 +155,7 @@ export const POST = withAuth(
             referenceId: newPayable.id,
             referenceNumber: payableNumber,
             description: `应付款 ${payableNumber} 创建`,
-            occurredAt: data.dueDate,
+            occurredAt: newPayable.createdAt,
             dueDate: data.dueDate,
             metadata: {
               sourceType: data.sourceType,

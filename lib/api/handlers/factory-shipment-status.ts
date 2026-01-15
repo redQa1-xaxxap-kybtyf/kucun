@@ -686,6 +686,7 @@ export async function updateFactoryShipmentStatus(
                   depositAmount > 0
                     ? `厂家直发订单 ${order.orderNumber} 自动生成应付款（已扣除定金）`
                     : `厂家直发订单 ${order.orderNumber} 自动生成应付款`;
+                const dueDate = computeDueDate();
                 const createdPayable = await tx.payableRecord.create({
                   data: {
                     payableNumber,

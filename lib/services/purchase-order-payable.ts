@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
@@ -137,7 +138,7 @@ export async function ensurePurchaseOrderPayable(
     const dueDate = new Date(dueDateBase.getTime());
     dueDate.setDate(dueDate.getDate() + 30);
 
-    await tx.payableRecord.create({
+    const createdPayable = await tx.payableRecord.create({
       data: {
         payableNumber,
         supplierId,
@@ -153,7 +154,35 @@ export async function ensurePurchaseOrderPayable(
         paymentTerms: '30天',
         remarks: `系统自动生成：采购订单 ${order.orderNumber} 发货应付`,
       },
+      select: {
+        id: true,
+        createdAt: true,
+        dueDate: true,
+      },
     });
+
+    await recordPartnerTransaction(
+      {
+        partnerId: supplierId,
+        partnerRole: 'supplier',
+        entityType: 'supplier',
+        transactionType: 'purchase',
+        amount,
+        referenceId: createdPayable.id,
+        referenceNumber: payableNumber,
+        description: `采购订单 ${order.orderNumber} 自动生成应付 ${payableNumber}`,
+        occurredAt: createdPayable.createdAt,
+        dueDate: createdPayable.dueDate ?? dueDate,
+        metadata: {
+          sourceType: 'purchase_order',
+          sourceId: order.id,
+          sourceNumber: order.orderNumber,
+          payableRecordId: createdPayable.id,
+          triggeredBy: 'purchase_order:payable_auto',
+        },
+      },
+      tx
+    );
   }
 
   // 3.2 再为“仅费用供应商”创建应付记录（如运费物流公司）
@@ -167,7 +196,7 @@ export async function ensurePurchaseOrderPayable(
     const dueDate = new Date(dueDateBase.getTime());
     dueDate.setDate(dueDate.getDate() + 30);
 
-    await tx.payableRecord.create({
+    const createdPayable = await tx.payableRecord.create({
       data: {
         payableNumber,
         supplierId,
@@ -183,6 +212,34 @@ export async function ensurePurchaseOrderPayable(
         paymentTerms: '30天',
         remarks: `系统自动生成：采购订单 ${order.orderNumber} 费用应付`,
       },
+      select: {
+        id: true,
+        createdAt: true,
+        dueDate: true,
+      },
     });
+
+    await recordPartnerTransaction(
+      {
+        partnerId: supplierId,
+        partnerRole: 'supplier',
+        entityType: 'supplier',
+        transactionType: 'purchase',
+        amount,
+        referenceId: createdPayable.id,
+        referenceNumber: payableNumber,
+        description: `采购订单 ${order.orderNumber} 自动生成应付 ${payableNumber}`,
+        occurredAt: createdPayable.createdAt,
+        dueDate: createdPayable.dueDate ?? dueDate,
+        metadata: {
+          sourceType: 'purchase_order',
+          sourceId: order.id,
+          sourceNumber: order.orderNumber,
+          payableRecordId: createdPayable.id,
+          triggeredBy: 'purchase_order:payable_auto',
+        },
+      },
+      tx
+    );
   }
 }
