@@ -5,7 +5,7 @@ import { type PrismaClient } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
-import { auth } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import { withIdempotency } from '@/lib/utils/idempotency-redis';
@@ -31,120 +31,118 @@ interface RouteParams {
  * - 使用幂等性保护防止重复操作
  * - 自动创建应收账款记录（确认发货时）
  */
-export async function PATCH(request: NextRequest, { params }: RouteParams) {
-  const { id } = await params;
+export const PATCH = withAuth(
+  async (request: NextRequest, { user, params }) => {
+    const resolvedParams = await Promise.resolve(params);
+    const id = resolvedParams?.id;
 
-  try {
-    const userId = await resolveUserId();
-
-    if (!userId) {
+    if (!id) {
       return NextResponse.json(
-        { error: '未授权操作', message: '未授权操作' },
-        { status: 401 }
+        { error: '缺少订单ID', message: '缺少订单ID' },
+        { status: 400 }
       );
     }
 
-    const validated = await parseAndValidateRequest(request);
-    const prisma = (await import('@/lib/db')).prisma;
-    const existingOrder = await ensureOrderExists(prisma, id);
-    if (!existingOrder) {
+    try {
+      const validated = await parseAndValidateRequest(request);
+      const prisma = (await import('@/lib/db')).prisma;
+      const existingOrder = await ensureOrderExists(prisma, id);
+      if (!existingOrder) {
+        return NextResponse.json(
+          {
+            error: '订单不存在',
+            message: '订单不存在',
+          },
+          { status: 404 }
+        );
+      }
+
+      const dateFields = convertDateFields(validated);
+      const enableSmartTransition =
+        validated.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
+
+      const result = await applyStatusUpdate({
+        id,
+        userId: user.id,
+        existingStatus: existingOrder.status,
+        enableSmartTransition,
+        payload: dateFields,
+      });
+
+      const updatedOrder = await fetchOrderWithRelations(prisma, id);
+
+      return NextResponse.json({
+        ...updatedOrder,
+        receivableCreated: result.receivableCreated,
+        paymentRecordId: result.paymentRecordId ?? null,
+        payableCreated: result.payableCreated,
+        payableRecordIds: result.payableRecordIds ?? [],
+      });
+    } catch (error) {
+      logger.error('factory-shipments', '更新厂家发货订单状态失败', error, {
+        orderId: id,
+        userId: user.id,
+      });
+
+      if (error instanceof Error) {
+        if (error.message.includes('数据验证失败')) {
+          return NextResponse.json(
+            {
+              error: error.message,
+              message: error.message,
+            },
+            { status: 422 }
+          );
+        }
+        if (error.message.includes('状态流转')) {
+          return NextResponse.json(
+            {
+              error: error.message,
+              message: error.message,
+            },
+            { status: 400 }
+          );
+        }
+        if (error.message.includes('集装箱号码')) {
+          return NextResponse.json(
+            {
+              error: error.message,
+              message: error.message,
+            },
+            { status: 400 }
+          );
+        }
+        if (error.message.includes('幂等性')) {
+          return NextResponse.json(
+            {
+              error: error.message,
+              message: error.message,
+            },
+            { status: 409 }
+          );
+        }
+
+        // 返回通用错误信息
+        return NextResponse.json(
+          {
+            error: error.message,
+            message: error.message,
+          },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
         {
-          error: '订单不存在',
-          message: '订单不存在',
-        },
-        { status: 404 }
-      );
-    }
-
-    const dateFields = convertDateFields(validated);
-    const enableSmartTransition =
-      validated.status === FACTORY_SHIPMENT_STATUS.SHIPPED;
-
-    const result = await applyStatusUpdate({
-      id,
-      userId,
-      existingStatus: existingOrder.status,
-      enableSmartTransition,
-      payload: dateFields,
-    });
-
-    const updatedOrder = await fetchOrderWithRelations(prisma, id);
-
-    return NextResponse.json({
-      ...updatedOrder,
-      receivableCreated: result.receivableCreated,
-      paymentRecordId: result.paymentRecordId ?? null,
-      payableCreated: result.payableCreated,
-      payableRecordIds: result.payableRecordIds ?? [],
-    });
-  } catch (error) {
-    logger.error('factory-shipments', '更新厂家发货订单状态失败', error, {
-      orderId: id,
-    });
-
-    if (error instanceof Error) {
-      if (error.message.includes('数据验证失败')) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            message: error.message,
-          },
-          { status: 422 }
-        );
-      }
-      if (error.message.includes('状态流转')) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            message: error.message,
-          },
-          { status: 400 }
-        );
-      }
-      if (error.message.includes('集装箱号码')) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            message: error.message,
-          },
-          { status: 400 }
-        );
-      }
-      if (error.message.includes('幂等性')) {
-        return NextResponse.json(
-          {
-            error: error.message,
-            message: error.message,
-          },
-          { status: 409 }
-        );
-      }
-
-      // 返回通用错误信息
-      return NextResponse.json(
-        {
-          error: error.message,
-          message: error.message,
+          error: '更新订单状态失败',
+          message: '更新订单状态失败',
         },
         { status: 500 }
       );
     }
-
-    return NextResponse.json(
-      {
-        error: '更新订单状态失败',
-        message: '更新订单状态失败',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-async function resolveUserId(): Promise<string | null> {
-  const session = await auth();
-  return session?.user?.id ?? null;
-}
+  },
+  { permissions: ['shipments:confirm'] }
+);
 
 async function parseAndValidateRequest(request: NextRequest) {
   try {

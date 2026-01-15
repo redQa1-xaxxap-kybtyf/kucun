@@ -551,7 +551,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       { status: 500 }
     );
   }
-});
+}, { permissions: ['shipments:view'] });
 
 // 创建厂家发货订单
 export const POST = withAuth(async (request: NextRequest, { user }) => {

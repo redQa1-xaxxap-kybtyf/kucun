@@ -82,4 +82,4 @@ export const GET = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-});
+}, { permissions: ['finance:view'] });
