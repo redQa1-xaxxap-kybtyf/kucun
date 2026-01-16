@@ -1,7 +1,15 @@
 'use client';
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { AlertTriangle, CheckCircle2, Clock, Eraser, Shield, Trash2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Eraser,
+  Loader2,
+  Shield,
+  Trash2,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -44,6 +52,8 @@ type Task = {
   result: any;
   startedAt: string | null;
   finishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 function stageToProgress(stage: Task['stage']) {
@@ -93,6 +103,27 @@ function formatMoney(value?: number) {
   return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+function formatDuration(ms: number) {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const hh = hours > 0 ? String(hours).padStart(2, '0') + ':' : '';
+  const mm = String(minutes).padStart(2, '0');
+  const ss = String(seconds).padStart(2, '0');
+  return `${hh}${mm}:${ss}`;
+}
+
+function formatTimeAgo(ms: number) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h`;
+}
+
 export function DataManagementPageClient({
   systemMode,
   canSwitchMode,
@@ -102,6 +133,17 @@ export function DataManagementPageClient({
 }) {
   const { toast } = useToast();
   const router = useRouter();
+
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const stageOrder = React.useMemo(
+    () => ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'] as const,
+    []
+  );
 
   const action: DataManagementAction = systemMode === 'trial' ? 'reset_trial' : 'cleanup_test';
   const confirmWord = systemMode === 'trial' ? '重置' : '清理';
@@ -210,6 +252,14 @@ export function DataManagementPageClient({
 
   const preview = previewMutation.data;
   const task = taskQuery.data;
+
+  const taskStartedAtMs = task?.startedAt ? new Date(task.startedAt).getTime() : null;
+  const taskUpdatedAtMs = task?.updatedAt ? new Date(task.updatedAt).getTime() : null;
+  const runningDuration = taskStartedAtMs ? formatDuration(now - taskStartedAtMs) : null;
+  const lastUpdateAgo = taskUpdatedAtMs ? formatTimeAgo(now - taskUpdatedAtMs) : null;
+  const currentStep =
+    task?.stage && stageOrder.includes(task.stage) ? stageOrder.indexOf(task.stage) + 1 : null;
+  const totalSteps = stageOrder.length;
 
   const modeBadge =
     systemMode === 'trial' ? (
@@ -333,6 +383,33 @@ export function DataManagementPageClient({
 
             {task && (
               <>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    {taskQuery.isFetching ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                    )}
+                    <span>自动刷新：每 1.5s</span>
+                  </span>
+                  {runningDuration && <span>已运行：{runningDuration}</span>}
+                  {currentStep && <span>步骤：{currentStep}/{totalSteps}</span>}
+                  {lastUpdateAgo && (
+                    <span>
+                      最近更新：{lastUpdateAgo}
+                      {task.status === 'running' && taskUpdatedAtMs && now - taskUpdatedAtMs > 15_000 ? (
+                        <span className="ml-1 text-amber-600">（本阶段可能耗时较久）</span>
+                      ) : null}
+                    </span>
+                  )}
+                </div>
+
+                {task.preview?.totals && (
+                  <div className="rounded-md border bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                    本次范围：{task.preview.totals.count} 项 / ¥{formatMoney(task.preview.totals.amountSum)}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <div className="flex items-center gap-2">
                     {task.status === 'completed' ? (
@@ -357,7 +434,15 @@ export function DataManagementPageClient({
                   </span>
                 </div>
 
-                <Progress value={stageToProgress(task.stage)} />
+                <div className="space-y-2">
+                  <Progress value={stageToProgress(task.stage)} className={task.status === 'running' ? 'animate-pulse' : undefined} />
+                  {task.status === 'running' && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <span>正在后台处理，请勿关闭页面（关闭后可用 taskId 继续查看）</span>
+                    </div>
+                  )}
+                </div>
 
                 {task.status === 'failed' && task.errorMessage && (
                   <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
