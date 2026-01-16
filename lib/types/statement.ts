@@ -10,15 +10,25 @@ export type PartnerRole = 'customer' | 'supplier' | 'both';
 // 交易类型枚举
 export type TransactionType =
   | 'sale'
+  | 'sale_reversal'
   | 'sales_return'
+  | 'sales_return_reversal'
   | 'order_cancellation'
+  | 'order_cancellation_reversal'
   | 'payment_in'
+  | 'payment_in_reversal'
   | 'payment_out'
+  | 'payment_out_reversal'
   | 'prepayment_in'
+  | 'prepayment_in_reversal'
   | 'prepayment_out'
+  | 'prepayment_out_reversal'
   | 'refund'
+  | 'refund_reversal'
   | 'purchase'
-  | 'adjustment';
+  | 'purchase_reversal'
+  | 'adjustment'
+  | 'adjustment_reversal';
 
 // 账单状态枚举
 export type StatementStatus = 'active' | 'settled' | 'suspended';
@@ -277,11 +287,25 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
+    type: 'sale_reversal',
+    label: '销售冲销',
+    description: '销售订单冲销分录（系统内部）',
+    isDebit: false,
+    isActive: false,
+  },
+  {
     type: 'sales_return',
     label: '销售退货',
     description: '销售退货单',
     isDebit: false,
     isActive: true,
+  },
+  {
+    type: 'sales_return_reversal',
+    label: '退货冲销',
+    description: '销售退货冲销分录（系统内部）',
+    isDebit: true,
+    isActive: false,
   },
   {
     type: 'order_cancellation',
@@ -291,11 +315,25 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
+    type: 'order_cancellation_reversal',
+    label: '取消冲销',
+    description: '订单取消冲销分录（系统内部）',
+    isDebit: true,
+    isActive: false,
+  },
+  {
     type: 'payment_in',
     label: '收款',
     description: '客户付款',
     isDebit: false,
     isActive: true,
+  },
+  {
+    type: 'payment_in_reversal',
+    label: '收款冲销',
+    description: '客户收款冲销分录（系统内部）',
+    isDebit: true,
+    isActive: false,
   },
   {
     type: 'payment_out',
@@ -305,11 +343,25 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
+    type: 'payment_out_reversal',
+    label: '付款冲销',
+    description: '供应商付款冲销分录（系统内部）',
+    isDebit: false,
+    isActive: false,
+  },
+  {
     type: 'prepayment_in',
     label: '预收款',
     description: '收到预付款',
     isDebit: false,
     isActive: true,
+  },
+  {
+    type: 'prepayment_in_reversal',
+    label: '预收冲销',
+    description: '预收款冲销分录（系统内部）',
+    isDebit: true,
+    isActive: false,
   },
   {
     type: 'prepayment_out',
@@ -319,11 +371,25 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
+    type: 'prepayment_out_reversal',
+    label: '预付冲销',
+    description: '预付款冲销分录（系统内部）',
+    isDebit: false,
+    isActive: false,
+  },
+  {
     type: 'refund',
     label: '退款',
     description: '退款给客户',
     isDebit: false,
     isActive: true,
+  },
+  {
+    type: 'refund_reversal',
+    label: '退款冲销',
+    description: '客户退款冲销分录（系统内部）',
+    isDebit: true,
+    isActive: false,
   },
   {
     type: 'purchase',
@@ -333,11 +399,25 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
+    type: 'purchase_reversal',
+    label: '采购冲销',
+    description: '采购应付冲销分录（系统内部）',
+    isDebit: true,
+    isActive: false,
+  },
+  {
     type: 'adjustment',
     label: '调整',
     description: '账务调整',
     isDebit: true,
     isActive: true,
+  },
+  {
+    type: 'adjustment_reversal',
+    label: '调整冲销',
+    description: '账务调整冲销分录（系统内部）',
+    isDebit: false,
+    isActive: false,
   },
 ];
 

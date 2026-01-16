@@ -14,6 +14,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { ApiError, generateErrorId } from '@/lib/api/errors';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { getSystemWriteLock } from '@/lib/services/system-write-lock';
 import { validateAndTouchUserSession } from '@/lib/services/user-session-service';
 
 import { getApiAuthContext, type AuthUser } from './context';
@@ -321,6 +322,36 @@ export function withAuth(
       }
 
       // 6. 执行业务逻辑
+      // 6.1 系统写入锁（数据维护/清理任务进行中）
+      if (isStateChanging) {
+        const pathname = request.nextUrl.pathname;
+        const allowlistPrefixes = ['/api/data-management'];
+        const isAllowlisted = allowlistPrefixes.some(prefix =>
+          pathname.startsWith(prefix)
+        );
+
+        if (!isAllowlisted) {
+          const lock = await getSystemWriteLock();
+          if (lock) {
+            const expiresAt = new Date(lock.expiresAt);
+            const isExpired = Number.isNaN(expiresAt.getTime())
+              ? false
+              : expiresAt.getTime() <= Date.now();
+
+            if (!isExpired) {
+              return NextResponse.json(
+                {
+                  success: false,
+                  error: '系统正在执行数据维护任务，请稍后重试',
+                  details: { taskId: lock.taskId, action: lock.action },
+                },
+                { status: 423 }
+              );
+            }
+          }
+        }
+      }
+
       return await handler(request, {
         user,
         params: context?.params,

@@ -61,15 +61,25 @@ const DEFAULT_TRANSACTION_STATUS: Record<
   'pending' | 'completed'
 > = {
   sale: 'completed',
+  sale_reversal: 'completed',
   sales_return: 'completed',
+  sales_return_reversal: 'completed',
   order_cancellation: 'completed',
+  order_cancellation_reversal: 'completed',
   payment_in: 'completed',
+  payment_in_reversal: 'completed',
   payment_out: 'completed',
+  payment_out_reversal: 'completed',
   prepayment_in: 'completed',
+  prepayment_in_reversal: 'completed',
   prepayment_out: 'completed',
+  prepayment_out_reversal: 'completed',
   refund: 'completed',
+  refund_reversal: 'completed',
   purchase: 'completed',
+  purchase_reversal: 'completed',
   adjustment: 'completed',
+  adjustment_reversal: 'completed',
 };
 
 type TransactionRule = {
@@ -91,15 +101,33 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     affectsTotalAmount: true,
     affectsPendingAmount: true,
   },
+  sale_reversal: {
+    direction: 'credit',
+    balanceDelta: amount => -amount,
+    affectsTotalAmount: true,
+    affectsPendingAmount: true,
+  },
   sales_return: {
     direction: 'credit',
     balanceDelta: amount => -amount,
     affectsTotalAmount: true,
     affectsPendingAmount: true,
   },
+  sales_return_reversal: {
+    direction: 'debit',
+    balanceDelta: amount => amount,
+    affectsTotalAmount: true,
+    affectsPendingAmount: true,
+  },
   order_cancellation: {
     direction: 'credit',
     balanceDelta: amount => -amount,
+    affectsTotalAmount: true,
+    affectsPendingAmount: true,
+  },
+  order_cancellation_reversal: {
+    direction: 'debit',
+    balanceDelta: amount => amount,
     affectsTotalAmount: true,
     affectsPendingAmount: true,
   },
@@ -111,11 +139,27 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     affectsPendingAmount: true,
     updateLastPaymentDate: true,
   },
+  payment_in_reversal: {
+    direction: 'debit',
+    balanceDelta: amount => amount,
+    affectsPaidAmount: true,
+    paidDelta: amount => -amount,
+    affectsPendingAmount: true,
+    updateLastPaymentDate: true,
+  },
   payment_out: {
     direction: 'debit',
     balanceDelta: amount => amount,
     affectsPaidAmount: true,
     paidDelta: amount => amount,
+    affectsPendingAmount: true,
+    updateLastPaymentDate: true,
+  },
+  payment_out_reversal: {
+    direction: 'credit',
+    balanceDelta: amount => -amount,
+    affectsPaidAmount: true,
+    paidDelta: amount => -amount,
     affectsPendingAmount: true,
     updateLastPaymentDate: true,
   },
@@ -125,17 +169,36 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     affectsPaidAmount: true,
     paidDelta: amount => amount,
   },
+  prepayment_in_reversal: {
+    direction: 'debit',
+    balanceDelta: amount => amount,
+    affectsPaidAmount: true,
+    paidDelta: amount => -amount,
+  },
   prepayment_out: {
     direction: 'debit',
     balanceDelta: amount => amount,
     affectsPaidAmount: true,
     paidDelta: amount => amount,
   },
+  prepayment_out_reversal: {
+    direction: 'credit',
+    balanceDelta: amount => -amount,
+    affectsPaidAmount: true,
+    paidDelta: amount => -amount,
+  },
   refund: {
     direction: 'credit',
     balanceDelta: amount => -amount,
     affectsPaidAmount: true,
     paidDelta: amount => -amount,
+    updateLastPaymentDate: true,
+  },
+  refund_reversal: {
+    direction: 'debit',
+    balanceDelta: amount => amount,
+    affectsPaidAmount: true,
+    paidDelta: amount => amount,
     updateLastPaymentDate: true,
   },
   purchase: {
@@ -145,9 +208,20 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     affectsTotalAmount: true,
     affectsPendingAmount: true,
   },
+  purchase_reversal: {
+    direction: 'debit',
+    balanceDelta: amount => amount,
+    affectsTotalAmount: true,
+    affectsPendingAmount: true,
+  },
   adjustment: {
     direction: 'debit',
     balanceDelta: amount => amount,
+    affectsPendingAmount: true,
+  },
+  adjustment_reversal: {
+    direction: 'credit',
+    balanceDelta: amount => -amount,
     affectsPendingAmount: true,
   },
 };
@@ -157,15 +231,25 @@ const FINANCE_EVENT_TYPE: Record<
   'receivable' | 'payable' | 'payment'
 > = {
   sale: 'receivable',
+  sale_reversal: 'receivable',
   sales_return: 'receivable',
+  sales_return_reversal: 'receivable',
   order_cancellation: 'receivable',
+  order_cancellation_reversal: 'receivable',
   payment_in: 'payment',
+  payment_in_reversal: 'payment',
   payment_out: 'payment',
+  payment_out_reversal: 'payment',
   prepayment_in: 'payment',
+  prepayment_in_reversal: 'payment',
   prepayment_out: 'payment',
+  prepayment_out_reversal: 'payment',
   refund: 'receivable',
+  refund_reversal: 'receivable',
   purchase: 'payable',
+  purchase_reversal: 'payable',
   adjustment: 'receivable',
+  adjustment_reversal: 'receivable',
 };
 
 const AUDIT_TRANSACTION_TYPES = new Set<TransactionType>([
