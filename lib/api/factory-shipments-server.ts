@@ -10,7 +10,10 @@ import { cache } from 'react';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
-import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+import {
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  type FactoryShipmentOrder,
+} from '@/lib/types/factory-shipment';
 import type { FactoryShipmentOrderListParams } from '@/lib/validations/factory-shipment';
 
 const factoryShipmentItemSelect = {
@@ -129,6 +132,7 @@ export const getFactoryShipmentOrdersServer = cache(
     const {
       page = 1,
       limit = paginationConfig.defaultPageSize,
+      mode,
       status,
       customerId,
       search,
@@ -145,6 +149,19 @@ export const getFactoryShipmentOrdersServer = cache(
     }
     if (customerId) {
       where.customerId = customerId;
+    }
+    if (mode === 'customer_direct') {
+      where.items = {
+        some: {
+          ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
+        },
+      };
+    } else if (mode === 'factory') {
+      where.items = {
+        some: {
+          ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF,
+        },
+      };
     }
 
     // ✅ 搜索逻辑：与客户端 API 保持一致

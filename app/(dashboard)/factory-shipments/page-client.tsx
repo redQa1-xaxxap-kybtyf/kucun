@@ -16,6 +16,7 @@ import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 interface FactoryShipmentQueryParams {
   page?: number;
   limit?: number;
+  mode?: 'customer_direct' | 'factory';
   search?: string;
   status?: FactoryShipmentStatus;
   sortBy?: string;
@@ -39,6 +40,7 @@ export function FactoryShipmentsPageClient({
   const router = useRouter();
   const [, startTransition] = React.useTransition();
   const { exportData, isExporting } = useFinanceExport();
+  const mode = initialParams.mode;
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -57,6 +59,9 @@ export function FactoryShipmentsPageClient({
     (searchValue: string, filters: FactoryShipmentQueryParams) => {
       startTransition(() => {
         const params = new URLSearchParams();
+        if (mode) {
+          params.set('mode', mode);
+        }
         if (searchValue) {
           params.set('search', searchValue);
         }
@@ -134,6 +139,9 @@ export function FactoryShipmentsPageClient({
       // 立即更新URL（筛选不需要防抖）
       startTransition(() => {
         const params = new URLSearchParams();
+        if (mode) {
+          params.set('mode', mode);
+        }
         if (search) {
           params.set('search', search);
         }
@@ -159,7 +167,7 @@ export function FactoryShipmentsPageClient({
         router.push(`/factory-shipments?${params.toString()}`);
       });
     },
-    [router, search, initialParams, startDate, endDate]
+    [router, search, initialParams, startDate, endDate, mode]
   );
 
   // 日期范围处理
@@ -176,6 +184,9 @@ export function FactoryShipmentsPageClient({
       // 立即更新URL
       startTransition(() => {
         const params = new URLSearchParams();
+        if (mode) {
+          params.set('mode', mode);
+        }
         if (search) {
           params.set('search', search);
         }
@@ -201,7 +212,7 @@ export function FactoryShipmentsPageClient({
         router.push(`/factory-shipments?${params.toString()}`);
       });
     },
-    [router, search, status, sortBy, sortOrder, initialParams.limit]
+    [router, search, status, sortBy, sortOrder, initialParams.limit, mode]
   );
 
   // 分页处理
@@ -209,6 +220,9 @@ export function FactoryShipmentsPageClient({
     (page: number) => {
       startTransition(() => {
         const params = new URLSearchParams();
+        if (mode) {
+          params.set('mode', mode);
+        }
         if (search) {
           params.set('search', search);
         }
@@ -246,6 +260,7 @@ export function FactoryShipmentsPageClient({
       startDate,
       endDate,
       initialParams.limit,
+      mode,
     ]
   );
 
@@ -254,6 +269,7 @@ export function FactoryShipmentsPageClient({
     exportData('/api/factory-shipments/export', {
       format: 'excel',
       filters: {
+        mode,
         status,
         search,
         containerNumber: search,
@@ -262,15 +278,19 @@ export function FactoryShipmentsPageClient({
         endDate: endDate?.toISOString().split('T')[0],
       },
     });
-  }, [exportData, status, search, startDate, endDate]);
+  }, [exportData, status, search, startDate, endDate, mode]);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="mb-4 flex-shrink-0 sm:mb-6">
         {/* 页面标题 */}
         <PageHeader
-          title="厂家发货管理"
-          description="管理厂家发货订单，跟踪货物运输状态和到货情况"
+          title={mode === 'factory' ? '厂家发货管理' : '客户直发管理'}
+          description={
+            mode === 'factory'
+              ? '管理厂家发货订单，跟踪货物运输状态和到货情况'
+              : '管理客户直发订单，跟踪货物运输状态和到货情况'
+          }
           icon={<Package className="h-6 w-6 text-white" />}
           variant="solid"
           actions={

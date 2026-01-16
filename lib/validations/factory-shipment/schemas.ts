@@ -163,6 +163,7 @@ export const factoryShipmentOrderListParamsSchema = z
         `每页数量不能超过${paginationConfig.maxPageSize}`
       )
       .optional(),
+    mode: z.enum(['customer_direct', 'factory']).optional(),
     status: factoryShipmentStatusSchema.optional(),
     customerId: z.string().uuid('客户ID格式不正确').optional(),
     search: z.string().max(50, '搜索关键字不能超过50个字符').optional(), // ✅ 新增：通用搜索字段

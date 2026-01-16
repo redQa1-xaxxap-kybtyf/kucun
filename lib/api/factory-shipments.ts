@@ -104,6 +104,9 @@ export async function getFactoryShipmentOrders(
   if (params.limit) {
     searchParams.set('limit', params.limit.toString());
   }
+  if (params.mode) {
+    searchParams.set('mode', params.mode);
+  }
   if (params.status) {
     searchParams.set('status', params.status);
   }

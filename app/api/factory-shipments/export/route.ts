@@ -11,11 +11,13 @@
  */
 
 import { type NextRequest } from 'next/server';
+import type { Prisma } from '@prisma/client';
 
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ExportAuditService } from '@/lib/services/export-audit-service';
+import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
 import { factoryShipmentOrderListParamsSchema } from '@/lib/validations/factory-shipment';
 
 /**
@@ -51,6 +53,7 @@ export const POST = withAuth(
       const {
         page = 1,
         limit = 50000,
+        mode,
         status,
         customerId,
         containerNumber,
@@ -60,17 +63,7 @@ export const POST = withAuth(
       } = validationResult.data;
 
       // 构建查询条件
-      const whereConditions: {
-        status?: string;
-        customerId?: string;
-        containerNumber?: { contains: string };
-        orderNumber?: { contains: string };
-        OR?: Array<{
-          containerNumber?: { contains: string };
-          orderNumber?: { contains: string };
-        }>;
-        createdAt?: { gte?: Date; lte?: Date };
-      } = {};
+      const whereConditions: Prisma.FactoryShipmentOrderWhereInput = {};
 
       // 状态筛选
       if (status) {
@@ -80,6 +73,20 @@ export const POST = withAuth(
       // 客户筛选
       if (customerId) {
         whereConditions.customerId = customerId;
+      }
+
+      if (mode === 'customer_direct') {
+        whereConditions.items = {
+          some: {
+            ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
+          },
+        };
+      } else if (mode === 'factory') {
+        whereConditions.items = {
+          some: {
+            ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF,
+          },
+        };
       }
 
       // 搜索条件：柜号或订单号

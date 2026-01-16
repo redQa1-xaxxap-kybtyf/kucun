@@ -26,6 +26,7 @@ import { FactoryShipmentOrderListView } from './factory-shipment-order-list-view
 interface FactoryShipmentQueryParams {
   page?: number;
   limit?: number;
+  mode?: 'customer_direct' | 'factory';
   search?: string;
   status?: FactoryShipmentStatus;
   startDate?: Date;
@@ -134,6 +135,7 @@ function useFactoryShipmentFilters({
   onDateRangeChange,
   onPageChange,
 }: FactoryShipmentFiltersOptions) {
+  const mode = initialParams?.mode;
   const [searchTerm, setSearchTerm] = React.useState(
     initialParams?.search ?? ''
   );
@@ -208,8 +210,9 @@ function useFactoryShipmentFilters({
         dateRange,
         currentPage,
         pageSize,
+        mode,
       }),
-    [searchTerm, statusFilter, dateRange, currentPage, pageSize]
+    [searchTerm, statusFilter, dateRange, currentPage, pageSize, mode]
   );
 
   return {
@@ -323,6 +326,7 @@ interface BuildQueryFiltersArgs {
   dateRange: { startDate?: string; endDate?: string };
   currentPage: number;
   pageSize: number;
+  mode?: 'customer_direct' | 'factory';
 }
 
 function buildQueryFilters({
@@ -331,12 +335,16 @@ function buildQueryFilters({
   dateRange,
   currentPage,
   pageSize,
+  mode,
 }: BuildQueryFiltersArgs): FactoryShipmentOrderListParams {
   const trimmedSearch = searchTerm.trim();
   const filters: FactoryShipmentOrderListParams = {
     page: currentPage,
     limit: pageSize,
   };
+  if (mode) {
+    filters.mode = mode;
+  }
 
   // ✅ 修复：使用 search 参数而不是同时传递 containerNumber 和 orderNumber
   // 这样 API 路由会使用 OR 逻辑进行搜索

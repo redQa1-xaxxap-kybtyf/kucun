@@ -45,6 +45,7 @@ import {
 type ListParams = {
   page: number;
   limit: number;
+  mode?: 'customer_direct' | 'factory';
   status?: FactoryShipmentStatus;
   customerId?: string;
   search?: string;
@@ -61,6 +62,7 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
   const raw = {
     page,
     limit,
+    mode: searchParams.get('mode') || undefined,
     status: searchParams.get('status') || undefined,
     customerId: searchParams.get('customerId') || undefined,
     search: searchParams.get('search') || undefined,
@@ -74,6 +76,7 @@ function parseAndValidateListParams(request: NextRequest): ListParams {
   return {
     page: parsed.page ?? 1,
     limit: parsed.limit ?? paginationConfig.defaultPageSize,
+    mode: parsed.mode,
     status: parsed.status as FactoryShipmentStatus | undefined,
     customerId: parsed.customerId,
     search: parsed.search,
@@ -88,6 +91,19 @@ function buildWhere(params: ListParams): Prisma.FactoryShipmentOrderWhereInput {
   const where: Prisma.FactoryShipmentOrderWhereInput = {};
   if (params.status) where.status = params.status;
   if (params.customerId) where.customerId = params.customerId;
+  if (params.mode === 'customer_direct') {
+    where.items = {
+      some: {
+        ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
+      },
+    };
+  } else if (params.mode === 'factory') {
+    where.items = {
+      some: {
+        ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF,
+      },
+    };
+  }
 
   // ✅ 搜索逻辑：优先使用统一 search 参数
   if (params.search) {

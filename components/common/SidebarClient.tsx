@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, Info, Package } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ export function SidebarClient({
   accessibleBottomNavItems,
 }: SidebarClientProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([]);
   const { version, systemName } = useSystemVersion();
 
@@ -55,7 +56,7 @@ export function SidebarClient({
     navItemsRef,
   });
 
-  const isPathActive = useIsPathActive(pathname);
+  const isPathActive = useIsPathActive(pathname, searchParams);
   useDuplicateNavKeyWarnings(accessibleNavItems);
 
   const getNavItemRef = React.useCallback(
@@ -82,7 +83,6 @@ export function SidebarClient({
           isPathActive={isPathActive}
           focusedIndex={focusedIndex}
           getNavItemRef={getNavItemRef}
-          pathname={pathname}
         />
       </ScrollArea>
 
@@ -159,7 +159,6 @@ interface SidebarNavigationProps {
   isPathActive: (href: string) => boolean;
   focusedIndex: number;
   getNavItemRef: (index: number) => (el: HTMLAnchorElement | null) => void;
-  pathname: string;
 }
 
 function SidebarNavigation({
@@ -169,7 +168,6 @@ function SidebarNavigation({
   isPathActive,
   focusedIndex,
   getNavItemRef,
-  pathname,
 }: SidebarNavigationProps) {
   return (
     <>
@@ -180,7 +178,6 @@ function SidebarNavigation({
         isPathActive={isPathActive}
         focusedIndex={focusedIndex}
         getNavItemRef={getNavItemRef}
-        currentPath={pathname}
       />
 
       {bottomItems.length > 0 && (
@@ -194,7 +191,6 @@ function SidebarNavigation({
             focusedIndex={focusedIndex}
             getNavItemRef={index => getNavItemRef(topItems.length + index)}
             startIndex={topItems.length}
-            currentPath={pathname}
           />
         </>
       )}
@@ -210,7 +206,6 @@ interface SideNavSectionProps {
   focusedIndex: number;
   getNavItemRef: (index: number) => (el: HTMLAnchorElement | null) => void;
   startIndex?: number;
-  currentPath: string;
 }
 
 function SideNavSection({
@@ -221,7 +216,6 @@ function SideNavSection({
   focusedIndex,
   getNavItemRef,
   startIndex = 0,
-  currentPath,
 }: SideNavSectionProps) {
   return (
     <nav className="space-y-2" role="navigation" aria-label={ariaLabel}>
@@ -238,7 +232,7 @@ function SideNavSection({
             key={itemKey}
             nodeKey={itemKey}
             item={item}
-            pathname={currentPath}
+            isPathActive={isPathActive}
             isActive={isPathActive(item.href)}
             isCollapsed={isCollapsed}
             isFocused={focusedIndex === globalIndex}
@@ -251,15 +245,39 @@ function SideNavSection({
   );
 }
 
-function useIsPathActive(pathname: string) {
+function useIsPathActive(
+  pathname: string,
+  searchParams: ReturnType<typeof useSearchParams>
+) {
   return React.useCallback(
     (href: string) => {
-      if (href === '/dashboard') {
+      const [hrefPath, hrefQuery] = href.split('?');
+      if (!hrefPath) {
+        return false;
+      }
+
+      if (hrefPath === '/dashboard') {
         return pathname === '/dashboard';
       }
-      return pathname.startsWith(href);
+
+      if (!pathname.startsWith(hrefPath)) {
+        return false;
+      }
+
+      if (!hrefQuery) {
+        return true;
+      }
+
+      const expectedParams = new URLSearchParams(hrefQuery);
+      for (const [key, value] of expectedParams.entries()) {
+        if (searchParams.get(key) !== value) {
+          return false;
+        }
+      }
+
+      return true;
     },
-    [pathname]
+    [pathname, searchParams]
   );
 }
 

@@ -3,6 +3,7 @@ import {
   QueryClient,
   dehydrate,
 } from '@tanstack/react-query';
+import { redirect } from 'next/navigation';
 
 import { transformFactoryShipmentListResponse } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
@@ -35,6 +36,31 @@ export default async function FactoryShipmentsPage({
 }) {
   // 等待并解析查询参数
   const params = await searchParams;
+
+  const rawModeParam = params.mode;
+  const modeParam = Array.isArray(rawModeParam) ? rawModeParam[0] : rawModeParam;
+  const mode =
+    modeParam === 'factory' || modeParam === 'customer_direct'
+      ? modeParam
+      : 'factory';
+
+  // 如果未带 mode 或 mode 非法，统一重定向到带 mode 的 URL，保证菜单/面包屑语义一致
+  if (modeParam !== mode) {
+    const nextParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value === undefined) {
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach(v => nextParams.append(key, v));
+        return;
+      }
+      nextParams.set(key, value);
+    });
+    nextParams.set('mode', mode);
+    redirect(`/factory-shipments?${nextParams.toString()}`);
+  }
+
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || paginationConfig.defaultPageSize;
   const search = (params.search as string) || '';
@@ -49,6 +75,7 @@ export default async function FactoryShipmentsPage({
   const queryParams = {
     page,
     limit,
+    mode,
     search, // ✅ 保留原始 search 参数，用于 OR 逻辑搜索
     status,
     sortBy,

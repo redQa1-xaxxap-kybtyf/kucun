@@ -25,32 +25,29 @@ export const buildNavItemKey = (
  */
 interface SubMenuItemProps {
   item: NavigationItem;
-  pathname: string;
+  isPathActive: (href: string) => boolean;
   isActive: boolean;
   level: number;
   nodeKey: string;
 }
 
 const SubMenuItem = React.memo(
-  ({ item, pathname, isActive, level, nodeKey }: SubMenuItemProps) => {
+  ({ item, isPathActive, isActive, level, nodeKey }: SubMenuItemProps) => {
     const [isExpanded, setIsExpanded] = React.useState(false);
 
     const hasChildren = item.children && item.children.length > 0;
 
     const hasActiveChild = React.useMemo(
       () =>
-        item.children?.some(
-          child =>
-            pathname === child.href || pathname.startsWith(`${child.href}/`)
-        ) ?? false,
-      [item.children, pathname]
+        item.children?.some(child => isPathActive(child.href)) ?? false,
+      [item.children, isPathActive]
     );
 
     React.useEffect(() => {
-      if (hasActiveChild) {
+      if (hasActiveChild || isActive) {
         setIsExpanded(true);
       }
-    }, [hasActiveChild]);
+    }, [hasActiveChild, isActive]);
 
     const handleToggle = React.useCallback((e: React.MouseEvent) => {
       e.preventDefault();
@@ -112,15 +109,13 @@ const SubMenuItem = React.memo(
              {/* 垂直引导线 */}
              <div className="absolute left-[18px] top-0 bottom-4 w-px bg-slate-100" />
              {item.children?.map((child, index) => {
-              const isChildActive =
-                pathname === child.href ||
-                pathname.startsWith(`${child.href}/`);
+              const isChildActive = isPathActive(child.href);
               const childKey = buildNavItemKey(nodeKey, child, index);
               return (
                 <SubMenuItem
                   key={childKey}
                   item={child}
-                  pathname={pathname}
+                  isPathActive={isPathActive}
                   isActive={isChildActive}
                   level={level + 1}
                   nodeKey={childKey}
@@ -138,21 +133,21 @@ SubMenuItem.displayName = 'SubMenuItem';
 
 interface ChildMenuListProps {
   items: NavigationItem[];
-  pathname: string;
+  isPathActive: (href: string) => boolean;
   parentKey: string;
 }
 
 const ChildMenuList = React.memo(
-  ({ items, pathname, parentKey }: ChildMenuListProps) => {
+  ({ items, isPathActive, parentKey }: ChildMenuListProps) => {
     const bestMatch = React.useMemo(
       () =>
         items
           .filter(
             child =>
-              pathname === child.href || pathname.startsWith(`${child.href}/`)
+              isPathActive(child.href)
           )
           .sort((a, b) => b.href.length - a.href.length)[0],
-      [items, pathname]
+      [items, isPathActive]
     );
 
     return (
@@ -167,7 +162,7 @@ const ChildMenuList = React.memo(
             <SubMenuItem
               key={childKey}
               item={child}
-              pathname={pathname}
+              isPathActive={isPathActive}
               isActive={isChildActive}
               level={2}
               nodeKey={childKey}
@@ -183,7 +178,7 @@ ChildMenuList.displayName = 'ChildMenuList';
 
 interface SidebarNavItemProps {
   item: NavigationItem;
-  pathname: string;
+  isPathActive: (href: string) => boolean;
   isActive: boolean;
   isCollapsed: boolean;
   isFocused?: boolean;
@@ -196,7 +191,7 @@ export const SidebarNavItem = React.memo(
     (
       {
         item,
-        pathname,
+        isPathActive,
         isActive,
         isCollapsed,
         isFocused = false,
@@ -212,18 +207,17 @@ export const SidebarNavItem = React.memo(
         () =>
           item.children?.some(
             child =>
-              (pathname === child.href ||
-                pathname.startsWith(`${child.href}/`)) &&
+              isPathActive(child.href) &&
               child.href !== item.href
           ) ?? false,
-        [item.children, item.href, pathname]
+        [item.children, item.href, isPathActive]
       );
 
       React.useEffect(() => {
-        if (hasActiveChild && !isCollapsed) {
+        if ((hasActiveChild || isActive) && !isCollapsed) {
           setIsExpanded(true);
         }
-      }, [hasActiveChild, isCollapsed]);
+      }, [hasActiveChild, isActive, isCollapsed]);
 
       const handleSubMenuToggle = React.useCallback(() => {
         setIsExpanded(prev => !prev);
@@ -324,7 +318,7 @@ export const SidebarNavItem = React.memo(
 
               {isExpanded && (
                 <ChildMenuList
-                  pathname={pathname}
+                  isPathActive={isPathActive}
                   items={item.children ?? []}
                   parentKey={nodeKey}
                 />

@@ -2,7 +2,7 @@
 
 import { ChevronDown, Package } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
@@ -42,6 +42,7 @@ interface MobileNavProps {
  */
 function MobileNavComponent({ open, onOpenChange, className }: MobileNavProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { data: session } = useSession();
   const userRole = session?.user?.role as UserRole | undefined;
 
@@ -53,11 +54,34 @@ function MobileNavComponent({ open, onOpenChange, className }: MobileNavProps) {
   }, [onOpenChange]);
 
   const isPathActive = React.useCallback(
-    (href: string) =>
-      href === '/dashboard'
-        ? pathname === '/dashboard'
-        : pathname.startsWith(href),
-    [pathname]
+    (href: string) => {
+      const [hrefPath, hrefQuery] = href.split('?');
+      if (!hrefPath) {
+        return false;
+      }
+
+      if (hrefPath === '/dashboard') {
+        return pathname === '/dashboard';
+      }
+
+      if (!pathname.startsWith(hrefPath)) {
+        return false;
+      }
+
+      if (!hrefQuery) {
+        return true;
+      }
+
+      const expectedParams = new URLSearchParams(hrefQuery);
+      for (const [key, value] of expectedParams.entries()) {
+        if (searchParams.get(key) !== value) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+    [pathname, searchParams]
   );
 
   return (
@@ -186,7 +210,6 @@ const MobileNavSheetContent = ({
         onItemClick={onItemClick}
         isPathActive={isPathActive}
         ariaLabel="主导航"
-        pathname={pathname}
       />
 
       {bottomNavItems.length > 0 ? (
@@ -197,7 +220,6 @@ const MobileNavSheetContent = ({
             onItemClick={onItemClick}
             isPathActive={isPathActive}
             ariaLabel="辅助导航"
-            pathname={pathname}
           />
         </>
       ) : null}
@@ -210,7 +232,6 @@ interface NavSectionProps {
   isPathActive: (href: string) => boolean;
   onItemClick: () => void;
   ariaLabel: string;
-  pathname: string;
 }
 
 const NavSection = ({
@@ -218,7 +239,6 @@ const NavSection = ({
   isPathActive,
   onItemClick,
   ariaLabel,
-  pathname,
 }: NavSectionProps) => (
   <nav className="space-y-2" role="navigation" aria-label={ariaLabel}>
     {items.map(item => (
@@ -226,8 +246,8 @@ const NavSection = ({
         key={item.id}
         item={item}
         isActive={isPathActive(item.href)}
+        isPathActive={isPathActive}
         onClick={onItemClick}
-        pathname={pathname}
       />
     ))}
   </nav>
@@ -236,8 +256,8 @@ const NavSection = ({
 interface MobileNavItemProps {
   item: NavigationItem;
   isActive: boolean;
+  isPathActive: (href: string) => boolean;
   onClick: () => void;
-  pathname?: string;
 }
 
 /**
@@ -245,7 +265,7 @@ interface MobileNavItemProps {
  * 优化的移动端交互体验,支持子菜单展开/收起
  */
 const MobileNavItem = React.memo(
-  ({ item, isActive, onClick, pathname }: MobileNavItemProps) => {
+  ({ item, isActive, isPathActive, onClick }: MobileNavItemProps) => {
     const Icon = item.icon;
     const [isPressed, setIsPressed] = React.useState(false);
     const [isExpanded, setIsExpanded] = React.useState(false);
@@ -256,12 +276,8 @@ const MobileNavItem = React.memo(
     // 检查是否有激活的子菜单项
     const hasActiveChild = React.useMemo(
       () =>
-        pathname &&
-        item.children?.some(
-          child =>
-            pathname === child.href || pathname.startsWith(`${child.href}/`)
-        ),
-      [item.children, pathname]
+        item.children?.some(child => isPathActive(child.href)) ?? false,
+      [item.children, isPathActive]
     );
 
     // 如果有激活的子菜单项,自动展开
@@ -350,16 +366,14 @@ const MobileNavItem = React.memo(
         {isExpanded && (
           <div className="border-border ml-4 space-y-1 border-l-2 pl-2">
             {item.children?.map(child => {
-              const isChildActive =
-                pathname === child.href ||
-                (pathname && pathname.startsWith(`${child.href}/`));
+              const isChildActive = isPathActive(child.href);
               return (
                 <MobileNavItem
                   key={child.id}
                   item={child}
                   isActive={!!isChildActive}
+                  isPathActive={isPathActive}
                   onClick={onClick}
-                  pathname={pathname}
                 />
               );
             })}
