@@ -5,33 +5,36 @@
 
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
-    InventoryTurnover,
-    MonthlyCosts,
-    MonthlyExpenses,
-    MonthlyFactoryShipmentProfit,
-    MonthlyProfit,
-    MonthlyReceivables,
-    MonthlyReport,
-    MonthlyRevenue,
+  InventoryTurnover,
+  MonthlyCosts,
+  MonthlyExpenses,
+  MonthlyFactoryShipmentProfit,
+  MonthlyProfit,
+  MonthlyReceivables,
+  MonthlyReport,
+  MonthlyRevenue,
 } from '@/lib/types/report';
 import {
-    calculateTotalExpenses,
-    extractExpensesByType,
+  calculateTotalExpenses,
+  extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
 import { toNumber } from '@/lib/utils/number';
 
 import {
-    buildExpenseWhere,
-    buildPaymentWhere,
-    buildSalesOrderWhere,
-    calculateComparison,
-    calculateProfitMargin,
-    createMonthlyPeriod,
-    generateExpenseAlerts,
-    generateProfitAlerts,
-    getMonthDateRange,
-    getPreviousMonth,
+  applyReportVisibility,
+  buildExpenseWhere,
+  buildPaymentWhere,
+  buildSalesOrderWhere,
+  calculateComparison,
+  calculateProfitMargin,
+  createMonthlyPeriod,
+  generateExpenseAlerts,
+  generateProfitAlerts,
+  getMonthDateRange,
+  getPreviousMonth,
+  type ReportVisibility,
 } from './report-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
@@ -43,10 +46,23 @@ const REPORT_QUERY_BATCH_SIZE = 1000;
  */
 async function getMonthlyRevenue(
   year: number,
-  month: number
+  month: number,
+  visibility: ReportVisibility
 ): Promise<MonthlyRevenue> {
   const { startDate, endDate } = getMonthDateRange(year, month);
-  const where = buildSalesOrderWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildSalesOrderWhere(startDate, endDate),
+    visibility
+  );
+  const orderCountWhere = applyReportVisibility(
+    {
+      createdAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    } as any,
+    visibility
+  );
 
   // 聚合销售订单数据
   const [salesStats, orderCounts] = await Promise.all([
@@ -62,12 +78,7 @@ async function getMonthlyRevenue(
     }),
     prisma.salesOrder.groupBy({
       by: ['status'],
-      where: {
-        createdAt: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
+      where: orderCountWhere,
       _count: {
         id: true,
       },
@@ -98,10 +109,14 @@ async function getMonthlyRevenue(
  */
 async function getMonthlyExpenses(
   year: number,
-  month: number
+  month: number,
+  visibility: ReportVisibility
 ): Promise<MonthlyExpenses> {
   const { startDate, endDate } = getMonthDateRange(year, month);
-  const where = buildExpenseWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildExpenseWhere(startDate, endDate),
+    visibility
+  );
 
   // 聚合费用数据
   const [totalStats, byTypeStats] = await Promise.all([
@@ -140,10 +155,14 @@ async function getMonthlyExpenses(
  */
 async function getMonthlyCosts(
   year: number,
-  month: number
+  month: number,
+  visibility: ReportVisibility
 ): Promise<MonthlyCosts> {
   const { startDate, endDate } = getMonthDateRange(year, month);
-  const where = buildSalesOrderWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildSalesOrderWhere(startDate, endDate),
+    visibility
+  );
 
   // 聚合销售成本
   const salesCostStats = await prisma.salesOrder.aggregate({
@@ -167,6 +186,9 @@ async function getMonthlyCosts(
         reason: {
           not: 'opening_balance',
         },
+        purchaseOrder: {
+          is: applyReportVisibility({} as any, visibility),
+        },
       },
       _sum: {
         totalCost: true,
@@ -177,6 +199,9 @@ async function getMonthlyCosts(
         createdAt: {
           gte: startDate,
           lte: endDate,
+        },
+        salesOrder: {
+          is: applyReportVisibility({} as any, visibility),
         },
       },
       _sum: {
@@ -218,7 +243,8 @@ async function getMonthlyCosts(
  */
 async function getMonthlyReceivables(
   year: number,
-  month: number
+  month: number,
+  visibility: ReportVisibility
 ): Promise<MonthlyReceivables> {
   const { startDate, endDate } = getMonthDateRange(year, month);
 
@@ -242,12 +268,14 @@ async function getMonthlyReceivables(
   const totalReceivable = toNumber(receivableAggregate._sum.currentBalance);
 
   // 获取应付款数据
+  const payableVisibility = applyReportVisibility({} as any, visibility);
   const payableStats = await prisma.payableRecord.aggregate({
     where: {
       createdAt: {
         gte: startDate,
         lte: endDate,
       },
+      ...(payableVisibility as any),
     },
     _sum: {
       payableAmount: true,
@@ -257,7 +285,10 @@ async function getMonthlyReceivables(
   });
 
   // 获取本月实际收款金额
-  const paymentWhere = buildPaymentWhere(startDate, endDate);
+  const paymentWhere = applyReportVisibility(
+    buildPaymentWhere(startDate, endDate),
+    visibility
+  );
   const receivedStats = await prisma.paymentRecord.aggregate({
     where: paymentWhere,
     _sum: {
@@ -273,6 +304,7 @@ async function getMonthlyReceivables(
         gte: startDate,
         lte: endDate,
       },
+      ...(applyReportVisibility({} as any, visibility) as any),
     },
     _sum: {
       paymentAmount: true,
@@ -475,14 +507,16 @@ export async function getMonthlyReport(
   month: number,
   includeComparison = true
 ): Promise<MonthlyReport> {
+  const visibility: ReportVisibility = { systemMode: await getSystemMode() };
+
   // 获取当月数据
   const [revenue, expenses, costs, receivables, factoryShipmentProfit] =
     await Promise.all([
-      getMonthlyRevenue(year, month),
-      getMonthlyExpenses(year, month),
-      getMonthlyCosts(year, month),
-      getMonthlyReceivables(year, month),
-      getMonthlyFactoryShipmentProfit(year, month),
+      getMonthlyRevenue(year, month, visibility),
+      getMonthlyExpenses(year, month, visibility),
+      getMonthlyCosts(year, month, visibility),
+      getMonthlyReceivables(year, month, visibility),
+      getMonthlyFactoryShipmentProfit(year, month, visibility),
     ]);
 
   // 先计算主营业务的基础利润(仅仓库销售), 再合并厂家直发利润
@@ -531,11 +565,11 @@ export async function getMonthlyReport(
     const { year: prevYear, month: prevMonth } = getPreviousMonth(year, month);
     const [prevRevenue, prevExpenses, prevCosts, prevFactoryShipmentProfit] =
       await Promise.all([
-      getMonthlyRevenue(prevYear, prevMonth),
-      getMonthlyExpenses(prevYear, prevMonth),
-      getMonthlyCosts(prevYear, prevMonth),
-      getMonthlyFactoryShipmentProfit(prevYear, prevMonth),
-    ]);
+        getMonthlyRevenue(prevYear, prevMonth, visibility),
+        getMonthlyExpenses(prevYear, prevMonth, visibility),
+        getMonthlyCosts(prevYear, prevMonth, visibility),
+        getMonthlyFactoryShipmentProfit(prevYear, prevMonth, visibility),
+      ]);
 
     const prevBaseProfit = calculateMonthlyProfit(
       prevRevenue,
@@ -575,7 +609,8 @@ export async function getMonthlyReport(
  */
 export async function getMonthlyFactoryShipmentProfit(
   year: number,
-  month: number
+  month: number,
+  visibility: ReportVisibility
 ): Promise<MonthlyFactoryShipmentProfit> {
   const { startDate, endDate } = getMonthDateRange(year, month);
 
@@ -588,8 +623,8 @@ export async function getMonthlyFactoryShipmentProfit(
 
   let cursor: string | undefined;
   while (true) {
-    const batch = await prisma.factoryShipmentOrder.findMany({
-      where: {
+    const where = applyReportVisibility(
+      {
         shipmentDate: {
           gte: startDate,
           lte: endDate,
@@ -597,7 +632,11 @@ export async function getMonthlyFactoryShipmentProfit(
         status: {
           in: ['arrived', 'completed'],
         },
-      },
+      } as any,
+      visibility
+    );
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where,
       select: {
         id: true,
         totalAmount: true,

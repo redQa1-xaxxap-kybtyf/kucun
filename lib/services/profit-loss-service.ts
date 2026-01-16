@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
   CostDetail,
   ExpenseDetail,
@@ -21,6 +22,7 @@ import {
 import { toNumber } from '@/lib/utils/number';
 
 import {
+  applyReportVisibility,
   buildExpenseWhere,
   buildRefundWhere,
   buildSalesOrderWhere,
@@ -32,6 +34,7 @@ import {
   determineProfitLossStatus,
   generateExpenseAlerts,
   generateProfitAlerts,
+  type ReportVisibility,
 } from './report-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
@@ -43,13 +46,29 @@ const REPORT_QUERY_BATCH_SIZE = 1000;
  */
 async function getRevenueDetail(
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  visibility: ReportVisibility
 ): Promise<RevenueDetail> {
-  const where = buildSalesOrderWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildSalesOrderWhere(startDate, endDate),
+    visibility
+  );
 
   // 销售收入拆分：
   // - salesRevenue: 普通销售订单收入
   // - factoryShipmentRevenue: 厂家直发应收金额
+  const factoryShipmentWhere = applyReportVisibility(
+    {
+      shipmentDate: {
+        gte: startDate,
+        lte: endDate,
+      },
+      status: {
+        in: ['arrived', 'completed'],
+      },
+    } as any,
+    visibility
+  );
   const [salesStats, factoryShipmentStats] = await Promise.all([
     prisma.salesOrder.aggregate({
       where,
@@ -62,15 +81,7 @@ async function getRevenueDetail(
       },
     }),
     prisma.factoryShipmentOrder.aggregate({
-      where: {
-        shipmentDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        status: {
-          in: ['arrived', 'completed'],
-        },
-      },
+      where: factoryShipmentWhere,
       _sum: {
         receivableAmount: true,
       },
@@ -81,7 +92,9 @@ async function getRevenueDetail(
   ]);
 
   const salesRevenue = toNumber(salesStats._sum.totalAmount);
-  const factoryShipmentRevenue = toNumber(factoryShipmentStats._sum?.receivableAmount);
+  const factoryShipmentRevenue = toNumber(
+    factoryShipmentStats._sum?.receivableAmount
+  );
 
   const orderCount =
     (salesStats._count.id || 0) +
@@ -110,9 +123,13 @@ async function getRevenueDetail(
 async function getCostDetail(
   startDate: Date,
   endDate: Date,
-  totalRevenue: number
+  totalRevenue: number,
+  visibility: ReportVisibility
 ): Promise<CostDetail> {
-  const where = buildSalesOrderWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildSalesOrderWhere(startDate, endDate),
+    visibility
+  );
 
   // 1) 销售成本（COGS）—— 唯一会计意义上的当期成本
   const salesCostStats = await prisma.salesOrder.aggregate({
@@ -136,7 +153,11 @@ async function getCostDetail(
         reason: {
           not: 'opening_balance',
         },
-      },
+        // 仅统计与采购订单关联的入库，避免清理/作废后残留入库影响报表
+        purchaseOrder: {
+          is: applyReportVisibility({} as any, visibility),
+        },
+      } as any,
       _sum: {
         totalCost: true,
       },
@@ -147,7 +168,11 @@ async function getCostDetail(
           gte: startDate,
           lte: endDate,
         },
-      },
+        // 仅统计与销售订单关联的出库，避免清理/作废后残留出库影响报表
+        salesOrder: {
+          is: applyReportVisibility({} as any, visibility),
+        },
+      } as any,
       _sum: {
         totalCost: true,
       },
@@ -178,9 +203,13 @@ async function getCostDetail(
 async function getExpenseDetail(
   startDate: Date,
   endDate: Date,
-  totalRevenue: number
+  totalRevenue: number,
+  visibility: ReportVisibility
 ): Promise<ExpenseDetail> {
-  const where = buildExpenseWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildExpenseWhere(startDate, endDate),
+    visibility
+  );
 
   // 按类型分组查询费用
   const expensesByType = await prisma.expenseRecord.groupBy({
@@ -247,7 +276,8 @@ function calculateProfit(
 async function getProfitLossTrend(
   startDate: Date,
   endDate: Date,
-  groupBy: 'day' | 'week' | 'month'
+  groupBy: 'day' | 'week' | 'month',
+  visibility: ReportVisibility
 ): Promise<ProfitLossTrend[]> {
   // 根据分组方式生成日期范围
   const dateRanges = generateDateRanges(startDate, endDate, groupBy);
@@ -255,9 +285,9 @@ async function getProfitLossTrend(
   // 并行查询每个时间段的数据
   const trendPromises = dateRanges.map(async range => {
     const [revenue, costs, expenses] = await Promise.all([
-      getRevenueDetail(range.start, range.end),
-      getCostDetail(range.start, range.end, 0), // 先传0，后面会重新计算
-      getExpenseDetail(range.start, range.end, 0),
+      getRevenueDetail(range.start, range.end, visibility),
+      getCostDetail(range.start, range.end, 0, visibility), // 先传0，后面会重新计算
+      getExpenseDetail(range.start, range.end, 0, visibility),
     ]);
 
     // 重新计算成本率和费用率
@@ -351,9 +381,13 @@ export async function getProfitLossAnalysis(
   const start = new Date(startDate);
   const end = new Date(endDate);
   end.setHours(23, 59, 59, 999);
+  const visibility: ReportVisibility = { systemMode: await getSystemMode() };
 
   // 获取退款金额
-  const refundWhere = buildRefundWhere(start, end);
+  const refundWhere = applyReportVisibility(
+    buildRefundWhere(start, end),
+    visibility
+  );
   const refundStats = await prisma.refundRecord.aggregate({
     where: refundWhere,
     _sum: {
@@ -364,15 +398,20 @@ export async function getProfitLossAnalysis(
 
   // 并行获取所有数据
   const [revenue, trend] = await Promise.all([
-    getRevenueDetail(start, end),
-    getProfitLossTrend(start, end, groupBy),
+    getRevenueDetail(start, end, visibility),
+    getProfitLossTrend(start, end, groupBy, visibility),
   ]);
 
   // 获取成本、费用和厂家发货利润（需要总收入）
   const [costs, expenses, factoryShipmentProfit] = await Promise.all([
-    getCostDetail(start, end, revenue.totalRevenue),
-    getExpenseDetail(start, end, revenue.totalRevenue),
-    getFactoryShipmentProfitDetail(start, end, revenue.totalRevenue),
+    getCostDetail(start, end, revenue.totalRevenue, visibility),
+    getExpenseDetail(start, end, revenue.totalRevenue, visibility),
+    getFactoryShipmentProfitDetail(
+      start,
+      end,
+      revenue.totalRevenue,
+      visibility
+    ),
   ]);
   // 先计算主营业务的基础利润（不含厂家直发收入）
   const coreRevenue: RevenueDetail = {
@@ -460,9 +499,9 @@ export async function getProfitLossAnalysis(
     prevEnd.setDate(prevEnd.getDate() - daysDiff);
 
     const [prevRevenue, prevCosts, prevExpenses] = await Promise.all([
-      getRevenueDetail(prevStart, prevEnd),
-      getCostDetail(prevStart, prevEnd, 0),
-      getExpenseDetail(prevStart, prevEnd, 0),
+      getRevenueDetail(prevStart, prevEnd, visibility),
+      getCostDetail(prevStart, prevEnd, 0, visibility),
+      getExpenseDetail(prevStart, prevEnd, 0, visibility),
     ]);
 
     const prevProfit = calculateProfit(prevRevenue, prevCosts, prevExpenses, 0);
@@ -492,7 +531,8 @@ export async function getProfitLossAnalysis(
 async function getFactoryShipmentProfitDetail(
   startDate: Date,
   endDate: Date,
-  totalRevenue: number
+  totalRevenue: number,
+  visibility: ReportVisibility
 ): Promise<FactoryShipmentProfitDetail> {
   let customerProfit = 0;
   let selfCostAmount = 0;
@@ -501,8 +541,8 @@ async function getFactoryShipmentProfitDetail(
 
   let cursor: string | undefined;
   while (true) {
-    const batch = await prisma.factoryShipmentOrder.findMany({
-      where: {
+    const where = applyReportVisibility(
+      {
         shipmentDate: {
           gte: startDate,
           lte: endDate,
@@ -510,7 +550,11 @@ async function getFactoryShipmentProfitDetail(
         status: {
           in: ['arrived', 'completed'],
         },
-      },
+      } as any,
+      visibility
+    );
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where,
       select: {
         id: true,
         receivableAmount: true,

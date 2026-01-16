@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db';
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
   AnnualFactoryShipmentProfit,
   AnnualReport,
@@ -21,6 +22,7 @@ import {
 import { toNumber } from '@/lib/utils/number';
 
 import {
+  applyReportVisibility,
   buildExpenseWhere,
   buildSalesOrderWhere,
   calculateComparison,
@@ -31,6 +33,7 @@ import {
   generateProfitAlerts,
   getMonthDateRange,
   getYearDateRange,
+  type ReportVisibility,
 } from './report-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
@@ -45,10 +48,19 @@ const REPORT_QUERY_BATCH_SIZE = 1000;
  * - 厂家直发部分在 getAnnualFactoryShipmentProfit 中单独统计,
  *   并在 getAnnualReport 中统一合并, 保持与盈亏分析一致
  */
-async function getAnnualSummary(year: number): Promise<AnnualSummary> {
+async function getAnnualSummary(
+  year: number,
+  visibility: ReportVisibility
+): Promise<AnnualSummary> {
   const { startDate, endDate } = getYearDateRange(year);
-  const salesWhere = buildSalesOrderWhere(startDate, endDate);
-  const expenseWhere = buildExpenseWhere(startDate, endDate);
+  const salesWhere = applyReportVisibility(
+    buildSalesOrderWhere(startDate, endDate),
+    visibility
+  );
+  const expenseWhere = applyReportVisibility(
+    buildExpenseWhere(startDate, endDate),
+    visibility
+  );
 
   // 聚合年度数据(仅销售订单收入/成本 + 全部费用)
   const [salesStats, expenseStats] = await Promise.all([
@@ -144,13 +156,16 @@ function mergeAnnualSummaryWithFactoryShipment(
 /**
  * 获取月度趋势数据
  */
-async function getMonthlyTrend(year: number): Promise<MonthlyTrendData[]> {
+async function getMonthlyTrend(
+  year: number,
+  visibility: ReportVisibility
+): Promise<MonthlyTrendData[]> {
   const monthlyData: MonthlyTrendData[] = [];
 
   // 并行查询12个月的数据
   const monthPromises = Array.from({ length: 12 }, (_, i) => {
     const month = i + 1;
-    return getMonthData(year, month);
+    return getMonthData(year, month, visibility);
   });
 
   const results = await Promise.all(monthPromises);
@@ -172,7 +187,8 @@ async function getMonthlyTrend(year: number): Promise<MonthlyTrendData[]> {
  */
 async function getMonthData(
   year: number,
-  month: number
+  month: number,
+  visibility: ReportVisibility
 ): Promise<{
   revenue: number;
   expenses: number;
@@ -181,8 +197,14 @@ async function getMonthData(
   orderCount: number;
 }> {
   const { startDate, endDate } = getMonthDateRange(year, month);
-  const salesWhere = buildSalesOrderWhere(startDate, endDate);
-  const expenseWhere = buildExpenseWhere(startDate, endDate);
+  const salesWhere = applyReportVisibility(
+    buildSalesOrderWhere(startDate, endDate),
+    visibility
+  );
+  const expenseWhere = applyReportVisibility(
+    buildExpenseWhere(startDate, endDate),
+    visibility
+  );
 
   const [salesStats, expenseStats] = await Promise.all([
     prisma.salesOrder.aggregate({
@@ -223,7 +245,10 @@ async function getMonthData(
 /**
  * 获取季度数据
  */
-async function getQuarterlyData(year: number): Promise<QuarterlyData[]> {
+async function getQuarterlyData(
+  year: number,
+  visibility: ReportVisibility
+): Promise<QuarterlyData[]> {
   const quarterlyData: QuarterlyData[] = [];
 
   // 计算4个季度的数据
@@ -237,7 +262,7 @@ async function getQuarterlyData(year: number): Promise<QuarterlyData[]> {
 
     // 聚合季度内3个月的数据
     for (let month = startMonth; month <= endMonth; month++) {
-      const monthData = await getMonthData(year, month);
+      const monthData = await getMonthData(year, month, visibility);
       quarterRevenue += monthData.revenue;
       quarterExpenses += monthData.expenses;
       quarterCost += monthData.cost;
@@ -264,10 +289,14 @@ async function getQuarterlyData(year: number): Promise<QuarterlyData[]> {
  * 获取费用分布数据
  */
 async function getExpenseDistribution(
-  year: number
+  year: number,
+  visibility: ReportVisibility
 ): Promise<ExpenseDistribution[]> {
   const { startDate, endDate } = getYearDateRange(year);
-  const where = buildExpenseWhere(startDate, endDate);
+  const where = applyReportVisibility(
+    buildExpenseWhere(startDate, endDate),
+    visibility
+  );
 
   // 按费用类型分组
   const expensesByType = await prisma.expenseRecord.groupBy({
@@ -418,6 +447,8 @@ export async function getAnnualReport(
   year: number,
   includeYearOverYear = true
 ): Promise<AnnualReport> {
+  const visibility: ReportVisibility = { systemMode: await getSystemMode() };
+
   // 并行获取所有数据
   const [
     summary,
@@ -426,11 +457,11 @@ export async function getAnnualReport(
     expenseDistribution,
     factoryShipmentProfit,
   ] = await Promise.all([
-    getAnnualSummary(year),
-    getMonthlyTrend(year),
-    getQuarterlyData(year),
-    getExpenseDistribution(year),
-    getAnnualFactoryShipmentProfit(year),
+    getAnnualSummary(year, visibility),
+    getMonthlyTrend(year, visibility),
+    getQuarterlyData(year, visibility),
+    getExpenseDistribution(year, visibility),
+    getAnnualFactoryShipmentProfit(year, visibility),
   ]);
 
   // 合并仓库销售 + 厂家直发后的年度汇总(用于报表 summary 展示)
@@ -478,8 +509,8 @@ export async function getAnnualReport(
   if (includeYearOverYear) {
     const prevYear = year - 1;
     const [prevSummaryCore, prevFactoryShipment] = await Promise.all([
-      getAnnualSummary(prevYear),
-      getAnnualFactoryShipmentProfit(prevYear),
+      getAnnualSummary(prevYear, visibility),
+      getAnnualFactoryShipmentProfit(prevYear, visibility),
     ]);
     const prevSummary = mergeAnnualSummaryWithFactoryShipment(
       prevSummaryCore,
@@ -514,7 +545,8 @@ export async function getAnnualReport(
  * @returns 年度厂家发货利润统计数据
  */
 export async function getAnnualFactoryShipmentProfit(
-  year: number
+  year: number,
+  visibility: ReportVisibility
 ): Promise<AnnualFactoryShipmentProfit> {
   const { startDate, endDate } = getYearDateRange(year);
 
@@ -531,8 +563,8 @@ export async function getAnnualFactoryShipmentProfit(
 
   let orderCursor: string | undefined;
   while (true) {
-    const batch = await prisma.factoryShipmentOrder.findMany({
-      where: {
+    const where = applyReportVisibility(
+      {
         shipmentDate: {
           gte: startDate,
           lte: endDate,
@@ -540,7 +572,11 @@ export async function getAnnualFactoryShipmentProfit(
         status: {
           in: ['arrived', 'completed'],
         },
-      },
+      } as any,
+      visibility
+    );
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where,
       select: {
         id: true,
         shipmentDate: true,
@@ -577,7 +613,9 @@ export async function getAnnualFactoryShipmentProfit(
       selfCostAmount += selfCost;
       totalExpenses += expenses;
 
-      const monthIndex = order.shipmentDate ? order.shipmentDate.getMonth() : -1;
+      const monthIndex = order.shipmentDate
+        ? order.shipmentDate.getMonth()
+        : -1;
       if (monthIndex >= 0 && monthIndex < 12) {
         monthlyOrdersCount[monthIndex] += 1;
         monthlyProfit[monthIndex] += profit;

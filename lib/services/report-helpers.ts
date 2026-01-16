@@ -11,6 +11,7 @@ import type {
   ReportAlert,
   ReportPeriod,
 } from '@/lib/types/report';
+import type { SystemMode } from '@/lib/types/system-mode';
 
 // ==================== 日期处理函数 ====================
 
@@ -74,6 +75,27 @@ export function getQuarter(month: number): number {
 }
 
 // ==================== 数据聚合函数 ====================
+
+export type ReportVisibility = {
+  systemMode: SystemMode;
+  includeTest?: boolean;
+  includeVoided?: boolean;
+};
+
+export function applyReportVisibility<T extends Record<string, unknown>>(
+  where: T,
+  visibility: ReportVisibility
+): T {
+  if (!visibility.includeVoided) {
+    (where as any).voidedAt = null;
+  }
+
+  if (visibility.systemMode === 'production' && !visibility.includeTest) {
+    (where as any).dataTag = 'prod';
+  }
+
+  return where;
+}
 
 /**
  * 构建销售订单查询条件

@@ -6,6 +6,7 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type { StatementType } from '@/lib/types/statement';
 import { toNumber } from '@/lib/utils/number';
 
@@ -50,7 +51,9 @@ type AccountStatementSummaryRow = Prisma.AccountStatementGetPayload<{
   select: typeof accountStatementSummarySelect;
 }>;
 
-async function fetchAccountStatementSummaries(where: Prisma.AccountStatementWhereInput) {
+async function fetchAccountStatementSummaries(
+  where: Prisma.AccountStatementWhereInput
+) {
   const statements: AccountStatementSummaryRow[] = [];
   const pageSize = 2000;
   let cursor: string | undefined;
@@ -343,11 +346,14 @@ export async function getTotalReceivable(): Promise<{
 }
 
 export async function getTotalRefundable(): Promise<number> {
+  const systemMode = await getSystemMode();
   const result = await prisma.refundRecord.aggregate({
     _sum: { remainingAmount: true },
     where: {
       status: { in: ['pending', 'processing'] },
       remainingAmount: { gt: 0 },
+      voidedAt: null,
+      ...(systemMode === 'production' ? { dataTag: 'prod' } : {}),
     },
   });
 
@@ -360,23 +366,26 @@ export async function getOverdueAmount(): Promise<number> {
 }
 
 export async function getMonthlyReceived(): Promise<number> {
+  const systemMode = await getSystemMode();
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  const result = await prisma.statementTransaction.aggregate({
-    _sum: { amount: true },
+  const result = await prisma.paymentRecord.aggregate({
+    _sum: { actualPaymentAmount: true },
     where: {
-      transactionType: { in: ['payment_in', 'prepayment_in'] },
-      status: 'completed',
-      transactionDate: {
+      status: 'confirmed',
+      voidedAt: null,
+      ...(systemMode === 'production' ? { dataTag: 'prod' } : {}),
+      paymentDate: {
         gte: startOfMonth,
         lt: startOfNextMonth,
       },
+      actualPaymentAmount: { gt: 0 },
     },
   });
 
-  return toNumber(result._sum.amount);
+  return toNumber(result._sum.actualPaymentAmount);
 }
 
 export async function getOverdueCount(): Promise<number> {
@@ -385,6 +394,11 @@ export async function getOverdueCount(): Promise<number> {
 }
 
 export async function getFinanceOverview(): Promise<FinanceOverview> {
+  const systemMode = await getSystemMode();
+  const refundVisibility =
+    systemMode === 'production'
+      ? ({ voidedAt: null, dataTag: 'prod' } as const)
+      : ({ voidedAt: null } as const);
   const [
     receivableData,
     totalRefundable,
@@ -402,7 +416,10 @@ export async function getFinanceOverview(): Promise<FinanceOverview> {
       },
     }),
     prisma.refundRecord.count({
-      where: { status: { in: ['pending', 'processing', 'completed'] } },
+      where: {
+        status: { in: ['pending', 'processing', 'completed'] },
+        ...refundVisibility,
+      },
     }),
   ]);
 
