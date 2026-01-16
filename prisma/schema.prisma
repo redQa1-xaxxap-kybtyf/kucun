@@ -276,6 +276,10 @@ model SalesOrder {
   usePrepayment      Boolean   @default(false) @map("use_prepayment")
   prepaymentAmount   Decimal?  @default(0) @map("prepayment_amount") @db.Decimal(18, 2)
   remarks            String?
+  dataTag            String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt           DateTime? @map("voided_at")
+  voidedBy           String?   @map("voided_by") @db.Char(36)
+  voidReason         String?   @map("void_reason") @db.VarChar(64)
   shippedAt          DateTime? @map("shipped_at")
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
@@ -305,6 +309,8 @@ model SalesOrder {
   @@index([status, totalAmount], map: "idx_sales_orders_status_amount")
   @@index([status, customerId, createdAt], map: "idx_sales_orders_status_customer_created")
   @@index([orderNumber], map: "idx_sales_orders_order_number")
+  @@index([dataTag], map: "idx_sales_orders_data_tag")
+  @@index([voidedAt], map: "idx_sales_orders_voided_at")
   @@map("sales_orders")
 }
 
@@ -656,6 +662,10 @@ model PaymentRecord {
   remarks                String?
   receiptNumber          String?  @map("receipt_number")
   bankInfo               String?  @map("bank_info")
+  dataTag                String   @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt               DateTime? @map("voided_at")
+  voidedBy               String?  @map("voided_by") @db.Char(36)
+  voidReason             String?  @map("void_reason") @db.VarChar(64)
   createdAt              DateTime @default(now()) @map("created_at")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
@@ -675,6 +685,8 @@ model PaymentRecord {
   @@index([paymentDate], map: "idx_payment_records_payment_date")
   @@index([customerId, paymentType, status], map: "idx_payment_records_customer_type_status")
   @@index([salesOrderId, status], map: "idx_payment_records_order_status")
+  @@index([dataTag], map: "idx_payment_records_data_tag")
+  @@index([voidedAt], map: "idx_payment_records_voided_at")
   @@map("payment_records")
 }
 
@@ -705,6 +717,10 @@ model FactoryShipmentOrder {
   depositAmount       Decimal   @default(0) @map("deposit_amount") @db.Decimal(18, 2)
   paidAmount          Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
   remarks             String?
+  dataTag             String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt            DateTime? @map("voided_at")
+  voidedBy            String?   @map("voided_by") @db.Char(36)
+  voidReason          String?   @map("void_reason") @db.VarChar(64)
   plan_date           DateTime?
   shipmentDate        DateTime? @map("shipment_date")
   arrivalDate         DateTime? @map("arrival_date")
@@ -742,6 +758,8 @@ model FactoryShipmentOrder {
   @@index([shippingQueryStatus], map: "idx_factory_shipment_orders_query_status")
   @@index([lastShippingQueryAt], map: "idx_factory_shipment_orders_last_query")
   @@index([preferredSiteId], map: "idx_factory_shipment_orders_preferred_site")
+  @@index([dataTag], map: "idx_factory_shipment_orders_data_tag")
+  @@index([voidedAt], map: "idx_factory_shipment_orders_voided_at")
   @@map("factory_shipment_orders")
 }
 
@@ -811,6 +829,10 @@ model ReturnOrder {
   approvedAt   DateTime? @map("approved_at")
   processedAt  DateTime? @map("processed_at")
   completedAt  DateTime? @map("completed_at")
+  dataTag      String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt     DateTime? @map("voided_at")
+  voidedBy     String?   @map("voided_by") @db.Char(36)
+  voidReason   String?   @map("void_reason") @db.VarChar(64)
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -830,6 +852,8 @@ model ReturnOrder {
   @@index([salesOrderId, status], map: "idx_return_orders_order_status")
   @@index([status, type], map: "idx_return_orders_status_type")
   @@index([customerId, status])
+  @@index([dataTag], map: "idx_return_orders_data_tag")
+  @@index([voidedAt], map: "idx_return_orders_voided_at")
   @@map("return_orders")
 }
 
@@ -880,6 +904,10 @@ model RefundRecord {
   remarks           String?
   bankInfo          String?   @map("bank_info")
   receiptNumber     String?   @map("receipt_number")
+  dataTag           String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt          DateTime? @map("voided_at")
+  voidedBy          String?   @map("voided_by") @db.Char(36)
+  voidReason        String?   @map("void_reason") @db.VarChar(64)
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -897,6 +925,8 @@ model RefundRecord {
   @@index([refundDate], map: "idx_refund_records_date")
   @@index([salesOrderId, status], map: "idx_refund_records_order_status")
   @@index([returnOrderId, status], map: "idx_refund_records_return_status")
+  @@index([dataTag], map: "idx_refund_records_data_tag")
+  @@index([voidedAt], map: "idx_refund_records_voided_at")
   @@map("refund_records")
 }
 
@@ -1050,6 +1080,10 @@ model PayableRecord {
   paymentTerms    String    @default("30天") @map("payment_terms") @db.VarChar(64)
   description     String?
   remarks         String?
+  dataTag         String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt        DateTime? @map("voided_at")
+  voidedBy        String?   @map("voided_by") @db.Char(36)
+  voidReason      String?   @map("void_reason") @db.VarChar(64)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
@@ -1066,6 +1100,8 @@ model PayableRecord {
   @@index([sourceType], map: "idx_payable_records_source_type")
   @@index([status, dueDate], map: "idx_payable_records_status_due")
   @@index([sourceType, sourceId], map: "idx_payable_records_source")
+  @@index([dataTag], map: "idx_payable_records_data_tag")
+  @@index([voidedAt], map: "idx_payable_records_voided_at")
   @@map("payable_records")
 }
 
@@ -1082,6 +1118,10 @@ model PaymentOutRecord {
   remarks         String?
   voucherNumber   String?  @map("voucher_number")
   bankInfo        String?  @map("bank_info")
+  dataTag         String   @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt        DateTime? @map("voided_at")
+  voidedBy        String?  @map("voided_by") @db.Char(36)
+  voidReason      String?  @map("void_reason") @db.VarChar(64)
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -1097,7 +1137,31 @@ model PaymentOutRecord {
   @@index([paymentMethod], map: "idx_payment_out_records_method")
   @@index([paymentDate], map: "idx_payment_out_records_payment_date")
   @@index([payableRecordId, status], map: "idx_payment_out_records_payable_status")
+  @@index([dataTag], map: "idx_payment_out_records_data_tag")
+  @@index([voidedAt], map: "idx_payment_out_records_voided_at")
   @@map("payment_out_records")
+}
+
+model DataManagementTask {
+  id             String    @id @default(uuid()) @db.Char(36)
+  action         String    @db.VarChar(32)
+  status         String    @default("queued") @db.VarChar(32)
+  stage          String?   @db.VarChar(8)
+  requestedBy    String    @map("requested_by") @db.Char(36)
+  idempotencyKey String?   @unique @map("idempotency_key") @db.VarChar(191)
+  scope          String?   @db.Text
+  preview        String?   @db.Text
+  result         String?   @db.Text
+  errorMessage   String?   @map("error_message") @db.Text
+  startedAt      DateTime? @map("started_at")
+  finishedAt     DateTime? @map("finished_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([action], map: "idx_data_management_tasks_action")
+  @@index([status], map: "idx_data_management_tasks_status")
+  @@index([createdAt], map: "idx_data_management_tasks_created_at")
+  @@map("data_management_tasks")
 }
 
 model LoginAttempt {
@@ -1191,6 +1255,10 @@ model ExpenseRecord {
   approvedById   String?   @map("approved_by_id") @db.Char(36)
   approvedAt     DateTime? @map("approved_at")
   cancelReason   String?   @map("cancel_reason") @db.Text
+  dataTag        String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt       DateTime? @map("voided_at")
+  voidedBy       String?   @map("voided_by") @db.Char(36)
+  voidReason     String?   @map("void_reason") @db.VarChar(64)
   userId         String    @map("user_id") @db.Char(36)
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
@@ -1215,6 +1283,8 @@ model ExpenseRecord {
   @@index([status], map: "idx_expense_records_status")
   @@index([paymentStatus], map: "idx_expense_records_payment_status")
   @@index([supplierId], map: "idx_expense_records_supplier")
+  @@index([dataTag], map: "idx_expense_records_data_tag")
+  @@index([voidedAt], map: "idx_expense_records_voided_at")
   @@map("expense_records")
 }
 
@@ -1314,6 +1384,10 @@ model PurchaseOrder {
   shippingQueryStatus String?   @map("shipping_query_status") @db.VarChar(50)
   shippingQueryError  String?   @map("shipping_query_error") @db.Text
   remarks             String?
+  dataTag             String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt            DateTime? @map("voided_at")
+  voidedBy            String?   @map("voided_by") @db.Char(36)
+  voidReason          String?   @map("void_reason") @db.VarChar(64)
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
   supplierId          String    @map("supplier_id") @db.Char(36)
@@ -1333,6 +1407,8 @@ model PurchaseOrder {
   @@index([containerNumber], map: "idx_purchase_orders_container")
   @@index([shippingCompany], map: "idx_purchase_orders_shipping_company")
   @@index([salesOrderId], map: "idx_purchase_orders_sales_order")
+  @@index([dataTag], map: "idx_purchase_orders_data_tag")
+  @@index([voidedAt], map: "idx_purchase_orders_voided_at")
   @@map("purchase_orders")
 }
 
