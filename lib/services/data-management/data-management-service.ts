@@ -757,50 +757,8 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     },
   },
   // 主业务单据
-  {
-    id: 'sales_orders',
-    label: '销售订单',
-    stage: 'S2',
-    methodByAction: { reset_trial: 'delete', cleanup_test: 'void' },
-    showInPreview: true,
-    preview: async ({ action }) => {
-      const where =
-        action === 'reset_trial'
-          ? undefined
-          : (buildActiveTestWhere() satisfies Prisma.SalesOrderWhereInput);
-
-      const agg = await prisma.salesOrder.aggregate({
-        where,
-        _count: { id: true },
-        _sum: { totalAmount: true },
-      });
-
-      return {
-        id: 'sales_orders',
-        label: '销售订单',
-        count: agg._count.id ?? 0,
-        amountSum: toNumber(agg._sum.totalAmount),
-      };
-    },
-    execute: async ({ action, now, userId }) => {
-      if (action === 'reset_trial') {
-        await prisma.salesOrder.deleteMany();
-        return;
-      }
-
-      await prisma.salesOrder.updateMany({
-        where: buildActiveTestWhere() as any,
-        data: buildVoidedData(now, userId) as any,
-      });
-    },
-    verify: async ({ action }) => {
-      const count =
-        action === 'reset_trial'
-          ? await prisma.salesOrder.count()
-          : await prisma.salesOrder.count({ where: buildActiveTestWhere() as any });
-      return count === 0 ? [] : [buildResidueError('sales_orders', count)];
-    },
-  },
+  // 注意：SalesOrder 被多表引用（例如 refund_records.sales_order_id 为 Restrict），
+  // trial 重置时必须先删除/作废下游表，最后再删 SalesOrder，避免触发 FK 报错与 SetNull 批量更新放大耗时。
   {
     id: 'return_orders',
     label: '退货订单',
@@ -1159,6 +1117,52 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
           ? await prisma.expenseRecord.count()
           : await prisma.expenseRecord.count({ where: buildActiveTestWhere() as any });
       return count === 0 ? [] : [buildResidueError('expense_records', count)];
+    },
+  },
+  {
+    id: 'sales_orders',
+    label: '销售订单',
+    stage: 'S2',
+    methodByAction: { reset_trial: 'delete', cleanup_test: 'void' },
+    showInPreview: true,
+    preview: async ({ action }) => {
+      const where =
+        action === 'reset_trial'
+          ? undefined
+          : (buildActiveTestWhere() satisfies Prisma.SalesOrderWhereInput);
+
+      const agg = await prisma.salesOrder.aggregate({
+        where,
+        _count: { id: true },
+        _sum: { totalAmount: true },
+      });
+
+      return {
+        id: 'sales_orders',
+        label: '销售订单',
+        count: agg._count.id ?? 0,
+        amountSum: toNumber(agg._sum.totalAmount),
+      };
+    },
+    execute: async ({ action, now, userId }) => {
+      if (action === 'reset_trial') {
+        await prisma.salesOrder.deleteMany();
+        return;
+      }
+
+      await prisma.salesOrder.updateMany({
+        where: buildActiveTestWhere() as any,
+        data: buildVoidedData(now, userId) as any,
+      });
+    },
+    verify: async ({ action }) => {
+      const count =
+        action === 'reset_trial'
+          ? await prisma.salesOrder.count()
+          : await prisma.salesOrder.count({
+              where: buildActiveTestWhere() as any,
+            });
+      return count === 0 ? [] : [buildResidueError('sales_orders', count)];
     },
   },
   // 往来流水/台账
