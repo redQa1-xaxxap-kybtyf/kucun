@@ -9,6 +9,7 @@ import { Settings } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { can } from '@/lib/auth/permissions';
 import {
   Card,
   CardContent,
@@ -16,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { usePermissions } from '@/lib/utils/permissions';
 
 // 未登录状态组件
 const LoginRequiredView = () => (
@@ -53,14 +53,25 @@ const LoginRequiredView = () => (
 
 const SettingsPage = () => {
   const { data: session } = useSession();
-  const permissions = usePermissions(session?.user?.role as 'admin' | 'sales');
+  const user = session?.user ?? null;
+  const isAdmin = user?.role === 'admin';
+  const canManageFinance = user ? can(user, 'finance:manage') : false;
 
   // 直接重定向到基本设置页面，避免冗余的聚合页面
   React.useEffect(() => {
-    if (typeof window !== 'undefined' && session && permissions.isAdmin()) {
-      window.location.replace('/settings/basic');
+    if (typeof window === 'undefined' || !session?.user) {
+      return;
     }
-  }, [session, permissions]);
+
+    if (isAdmin) {
+      window.location.replace('/settings/basic');
+      return;
+    }
+
+    if (canManageFinance) {
+      window.location.replace('/settings/data-management');
+    }
+  }, [session, isAdmin, canManageFinance]);
 
   // 检查用户权限
   if (!session) {
@@ -68,7 +79,7 @@ const SettingsPage = () => {
   }
 
   // 检查管理员权限
-  if (!permissions.isAdmin()) {
+  if (!isAdmin && !canManageFinance) {
     return (
       <div className="flex h-full flex-col overflow-hidden p-6">
         <div className="space-y-6">
@@ -96,7 +107,7 @@ const SettingsPage = () => {
                 权限不足
               </CardTitle>
               <CardDescription className="text-amber-700">
-                只有管理员可以访问系统设置功能。
+                只有管理员/财务管理员可以访问系统设置功能。
               </CardDescription>
             </CardHeader>
           </Card>
@@ -115,18 +126,20 @@ const SettingsPage = () => {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
                 <Settings className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  系统设置
-                </h1>
-                <p className="text-sm text-gray-600">正在跳转到基本设置...</p>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    系统设置
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    {isAdmin ? '正在跳转到基本设置...' : '正在跳转到数据管理...'}
+                  </p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
 export default SettingsPage;

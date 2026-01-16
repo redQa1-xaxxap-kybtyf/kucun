@@ -4,7 +4,7 @@
  */
 
 // 用户角色枚举
-export type UserRole = 'admin' | 'sales';
+export type UserRole = 'admin' | 'sales' | 'warehouse' | 'finance';
 
 // 用户状态枚举
 export type UserStatus = 'active' | 'inactive' | 'pending';
@@ -70,6 +70,8 @@ export interface UserInfo {
 export const USER_ROLE_LABELS: Record<UserRole, string> = {
   admin: '管理员',
   sales: '销售员',
+  warehouse: '仓库员',
+  finance: '财务员',
 };
 
 // 用户状态标签
@@ -86,6 +88,8 @@ export const USER_ROLE_VARIANTS: Record<
 > = {
   admin: 'destructive',
   sales: 'default',
+  warehouse: 'secondary',
+  finance: 'outline',
 };
 
 // 用户状态变体（用于Badge组件）
@@ -133,15 +137,15 @@ export function hasPermission(user: User, permission: string): boolean {
 // 检查用户是否可以访问特定页面
 export function canAccessPage(user: User, page: string): boolean {
   const pagePermissions: Record<string, string[]> = {
-    '/dashboard': ['admin', 'sales'],
-    '/products': ['admin', 'sales'],
-    '/customers': ['admin', 'sales'],
-    '/sales-orders': ['admin', 'sales'],
-    '/inventory': ['admin', 'sales'],
-    '/payments': ['admin', 'sales'],
-    '/return-orders': ['admin'],
+    '/dashboard': ['admin', 'sales', 'warehouse', 'finance'],
+    '/products': ['admin', 'sales', 'warehouse', 'finance'],
+    '/customers': ['admin', 'sales', 'finance'],
+    '/sales-orders': ['admin', 'sales', 'warehouse', 'finance'],
+    '/inventory': ['admin', 'sales', 'warehouse'],
+    '/payments': ['admin', 'sales', 'finance'],
+    '/return-orders': ['admin', 'sales', 'warehouse', 'finance'],
     '/users': ['admin'],
-    '/settings': ['admin'],
+    '/settings': ['admin', 'finance'],
   };
 
   const allowedRoles = pagePermissions[page] || [];

@@ -143,6 +143,39 @@ const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // 报表查看（限制）
     'reports:read',
   ],
+  warehouse: [
+    // 产品（只读）
+    'products:read',
+    // 库存（写）
+    'inventory:read',
+    'inventory:write',
+    'inventory:adjust',
+    // 业务（只读）
+    'sales:read',
+    'customers:read',
+    // 财务（只读）
+    'finance:read',
+    // 报表（只读）
+    'reports:read',
+  ],
+  finance: [
+    // 界面和通知设置
+    'system:settings:interface',
+    'system:settings:notifications',
+    // 产品/客户（只读）
+    'products:read',
+    'customers:read',
+    // 销售（只读）
+    'sales:read',
+    // 财务（写）
+    'finance:read',
+    'finance:write',
+    'finance:approve',
+    'finance:reports',
+    // 报表（导出）
+    'reports:read',
+    'reports:export',
+  ],
 };
 
 /**

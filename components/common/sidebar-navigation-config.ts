@@ -24,6 +24,7 @@ import {
     ShoppingCart,
     TrendingDown,
     TrendingUp,
+    Trash2,
     Truck,
     Users,
     Warehouse,
@@ -264,7 +265,7 @@ export const navigationItems: NavigationItem[] = [
     title: '系统设置',
     href: '/settings',
     icon: Settings,
-    requiredRoles: ['admin'],
+    requiredRoles: ['admin', 'finance'],
     children: [
       {
         id: 'settings-basic',
@@ -272,6 +273,13 @@ export const navigationItems: NavigationItem[] = [
         href: '/settings/basic',
         icon: Settings,
         requiredRoles: ['admin'],
+      },
+      {
+        id: 'settings-data-management',
+        title: '数据管理',
+        href: '/settings/data-management',
+        icon: Trash2,
+        requiredRoles: ['admin', 'finance'],
       },
       {
         id: 'settings-users',
