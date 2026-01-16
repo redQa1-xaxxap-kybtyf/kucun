@@ -134,12 +134,6 @@ export function DataManagementPageClient({
   const { toast } = useToast();
   const router = useRouter();
 
-  const [now, setNow] = React.useState(() => Date.now());
-  React.useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
   const stageOrder = React.useMemo(
     () => ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6'] as const,
     []
@@ -244,6 +238,8 @@ export function DataManagementPageClient({
       }
       return json.data as Task;
     },
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     refetchInterval: query => {
       const data = query.state.data;
       if (!data) return 1500;
@@ -253,6 +249,18 @@ export function DataManagementPageClient({
 
   const preview = previewMutation.data;
   const task = taskQuery.data;
+  const isTaskActive =
+    task?.status === 'running' || task?.status === 'queued' || taskQuery.isFetching;
+
+  const [now, setNow] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    if (!taskId || !isTaskActive) {
+      return;
+    }
+
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isTaskActive, taskId]);
 
   const taskStartedAtMs = task?.startedAt ? new Date(task.startedAt).getTime() : null;
   const taskUpdatedAtMs = task?.updatedAt ? new Date(task.updatedAt).getTime() : null;
@@ -382,21 +390,24 @@ export function DataManagementPageClient({
               </div>
             )}
 
-            {task && (
-              <>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    {taskQuery.isFetching ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                    )}
-                    <span>自动刷新：每 1.5s</span>
-                  </span>
-                  {runningDuration && <span>已运行：{runningDuration}</span>}
-                  {currentStep && <span>步骤：{currentStep}/{totalSteps}</span>}
-                  {lastUpdateAgo && (
-                    <span>
+                {task && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        {taskQuery.isFetching ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                        )}
+                        <span>
+                          自动刷新：
+                          {isTaskActive ? '每 1.5s' : '已停止'}
+                        </span>
+                      </span>
+                      {runningDuration && <span>已运行：{runningDuration}</span>}
+                      {currentStep && <span>步骤：{currentStep}/{totalSteps}</span>}
+                      {lastUpdateAgo && (
+                        <span>
                       最近更新：{lastUpdateAgo}
                       {task.status === 'running' && taskUpdatedAtMs && now - taskUpdatedAtMs > 15_000 ? (
                         <span className="ml-1 text-amber-600">（本阶段可能耗时较久）</span>
