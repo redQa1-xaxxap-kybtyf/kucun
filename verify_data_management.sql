@@ -209,3 +209,48 @@ FROM inventory_operations
 WHERE status = 'processing'
   AND expires_at < NOW();
 
+-- ============================================================
+-- 6) Trial：产品/分类等基础资料残留（应为 0）
+-- 说明：production 模式下不清空基础资料，因此本段仅在 system_mode=trial（或未设置时默认 trial）时生效。
+-- ============================================================
+SELECT 'products' AS table_name, COUNT(*) AS cnt
+FROM products
+WHERE COALESCE(
+        (SELECT `value` FROM system_settings WHERE `key` = 'system_mode' LIMIT 1),
+        'trial'
+      ) = 'trial'
+UNION ALL
+SELECT 'product_variants', COUNT(*)
+FROM product_variants
+WHERE COALESCE(
+        (SELECT `value` FROM system_settings WHERE `key` = 'system_mode' LIMIT 1),
+        'trial'
+      ) = 'trial'
+UNION ALL
+SELECT 'categories', COUNT(*)
+FROM categories
+WHERE COALESCE(
+        (SELECT `value` FROM system_settings WHERE `key` = 'system_mode' LIMIT 1),
+        'trial'
+      ) = 'trial'
+UNION ALL
+SELECT 'temporary_products', COUNT(*)
+FROM temporary_products
+WHERE COALESCE(
+        (SELECT `value` FROM system_settings WHERE `key` = 'system_mode' LIMIT 1),
+        'trial'
+      ) = 'trial'
+UNION ALL
+SELECT 'batch_specifications', COUNT(*)
+FROM batch_specifications
+WHERE COALESCE(
+        (SELECT `value` FROM system_settings WHERE `key` = 'system_mode' LIMIT 1),
+        'trial'
+      ) = 'trial'
+UNION ALL
+SELECT 'fifo_consumption_ledger', COUNT(*)
+FROM fifo_consumption_ledger
+WHERE COALESCE(
+        (SELECT `value` FROM system_settings WHERE `key` = 'system_mode' LIMIT 1),
+        'trial'
+      ) = 'trial';

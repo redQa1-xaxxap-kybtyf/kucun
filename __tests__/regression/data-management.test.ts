@@ -129,6 +129,11 @@ jest.mock('@/lib/db', () => ({
     inventoryAdjustment: { count: jest.fn(), deleteMany: jest.fn() },
     inventoryOperation: { count: jest.fn(), deleteMany: jest.fn() },
     inventory: { count: jest.fn(), deleteMany: jest.fn() },
+    fifoConsumptionLedger: { count: jest.fn(), deleteMany: jest.fn() },
+    batchSpecification: { count: jest.fn(), deleteMany: jest.fn() },
+    temporaryProduct: { count: jest.fn(), deleteMany: jest.fn() },
+    product: { count: jest.fn(), deleteMany: jest.fn() },
+    category: { count: jest.fn(), deleteMany: jest.fn() },
     salesOrder: {
       aggregate: jest.fn(),
       count: jest.fn(),
@@ -348,6 +353,7 @@ describe('data-management regression', () => {
     await runDataManagementTask('task-001');
 
     expect(prisma.salesOrder.deleteMany).toHaveBeenCalled();
+    expect(prisma.product.deleteMany).toHaveBeenCalled();
     expect(prisma.statementTransaction.deleteMany).toHaveBeenCalled();
     expect(
       prisma.dataManagementTask.update.mock.calls.some(
@@ -456,4 +462,3 @@ describe('data-management regression', () => {
     expect((response as any).status).toBe(403);
   });
 });
-

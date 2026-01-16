@@ -756,6 +756,106 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       return count === 0 ? [] : [buildResidueError('inventory', count)];
     },
   },
+  // trial only: 产品基础资料
+  // 注意：products 删除会触发多表 FK / cascade，必须确保已先删除库存与明细等下游表，
+  // 并先删除 onDelete: Restrict 的 batch_specifications / fifo_consumption_ledger，避免 FK 报错。
+  {
+    id: 'fifo_consumption_ledger',
+    label: 'FIFO 成本消耗台账',
+    stage: 'S2',
+    methodByAction: { reset_trial: 'delete' },
+    showInPreview: true,
+    preview: async () => {
+      const count = await prisma.fifoConsumptionLedger.count();
+      return { id: 'fifo_consumption_ledger', label: 'FIFO 成本消耗台账', count };
+    },
+    execute: async () => {
+      await prisma.fifoConsumptionLedger.deleteMany();
+    },
+    verify: async ({ action }) => {
+      if (action !== 'reset_trial') return [];
+      const count = await prisma.fifoConsumptionLedger.count();
+      return count === 0
+        ? []
+        : [buildResidueError('fifo_consumption_ledger', count)];
+    },
+  },
+  {
+    id: 'batch_specifications',
+    label: '批次规格',
+    stage: 'S2',
+    methodByAction: { reset_trial: 'delete' },
+    showInPreview: true,
+    preview: async () => {
+      const count = await prisma.batchSpecification.count();
+      return { id: 'batch_specifications', label: '批次规格', count };
+    },
+    execute: async () => {
+      await prisma.batchSpecification.deleteMany();
+    },
+    verify: async ({ action }) => {
+      if (action !== 'reset_trial') return [];
+      const count = await prisma.batchSpecification.count();
+      return count === 0 ? [] : [buildResidueError('batch_specifications', count)];
+    },
+  },
+  {
+    id: 'temporary_products',
+    label: '临时产品',
+    stage: 'S2',
+    methodByAction: { reset_trial: 'delete' },
+    showInPreview: true,
+    preview: async () => {
+      const count = await prisma.temporaryProduct.count();
+      return { id: 'temporary_products', label: '临时产品', count };
+    },
+    execute: async () => {
+      await prisma.temporaryProduct.deleteMany();
+    },
+    verify: async ({ action }) => {
+      if (action !== 'reset_trial') return [];
+      const count = await prisma.temporaryProduct.count();
+      return count === 0 ? [] : [buildResidueError('temporary_products', count)];
+    },
+  },
+  {
+    id: 'products',
+    label: '产品',
+    stage: 'S2',
+    methodByAction: { reset_trial: 'delete' },
+    showInPreview: true,
+    preview: async () => {
+      const count = await prisma.product.count();
+      return { id: 'products', label: '产品', count };
+    },
+    execute: async () => {
+      await prisma.product.deleteMany();
+    },
+    verify: async ({ action }) => {
+      if (action !== 'reset_trial') return [];
+      const count = await prisma.product.count();
+      return count === 0 ? [] : [buildResidueError('products', count)];
+    },
+  },
+  {
+    id: 'categories',
+    label: '产品分类',
+    stage: 'S2',
+    methodByAction: { reset_trial: 'delete' },
+    showInPreview: true,
+    preview: async () => {
+      const count = await prisma.category.count();
+      return { id: 'categories', label: '产品分类', count };
+    },
+    execute: async () => {
+      await prisma.category.deleteMany();
+    },
+    verify: async ({ action }) => {
+      if (action !== 'reset_trial') return [];
+      const count = await prisma.category.count();
+      return count === 0 ? [] : [buildResidueError('categories', count)];
+    },
+  },
   // 主业务单据
   // 注意：SalesOrder 被多表引用（例如 refund_records.sales_order_id 为 Restrict），
   // trial 重置时必须先删除/作废下游表，最后再删 SalesOrder，避免触发 FK 报错与 SetNull 批量更新放大耗时。
@@ -1718,6 +1818,11 @@ async function verifyAfterRun(
       inventoryAdjustmentCount,
       inventoryOperationCount,
       inventoryCount,
+      fifoConsumptionLedgerCount,
+      batchSpecificationCount,
+      temporaryProductCount,
+      productCount,
+      categoryCount,
       statementTxCount,
       statementCount,
       prepaymentUsageCount,
@@ -1747,6 +1852,11 @@ async function verifyAfterRun(
       prisma.inventoryAdjustment.count(),
       prisma.inventoryOperation.count(),
       prisma.inventory.count(),
+      prisma.fifoConsumptionLedger.count(),
+      prisma.batchSpecification.count(),
+      prisma.temporaryProduct.count(),
+      prisma.product.count(),
+      prisma.category.count(),
       prisma.statementTransaction.count(),
       prisma.accountStatement.count(),
       prisma.prepaymentUsage.count(),
@@ -1780,6 +1890,11 @@ async function verifyAfterRun(
       ['inventory_adjustments', inventoryAdjustmentCount],
       ['inventory_operations', inventoryOperationCount],
       ['inventory', inventoryCount],
+      ['fifo_consumption_ledger', fifoConsumptionLedgerCount],
+      ['batch_specifications', batchSpecificationCount],
+      ['temporary_products', temporaryProductCount],
+      ['products', productCount],
+      ['categories', categoryCount],
       ['statement_transactions', statementTxCount],
       ['account_statements', statementCount],
       ['prepayment_usages', prepaymentUsageCount],
