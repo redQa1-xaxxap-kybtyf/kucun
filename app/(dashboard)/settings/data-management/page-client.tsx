@@ -184,6 +184,7 @@ export function DataManagementPageClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
+          preview: previewMutation.data ?? null,
           confirmText,
           idempotencyKey: crypto.randomUUID(),
         }),

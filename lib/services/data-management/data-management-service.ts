@@ -163,6 +163,18 @@ function sumPreview(items: DataManagementPreviewItem[]) {
   );
 }
 
+function assertActionAllowedForMode(
+  action: DataManagementAction,
+  systemMode: 'trial' | 'production'
+) {
+  if (action === 'reset_trial' && systemMode !== 'trial') {
+    throw new Error('当前为正式账套，禁止重置试用数据');
+  }
+  if (action === 'cleanup_test' && systemMode !== 'production') {
+    throw new Error('当前为试用账套，仅允许重置试用数据');
+  }
+}
+
 function buildActiveTestWhere() {
   return { dataTag: 'test', voidedAt: null } as const;
 }
@@ -1285,12 +1297,7 @@ async function buildPreview(
   action: DataManagementAction
 ): Promise<DataManagementPreview> {
   const systemMode = await getSystemMode();
-  if (action === 'reset_trial' && systemMode !== 'trial') {
-    throw new Error('当前为正式账套，禁止重置试用数据');
-  }
-  if (action === 'cleanup_test' && systemMode !== 'production') {
-    throw new Error('当前为试用账套，仅允许重置试用数据');
-  }
+  assertActionAllowedForMode(action, systemMode);
 
   const previewEntries = CLEANUP_REGISTRY.filter(entry => {
     if (!entry.showInPreview) return false;
@@ -1316,8 +1323,9 @@ export async function createDataManagementTask(input: {
   requestedBy: string;
   idempotencyKey?: string | null;
   scope?: Record<string, unknown> | null;
+  preview?: DataManagementPreview | null;
 }) {
-  const { action, requestedBy, idempotencyKey, scope } = input;
+  const { action, requestedBy, idempotencyKey, scope, preview } = input;
   if (idempotencyKey) {
     const existing = await prisma.dataManagementTask.findUnique({
       where: { idempotencyKey },
@@ -1335,6 +1343,7 @@ export async function createDataManagementTask(input: {
       requestedBy,
       idempotencyKey: idempotencyKey ?? null,
       scope: scope ? serialiseJson(scope) : null,
+      preview: preview ? serialiseJson(preview) : null,
     },
   });
   return toDTO(created);
@@ -2070,18 +2079,22 @@ export async function runDataManagementTask(taskId: string) {
     return;
   }
 
-  const lock = buildWriteLock(taskId, userId, action);
-  await setSystemWriteLock(lock);
-  await writeSystemLog(taskId, userId, action, 'info', '数据管理任务开始', {
-    taskId,
-    action,
-  });
-
   try {
-    const preview = await buildPreview(action);
+    const systemMode = await getSystemMode();
+    assertActionAllowedForMode(action, systemMode);
+
+    const lock = buildWriteLock(taskId, userId, action);
+    await setSystemWriteLock(lock);
+    await writeSystemLog(taskId, userId, action, 'info', '数据管理任务开始', {
+      taskId,
+      action,
+    });
+
+    // 预览统计可能非常耗时（大表 COUNT/SUM），执行阶段优先保证“尽快开始清理”，
+    // 预览快照可由前端在执行前调用 /preview 并随执行请求传入（存入 task.preview）。
     await prisma.dataManagementTask.update({
       where: { id: taskId },
-      data: { preview: serialiseJson(preview), stage: 'S1' },
+      data: { stage: 'S1' },
     });
 
     const now = new Date();

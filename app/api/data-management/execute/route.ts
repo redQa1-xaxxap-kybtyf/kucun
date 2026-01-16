@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import {
   createDataManagementTask,
   runDataManagementTask,
@@ -11,6 +12,7 @@ export const POST = withAuth(
   async (request: NextRequest, { user }) => {
     const body = (await request.json()) as {
       action?: unknown;
+      preview?: unknown;
       confirmText?: unknown;
       idempotencyKey?: unknown;
     };
@@ -37,11 +39,27 @@ export const POST = withAuth(
         ? body.idempotencyKey
         : request.headers.get('x-idempotency-key');
 
+    const systemMode = await getSystemMode();
+    if (action === 'reset_trial' && systemMode !== 'trial') {
+      return NextResponse.json(
+        { success: false, error: '当前为正式账套，禁止重置试用数据' },
+        { status: 400 }
+      );
+    }
+    if (action === 'cleanup_test' && systemMode !== 'production') {
+      return NextResponse.json(
+        { success: false, error: '当前为试用账套，仅允许重置试用数据' },
+        { status: 400 }
+      );
+    }
+
     const task = await createDataManagementTask({
       action,
       requestedBy: user.id,
       idempotencyKey,
       scope: null,
+      preview:
+        body.preview && typeof body.preview === 'object' ? (body.preview as any) : null,
     });
 
     void runDataManagementTask(task.id).catch(error => {
@@ -55,4 +73,3 @@ export const POST = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
-
