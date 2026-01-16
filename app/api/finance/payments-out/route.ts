@@ -482,6 +482,7 @@ export const POST = withAuth(
                   referenceId: newPayment.id,
                   referenceNumber: paymentNumber,
                   description: `付款 ${paymentNumber} 已确认`,
+                  userId: user.id,
                   occurredAt: newPayment.paymentDate,
                   metadata: {
                     paymentMethod: data.paymentMethod,

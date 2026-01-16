@@ -171,6 +171,7 @@ export async function ensurePurchaseOrderPayable(
         referenceId: createdPayable.id,
         referenceNumber: payableNumber,
         description: `采购订单 ${order.orderNumber} 自动生成应付 ${payableNumber}`,
+        userId: order.userId,
         occurredAt: createdPayable.createdAt,
         dueDate: createdPayable.dueDate ?? dueDate,
         metadata: {
@@ -229,6 +230,7 @@ export async function ensurePurchaseOrderPayable(
         referenceId: createdPayable.id,
         referenceNumber: payableNumber,
         description: `采购订单 ${order.orderNumber} 自动生成应付 ${payableNumber}`,
+        userId: order.userId,
         occurredAt: createdPayable.createdAt,
         dueDate: createdPayable.dueDate ?? dueDate,
         metadata: {

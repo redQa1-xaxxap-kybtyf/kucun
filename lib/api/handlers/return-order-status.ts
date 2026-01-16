@@ -347,6 +347,7 @@ export async function updateReturnOrderStatus(
                   referenceId: order.id,
                   referenceNumber: order.returnNumber,
                   description: `销售退货 ${order.returnNumber} 入账`,
+                  userId,
                   occurredAt: updateData.completedAt ?? updateData.updatedAt,
                   metadata: {
                     source: 'return_order',

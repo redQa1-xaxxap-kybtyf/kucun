@@ -408,6 +408,7 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
         referenceId: order.id,
         referenceNumber: order.orderNumber,
         description: `销售订单 ${order.orderNumber} 创建并已确认`,
+        userId: order.userId,
         occurredAt: order.createdAt,
         metadata: {
           status: order.status,

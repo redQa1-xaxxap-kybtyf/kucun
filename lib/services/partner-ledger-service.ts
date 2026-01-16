@@ -32,6 +32,7 @@ export interface RecordPartnerTransactionInput {
   referenceId: string;
   referenceNumber?: string;
   description: string;
+  userId?: string | null;
   occurredAt?: Date | string;
   dueDate?: Date | string;
   status?: 'pending' | 'completed' | 'overdue';
@@ -167,6 +168,15 @@ const FINANCE_EVENT_TYPE: Record<
   adjustment: 'receivable',
 };
 
+const AUDIT_TRANSACTION_TYPES = new Set<TransactionType>([
+  'sale',
+  'sales_return',
+  'refund',
+  'payment_in',
+  'payment_out',
+  'purchase',
+]);
+
 // ==================== 工具函数 ====================
 
 function resolveRule(type: TransactionType): TransactionRule {
@@ -201,7 +211,33 @@ function serialiseMetadata(
   }
 
   try {
-    return JSON.stringify(metadata);
+    const json = JSON.stringify(metadata);
+    if (json.length <= 191) {
+      return json;
+    }
+
+    // statement_transactions.metadata 在数据库中是 VARCHAR(191)，超长会导致写入失败。
+    // 这里做“尽量保留关键信息”的降级，保证写入成功且仍为合法 JSON。
+    const compact: Record<string, unknown> = { truncated: true };
+    const allowlist = [
+      'userId',
+      'paymentType',
+      'salesOrderId',
+      'returnOrderId',
+      'refundType',
+      'refundMethod',
+      'source',
+      'triggeredBy',
+    ] as const;
+
+    for (const key of allowlist) {
+      if (key in metadata) {
+        compact[key] = metadata[key];
+      }
+    }
+
+    const compactJson = JSON.stringify(compact);
+    return compactJson.length <= 191 ? compactJson : JSON.stringify({ truncated: true });
   } catch (_error) {
     throw new Error('Failed to serialise transaction metadata');
   }
@@ -524,6 +560,47 @@ export async function recordPartnerTransaction(
       where: { id: statement.id },
       data: updateData,
     });
+
+    if (AUDIT_TRANSACTION_TYPES.has(input.transactionType)) {
+      const operatorId =
+        input.userId ??
+        (typeof input.metadata?.userId === 'string' ? input.metadata.userId : null);
+
+      try {
+        const auditMetadata = JSON.stringify({
+          p: input.partnerId,
+          ref: input.referenceId,
+          amt: input.amount,
+          b: beforeBalance,
+          a: afterBalance,
+        }).slice(0, 191);
+
+        await db.systemLog.create({
+          data: {
+            type: 'business_operation',
+            level: 'info',
+            action: `ledger:${input.transactionType}`,
+            description: `${input.transactionType} ${referenceNumber} ${input.amount} ${beforeBalance} -> ${afterBalance}`.slice(
+              0,
+              191
+            ),
+            userId: operatorId,
+            metadata: auditMetadata,
+          },
+        });
+      } catch (logError) {
+        logger.warn(
+          'partner-ledger',
+          '记录账本审计日志失败(忽略)',
+          undefined,
+          {
+            transactionType: input.transactionType,
+            referenceId: input.referenceId,
+            error: logError instanceof Error ? logError.message : String(logError),
+          }
+        );
+      }
+    }
 
     await publishFinanceChange({
       recordType: FINANCE_EVENT_TYPE[input.transactionType] ?? 'receivable',

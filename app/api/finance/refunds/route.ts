@@ -9,6 +9,7 @@ import {
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { publishFinanceEvent } from '@/lib/events';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { toNumber } from '@/lib/utils/number';
 import {
   createRefundRecordSchema,
@@ -392,7 +393,7 @@ export const POST = withAuth(
       const refundNumber = `RT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
       // 7. 创建退款记录（进销存系统：退款是记录已发生的事实，直接标记为已完成）
-      return await tx.refundRecord.create({
+      const refund = await tx.refundRecord.create({
         data: {
           refundNumber,
           returnOrderId: validatedData.returnOrderId || null,
@@ -436,6 +437,37 @@ export const POST = withAuth(
           },
         },
       });
+
+      // ✅ 退款完成即入账：同步一笔「退款」流水到往来账
+      if (refund.customerId && toNumber(refund.processedAmount, 0) > 0) {
+        await recordPartnerTransaction(
+          {
+            partnerId: refund.customerId,
+            partnerName: refund.customer.name,
+            partnerRole: 'customer',
+            entityType: 'customer',
+            transactionType: 'refund',
+            amount: toNumber(refund.processedAmount, 0),
+            referenceId: refund.id,
+            referenceNumber: refund.refundNumber,
+            description: `退款 ${refund.refundNumber} 入账`,
+            userId: user.id,
+            occurredAt: refund.processedDate ?? refund.refundDate,
+            metadata: {
+              source: 'refund_record',
+              salesOrderId: refund.salesOrderId,
+              returnOrderId: refund.returnOrderId ?? undefined,
+              refundMethod: refund.refundMethod,
+              refundType: refund.refundType,
+              status: refund.status,
+              triggeredBy: 'finance_refund:create',
+            },
+          },
+          tx
+        );
+      }
+
+      return refund;
     });
 
     // 发布财务事件

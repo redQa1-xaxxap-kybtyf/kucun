@@ -500,6 +500,7 @@ export async function updateFactoryShipmentStatus(
             referenceId: order.id,
             referenceNumber: order.orderNumber,
             description: `厂家直发订单 ${order.orderNumber} 确认应收`,
+            userId: order.userId,
             occurredAt:
               data.shipmentDate ??
               order.shipmentDate ??
@@ -697,7 +698,7 @@ export async function updateFactoryShipmentStatus(
                     sourceNumber: order.orderNumber,
                     payableAmount: payable.amount,
                     remainingAmount: payable.amount,
-                    dueDate: computeDueDate(),
+                    dueDate,
                     status: 'pending',
                     paymentTerms: '30天',
                     description,
@@ -708,6 +709,45 @@ export async function updateFactoryShipmentStatus(
                   },
                 });
                 payableRecordIds.push(createdPayable.id);
+
+                try {
+                  await recordPartnerTransaction(
+                    {
+                      partnerId: payable.supplierId,
+                      partnerRole: 'supplier',
+                      entityType: 'supplier',
+                      transactionType: 'purchase',
+                      amount: payable.amount,
+                      referenceId: createdPayable.id,
+                      referenceNumber: payableNumber,
+                      description,
+                      userId: order.userId,
+                      occurredAt: payableDateBase,
+                      dueDate,
+                      metadata: {
+                        sourceType: 'factory_shipment',
+                        sourceId: orderId,
+                        sourceNumber: order.orderNumber,
+                        payableRecordId: createdPayable.id,
+                        triggeredBy: 'factory_shipment:payable_auto',
+                      },
+                    },
+                    tx
+                  );
+                } catch (error) {
+                  logger.error(
+                    'factory-shipment-status',
+                    '记录供应商往来账失败',
+                    error,
+                    {
+                      orderId,
+                      orderNumber: order.orderNumber,
+                      payableRecordId: createdPayable.id,
+                      supplierId: payable.supplierId,
+                    }
+                  );
+                  throw new Error('记录供应商往来账失败');
+                }
               }
 
               if (payableRecordIds.length > 0) {

@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { toNumber } from '@/lib/utils/number';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
@@ -145,16 +146,61 @@ export const PUT = withAuth(
         }
       }
 
-      const refund = await prisma.refundRecord.update({
-        where: { id: params.id },
-        data: updateData,
-        include: {
-          salesOrder: {
-            include: {
-              customer: true,
+      const refund = await prisma.$transaction(async tx => {
+        const updatedRefund = await tx.refundRecord.update({
+          where: { id: params.id },
+          data: updateData,
+          include: {
+            salesOrder: {
+              include: {
+                customer: true,
+              },
             },
           },
-        },
+        });
+
+        // ✅ 更新为已完成时补写往来账退款流水（幂等：referenceId+type 唯一）
+        if (
+          updatedRefund.status === 'completed' &&
+          updatedRefund.customerId
+        ) {
+          const processedAmount = toNumber(updatedRefund.processedAmount, 0);
+          const fallbackAmount = toNumber(updatedRefund.refundAmount, 0);
+          const effectiveAmount =
+            processedAmount > 0 ? processedAmount : fallbackAmount;
+
+          if (effectiveAmount > 0) {
+            await recordPartnerTransaction(
+              {
+                partnerId: updatedRefund.customerId,
+                partnerName:
+                  updatedRefund.salesOrder?.customer?.name ?? undefined,
+                partnerRole: 'customer',
+                entityType: 'customer',
+                transactionType: 'refund',
+                amount: effectiveAmount,
+                referenceId: updatedRefund.id,
+                referenceNumber: updatedRefund.refundNumber,
+                description: `退款 ${updatedRefund.refundNumber} 入账`,
+                userId: context.user.id,
+                occurredAt:
+                  updatedRefund.processedDate ?? updatedRefund.refundDate,
+                metadata: {
+                  source: 'refund_record',
+                  salesOrderId: updatedRefund.salesOrderId,
+                  returnOrderId: updatedRefund.returnOrderId ?? undefined,
+                  refundMethod: updatedRefund.refundMethod,
+                  refundType: updatedRefund.refundType,
+                  status: updatedRefund.status,
+                  triggeredBy: 'finance_refund:update',
+                },
+              },
+              tx
+            );
+          }
+        }
+
+        return updatedRefund;
       });
 
       return NextResponse.json({

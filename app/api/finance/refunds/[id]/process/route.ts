@@ -4,10 +4,12 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   processRefundWithLock,
   validateRefundProcessable,
 } from '@/lib/utils/idempotency-refund';
+import { toNumber } from '@/lib/utils/number';
 import { processRefundSchema } from '@/lib/validations/refund';
 
 export const POST = withAuth(
@@ -77,6 +79,42 @@ export const POST = withAuth(
             },
           },
         });
+
+        // ✅ 退款完成后同步往来账（避免总账/明细缺少退款流水）
+        if (updatedRefund.status === 'completed' && updatedRefund.customerId) {
+          const processedAmount = toNumber(updatedRefund.processedAmount, 0);
+          const fallbackAmount = toNumber(updatedRefund.refundAmount, 0);
+          const effectiveAmount =
+            processedAmount > 0 ? processedAmount : fallbackAmount;
+
+          if (effectiveAmount > 0) {
+            await recordPartnerTransaction(
+              {
+                partnerId: updatedRefund.customerId,
+                partnerName: updatedRefund.salesOrder?.customer?.name ?? undefined,
+                partnerRole: 'customer',
+                entityType: 'customer',
+                transactionType: 'refund',
+                amount: effectiveAmount,
+                referenceId: updatedRefund.id,
+                referenceNumber: updatedRefund.refundNumber,
+                description: `退款 ${updatedRefund.refundNumber} 入账`,
+                userId: user.id,
+                occurredAt: updatedRefund.processedDate ?? updatedRefund.refundDate,
+                metadata: {
+                  source: 'refund_record',
+                  salesOrderId: updatedRefund.salesOrderId,
+                  returnOrderId: updatedRefund.returnOrderId ?? undefined,
+                  refundMethod: updatedRefund.refundMethod,
+                  refundType: updatedRefund.refundType,
+                  status: updatedRefund.status,
+                  triggeredBy: 'refund:process',
+                },
+              },
+              tx
+            );
+          }
+        }
 
         return updatedRefund;
       });

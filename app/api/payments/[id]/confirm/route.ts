@@ -31,13 +31,11 @@ function appendRemark(existing: string | null, note?: string): string | null {
 export const POST = withAuth(
   async (
     request: NextRequest,
-    context: {
-      params?: Promise<Record<string, string>> | Record<string, string>;
-    }
+    { user, params }
   ) => {
     let paymentId: string | undefined;
     try {
-      const { id } = await resolveParams(context.params);
+      const { id } = await resolveParams(params);
       paymentId = id;
 
       const body = request.bodyUsed
@@ -175,6 +173,7 @@ export const POST = withAuth(
             referenceId: updated.id,
             referenceNumber: updated.paymentNumber,
             description: `收款 ${updated.paymentNumber} 确认到账`,
+            userId: user.id,
             occurredAt: updated.paymentDate ?? new Date(),
             metadata: {
               paymentMethod: updated.paymentMethod,

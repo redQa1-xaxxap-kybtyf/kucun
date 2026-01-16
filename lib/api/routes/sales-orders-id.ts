@@ -201,6 +201,7 @@ export const putSalesOrderRoute: ApiHandler = async (
         referenceId: data.id,
         referenceNumber: data.orderNumber,
         description: `销售订单 ${data.orderNumber} 确认应收`,
+        userId,
         occurredAt: new Date(),
         metadata: {
           status: data.status,

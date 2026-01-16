@@ -25,6 +25,7 @@
     "test:e2e:report": "playwright show-report",
     "test:redis-ws": "tsx scripts/test-redis-websocket.ts",
     "ledger:rebuild": "tsx scripts/rebuild-ledger.ts",
+    "ledger:backfill": "tsx scripts/backfill-ledger-returns-refunds.ts",
     "cache:clear": "tsx scripts/clear-cache.ts",
     "format:check": "prettier --check .",
     "prepare": "husky install",
