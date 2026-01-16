@@ -52,6 +52,8 @@ const protectedPaths = [
   '/api/price-history', // 价格历史 API
   '/api/profile', // 个人资料 API
   '/api/admin', // 管理端 API（仅管理员可用）
+  '/api/system', // 系统模式等全局配置 API
+  '/api/data-management', // 数据管理（预览/执行/任务）
 ];
 
 // 需要管理员权限的路径
