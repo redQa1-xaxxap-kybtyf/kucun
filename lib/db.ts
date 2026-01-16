@@ -70,6 +70,8 @@ const slowQueryThresholdMs = Math.max(
 const SYSTEM_MODE_CACHE_TTL_MS = 5_000;
 let cachedSystemMode: 'trial' | 'production' | null = null;
 let cachedSystemModeAt = 0;
+const DEFAULT_SYSTEM_MODE: 'trial' | 'production' =
+  env.NODE_ENV === 'development' ? 'trial' : 'production';
 
 // 防止在客户端环境中初始化 Prisma
 function createPrismaClient() {
@@ -150,10 +152,10 @@ if (typeof window === 'undefined' && prisma) {
         cachedSystemMode =
           setting?.value === 'trial' || setting?.value === 'production'
             ? (setting.value as 'trial' | 'production')
-            : 'production';
+            : DEFAULT_SYSTEM_MODE;
         cachedSystemModeAt = now;
       } catch {
-        cachedSystemMode = 'production';
+        cachedSystemMode = DEFAULT_SYSTEM_MODE;
         cachedSystemModeAt = now;
       }
     }

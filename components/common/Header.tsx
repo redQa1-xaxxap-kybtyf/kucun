@@ -195,19 +195,26 @@ function HeaderComponent({
               <PopoverTrigger asChild>
                 <button
                   type="button"
-                  className="hidden items-center rounded-full sm:flex"
+                  className="flex items-center rounded-full"
                 >
                   <Badge
                     variant="secondary"
                     className={cn(
-                      'rounded-full px-3 py-1 text-[10px] font-black',
+                      'rounded-full px-2 py-1 text-[10px] font-black sm:px-3',
                       systemMode === 'trial'
                         ? 'bg-emerald-50 text-emerald-700'
                         : 'bg-amber-50 text-amber-700'
                     )}
                   >
-                    当前账套：
-                    {systemMode === 'trial' ? '试用（可重置）' : '正式（受保护）'}
+                    <span className="sm:hidden">
+                      {systemMode === 'trial' ? '试用' : '正式'}
+                    </span>
+                    <span className="hidden sm:inline">
+                      当前账套：
+                      {systemMode === 'trial'
+                        ? '试用（可重置）'
+                        : '正式（受保护）'}
+                    </span>
                   </Badge>
                 </button>
               </PopoverTrigger>
