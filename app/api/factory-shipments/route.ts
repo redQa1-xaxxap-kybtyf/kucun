@@ -34,6 +34,7 @@ import {
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+import { replacePrismaDecimals } from '@/lib/utils/prisma-serialization';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
@@ -549,7 +550,9 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
 
     // ✅ P1修复: 使用共享的字段增强函数
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const enrichedOrders = await enrichFactoryShipmentOrders(orders as any);
+    const normalizedOrders = replacePrismaDecimals(orders);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const enrichedOrders = await enrichFactoryShipmentOrders(normalizedOrders as any);
 
     return NextResponse.json({
       data: enrichedOrders,

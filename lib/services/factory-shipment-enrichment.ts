@@ -6,6 +6,7 @@
 
 import { prisma } from '@/lib/db';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+import { toNumber } from '@/lib/utils/number';
 
 /**
  * 增强厂家发货订单数据
@@ -50,10 +51,10 @@ export async function enrichFactoryShipmentOrders(
     // 计算客户货和自有货金额
     const customerOwnedAmount = order.items
       .filter(item => item.ownership === 'customer')
-      .reduce((sum, item) => sum + item.totalPrice, 0);
+      .reduce((sum, item) => sum + toNumber(item.totalPrice, 0), 0);
     const selfOwnedAmount = order.items
       .filter(item => item.ownership === 'self')
-      .reduce((sum, item) => sum + item.totalPrice, 0);
+      .reduce((sum, item) => sum + toNumber(item.totalPrice, 0), 0);
 
     return {
       ...order,
