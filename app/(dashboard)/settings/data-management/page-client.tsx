@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle2, Clock, Eraser, Shield, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import {
@@ -92,16 +93,29 @@ function formatMoney(value?: number) {
   return value.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function DataManagementPageClient({ systemMode }: { systemMode: 'trial' | 'production' }) {
+export function DataManagementPageClient({
+  systemMode,
+  canSwitchMode,
+}: {
+  systemMode: 'trial' | 'production';
+  canSwitchMode?: boolean;
+}) {
   const { toast } = useToast();
+  const router = useRouter();
 
   const action: DataManagementAction = systemMode === 'trial' ? 'reset_trial' : 'cleanup_test';
   const confirmWord = systemMode === 'trial' ? '重置' : '清理';
+
+  const switchTargetMode: 'trial' | 'production' =
+    systemMode === 'trial' ? 'production' : 'trial';
+  const switchConfirmWord = switchTargetMode === 'trial' ? '切换为试用' : '切换为正式';
 
   const [previewOpen, setPreviewOpen] = React.useState(false);
   const [executeOpen, setExecuteOpen] = React.useState(false);
   const [confirmText, setConfirmText] = React.useState('');
   const [taskId, setTaskId] = React.useState<string | null>(null);
+  const [switchOpen, setSwitchOpen] = React.useState(false);
+  const [switchConfirmText, setSwitchConfirmText] = React.useState('');
 
   const previewMutation = useMutation({
     mutationFn: async () => {
@@ -146,6 +160,33 @@ export function DataManagementPageClient({ systemMode }: { systemMode: 'trial' |
     },
     onError: error => {
       toast({ variant: 'destructive', title: '执行失败', description: String(error) });
+    },
+  });
+
+  const switchModeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await csrfFetch('/api/system/mode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: switchTargetMode }),
+      });
+      const json = (await response.json()) as any;
+      if (!response.ok || !json?.success) {
+        throw new Error(json?.error || '切换失败');
+      }
+      return json.data as { mode: 'trial' | 'production' };
+    },
+    onSuccess: data => {
+      setSwitchOpen(false);
+      setSwitchConfirmText('');
+      toast({
+        title: '账套模式已切换',
+        description: `当前：${data.mode === 'trial' ? '试用' : '正式'}（页面将刷新）`,
+      });
+      router.refresh();
+    },
+    onError: error => {
+      toast({ variant: 'destructive', title: '切换失败', description: String(error) });
     },
   });
 
@@ -238,6 +279,39 @@ export function DataManagementPageClient({ systemMode }: { systemMode: 'trial' |
           </Button>
         </CardContent>
       </Card>
+
+      {canSwitchMode && (
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-2">
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-slate-700" />
+              账套模式切换（管理员）
+            </CardTitle>
+            <div className="text-sm text-muted-foreground">
+              切换将影响“默认数据标签（test/prod）”与“数据管理”入口，并会写入系统日志。
+            </div>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm">
+              当前：
+              <Badge
+                variant={systemMode === 'trial' ? 'secondary' : 'default'}
+                className="ml-2"
+              >
+                {systemMode === 'trial' ? '试用' : '正式'}
+              </Badge>
+            </div>
+            <Button
+              variant="outline"
+              className="h-10"
+              onClick={() => setSwitchOpen(true)}
+              disabled={switchModeMutation.isPending}
+            >
+              切换为{switchTargetMode === 'trial' ? '试用' : '正式'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {taskId && (
         <Card className="shadow-sm">
@@ -380,6 +454,56 @@ export function DataManagementPageClient({ systemMode }: { systemMode: 'trial' |
               onClick={() => executeMutation.mutate()}
             >
               {executeMutation.isPending ? '执行中...' : '确认执行'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={switchOpen}
+        onOpenChange={open => {
+          setSwitchOpen(open);
+          if (!open) setSwitchConfirmText('');
+        }}
+      >
+        <AlertDialogContent className="max-w-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>切换账套模式</AlertDialogTitle>
+            <AlertDialogDescription>
+              该操作仅管理员可执行。本操作不可撤销。请输入“{switchConfirmWord}”以继续。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-3">
+            <div className="text-sm text-muted-foreground">
+              目标模式：
+              <Badge
+                variant={switchTargetMode === 'trial' ? 'secondary' : 'default'}
+                className="ml-2"
+              >
+                {switchTargetMode === 'trial' ? '试用' : '正式'}
+              </Badge>
+            </div>
+            <Input
+              value={switchConfirmText}
+              onChange={e => setSwitchConfirmText(e.target.value)}
+              placeholder={`请输入：${switchConfirmWord}`}
+            />
+            <div className="text-xs text-muted-foreground">
+              提示：切换后页面会刷新；模式写入数据库后可能有短暂缓存延迟（约 5 秒）。
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={
+                switchModeMutation.isPending ||
+                switchConfirmText !== switchConfirmWord
+              }
+              onClick={() => switchModeMutation.mutate()}
+            >
+              {switchModeMutation.isPending ? '切换中...' : '确认切换'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

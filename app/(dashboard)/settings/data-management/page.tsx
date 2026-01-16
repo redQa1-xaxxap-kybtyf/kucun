@@ -21,6 +21,7 @@ export default async function DataManagementPage() {
   }
 
   const systemMode = await getSystemMode();
+  const canSwitchMode = session.user.role === 'admin';
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-4 sm:p-6">
@@ -41,9 +42,11 @@ export default async function DataManagementPage() {
           </div>
         </div>
 
-        <DataManagementPageClient systemMode={systemMode} />
+        <DataManagementPageClient
+          systemMode={systemMode}
+          canSwitchMode={canSwitchMode}
+        />
       </div>
     </div>
   );
 }
-
