@@ -75,12 +75,6 @@ export const navigationItems: NavigationItem[] = [
             icon: Truck,
           },
           {
-            id: 'factory-shipments-customer-direct',
-            title: '客户直发',
-            href: '/factory-shipments?mode=customer_direct',
-            icon: PackageCheck,
-          },
-          {
             id: 'factory-shipments-warehouse-inbound',
             title: '仓库进货',
             href: '/purchase-orders',
