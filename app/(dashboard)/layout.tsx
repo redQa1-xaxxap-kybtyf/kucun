@@ -8,6 +8,7 @@ import {
   navigationItems,
 } from '@/components/common/sidebar-navigation-config';
 import { authOptions } from '@/lib/auth';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type { NavigationItem } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
 import { getAccessibleNavItems } from '@/lib/utils/permissions';
@@ -61,12 +62,15 @@ export default async function DashboardLayout({
   const accessibleNavItemIds = extractAllIds(accessibleNavItems);
   const accessibleBottomNavItemIds = extractAllIds(accessibleBottomNavItems);
 
+  const systemMode = await getSystemMode();
+
   // 传递 session 和过滤后的导航项 ID 到客户端组件
   return (
     <DashboardLayoutClient
       session={session}
       accessibleNavItemIds={accessibleNavItemIds}
       accessibleBottomNavItemIds={accessibleBottomNavItemIds}
+      systemMode={systemMode}
     >
       {children}
     </DashboardLayoutClient>

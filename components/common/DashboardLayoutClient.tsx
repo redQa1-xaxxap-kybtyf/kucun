@@ -30,6 +30,8 @@ interface DashboardLayoutClientProps {
   accessibleNavItemIds: string[];
   /** 服务端过滤后的可访问底部导航项 ID */
   accessibleBottomNavItemIds: string[];
+  /** 服务端传递的账套模式 */
+  systemMode: 'trial' | 'production';
   /** 自定义样式类名 */
   className?: string;
   /** 是否显示侧边栏 */
@@ -87,6 +89,7 @@ export function DashboardLayoutClient({
   session,
   accessibleNavItemIds,
   accessibleBottomNavItemIds,
+  systemMode,
   className,
   showSidebar = true,
   showHeader = true,
@@ -248,6 +251,7 @@ export function DashboardLayoutClient({
             showMobileMenuButton={isMobile}
             onMobileMenuClick={() => setMobileNavOpen(true)}
             user={session.user} // 传递用户信息，避免客户端重复请求
+            systemMode={systemMode}
           />
         )}
 

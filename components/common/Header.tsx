@@ -27,6 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
@@ -49,6 +50,7 @@ interface HeaderProps {
     status: string;
     avatar?: string;
   };
+  systemMode?: 'trial' | 'production';
 }
 
 /**
@@ -60,6 +62,7 @@ function HeaderComponent({
   onMobileMenuClick,
   className,
   user,
+  systemMode,
 }: HeaderProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -187,6 +190,57 @@ function HeaderComponent({
 
         {/* 右侧区域 */}
         <div className="flex items-center gap-1.5">
+          {systemMode && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="hidden items-center rounded-full sm:flex"
+                >
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      'rounded-full px-3 py-1 text-[10px] font-black',
+                      systemMode === 'trial'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : 'bg-amber-50 text-amber-700'
+                    )}
+                  >
+                    当前账套：
+                    {systemMode === 'trial' ? '试用（可重置）' : '正式（受保护）'}
+                  </Badge>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 rounded-xl">
+                <div className="space-y-2">
+                  <div className="text-sm font-black text-slate-900">
+                    账套模式说明
+                  </div>
+                  <div className="text-xs leading-relaxed text-slate-600">
+                    {systemMode === 'trial' ? (
+                      <>
+                        当前为试用账套：允许在“数据管理”中一键重置试用数据，重置后业务单据、报表与台账会清空/归零。
+                      </>
+                    ) : (
+                      <>
+                        当前为正式账套：受保护，禁止直接清空正式数据；仅支持清理标记为测试的数据，并通过作废/冲销保证可追溯。
+                      </>
+                    )}
+                  </div>
+                  <div className="pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 rounded-full text-xs font-bold"
+                      onClick={() => router.push('/settings/data-management')}
+                    >
+                      进入数据管理
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
           {/* 数据刷新按钮 */}
           <Button
             variant="ghost"
