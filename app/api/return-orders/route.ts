@@ -4,11 +4,15 @@
 import { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import { toNumber } from '@/lib/utils/number';
 import {
   createReturnOrderSchema,
@@ -70,27 +74,21 @@ export const GET = withAuth(
       endDate,
       sortBy = 'createdAt',
       sortOrder = 'desc',
+      includeTest,
+      includeVoided,
     } = validationResult.data;
 
     // 构建查询条件
-    type WhereClause = {
-      OR?: Array<{
-        returnNumber?: { contains: string };
-        reason?: { contains: string };
-        customer?: { name: { contains: string } };
-        salesOrder?: { orderNumber: { contains: string } };
-      }>;
-      customerId?: string;
-      salesOrderId?: string;
-      status?: string;
-      type?: string;
-      createdAt?: {
-        gte?: Date;
-        lte?: Date;
-      };
-    };
+    const where: Prisma.ReturnOrderWhereInput = {};
 
-    const where: WhereClause = {};
+    if (!includeVoided) {
+      where.voidedAt = null;
+    }
+
+    const systemMode = await getSystemMode();
+    if (systemMode === 'production' && !includeTest) {
+      where.dataTag = 'prod';
+    }
 
     if (search) {
       where.OR = [

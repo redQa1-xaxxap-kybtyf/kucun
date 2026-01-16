@@ -327,6 +327,15 @@ export const expenseFilterSchema = z.object({
     .describe('排序字段'),
 
   sortOrder: z.enum(['asc', 'desc']).default('desc').describe('排序方向'),
+
+  includeTest: z.coerce
+    .boolean()
+    .optional()
+    .describe('是否包含测试数据（可选）'),
+  includeVoided: z.coerce
+    .boolean()
+    .optional()
+    .describe('是否包含已作废数据（可选）'),
 });
 
 // 费用统计筛选验证规则

@@ -36,6 +36,8 @@ type RefundSearchParams = {
   sortOrder?: string;
   startDate?: string;
   endDate?: string;
+  includeTest?: string;
+  includeVoided?: string;
 };
 
 async function getRefundsData(searchParams: RefundSearchParams) {
@@ -74,6 +76,8 @@ async function getRefundsData(searchParams: RefundSearchParams) {
     sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
     startDate: parsedParams.startDate,
     endDate: parsedParams.endDate,
+    includeTest: parsedParams.includeTest,
+    includeVoided: parsedParams.includeVoided,
   });
 }
 
@@ -114,6 +118,8 @@ export default async function RefundsPage({
     sortOrder: validatedParams.sortOrder as 'asc' | 'desc',
     startDate: validatedParams.startDate,
     endDate: validatedParams.endDate,
+    includeTest: validatedParams.includeTest,
+    includeVoided: validatedParams.includeVoided,
   });
 
   const queryClient = new QueryClient({

@@ -1,10 +1,12 @@
 'use client';
 
+import { Ban, Eye } from 'lucide-react';
+
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import {
-    EXPENSE_RELATED_TYPE_OPTIONS,
-    EXPENSE_TYPE_OPTIONS,
-    type ExpenseQueryParams,
+  EXPENSE_RELATED_TYPE_OPTIONS,
+  EXPENSE_TYPE_OPTIONS,
+  type ExpenseQueryParams,
 } from '@/lib/types/expense';
 
 interface ExpenseFiltersProps {
@@ -16,10 +18,34 @@ export function ExpenseFilters({
   filters,
   onFilterChange,
 }: ExpenseFiltersProps) {
+  const handleIncludeTestToggle = () => {
+    onFilterChange({ includeTest: filters.includeTest ? undefined : true });
+  };
+
+  const handleIncludeVoidedToggle = () => {
+    onFilterChange({ includeVoided: filters.includeVoided ? undefined : true });
+  };
+
   return (
     <SearchFilterCard
       searchValue=""
       onSearchChange={() => {}}
+      toggleButtons={[
+        {
+          key: 'includeTest',
+          label: '显示测试',
+          icon: <Eye className="h-3.5 w-3.5" />,
+          active: !!filters.includeTest,
+          onClick: handleIncludeTestToggle,
+        },
+        {
+          key: 'includeVoided',
+          label: '显示作废',
+          icon: <Ban className="h-3.5 w-3.5" />,
+          active: !!filters.includeVoided,
+          onClick: handleIncludeVoidedToggle,
+        },
+      ]}
       // 筛选器配置
       filters={[
         {

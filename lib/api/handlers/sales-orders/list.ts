@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 
 import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 
 import {
@@ -45,17 +46,30 @@ const DEFAULT_SORT_FIELD: keyof Prisma.SalesOrderOrderByWithRelationInput =
   'createdAt';
 const DEFAULT_SORT_ORDER: Prisma.SortOrder = 'desc';
 
-const buildWhere = ({
-  search,
-  status,
-  customerId,
-  userId,
-  startDate,
-  endDate,
-  orderType,
-  hasReturns,
-}: SalesOrderQueryParams): Prisma.SalesOrderWhereInput => {
+const buildWhere = (
+  {
+    search,
+    status,
+    customerId,
+    userId,
+    startDate,
+    endDate,
+    orderType,
+    hasReturns,
+    includeTest,
+    includeVoided,
+  }: SalesOrderQueryParams,
+  systemMode: 'trial' | 'production'
+): Prisma.SalesOrderWhereInput => {
   const where: Prisma.SalesOrderWhereInput = {};
+
+  if (!includeVoided) {
+    where.voidedAt = null;
+  }
+
+  if (systemMode === 'production' && !includeTest) {
+    where.dataTag = 'prod';
+  }
 
   if (search) {
     where.OR = [
@@ -160,7 +174,8 @@ const mapListOrder = (
 export async function getSalesOrders(params: SalesOrderQueryParams) {
   const { page = 1, limit = 20 } = params;
   const skip = (page - 1) * limit;
-  const where = buildWhere(params);
+  const systemMode = await getSystemMode();
+  const where = buildWhere(params, systemMode);
   const orderBy = buildOrderBy(params);
 
   const [orders, total] = await Promise.all([

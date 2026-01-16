@@ -236,6 +236,8 @@ export interface RefundListQueryParams {
   sortOrder?: 'asc' | 'desc';
   startDate?: string;
   endDate?: string;
+  includeTest?: boolean;
+  includeVoided?: boolean;
 }
 
 // 退款列表统计数据（用于列表视图）

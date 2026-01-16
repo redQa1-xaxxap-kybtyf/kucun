@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
   RefundListData,
   RefundListQueryParams,
@@ -21,6 +22,8 @@ type RawSearchParams = {
   sortOrder?: string;
   startDate?: string;
   endDate?: string;
+  includeTest?: string;
+  includeVoided?: string;
 };
 
 type ParsedQuery = {
@@ -37,6 +40,8 @@ type ParsedQuery = {
   sortOrder: 'asc' | 'desc';
   startDate?: string;
   endDate?: string;
+  includeTest?: boolean;
+  includeVoided?: boolean;
 };
 
 /**
@@ -70,6 +75,8 @@ export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
     sortOrder: searchParams.sortOrder || undefined,
     startDate: searchParams.startDate || undefined,
     endDate: searchParams.endDate || undefined,
+    includeTest: searchParams.includeTest === 'true' ? true : undefined,
+    includeVoided: searchParams.includeVoided === 'true' ? true : undefined,
   };
 }
 
@@ -77,6 +84,7 @@ export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
  * ✅ P0修复: 扩展查询条件构建，支持完整的筛选参数
  */
 function buildQueryConditions(
+  systemMode: 'trial' | 'production',
   search: string,
   status?: string,
   customerId?: string,
@@ -85,9 +93,19 @@ function buildQueryConditions(
   refundType?: string,
   refundMethod?: string,
   startDate?: string,
-  endDate?: string
+  endDate?: string,
+  includeTest?: boolean,
+  includeVoided?: boolean
 ) {
   const whereConditions: Record<string, unknown> = {};
+
+  if (!includeVoided) {
+    whereConditions.voidedAt = null;
+  }
+
+  if (systemMode === 'production' && !includeTest) {
+    whereConditions.dataTag = 'prod';
+  }
 
   if (search) {
     whereConditions.OR = [
@@ -316,7 +334,9 @@ function buildRefundPagination(total: number, query: ParsedQuery) {
  * - 统计计算：aggregate + groupBy - 数据库级别聚合，性能提升 90%+
  */
 export async function fetchRefundsList(query: ParsedQuery) {
+  const systemMode = await getSystemMode();
   const whereConditions = buildQueryConditions(
+    systemMode,
     query.search,
     query.status,
     query.customerId,
@@ -325,7 +345,9 @@ export async function fetchRefundsList(query: ParsedQuery) {
     query.refundType,
     query.refundMethod,
     query.startDate,
-    query.endDate
+    query.endDate,
+    query.includeTest,
+    query.includeVoided
   );
 
   const [refundsData, total, aggregateResult] = await Promise.all([
@@ -397,5 +419,7 @@ export function buildRefundQueryParams(
     sortOrder: (validatedParams.sortOrder as 'asc' | 'desc') ?? 'desc',
     startDate: validatedParams.startDate,
     endDate: validatedParams.endDate,
+    includeTest: validatedParams.includeTest,
+    includeVoided: validatedParams.includeVoided,
   };
 }

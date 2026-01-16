@@ -243,6 +243,8 @@ export const paymentRecordQuerySchema = z
       .optional()
       .default('paymentDate'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+    includeTest: z.coerce.boolean().optional(),
+    includeVoided: z.coerce.boolean().optional(),
   })
   .refine(
     data => {

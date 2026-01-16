@@ -31,6 +31,8 @@ const getSalesOrdersHandler = withErrorHandling(
         endDate: searchParams.get('endDate'),
         orderType: searchParams.get('orderType'),
         hasReturns: searchParams.get('hasReturns'),
+        includeTest: searchParams.get('includeTest'),
+        includeVoided: searchParams.get('includeVoided'),
       };
 
       // 验证查询参数

@@ -75,6 +75,8 @@ interface PaymentsClientProps {
     sortOrder?: 'asc' | 'desc';
     startDate?: string;
     endDate?: string;
+    includeTest?: boolean;
+    includeVoided?: boolean;
   };
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: PaymentStatus | string | undefined) => void;
@@ -412,6 +414,8 @@ interface PaymentFiltersProps {
     paymentMethod?: string;
     startDate?: string;
     endDate?: string;
+    includeTest?: boolean;
+    includeVoided?: boolean;
   };
   onSearch: (value: string) => void;
   onFilterChange: (key: string, value: string | undefined) => void;
@@ -425,11 +429,37 @@ function PaymentFilters({
   onFilterChange,
   onDateRangeChange,
 }: PaymentFiltersProps) {
+  const handleIncludeTestToggle = React.useCallback(() => {
+    const nextValue = initialParams?.includeTest ? undefined : 'true';
+    onFilterChange('includeTest', nextValue);
+  }, [initialParams?.includeTest, onFilterChange]);
+
+  const handleIncludeVoidedToggle = React.useCallback(() => {
+    const nextValue = initialParams?.includeVoided ? undefined : 'true';
+    onFilterChange('includeVoided', nextValue);
+  }, [initialParams?.includeVoided, onFilterChange]);
+
   return (
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
       searchPlaceholder="搜索收款单号、客户名称或订单号..."
+      toggleButtons={[
+        {
+          key: 'includeTest',
+          label: '显示测试',
+          icon: <TrendingUp className="h-3.5 w-3.5" />,
+          active: !!initialParams?.includeTest,
+          onClick: handleIncludeTestToggle,
+        },
+        {
+          key: 'includeVoided',
+          label: '显示作废',
+          icon: <Clock className="h-3.5 w-3.5" />,
+          active: !!initialParams?.includeVoided,
+          onClick: handleIncludeVoidedToggle,
+        },
+      ]}
       // 筛选器配置
       filters={[
         {

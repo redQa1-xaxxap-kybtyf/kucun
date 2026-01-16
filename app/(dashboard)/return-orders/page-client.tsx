@@ -47,6 +47,8 @@ export function ReturnOrdersPageClient({
     sortOrder: initialParams?.sortOrder || 'desc',
     startDate: initialParams?.startDate,
     endDate: initialParams?.endDate,
+    includeTest: initialParams?.includeTest,
+    includeVoided: initialParams?.includeVoided,
   };
 
   // 获取退货订单数据
@@ -167,6 +169,32 @@ export function ReturnOrdersPageClient({
     params.delete('processType');
     params.delete('startDate');
     params.delete('endDate');
+    params.delete('includeTest');
+    params.delete('includeVoided');
+    params.delete('page');
+    router.push(`/return-orders?${params.toString()}`);
+  }, [router]);
+
+  const handleIncludeTestToggle = React.useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('includeTest') !== 'true';
+    if (next) {
+      params.set('includeTest', 'true');
+    } else {
+      params.delete('includeTest');
+    }
+    params.delete('page');
+    router.push(`/return-orders?${params.toString()}`);
+  }, [router]);
+
+  const handleIncludeVoidedToggle = React.useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('includeVoided') !== 'true';
+    if (next) {
+      params.set('includeVoided', 'true');
+    } else {
+      params.delete('includeVoided');
+    }
     params.delete('page');
     router.push(`/return-orders?${params.toString()}`);
   }, [router]);
@@ -231,6 +259,8 @@ export function ReturnOrdersPageClient({
             statusFilter={initialParams?.status || 'all'}
             typeFilter={initialParams?.type || 'all'}
             processTypeFilter={initialParams?.processType || 'all'}
+            includeTest={initialParams?.includeTest}
+            includeVoided={initialParams?.includeVoided}
             dateRange={{
               startDate: initialParams?.startDate,
               endDate: initialParams?.endDate,
@@ -240,6 +270,8 @@ export function ReturnOrdersPageClient({
             onStatusChange={handleStatusChange}
             onTypeChange={handleTypeChange}
             onProcessTypeChange={handleProcessTypeChange}
+            onIncludeTestToggle={handleIncludeTestToggle}
+            onIncludeVoidedToggle={handleIncludeVoidedToggle}
             onDateRangeChange={handleDateRangeChange}
             onClearFilters={handleClearFilters}
             orders={orders}

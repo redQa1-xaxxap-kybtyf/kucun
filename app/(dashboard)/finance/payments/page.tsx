@@ -8,6 +8,7 @@ import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
 import { queryKeys } from '@/lib/queryKeys';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type {
   PaymentMethod,
   PaymentRecordQuery,
@@ -74,6 +75,8 @@ async function getPaymentsData(searchParams: {
   sortOrder?: string;
   startDate?: string;
   endDate?: string;
+  includeTest?: string;
+  includeVoided?: string;
 }) {
   const page = parseInt(searchParams.page || '1', 10);
   const limit = parseInt(searchParams.limit || '20', 10);
@@ -98,9 +101,21 @@ async function getPaymentsData(searchParams: {
       : 'desc';
   const startDateParam = searchParams.startDate;
   const endDateParam = searchParams.endDate;
+  const includeTest = searchParams.includeTest === 'true' ? true : undefined;
+  const includeVoided =
+    searchParams.includeVoided === 'true' ? true : undefined;
 
   // 构建查询条件
   const whereConditions: Prisma.PaymentRecordWhereInput = {};
+
+  if (!includeVoided) {
+    whereConditions.voidedAt = null;
+  }
+
+  const systemMode = await getSystemMode();
+  if (systemMode === 'production' && !includeTest) {
+    whereConditions.dataTag = 'prod';
+  }
 
   if (search) {
     whereConditions.OR = [
@@ -216,7 +231,10 @@ async function getPaymentsData(searchParams: {
   const CONFIRMED_STATUSES = new Set(['confirmed', 'applied'] as const);
 
   const sumPaymentAmount = (
-    rows: Array<{ status: string; _sum: { paymentAmount: Prisma.Decimal | null } }>,
+    rows: Array<{
+      status: string;
+      _sum: { paymentAmount: Prisma.Decimal | null };
+    }>,
     allowedStatuses?: Set<string>
   ) =>
     rows.reduce((acc, row) => {
@@ -416,6 +434,8 @@ export default async function PaymentsPage({
     sortOrder?: string;
     startDate?: string;
     endDate?: string;
+    includeTest?: string;
+    includeVoided?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -459,6 +479,8 @@ export default async function PaymentsPage({
       typeof params.endDate === 'string' && params.endDate.trim().length > 0
         ? params.endDate
         : undefined,
+    includeTest: params.includeTest === 'true' ? true : undefined,
+    includeVoided: params.includeVoided === 'true' ? true : undefined,
   };
 
   const clientParams = {
@@ -471,6 +493,8 @@ export default async function PaymentsPage({
     sortOrder: safeSortOrder,
     startDate: queryParams.startDate,
     endDate: queryParams.endDate,
+    includeTest: queryParams.includeTest,
+    includeVoided: queryParams.includeVoided,
   };
 
   const queryClient = new QueryClient({

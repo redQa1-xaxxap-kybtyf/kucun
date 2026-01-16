@@ -5,18 +5,18 @@
  * 使用统一的 SearchFilterCard 组件
  */
 
-import { Clock, Package } from 'lucide-react';
+import { Ban, Clock, Eye, Package } from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-    RETURN_ORDER_STATUS_LABELS,
-    RETURN_ORDER_TYPE_LABELS,
-    RETURN_PROCESS_TYPE_LABELS,
-    type ReturnOrderStatus,
-    type ReturnOrderType,
-    type ReturnProcessType,
+  RETURN_ORDER_STATUS_LABELS,
+  RETURN_ORDER_TYPE_LABELS,
+  RETURN_PROCESS_TYPE_LABELS,
+  type ReturnOrderStatus,
+  type ReturnOrderType,
+  type ReturnProcessType,
 } from '@/lib/types/return-order';
 
 interface ReturnOrderSearchToolbarProps {
@@ -24,12 +24,16 @@ interface ReturnOrderSearchToolbarProps {
   statusFilter: ReturnOrderStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
+  includeTest?: boolean;
+  includeVoided?: boolean;
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
   onStatusChange: (value: ReturnOrderStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
   onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
+  onIncludeTestToggle: () => void;
+  onIncludeVoidedToggle: () => void;
   onDateRangeChange: (range: DateRangeValue) => void;
   onClearFilters: () => void;
 }
@@ -41,12 +45,16 @@ export const ReturnOrderSearchToolbar =
       statusFilter,
       typeFilter,
       processTypeFilter,
+      includeTest,
+      includeVoided,
       dateRange,
       isSearching,
       onSearch,
       onStatusChange,
       onTypeChange,
       onProcessTypeChange,
+      onIncludeTestToggle,
+      onIncludeVoidedToggle,
       onDateRangeChange,
       onClearFilters,
     }) => {
@@ -54,6 +62,8 @@ export const ReturnOrderSearchToolbar =
         statusFilter,
         typeFilter,
         processTypeFilter,
+        includeTest,
+        includeVoided,
         dateRange,
         onStatusChange,
         onTypeChange,
@@ -68,9 +78,13 @@ export const ReturnOrderSearchToolbar =
           statusFilter={statusFilter}
           typeFilter={typeFilter}
           processTypeFilter={processTypeFilter}
+          includeTest={includeTest}
+          includeVoided={includeVoided}
           isSearching={isSearching}
           dateRange={dateRange}
           onSearch={onSearch}
+          onIncludeTestToggle={onIncludeTestToggle}
+          onIncludeVoidedToggle={onIncludeVoidedToggle}
           {...logic}
         />
       );
@@ -83,6 +97,8 @@ function useReturnOrderToolbarLogic({
   statusFilter,
   typeFilter,
   processTypeFilter,
+  includeTest,
+  includeVoided,
   dateRange,
   onStatusChange,
   onTypeChange,
@@ -94,6 +110,8 @@ function useReturnOrderToolbarLogic({
   | 'statusFilter'
   | 'typeFilter'
   | 'processTypeFilter'
+  | 'includeTest'
+  | 'includeVoided'
   | 'dateRange'
   | 'onStatusChange'
   | 'onTypeChange'
@@ -142,6 +160,8 @@ function useReturnOrderToolbarLogic({
     statusFilter !== 'all' ||
     typeFilter !== 'all' ||
     processTypeFilter !== 'all' ||
+    !!includeTest ||
+    !!includeVoided ||
     !!dateRange.startDate ||
     !!dateRange.endDate;
 
@@ -159,9 +179,13 @@ type ReturnOrderToolbarViewProps = {
   statusFilter: ReturnOrderStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
+  includeTest?: boolean;
+  includeVoided?: boolean;
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
+  onIncludeTestToggle: () => void;
+  onIncludeVoidedToggle: () => void;
   handleFilterChange: (key: string, value: string | undefined) => void;
   toggleStatus: (status: ReturnOrderStatus) => () => void;
   handleDateRangeChange: (range: DateRangeValue) => void;
@@ -174,9 +198,13 @@ function ReturnOrderToolbarView({
   statusFilter,
   typeFilter,
   processTypeFilter,
+  includeTest,
+  includeVoided,
   dateRange,
   isSearching,
   onSearch,
+  onIncludeTestToggle,
+  onIncludeVoidedToggle,
   handleFilterChange,
   toggleStatus,
   handleDateRangeChange,
@@ -204,6 +232,20 @@ function ReturnOrderToolbarView({
           icon: <Package className="h-3.5 w-3.5" />,
           active: statusFilter === 'processing',
           onClick: toggleStatus('processing'),
+        },
+        {
+          key: 'includeTest',
+          label: '显示测试',
+          icon: <Eye className="h-3.5 w-3.5" />,
+          active: !!includeTest,
+          onClick: onIncludeTestToggle,
+        },
+        {
+          key: 'includeVoided',
+          label: '显示作废',
+          icon: <Ban className="h-3.5 w-3.5" />,
+          active: !!includeVoided,
+          onClick: onIncludeVoidedToggle,
         },
       ]}
       // 筛选器配置
@@ -245,8 +287,7 @@ function ReturnOrderToolbarView({
       filterValues={{
         status: statusFilter === 'all' ? 'all' : statusFilter,
         type: typeFilter === 'all' ? 'all' : typeFilter,
-        processType:
-          processTypeFilter === 'all' ? 'all' : processTypeFilter,
+        processType: processTypeFilter === 'all' ? 'all' : processTypeFilter,
       }}
       onFilterChange={handleFilterChange}
       // 日期范围筛选

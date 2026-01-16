@@ -276,6 +276,14 @@ export const returnOrderQuerySchema = z.object({
     .enum(['createdAt', 'returnNumber', 'totalAmount', 'status'])
     .default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  includeTest: z
+    .string()
+    .optional()
+    .transform(val => (val === 'true' ? true : undefined)),
+  includeVoided: z
+    .string()
+    .optional()
+    .transform(val => (val === 'true' ? true : undefined)),
 });
 
 // 退货搜索表单验证规则

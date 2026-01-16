@@ -150,6 +150,8 @@ export interface ExpenseQueryParams {
   pageSize?: number;
   sortBy?: 'expenseDate' | 'expenseAmount' | 'createdAt';
   sortOrder?: 'asc' | 'desc';
+  includeTest?: boolean;
+  includeVoided?: boolean;
 }
 
 // 费用记录列表响应

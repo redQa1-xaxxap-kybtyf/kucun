@@ -12,6 +12,7 @@ import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { createOrMergePayableFromExpense } from '@/lib/services/expense-payable-integration';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import {
   EXPENSE_TYPE_LABELS,
   type CreateExpenseRequest,
@@ -570,12 +571,23 @@ export async function getExpenseRecords(
     status,
     sortBy = 'expenseDate',
     sortOrder = 'desc',
+    includeTest,
+    includeVoided,
   } = query;
 
   const skip = (page - 1) * pageSize;
 
   // 构建查询条件
   const where: Prisma.ExpenseRecordWhereInput = {};
+
+  if (!includeVoided) {
+    where.voidedAt = null;
+  }
+
+  const systemMode = await getSystemMode();
+  if (systemMode === 'production' && !includeTest) {
+    where.dataTag = 'prod';
+  }
 
   if (expenseType) {
     where.expenseType = expenseType;
@@ -960,8 +972,9 @@ export async function getExpenseStatistics(
     count: item._count.id,
     percentage:
       totalAmount > 0
-        ? Math.round((toNumber(item._sum.expenseAmount) / totalAmount) * 10000) /
-          100
+        ? Math.round(
+            (toNumber(item._sum.expenseAmount) / totalAmount) * 10000
+          ) / 100
         : 0,
   }));
 

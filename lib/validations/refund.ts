@@ -206,6 +206,8 @@ export const refundQuerySchema = z.object({
     .enum(['refundDate', 'refundAmount', 'createdAt', 'updatedAt'])
     .optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
+  includeTest: z.coerce.boolean().optional(),
+  includeVoided: z.coerce.boolean().optional(),
 });
 
 // 退款处理验证规则

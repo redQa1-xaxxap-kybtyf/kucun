@@ -10,12 +10,16 @@ export interface ReturnOrderListViewProps {
   statusFilter: ReturnOrderStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
+  includeTest?: boolean;
+  includeVoided?: boolean;
   dateRange: { startDate?: string; endDate?: string };
   isSearching: boolean;
   onSearch: (value: string) => void;
   onStatusChange: (value: ReturnOrderStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
   onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
+  onIncludeTestToggle: () => void;
+  onIncludeVoidedToggle: () => void;
   onDateRangeChange: (range: { startDate?: string; endDate?: string }) => void;
   onClearFilters: () => void;
   orders: ReturnOrder[];

@@ -336,6 +336,16 @@ export const salesOrderQuerySchema = z.object({
     .nullable()
     .optional()
     .transform(val => (val === 'true' ? true : undefined)),
+  includeTest: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val === 'true' ? true : undefined)),
+  includeVoided: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val === 'true' ? true : undefined)),
 });
 
 /**

@@ -50,6 +50,8 @@ interface PageProps {
     sortOrder?: 'asc' | 'desc';
     startDate?: string;
     endDate?: string;
+    includeTest?: string;
+    includeVoided?: string;
   }>;
 }
 
@@ -83,9 +85,7 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
   const isReturnOrderType = (value?: string): value is ReturnOrderType =>
     typeof value === 'string' &&
     (RETURN_ORDER_TYPE_VALUES as readonly string[]).includes(value);
-  const isReturnProcessType = (
-    value?: string
-  ): value is ReturnProcessType =>
+  const isReturnProcessType = (value?: string): value is ReturnProcessType =>
     typeof value === 'string' &&
     (RETURN_PROCESS_TYPE_VALUES as readonly string[]).includes(value);
   const initialParams = {
@@ -101,6 +101,8 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
     sortOrder: (params?.sortOrder as 'asc' | 'desc') || 'desc',
     startDate: params?.startDate || undefined,
     endDate: params?.endDate || undefined,
+    includeTest: params?.includeTest === 'true' ? true : undefined,
+    includeVoided: params?.includeVoided === 'true' ? true : undefined,
   };
 
   // ✅ 创建 QueryClient 用于服务端预取

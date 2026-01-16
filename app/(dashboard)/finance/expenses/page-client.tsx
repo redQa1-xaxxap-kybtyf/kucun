@@ -13,9 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
 import type {
-    ExpenseQueryParams,
-    ExpenseStatisticsParams,
-    ExpenseType,
+  ExpenseQueryParams,
+  ExpenseStatisticsParams,
+  ExpenseType,
 } from '@/lib/types/expense';
 
 interface ExpensesPageClientProps {
@@ -28,6 +28,8 @@ interface ExpensesPageClientProps {
     relatedType?: string;
     sortBy: string;
     sortOrder: 'asc' | 'desc';
+    includeTest?: boolean;
+    includeVoided?: boolean;
   };
 }
 
@@ -58,6 +60,8 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
       | 'expenseAmount'
       | 'createdAt',
     sortOrder: initialParams.sortOrder,
+    includeTest: initialParams.includeTest,
+    includeVoided: initialParams.includeVoided,
   });
 
   const getDefaultDateRange = React.useCallback(() => {
@@ -113,6 +117,12 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
       }
       if (newFilters.sortOrder && newFilters.sortOrder !== 'desc') {
         params.set('sortOrder', newFilters.sortOrder);
+      }
+      if (newFilters.includeTest) {
+        params.set('includeTest', 'true');
+      }
+      if (newFilters.includeVoided) {
+        params.set('includeVoided', 'true');
       }
 
       const queryString = params.toString();
@@ -235,9 +245,9 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
         {/* 页面标题卡片 - v3 PRO 旗舰玻璃拟态 */}
         <Card className="relative overflow-hidden border-none bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
           {/* 装饰性光斑 */}
-          <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
-          <div className="absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
-          
+          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
+
           <CardContent className="relative z-10 p-6 sm:p-8">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-5">
@@ -246,7 +256,10 @@ export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
                 </div>
                 <div>
                   <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                    费用支出流水 <span className="ml-2 text-xs font-normal opacity-40 sm:text-sm uppercase tracking-widest">费用开支明细台账</span>
+                    费用支出流水{' '}
+                    <span className="ml-2 text-xs font-normal tracking-widest uppercase opacity-40 sm:text-sm">
+                      费用开支明细台账
+                    </span>
                   </h1>
                   <p className="mt-1 text-sm font-medium text-slate-400">
                     智能财务开支监控 · 业务关联穿透审计

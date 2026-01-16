@@ -41,6 +41,8 @@ export default async function ExpensesPage({
     relatedType?: string;
     sortBy?: string;
     sortOrder?: string;
+    includeTest?: string;
+    includeVoided?: string;
   }>;
 }) {
   // 获取用户会话
@@ -77,6 +79,8 @@ export default async function ExpensesPage({
     relatedType: params.relatedType,
     sortBy,
     sortOrder,
+    includeTest: params.includeTest === 'true' ? true : undefined,
+    includeVoided: params.includeVoided === 'true' ? true : undefined,
   };
 
   const expenseQuery: ExpenseQueryParams = {
@@ -88,6 +92,8 @@ export default async function ExpensesPage({
     relatedType: params.relatedType as ExpenseQueryParams['relatedType'],
     sortBy,
     sortOrder,
+    includeTest: params.includeTest === 'true' ? true : undefined,
+    includeVoided: params.includeVoided === 'true' ? true : undefined,
   };
 
   const queryClient = new QueryClient({

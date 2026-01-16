@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useRefundsQuery } from '@/hooks/use-refunds-query';
 import type {
-    RefundListData,
-    RefundListQueryParams,
-    RefundStatus,
+  RefundListData,
+  RefundListQueryParams,
+  RefundStatus,
 } from '@/lib/types/refund';
 
 type RefundsQueryParams = RefundListQueryParams;
@@ -34,6 +34,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
   const [status, setStatus] = React.useState(initialParams.status);
+  const [includeTest, setIncludeTest] = React.useState<boolean>(
+    !!initialParams.includeTest
+  );
+  const [includeVoided, setIncludeVoided] = React.useState<boolean>(
+    !!initialParams.includeVoided
+  );
   const [sortBy, setSortBy] = React.useState(
     initialParams.sortBy || 'refundDate'
   );
@@ -50,6 +56,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   React.useEffect(() => {
     setSearch(initialParams.search || '');
     setStatus(initialParams.status);
+    setIncludeTest(!!initialParams.includeTest);
+    setIncludeVoided(!!initialParams.includeVoided);
     setSortBy(initialParams.sortBy || 'refundDate');
     setSortOrder(initialParams.sortOrder || 'desc');
     setStartDate(initialParams.startDate);
@@ -61,6 +69,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       ...initialParams,
       search,
       status,
+      includeTest: includeTest || undefined,
+      includeVoided: includeVoided || undefined,
       sortBy,
       sortOrder,
       startDate,
@@ -73,12 +83,24 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       ...initialParams,
       search,
       status,
+      includeTest: includeTest || undefined,
+      includeVoided: includeVoided || undefined,
       sortBy,
       sortOrder,
       startDate,
       endDate,
     }),
-    [initialParams, search, status, sortBy, sortOrder, startDate, endDate]
+    [
+      initialParams,
+      search,
+      status,
+      includeTest,
+      includeVoided,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    ]
   );
 
   const resolvedData = React.useMemo<RefundListData>(
@@ -129,6 +151,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (filters.endDate) {
           params.set('endDate', filters.endDate);
         }
+        if (filters.includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (filters.includeVoided) {
+          params.set('includeVoided', 'true');
+        }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
         }
@@ -150,6 +178,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         ...initialParams,
         search: value,
         status,
+        includeTest: includeTest || undefined,
+        includeVoided: includeVoided || undefined,
         sortBy,
         sortOrder,
         startDate,
@@ -161,6 +191,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       debouncedUpdateURL,
       initialParams,
       status,
+      includeTest,
+      includeVoided,
       sortBy,
       sortOrder,
       startDate,
@@ -171,16 +203,27 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
+      let nextStatus = status;
+      let nextSortBy = sortBy;
+      let nextSortOrder = sortOrder;
+      let nextIncludeTest = includeTest;
+      let nextIncludeVoided = includeVoided;
 
       if (key === 'status') {
-        setStatus(value as RefundStatus | undefined);
+        nextStatus = value as RefundStatus | undefined;
+        setStatus(nextStatus);
       } else if (key === 'sortBy') {
-        const nextSortBy =
-          (value as RefundListQueryParams['sortBy']) || 'refundDate';
+        nextSortBy = (value as RefundListQueryParams['sortBy']) || 'refundDate';
         setSortBy(nextSortBy);
       } else if (key === 'sortOrder') {
-        setSortOrder((value as 'asc' | 'desc') || 'desc');
+        nextSortOrder = (value as 'asc' | 'desc') || 'desc';
+        setSortOrder(nextSortOrder);
+      } else if (key === 'includeTest') {
+        nextIncludeTest = value === 'true';
+        setIncludeTest(nextIncludeTest);
+      } else if (key === 'includeVoided') {
+        nextIncludeVoided = value === 'true';
+        setIncludeVoided(nextIncludeVoided);
       }
 
       startTransition(() => {
@@ -188,14 +231,14 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (search) {
           params.set('search', search);
         }
-        if (newFilters.status) {
-          params.set('status', newFilters.status);
+        if (nextStatus) {
+          params.set('status', nextStatus);
         }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
+        if (nextSortBy) {
+          params.set('sortBy', nextSortBy);
         }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
+        if (nextSortOrder) {
+          params.set('sortOrder', nextSortOrder);
         }
         if (startDate) {
           params.set('startDate', startDate);
@@ -203,14 +246,31 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (endDate) {
           params.set('endDate', endDate);
         }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
+        if (nextIncludeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (nextIncludeVoided) {
+          params.set('includeVoided', 'true');
+        }
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
         }
 
         router.push(`/finance/refunds?${params.toString()}`);
       });
     },
-    [router, search, initialParams, startDate, endDate]
+    [
+      router,
+      search,
+      status,
+      includeTest,
+      includeVoided,
+      sortBy,
+      sortOrder,
+      initialParams.limit,
+      startDate,
+      endDate,
+    ]
   );
 
   // 分页处理
@@ -236,6 +296,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (endDate) {
           params.set('endDate', endDate);
         }
+        if (includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (includeVoided) {
+          params.set('includeVoided', 'true');
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
@@ -250,6 +316,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
       router,
       search,
       status,
+      includeTest,
+      includeVoided,
       sortBy,
       sortOrder,
       startDate,
@@ -283,6 +351,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (range.endDate) {
           params.set('endDate', range.endDate);
         }
+        if (includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (includeVoided) {
+          params.set('includeVoided', 'true');
+        }
         if (pagination.limit) {
           params.set('limit', pagination.limit.toString());
         }
@@ -290,7 +364,16 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         router.push(`/finance/refunds?${params.toString()}`);
       });
     },
-    [router, pagination.limit, search, sortBy, sortOrder, status]
+    [
+      router,
+      pagination.limit,
+      search,
+      status,
+      includeTest,
+      includeVoided,
+      sortBy,
+      sortOrder,
+    ]
   );
 
   return (

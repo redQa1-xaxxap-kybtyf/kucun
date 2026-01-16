@@ -126,6 +126,8 @@ export interface ReturnOrderQueryParams {
   endDate?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  includeTest?: boolean;
+  includeVoided?: boolean;
 }
 
 // API响应接口

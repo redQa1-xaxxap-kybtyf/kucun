@@ -143,6 +143,8 @@ export function ERPReturnOrderList({
     sortOrder: initialParams?.sortOrder || 'desc',
     startDate: initialParams?.startDate,
     endDate: initialParams?.endDate,
+    includeTest: initialParams?.includeTest,
+    includeVoided: initialParams?.includeVoided,
   };
 
   const [searchInput, setSearchInput] = React.useState(
@@ -181,6 +183,8 @@ export function ERPReturnOrderList({
   const typeFilter: ReturnOrderType | 'all' = queryParams.type ?? 'all';
   const processTypeFilter: ReturnProcessType | 'all' =
     queryParams.processType ?? 'all';
+  const includeTest = queryParams.includeTest;
+  const includeVoided = queryParams.includeVoided;
   const dateRange: DateRangeValue = {
     startDate: queryParams.startDate,
     endDate: queryParams.endDate,
@@ -369,6 +373,30 @@ export function ERPReturnOrderList({
     [onFilter, updateQueryStringParams]
   );
 
+  const handleIncludeTestToggle = React.useCallback(() => {
+    const nextValue = !(queryParams.includeTest === true);
+    if (onFilter) {
+      onFilter('includeTest', nextValue ? 'true' : undefined);
+    } else {
+      updateQueryStringParams({
+        includeTest: nextValue ? true : undefined,
+        page: 1,
+      });
+    }
+  }, [onFilter, queryParams.includeTest, updateQueryStringParams]);
+
+  const handleIncludeVoidedToggle = React.useCallback(() => {
+    const nextValue = !(queryParams.includeVoided === true);
+    if (onFilter) {
+      onFilter('includeVoided', nextValue ? 'true' : undefined);
+    } else {
+      updateQueryStringParams({
+        includeVoided: nextValue ? true : undefined,
+        page: 1,
+      });
+    }
+  }, [onFilter, queryParams.includeVoided, updateQueryStringParams]);
+
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
       if (onDateRangeChange) {
@@ -394,6 +422,8 @@ export function ERPReturnOrderList({
       onFilter('status', undefined);
       onFilter('type', undefined);
       onFilter('processType', undefined);
+      onFilter('includeTest', undefined);
+      onFilter('includeVoided', undefined);
     } else {
       updateQueryStringParams({
         status: undefined,
@@ -401,6 +431,8 @@ export function ERPReturnOrderList({
         processType: undefined,
         startDate: undefined,
         endDate: undefined,
+        includeTest: undefined,
+        includeVoided: undefined,
         page: 1,
       });
     }
@@ -483,12 +515,16 @@ export function ERPReturnOrderList({
         statusFilter={statusFilter}
         typeFilter={typeFilter}
         processTypeFilter={processTypeFilter}
+        includeTest={includeTest}
+        includeVoided={includeVoided}
         dateRange={dateRange}
         isSearching={isSearching || isBackgroundFetching}
         onSearch={handleSearch}
         onStatusChange={handleStatusChange}
         onTypeChange={handleTypeChange}
         onProcessTypeChange={handleProcessTypeChange}
+        onIncludeTestToggle={handleIncludeTestToggle}
+        onIncludeVoidedToggle={handleIncludeVoidedToggle}
         onDateRangeChange={handleDateRangeChange}
         onClearFilters={handleClearFilters}
       />

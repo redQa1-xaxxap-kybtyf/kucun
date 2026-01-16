@@ -8,6 +8,7 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import { getSystemMode } from '@/lib/services/system-mode-service';
 import type { Product } from '@/lib/types/product';
 import type {
   ReturnOrder,
@@ -34,12 +35,23 @@ export async function getReturnOrdersServer(
     processType,
     startDate,
     endDate,
+    includeTest,
+    includeVoided,
     sortBy = 'createdAt',
     sortOrder = 'desc',
   } = params;
 
   // 构建查询条件
   const where: Prisma.ReturnOrderWhereInput = {};
+
+  if (!includeVoided) {
+    where.voidedAt = null;
+  }
+
+  const systemMode = await getSystemMode();
+  if (systemMode === 'production' && !includeTest) {
+    where.dataTag = 'prod';
+  }
 
   if (search) {
     where.OR = [

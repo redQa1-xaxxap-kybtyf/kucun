@@ -106,6 +106,10 @@ function buildFilterUpdates(
       };
     case 'hasReturns':
       return { ...base, hasReturns: value === 'true' ? true : undefined };
+    case 'includeTest':
+      return { ...base, includeTest: value === 'true' ? true : undefined };
+    case 'includeVoided':
+      return { ...base, includeVoided: value === 'true' ? true : undefined };
     default:
       return base;
   }
@@ -200,6 +204,8 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
       endDate: undefined,
       orderType: undefined,
       hasReturns: undefined,
+      includeTest: undefined,
+      includeVoided: undefined,
       page: 1,
     });
   }, [updateParams]);

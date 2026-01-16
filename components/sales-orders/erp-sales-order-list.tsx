@@ -4,16 +4,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    Ban,
-    Clock,
-    Download,
-    Edit,
-    Eye,
-    MoreHorizontal,
-    Package,
-    Trash2,
-    Truck,
+  AlertCircle,
+  Ban,
+  Clock,
+  Download,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Package,
+  Trash2,
+  Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -23,46 +23,46 @@ import { EmptyState } from '@/components/common/empty-state';
 import { RelativeTime } from '@/components/common/relative-time';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
 import {
-    getSalesOrders,
-    salesOrderQueryKeys,
-    useDeleteSalesOrder,
-    useUpdateSalesOrderStatus,
+  getSalesOrders,
+  salesOrderQueryKeys,
+  useDeleteSalesOrder,
+  useUpdateSalesOrderStatus,
 } from '@/lib/api/sales-orders';
 import {
-    SALES_ORDER_STATUS_LABELS,
-    TRANSFER_MODE_LABELS,
-    type SalesOrder,
-    type SalesOrderQueryParams,
-    type SalesOrderStatus,
+  SALES_ORDER_STATUS_LABELS,
+  TRANSFER_MODE_LABELS,
+  type SalesOrder,
+  type SalesOrderQueryParams,
+  type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 import { formatDateTime } from '@/lib/utils/datetime';
 
@@ -133,6 +133,8 @@ export function ERPSalesOrderList({
           initialParams?.endDate ||
           initialParams?.orderType ||
           initialParams?.hasReturns ||
+          initialParams?.includeTest ||
+          initialParams?.includeVoided ||
           // ✅ P1修复: 搜索词也算活跃筛选
           initialParams?.search ||
           searchValue
@@ -144,6 +146,8 @@ export function ERPSalesOrderList({
       initialParams?.endDate,
       initialParams?.orderType,
       initialParams?.hasReturns,
+      initialParams?.includeTest,
+      initialParams?.includeVoided,
       initialParams?.search,
       searchValue,
     ]
@@ -164,6 +168,8 @@ export function ERPSalesOrderList({
     externalOnFilter?.('endDate', undefined);
     externalOnFilter?.('orderType', undefined);
     externalOnFilter?.('hasReturns', undefined);
+    externalOnFilter?.('includeTest', undefined);
+    externalOnFilter?.('includeVoided', undefined);
     externalOnFilter?.(
       'dateRange',
       JSON.stringify({ startDate: undefined, endDate: undefined })
@@ -190,6 +196,18 @@ export function ERPSalesOrderList({
     externalOnFilter?.('hasReturns', String(nextValue));
   }, [externalOnFilter, initialParams?.hasReturns]);
 
+  const handleToggleIncludeTest = React.useCallback(() => {
+    const currentValue = initialParams?.includeTest === true;
+    const nextValue = !currentValue;
+    externalOnFilter?.('includeTest', nextValue ? 'true' : undefined);
+  }, [externalOnFilter, initialParams?.includeTest]);
+
+  const handleToggleIncludeVoided = React.useCallback(() => {
+    const currentValue = initialParams?.includeVoided === true;
+    const nextValue = !currentValue;
+    externalOnFilter?.('includeVoided', nextValue ? 'true' : undefined);
+  }, [externalOnFilter, initialParams?.includeVoided]);
+
   // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
   // ✅ 单一数据源原则：状态统一在父组件管理
 
@@ -207,6 +225,8 @@ export function ERPSalesOrderList({
       endDate: initialParams?.endDate,
       orderType: initialParams?.orderType,
       hasReturns: initialParams?.hasReturns,
+      includeTest: initialParams?.includeTest,
+      includeVoided: initialParams?.includeVoided,
     }),
     [
       initialParams?.page,
@@ -220,6 +240,8 @@ export function ERPSalesOrderList({
       initialParams?.endDate,
       initialParams?.orderType,
       initialParams?.hasReturns,
+      initialParams?.includeTest,
+      initialParams?.includeVoided,
     ]
   );
 
@@ -632,6 +654,20 @@ export function ERPSalesOrderList({
             active: !!initialParams?.hasReturns,
             onClick: handleToggleHasReturns,
           },
+          {
+            key: 'includeTest',
+            label: '显示测试',
+            icon: <Eye className="mr-1 h-3 w-3" />,
+            active: !!initialParams?.includeTest,
+            onClick: handleToggleIncludeTest,
+          },
+          {
+            key: 'includeVoided',
+            label: '显示作废',
+            icon: <Ban className="mr-1 h-3 w-3" />,
+            active: !!initialParams?.includeVoided,
+            onClick: handleToggleIncludeVoided,
+          },
         ]}
         // 清空筛选
         onClearFilters={handleClearFilters}
@@ -1004,7 +1040,10 @@ export function ERPSalesOrderList({
                           </Badge>
                         )}
                         {order.hasReturnOrder && (
-                          <Badge variant="destructive" className="text-xs font-bold">
+                          <Badge
+                            variant="destructive"
+                            className="text-xs font-bold"
+                          >
                             已发生退货
                           </Badge>
                         )}

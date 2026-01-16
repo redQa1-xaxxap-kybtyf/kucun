@@ -128,6 +128,8 @@ export interface SalesOrderQueryParams {
   endDate?: string;
   orderType?: SalesOrderType;
   hasReturns?: boolean;
+  includeTest?: boolean;
+  includeVoided?: boolean;
 }
 
 // API 响应类型

@@ -58,6 +58,8 @@ interface PaymentsQueryParams {
   sortOrder?: 'asc' | 'desc';
   startDate?: string;
   endDate?: string;
+  includeTest?: boolean;
+  includeVoided?: boolean;
 }
 
 interface PaymentsPageClientProps {
@@ -115,6 +117,12 @@ export function PaymentsPageClient({
   const [endDate, setEndDate] = React.useState<string | undefined>(
     initialParams.endDate
   );
+  const [includeTest, setIncludeTest] = React.useState<boolean>(
+    !!initialParams.includeTest
+  );
+  const [includeVoided, setIncludeVoided] = React.useState<boolean>(
+    !!initialParams.includeVoided
+  );
 
   const handleExport = React.useCallback(() => {
     // 导出使用当前筛选条件，但一次性导出最多 50,000 条记录
@@ -128,6 +136,8 @@ export function PaymentsPageClient({
       sortOrder,
       startDate,
       endDate,
+      includeTest: includeTest || undefined,
+      includeVoided: includeVoided || undefined,
     };
 
     exportData('/api/finance/payments/export', {
@@ -144,6 +154,8 @@ export function PaymentsPageClient({
     sortOrder,
     startDate,
     endDate,
+    includeTest,
+    includeVoided,
   ]);
 
   // 防抖更新URL - 避免每次输入都触发导航
@@ -172,6 +184,12 @@ export function PaymentsPageClient({
         if (filters.endDate) {
           params.set('endDate', filters.endDate);
         }
+        if (filters.includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (filters.includeVoided) {
+          params.set('includeVoided', 'true');
+        }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
         }
@@ -199,6 +217,8 @@ export function PaymentsPageClient({
         page: 1,
         startDate,
         endDate,
+        includeTest: includeTest || undefined,
+        includeVoided: includeVoided || undefined,
       });
     },
     [
@@ -210,6 +230,8 @@ export function PaymentsPageClient({
       sortOrder,
       startDate,
       endDate,
+      includeTest,
+      includeVoided,
     ]
   );
 
@@ -220,6 +242,8 @@ export function PaymentsPageClient({
       let nextPaymentMethod = paymentMethod;
       let nextSortBy = sortBy;
       let nextSortOrder = sortOrder;
+      let nextIncludeTest = includeTest;
+      let nextIncludeVoided = includeVoided;
 
       if (key === 'status') {
         nextStatus =
@@ -234,6 +258,12 @@ export function PaymentsPageClient({
       } else if (key === 'sortOrder') {
         nextSortOrder = (value as 'asc' | 'desc') || 'desc';
         setSortOrder(nextSortOrder);
+      } else if (key === 'includeTest') {
+        nextIncludeTest = value === 'true';
+        setIncludeTest(nextIncludeTest);
+      } else if (key === 'includeVoided') {
+        nextIncludeVoided = value === 'true';
+        setIncludeVoided(nextIncludeVoided);
       }
 
       const nextFilters: PaymentsQueryParams = {
@@ -245,6 +275,8 @@ export function PaymentsPageClient({
         sortOrder: nextSortOrder,
         startDate,
         endDate,
+        includeTest: nextIncludeTest || undefined,
+        includeVoided: nextIncludeVoided || undefined,
       };
 
       startTransition(() => {
@@ -270,6 +302,12 @@ export function PaymentsPageClient({
         if (nextFilters.endDate) {
           params.set('endDate', nextFilters.endDate);
         }
+        if (nextFilters.includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (nextFilters.includeVoided) {
+          params.set('includeVoided', 'true');
+        }
         if (nextFilters.limit) {
           params.set('limit', nextFilters.limit.toString());
         }
@@ -287,6 +325,8 @@ export function PaymentsPageClient({
       sortOrder,
       startDate,
       endDate,
+      includeTest,
+      includeVoided,
     ]
   );
 
@@ -316,6 +356,12 @@ export function PaymentsPageClient({
         if (endDate) {
           params.set('endDate', endDate);
         }
+        if (includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (includeVoided) {
+          params.set('includeVoided', 'true');
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
@@ -335,6 +381,8 @@ export function PaymentsPageClient({
       sortOrder,
       startDate,
       endDate,
+      includeTest,
+      includeVoided,
       initialParams.limit,
     ]
   );
@@ -373,6 +421,12 @@ export function PaymentsPageClient({
         if (nextEnd) {
           params.set('endDate', nextEnd);
         }
+        if (includeTest) {
+          params.set('includeTest', 'true');
+        }
+        if (includeVoided) {
+          params.set('includeVoided', 'true');
+        }
 
         router.push(`/finance/payments?${params.toString()}`);
       });
@@ -384,6 +438,8 @@ export function PaymentsPageClient({
       paymentMethod,
       sortBy,
       sortOrder,
+      includeTest,
+      includeVoided,
       initialParams.limit,
     ]
   );

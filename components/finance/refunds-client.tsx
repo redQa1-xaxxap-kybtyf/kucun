@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, CheckCircle, TrendingDown } from 'lucide-react';
+import { Ban, Calendar, CheckCircle, Eye, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -15,19 +15,19 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import type {
-    RefundListData,
-    RefundListQueryParams,
-    RefundMethod,
-    RefundStatus,
-    RefundType,
+  RefundListData,
+  RefundListQueryParams,
+  RefundMethod,
+  RefundStatus,
+  RefundType,
 } from '@/lib/types/refund';
 import { formatCurrency } from '@/lib/utils';
 
@@ -65,6 +65,17 @@ export function RefundsClient({
   const [searchValue, setSearchValue] = React.useState(
     initialParams.search ?? ''
   );
+
+  const handleIncludeTestToggle = React.useCallback(() => {
+    onFilter?.('includeTest', initialParams.includeTest ? undefined : 'true');
+  }, [initialParams.includeTest, onFilter]);
+
+  const handleIncludeVoidedToggle = React.useCallback(() => {
+    onFilter?.(
+      'includeVoided',
+      initialParams.includeVoided ? undefined : 'true'
+    );
+  }, [initialParams.includeVoided, onFilter]);
 
   React.useEffect(() => {
     setSearchValue(initialParams.search ?? '');
@@ -332,6 +343,22 @@ export function RefundsClient({
           onSearch?.(value);
         }}
         searchPlaceholder="搜索退款单号、退货单号..."
+        toggleButtons={[
+          {
+            key: 'includeTest',
+            label: '显示测试',
+            icon: <Eye className="h-3.5 w-3.5" />,
+            active: !!initialParams.includeTest,
+            onClick: handleIncludeTestToggle,
+          },
+          {
+            key: 'includeVoided',
+            label: '显示作废',
+            icon: <Ban className="h-3.5 w-3.5" />,
+            active: !!initialParams.includeVoided,
+            onClick: handleIncludeVoidedToggle,
+          },
+        ]}
         // 筛选器配置
         filters={[
           {
