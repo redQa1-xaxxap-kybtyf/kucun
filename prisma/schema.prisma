@@ -1007,7 +1007,7 @@ model OrderSequence {
 model SystemSetting {
   id          String   @id @default(uuid()) @db.Char(36)
   key         String   @unique
-  value       String
+  value       String   @db.Text
   category    String   @default("basic")
   description String?
   dataType    String   @default("string") @map("dataType")
