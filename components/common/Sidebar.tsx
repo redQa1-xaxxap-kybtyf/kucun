@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ function SidebarComponent({
   accessibleBottomNavItems = bottomNavigationItems,
 }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([]);
 
   // 键盘导航逻辑 (独立 Hook)
@@ -55,10 +56,36 @@ function SidebarComponent({
 
   // 检查路径是否匹配 (使用 useCallback 优化)
   const isPathActive = React.useCallback(
-    (href: string) =>
-      // 精确匹配：pathname 必须完全等于 href，或者以 href/ 开头
-      pathname === href || pathname.startsWith(`${href}/`),
-    [pathname]
+    (href: string) => {
+      const [hrefPath, hrefQuery] = href.split('?');
+      if (!hrefPath) {
+        return false;
+      }
+
+      if (hrefPath === '/dashboard') {
+        return pathname === '/dashboard';
+      }
+
+      const pathMatched =
+        pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+      if (!pathMatched) {
+        return false;
+      }
+
+      if (!hrefQuery) {
+        return true;
+      }
+
+      const expectedParams = new URLSearchParams(hrefQuery);
+      for (const [key, value] of expectedParams.entries()) {
+        if (searchParams.get(key) !== value) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+    [pathname, searchParams]
   );
 
   return (
@@ -124,7 +151,7 @@ function SidebarComponent({
             <SidebarNavItem
               key={item.id}
               item={item}
-              pathname={pathname}
+              isPathActive={isPathActive}
               isActive={isPathActive(item.href)}
               isCollapsed={state.isCollapsed}
               isFocused={focusedIndex === index}
@@ -151,7 +178,7 @@ function SidebarComponent({
                   <SidebarNavItem
                     key={item.id}
                     item={item}
-                    pathname={pathname}
+                    isPathActive={isPathActive}
                     isActive={isPathActive(item.href)}
                     isCollapsed={state.isCollapsed}
                     isFocused={focusedIndex === globalIndex}

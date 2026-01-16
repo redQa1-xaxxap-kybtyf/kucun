@@ -38,8 +38,10 @@ export default async function FactoryShipmentsPage({
   const params = await searchParams;
 
   const rawModeParam = params.mode;
-  const modeParam = Array.isArray(rawModeParam) ? rawModeParam[0] : rawModeParam;
-  const mode =
+  const modeParam = Array.isArray(rawModeParam)
+    ? rawModeParam[0]
+    : rawModeParam;
+  const mode: 'factory' | 'customer_direct' =
     modeParam === 'factory' || modeParam === 'customer_direct'
       ? modeParam
       : 'factory';
