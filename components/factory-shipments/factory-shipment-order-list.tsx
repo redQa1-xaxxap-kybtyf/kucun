@@ -88,6 +88,7 @@ export function FactoryShipmentOrderList({
   return (
     <>
       <FactoryShipmentOrderListView
+        mode={initialParams?.mode}
         searchValue={filters.searchTerm}
         statusFilter={filters.statusFilter}
         dateRange={filters.dateRange}

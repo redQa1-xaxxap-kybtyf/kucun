@@ -12,7 +12,6 @@ import { paginationConfig } from '@/lib/env';
 import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
 import { replacePrismaDecimals } from '@/lib/utils/prisma-serialization';
 import {
-  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import type { FactoryShipmentOrderListParams } from '@/lib/validations/factory-shipment';
@@ -151,19 +150,9 @@ export const getFactoryShipmentOrdersServer = cache(
     if (customerId) {
       where.customerId = customerId;
     }
-    if (mode === 'customer_direct') {
-      where.items = {
-        some: {
-          ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
-        },
-      };
-    } else if (mode === 'factory') {
-      where.items = {
-        some: {
-          ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF,
-        },
-      };
-    }
+
+    // NOTE: “厂家发货/客户直发”在业务上为同一类单据，当前仅用于 UI 文案区分。
+    // 列表/导出不按 items.ownership 做过滤，避免造成数据集被错误切分。
 
     // ✅ 搜索逻辑：与客户端 API 保持一致
     // 如果提供了 search 参数，使用 OR 逻辑同时匹配 containerNumber 和 orderNumber

@@ -17,7 +17,6 @@ import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { ExportAuditService } from '@/lib/services/export-audit-service';
-import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
 import { factoryShipmentOrderListParamsSchema } from '@/lib/validations/factory-shipment';
 
 /**
@@ -53,7 +52,6 @@ export const POST = withAuth(
       const {
         page = 1,
         limit = 50000,
-        mode,
         status,
         customerId,
         containerNumber,
@@ -75,19 +73,8 @@ export const POST = withAuth(
         whereConditions.customerId = customerId;
       }
 
-      if (mode === 'customer_direct') {
-        whereConditions.items = {
-          some: {
-            ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
-          },
-        };
-      } else if (mode === 'factory') {
-        whereConditions.items = {
-          some: {
-            ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF,
-          },
-        };
-      }
+      // NOTE: “厂家发货/客户直发”在业务上为同一类单据，当前仅用于 UI 文案区分。
+      // 导出不按 items.ownership 做过滤，避免造成数据集被错误切分。
 
       // 搜索条件：柜号或订单号
       if (containerNumber && orderNumber) {

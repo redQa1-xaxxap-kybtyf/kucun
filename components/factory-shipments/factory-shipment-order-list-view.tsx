@@ -63,6 +63,7 @@ import { ErrorStateCard } from './factory-shipment-order-list.error';
 import type { FactoryShipmentOrderListViewProps } from './factory-shipment-order-list.types';
 
 export function FactoryShipmentOrderListView({
+  mode,
   searchValue,
   statusFilter,
   dateRange,
@@ -81,12 +82,14 @@ export function FactoryShipmentOrderListView({
   onOrderSelect,
   onRetry,
 }: FactoryShipmentOrderListViewProps) {
+  const label = mode === 'customer_direct' ? '客户直发订单' : '厂家发货订单';
+
   if (isLoading) {
-    return <ContentLoading text="加载厂家发货订单..." />;
+    return <ContentLoading text={`加载${label}...`} />;
   }
 
   if (error) {
-    return <ErrorStateCard onRetry={onRetry} />;
+    return <ErrorStateCard label={label} onRetry={onRetry} />;
   }
 
   return (
@@ -103,6 +106,7 @@ export function FactoryShipmentOrderListView({
       />
 
       <FactoryShipmentOrderTable
+        label={label}
         orders={orders}
         onCancelRequest={onCancelRequest}
         onDeleteRequest={onDeleteRequest}
@@ -129,6 +133,7 @@ export function FactoryShipmentOrderListView({
 }
 
 interface FactoryShipmentOrderTableProps {
+  label: string;
   orders: FactoryShipmentOrder[];
   onCancelRequest: (order: FactoryShipmentOrder) => void;
   onDeleteRequest: (order: FactoryShipmentOrder) => void;
@@ -136,6 +141,7 @@ interface FactoryShipmentOrderTableProps {
 }
 
 function FactoryShipmentOrderTable({
+  label,
   orders,
   onCancelRequest,
   onDeleteRequest,
@@ -146,7 +152,7 @@ function FactoryShipmentOrderTable({
       <div className="card-shadow-medium flex flex-col items-center justify-center rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] py-10">
         <Package className="h-12 w-12 text-[hsl(var(--color-text-tertiary))]" />
         <h3 className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
-          暂无厂家发货订单
+          暂无{label}
         </h3>
       </div>
     );

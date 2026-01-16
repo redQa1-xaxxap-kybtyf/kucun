@@ -4,6 +4,7 @@ import type {
 } from '@/lib/types/factory-shipment';
 
 export interface FactoryShipmentOrderListViewProps {
+  mode?: 'factory' | 'customer_direct';
   searchValue: string;
   statusFilter: FactoryShipmentStatus | 'all';
   dateRange: { startDate?: string; endDate?: string };

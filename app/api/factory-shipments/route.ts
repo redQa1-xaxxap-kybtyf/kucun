@@ -92,19 +92,9 @@ function buildWhere(params: ListParams): Prisma.FactoryShipmentOrderWhereInput {
   const where: Prisma.FactoryShipmentOrderWhereInput = {};
   if (params.status) where.status = params.status;
   if (params.customerId) where.customerId = params.customerId;
-  if (params.mode === 'customer_direct') {
-    where.items = {
-      some: {
-        ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
-      },
-    };
-  } else if (params.mode === 'factory') {
-    where.items = {
-      some: {
-        ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF,
-      },
-    };
-  }
+
+  // NOTE: “厂家发货/客户直发”在业务上为同一类单据，当前仅用于 UI 文案区分。
+  // 列表查询不按 items.ownership 做过滤，避免造成数据集被错误切分。
 
   // ✅ 搜索逻辑：优先使用统一 search 参数
   if (params.search) {
