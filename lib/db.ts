@@ -1,6 +1,7 @@
 import { PrismaClient, type Prisma } from '@prisma/client';
 
 import { env } from './env';
+import { SYSTEM_MODE_SETTING_KEY } from './types/system-mode';
 
 type LogContext = {
   userId?: string;
@@ -66,6 +67,10 @@ const slowQueryThresholdMs = Math.max(
   env.PRISMA_SLOW_QUERY_THRESHOLD_MS ?? defaultSlowQueryThresholdMs
 );
 
+const SYSTEM_MODE_CACHE_TTL_MS = 5_000;
+let cachedSystemMode: 'trial' | 'production' | null = null;
+let cachedSystemModeAt = 0;
+
 // 防止在客户端环境中初始化 Prisma
 function createPrismaClient() {
   // 客户端环境检测
@@ -101,6 +106,98 @@ if (typeof window === 'undefined' && env.NODE_ENV !== 'production') {
 
 // 慢查询监控（仅在服务端环境）
 if (typeof window === 'undefined' && prisma) {
+  // 系统模式下的默认数据标签写入（trial=test, production=prod）
+  prisma.$use(async (params, next) => {
+    // 仅拦截包含 dataTag 字段的核心业务表写入，避免影响系统表与其他模型
+    const taggedModels = new Set([
+      'SalesOrder',
+      'ReturnOrder',
+      'PaymentRecord',
+      'RefundRecord',
+      'PurchaseOrder',
+      'FactoryShipmentOrder',
+      'PayableRecord',
+      'PaymentOutRecord',
+      'ExpenseRecord',
+    ]);
+
+    const shouldTag =
+      params.model &&
+      taggedModels.has(params.model) &&
+      (params.action === 'create' ||
+        params.action === 'createMany' ||
+        params.action === 'upsert');
+
+    if (!shouldTag) {
+      return next(params);
+    }
+
+    // 避免在读取 system_settings 时递归触发
+    if (params.model === 'SystemSetting') {
+      return next(params);
+    }
+
+    const now = Date.now();
+    if (
+      !cachedSystemMode ||
+      now - cachedSystemModeAt > SYSTEM_MODE_CACHE_TTL_MS
+    ) {
+      try {
+        const setting = await prisma.systemSetting.findUnique({
+          where: { key: SYSTEM_MODE_SETTING_KEY },
+          select: { value: true },
+        });
+        cachedSystemMode =
+          setting?.value === 'trial' || setting?.value === 'production'
+            ? (setting.value as 'trial' | 'production')
+            : 'production';
+        cachedSystemModeAt = now;
+      } catch {
+        cachedSystemMode = 'production';
+        cachedSystemModeAt = now;
+      }
+    }
+
+    const desiredTag = cachedSystemMode === 'trial' ? 'test' : 'prod';
+
+    const ensureTag = (data: Record<string, unknown>) => {
+      if (
+        data.dataTag === undefined ||
+        data.dataTag === null ||
+        data.dataTag === ''
+      ) {
+        data.dataTag = desiredTag;
+      }
+    };
+
+    if (params.action === 'create') {
+      if (params.args?.data && typeof params.args.data === 'object') {
+        ensureTag(params.args.data as Record<string, unknown>);
+      }
+    }
+
+    if (params.action === 'createMany') {
+      const data = params.args?.data;
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          if (item && typeof item === 'object') {
+            ensureTag(item as Record<string, unknown>);
+          }
+        });
+      } else if (data && typeof data === 'object') {
+        ensureTag(data as Record<string, unknown>);
+      }
+    }
+
+    if (params.action === 'upsert') {
+      if (params.args?.create && typeof params.args.create === 'object') {
+        ensureTag(params.args.create as Record<string, unknown>);
+      }
+    }
+
+    return next(params);
+  });
+
   // 通过环境变量/默认值控制慢查询阈值，避免噪声同时保留可观测性
   prisma.$use(async (params, next) => {
     const before = Date.now();
