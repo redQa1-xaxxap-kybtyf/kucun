@@ -79,8 +79,10 @@ interface PaymentsOutTableListProps {
   };
   onPageChange?: (page: number) => void;
   onConfirm?: (paymentId: string) => void;
+  onVoid?: (payment: PaymentOutRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  isVoiding?: boolean;
 }
 
 /**
@@ -91,8 +93,10 @@ export function PaymentsOutTableList({
   pagination,
   onPageChange,
   onConfirm,
+  onVoid,
   confirmingId,
   isConfirming,
+  isVoiding,
 }: PaymentsOutTableListProps) {
   if (!payments.length) {
     return (
@@ -127,8 +131,10 @@ export function PaymentsOutTableList({
                 key={payment.id}
                 payment={payment}
                 onConfirm={onConfirm}
+                onVoid={onVoid}
                 confirmingId={confirmingId}
                 isConfirming={isConfirming}
+                isVoiding={isVoiding}
               />
             ))}
           </TableBody>
@@ -142,8 +148,10 @@ export function PaymentsOutTableList({
             key={payment.id}
             payment={payment}
             onConfirm={onConfirm}
+            onVoid={onVoid}
             confirmingId={confirmingId}
             isConfirming={isConfirming}
+            isVoiding={isVoiding}
           />
         ))}
       </div>
@@ -165,13 +173,17 @@ export function PaymentsOutTableList({
 function PaymentOutTableRow({
   payment,
   onConfirm,
+  onVoid,
   confirmingId,
   isConfirming,
+  isVoiding,
 }: {
   payment: PaymentOutRecord;
   onConfirm?: (paymentId: string) => void;
+  onVoid?: (payment: PaymentOutRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  isVoiding?: boolean;
 }) {
   return (
     <TableRow className="hover:bg-muted/50">
@@ -235,8 +247,10 @@ function PaymentOutTableRow({
         <PaymentOutRowActions
           payment={payment}
           onConfirm={onConfirm}
+          onVoid={onVoid}
           confirmingId={confirmingId}
           isConfirming={isConfirming}
+          isVoiding={isVoiding}
         />
       </TableCell>
     </TableRow>
@@ -246,13 +260,17 @@ function PaymentOutTableRow({
 function PaymentOutCard({
   payment,
   onConfirm,
+  onVoid,
   confirmingId,
   isConfirming,
+  isVoiding,
 }: {
   payment: PaymentOutRecord;
   onConfirm?: (paymentId: string) => void;
+  onVoid?: (payment: PaymentOutRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  isVoiding?: boolean;
 }) {
   const isThisConfirming = isConfirming && confirmingId === payment.id;
 
@@ -341,7 +359,7 @@ function PaymentOutCard({
                   variant="default"
                   size="sm"
                   onClick={() => onConfirm(payment.id)}
-                  disabled={isConfirming}
+                  disabled={isConfirming || Boolean(isVoiding)}
                   className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
                 >
                   {isThisConfirming ? '确认中...' : '确认付款'}
@@ -386,7 +404,7 @@ function PaymentOutCard({
                 {onConfirm && (
                   <DropdownMenuItem
                     onClick={() => onConfirm(payment.id)}
-                    disabled={isConfirming}
+                    disabled={isConfirming || Boolean(isVoiding)}
                     className="text-green-600 focus:text-green-700"
                   >
                     {isThisConfirming ? (
@@ -398,6 +416,16 @@ function PaymentOutCard({
                   </DropdownMenuItem>
                 )}
               </>
+            )}
+            {onVoid && payment.status !== 'cancelled' && (
+              <DropdownMenuItem
+                onClick={() => onVoid(payment)}
+                disabled={isVoiding}
+                className="text-destructive focus:text-destructive"
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                {isVoiding ? '作废中...' : '作废付款'}
+              </DropdownMenuItem>
             )}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -461,13 +489,17 @@ function PaymentMethodBadge({ method }: { method: string }) {
 function PaymentOutRowActions({
   payment,
   onConfirm,
+  onVoid,
   confirmingId,
   isConfirming,
+  isVoiding,
 }: {
   payment: PaymentOutRecord;
   onConfirm?: (paymentId: string) => void;
+  onVoid?: (payment: PaymentOutRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  isVoiding?: boolean;
 }) {
   const isThisConfirming = isConfirming && confirmingId === payment.id;
 
@@ -519,7 +551,7 @@ function PaymentOutRowActions({
                     size="sm"
                     className="h-8 w-8 p-0 text-green-600 hover:bg-green-50 hover:text-green-700"
                     onClick={() => onConfirm(payment.id)}
-                    disabled={isConfirming}
+                    disabled={isConfirming || Boolean(isVoiding)}
                   >
                     {isThisConfirming ? (
                       <Clock className="h-4 w-4 animate-spin" />
@@ -561,7 +593,7 @@ function PaymentOutRowActions({
               {onConfirm && (
                 <DropdownMenuItem
                   onClick={() => onConfirm(payment.id)}
-                  disabled={isConfirming}
+                  disabled={isConfirming || Boolean(isVoiding)}
                   className="text-green-600 focus:text-green-700"
                 >
                   {isThisConfirming ? (
@@ -573,6 +605,16 @@ function PaymentOutRowActions({
                 </DropdownMenuItem>
               )}
             </>
+          )}
+          {onVoid && payment.status !== 'cancelled' && (
+            <DropdownMenuItem
+              onClick={() => onVoid(payment)}
+              disabled={isVoiding}
+              className="text-destructive focus:text-destructive"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              {isVoiding ? '作废中...' : '作废付款'}
+            </DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>

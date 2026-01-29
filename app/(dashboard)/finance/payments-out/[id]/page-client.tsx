@@ -23,7 +23,18 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
@@ -135,6 +146,9 @@ export function PaymentOutDetailClient({
   const { toast } = useToast();
   const [payment, setPayment] = useState(initialPayment);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showVoidDialog, setShowVoidDialog] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [isVoiding, setIsVoiding] = useState(false);
 
   // 确认付款
   const handleConfirm = async () => {
@@ -189,6 +203,63 @@ export function PaymentOutDetailClient({
     }
   };
 
+  const handleVoid = async () => {
+    if (isVoiding || payment.status === 'cancelled') {
+      return;
+    }
+
+    setIsVoiding(true);
+    try {
+      const trimmedReason = voidReason.trim().slice(0, 64);
+      const payload: Record<string, unknown> = {
+        idempotencyKey: crypto.randomUUID(),
+        ...(trimmedReason ? { voidReason: trimmedReason } : {}),
+      };
+
+      const response = await fetch(
+        `/api/finance/payments-out/${payment.id}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+      );
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '作废付款失败');
+      }
+
+      toast({
+        title: '作废成功',
+        description: data.message || '付款记录已作废',
+        variant: 'success',
+      });
+
+      setPayment(prev => ({
+        ...prev,
+        status: 'cancelled',
+      }));
+      setShowVoidDialog(false);
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: '作废失败',
+        description: error instanceof Error ? error.message : '作废付款失败',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVoiding(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
@@ -229,14 +300,64 @@ export function PaymentOutDetailClient({
                 size="sm"
                 className="gap-1.5 bg-green-600 hover:bg-green-700"
                 onClick={handleConfirm}
-                disabled={isConfirming}
+                disabled={isConfirming || isVoiding}
               >
                 <CheckCircle className="h-3.5 w-3.5" />
                 {isConfirming ? '确认中...' : '确认付款'}
               </Button>
             )}
+            {payment.status !== 'cancelled' && (
+              <Button
+                variant="destructive"
+                size="sm"
+                className="gap-1.5"
+                onClick={() => {
+                  setVoidReason('');
+                  setShowVoidDialog(true);
+                }}
+                disabled={isVoiding || isConfirming}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                作废
+              </Button>
+            )}
           </div>
         </div>
+
+        <AlertDialog open={showVoidDialog} onOpenChange={setShowVoidDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认作废付款记录？</AlertDialogTitle>
+              <AlertDialogDescription>
+                将作废付款单 <strong>{payment.paymentNumber}</strong>。
+                <br />
+                作废会回滚关联应付款，并写入供应商往来账反向流水。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">作废原因（可选）</div>
+              <Textarea
+                value={voidReason}
+                onChange={e => setVoidReason(e.target.value)}
+                placeholder="例如：录入错误 / 重复付款 / 供应商更换…（最多64字）"
+                disabled={isVoiding}
+                rows={3}
+              />
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isVoiding}>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleVoid}
+                disabled={isVoiding}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isVoiding ? '作废中...' : '确认作废'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* 顶部核心信息卡片 */}
         <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-lg">

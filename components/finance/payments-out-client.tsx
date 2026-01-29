@@ -7,6 +7,17 @@ import * as React from 'react';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { Badge } from '@/components/ui/badge';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
@@ -145,6 +156,10 @@ export function PaymentsOutClient({
   );
   const [isConfirming, setIsConfirming] = React.useState(false);
   const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
+  const [voidingPayment, setVoidingPayment] =
+    React.useState<PaymentOutRecord | null>(null);
+  const [voidReason, setVoidReason] = React.useState('');
+  const [isVoiding, setIsVoiding] = React.useState(false);
 
   React.useEffect(() => {
     _setSearchValue(initialParams?.search ?? '');
@@ -197,6 +212,63 @@ export function PaymentsOutClient({
     } finally {
       setIsConfirming(false);
       setConfirmingId(null);
+    }
+  };
+
+  const handleVoidRequest = (payment: PaymentOutRecord) => {
+    if (isVoiding) return;
+    setVoidingPayment(payment);
+    setVoidReason('');
+  };
+
+  const handleVoidConfirm = async () => {
+    if (!voidingPayment || isVoiding) return;
+
+    setIsVoiding(true);
+    try {
+      const trimmedReason = voidReason.trim().slice(0, 64);
+      const payload: Record<string, unknown> = {
+        idempotencyKey: crypto.randomUUID(),
+        ...(trimmedReason ? { voidReason: trimmedReason } : {}),
+      };
+
+      const response = await fetch(
+        `/api/finance/payments-out/${voidingPayment.id}`,
+        getCsrfTokenHeader({
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+      );
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        message?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '作废付款失败');
+      }
+
+      toast({
+        title: '作废成功',
+        description: data.message || '付款记录已作废',
+        variant: 'success',
+      });
+
+      setVoidingPayment(null);
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: '作废失败',
+        description: error instanceof Error ? error.message : '作废付款失败',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsVoiding(false);
     }
   };
 
@@ -265,10 +337,60 @@ export function PaymentsOutClient({
           pagination={pagination}
           onPageChange={onPageChange}
           onConfirm={handleConfirm}
+          onVoid={handleVoidRequest}
           confirmingId={confirmingId}
           isConfirming={isConfirming}
+          isVoiding={isVoiding}
         />
       </div>
+
+      <AlertDialog
+        open={Boolean(voidingPayment)}
+        onOpenChange={open => {
+          if (!open) {
+            setVoidingPayment(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认作废付款记录？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {voidingPayment ? (
+                <>
+                  将作废付款单 <strong>{voidingPayment.paymentNumber}</strong>。
+                  <br />
+                  作废会回滚关联应付款，并写入供应商往来账反向流水。
+                </>
+              ) : (
+                '确认作废该付款记录吗？'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">作废原因（可选）</div>
+            <Textarea
+              value={voidReason}
+              onChange={e => setVoidReason(e.target.value)}
+              placeholder="例如：录入错误 / 重复付款 / 供应商更换…（最多64字）"
+              disabled={isVoiding}
+              rows={3}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isVoiding}>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleVoidConfirm}
+              disabled={isVoiding}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isVoiding ? '作废中...' : '确认作废'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
