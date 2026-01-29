@@ -1,6 +1,7 @@
 'use client';
 
 import { ChevronsUpDown, Search } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import React from 'react';
 import { ZodError } from 'zod';
 
@@ -19,13 +20,19 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-import { AddTemporaryProductDialog } from '../add-temporary-product-dialog';
-
 import { ProductSearchEmptyState } from './components/ProductSearchEmptyState';
 import { ProductSearchLoadingIndicator } from './components/ProductSearchLoadingIndicator';
 import { ProductSearchResults } from './components/ProductSearchResults';
 import { useSmartProductSearchController } from './hooks/useSmartProductSearchController';
 import type { ProductWithInventory, SmartProductSearchProps } from './types';
+
+const AddTemporaryProductDialog = dynamic(
+  () =>
+    import('../add-temporary-product-dialog').then(
+      mod => mod.AddTemporaryProductDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 export function SmartProductSearch(props: SmartProductSearchProps) {
   const {
@@ -169,13 +176,15 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
           </Command>
         </PopoverContent>
       </Popover>
-      <AddTemporaryProductDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
-        initialName={searchValue}
-        onConfirm={handleTemporaryProductAdded}
-        requirements={temporaryProductRequirements}
-      />
+      {showAddDialog && (
+        <AddTemporaryProductDialog
+          open={showAddDialog}
+          onOpenChange={setShowAddDialog}
+          initialName={searchValue}
+          onConfirm={handleTemporaryProductAdded}
+          requirements={temporaryProductRequirements}
+        />
+      )}
     </>
   );
 }

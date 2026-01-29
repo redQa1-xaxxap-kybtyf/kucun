@@ -1,4 +1,5 @@
 import { Clock, Package, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import React from 'react';
 import type {
   FieldArrayWithId,
@@ -6,7 +7,6 @@ import type {
   UseFormReturn,
 } from 'react-hook-form';
 
-import { HistoricalTemporaryProductDialog } from '@/components/sales-orders/historical-temporary-product-dialog';
 import { OrderItemRow } from '@/components/sales-orders/order-item-row';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,6 +30,14 @@ import type {
 } from '@/lib/types/sales-order';
 import type { HistoricalTemporaryProduct } from '@/lib/types/temporary-product';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
+
+const HistoricalTemporaryProductDialog = dynamic(
+  () =>
+    import(
+      '@/components/sales-orders/historical-temporary-product-dialog'
+    ).then(mod => mod.HistoricalTemporaryProductDialog),
+  { ssr: false, loading: () => null }
+);
 
 interface OrderItemsSectionProps {
   fields: FieldArrayWithId<SalesOrderCreateFormData, 'items', 'id'>[];
@@ -315,12 +323,14 @@ export function OrderItemsSection({
       </Card>
 
       {/* 历史临时产品选择对话框 */}
-      <HistoricalTemporaryProductDialog
-        open={showHistoricalDialog}
-        onOpenChange={setShowHistoricalDialog}
-        supplierId={supplierId || null}
-        onSelect={handleHistoricalProductSelect}
-      />
+      {showHistoricalDialog && (
+        <HistoricalTemporaryProductDialog
+          open={showHistoricalDialog}
+          onOpenChange={setShowHistoricalDialog}
+          supplierId={supplierId || null}
+          onSelect={handleHistoricalProductSelect}
+        />
+      )}
     </>
   );
 }
