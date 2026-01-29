@@ -1,13 +1,13 @@
 'use client';
 
 import { CreditCard, Download, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback, type DebouncedState } from 'use-debounce';
 
-import { PayablesClient } from '@/components/finance/payables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
@@ -23,6 +23,18 @@ type PayableSortField =
   | 'payableAmount'
   | 'dueDate'
   | 'remainingAmount';
+
+const PayablesClient = dynamic(
+  () => import('@/components/finance/payables-client').then(mod => mod.PayablesClient),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 const PAYABLE_STATUS_VALUES: PayableStatus[] = [
   'pending',
