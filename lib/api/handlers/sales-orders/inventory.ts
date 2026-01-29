@@ -140,7 +140,10 @@ const resolveInventory = (
           if (!batch) return false;
           if (batch === normalizedProductionDate) return true;
           if (productionDateToken && batch === productionDateToken) return true;
-          return productionDateToken.length > 0 && batch.includes(productionDateToken);
+          return (
+            productionDateToken.length > 0 &&
+            batch.includes(productionDateToken)
+          );
         })
       : [];
 
@@ -153,7 +156,9 @@ const resolveInventory = (
         : undefined);
 
   if (!matched) {
-    const variantHint = input.variantId ? ` (variantId: ${input.variantId})` : '';
+    const variantHint = input.variantId
+      ? ` (variantId: ${input.variantId})`
+      : '';
     if (normalizedTarget.length > 0) {
       throw new Error(
         `产品ID ${input.productId}${variantHint} 库存记录不存在 (批次: ${normalizedTarget})`
@@ -179,7 +184,9 @@ const resolveVariantId = async (
   tx: Tx,
   item: OrderItemInput & { productId: string }
 ): Promise<string | null> => {
-  const explicitVariantId = normalizeText((item as { variantId?: string }).variantId);
+  const explicitVariantId = normalizeText(
+    (item as { variantId?: string }).variantId
+  );
   if (explicitVariantId.length > 0) {
     return explicitVariantId;
   }

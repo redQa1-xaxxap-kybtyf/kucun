@@ -71,13 +71,23 @@ function SummaryCard({
   }[variant];
 
   return (
-    <Card className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${borderClass}`}>
+    <Card
+      className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md ${borderClass}`}
+    >
       <CardContent className="p-5">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</div>
-        <div className={`mt-2 font-mono text-2xl font-black tracking-tighter ${colorClass}`}>{value}</div>
+        <div className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+          {label}
+        </div>
+        <div
+          className={`mt-2 font-mono text-2xl font-black tracking-tighter ${colorClass}`}
+        >
+          {value}
+        </div>
         {description && (
           <div className="mt-2 flex items-center gap-1.5 text-[10px] font-medium text-slate-400">
-            <div className={`h-1 w-1 rounded-full ${variant === 'warning' ? 'bg-amber-400' : 'bg-rose-400'}`} />
+            <div
+              className={`h-1 w-1 rounded-full ${variant === 'warning' ? 'bg-amber-400' : 'bg-rose-400'}`}
+            />
             {description}
           </div>
         )}

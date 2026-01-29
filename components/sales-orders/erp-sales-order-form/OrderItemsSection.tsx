@@ -1,9 +1,9 @@
 import { Clock, Package, Plus } from 'lucide-react';
 import React from 'react';
 import type {
-    FieldArrayWithId,
-    UseFieldArrayRemove,
-    UseFormReturn,
+  FieldArrayWithId,
+  UseFieldArrayRemove,
+  UseFormReturn,
 } from 'react-hook-form';
 
 import { HistoricalTemporaryProductDialog } from '@/components/sales-orders/historical-temporary-product-dialog';
@@ -11,22 +11,22 @@ import { OrderItemRow } from '@/components/sales-orders/order-item-row';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-    Table,
-    TableBody,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import type { Toast } from '@/components/ui/use-toast';
 import {
-    getLatestPrice,
-    type CustomerProductPrice,
-    type PriceType,
+  getLatestPrice,
+  type CustomerProductPrice,
+  type PriceType,
 } from '@/hooks/use-price-history';
 import type { Product } from '@/lib/types/product';
 import type {
-    SalesOrderType,
-    TransferFulfillmentMode,
+  SalesOrderType,
+  TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
 import type { HistoricalTemporaryProduct } from '@/lib/types/temporary-product';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';

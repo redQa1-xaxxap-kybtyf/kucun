@@ -519,7 +519,9 @@ function computeCompanyExpenseAllocations(order: {
         allocatedCents += valueCents;
       });
     } else {
-      const evenShareCents = Math.floor(companyExpenseCents / order.items.length);
+      const evenShareCents = Math.floor(
+        companyExpenseCents / order.items.length
+      );
       let allocatedCents = 0;
       order.items.forEach((item, index) => {
         const valueCents =

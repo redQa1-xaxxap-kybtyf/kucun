@@ -185,8 +185,8 @@ export default function SalesOrderDetailPage() {
 
   return (
     <div className="flex h-full flex-col overflow-auto bg-slate-50/30">
-      <div 
-        id="sales-order-export-content" 
+      <div
+        id="sales-order-export-content"
         className="mx-auto w-full max-w-[1680px] space-y-8 p-4 lg:p-10 xl:p-14"
       >
         <HeaderCard

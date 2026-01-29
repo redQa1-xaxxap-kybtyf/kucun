@@ -262,7 +262,7 @@ export function OrderItemsTable({
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <CardTitle className="flex items-center gap-3 text-sm font-black uppercase tracking-widest text-slate-900">
+          <CardTitle className="flex items-center gap-3 text-sm font-black tracking-widest text-slate-900 uppercase">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100/50 text-blue-600 shadow-sm">
               <ShoppingCart className="h-5 w-5" />
             </div>
@@ -308,7 +308,7 @@ export function OrderItemsTable({
         {/* 桌面端：表格视图 */}
         <div className="hidden overflow-x-auto md:block">
           <table className="w-full text-sm text-slate-600">
-            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-[11px] font-black uppercase tracking-widest text-slate-500 backdrop-blur-md">
+            <thead className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/80 text-[11px] font-black tracking-widest text-slate-500 uppercase backdrop-blur-md">
               <tr>
                 <th className="px-3 py-2.5 text-left font-medium whitespace-nowrap">
                   产品编码
@@ -530,7 +530,7 @@ export function OrderItemsTable({
                     <td className="px-3 py-2.5 align-top whitespace-nowrap">
                       <div className="flex h-full min-w-[100px] items-center text-xs text-gray-500">
                         {remarkText !== '-' ? (
-                          <div className="inline-flex rounded border border-blue-100 bg-blue-50/50 px-2 py-0.5 font-bold tracking-tight text-blue-600 whitespace-nowrap">
+                          <div className="inline-flex rounded border border-blue-100 bg-blue-50/50 px-2 py-0.5 font-bold tracking-tight whitespace-nowrap text-blue-600">
                             {remarkText}
                           </div>
                         ) : (
@@ -548,13 +548,19 @@ export function OrderItemsTable({
                   colSpan={order.orderType === 'TRANSFER' ? 3 : 4}
                   className="px-4 py-5 text-right text-slate-500"
                 >
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em]">合计统计</span>
+                  <span className="text-[10px] font-black tracking-[0.2em] uppercase">
+                    合计统计
+                  </span>
                 </td>
                 <td className="px-3 py-5 text-center whitespace-nowrap">
-                  <span className="text-[10px] font-bold text-slate-300">-</span>
+                  <span className="text-[10px] font-bold text-slate-300">
+                    -
+                  </span>
                 </td>
                 <td className="px-3 py-5 text-center whitespace-nowrap">
-                  <span className="text-[10px] font-bold text-slate-300">-</span>
+                  <span className="text-[10px] font-bold text-slate-300">
+                    -
+                  </span>
                 </td>
                 <td className="px-3 py-5 text-right whitespace-nowrap">
                   <span className="font-mono text-base font-black text-slate-900">
@@ -583,7 +589,9 @@ export function OrderItemsTable({
                   </>
                 )}
                 <td className="px-3 py-5 text-right whitespace-nowrap">
-                  <span className="text-[10px] font-bold text-slate-300">-</span>
+                  <span className="text-[10px] font-bold text-slate-300">
+                    -
+                  </span>
                 </td>
                 <td className="px-3 py-5 text-right whitespace-nowrap">
                   <span className="font-mono text-xl font-black text-blue-700">
@@ -593,7 +601,9 @@ export function OrderItemsTable({
                 {order.orderType === 'TRANSFER' && (
                   <>
                     <td className="px-3 py-5 text-right whitespace-nowrap">
-                      <span className="text-[10px] font-bold text-slate-300">-</span>
+                      <span className="text-[10px] font-bold text-slate-300">
+                        -
+                      </span>
                     </td>
                     <td className="px-3 py-5 text-right whitespace-nowrap">
                       <span className="font-mono text-sm font-semibold text-slate-700">
@@ -608,7 +618,9 @@ export function OrderItemsTable({
                   </>
                 )}
                 <td className="px-3 py-5">
-                  <span className="text-[10px] font-bold text-slate-200">#</span>
+                  <span className="text-[10px] font-bold text-slate-200">
+                    #
+                  </span>
                 </td>
               </tr>
             </tfoot>
@@ -616,7 +628,7 @@ export function OrderItemsTable({
         </div>
 
         {/* 移动端：卡片视图 */}
-        <div className="border-t border-[hsl(var(--color-border-secondary))] bg-white p-3 space-y-3 md:hidden">
+        <div className="space-y-3 border-t border-[hsl(var(--color-border-secondary))] bg-white p-3 md:hidden">
           {orderItems.map((item, index) => {
             const unitLabel = resolveUnitLabel(item);
             const quantityDisplay = formatQuantityDisplay(item);
@@ -640,9 +652,7 @@ export function OrderItemsTable({
             const displayProductCode = item.isManualProduct
               ? manualCode || '-'
               : item.product?.code || '-';
-            const localQuantityDisplay = formatDecimal(
-              item.localQuantity ?? 0
-            );
+            const localQuantityDisplay = formatDecimal(item.localQuantity ?? 0);
             const transferQuantityDisplay = formatDecimal(
               item.transferQuantity ?? 0
             );
@@ -683,7 +693,7 @@ export function OrderItemsTable({
                     </div>
                   </div>
                   {/* 单价 + 小计 */}
-                  <div className="text-right text-[11px] text-gray-500 space-y-1">
+                  <div className="space-y-1 text-right text-[11px] text-gray-500">
                     <div>单价</div>
                     <div className="font-mono text-[13px] font-semibold text-[hsl(var(--color-primary))]">
                       {typeof item.unitPrice === 'number'
@@ -714,7 +724,9 @@ export function OrderItemsTable({
                     </div>
                   </div>
                   <div className="space-y-0.5 text-right">
-                    <div className="text-[10px] text-gray-500">单位 / 装箱数</div>
+                    <div className="text-[10px] text-gray-500">
+                      单位 / 装箱数
+                    </div>
                     <div>
                       <span className="mr-1">{unitLabel}</span>
                       {typeof piecesPerUnitDisplay === 'number' && (

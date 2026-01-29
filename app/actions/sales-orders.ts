@@ -310,7 +310,9 @@ export async function updateSalesOrderStatus(
                 continue;
               }
 
-              const unitCost = Number(inventory?.unitCost ?? item.unitCost ?? 0);
+              const unitCost = Number(
+                inventory?.unitCost ?? item.unitCost ?? 0
+              );
 
               const inboundRecord = await executeMinimalInboundTransaction(
                 {
@@ -590,7 +592,10 @@ export async function updateSalesOrder(
       }
 
       // 不能修改已完成的订单
-      if (existingOrder.status === 'completed' || existingOrder.status === 'delivered') {
+      if (
+        existingOrder.status === 'completed' ||
+        existingOrder.status === 'delivered'
+      ) {
         throw new Error('不能修改已完成的订单');
       }
 

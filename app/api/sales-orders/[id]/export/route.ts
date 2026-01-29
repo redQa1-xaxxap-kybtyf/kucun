@@ -142,7 +142,7 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
 export const POST = withAuth(
   async (request: NextRequest, { params }) => {
     try {
-      const bag = params ? await Promise.resolve(params) : ({ } as any);
+      const bag = params ? await Promise.resolve(params) : ({} as any);
       const id = (bag as Record<string, string>).id;
 
       if (!id) {
@@ -154,7 +154,8 @@ export const POST = withAuth(
         format?: 'excel' | 'csv';
       } | null;
 
-      const mode: ExportMode = body?.mode === 'complete' ? 'complete' : 'details';
+      const mode: ExportMode =
+        body?.mode === 'complete' ? 'complete' : 'details';
       const format = body?.format ?? 'excel';
 
       if (format !== 'excel') {

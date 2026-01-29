@@ -5,10 +5,10 @@ import { useWatch } from 'react-hook-form';
 import { BatchSelector } from '@/components/sales-orders/batch-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { TableCell } from '@/components/ui/table';

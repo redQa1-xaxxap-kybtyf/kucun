@@ -422,7 +422,8 @@ export class ReportGenerationService {
           };
           existingProduct.revenue += item.subtotal;
           existingProduct.cost += (item.unitCost || 0) * item.quantity;
-          existingProduct.profit = existingProduct.revenue - existingProduct.cost;
+          existingProduct.profit =
+            existingProduct.revenue - existingProduct.cost;
           productProfitMap.set(item.product.id, existingProduct);
         }
 
@@ -625,9 +626,7 @@ export class ReportGenerationService {
     });
 
     if (inconsistentAmountCount > 0) {
-      errors.push(
-        `发现 ${inconsistentAmountCount} 个订单金额异常`
-      );
+      errors.push(`发现 ${inconsistentAmountCount} 个订单金额异常`);
     }
 
     // 检查库存预留一致性
@@ -657,9 +656,7 @@ export class ReportGenerationService {
     });
 
     if (profitIssueCount > 0) {
-      warnings.push(
-        `发现 ${profitIssueCount} 个订单利润计算可能不完整`
-      );
+      warnings.push(`发现 ${profitIssueCount} 个订单利润计算可能不完整`);
     }
 
     return {

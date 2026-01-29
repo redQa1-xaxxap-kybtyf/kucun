@@ -103,7 +103,8 @@ export function mapSalesOrderItem(
     costSubtotal: toNumber(item.costSubtotal),
     localQuantity: toNumber(item.localQuantity),
     transferQuantity: toNumber(item.transferQuantity),
-    piecesPerUnit: toNumber(item.piecesPerUnit) ?? product?.piecesPerUnit ?? undefined,
+    piecesPerUnit:
+      toNumber(item.piecesPerUnit) ?? product?.piecesPerUnit ?? undefined,
     manualWeight: toNumber(item.manualWeight),
     // 其他字段
     batchNumber: item.batchNumber ?? undefined,

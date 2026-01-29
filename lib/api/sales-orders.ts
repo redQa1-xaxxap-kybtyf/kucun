@@ -658,12 +658,7 @@ export function useUpdateSalesOrderStatus(
  * 复制销售订单 Mutation Hook
  */
 export function useCopySalesOrder(
-  options?: UseMutationOptions<
-    ApiResponse<SalesOrder>,
-    Error,
-    string,
-    unknown
-  >
+  options?: UseMutationOptions<ApiResponse<SalesOrder>, Error, string, unknown>
 ) {
   const queryClient = useQueryClient();
 

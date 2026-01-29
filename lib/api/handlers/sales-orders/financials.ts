@@ -104,7 +104,9 @@ export const calculateFinancials = (
   const profitAmountWithExpense = roundCurrency(
     allocationResults.reduce((sum, row) => sum + (row.profitAmount ?? 0), 0)
   );
-  const costAmountWithExpense = roundCurrency(itemsAmount - profitAmountWithExpense);
+  const costAmountWithExpense = roundCurrency(
+    itemsAmount - profitAmountWithExpense
+  );
 
   // totalAmount 不包含抹零；实际应收 = totalAmount + roundingAdjustment
   const totalAmount = roundCurrency(itemsAmount + additionalFees);

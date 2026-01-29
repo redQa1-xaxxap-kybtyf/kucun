@@ -62,7 +62,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="space-y-1.5">
-            <CardTitle className="flex items-center gap-2.5 text-sm font-black uppercase tracking-widest text-slate-900">
+            <CardTitle className="flex items-center gap-2.5 text-sm font-black tracking-widest text-slate-900 uppercase">
               <PiggyBank className="h-4 w-4 text-amber-600" />
               预收款冲抵记录
             </CardTitle>
@@ -70,15 +70,23 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
               追溯本笔业务所消耗的客户账户预存资金。
             </p>
           </div>
-          <Badge variant="secondary" className="hidden sm:inline-flex rounded-lg px-2.5 py-1 font-black">
+          <Badge
+            variant="secondary"
+            className="hidden rounded-lg px-2.5 py-1 font-black sm:inline-flex"
+          >
             合计抵扣：{formatCurrency(totalApplied)}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="space-y-5 py-6">
-        <div className="rounded-xl border border-amber-100 bg-amber-50/30 p-4 text-[11px] font-bold text-amber-700 flex items-center gap-3">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] text-white">i</div>
-          <span>当前订单已执行 {usages.length} 笔预收款对冲，金额已从往来账户余额中扣除。</span>
+        <div className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50/30 p-4 text-[11px] font-bold text-amber-700">
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] text-white">
+            i
+          </div>
+          <span>
+            当前订单已执行 {usages.length}{' '}
+            笔预收款对冲，金额已从往来账户余额中扣除。
+          </span>
         </div>
 
         <div className="space-y-4">
@@ -93,7 +101,7 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
               >
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-3">
-                    <Badge 
+                    <Badge
                       variant={statusConfig.variant}
                       className="rounded-lg px-2 py-0.5 font-bold"
                     >
@@ -112,9 +120,11 @@ export function PrepaymentUsageCard({ order }: { order: SalesOrderDetail }) {
                     <p>冲抵生效时间：{formatDateTime(usage.createdAt)}</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:border-0 sm:pt-0 sm:gap-2">
+                <div className="flex items-center justify-between border-t border-slate-100 pt-3 sm:flex-col sm:items-end sm:gap-2 sm:border-0 sm:pt-0">
                   <div className="text-right">
-                    <p className="text-[9px] font-black uppercase tracking-tighter text-slate-400">本次抵扣</p>
+                    <p className="text-[9px] font-black tracking-tighter text-slate-400 uppercase">
+                      本次抵扣
+                    </p>
                     <p className="font-mono text-lg font-black tracking-tighter text-emerald-600">
                       -{formatCurrency(usage.appliedAmount)}
                     </p>

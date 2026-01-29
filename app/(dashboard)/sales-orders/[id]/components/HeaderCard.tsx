@@ -1,12 +1,12 @@
 'use client';
 
 import {
-    ArrowLeft,
-    Download,
-    Edit,
-    MoreHorizontal,
-    Printer,
-    Truck,
+  ArrowLeft,
+  Download,
+  Edit,
+  MoreHorizontal,
+  Printer,
+  Truck,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -16,15 +16,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
 import {
-    SALES_ORDER_STATUS_LABELS,
-    TRANSFER_MODE_LABELS,
+  SALES_ORDER_STATUS_LABELS,
+  TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
@@ -109,11 +109,11 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
           销售订单
         </h1>
         <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
-          <span className="text-sm font-bold uppercase tracking-wider text-slate-500">
+          <span className="text-sm font-bold tracking-wider text-slate-500 uppercase">
             {order.orderNumber}
           </span>
           <div className="h-3.5 w-px bg-slate-200" />
-          <Badge 
+          <Badge
             variant={getSalesOrderStatusBadgeVariant(order.status)}
             className="rounded-lg px-2 py-0.5"
           >
@@ -171,7 +171,7 @@ function HeaderActions({
           size="sm"
           onClick={onConfirmShipment}
           disabled={isUpdatingStatus}
-          className="h-8 px-3 text-xs bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))] disabled:bg-[hsl(var(--color-primary))] disabled:text-[hsl(var(--color-text-on-primary))] disabled:opacity-60 sm:h-9 sm:px-4"
+          className="h-8 bg-[hsl(var(--color-primary))] px-3 text-xs text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))] disabled:bg-[hsl(var(--color-primary))] disabled:text-[hsl(var(--color-text-on-primary))] disabled:opacity-60 sm:h-9 sm:px-4"
         >
           <Truck className="mr-1.5 h-3.5 w-3.5" />
           {isUpdatingStatus ? '处理中...' : '确认发货'}
@@ -188,13 +188,16 @@ function HeaderActions({
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 rounded-xl border-slate-100 shadow-xl">
+        <DropdownMenuContent
+          align="end"
+          className="w-56 rounded-xl border-slate-100 shadow-xl"
+        >
           <DropdownMenuItem onClick={onPrint} className="cursor-pointer py-2.5">
             <Printer className="mr-3 h-4 w-4 text-slate-500" />
             <span className="font-semibold text-slate-700">打印订单单据</span>
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={onExportImage} 
+          <DropdownMenuItem
+            onClick={onExportImage}
             disabled={isExportingImage}
             className="cursor-pointer py-2.5"
           >
@@ -203,8 +206,8 @@ function HeaderActions({
               {isExportingImage ? '正在生成报表...' : '导出为专业图片'}
             </span>
           </DropdownMenuItem>
-          <DropdownMenuItem 
-            onClick={onExportExcel} 
+          <DropdownMenuItem
+            onClick={onExportExcel}
             disabled={isExportingExcel}
             className="cursor-pointer py-2.5"
           >
@@ -219,10 +222,12 @@ function HeaderActions({
             className="cursor-pointer py-2.5"
           >
             <Download className="mr-3 h-4 w-4 text-slate-500" />
-            <span className="font-semibold text-slate-700">导出完整业务明细</span>
+            <span className="font-semibold text-slate-700">
+              导出完整业务明细
+            </span>
           </DropdownMenuItem>
           <div className="my-1.5 h-px bg-slate-100" />
-          <DropdownMenuItem className="cursor-pointer py-2.5 text-blue-600 font-bold focus:text-blue-700 focus:bg-blue-50">
+          <DropdownMenuItem className="cursor-pointer py-2.5 font-bold text-blue-600 focus:bg-blue-50 focus:text-blue-700">
             复制并创建新订单
           </DropdownMenuItem>
         </DropdownMenuContent>

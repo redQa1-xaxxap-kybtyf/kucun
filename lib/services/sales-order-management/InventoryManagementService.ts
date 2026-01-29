@@ -92,12 +92,15 @@ export class InventoryManagementService {
   ): Promise<InventoryReservation> {
     return prisma.$transaction(async tx => {
       // 检查库存可用性
-      const checkResult = await this.checkInventoryAvailability({
+      const checkResult = await this.checkInventoryAvailability(
+        {
           productId: request.productId,
           variantId: request.variantId,
           batchNumber: request.batchNumber,
           requiredQuantity: request.quantity,
-      }, tx as unknown as PrismaClient);
+        },
+        tx as unknown as PrismaClient
+      );
 
       if (!checkResult.available) {
         throw new Error(`库存不足: ${checkResult.message}`);
@@ -271,7 +274,8 @@ export class InventoryManagementService {
         });
 
         if (inventory) {
-          const availableStock = inventory.quantity - inventory.reservedQuantity;
+          const availableStock =
+            inventory.quantity - inventory.reservedQuantity;
           const alertThreshold = config.safetyStock * config.alertThreshold;
 
           if (availableStock <= config.safetyStock) {

@@ -307,7 +307,11 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       try {
         await createPurchaseOrderForTransfer(
           tx,
-          validatedData,
+          {
+            ...validatedData,
+            // ✅ 后端统一真源：采购总额应使用本次计算出的成本汇总，而非依赖前端传入
+            costAmount: financials.costAmount,
+          },
           salesOrder,
           userId
         );
@@ -321,7 +325,9 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       }
     }
 
-    const roundedTotalAmount = Number(Number(financials.totalAmount ?? 0).toFixed(2));
+    const roundedTotalAmount = Number(
+      Number(financials.totalAmount ?? 0).toFixed(2)
+    );
     const roundedRoundingAmount = Number(
       Number(financials.roundingAdjustment ?? 0).toFixed(2)
     );

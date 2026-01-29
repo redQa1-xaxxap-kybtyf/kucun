@@ -5,8 +5,8 @@
  */
 
 import {
-    reserveInventory,
-    shouldReserveInventory,
+  reserveInventory,
+  shouldReserveInventory,
 } from '@/lib/api/handlers/sales-orders/inventory';
 import { prisma, withTransaction } from '@/lib/db';
 import { logger } from '@/lib/logger';
@@ -15,16 +15,12 @@ import {
   ensureFIFOQueueMatchesInventory,
 } from '@/lib/services/fifo-cost-service';
 import {
-    generateUniqueOrderNumber,
-    type OrderNumberConfig,
+  generateUniqueOrderNumber,
+  type OrderNumberConfig,
 } from '@/lib/services/order-number-generator';
-import {
-    findAvailableInventory,
-    mapProductionDateToBatchNumber,
-} from '@/lib/utils/inventory-variant-mapper';
+import { findAvailableInventory } from '@/lib/utils/inventory-variant-mapper';
 import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
-
 
 /**
  * 出库单号配置
@@ -505,7 +501,12 @@ async function executeOrderStatusUpdateWithInventory(
       >;
     }> = [];
 
-    for (const { item, productId, transferReason, outboundQuantity } of itemsWithInventory) {
+    for (const {
+      item,
+      productId,
+      transferReason,
+      outboundQuantity,
+    } of itemsWithInventory) {
       if (transferReason) {
         logger.info('sales-order-status', '跳过调货产品库存扣减', {
           orderId: existingOrder.id,
@@ -522,14 +523,18 @@ async function executeOrderStatusUpdateWithInventory(
       }
 
       // 使用类型安全的库存查找（支持变体和批次映射）
-      const inventory = await findAvailableInventory(productId, outboundQuantity, {
-        colorCode: item.colorCode,
-        // 优先按销售订单明细中选择的批次号匹配库存；
-        // 只有在没有批次号时，才退回到按生产日期推导批次
-        batchNumber: item.batchNumber,
-        productionDate: item.productionDate,
-        tx,
-      });
+      const inventory = await findAvailableInventory(
+        productId,
+        outboundQuantity,
+        {
+          colorCode: item.colorCode,
+          // 优先按销售订单明细中选择的批次号匹配库存；
+          // 只有在没有批次号时，才退回到按生产日期推导批次
+          batchNumber: item.batchNumber,
+          productionDate: item.productionDate,
+          tx,
+        }
+      );
 
       if (!inventory) {
         const existingInventory = await findAvailableInventory(productId, 0, {
@@ -546,10 +551,8 @@ async function executeOrderStatusUpdateWithInventory(
         const unitLabel = '片';
         const derivedBatch =
           item.batchNumber ||
-          (item.productionDate
-            ? mapProductionDateToBatchNumber(item.productionDate)
-            : null) ||
           existingInventory?.batchNumber ||
+          (item.productionDate ? item.productionDate : null) ||
           '未设置';
         const resolvedLocation = existingInventory?.location || '未设置';
 
@@ -623,7 +626,12 @@ async function executeOrderStatusUpdateWithInventory(
     const isMixedTransferOrder =
       existingOrder.orderType === 'TRANSFER' && transferMode === 'MIXED';
 
-    for (const { item, productId, inventory, outboundQuantity } of inventoryChecks) {
+    for (const {
+      item,
+      productId,
+      inventory,
+      outboundQuantity,
+    } of inventoryChecks) {
       const decrementReservedQty = outboundQuantity;
 
       // 使用乐观锁更新库存数量和预留量，确保并发安全
@@ -682,15 +690,9 @@ async function executeOrderStatusUpdateWithInventory(
           ? roundCurrency(fifoCost.totalCost / itemQuantity)
           : fifoCost.averageUnitCost;
 
-      const mappedBatchNumber = item.productionDate
-        ? mapProductionDateToBatchNumber(item.productionDate)
-        : null;
-      // 批次号优先级：生产日期映射 > 订单批次号 > 库存批次号
+      // 批次号真源：库存/订单显式批次号；生产日期仅用于匹配查找，不能写回/落库
       const finalBatchNumber =
-        mappedBatchNumber ||
-        item.batchNumber ||
-        inventory.batchNumber ||
-        undefined;
+        item.batchNumber || inventory.batchNumber || undefined;
 
       const outboundRecordNumber = await generateUniqueOrderNumber(
         OUTBOUND_RECORD_CONFIG,
@@ -721,12 +723,15 @@ async function executeOrderStatusUpdateWithInventory(
           ? roundCurrency(transferQuantity * transferUnitCost)
           : 0;
 
-      const totalCostWithExpense =
-        isMixedTransferOrder
-          ? baseTotalCost !== undefined || transferCost > 0 || allocatedExpense > 0
-            ? roundCurrency((baseTotalCost ?? 0) + transferCost + allocatedExpense)
-            : undefined
-          : localCostWithExpense;
+      const totalCostWithExpense = isMixedTransferOrder
+        ? baseTotalCost !== undefined ||
+          transferCost > 0 ||
+          allocatedExpense > 0
+          ? roundCurrency(
+              (baseTotalCost ?? 0) + transferCost + allocatedExpense
+            )
+          : undefined
+        : localCostWithExpense;
 
       // 创建出库记录（使用事务内生成的单号 + FIFO成本）
       await tx.outboundRecord.create({
@@ -960,7 +965,7 @@ async function executeOrderCancellation(
       }
 
       for (const release of releaseByKey.values()) {
-        const inventories = await tx.inventory.findMany({
+        const inventory = await tx.inventory.findFirst({
           where: {
             productId: release.productId,
             variantId: release.variantId,
@@ -968,12 +973,8 @@ async function executeOrderCancellation(
           },
           select: {
             id: true,
-            reservedQuantity: true,
           },
-          take: 2,
         });
-
-        const inventory = inventories[0];
 
         if (!inventory) {
           throw new Error(
@@ -981,61 +982,100 @@ async function executeOrderCancellation(
           );
         }
 
-        if (inventories.length > 1) {
-          throw new Error(
-            `库存记录不唯一，无法安全释放预留量: productId=${release.productId}, variantId=${release.variantId ?? 'null'}, batchNumber=${release.batchNumber ?? 'null'}`
-          );
-        }
-
-        if (inventory.reservedQuantity <= 0) {
+        const releaseQty = Number(release.quantity ?? 0);
+        if (releaseQty <= 0) {
           continue;
         }
 
-        let decrementQty = Math.min(
-          release.quantity,
-          inventory.reservedQuantity
-        );
-        if (decrementQty <= 0) {
-          continue;
-        }
-
+        // ✅ 原子性释放：直接用 releaseQty 做 decrement，不预读 reservedQuantity
         let updateResult = await tx.inventory.updateMany({
           where: {
             id: inventory.id,
-            reservedQuantity: { gte: decrementQty },
+            reservedQuantity: { gte: releaseQty },
           },
           data: {
-            reservedQuantity: { decrement: decrementQty },
+            reservedQuantity: { decrement: releaseQty },
           },
         });
 
-        if (updateResult.count === 0) {
-          const fresh = await tx.inventory.findUnique({
-            where: { id: inventory.id },
-            select: { reservedQuantity: true },
-          });
+        if (updateResult.count > 0) {
+          releasedAny = true;
+          continue;
+        }
 
-          const freshReserved = fresh?.reservedQuantity ?? 0;
-          decrementQty = Math.min(release.quantity, freshReserved);
-          if (decrementQty <= 0) {
-            continue;
-          }
+        // ✅ 行锁读取最新 reserved（用于幂等/不足告警/部分释放）
+        const lockedRows = (await tx.$queryRaw`
+          SELECT id, reserved_quantity
+          FROM inventory
+          WHERE id = ${inventory.id}
+          FOR UPDATE
+        `) as Array<{ id: string; reserved_quantity: number }>;
+
+        const latestReserved = Number(lockedRows?.[0]?.reserved_quantity ?? 0);
+
+        if (latestReserved <= 0) {
+          logger.info('inventory-release', 'ALREADY_RELEASED', {
+            orderId,
+            reason: 'ALREADY_RELEASED',
+            latestReserved,
+          });
+          continue;
+        }
+
+        if (latestReserved < releaseQty) {
+          const shortage = releaseQty - latestReserved;
+
+          logger.error(
+            'inventory-release',
+            'RESERVED_INSUFFICIENT',
+            undefined,
+            { orderId, inventoryId: inventory.id },
+            {
+              releaseQty,
+              latestReserved,
+              shortage,
+              reason: 'RESERVED_INSUFFICIENT',
+              action: 'ALERT_FOR_RECONCILIATION',
+            }
+          );
 
           updateResult = await tx.inventory.updateMany({
             where: {
               id: inventory.id,
-              reservedQuantity: { gte: decrementQty },
+              reservedQuantity: { gte: latestReserved },
             },
             data: {
-              reservedQuantity: { decrement: decrementQty },
+              reservedQuantity: { decrement: latestReserved },
             },
           });
 
-          if (updateResult.count === 0) {
-            throw new Error(
-              `释放预留库存失败, 请重试: inventoryId=${inventory.id}`
-            );
+          if (updateResult.count > 0) {
+            releasedAny = true;
+            logger.warn('inventory-release', 'PARTIAL_RELEASE', {
+              expectedRelease: releaseQty,
+              actualRelease: latestReserved,
+              reason: 'PARTIAL_RELEASE_DUE_TO_INSUFFICIENT',
+            });
           }
+
+          continue;
+        }
+
+        // latestReserved >= releaseQty：可能是并发写导致第一次 updateMany 失败，重试一次
+        updateResult = await tx.inventory.updateMany({
+          where: {
+            id: inventory.id,
+            reservedQuantity: { gte: releaseQty },
+          },
+          data: {
+            reservedQuantity: { decrement: releaseQty },
+          },
+        });
+
+        if (updateResult.count === 0) {
+          throw new Error(
+            `释放预留库存失败, 请重试: inventoryId=${inventory.id}`
+          );
         }
 
         releasedAny = true;

@@ -3,10 +3,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
 import {
-    useFieldArray,
-    useWatch,
-    type Control,
-    type FieldValues,
+  useFieldArray,
+  useWatch,
+  type Control,
+  type FieldValues,
 } from 'react-hook-form';
 
 // UI Components
@@ -14,18 +14,18 @@ import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-prod
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -33,9 +33,9 @@ import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { queryKeys } from '@/lib/queryKeys';
 import type { Product } from '@/lib/types/product';
 import {
-    calculateItemSubtotal,
-    calculateOrderTotal,
-    type SalesOrderItemData,
+  calculateItemSubtotal,
+  calculateOrderTotal,
+  type SalesOrderItemData,
 } from '@/lib/utils/sales-order-utils';
 
 // API

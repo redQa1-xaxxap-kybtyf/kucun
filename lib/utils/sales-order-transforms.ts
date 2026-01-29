@@ -271,7 +271,13 @@ export function transformFormItemToCreateInput(
   // 2) 其他情况：
   //    - 行小计 = 片数 * 片单价
   let normalizedUnitPrice = rawUnitPrice;
-  let displayQuantity = toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  let displayQuantity = toOptionalNumber(formItem.displayQuantity);
+  if (displayQuantity === undefined) {
+    displayQuantity =
+      displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0
+        ? quantity / piecesPerUnit
+        : quantity;
+  }
   let subtotal: number;
 
   if (displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0) {
@@ -404,7 +410,13 @@ export function transformFormItemToUpdateInput(
 
   // 与创建逻辑保持一致：保证行小计与销售员录入的单位/单价一致
   let normalizedUnitPrice = rawUnitPrice;
-  let displayQuantity = toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  let displayQuantity = toOptionalNumber(formItem.displayQuantity);
+  if (displayQuantity === undefined) {
+    displayQuantity =
+      displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0
+        ? quantity / piecesPerUnit
+        : quantity;
+  }
   let subtotal: number | undefined;
 
   if (displayUnit === '件' && piecesPerUnit && piecesPerUnit > 0) {
