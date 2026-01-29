@@ -1,14 +1,13 @@
 'use client';
 
 import { Plus, Receipt } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';
-import { ExpenseList } from '@/components/finance/expenses/expense-list';
-import { ExpenseStatistics } from '@/components/finance/expenses/expense-statistics';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
@@ -17,6 +16,36 @@ import type {
   ExpenseStatisticsParams,
   ExpenseType,
 } from '@/lib/types/expense';
+
+const ExpenseList = dynamic(
+  () =>
+    import('@/components/finance/expenses/expense-list').then(
+      mod => mod.ExpenseList
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
+
+const ExpenseStatistics = dynamic(
+  () =>
+    import('@/components/finance/expenses/expense-statistics').then(
+      mod => mod.ExpenseStatistics
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        统计加载中...
+      </div>
+    ),
+  }
+);
 
 interface ExpensesPageClientProps {
   initialParams: {
