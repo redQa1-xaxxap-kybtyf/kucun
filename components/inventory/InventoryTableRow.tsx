@@ -15,10 +15,10 @@ import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { TableCell, TableRow } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
@@ -241,11 +241,9 @@ function InventoryRowView({
             <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
           )}
           {item.weight ? (
-            <span className="text-xs font-bold tabular-nums text-slate-500">
+            <span className="text-xs font-bold text-slate-500 tabular-nums">
               {item.weight.toFixed(2)}
-              <span className="ml-1 font-bold text-slate-400">
-                kg
-              </span>
+              <span className="ml-1 font-bold text-slate-400">kg</span>
             </span>
           ) : null}
         </div>

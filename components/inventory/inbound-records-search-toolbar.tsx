@@ -157,20 +157,20 @@ function InboundToolbarView({
       isSearching={isSearching}
       // Toggle 按钮
       toggleButtons={[
-          {
-            key: 'purchase',
-            label: '采购入库',
-            icon: <Package className="h-3.5 w-3.5" />,
-            active: reasonFilter === 'purchase',
-            onClick: toggleReason('purchase'),
-          },
-          {
-            key: 'return',
-            label: '退货入库',
-            icon: <RefreshCw className="h-3.5 w-3.5" />,
-            active: reasonFilter === 'return',
-            onClick: toggleReason('return'),
-          },
+        {
+          key: 'purchase',
+          label: '采购入库',
+          icon: <Package className="h-3.5 w-3.5" />,
+          active: reasonFilter === 'purchase',
+          onClick: toggleReason('purchase'),
+        },
+        {
+          key: 'return',
+          label: '退货入库',
+          icon: <RefreshCw className="h-3.5 w-3.5" />,
+          active: reasonFilter === 'return',
+          onClick: toggleReason('return'),
+        },
       ]}
       // 筛选器配置
       filters={[

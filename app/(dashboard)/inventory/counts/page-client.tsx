@@ -11,9 +11,9 @@ import { CountList } from '@/components/inventory/counts/count-list';
 import { Button } from '@/components/ui/button';
 import { can } from '@/lib/auth/permissions';
 import type {
-    CountStatus,
-    CountType,
-    InventoryCountQueryParams,
+  CountStatus,
+  CountType,
+  InventoryCountQueryParams,
 } from '@/lib/types/inventory-count';
 
 import { CountRecordsFilters } from './components/CountRecordsFilters';

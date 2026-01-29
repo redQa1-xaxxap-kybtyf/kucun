@@ -25,7 +25,7 @@ export function CountRecordsFilters({
   return (
     <SearchFilterCard
       searchValue={filters.location || ''}
-      onSearchChange={(val) => onFiltersChange({ location: val })}
+      onSearchChange={val => onFiltersChange({ location: val })}
       searchPlaceholder="搜索盘点位置..."
       // 筛选器配置
       filters={[

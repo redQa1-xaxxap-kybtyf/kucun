@@ -11,16 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    INBOUND_REASON_LABELS,
-    type InboundRecord as BaseInboundRecord,
+  INBOUND_REASON_LABELS,
+  type InboundRecord as BaseInboundRecord,
 } from '@/lib/types/inbound';
 
 interface InboundRecordWithProduct
@@ -199,12 +199,19 @@ export function InboundRecordsTable({
                     <div className="mt-2 flex flex-wrap gap-x-3 gap-y-2 text-[11px] text-[hsl(var(--color-text-secondary))]">
                       <span className="flex items-center gap-1">
                         批次：
-                        <Badge variant="outline" className="h-4 px-1 text-[9px] font-bold border-amber-100 bg-amber-50 text-amber-600">
-                           {record.batchNumber || '-'}
+                        <Badge
+                          variant="outline"
+                          className="h-4 border-amber-100 bg-amber-50 px-1 text-[9px] font-bold text-amber-600"
+                        >
+                          {record.batchNumber || '-'}
                         </Badge>
                       </span>
                       <span className="flex items-center gap-1">
-                         包装：<span className="font-bold text-slate-600">{piecesPerUnit}</span> 片/件
+                        包装：
+                        <span className="font-bold text-slate-600">
+                          {piecesPerUnit}
+                        </span>{' '}
+                        片/件
                       </span>
                       <span>重量：{getActualWeight(record)}</span>
                     </div>
@@ -275,15 +282,33 @@ function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
     <Table>
       <TableHeader className="bg-slate-50">
         <TableRow className="border-b border-slate-200 hover:bg-transparent">
-          <TableHead className="py-4 font-black text-slate-700">单据编号</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">产品编码/名称</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">产品批次</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">规格型号</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">装箱数</TableHead>
-          <TableHead className="py-4 text-right font-black text-slate-700">入库总量</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">业务类型</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">记账时间</TableHead>
-          <TableHead className="py-4 font-black text-slate-700">备注说明</TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            单据编号
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            产品编码/名称
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            产品批次
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            规格型号
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            装箱数
+          </TableHead>
+          <TableHead className="py-4 text-right font-black text-slate-700">
+            入库总量
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            业务类型
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            记账时间
+          </TableHead>
+          <TableHead className="py-4 font-black text-slate-700">
+            备注说明
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -327,18 +352,21 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
       </TableCell>
       <TableCell>
         <div className="flex flex-col py-1">
-          <span className="text-sm font-black text-slate-900 leading-tight">
+          <span className="text-sm leading-tight font-black text-slate-900">
             {record.product?.code || record.productId}
           </span>
-          <span className="text-[11px] font-bold text-slate-400 mt-1">
+          <span className="mt-1 text-[11px] font-bold text-slate-400">
             {record.product?.name || '未知产品'}
           </span>
         </div>
       </TableCell>
       <TableCell>
         {record.batchNumber ? (
-          <Badge variant="outline" className="border-amber-100 bg-amber-50 px-2 py-0.5 font-mono text-[11px] font-black text-amber-600">
-             <CopyableText text={record.batchNumber} />
+          <Badge
+            variant="outline"
+            className="border-amber-100 bg-amber-50 px-2 py-0.5 font-mono text-[11px] font-black text-amber-600"
+          >
+            <CopyableText text={record.batchNumber} />
           </Badge>
         ) : (
           <span className="text-slate-300">-</span>
@@ -346,14 +374,22 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
       </TableCell>
       <TableCell className="text-xs font-medium text-slate-500">
         <div className="flex flex-col gap-1">
-           <span>{formatSpecification(record.product?.specification) || '-'}</span>
-           <span className="text-[10px] text-slate-400 font-bold">{getActualWeight(record)}</span>
+          <span>
+            {formatSpecification(record.product?.specification) || '-'}
+          </span>
+          <span className="text-[10px] font-bold text-slate-400">
+            {getActualWeight(record)}
+          </span>
         </div>
       </TableCell>
       <TableCell className="text-xs font-bold text-slate-500">
         <div className="flex items-center gap-1.5">
-          <span className="text-sm font-black text-slate-700">{piecesPerUnit}</span>
-          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-black text-blue-500">片/件</span>
+          <span className="text-sm font-black text-slate-700">
+            {piecesPerUnit}
+          </span>
+          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1.5 py-0.5 text-[10px] font-black text-blue-500">
+            片/件
+          </span>
         </div>
       </TableCell>
       <TableCell className="text-right">
@@ -364,7 +400,7 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
       <TableCell>
         <Badge
           variant={getOperationTypeVariant(record.reason)}
-          className="text-[10px] font-black uppercase tracking-wider"
+          className="text-[10px] font-black tracking-wider uppercase"
         >
           {getOperationTypeLabel(record.reason)}
         </Badge>
@@ -372,7 +408,7 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
       <TableCell className="text-xs text-slate-500">
         <div className="flex flex-col gap-1">
           <RelativeTime date={record.createdAt} />
-          <div className="flex items-center gap-1 text-[11px] font-black text-slate-400 uppercase tracking-widest">
+          <div className="flex items-center gap-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
             <User className="h-2.5 w-2.5" />
             操作员
           </div>

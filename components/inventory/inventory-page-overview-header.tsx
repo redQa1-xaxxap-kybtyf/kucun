@@ -7,10 +7,10 @@
  */
 
 import {
-    ArrowDownToLine,
-    ArrowUpFromLine,
-    Package,
-    Settings
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Package,
+  Settings,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -20,9 +20,9 @@ export function InventoryPageOverviewHeader() {
   const router = useRouter();
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
       {/* 背景装饰：紫色与靛蓝色调，体现核心管理页面的稳重与专业 */}
-      <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-violet-500/5 blur-3xl" />
+      <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-violet-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/5 blur-3xl" />
 
       <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
@@ -45,7 +45,7 @@ export function InventoryPageOverviewHeader() {
           <Button
             variant="outline"
             size="lg"
-            className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100"
+            className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:border-blue-100 hover:bg-blue-50 hover:text-blue-600"
             onClick={() => router.push('/inventory/inbound/create')}
           >
             <ArrowDownToLine className="mr-2 h-4 w-4" />
@@ -56,7 +56,7 @@ export function InventoryPageOverviewHeader() {
           <Button
             variant="outline"
             size="lg"
-            className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100"
+            className="h-12 border-slate-200 bg-white text-slate-600 shadow-sm hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600"
             onClick={() => router.push('/inventory/outbound/create')}
           >
             <ArrowUpFromLine className="mr-2 h-4 w-4" />
@@ -66,7 +66,7 @@ export function InventoryPageOverviewHeader() {
           {/* 调整/盘点入口 */}
           <Button
             size="lg"
-            className="h-12 bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 hover:scale-105 active:scale-95"
+            className="h-12 bg-indigo-600 text-white shadow-lg shadow-indigo-500/20 transition-all hover:scale-105 hover:bg-indigo-700 active:scale-95"
             onClick={() => router.push('/inventory/adjust')}
           >
             <Settings className="mr-2 h-4 w-4" />

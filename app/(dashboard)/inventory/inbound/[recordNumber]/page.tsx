@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getInboundRecordByNumber } from '@/lib/api/inbound-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 import {
-    INBOUND_REASON_LABELS,
-    type InboundRecordDetail,
+  INBOUND_REASON_LABELS,
+  type InboundRecordDetail,
 } from '@/lib/types/inbound';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 
@@ -56,7 +56,7 @@ function ProductInfoCard({ record }: { record: InboundRecordDetail }) {
   return (
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4">
-        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 italic">
+        <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
           核心产品参数
         </CardTitle>
       </CardHeader>
@@ -122,39 +122,45 @@ function OperationRecordCard({
   return (
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4">
-        <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 italic">
+        <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
           系统记账存证
         </CardTitle>
       </CardHeader>
       <CardContent className="grid gap-4 p-6 text-sm">
         <div className="grid grid-cols-[100px_1fr] items-center gap-2">
-          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             经办人员
           </span>
-          <span className="font-bold text-slate-900">{record.user?.name || '—'}</span>
+          <span className="font-bold text-slate-900">
+            {record.user?.name || '—'}
+          </span>
         </div>
         <div className="grid grid-cols-[100px_1fr] items-center gap-2">
-          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             初始记账
           </span>
           <span className="font-mono text-xs text-slate-500">{createdAt}</span>
         </div>
         {updatedAt && (
           <div className="grid grid-cols-[100px_1fr] items-center gap-2">
-            <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
               最后变更
             </span>
-            <span className="font-mono text-xs text-slate-500">{updatedAt}</span>
+            <span className="font-mono text-xs text-slate-500">
+              {updatedAt}
+            </span>
           </div>
         )}
         <div className="grid grid-cols-[100px_1fr] items-center gap-2">
-          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             库位指引
           </span>
-          <span className="font-bold text-slate-700">{record.location || '—'}</span>
+          <span className="font-bold text-slate-700">
+            {record.location || '—'}
+          </span>
         </div>
-        <div className="grid grid-cols-[100px_1fr] gap-2 pt-2 border-t border-slate-50">
-          <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+        <div className="grid grid-cols-[100px_1fr] gap-2 border-t border-slate-50 pt-2">
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             备注摘要
           </span>
           <span className="text-xs text-slate-500 italic">
@@ -171,15 +177,15 @@ function BatchTraceCard({ batchNumber }: { batchNumber: string }) {
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="flex flex-col gap-3 border-b border-slate-100 bg-slate-50/50 px-6 py-5 md:flex-row md:items-center md:justify-between">
         <div>
-          <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 italic">
+          <CardTitle className="text-sm font-black tracking-widest text-slate-500 uppercase italic">
             批次效期追溯
           </CardTitle>
           <p className="mt-1 text-xs font-bold text-slate-400">
             追踪批次 {batchNumber} 的完整库存生命周期流水
           </p>
         </div>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           size="sm"
           asChild
           className="h-9 border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-blue-600"

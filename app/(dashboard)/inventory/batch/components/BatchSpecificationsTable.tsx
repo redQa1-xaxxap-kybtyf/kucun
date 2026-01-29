@@ -11,16 +11,16 @@ import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import type {
-    BatchSpecification,
-    BatchSpecificationListResponse,
+  BatchSpecification,
+  BatchSpecificationListResponse,
 } from '@/lib/types/batch-specification';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -58,14 +58,30 @@ export function BatchSpecificationsTable({
             <Table>
               <TableHeader className="card-shadow-light">
                 <TableRow className="border-b border-slate-100 bg-slate-50/50 hover:bg-slate-50">
-                  <TableHead className="py-4 font-black text-slate-500 first:pl-6">产品编码</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">产品名称</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">批次号</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">规格</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500 text-right">装箱数</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500 text-right">重量 (kg)</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500">创建时间</TableHead>
-                  <TableHead className="py-4 font-black text-slate-500 text-right pr-6">操作</TableHead>
+                  <TableHead className="py-4 font-black text-slate-500 first:pl-6">
+                    产品编码
+                  </TableHead>
+                  <TableHead className="py-4 font-black text-slate-500">
+                    产品名称
+                  </TableHead>
+                  <TableHead className="py-4 font-black text-slate-500">
+                    批次号
+                  </TableHead>
+                  <TableHead className="py-4 font-black text-slate-500">
+                    规格
+                  </TableHead>
+                  <TableHead className="py-4 text-right font-black text-slate-500">
+                    装箱数
+                  </TableHead>
+                  <TableHead className="py-4 text-right font-black text-slate-500">
+                    重量 (kg)
+                  </TableHead>
+                  <TableHead className="py-4 font-black text-slate-500">
+                    创建时间
+                  </TableHead>
+                  <TableHead className="py-4 pr-6 text-right font-black text-slate-500">
+                    操作
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,7 +118,7 @@ export function BatchSpecificationsTable({
                       </TableRow>
                     ))
                   : data.map(spec => (
-                    <TableRow
+                      <TableRow
                         key={spec.id}
                         className="group border-b border-slate-50 transition-colors hover:bg-blue-50/30"
                       >
@@ -113,18 +129,20 @@ export function BatchSpecificationsTable({
                           {spec.product?.name || '-'}
                         </TableCell>
                         <TableCell className="py-4">
-                           <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-black uppercase text-amber-600">
-                             {spec.batchNumber}
-                           </span>
+                          <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 uppercase">
+                            {spec.batchNumber}
+                          </span>
                         </TableCell>
                         <TableCell className="py-4 text-xs font-medium text-slate-400">
                           {spec.product?.specification || '-'}
                         </TableCell>
-                        <TableCell className="py-4 text-right tabular-nums text-xs font-bold text-slate-700">
+                        <TableCell className="py-4 text-right text-xs font-bold text-slate-700 tabular-nums">
                           {formatNumber(spec.piecesPerUnit)}
                         </TableCell>
-                        <TableCell className="py-4 text-right tabular-nums text-xs font-bold text-slate-700">
-                          {spec.weight ? `${formatNumber(spec.weight, 2)} kg` : '-'}
+                        <TableCell className="py-4 text-right text-xs font-bold text-slate-700 tabular-nums">
+                          {spec.weight
+                            ? `${formatNumber(spec.weight, 2)} kg`
+                            : '-'}
                         </TableCell>
                         <TableCell className="py-4 text-xs font-medium text-slate-400">
                           <div className="flex items-center gap-1.5">
@@ -132,42 +150,42 @@ export function BatchSpecificationsTable({
                             {formatDate(spec.createdAt)}
                           </div>
                         </TableCell>
-                        <TableCell className="py-4 text-right pr-6">
+                        <TableCell className="py-4 pr-6 text-right">
                           <div className="flex justify-end gap-2">
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 rounded-lg p-0 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
-                               asChild
-                               title="变动流水"
-                             >
-                               <Link
-                                 href={`/inventory/batch/${encodeURIComponent(
-                                   spec.batchNumber
-                                 )}/history?productId=${spec.productId}`}
-                                 prefetch={false}
-                               >
-                                 <History className="h-4 w-4" />
-                               </Link>
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 rounded-lg p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
-                               onClick={() => onEdit(spec)}
-                               title="编辑规格"
-                             >
-                               <Pencil className="h-4 w-4" />
-                             </Button>
-                             <Button
-                               variant="ghost"
-                               size="sm"
-                               className="h-8 w-8 rounded-lg p-0 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                               onClick={() => onDelete(spec)}
-                               title="删除"
-                             >
-                               <Trash2 className="h-4 w-4" />
-                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 rounded-lg p-0 text-slate-400 hover:bg-blue-50 hover:text-blue-600"
+                              asChild
+                              title="变动流水"
+                            >
+                              <Link
+                                href={`/inventory/batch/${encodeURIComponent(
+                                  spec.batchNumber
+                                )}/history?productId=${spec.productId}`}
+                                prefetch={false}
+                              >
+                                <History className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 rounded-lg p-0 text-slate-400 hover:bg-slate-100 hover:text-slate-900"
+                              onClick={() => onEdit(spec)}
+                              title="编辑规格"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 rounded-lg p-0 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                              onClick={() => onDelete(spec)}
+                              title="删除"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -226,17 +244,20 @@ export function BatchSpecificationsTable({
                 className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-blue-200 hover:shadow-md"
               >
                 <div className="absolute top-0 right-0 p-2">
-                   <Badge variant="outline" className="h-5 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black uppercase text-amber-600">
-                     {spec.batchNumber}
-                   </Badge>
+                  <Badge
+                    variant="outline"
+                    className="h-5 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600 uppercase"
+                  >
+                    {spec.batchNumber}
+                  </Badge>
                 </div>
 
                 <div className="flex flex-col gap-4">
                   <div>
-                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                    <div className="mb-1 text-[10px] font-black tracking-widest text-slate-400 uppercase">
                       产品编码
                     </div>
-                    <div className="text-base font-black tracking-tight text-slate-900 group-hover:text-blue-600 transition-colors">
+                    <div className="text-base font-black tracking-tight text-slate-900 transition-colors group-hover:text-blue-600">
                       {spec.product?.code || '-'}
                     </div>
                     <div className="mt-1 text-sm font-bold text-slate-600">
@@ -249,12 +270,22 @@ export function BatchSpecificationsTable({
 
                   <div className="grid grid-cols-2 gap-4 border-t border-slate-50 pt-4">
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">装箱数</span>
-                      <span className="text-sm font-black tabular-nums text-slate-700">{formatNumber(spec.piecesPerUnit)} PCS</span>
+                      <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase">
+                        装箱数
+                      </span>
+                      <span className="text-sm font-black text-slate-700 tabular-nums">
+                        {formatNumber(spec.piecesPerUnit)} PCS
+                      </span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">重量</span>
-                      <span className="text-sm font-black tabular-nums text-slate-700">{spec.weight ? `${formatNumber(spec.weight, 2)} kg` : '-'}</span>
+                      <span className="text-[9px] font-black tracking-wider text-slate-400 uppercase">
+                        重量
+                      </span>
+                      <span className="text-sm font-black text-slate-700 tabular-nums">
+                        {spec.weight
+                          ? `${formatNumber(spec.weight, 2)} kg`
+                          : '-'}
+                      </span>
                     </div>
                   </div>
 
@@ -264,37 +295,37 @@ export function BatchSpecificationsTable({
                       {formatDate(spec.createdAt)}
                     </div>
                     <div className="flex gap-2">
-                       <Button
-                         variant="secondary"
-                         size="sm"
-                         className="h-8 w-8 rounded-lg bg-slate-100 p-0 text-slate-600 hover:bg-blue-100 hover:text-blue-600"
-                         asChild
-                       >
-                         <Link
-                           href={`/inventory/batch/${encodeURIComponent(
-                             spec.batchNumber
-                           )}/history?productId=${spec.productId}`}
-                           prefetch={false}
-                         >
-                           <History className="h-4 w-4" />
-                         </Link>
-                       </Button>
-                       <Button
-                         variant="secondary"
-                         size="sm"
-                         className="h-8 w-8 rounded-lg bg-slate-100 p-0 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
-                         onClick={() => onEdit(spec)}
-                       >
-                         <Pencil className="h-4 w-4" />
-                       </Button>
-                       <Button
-                         variant="secondary"
-                         size="sm"
-                         className="h-8 w-8 rounded-lg bg-slate-100 p-0 text-slate-600 hover:bg-red-100 hover:text-red-600"
-                         onClick={() => onDelete(spec)}
-                       >
-                         <Trash2 className="h-4 w-4" />
-                       </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-8 w-8 rounded-lg bg-slate-100 p-0 text-slate-600 hover:bg-blue-100 hover:text-blue-600"
+                        asChild
+                      >
+                        <Link
+                          href={`/inventory/batch/${encodeURIComponent(
+                            spec.batchNumber
+                          )}/history?productId=${spec.productId}`}
+                          prefetch={false}
+                        >
+                          <History className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-8 w-8 rounded-lg bg-slate-100 p-0 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                        onClick={() => onEdit(spec)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="h-8 w-8 rounded-lg bg-slate-100 p-0 text-slate-600 hover:bg-red-100 hover:text-red-600"
+                        onClick={() => onDelete(spec)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>

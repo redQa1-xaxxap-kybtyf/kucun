@@ -48,21 +48,28 @@ export async function mapColorCodeToVariantId(
 }
 
 /**
- * 将生产日期映射到批次号
- * @param productionDate 生产日期 (YYYY-MM-DD格式)
- * @returns 批次号，使用生产日期作为批次号
+ * 将生产日期映射为“批次匹配 Token”（不是最终批次号）
+ *
+ * 批次号真源：入库/采购明细录入的 batchNumber（自由输入）
+ * 生产日期仅用于在缺少显式批次号时，辅助在库存批次号中查找匹配日期片段。
+ *
+ * @param productionDate 生产日期（常见格式：YYYY-MM-DD / YYYYMMDD / ISO datetime）
+ * @returns YYYYMMDD（用于 contains 匹配）；无法解析则返回 null
  */
 export function mapProductionDateToBatchNumber(
   productionDate?: string | null
 ): string | null {
-  if (!productionDate) {
+  const normalized = (productionDate ?? '').trim();
+  if (!normalized) {
     return null;
   }
 
-  // 将生产日期转换为批次号格式
-  // 例如: "2024-01-15" -> "BATCH-20240115"
-  const dateStr = productionDate.replace(/-/g, '');
-  return `BATCH-${dateStr}`;
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length < 8) {
+    return null;
+  }
+
+  return digits.slice(0, 8);
 }
 
 /**
@@ -94,13 +101,20 @@ export async function buildInventoryWhereCondition(
 
   // 批次优先级：
   // 1) 显式指定的批次号（例如销售订单明细上的 batchNumber）
-  // 2) 根据生产日期推导的批次号
+  // 2) 根据生产日期推导的匹配 token（用于 contains 查找，不可写回/落库）
   if (explicitBatchNumber && explicitBatchNumber.trim().length > 0) {
     where.batchNumber = explicitBatchNumber.trim();
   } else if (productionDate) {
-    const batchNumber = mapProductionDateToBatchNumber(productionDate);
-    if (batchNumber) {
-      where.batchNumber = batchNumber;
+    const normalizedProductionDate = productionDate.trim();
+    const token = mapProductionDateToBatchNumber(normalizedProductionDate);
+    if (token) {
+      // 兼容历史数据：batchNumber 可能直接存了生产日期字符串（如 2024-01-15）
+      where.OR = [
+        { batchNumber: normalizedProductionDate },
+        { batchNumber: { contains: token } },
+      ];
+    } else if (normalizedProductionDate.length > 0) {
+      where.batchNumber = normalizedProductionDate;
     }
   }
 
@@ -151,24 +165,65 @@ export async function findAvailableInventory(
     batchNumber
   );
 
-  // 查找第一条满足条件的库存记录（FIFO策略）
-  const inventory = await db.inventory.findFirst({
-    where,
-    orderBy: {
-      updatedAt: 'asc', // 先进先出
-    },
-    select: {
-      id: true,
-      productId: true,
-      variantId: true,
-      batchNumber: true,
-      quantity: true,
-      reservedQuantity: true,
-      updatedAt: true,
-      unitCost: true,
-      location: true,
-    },
-  });
+  const shouldValidateUniqueness =
+    requiredQuantity > 0 &&
+    (!batchNumber || batchNumber.trim().length === 0) &&
+    Boolean((productionDate ?? '').trim());
+
+  const inventory = shouldValidateUniqueness
+    ? // 当仅提供生产日期时，如果匹配到多个库存批次会造成预留/出库错扣；这里强校验唯一性
+      await (async () => {
+        const matches = await db.inventory.findMany({
+          where,
+          orderBy: { updatedAt: 'asc' },
+          take: 2,
+          select: {
+            id: true,
+            productId: true,
+            variantId: true,
+            batchNumber: true,
+            quantity: true,
+            reservedQuantity: true,
+            updatedAt: true,
+            unitCost: true,
+            location: true,
+          },
+        });
+
+        if (matches.length === 0) {
+          return null;
+        }
+
+        if (matches.length > 1) {
+          const token =
+            mapProductionDateToBatchNumber(productionDate) ??
+            productionDate?.trim() ??
+            '';
+          throw new Error(
+            `存在多个匹配生产日期的库存批次，请在订单明细中指定批次号（productId=${productId}, productionDate=${token}）`
+          );
+        }
+
+        return matches[0];
+      })()
+    : // 查找第一条满足条件的库存记录（FIFO策略）
+      await db.inventory.findFirst({
+        where,
+        orderBy: {
+          updatedAt: 'asc', // 先进先出
+        },
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          batchNumber: true,
+          quantity: true,
+          reservedQuantity: true,
+          updatedAt: true,
+          unitCost: true,
+          location: true,
+        },
+      });
 
   if (!inventory) {
     return null;

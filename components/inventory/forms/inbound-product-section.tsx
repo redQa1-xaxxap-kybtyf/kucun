@@ -5,11 +5,11 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import { ProductSelector } from '@/components/inventory/product-selector';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { type InboundFormData, type ProductOption } from '@/lib/types/inbound';
 import { cn } from '@/lib/utils';

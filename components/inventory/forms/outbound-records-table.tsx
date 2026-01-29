@@ -9,18 +9,18 @@ import { RelativeTime } from '@/components/common/relative-time';
 import { Badge } from '@/components/ui/badge';
 import { Pagination } from '@/components/ui/pagination';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    OUTBOUND_REASON_LABELS,
-    OUTBOUND_TYPE_LABELS,
-    OUTBOUND_TYPE_VARIANTS,
-    type OutboundRecord,
+  OUTBOUND_REASON_LABELS,
+  OUTBOUND_TYPE_LABELS,
+  OUTBOUND_TYPE_VARIANTS,
+  type OutboundRecord,
 } from '@/lib/types/inventory';
 
 interface OutboundRecordsTableProps {
@@ -112,14 +112,30 @@ export function OutboundRecordsTable({
         <Table>
           <TableHeader className="card-shadow-light">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead className="py-4 font-black text-slate-700">单据编号</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">产品编码</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">产品名称</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">批次/规格</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">装箱数</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-700">出库总量</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">业务类型</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">经办时间</TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                单据编号
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                产品编码
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                产品名称
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                批次/规格
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                装箱数
+              </TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">
+                出库总量
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                业务类型
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                经办时间
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -146,7 +162,7 @@ export function OutboundRecordsTable({
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
-                    <div className="text-sm font-black text-slate-900 leading-tight">
+                    <div className="text-sm leading-tight font-black text-slate-900">
                       <CopyableText text={record.productCode || '-'} />
                     </div>
                   </TableCell>
@@ -158,21 +174,31 @@ export function OutboundRecordsTable({
                   <TableCell className="py-4">
                     <div className="flex flex-col gap-1.5">
                       {record.batchNumber ? (
-                        <Badge variant="outline" className="w-fit border-amber-100 bg-amber-50 px-1.5 py-0 text-[10px] font-black text-amber-600">
+                        <Badge
+                          variant="outline"
+                          className="w-fit border-amber-100 bg-amber-50 px-1.5 py-0 text-[10px] font-black text-amber-600"
+                        >
                           {record.batchNumber}
                         </Badge>
                       ) : (
-                        <span className="text-[10px] text-slate-300">无批次</span>
+                        <span className="text-[10px] text-slate-300">
+                          无批次
+                        </span>
                       )}
                       <div className="text-[10px] font-medium text-slate-400">
-                        {formatSpecification(record.productSpecification) || '-'}
+                        {formatSpecification(record.productSpecification) ||
+                          '-'}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-slate-700">{record.piecesPerUnit || '-'}</span>
-                      <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500">片/件</span>
+                      <span className="text-xs font-black text-slate-700">
+                        {record.piecesPerUnit || '-'}
+                      </span>
+                      <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500">
+                        片/件
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell className="py-4 text-right">
@@ -181,20 +207,25 @@ export function OutboundRecordsTable({
                         {formatQuantity(record.quantity, record.piecesPerUnit)}
                       </div>
                       <div className="text-[10px] font-bold text-slate-400">
-                         {getActualWeight(record)}
+                        {getActualWeight(record)}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="flex flex-col gap-1">
                       <Badge
-                        variant={OUTBOUND_TYPE_VARIANTS[record.type] || 'default'}
+                        variant={
+                          OUTBOUND_TYPE_VARIANTS[record.type] || 'default'
+                        }
                         className="w-fit text-[10px] font-black"
                       >
                         {OUTBOUND_TYPE_LABELS[record.type] || '未知'}
                       </Badge>
                       <div className="text-[10px] font-bold text-slate-400">
-                        {record.reason ? (OUTBOUND_REASON_LABELS[record.reason] ?? record.reason) : '-'}
+                        {record.reason
+                          ? (OUTBOUND_REASON_LABELS[record.reason] ??
+                            record.reason)
+                          : '-'}
                       </div>
                     </div>
                   </TableCell>
@@ -203,7 +234,7 @@ export function OutboundRecordsTable({
                       <User className="h-3 w-3 text-slate-300" />
                       <div className="flex flex-col">
                         <span className="text-[11px] font-bold text-slate-600">
-                           <RelativeTime date={record.createdAt} />
+                          <RelativeTime date={record.createdAt} />
                         </span>
                       </div>
                     </div>
@@ -231,7 +262,7 @@ export function OutboundRecordsTable({
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-black text-slate-900 leading-tight truncate">
+                  <div className="truncate text-sm leading-tight font-black text-slate-900">
                     {record.productCode || '-'}
                   </div>
                   <div className="mt-0.5 text-[11px] font-bold text-slate-400">
@@ -239,13 +270,20 @@ export function OutboundRecordsTable({
                   </div>
                   <div className="mt-2 space-y-1.5">
                     <div className="text-[11px] text-slate-500">
-                      规格：<span className="font-bold text-slate-600">{formatSpecification(record.productSpecification) || '-'}</span>
+                      规格：
+                      <span className="font-bold text-slate-600">
+                        {formatSpecification(record.productSpecification) ||
+                          '-'}
+                      </span>
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[11px]">
                       <span className="flex items-center gap-1">
                         批次：
                         {record.batchNumber ? (
-                          <Badge variant="outline" className="h-4 px-1 text-[9px] font-black border-amber-100 bg-amber-50 text-amber-600">
+                          <Badge
+                            variant="outline"
+                            className="h-4 border-amber-100 bg-amber-50 px-1 text-[9px] font-black text-amber-600"
+                          >
                             {record.batchNumber}
                           </Badge>
                         ) : (
@@ -253,8 +291,13 @@ export function OutboundRecordsTable({
                         )}
                       </span>
                       <span className="flex items-center gap-1 text-slate-500">
-                        包装：<span className="font-black text-slate-600">{record.piecesPerUnit || '-'}</span>
-                        <span className="rounded bg-blue-50 px-1 py-0.5 text-[9px] text-blue-500 font-black">片/件</span>
+                        包装：
+                        <span className="font-black text-slate-600">
+                          {record.piecesPerUnit || '-'}
+                        </span>
+                        <span className="rounded bg-blue-50 px-1 py-0.5 text-[9px] font-black text-blue-500">
+                          片/件
+                        </span>
                       </span>
                     </div>
                   </div>

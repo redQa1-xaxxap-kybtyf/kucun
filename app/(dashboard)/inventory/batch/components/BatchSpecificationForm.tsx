@@ -8,19 +8,19 @@ import type { z } from 'zod';
 import { ProductSelector } from '@/components/inventory/product-selector';
 import { Button } from '@/components/ui/button';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { CreateBatchSpecificationRequest } from '@/lib/types/batch-specification';
 import type { ProductOption } from '@/lib/types/inbound';
 import {
-    batchSpecificationDefaults,
-    createBatchSpecificationSchema,
+  batchSpecificationDefaults,
+  createBatchSpecificationSchema,
 } from '@/lib/validations/batch-specification';
 
 const formSchema = createBatchSpecificationSchema;

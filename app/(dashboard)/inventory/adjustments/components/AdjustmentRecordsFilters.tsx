@@ -1,8 +1,8 @@
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { ADJUSTMENT_REASON_OPTIONS } from '@/lib/constants/inventory-filters';
 import type {
-    AdjustmentQueryParams,
-    AdjustmentReason,
+  AdjustmentQueryParams,
+  AdjustmentReason,
 } from '@/lib/types/inventory';
 
 interface AdjustmentRecordsFiltersProps {
@@ -30,7 +30,7 @@ export function AdjustmentRecordsFilters({
   return (
     <SearchFilterCard
       searchValue={filters?.search || ''}
-      onSearchChange={(val) =>
+      onSearchChange={val =>
         onFiltersChange({ ...filters, search: val, page: 1 })
       }
       searchPlaceholder="搜索调整单号、产品名称、编码..."

@@ -16,12 +16,12 @@ import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
@@ -78,9 +78,13 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
 
   // 计算每个分组的总计
   groups.forEach(group => {
-    const totalPieces = group.items.reduce((sum, item) => sum + item.quantity, 0);
+    const totalPieces = group.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
     const firstItem = group.items[0];
-    const packaging = firstItem.batchPiecesPerUnit ?? firstItem.product?.piecesPerUnit ?? 0;
+    const packaging =
+      firstItem.batchPiecesPerUnit ?? firstItem.product?.piecesPerUnit ?? 0;
 
     group.totalPieces = totalPieces;
     if (packaging > 0) {
@@ -145,20 +149,38 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
       >
         <TableHeader className="card-shadow-light sticky top-0 z-20 bg-white/95 backdrop-blur-md">
           <TableRow className="border-b border-slate-200 hover:bg-transparent">
-            <TableHead className="w-16 py-4 font-black text-slate-700">预览图</TableHead>
-            <TableHead className="py-4 font-black text-slate-700">产品编码</TableHead>
-            <TableHead className="py-4 font-black text-slate-700">产品名称</TableHead>
-            <TableHead className="py-4 font-black text-slate-700">批次/规格</TableHead>
-            <TableHead className="py-4 font-black text-slate-700">装箱数</TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-700">库存总量</TableHead>
-            <TableHead className="py-4 text-right font-black text-slate-700">预留/可用</TableHead>
+            <TableHead className="w-16 py-4 font-black text-slate-700">
+              预览图
+            </TableHead>
+            <TableHead className="py-4 font-black text-slate-700">
+              产品编码
+            </TableHead>
+            <TableHead className="py-4 font-black text-slate-700">
+              产品名称
+            </TableHead>
+            <TableHead className="py-4 font-black text-slate-700">
+              批次/规格
+            </TableHead>
+            <TableHead className="py-4 font-black text-slate-700">
+              装箱数
+            </TableHead>
+            <TableHead className="py-4 text-right font-black text-slate-700">
+              库存总量
+            </TableHead>
+            <TableHead className="py-4 text-right font-black text-slate-700">
+              预留/可用
+            </TableHead>
             {hasFinancePermission && (
               <TableHead className="py-4 text-right font-black text-slate-700">
                 单位成本/货值评估
               </TableHead>
             )}
-            <TableHead className="py-4 font-black text-slate-700">健康度</TableHead>
-            <TableHead className="py-4 font-black text-slate-700 text-right">操作</TableHead>
+            <TableHead className="py-4 font-black text-slate-700">
+              健康度
+            </TableHead>
+            <TableHead className="py-4 text-right font-black text-slate-700">
+              操作
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -201,7 +223,8 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
               </TableCell>
             </TableRow>
           ) : (
-            groups.map(group => group.items.map((item, index) => {
+            groups.map(group =>
+              group.items.map((item, index) => {
                 const isFirstInGroup = index === 0;
                 const isLastInGroup = index === group.items.length - 1;
 
@@ -247,9 +270,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                   <TableRow
                     key={item.id}
                     className={`group transition-all hover:bg-slate-50/80 ${
-                      isLastInGroup
-                        ? 'border-b border-slate-200'
-                        : 'border-b-0'
+                      isLastInGroup ? 'border-b border-slate-200' : 'border-b-0'
                     }`}
                     onDoubleClick={() => onAdjust(item.id)}
                   >
@@ -281,7 +302,9 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     {/* 产品编码 */}
                     <TableCell className="py-3">
                       <div className="flex flex-col gap-1">
-                        <div className={`text-sm font-black tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}>
+                        <div
+                          className={`text-sm font-black tracking-tight ${isFirstInGroup ? 'text-slate-900' : 'text-slate-400'}`}
+                        >
                           <CopyableText text={group.productCode} />
                         </div>
                       </div>
@@ -289,43 +312,47 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 产品名称 */}
                     <TableCell className="py-3">
-                      <div className={`max-w-[200px] truncate text-xs font-bold transition-colors ${isFirstInGroup ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400'}`}>
+                      <div
+                        className={`max-w-[200px] truncate text-xs font-bold transition-colors ${isFirstInGroup ? 'text-slate-600 group-hover:text-slate-900' : 'text-slate-400'}`}
+                      >
                         {group.productName}
                       </div>
                     </TableCell>
 
                     {/* 批次规格 */}
                     <TableCell className="py-3">
-                       <div className="flex flex-col gap-1">
-                         <div className="max-w-[150px] truncate text-xs font-medium text-slate-500">
-                           {group.specification}
-                         </div>
-                         <div className="flex items-center gap-1.5">
-                           <Badge
-                             variant="outline"
-                             className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600"
-                           >
-                             {item.batchNumber
-                               ? item.batchNumber.toUpperCase().slice(-8)
-                               : '常规'}
-                           </Badge>
-                           {isFirstInGroup && group.items.length > 1 && (
-                             <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-black text-white shadow-sm shadow-indigo-200">
-                               共 {group.items.length} 批次
-                             </Badge>
-                           )}
-                         </div>
-                       </div>
+                      <div className="flex flex-col gap-1">
+                        <div className="max-w-[150px] truncate text-xs font-medium text-slate-500">
+                          {group.specification}
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Badge
+                            variant="outline"
+                            className="h-4 border-amber-100 bg-amber-50 px-1.5 text-[9px] font-black text-amber-600"
+                          >
+                            {item.batchNumber
+                              ? item.batchNumber.toUpperCase().slice(-8)
+                              : '常规'}
+                          </Badge>
+                          {isFirstInGroup && group.items.length > 1 && (
+                            <Badge className="h-4 bg-indigo-600 px-1.5 text-[9px] font-black text-white shadow-sm shadow-indigo-200">
+                              共 {group.items.length} 批次
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* 包装信息 */}
                     <TableCell className="py-3">
                       <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-1">
-                           <span className="text-sm font-black text-slate-700">{packaging}</span>
-                           <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500 uppercase">
-                             片/件
-                           </span>
+                          <span className="text-sm font-black text-slate-700">
+                            {packaging}
+                          </span>
+                          <span className="rounded-md border border-blue-50 bg-blue-50/30 px-1 py-0.5 text-[9px] font-black text-blue-500 uppercase">
+                            片/件
+                          </span>
                         </div>
                         {item.weight ? (
                           <div className="text-[11px] font-bold text-slate-400 tabular-nums">
@@ -337,35 +364,43 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 库存总量 */}
                     <TableCell className="py-3 text-right">
-                       <div className="flex flex-col items-end gap-1.5">
-                         {isFirstInGroup && group.items.length > 1 && (
-                            <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white shadow-md ring-2 ring-white">
-                               汇总: {group.totalUnits}件{group.remainingPieces > 0 ? `+${group.remainingPieces}片` : ''}
-                            </div>
-                         )}
-                         <div className={`text-sm font-black ${isFirstInGroup ? 'text-emerald-600' : 'text-slate-400'}`}>
-                           {quantityDisplay}
-                         </div>
-                       </div>
+                      <div className="flex flex-col items-end gap-1.5">
+                        {isFirstInGroup && group.items.length > 1 && (
+                          <div className="rounded-full bg-slate-900 px-2 py-0.5 text-[10px] font-black text-white shadow-md ring-2 ring-white">
+                            汇总: {group.totalUnits}件
+                            {group.remainingPieces > 0
+                              ? `+${group.remainingPieces}片`
+                              : ''}
+                          </div>
+                        )}
+                        <div
+                          className={`text-sm font-black ${isFirstInGroup ? 'text-emerald-600' : 'text-slate-400'}`}
+                        >
+                          {quantityDisplay}
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* 预留/可用 */}
                     <TableCell className="py-3 text-right">
-                       <div className="flex flex-col items-end gap-1">
-                         <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
-                            <span>预留 {reservedDisplay}</span>
-                         </div>
-                         <div className="flex flex-col items-end gap-1.5">
-                            {isFirstInGroup && group.items.length > 1 && (
-                               <div className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600 border border-slate-200">
-                                  总可用: {availableDisplay.replace('总计', '').trim()}
-                               </div>
-                            )}
-                            <div className={`text-sm font-black ${isFirstInGroup ? 'text-indigo-600' : 'text-slate-400'}`}>
-                               {availableDisplay}
+                      <div className="flex flex-col items-end gap-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400">
+                          <span>预留 {reservedDisplay}</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-1.5">
+                          {isFirstInGroup && group.items.length > 1 && (
+                            <div className="rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-600">
+                              总可用:{' '}
+                              {availableDisplay.replace('总计', '').trim()}
                             </div>
-                         </div>
-                       </div>
+                          )}
+                          <div
+                            className={`text-sm font-black ${isFirstInGroup ? 'text-indigo-600' : 'text-slate-400'}`}
+                          >
+                            {availableDisplay}
+                          </div>
+                        </div>
+                      </div>
                     </TableCell>
 
                     {/* 货值评估 */}
@@ -390,7 +425,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     <TableCell className="py-3">
                       <Badge
                         variant={variant}
-                        className={`rounded-full px-3 py-0.5 text-[10px] font-black uppercase tracking-wider ${
+                        className={`rounded-full px-3 py-0.5 text-[10px] font-black tracking-wider uppercase ${
                           variant === 'destructive' || variant === 'warning'
                             ? 'animate-breathe'
                             : ''
@@ -416,7 +451,8 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
                   </TableRow>
                 );
-              }))
+              })
+            )
           )}
         </TableBody>
       </Table>

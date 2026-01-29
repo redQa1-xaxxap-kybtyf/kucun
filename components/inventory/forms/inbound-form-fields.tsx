@@ -6,27 +6,27 @@ import { type UseFormReturn } from 'react-hook-form';
 
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import {
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { can } from '@/lib/auth/permissions';
 import {
-    type InboundFormData,
-    INBOUND_REASON_OPTIONS,
-    INBOUND_UNIT_OPTIONS,
+  type InboundFormData,
+  INBOUND_REASON_OPTIONS,
+  INBOUND_UNIT_OPTIONS,
 } from '@/lib/types/inbound';
 
 // ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver

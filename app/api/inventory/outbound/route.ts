@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
-import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
@@ -291,7 +294,7 @@ export const GET = withRateLimit(RateLimitType.READ)(getOutboundRecordsHandler);
  * 执行出库事务
  * 使用乐观锁防止并发问题
  */
-async function executeOutboundTransaction(
+export async function executeOutboundTransaction(
   data: {
     type: OutboundType;
     productId: string;
@@ -317,17 +320,24 @@ async function executeOutboundTransaction(
     customerId,
   } = data;
 
+  const normalizedBatchNumber =
+    typeof batchNumber === 'string' ? batchNumber.trim() : '';
+  const normalizedVariantId =
+    typeof variantId === 'string' ? variantId.trim() : '';
+  const normalizedCustomerId =
+    typeof customerId === 'string' ? customerId.trim() : '';
+
   return await prisma.$transaction(async tx => {
     // ✅ 修复：批次号必填校验
-    if (!batchNumber || batchNumber.trim().length === 0) {
+    if (normalizedBatchNumber.length === 0) {
       throw new Error('批次号/色号为必填项');
     }
 
     // ✅ 修复：如果有客户ID，校验同一客户的批次一致性
-    if (customerId) {
+    if (normalizedCustomerId.length > 0) {
       const existingOutbounds = await tx.outboundRecord.findMany({
         where: {
-          customerId,
+          customerId: normalizedCustomerId,
           productId,
         },
         select: {
@@ -343,7 +353,7 @@ async function executeOutboundTransaction(
           .filter(Boolean);
         if (
           existingBatches.length > 0 &&
-          !existingBatches.includes(batchNumber)
+          !existingBatches.includes(normalizedBatchNumber)
         ) {
           throw new Error(
             `同一客户的同一产品必须使用相同批次。已有批次：${existingBatches.join(', ')}`
@@ -359,11 +369,11 @@ async function executeOutboundTransaction(
       batchNumber: string; // ✅ 修复：批次号必填
     } = {
       productId,
-      batchNumber, // ✅ 修复：必须指定批次
+      batchNumber: normalizedBatchNumber, // ✅ 修复：必须指定批次
     };
 
-    if (variantId) {
-      whereCondition.variantId = variantId;
+    if (normalizedVariantId.length > 0) {
+      whereCondition.variantId = normalizedVariantId;
     }
 
     const availableInventory = await tx.inventory.findFirst({
@@ -372,7 +382,7 @@ async function executeOutboundTransaction(
     });
 
     if (!availableInventory) {
-      throw new Error(`未找到批次 ${batchNumber} 的库存记录`);
+      throw new Error(`未找到批次 ${normalizedBatchNumber} 的库存记录`);
     }
 
     // 记录出库前的数量（用于事件发布）
@@ -411,7 +421,8 @@ async function executeOutboundTransaction(
     // 2.1 使用 FIFO 队列计算成本（若发现 FIFO 缺失则在事务内补齐，避免账实不一致）
     const outboundQty = quantity;
     const unitCostHint =
-      availableInventory.unitCost !== null && availableInventory.unitCost !== undefined
+      availableInventory.unitCost !== null &&
+      availableInventory.unitCost !== undefined
         ? Number(availableInventory.unitCost)
         : null;
 
@@ -471,9 +482,7 @@ async function executeOutboundTransaction(
         variantId: availableInventory.variantId,
         notes: mergedNotes,
         customerId:
-          typeof customerId === 'string' && customerId.trim().length > 0
-            ? customerId.trim()
-            : null,
+          normalizedCustomerId.length > 0 ? normalizedCustomerId : null,
         operatorId: userId,
       },
     });

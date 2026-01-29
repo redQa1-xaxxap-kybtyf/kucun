@@ -1,11 +1,11 @@
 'use client';
 
 import {
-    ArrowLeft,
-    Loader2,
-    PackageCheck,
-    RotateCcw,
-    Save,
+  ArrowLeft,
+  Loader2,
+  PackageCheck,
+  RotateCcw,
+  Save,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -31,9 +31,9 @@ export function InboundFormToolbar({
   const router = useRouter();
 
   return (
-    <Card className="relative overflow-hidden border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+    <Card className="relative overflow-hidden border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
       {/* 背景装饰 */}
-      <div className="absolute -right-24 -top-24 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute -top-24 -right-24 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl" />
 
       <CardContent className="relative z-10 p-6 sm:p-8">
@@ -78,7 +78,7 @@ export function InboundFormToolbar({
               size="lg"
               disabled={isSubmitting}
               onClick={onSubmit}
-              className="h-12 bg-blue-600 px-8 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 hover:scale-105 active:scale-95 sm:h-12"
+              className="h-12 bg-blue-600 px-8 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95 sm:h-12"
             >
               {isSubmitting ? (
                 <>

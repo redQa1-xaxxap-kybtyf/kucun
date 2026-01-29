@@ -10,11 +10,15 @@ interface BatchPageHeaderProps {
   isError?: boolean;
 }
 
-export function BatchPageHeader({ onCreate, onRefresh, isError }: BatchPageHeaderProps) {
+export function BatchPageHeader({
+  onCreate,
+  onRefresh,
+  isError,
+}: BatchPageHeaderProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
       {/* 背景装饰：蓝色与青色调，体现规格参数管理的精确与严谨 */}
-      <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-cyan-500/5 blur-3xl" />
 
       <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
@@ -26,7 +30,7 @@ export function BatchPageHeader({ onCreate, onRefresh, isError }: BatchPageHeade
             <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
               批次规格管理
             </h1>
-            <p className="max-w-md text-sm font-medium leading-relaxed text-slate-500">
+            <p className="max-w-md text-sm leading-relaxed font-medium text-slate-500">
               精准维护每个产品批次的装箱数与重量参数，确保全系统数据一致性。
             </p>
           </div>

@@ -44,12 +44,12 @@ export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
           endDate: filters.endDate,
         }}
         isSearching={isLoading}
-        onSearch={(val) => {
+        onSearch={val => {
           setSearchValue(val);
           updateFilter('search', val);
         }}
-        onTypeChange={(val) => updateFilter('type', val)}
-        onDateRangeChange={(range) => {
+        onTypeChange={val => updateFilter('type', val)}
+        onDateRangeChange={range => {
           updateFilter('startDate', range.startDate || '');
           updateFilter('endDate', range.endDate || '');
         }}

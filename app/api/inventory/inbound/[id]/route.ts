@@ -10,6 +10,7 @@ import type { AuthUser } from '@/lib/auth/context';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
+import { toNumber } from '@/lib/utils/number';
 import {
   cleanRemarks,
   formatQuantity,
@@ -187,7 +188,9 @@ const putInboundRecordHandler = withAuth(
             });
 
             if (inventories.length === 0) {
-              throw ApiError.badRequest('未找到该入库记录对应的库存记录，无法更新');
+              throw ApiError.badRequest(
+                '未找到该入库记录对应的库存记录，无法更新'
+              );
             }
 
             if (inventories.length > 1) {
@@ -213,7 +216,8 @@ const putInboundRecordHandler = withAuth(
             const costEntry = costEntries[0] ?? null;
 
             if (costEntry) {
-              const consumedQty = existingRecord.quantity - costEntry.remainingQty;
+              const consumedQty =
+                existingRecord.quantity - costEntry.remainingQty;
 
               if (consumedQty < 0) {
                 throw ApiError.badRequest(
@@ -250,7 +254,8 @@ const putInboundRecordHandler = withAuth(
               });
             } else {
               const decrementQty = Math.abs(quantityDiff);
-              const availableQty = inventory.quantity - inventory.reservedQuantity;
+              const availableQty =
+                inventory.quantity - inventory.reservedQuantity;
 
               if (availableQty < decrementQty) {
                 throw ApiError.badRequest(
@@ -268,9 +273,10 @@ const putInboundRecordHandler = withAuth(
             }
 
             updateData.quantity = newQuantity;
-            if (typeof existingRecord.unitCost === 'number') {
+            const unitCost = toNumber(existingRecord.unitCost, Number.NaN);
+            if (Number.isFinite(unitCost)) {
               updateData.totalCost =
-                Math.round(newQuantity * existingRecord.unitCost * 100) / 100;
+                Math.round(newQuantity * unitCost * 100) / 100;
             }
           }
 
@@ -371,7 +377,9 @@ const deleteInboundRecordHandler = withAuth(
           });
 
           if (inventories.length === 0) {
-            throw ApiError.badRequest('未找到该入库记录对应的库存记录，无法删除');
+            throw ApiError.badRequest(
+              '未找到该入库记录对应的库存记录，无法删除'
+            );
           }
 
           if (inventories.length > 1) {

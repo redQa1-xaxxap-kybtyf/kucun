@@ -15,7 +15,7 @@ export function BatchRecordsFilters({
   return (
     <SearchFilterCard
       searchValue={filters.search || ''}
-      onSearchChange={(val) => onFiltersChange({ search: val, page: 1 })}
+      onSearchChange={val => onFiltersChange({ search: val, page: 1 })}
       searchPlaceholder="搜索批次号、产品名称、编码..."
       // 日期范围筛选
       dateRangeFilter={{

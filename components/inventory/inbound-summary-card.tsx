@@ -1,13 +1,13 @@
 'use client';
 
 import {
-    BadgeCheck,
-    Boxes,
-    CalendarDays,
-    ClipboardList,
-    Package,
-    Printer,
-    Warehouse,
+  BadgeCheck,
+  Boxes,
+  CalendarDays,
+  ClipboardList,
+  Package,
+  Printer,
+  Warehouse,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
@@ -47,10 +47,10 @@ function DetailStat({
           {icon}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+          <div className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             {label}
           </div>
-          <div className="mt-0.5 truncate text-base font-black text-slate-900 leading-tight">
+          <div className="mt-0.5 truncate text-base leading-tight font-black text-slate-900">
             {value ?? '—'}
           </div>
         </div>
@@ -163,7 +163,9 @@ export function InboundSummaryCard({
               数字入库单 {record.recordNumber}
             </CardTitle>
             <p className="flex flex-wrap items-center justify-center gap-2 text-xs font-bold text-slate-400 md:justify-start">
-              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {createdAt}</span>
+              <span className="flex items-center gap-1">
+                <CalendarDays className="h-3 w-3" /> {createdAt}
+              </span>
               {updatedAt && (
                 <>
                   <span className="h-3 w-px bg-slate-200" />
@@ -175,7 +177,7 @@ export function InboundSummaryCard({
           <div className="mx-auto flex items-center gap-2 md:mx-0">
             <Badge
               variant={reasonVariant}
-              className="w-fit px-3 py-1 text-[11px] font-black uppercase tracking-widest"
+              className="w-fit px-3 py-1 text-[11px] font-black tracking-widest uppercase"
             >
               {reasonLabel}
             </Badge>

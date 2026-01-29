@@ -7,18 +7,18 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { can } from '@/lib/auth/permissions';
 import {
-    COUNT_ITEM_STATUS_LABELS,
-    type CountItemStatus,
-    type InventoryCountItem,
+  COUNT_ITEM_STATUS_LABELS,
+  type CountItemStatus,
+  type InventoryCountItem,
 } from '@/lib/types/inventory-count';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import { ProductDataUtils } from '@/lib/utils/product-data';

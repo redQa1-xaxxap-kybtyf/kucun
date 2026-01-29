@@ -2,7 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError, ApiErrorType } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';

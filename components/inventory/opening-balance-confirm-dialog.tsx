@@ -52,7 +52,7 @@ export function OpeningBalanceConfirmDialog({
             期初入库确认
           </DialogTitle>
           <DialogDescription asChild>
-            <div className="space-y-3 pt-2 text-muted-foreground text-sm">
+            <div className="text-muted-foreground space-y-3 pt-2 text-sm">
               <p className="text-base font-medium text-gray-900">
                 您正在录入期初库存数据，请确认数据准确无误。
               </p>

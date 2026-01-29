@@ -5,6 +5,10 @@ import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
+import {
+  computeStockStatusFromInventoryLike,
+  stripSensitiveKeysDeep,
+} from '@/lib/api/mini-program-sanitize';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
@@ -74,6 +78,27 @@ async function handleGetInventory(request: NextRequest) {
   return NextResponse.json({ success: true, data: response });
 }
 
+function isMiniProgramAdmin(request: NextRequest): boolean {
+  // x-user-role 由 auth middleware 在已认证请求上注入
+  return request.headers.get('x-user-role') === 'admin';
+}
+
+function attachStockStatusToInventoryListBody(body: any): any {
+  const inventories = body?.data?.inventories;
+  if (!Array.isArray(inventories)) return body;
+
+  return {
+    ...body,
+    data: {
+      ...body.data,
+      inventories: inventories.map((inv: any) => ({
+        ...inv,
+        stockStatus: computeStockStatusFromInventoryLike(inv ?? {}),
+      })),
+    },
+  };
+}
+
 const authedInventoryHandler = withAuth(
   async (request: NextRequest) => handleGetInventory(request),
   { permissions: ['inventory:view'] }
@@ -86,7 +111,16 @@ export const GET = withRateLimit(RateLimitType.READ)(async (
 
   // 小程序游客：允许直接查看库存列表（只读）
   if (clientFrom === 'mini-program') {
-    return handleGetInventory(request);
+    const admin = isMiniProgramAdmin(request);
+    if (admin) {
+      return handleGetInventory(request);
+    }
+
+    const response = await handleGetInventory(request);
+    const body = await response.json();
+    const enriched = attachStockStatusToInventoryListBody(body);
+    const sanitized = stripSensitiveKeysDeep(enriched);
+    return NextResponse.json(sanitized, { status: response.status });
   }
 
   // 其他客户端：保持原有权限校验

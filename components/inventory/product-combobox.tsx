@@ -4,12 +4,12 @@ import { Check, X } from 'lucide-react';
 import React from 'react';
 
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import { Popover } from '@/components/ui/popover';
 import { useProductSearch } from '@/lib/api/inbound';

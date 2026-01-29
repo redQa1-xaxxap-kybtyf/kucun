@@ -79,7 +79,9 @@ export async function addToFIFOQueue(
   }
 }
 
-function normalizeNullableString(value: string | null | undefined): string | null {
+function normalizeNullableString(
+  value: string | null | undefined
+): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
@@ -140,18 +142,27 @@ export async function ensureFIFOQueueMatchesInventory(
     return { backfilledQty: 0, usedUnitCost: 0 };
   }
 
-  let usedUnitCost =
-    typeof params.unitCostHint === 'number' && Number.isFinite(params.unitCostHint)
-      ? params.unitCostHint
-      : 0;
+  // 成本推断优先级：
+  // 1) 先用已有 FIFO 队列加权平均（当队列非空时更贴近真实口径）
+  // 2) 队列为空/无法计算时再使用库存侧 hint（历史数据兜底）
+  let usedUnitCost = 0;
 
-  if (!(usedUnitCost > 0)) {
+  if (fifoAvailableQty > 0) {
     usedUnitCost = await getWeightedAverageCostFromFIFOByBatch(
       params.productId,
       variantId,
       batchNumber,
       tx
     );
+  }
+
+  if (!(usedUnitCost > 0)) {
+    usedUnitCost =
+      typeof params.unitCostHint === 'number' &&
+      Number.isFinite(params.unitCostHint) &&
+      params.unitCostHint > 0
+        ? params.unitCostHint
+        : 0;
   }
 
   if (!(usedUnitCost > 0)) {
@@ -276,7 +287,8 @@ export async function ensureFIFOQueueMatchesInventory(
       data: {
         quantity: newQuantity,
         unitCost:
-          inboundRecord.unitCost !== null && inboundRecord.unitCost !== undefined
+          inboundRecord.unitCost !== null &&
+          inboundRecord.unitCost !== undefined
             ? inboundRecord.unitCost
             : recordUnitCost,
         totalCost: roundCurrency(newQuantity * recordUnitCost),
@@ -310,6 +322,10 @@ export async function getFIFOCost(
   tx?: PrismaTransaction
 ): Promise<FIFOCostResult> {
   try {
+    if (!Number.isFinite(outboundQty) || outboundQty <= 0) {
+      return { totalCost: 0, averageUnitCost: 0, batches: [] };
+    }
+
     const db = tx ?? prisma;
     const pageSize = 2000;
     let lastInboundDate: Date | undefined;
@@ -449,6 +465,10 @@ export async function consumeFIFOQueue(
   const MAX_CONCURRENCY_RETRY_PER_BATCH = 3;
 
   try {
+    if (!Number.isFinite(outboundQty) || outboundQty <= 0) {
+      return { totalCost: 0, averageUnitCost: 0, batches: [] };
+    }
+
     const pageSize = 2000;
     let lastInboundDate: Date | undefined;
     let lastId: string | undefined;
@@ -651,6 +671,10 @@ export async function consumeFIFOQueueByBatch(
   outboundQty: number,
   tx: PrismaTransaction
 ): Promise<FIFOCostResult> {
+  if (!Number.isFinite(outboundQty) || outboundQty <= 0) {
+    return { totalCost: 0, averageUnitCost: 0, batches: [] };
+  }
+
   const normalizedBatch =
     typeof batchNumber === 'string' && batchNumber.trim().length > 0
       ? batchNumber.trim()

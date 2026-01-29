@@ -1,11 +1,7 @@
 'use client';
 
 import { useQueryClient } from '@tanstack/react-query';
-import {
-    BarChart3,
-    ChevronDown,
-    ChevronRight
-} from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
 import * as React from 'react';
 import { Suspense } from 'react';
 
@@ -22,8 +18,8 @@ import { queryKeys } from '@/lib/queryKeys';
 import { inventoryParamsSchema } from '@/lib/schemas/inventory-params';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
-    InventoryListResponse,
-    InventoryQueryParams,
+  InventoryListResponse,
+  InventoryQueryParams,
 } from '@/lib/types/inventory';
 
 interface InventoryPageClientProps {

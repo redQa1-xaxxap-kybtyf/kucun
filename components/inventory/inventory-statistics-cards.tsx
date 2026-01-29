@@ -1,12 +1,12 @@
 'use client';
 
 import {
-    AlertTriangle,
-    DollarSign,
-    Download,
-    Package,
-    TrendingUp,
-    Wallet,
+  AlertTriangle,
+  DollarSign,
+  Download,
+  Package,
+  TrendingUp,
+  Wallet,
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
@@ -239,7 +239,9 @@ export function InventoryStatisticsCards({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between px-1">
-        <div className="text-sm font-black tracking-wide text-slate-400 uppercase">实时库存指标集</div>
+        <div className="text-sm font-black tracking-wide text-slate-400 uppercase">
+          实时库存指标集
+        </div>
         <Button
           size="sm"
           variant="ghost"
@@ -255,18 +257,22 @@ export function InventoryStatisticsCards({
       <div className={`grid gap-4 sm:grid-cols-2 ${gridColsClass}`}>
         {cards.map(
           ({ id, title, icon: Icon, value, description, color, bgColor }) => (
-            <div 
+            <div
               key={id}
               className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
             >
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <p className="text-xs font-black text-slate-400">{title}</p>
-                  <div className={`text-2xl font-black tracking-tight ${color}`}>
+                  <div
+                    className={`text-2xl font-black tracking-tight ${color}`}
+                  >
                     {value}
                   </div>
                 </div>
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${bgColor} transition-transform group-hover:scale-110`}>
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl ${bgColor} transition-transform group-hover:scale-110`}
+                >
                   <Icon className={`h-6 w-6 ${color}`} />
                 </div>
               </div>
@@ -274,8 +280,10 @@ export function InventoryStatisticsCards({
                 <p className="text-[11px] font-bold text-slate-400">
                   {description}
                 </p>
-                <div className="h-1 w-12 rounded-full bg-slate-50 overflow-hidden">
-                   <div className={`h-full w-2/3 ${color.replace('text', 'bg').split(' ')[0]}`} />
+                <div className="h-1 w-12 overflow-hidden rounded-full bg-slate-50">
+                  <div
+                    className={`h-full w-2/3 ${color.replace('text', 'bg').split(' ')[0]}`}
+                  />
                 </div>
               </div>
             </div>

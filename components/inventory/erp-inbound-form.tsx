@@ -1,43 +1,43 @@
 'use client';
 
 import {
-    AlertCircle,
-    BarChart3,
-    ClipboardList,
-    DollarSign,
-    FileText,
-    Package,
+  AlertCircle,
+  BarChart3,
+  ClipboardList,
+  DollarSign,
+  FileText,
+  Package,
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import {
-    InboundCostField,
-    InboundQuantityFields,
-    InboundReasonField,
-    InboundSpecificationFields,
-    InboundSupplierField,
-    InboundTotalCostField,
+  InboundCostField,
+  InboundQuantityFields,
+  InboundReasonField,
+  InboundSpecificationFields,
+  InboundSupplierField,
+  InboundTotalCostField,
 } from '@/components/inventory/forms/inbound-form-fields';
 import { InboundFormToolbar } from '@/components/inventory/forms/inbound-form-toolbar';
 import { InboundProductSection } from '@/components/inventory/forms/inbound-product-section';
 import { OpeningBalanceConfirmDialog } from '@/components/inventory/opening-balance-confirm-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-    calculateFinalQuantity,
-    useInboundForm,
-    useProductSelection,
+  calculateFinalQuantity,
+  useInboundForm,
+  useProductSelection,
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
 import type { InboundFormData, ProductOption } from '@/lib/types/inbound';
@@ -255,7 +255,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       onProductSelect={handleProductSelectWithPrompt}
                       showProductPrompt={showProductPrompt}
                     />
-                    <div className="pt-4 border-t border-slate-100/50">
+                    <div className="border-t border-slate-100/50 pt-4">
                       <InboundSupplierField form={form} />
                     </div>
                   </div>
@@ -302,13 +302,13 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     />
 
                     {/* 入库数量、单位、最终片数 */}
-                    <div className="pt-4 border-t border-slate-100/50">
-                       <InboundQuantityFields form={form} />
+                    <div className="border-t border-slate-100/50 pt-4">
+                      <InboundQuantityFields form={form} />
                     </div>
 
                     {/* 每件片数、每件重量 */}
-                    <div className="pt-4 border-t border-slate-100/50">
-                       <InboundSpecificationFields form={form} />
+                    <div className="border-t border-slate-100/50 pt-4">
+                      <InboundSpecificationFields form={form} />
                     </div>
                   </div>
                 </div>
@@ -343,9 +343,11 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       <FileText className="h-5 w-5" />
                     </div>
                     <div className="space-y-0.5">
-                      <h3 className="text-base font-black tracking-tight text-slate-900">5. 备注存证</h3>
+                      <h3 className="text-base font-black tracking-tight text-slate-900">
+                        5. 备注存证
+                      </h3>
                       <p className="text-[10px] font-bold text-slate-400">
-                         记录本次入库的特殊变动或说明事项
+                        记录本次入库的特殊变动或说明事项
                       </p>
                     </div>
                   </div>
@@ -361,7 +363,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                           <FormControl>
                             <Textarea
                               placeholder="系统将自动关联当前操作人与时间戳，如有特殊说明请在此记录..."
-                              className="min-h-[100px] border-slate-200 bg-white/50 focus:bg-white resize-none"
+                              className="min-h-[100px] resize-none border-slate-200 bg-white/50 focus:bg-white"
                               {...field}
                             />
                           </FormControl>

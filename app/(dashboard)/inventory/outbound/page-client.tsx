@@ -6,7 +6,7 @@ import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
 
 /**
  * 出库记录客户端组件
- * 
+ *
  * ✅ 已修复页面标题丢失问题
  * ✅ 结构已与入库页面（Inbound）完成对齐
  */

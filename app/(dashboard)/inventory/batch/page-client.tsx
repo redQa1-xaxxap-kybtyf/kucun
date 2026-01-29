@@ -5,33 +5,33 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { BatchPageHeader } from '@/components/inventory/batch-page-header';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/use-toast';
 import {
-    useBatchSpecifications,
-    useCreateBatchSpecification,
-    useDeleteBatchSpecification,
-    useUpdateBatchSpecification,
+  useBatchSpecifications,
+  useCreateBatchSpecification,
+  useDeleteBatchSpecification,
+  useUpdateBatchSpecification,
 } from '@/lib/api/batch-specifications';
 import type {
-    BatchSpecification,
-    BatchSpecificationListResponse,
-    BatchSpecificationQueryParams,
-    CreateBatchSpecificationRequest,
+  BatchSpecification,
+  BatchSpecificationListResponse,
+  BatchSpecificationQueryParams,
+  CreateBatchSpecificationRequest,
 } from '@/lib/types/batch-specification';
 
 import { BatchRecordsFilters } from './components/BatchRecordsFilters';

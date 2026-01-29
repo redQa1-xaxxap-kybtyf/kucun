@@ -20,9 +20,9 @@ export function InboundPageHeader() {
   const user = session?.user;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
       {/* 背景装饰 */}
-      <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-emerald-500/5 blur-3xl" />
 
       <div className="relative z-10 flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
@@ -59,7 +59,7 @@ export function InboundPageHeader() {
           {/* 新增入库按钮 */}
           <Button
             size="lg"
-            className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 hover:scale-105 active:scale-95"
+            className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95"
             onClick={() => router.push('/inventory/inbound/create')}
           >
             <Plus className="mr-2 h-4 w-4" />

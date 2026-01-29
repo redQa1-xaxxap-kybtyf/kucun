@@ -40,6 +40,19 @@ export async function executeAdjustmentTransaction(
   const { productId, adjustQuantity, reason, batchNumber, variantId, notes } =
     data;
 
+  const normalizedBatchNumber =
+    typeof batchNumber === 'string' ? batchNumber.trim() : '';
+  const normalizedVariantId =
+    typeof variantId === 'string' ? variantId.trim() : '';
+  const batchNumberOrNull =
+    normalizedBatchNumber.length > 0 ? normalizedBatchNumber : null;
+  const variantIdOrNull =
+    normalizedVariantId.length > 0 ? normalizedVariantId : null;
+
+  if (!batchNumberOrNull) {
+    throw new Error('批次号/色号为必填项');
+  }
+
   // 1. 在事务外部生成调整单号（避免嵌套事务导致死锁）
   const adjustmentNumber = await generateAdjustmentNumber();
 
@@ -49,8 +62,8 @@ export async function executeAdjustmentTransaction(
       const existingInventory = await tx.inventory.findFirst({
         where: {
           productId,
-          ...(batchNumber && { batchNumber }),
-          ...(variantId && { variantId }),
+          batchNumber: batchNumberOrNull,
+          variantId: variantIdOrNull,
         },
       });
 
@@ -114,8 +127,8 @@ export async function executeAdjustmentTransaction(
             productId,
             quantity: adjustQuantity,
             reservedQuantity: 0,
-            batchNumber,
-            variantId,
+            batchNumber: batchNumberOrNull,
+            variantId: variantIdOrNull,
           },
           include: {
             product: {
@@ -133,8 +146,8 @@ export async function executeAdjustmentTransaction(
         // 增加库存：优先使用 FIFO 队列的加权平均成本，其次使用库存单价
         const fifoAvg = await getWeightedAverageCostFromFIFOByBatch(
           productId,
-          variantId || null,
-          batchNumber?.trim() || null,
+          variantIdOrNull,
+          batchNumberOrNull,
           tx
         );
 
@@ -164,8 +177,8 @@ export async function executeAdjustmentTransaction(
           {
             inventoryId: existingInventory?.id ?? updatedInventory.id,
             productId,
-            variantId: variantId || null,
-            batchNumber: batchNumber?.trim() || null,
+            variantId: variantIdOrNull,
+            batchNumber: batchNumberOrNull,
             expectedInventoryQty: beforeQuantity,
             unitCostHint,
             userId,
@@ -176,8 +189,8 @@ export async function executeAdjustmentTransaction(
 
         const fifoCost = await consumeFIFOQueueByBatch(
           productId,
-          variantId || null,
-          batchNumber?.trim() || null,
+          variantIdOrNull,
+          batchNumberOrNull,
           absQty,
           tx
         );
@@ -195,8 +208,8 @@ export async function executeAdjustmentTransaction(
           data: {
             recordNumber: generateInboundRecordNumber(),
             productId,
-            variantId: variantId || null,
-            batchNumber: batchNumber || null,
+            variantId: variantIdOrNull,
+            batchNumber: batchNumberOrNull,
             batchSpecificationId: null,
             quantity: adjustQuantity,
             unitCost,
@@ -214,8 +227,8 @@ export async function executeAdjustmentTransaction(
         await addToFIFOQueue(
           {
             productId,
-            variantId: variantId || null,
-            batchNumber: batchNumber || null,
+            variantId: variantIdOrNull,
+            batchNumber: batchNumberOrNull,
             inboundRecordId: inboundRecord.id,
             quantity: adjustQuantity,
             unitCost,
@@ -230,8 +243,8 @@ export async function executeAdjustmentTransaction(
         data: {
           adjustmentNumber,
           productId,
-          variantId,
-          batchNumber,
+          variantId: variantIdOrNull,
+          batchNumber: batchNumberOrNull,
           beforeQuantity,
           adjustQuantity,
           afterQuantity,
