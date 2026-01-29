@@ -31,10 +31,7 @@ export function useImageUpload({
     // - 缩略图：1MB
     // - 主图：1MB
     // - 效果图：2MB
-    const typeLimit =
-      imageType === 'effect'
-        ? 2
-        : 1;
+    const typeLimit = imageType === 'effect' ? 2 : 1;
 
     // 同时不超过外部传入的 maxSize（兜底）
     return Math.min(typeLimit, maxSize);

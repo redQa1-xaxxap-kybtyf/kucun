@@ -290,7 +290,10 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
     ref
   ) => (
     <div
-      className={cn('grid grid-cols-[repeat(var(--grid-cols),minmax(0,1fr))] gap-2', className)}
+      className={cn(
+        'grid grid-cols-[repeat(var(--grid-cols),minmax(0,1fr))] gap-2',
+        className
+      )}
       style={{ '--grid-cols': columns } as React.CSSProperties}
       ref={ref}
       {...props}
@@ -316,10 +319,9 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
 ColorCodeGrid.displayName = 'ColorCodeGrid';
 
 export {
-    COLOR_CODE_COLORS,
-    ColorCodeDisplay,
-    colorCodeDisplayVariants,
-    ColorCodeGrid,
-    ColorCodeSelector
+  COLOR_CODE_COLORS,
+  ColorCodeDisplay,
+  colorCodeDisplayVariants,
+  ColorCodeGrid,
+  ColorCodeSelector,
 };
-

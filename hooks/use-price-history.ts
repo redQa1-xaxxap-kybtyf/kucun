@@ -237,8 +237,24 @@ export function getLatestPrice(
     return undefined;
   }
 
-  // 返回最新的价格（已经按创建时间降序排列）
-  return filteredPrices[0].unitPrice;
+  const toTimestamp = (value: unknown) => {
+    const date = value instanceof Date ? value : new Date(value as any);
+    const ms = date.getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  };
+
+  // 返回最新的价格（不依赖输入顺序）
+  const latest = filteredPrices.reduce<CustomerProductPrice | undefined>(
+    (acc, current) => {
+      if (!acc) return current;
+      return toTimestamp(current.createdAt) > toTimestamp(acc.createdAt)
+        ? current
+        : acc;
+    },
+    undefined
+  );
+
+  return latest?.unitPrice;
 }
 
 /**
@@ -259,6 +275,22 @@ export function getLatestSupplierPrice(
     return undefined;
   }
 
-  // 返回最新的价格（已经按创建时间降序排列）
-  return filteredPrices[0].unitPrice;
+  const toTimestamp = (value: unknown) => {
+    const date = value instanceof Date ? value : new Date(value as any);
+    const ms = date.getTime();
+    return Number.isFinite(ms) ? ms : 0;
+  };
+
+  // 返回最新的价格（不依赖输入顺序）
+  const latest = filteredPrices.reduce<SupplierProductPrice | undefined>(
+    (acc, current) => {
+      if (!acc) return current;
+      return toTimestamp(current.createdAt) > toTimestamp(acc.createdAt)
+        ? current
+        : acc;
+    },
+    undefined
+  );
+
+  return latest?.unitPrice;
 }

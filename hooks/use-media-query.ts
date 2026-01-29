@@ -3,10 +3,10 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import {
-    BREAKPOINT_QUERIES,
-    getDeviceType,
-    type BreakpointQuery,
-    type DeviceType,
+  BREAKPOINT_QUERIES,
+  getDeviceType,
+  type BreakpointQuery,
+  type DeviceType,
 } from '@/lib/utils/breakpoints';
 
 // ============================================================================
@@ -57,7 +57,7 @@ export function useMediaQuery(query: string): boolean {
 
 /**
  * 使用预定义断点的 Hook
- * 
+ *
  * @example
  * const isMobile = useBreakpoint('mobile');
  * const isDesktop = useBreakpoint('desktop');
@@ -81,7 +81,8 @@ export const useIsTablet = () => useMediaQuery(BREAKPOINT_QUERIES.tablet);
 export const useIsDesktop = () => useMediaQuery(BREAKPOINT_QUERIES.desktop);
 
 /** 大屏幕 (>= 1280px) */
-export const useIsLargeScreen = () => useMediaQuery(BREAKPOINT_QUERIES.largeScreen);
+export const useIsLargeScreen = () =>
+  useMediaQuery(BREAKPOINT_QUERIES.largeScreen);
 
 // ============================================================================
 // 组合 Hooks
@@ -89,7 +90,7 @@ export const useIsLargeScreen = () => useMediaQuery(BREAKPOINT_QUERIES.largeScre
 
 /**
  * 获取当前设备类型
- * 
+ *
  * @returns 'mobile' | 'tablet' | 'desktop' | 'largeScreen'
  */
 export function useDeviceType(): DeviceType {
@@ -129,6 +130,13 @@ export function useDeviceTypeByWidth(): DeviceType {
 }
 
 // 重新导出断点相关工具
-export { BREAKPOINT_QUERIES, BREAKPOINTS, getDeviceType } from '@/lib/utils/breakpoints';
-export type { BreakpointKey, BreakpointQuery, DeviceType } from '@/lib/utils/breakpoints';
-
+export {
+  BREAKPOINT_QUERIES,
+  BREAKPOINTS,
+  getDeviceType,
+} from '@/lib/utils/breakpoints';
+export type {
+  BreakpointKey,
+  BreakpointQuery,
+  DeviceType,
+} from '@/lib/utils/breakpoints';
