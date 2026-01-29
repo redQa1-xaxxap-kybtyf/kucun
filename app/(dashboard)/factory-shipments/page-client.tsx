@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, Package, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -8,7 +9,6 @@ import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { FactoryShipmentOrderList } from '@/components/factory-shipments/factory-shipment-order-list';
 import { Button } from '@/components/ui/button';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
@@ -28,6 +28,21 @@ interface FactoryShipmentQueryParams {
 interface FactoryShipmentsPageClientProps {
   initialParams: FactoryShipmentQueryParams;
 }
+
+const FactoryShipmentOrderList = dynamic(
+  () =>
+    import('@/components/factory-shipments/factory-shipment-order-list').then(
+      mod => mod.FactoryShipmentOrderList
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-muted-foreground">加载中...</div>
+      </div>
+    ),
+  }
+);
 
 /**
  * 厂家发货页面客户端组件
