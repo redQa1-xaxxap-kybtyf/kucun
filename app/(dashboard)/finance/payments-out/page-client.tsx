@@ -1,13 +1,13 @@
 'use client';
 
 import { Download, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { PaymentsOutClient } from '@/components/finance/payments-out-client';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,6 +21,18 @@ import {
 } from '@/lib/types/payable';
 
 type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
+
+const PaymentsOutClient = dynamic(
+  () => import('@/components/finance/payments-out-client').then(mod => mod.PaymentsOutClient),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface PaymentsOutQueryParams {
   page: number;
