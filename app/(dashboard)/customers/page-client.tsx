@@ -1,6 +1,7 @@
 'use client';
 
 import { Download, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -8,7 +9,6 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { CustomerDeleteDialog } from '@/components/customers/customer-delete-dialog';
-import { ERPCustomerList } from '@/components/customers/erp-customer-list';
 import { Button } from '@/components/ui/button';
 import { useCustomersQuery } from '@/hooks/use-customers-query';
 import {
@@ -20,6 +20,18 @@ import {
 interface CustomersPageClientProps {
   initialParams: CustomerQueryParams;
 }
+
+const ERPCustomerList = dynamic(
+  () => import('@/components/customers/erp-customer-list').then(mod => mod.ERPCustomerList),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 客户管理页面客户端组件
