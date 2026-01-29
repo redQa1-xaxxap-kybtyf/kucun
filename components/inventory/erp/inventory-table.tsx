@@ -2,16 +2,31 @@
 
 import { Boxes, Eye, ImageIcon } from 'lucide-react';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { memo } from 'react';
 
 import { RelativeTime } from '@/components/common/relative-time';
 import { InventoryGroupedTable } from '@/components/inventory/InventoryGroupedTable';
-import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { Button } from '@/components/ui/button';
 import type { Inventory } from '@/lib/types/inventory';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import { ProductDataUtils } from '@/lib/utils/product-data';
+
+const VirtualizedInventoryTable = dynamic(
+  () =>
+    import('@/components/inventory/VirtualizedInventoryTable').then(
+      mod => mod.VirtualizedInventoryTable
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground flex items-center justify-center py-12 text-sm">
+        加载表格中...
+      </div>
+    ),
+  }
+);
 
 interface InventoryTableProps {
   data: Inventory[];
