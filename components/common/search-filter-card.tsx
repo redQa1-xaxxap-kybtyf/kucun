@@ -15,6 +15,7 @@
  */
 
 import { Filter, RotateCcw } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 
 import {
@@ -25,11 +26,16 @@ import {
 } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  DateRangePicker,
-  type DateRangeValue,
-} from '@/components/ui/date-range-picker';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { cn } from '@/lib/utils';
+
+const DateRangePicker = dynamic(
+  () =>
+    import('@/components/ui/date-range-picker').then(
+      mod => mod.DateRangePicker
+    ),
+  { ssr: false, loading: () => null }
+);
 
 // ============================================================================
 // 类型定义
