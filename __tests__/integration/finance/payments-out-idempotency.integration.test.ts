@@ -248,6 +248,65 @@ describe('付款记录：更新/作废 并发幂等（真实数据库集成）',
     expect(op?.operationType).toBe('payment_out_update');
   });
 
+  it('更新付款金额下调幂等：并发两次相同 idempotencyKey，应写 payment_out_reversal 差额流水且应付款只回滚一次', async () => {
+    const userId = createdRecords.userId as string;
+    const supplierId = await createTestSupplier('decrease');
+    const payableRecordId = await createTestPayableRecord({
+      supplierId,
+      userId,
+      amount: 500,
+    });
+
+    const { paymentId } = await createPaymentOutFixture({
+      supplierId,
+      payableRecordId,
+      amount: 120,
+    });
+
+    const updateKey = randomUUID();
+    createdRecords.idempotencyKeys.add(updateKey);
+
+    const requestBody = { paymentAmount: 80, idempotencyKey: updateKey };
+
+    const [r1, r2] = await Promise.all([
+      updatePaymentOut(
+        { json: async () => requestBody } as any,
+        { params: { id: paymentId } } as any
+      ),
+      updatePaymentOut(
+        { json: async () => requestBody } as any,
+        { params: { id: paymentId } } as any
+      ),
+    ]);
+
+    expect(r1.status).toBe(200);
+    expect(r2.status).toBe(200);
+
+    const payableAfter = await prisma.payableRecord.findUnique({
+      where: { id: payableRecordId },
+      select: { paidAmount: true, remainingAmount: true, status: true },
+    });
+
+    expect(Number(payableAfter?.paidAmount ?? 0)).toBeCloseTo(80, 2);
+    expect(Number(payableAfter?.remainingAmount ?? 0)).toBeCloseTo(420, 2);
+    expect(payableAfter?.status).toBe('partial');
+
+    const reversalTransactionCount = await prisma.statementTransaction.count({
+      where: {
+        referenceId: updateKey,
+        transactionType: 'payment_out_reversal',
+      },
+    });
+    expect(reversalTransactionCount).toBe(1);
+
+    const op = await prisma.inventoryOperation.findUnique({
+      where: { idempotencyKey: updateKey },
+      select: { status: true, operationType: true },
+    });
+    expect(op?.status).toBe('completed');
+    expect(op?.operationType).toBe('payment_out_update');
+  });
+
   it('作废幂等：并发两次相同 idempotencyKey，只应回滚一次应付款且反向流水只落一条', async () => {
     const userId = createdRecords.userId as string;
     const supplierId = await createTestSupplier('void');
