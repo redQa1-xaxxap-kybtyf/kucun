@@ -1,11 +1,11 @@
 'use client';
 
 import { Package, RefreshCw, ShoppingCart, Users } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 import { DashboardTodoBar } from '@/components/dashboard/dashboard-todo-bar';
-import { DashboardTrendChart } from '@/components/dashboard/dashboard-trend-chart';
 import { ProductRanking } from '@/components/dashboard/product-ranking';
 import { StatCardsGrid } from '@/components/dashboard/stat-cards-enhanced';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,17 @@ import type {
   TimeRange,
 } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
+
+const DashboardTrendChart = dynamic(
+  () =>
+    import('./dashboard-trend-chart').then(mod => mod.DashboardTrendChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[480px] w-full animate-pulse rounded-3xl bg-white/40" />
+    ),
+  }
+);
 
 /**
  * ERP风格的仪表盘组件
