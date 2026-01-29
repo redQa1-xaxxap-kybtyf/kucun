@@ -15,13 +15,12 @@ import {
   Search,
   Users,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import React from 'react';
 
 import { SettingsLayout } from '@/components/settings/SettingsLayout';
-import { UserForm } from '@/components/settings/UserForm';
-import { UserManagementTable } from '@/components/settings/UserManagementTable';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,6 +43,27 @@ import type {
 } from '@/lib/types/settings';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import type { UserFormData } from '@/lib/validations/settings';
+
+const UserManagementTable = dynamic(
+  () =>
+    import('@/components/settings/UserManagementTable').then(
+      mod => mod.UserManagementTable
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-64 items-center justify-center bg-slate-50/30">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+        <span className="ml-3 font-medium text-slate-500">表格加载中...</span>
+      </div>
+    ),
+  }
+);
+
+const UserForm = dynamic(
+  () => import('@/components/settings/UserForm').then(mod => mod.UserForm),
+  { ssr: false, loading: () => null }
+);
 
 export default function UsersSettingsPage() {
   const router = useRouter();
@@ -497,16 +517,18 @@ export default function UsersSettingsPage() {
         </Card>
 
         {/* 用户表单对话框 */}
-        <UserForm
-          open={userFormOpen}
-          onOpenChange={setUserFormOpen}
-          mode={formMode}
-          user={selectedUser}
-          onSubmit={handleFormSubmit}
-          isLoading={
-            createUserMutation.isPending || updateUserMutation.isPending
-          }
-        />
+        {userFormOpen && (
+          <UserForm
+            open={userFormOpen}
+            onOpenChange={setUserFormOpen}
+            mode={formMode}
+            user={selectedUser}
+            onSubmit={handleFormSubmit}
+            isLoading={
+              createUserMutation.isPending || updateUserMutation.isPending
+            }
+          />
+        )}
       </div>
     </SettingsLayout>
   );
