@@ -122,7 +122,7 @@ function validateRelations(models) {
       if (!field.attributes.includes('@relation')) continue;
 
       const relationMatch = field.attributes.match(
-        /@relation\([^)]*fields\s*:\s*\[([^\]]+)]/,
+        /@relation\([^)]*fields\s*:\s*\[([^\]]+)]/
       );
       if (!relationMatch) continue;
 
@@ -176,7 +176,7 @@ function printReport(models, issues) {
         f =>
           f.name.endsWith('Id') &&
           f.name !== 'id' &&
-          !SPECIAL_FOREIGN_KEYS.has(f.name),
+          !SPECIAL_FOREIGN_KEYS.has(f.name)
       ).length
     );
   }, 0);
@@ -196,23 +196,21 @@ function printReport(models, issues) {
 
   issues.forEach((issue, index) => {
     console.error(
-      `${index + 1}. ❌ ${issue.model} 模型 (line ${issue.line}) - 字段 "${issue.field}"`,
+      `${index + 1}. ❌ ${issue.model} 模型 (line ${issue.line}) - 字段 "${issue.field}"`
     );
     console.error(`   - ${issue.message}`);
-    console.error(
-      '   - 建议：在同一模型中添加对应的关系字段，例如：',
-    );
+    console.error('   - 建议：在同一模型中添加对应的关系字段，例如：');
     console.error(
       `     ${issue.field.replace(
         /Id$/,
-        '',
-      )} SomeModel @relation(fields: [${issue.field}], references: [id])`,
+        ''
+      )} SomeModel @relation(fields: [${issue.field}], references: [id])`
     );
     console.error('');
   });
 
   console.error(
-    `总计: ${errorCount} 个错误。请修复以上问题后再运行 npm run validate:schema / npm run lint。\n`,
+    `总计: ${errorCount} 个错误。请修复以上问题后再运行 npm run validate:schema / npm run lint。\n`
   );
 
   process.exit(1);
@@ -223,7 +221,7 @@ function main() {
 
   if (!fs.existsSync(PRISMA_SCHEMA_PATH)) {
     console.warn(
-      `⚠️  未找到 ${PRISMA_SCHEMA_PATH}，仅执行了 prisma validate，跳过关系自检。`,
+      `⚠️  未找到 ${PRISMA_SCHEMA_PATH}，仅执行了 prisma validate，跳过关系自检。`
     );
     return;
   }

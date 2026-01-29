@@ -128,8 +128,10 @@ function parseArgs(argv: string[]): Options {
   const take = takeRaw ? Number(takeRaw) : undefined;
   const failOnIssues = hasFlag('--fail');
 
-  const safeBatchSize = Number.isFinite(batchSize) && batchSize > 0 ? batchSize : 200;
-  const safeTake = take !== undefined && Number.isFinite(take) && take > 0 ? take : undefined;
+  const safeBatchSize =
+    Number.isFinite(batchSize) && batchSize > 0 ? batchSize : 200;
+  const safeTake =
+    take !== undefined && Number.isFinite(take) && take > 0 ? take : undefined;
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const defaultOutPrefix = path.join(
@@ -194,7 +196,9 @@ async function main() {
 
   while (true) {
     const remainingTake = take ? Math.max(0, take - scanned) : undefined;
-    const pageTake = remainingTake ? Math.min(batchSize, remainingTake) : batchSize;
+    const pageTake = remainingTake
+      ? Math.min(batchSize, remainingTake)
+      : batchSize;
     if (pageTake <= 0) break;
 
     const orders = await prisma.salesOrder.findMany({
@@ -325,10 +329,16 @@ async function main() {
       const issues: Anomaly[] = [];
 
       const orderItemsAmount = roundCurrency(Number(order.itemsAmount ?? 0));
-      const orderAdditionalFees = roundCurrency(Number(order.additionalFees ?? 0));
+      const orderAdditionalFees = roundCurrency(
+        Number(order.additionalFees ?? 0)
+      );
       const orderTotalAmount = roundCurrency(Number(order.totalAmount ?? 0));
-      const orderRounding = roundCurrency(Number(order.roundingAdjustment ?? 0));
-      const orderExpenseAmount = roundCurrency(Number(order.expenseAmount ?? 0));
+      const orderRounding = roundCurrency(
+        Number(order.roundingAdjustment ?? 0)
+      );
+      const orderExpenseAmount = roundCurrency(
+        Number(order.expenseAmount ?? 0)
+      );
       const orderCostAmount = roundCurrency(Number(order.costAmount ?? 0));
       const orderProfitAmount = roundCurrency(Number(order.profitAmount ?? 0));
 
@@ -393,7 +403,8 @@ async function main() {
       if (!nearlyEqual(orderTotalAmount, expectedTotalFromOrderFields)) {
         issues.push({
           code: 'TOTAL_AMOUNT_MISMATCH_FIELDS',
-          message: 'salesOrder.totalAmount 与 itemsAmount+additionalFees 不一致（口径：total 不含抹零）',
+          message:
+            'salesOrder.totalAmount 与 itemsAmount+additionalFees 不一致（口径：total 不含抹零）',
           expected: expectedTotalFromOrderFields,
           actual: orderTotalAmount,
           diff: roundCurrency(orderTotalAmount - expectedTotalFromOrderFields),
@@ -403,7 +414,8 @@ async function main() {
       if (!nearlyEqual(orderTotalAmount, computedTotalAmount)) {
         issues.push({
           code: 'TOTAL_AMOUNT_MISMATCH_COMPUTED',
-          message: 'salesOrder.totalAmount 与明细口径（subtotal+客户承担费用）不一致',
+          message:
+            'salesOrder.totalAmount 与明细口径（subtotal+客户承担费用）不一致',
           expected: computedTotalAmount,
           actual: orderTotalAmount,
           diff: roundCurrency(orderTotalAmount - computedTotalAmount),
@@ -483,14 +495,19 @@ async function main() {
             });
           }
 
-          if (!nearlyEqual(quantity, localQuantity + transferQuantity, EPS_QTY)) {
+          if (
+            !nearlyEqual(quantity, localQuantity + transferQuantity, EPS_QTY)
+          ) {
             issues.push({
               code: 'MIXED_SPLIT_MISMATCH',
-              message: 'MIXED 明细 quantity != localQuantity + transferQuantity',
+              message:
+                'MIXED 明细 quantity != localQuantity + transferQuantity',
               itemId: item.id,
               expected: roundCurrency(localQuantity + transferQuantity),
               actual: roundCurrency(quantity),
-              diff: roundCurrency(quantity - (localQuantity + transferQuantity)),
+              diff: roundCurrency(
+                quantity - (localQuantity + transferQuantity)
+              ),
             });
           }
 
@@ -516,7 +533,8 @@ async function main() {
           if (!nearlyEqual(transferQuantity, quantity, EPS_QTY)) {
             issues.push({
               code: 'SUPPLIER_ONLY_TRANSFER_QTY_MISMATCH',
-              message: 'SUPPLIER_ONLY 明细 transferQuantity 应等于 quantity（建议回填）',
+              message:
+                'SUPPLIER_ONLY 明细 transferQuantity 应等于 quantity（建议回填）',
               itemId: item.id,
               expected: roundCurrency(quantity),
               actual: roundCurrency(transferQuantity),
@@ -535,7 +553,8 @@ async function main() {
           if (localQuantity > EPS_QTY || transferQuantity > EPS_QTY) {
             issues.push({
               code: 'NORMAL_HAS_TRANSFER_FIELDS',
-              message: '普通销售明细存在 localQuantity/transferQuantity（建议清理或统一口径）',
+              message:
+                '普通销售明细存在 localQuantity/transferQuantity（建议清理或统一口径）',
               itemId: item.id,
               actual: roundCurrency(localQuantity + transferQuantity),
             });
@@ -548,7 +567,9 @@ async function main() {
         order.status !== 'draft' && order.status !== 'cancelled';
       if (shouldCheckCost) {
         const itemCostSubtotals = order.items.map(i => i.costSubtotal);
-        const hasMissingCost = itemCostSubtotals.some(v => v === null || v === undefined);
+        const hasMissingCost = itemCostSubtotals.some(
+          v => v === null || v === undefined
+        );
         const sumItemCost = roundCurrency(
           itemCostSubtotals.reduce((sum: number, v) => sum + Number(v ?? 0), 0)
         );
@@ -556,12 +577,16 @@ async function main() {
         if (hasMissingCost && orderCostAmount > EPS_CURRENCY) {
           issues.push({
             code: 'ITEM_COST_SUBTOTAL_MISSING',
-            message: '订单已进入业务流转，但存在明细 costSubtotal 为空（建议回填/重算成本）',
+            message:
+              '订单已进入业务流转，但存在明细 costSubtotal 为空（建议回填/重算成本）',
             actual: orderCostAmount,
           });
         }
 
-        if (!hasMissingCost && !nearlyEqual(orderCostAmount, sumItemCost, 0.05)) {
+        if (
+          !hasMissingCost &&
+          !nearlyEqual(orderCostAmount, sumItemCost, 0.05)
+        ) {
           issues.push({
             code: 'COST_AMOUNT_MISMATCH',
             message: 'salesOrder.costAmount 与明细 costSubtotal 汇总不一致',
@@ -571,11 +596,14 @@ async function main() {
           });
         }
 
-        const expectedProfit = roundCurrency(orderItemsAmount - orderCostAmount);
+        const expectedProfit = roundCurrency(
+          orderItemsAmount - orderCostAmount
+        );
         if (!nearlyEqual(orderProfitAmount, expectedProfit, 0.05)) {
           issues.push({
             code: 'PROFIT_AMOUNT_MISMATCH',
-            message: 'salesOrder.profitAmount 与 itemsAmount - costAmount 不一致',
+            message:
+              'salesOrder.profitAmount 与 itemsAmount - costAmount 不一致',
             expected: expectedProfit,
             actual: orderProfitAmount,
             diff: roundCurrency(orderProfitAmount - expectedProfit),
@@ -605,7 +633,8 @@ async function main() {
           );
         }
 
-        const actualOutboundByPv = outboundMap.get(order.id) ?? new Map<string, number>();
+        const actualOutboundByPv =
+          outboundMap.get(order.id) ?? new Map<string, number>();
         const allPvKeys = new Set([
           ...Array.from(expectedOutboundByPv.keys()),
           ...Array.from(actualOutboundByPv.keys()),
@@ -667,16 +696,22 @@ async function main() {
       if (!take) {
         // 控制台反馈节奏：每处理 500 单打印一次
         if (scanned % 500 === 0) {
-          console.log(`   ...已扫描 ${scanned} 单，累计异常订单 ${allIssues.length} 单`);
+          console.log(
+            `   ...已扫描 ${scanned} 单，累计异常订单 ${allIssues.length} 单`
+          );
         }
       }
     }
   }
 
   console.log('\n' + '='.repeat(70));
-  console.log(`✅ 扫描完成：共扫描 ${scanned} 单，发现异常订单 ${allIssues.length} 单`);
+  console.log(
+    `✅ 扫描完成：共扫描 ${scanned} 单，发现异常订单 ${allIssues.length} 单`
+  );
 
-  const topIssues = Array.from(issueCounts.entries()).sort((a, b) => b[1] - a[1]);
+  const topIssues = Array.from(issueCounts.entries()).sort(
+    (a, b) => b[1] - a[1]
+  );
   if (topIssues.length > 0) {
     console.log('\n📌 异常类型分布（按出现次数排序）：');
     for (const [code, count] of topIssues.slice(0, 20)) {

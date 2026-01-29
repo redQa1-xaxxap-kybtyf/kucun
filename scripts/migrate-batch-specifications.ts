@@ -132,7 +132,8 @@ async function migrateBatchSpecifications(): Promise<MigrationResult> {
               data: {
                 batchSpecificationId: batchSpec.id,
                 // 如果原来没有批次号，设置为默认批次号
-                ...(batchNumber === generateDefaultBatchNumber(product.code) && {
+                ...(batchNumber ===
+                  generateDefaultBatchNumber(product.code) && {
                   batchNumber,
                 }),
               },

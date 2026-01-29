@@ -22,7 +22,9 @@ async function main() {
 
     console.log(`[smoke] auditRun OK runId=${runId} status=${row.status}`);
   } finally {
-    await prisma.auditRun.deleteMany({ where: { runId } }).catch(() => undefined);
+    await prisma.auditRun
+      .deleteMany({ where: { runId } })
+      .catch(() => undefined);
     await prisma.$disconnect();
   }
 }
@@ -31,4 +33,3 @@ main().catch(err => {
   console.error('[smoke] auditRun FAILED', err);
   process.exitCode = 1;
 });
-

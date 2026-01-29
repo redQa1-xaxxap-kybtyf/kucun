@@ -108,7 +108,8 @@ async function updateUniversalSelectors() {
           data: {
             searchInputSelector: UNIVERSAL_SELECTORS.searchInputSelector,
             searchButtonSelector: UNIVERSAL_SELECTORS.searchButtonSelector,
-            resultContainerSelector: UNIVERSAL_SELECTORS.resultContainerSelector,
+            resultContainerSelector:
+              UNIVERSAL_SELECTORS.resultContainerSelector,
             extractSelectors: UNIVERSAL_SELECTORS.extractSelectors,
             updatedAt: new Date(),
           },

@@ -75,7 +75,10 @@ function getPropertyInitializer(
 }
 
 function getModelNameFromReceiver(receiver: ts.Expression): string | undefined {
-  if (ts.isPropertyAccessExpression(receiver) || ts.isPropertyAccessChain(receiver)) {
+  if (
+    ts.isPropertyAccessExpression(receiver) ||
+    ts.isPropertyAccessChain(receiver)
+  ) {
     return receiver.name.text;
   }
   return undefined;
@@ -85,9 +88,7 @@ function isBooleanTrueLiteral(node: ts.Expression): boolean {
   return node.kind === ts.SyntaxKind.TrueKeyword;
 }
 
-function collectBooleanTrueKeys(
-  object: ts.ObjectLiteralExpression
-): string[] {
+function collectBooleanTrueKeys(object: ts.ObjectLiteralExpression): string[] {
   const keys: string[] = [];
   for (const prop of object.properties) {
     if (!ts.isPropertyAssignment(prop)) {
@@ -124,7 +125,8 @@ function analyzeSourceFile(sourceFile: ts.SourceFile): Finding[] {
             file: sourceFile.fileName,
             ...location,
             model,
-            message: 'findMany() called without args (unbounded + full row fetch)',
+            message:
+              'findMany() called without args (unbounded + full row fetch)',
           });
           ts.forEachChild(node, visit);
           return;
@@ -137,7 +139,8 @@ function analyzeSourceFile(sourceFile: ts.SourceFile): Finding[] {
             file: sourceFile.fileName,
             ...location,
             model,
-            message: 'findMany() called with non-object args (unable to audit select/take)',
+            message:
+              'findMany() called with non-object args (unable to audit select/take)',
           });
           ts.forEachChild(node, visit);
           return;
@@ -303,7 +306,9 @@ function main() {
   // eslint-disable-next-line no-console
   console.log(`- scanned files: ${summary.scannedFiles}`);
   // eslint-disable-next-line no-console
-  console.log(`- findings: ${findings.length} (${summary.errors} errors, ${summary.warnings} warnings)`);
+  console.log(
+    `- findings: ${findings.length} (${summary.errors} errors, ${summary.warnings} warnings)`
+  );
 
   // Print top findings (errors first).
   const sorted = [...findings].sort((a, b) => {

@@ -112,7 +112,7 @@ ORDER BY ABS(a.current_balance - t.after_balance) DESC
 LIMIT 200;
 ```
 
-## 9) 关键余额变更是否写入 SystemLog（ledger:*）
+## 9) 关键余额变更是否写入 SystemLog（ledger:\*）
 
 ```sql
 SELECT id, action, user_id, metadata, created_at

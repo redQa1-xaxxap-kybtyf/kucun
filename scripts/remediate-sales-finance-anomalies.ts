@@ -93,7 +93,9 @@ function parseArgs(argv: string[]): Options {
   const endDate = parseDate(endArg);
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
-  const outPrefix = getFlag('--out') ?? path.join('test-results', `sales-finance-remediate-${ts}`);
+  const outPrefix =
+    getFlag('--out') ??
+    path.join('test-results', `sales-finance-remediate-${ts}`);
   const batchSize = Number(getFlag('--batch') ?? 200);
 
   return {
@@ -165,7 +167,11 @@ async function main() {
 
   const proposedOrderUpdates: ProposedOrderUpdate[] = [];
   const proposedItemUpdates: ProposedItemUpdate[] = [];
-  const manualIssues: Array<{ orderNumber: string; message: string; itemId?: string }> = [];
+  const manualIssues: Array<{
+    orderNumber: string;
+    message: string;
+    itemId?: string;
+  }> = [];
 
   let cursorId: string | undefined;
   let scanned = 0;
@@ -242,8 +248,12 @@ async function main() {
       );
 
       const orderItemsAmount = roundCurrency(Number(order.itemsAmount ?? 0));
-      const orderAdditionalFees = roundCurrency(Number(order.additionalFees ?? 0));
-      const orderExpenseAmount = roundCurrency(Number(order.expenseAmount ?? 0));
+      const orderAdditionalFees = roundCurrency(
+        Number(order.additionalFees ?? 0)
+      );
+      const orderExpenseAmount = roundCurrency(
+        Number(order.expenseAmount ?? 0)
+      );
       const orderTotalAmount = roundCurrency(Number(order.totalAmount ?? 0));
       const orderCostAmount = roundCurrency(Number(order.costAmount ?? 0));
       const orderProfitAmount = roundCurrency(Number(order.profitAmount ?? 0));
@@ -264,7 +274,9 @@ async function main() {
       }
 
       // 利润统一口径（不改成本，只改利润字段）
-      const computedProfit = roundCurrency(computedItemsAmount - orderCostAmount);
+      const computedProfit = roundCurrency(
+        computedItemsAmount - orderCostAmount
+      );
       if (!nearlyEqual(orderProfitAmount, computedProfit, 0.05)) {
         orderUpdate.profitAmount = computedProfit;
       }
@@ -299,7 +311,10 @@ async function main() {
         const currentLocal = Number(item.localQuantity ?? 0);
         const currentTransfer = Number(item.transferQuantity ?? 0);
 
-        if (order.orderType === 'TRANSFER' && order.transferMode === 'SUPPLIER_ONLY') {
+        if (
+          order.orderType === 'TRANSFER' &&
+          order.transferMode === 'SUPPLIER_ONLY'
+        ) {
           const nextLocal = 0;
           const nextTransfer = quantity;
           if (
@@ -313,7 +328,10 @@ async function main() {
               orderType: order.orderType,
               transferMode: order.transferMode,
               status: order.status,
-              from: { localQuantity: currentLocal, transferQuantity: currentTransfer },
+              from: {
+                localQuantity: currentLocal,
+                transferQuantity: currentTransfer,
+              },
               to: { localQuantity: nextLocal, transferQuantity: nextTransfer },
             });
 
@@ -345,7 +363,10 @@ async function main() {
               orderType: order.orderType,
               transferMode: order.transferMode,
               status: order.status,
-              from: { localQuantity: currentLocal, transferQuantity: currentTransfer },
+              from: {
+                localQuantity: currentLocal,
+                transferQuantity: currentTransfer,
+              },
               to: { localQuantity: nextLocal, transferQuantity: nextTransfer },
             });
 

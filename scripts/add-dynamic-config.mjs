@@ -48,7 +48,12 @@ function addDynamicConfig(filePath) {
     }
 
     // 在最后一个 import 语句后添加
-    lines.splice(lastImportIndex + 1, 0, '', `export const dynamic = 'force-dynamic';`);
+    lines.splice(
+      lastImportIndex + 1,
+      0,
+      '',
+      `export const dynamic = 'force-dynamic';`
+    );
     const newContent = lines.join('\n');
     writeFileSync(filePath, newContent, 'utf-8');
 
@@ -89,4 +94,3 @@ console.log(`  已修改: ${modified}`);
 console.log(`  已跳过: ${skipped}`);
 console.log(`  错误: ${errors}`);
 console.log(`  总计: ${files.length}`);
-

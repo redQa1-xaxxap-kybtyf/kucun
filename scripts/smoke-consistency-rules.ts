@@ -12,8 +12,14 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 function asFiniteNumber(value: unknown, label: string): number {
-  assert(typeof value === 'number', `${label} must be a number, got ${typeof value}`);
-  assert(Number.isFinite(value), `${label} must be finite, got ${String(value)}`);
+  assert(
+    typeof value === 'number',
+    `${label} must be a number, got ${typeof value}`
+  );
+  assert(
+    Number.isFinite(value),
+    `${label} must be finite, got ${String(value)}`
+  );
   return value;
 }
 
@@ -26,7 +32,10 @@ function trackAndValidatePagination(
   args: unknown,
   expectedBatchSize: number
 ): { take: number; skip: number; callIndex: number } {
-  assert(args && typeof args === 'object', `${tracker.label} args must be object`);
+  assert(
+    args && typeof args === 'object',
+    `${tracker.label} args must be object`
+  );
   const take = asFiniteNumber((args as any).take, `${tracker.label}.take`);
   const skip = asFiniteNumber((args as any).skip, `${tracker.label}.skip`);
 
@@ -83,8 +92,12 @@ async function main() {
 
   const inventoryFindManyTracker = makeTracker('prisma.inventory.findMany');
   const outboundFindManyTracker = makeTracker('prisma.outboundRecord.findMany');
-  const salesOrderFindManyTracker = makeTracker('prisma.salesOrder.findMany(paged)');
-  const statementFindManyTracker = makeTracker('prisma.accountStatement.findMany');
+  const salesOrderFindManyTracker = makeTracker(
+    'prisma.salesOrder.findMany(paged)'
+  );
+  const statementFindManyTracker = makeTracker(
+    'prisma.accountStatement.findMany'
+  );
   const paymentFindManyTracker = makeTracker('prisma.paymentRecord.findMany');
 
   const prismaAny = prisma as any;
@@ -123,7 +136,8 @@ async function main() {
   );
 
   prismaAny.salesOrder.findMany = async (args: any) => {
-    const isPagedCall = typeof args?.take === 'number' && typeof args?.skip === 'number';
+    const isPagedCall =
+      typeof args?.take === 'number' && typeof args?.skip === 'number';
     if (isPagedCall) {
       return await makePagedFindMany(
         salesOrderFindManyTracker,

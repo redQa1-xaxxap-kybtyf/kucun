@@ -61,7 +61,8 @@ function parseArgs(argv: string[]): Options {
     startDate,
     endDate,
     apply: hasFlag('--apply'),
-    batchSize: Number.isFinite(batchSizeRaw) && batchSizeRaw > 0 ? batchSizeRaw : 200,
+    batchSize:
+      Number.isFinite(batchSizeRaw) && batchSizeRaw > 0 ? batchSizeRaw : 200,
   };
 }
 
@@ -80,10 +81,15 @@ function buildCreatedAtWhere(startDate?: Date, endDate?: Date) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
 
   console.log('🧱 回填 FIFO 成本队列（InventoryCostQueue）...');
-  console.log(`   模式：${options.apply ? 'APPLY（写库）' : 'DRY-RUN（不写库）'}`);
+  console.log(
+    `   模式：${options.apply ? 'APPLY（写库）' : 'DRY-RUN（不写库）'}`
+  );
 
   let cursorId: string | undefined;
   let scanned = 0;
@@ -122,7 +128,9 @@ async function main() {
 
       const qty = Number(r.quantity ?? 0);
       const unitCost =
-        r.unitCost !== null && r.unitCost !== undefined ? Number(r.unitCost) : 0;
+        r.unitCost !== null && r.unitCost !== undefined
+          ? Number(r.unitCost)
+          : 0;
 
       if (!(qty > EPS_QTY) || !(unitCost > 0)) {
         continue;
@@ -167,4 +175,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-

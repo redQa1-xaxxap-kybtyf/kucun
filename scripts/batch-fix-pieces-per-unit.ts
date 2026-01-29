@@ -38,7 +38,9 @@ async function batchFixPiecesPerUnit() {
     });
 
     if (totalAbnormal > abnormalSample.length) {
-      console.log(`  ... 还有 ${totalAbnormal - abnormalSample.length} 个未显示`);
+      console.log(
+        `  ... 还有 ${totalAbnormal - abnormalSample.length} 个未显示`
+      );
     }
 
     // 批量更新为 10

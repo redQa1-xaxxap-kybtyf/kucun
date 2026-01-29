@@ -206,7 +206,8 @@ async function collectPaymentRecordEvents(): Promise<LedgerEvent[]> {
         amount: Number(payment.paymentAmount ?? 0),
         referenceId: payment.id,
         referenceNumber: payment.paymentNumber,
-        description: payment.paymentType === 'prepayment' ? '预收款' : '订单收款',
+        description:
+          payment.paymentType === 'prepayment' ? '预收款' : '订单收款',
         occurredAt: toDate(payment.paymentDate),
         metadata: {
           source: 'payment_record',

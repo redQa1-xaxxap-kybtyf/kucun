@@ -99,7 +99,8 @@ function parseArgs(argv: string[]): Options {
   const take = takeRaw ? Number(takeRaw) : undefined;
 
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
-  const outPrefix = outPrefixRaw || path.join('test-results', `full-audit-${ts}`);
+  const outPrefix =
+    outPrefixRaw || path.join('test-results', `full-audit-${ts}`);
 
   return {
     startDate,
@@ -108,7 +109,10 @@ function parseArgs(argv: string[]): Options {
     format,
     batchSize:
       Number.isFinite(batchSizeRaw) && batchSizeRaw > 0 ? batchSizeRaw : 200,
-    take: take !== undefined && Number.isFinite(take) && take > 0 ? take : undefined,
+    take:
+      take !== undefined && Number.isFinite(take) && take > 0
+        ? take
+        : undefined,
     failOnIssues: hasFlag('--fail'),
   };
 }
@@ -172,7 +176,11 @@ async function auditAccountStatements(batchSize: number): Promise<Anomaly[]> {
     const ids = statements.map(s => s.id);
     const txs = await prisma.statementTransaction.findMany({
       where: { statementId: { in: ids } },
-      orderBy: [{ transactionDate: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }],
+      orderBy: [
+        { transactionDate: 'asc' },
+        { createdAt: 'asc' },
+        { id: 'asc' },
+      ],
       select: {
         id: true,
         statementId: true,
@@ -285,7 +293,10 @@ async function auditAccountStatements(batchSize: number): Promise<Anomaly[]> {
         }
 
         // 复算 statement 汇总字段（对齐 partner-ledger-service 的规则）
-        if (tx.transactionType === 'sale' || tx.transactionType === 'purchase') {
+        if (
+          tx.transactionType === 'sale' ||
+          tx.transactionType === 'purchase'
+        ) {
           expectedOrders += 1;
         }
         if (
@@ -395,7 +406,10 @@ async function auditAccountStatements(batchSize: number): Promise<Anomaly[]> {
 
 async function auditPayables(options: Options): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
   let cursorId: string | undefined;
 
   while (true) {
@@ -432,7 +446,9 @@ async function auditPayables(options: Options): Promise<Anomaly[]> {
       const payableAmount = Number(p.payableAmount ?? 0);
       const paidAmount = Number(p.paidAmount ?? 0);
       const remaining = Number(p.remainingAmount ?? 0);
-      const expectedRemaining = roundCurrency(Math.max(0, payableAmount - paidAmount));
+      const expectedRemaining = roundCurrency(
+        Math.max(0, payableAmount - paidAmount)
+      );
 
       if (!nearlyEqual(remaining, expectedRemaining, 0.5)) {
         anomalies.push({
@@ -454,7 +470,7 @@ async function auditPayables(options: Options): Promise<Anomaly[]> {
         anomalies.push({
           domain: 'payables',
           code: 'PAYABLE_PAID_AMOUNT_MISMATCH',
-          message: "paidAmount != sum(paymentOut confirmed)",
+          message: 'paidAmount != sum(paymentOut confirmed)',
           entityType: 'PayableRecord',
           entityId: p.id,
           entityNumber: p.payableNumber,
@@ -541,7 +557,13 @@ async function auditInventory(options: Options): Promise<Anomaly[]> {
         });
       }
 
-      keySet.add(pvBatchKey(inv.productId, inv.variantId ?? null, inv.batchNumber ?? null));
+      keySet.add(
+        pvBatchKey(
+          inv.productId,
+          inv.variantId ?? null,
+          inv.batchNumber ?? null
+        )
+      );
       productIds.add(inv.productId);
     }
 
@@ -553,13 +575,21 @@ async function auditInventory(options: Options): Promise<Anomaly[]> {
 
     const costMap = new Map<string, number>();
     for (const row of costGroups) {
-      const key = pvBatchKey(row.productId, row.variantId ?? null, row.batchNumber ?? null);
+      const key = pvBatchKey(
+        row.productId,
+        row.variantId ?? null,
+        row.batchNumber ?? null
+      );
       if (!keySet.has(key)) continue;
       costMap.set(key, Number(row._sum.remainingQty ?? 0));
     }
 
     for (const inv of inventories) {
-      const key = pvBatchKey(inv.productId, inv.variantId ?? null, inv.batchNumber ?? null);
+      const key = pvBatchKey(
+        inv.productId,
+        inv.variantId ?? null,
+        inv.batchNumber ?? null
+      );
       const invQty = Number(inv.quantity ?? 0);
       const queueQty = Number(costMap.get(key) ?? 0);
 
@@ -587,13 +617,18 @@ async function auditInventory(options: Options): Promise<Anomaly[]> {
 
 async function auditSalesOutbound(options: Options): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
 
   let cursorId: string | undefined;
   let scanned = 0;
 
   while (true) {
-    const remainingTake = options.take ? Math.max(0, options.take - scanned) : undefined;
+    const remainingTake = options.take
+      ? Math.max(0, options.take - scanned)
+      : undefined;
     const pageTake = remainingTake
       ? Math.min(options.batchSize, remainingTake)
       : options.batchSize;
@@ -674,7 +709,11 @@ async function auditSalesOutbound(options: Options): Promise<Anomaly[]> {
             createdAt: order.createdAt.toISOString(),
             expected: 0,
             actual: roundCurrency(actual),
-            extra: { pv, orderType: order.orderType, transferMode: order.transferMode },
+            extra: {
+              pv,
+              orderType: order.orderType,
+              transferMode: order.transferMode,
+            },
           });
           continue;
         }
@@ -691,7 +730,11 @@ async function auditSalesOutbound(options: Options): Promise<Anomaly[]> {
             expected: roundCurrency(expected),
             actual: roundCurrency(actual),
             diff: roundCurrency(actual - expected),
-            extra: { pv, orderType: order.orderType, transferMode: order.transferMode },
+            extra: {
+              pv,
+              orderType: order.orderType,
+              transferMode: order.transferMode,
+            },
           });
           continue;
         }
@@ -708,7 +751,11 @@ async function auditSalesOutbound(options: Options): Promise<Anomaly[]> {
             expected: roundCurrency(expected),
             actual: roundCurrency(actual),
             diff: roundCurrency(actual - expected),
-            extra: { pv, orderType: order.orderType, transferMode: order.transferMode },
+            extra: {
+              pv,
+              orderType: order.orderType,
+              transferMode: order.transferMode,
+            },
           });
         }
       }
@@ -720,20 +767,28 @@ async function auditSalesOutbound(options: Options): Promise<Anomaly[]> {
 
 async function auditSalesFinancials(options: Options): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
 
   let cursorId: string | undefined;
   let scanned = 0;
 
   while (true) {
-    const remainingTake = options.take ? Math.max(0, options.take - scanned) : undefined;
+    const remainingTake = options.take
+      ? Math.max(0, options.take - scanned)
+      : undefined;
     const pageTake = remainingTake
       ? Math.min(options.batchSize, remainingTake)
       : options.batchSize;
     if (pageTake <= 0) break;
 
     const orders = await prisma.salesOrder.findMany({
-      where: { ...whereCreatedAt, status: { in: ['confirmed', 'shipped', 'completed'] } },
+      where: {
+        ...whereCreatedAt,
+        status: { in: ['confirmed', 'shipped', 'completed'] },
+      },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
       take: pageTake,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
@@ -774,7 +829,10 @@ async function auditSalesFinancials(options: Options): Promise<Anomaly[]> {
     });
     const prepaymentSumMap = new Map<string, number>();
     for (const row of prepaymentGroups) {
-      prepaymentSumMap.set(row.salesOrderId, Number(row._sum.appliedAmount ?? 0));
+      prepaymentSumMap.set(
+        row.salesOrderId,
+        Number(row._sum.appliedAmount ?? 0)
+      );
     }
 
     for (const order of orders) {
@@ -870,7 +928,10 @@ async function auditPaymentRecords(options: Options): Promise<Anomaly[]> {
       const applied = Number(p.appliedAmount ?? 0);
       const expected = roundCurrency(actual + rounding);
 
-      if (['confirmed', 'applied'].includes(p.status) && !nearlyEqual(paymentAmount, expected, 0.01)) {
+      if (
+        ['confirmed', 'applied'].includes(p.status) &&
+        !nearlyEqual(paymentAmount, expected, 0.01)
+      ) {
         anomalies.push({
           domain: 'payments',
           code: 'PAYMENT_AMOUNT_MISMATCH',
@@ -886,7 +947,10 @@ async function auditPaymentRecords(options: Options): Promise<Anomaly[]> {
         });
       }
 
-      if (p.paymentType === 'prepayment' && applied - paymentAmount > EPS_CURRENCY) {
+      if (
+        p.paymentType === 'prepayment' &&
+        applied - paymentAmount > EPS_CURRENCY
+      ) {
         anomalies.push({
           domain: 'payments',
           code: 'PREPAYMENT_APPLIED_GT_TOTAL',
@@ -923,7 +987,10 @@ async function auditPaymentRecords(options: Options): Promise<Anomaly[]> {
 
 async function auditReturnsAndRefunds(options: Options): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
 
   let cursorId: string | undefined;
   while (true) {
@@ -949,7 +1016,9 @@ async function auditReturnsAndRefunds(options: Options): Promise<Anomaly[]> {
       const refundAmount = Number(r.refundAmount ?? 0);
       const processed = Number(r.processedAmount ?? 0);
       const remaining = Number(r.remainingAmount ?? 0);
-      const expectedRemaining = roundCurrency(Math.max(0, refundAmount - processed));
+      const expectedRemaining = roundCurrency(
+        Math.max(0, refundAmount - processed)
+      );
 
       if (processed - refundAmount > EPS_CURRENCY) {
         anomalies.push({
@@ -985,7 +1054,7 @@ async function auditReturnsAndRefunds(options: Options): Promise<Anomaly[]> {
         anomalies.push({
           domain: 'returns-refunds',
           code: 'REFUND_COMPLETED_BUT_REMAINING',
-          message: "completed but remaining>0",
+          message: 'completed but remaining>0',
           entityType: 'RefundRecord',
           entityId: r.id,
           entityNumber: r.refundNumber,
@@ -998,7 +1067,12 @@ async function auditReturnsAndRefunds(options: Options): Promise<Anomaly[]> {
 
   const returnOrders = await prisma.returnOrder.findMany({
     where: { ...whereCreatedAt, status: { not: 'draft' } },
-    select: { id: true, returnNumber: true, refundAmount: true, createdAt: true },
+    select: {
+      id: true,
+      returnNumber: true,
+      refundAmount: true,
+      createdAt: true,
+    },
     orderBy: { createdAt: 'asc' },
   });
   if (returnOrders.length === 0) return anomalies;
@@ -1055,7 +1129,10 @@ async function auditReturnsAndRefunds(options: Options): Promise<Anomaly[]> {
 
 async function auditFactoryShipments(options: Options): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
   let cursorId: string | undefined;
 
   while (true) {
@@ -1072,7 +1149,12 @@ async function auditFactoryShipments(options: Options): Promise<Anomaly[]> {
         depositAmount: true,
         createdAt: true,
         items: {
-          select: { supplierId: true, quantity: true, unitCost: true, totalPrice: true },
+          select: {
+            supplierId: true,
+            quantity: true,
+            unitCost: true,
+            totalPrice: true,
+          },
         },
       },
     });
@@ -1133,7 +1215,10 @@ async function auditFactoryShipments(options: Options): Promise<Anomaly[]> {
       }
 
       const baseCost = roundCurrency(
-        Array.from(supplierCost.values()).reduce((s, v) => s + Math.max(0, v), 0)
+        Array.from(supplierCost.values()).reduce(
+          (s, v) => s + Math.max(0, v),
+          0
+        )
       );
       const deposit = roundCurrency(
         Math.min(baseCost, Math.max(0, Number(o.depositAmount ?? 0)))
@@ -1169,7 +1254,8 @@ async function auditFactoryShipments(options: Options): Promise<Anomaly[]> {
         anomalies.push({
           domain: 'factory-shipment',
           code: 'FACTORY_PAYABLE_MISSING',
-          message: "eligible but no PayableRecord(sourceType='factory_shipment')",
+          message:
+            "eligible but no PayableRecord(sourceType='factory_shipment')",
           entityType: 'FactoryShipmentOrder',
           entityId: o.id,
           entityNumber: o.orderNumber,
@@ -1186,7 +1272,10 @@ async function auditFactoryShipments(options: Options): Promise<Anomaly[]> {
 
 async function auditPurchaseOrders(options: Options): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
   let cursorId: string | undefined;
 
   while (true) {
@@ -1229,11 +1318,15 @@ async function auditPurchaseOrders(options: Options): Promise<Anomaly[]> {
         });
       }
 
-      if (o.items.length === 0 && Math.abs(Number(o.totalAmount ?? 0)) > EPS_CURRENCY) {
+      if (
+        o.items.length === 0 &&
+        Math.abs(Number(o.totalAmount ?? 0)) > EPS_CURRENCY
+      ) {
         anomalies.push({
           domain: 'purchase',
           code: 'PURCHASE_NO_ITEMS_NONZERO_TOTAL',
-          message: '采购单无明细但 totalAmount != 0（常见于历史数据断链/删除明细）',
+          message:
+            '采购单无明细但 totalAmount != 0（常见于历史数据断链/删除明细）',
           entityType: 'PurchaseOrder',
           entityId: o.id,
           entityNumber: o.orderNumber,
@@ -1248,7 +1341,8 @@ async function auditPurchaseOrders(options: Options): Promise<Anomaly[]> {
         if (!inb.purchaseOrderItemId) continue;
         inboundByItem.set(
           inb.purchaseOrderItemId,
-          (inboundByItem.get(inb.purchaseOrderItemId) ?? 0) + Number(inb.quantity ?? 0)
+          (inboundByItem.get(inb.purchaseOrderItemId) ?? 0) +
+            Number(inb.quantity ?? 0)
         );
       }
 
@@ -1257,7 +1351,8 @@ async function auditPurchaseOrders(options: Options): Promise<Anomaly[]> {
         anomalies.push({
           domain: 'purchase',
           code: 'PURCHASE_INBOUND_ITEM_LINK_MISSING',
-          message: '入库记录已关联采购单但缺少 purchaseOrderItemId（无法按明细对账/追溯）',
+          message:
+            '入库记录已关联采购单但缺少 purchaseOrderItemId（无法按明细对账/追溯）',
           entityType: 'InboundRecord',
           entityId: inb.id,
           entityNumber: o.orderNumber,
@@ -1291,9 +1386,14 @@ async function auditPurchaseOrders(options: Options): Promise<Anomaly[]> {
   return anomalies;
 }
 
-async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]> {
+async function auditInboundOutboundRecords(
+  options: Options
+): Promise<Anomaly[]> {
   const anomalies: Anomaly[] = [];
-  const whereCreatedAt = buildCreatedAtWhere(options.startDate, options.endDate);
+  const whereCreatedAt = buildCreatedAtWhere(
+    options.startDate,
+    options.endDate
+  );
 
   // InboundRecord: totalCost ~ unitCost * quantity；采购入库但缺少 purchaseOrderId/itemId 提示
   let inboundCursor: string | undefined;
@@ -1322,8 +1422,14 @@ async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]>
 
     for (const r of inbound) {
       const qty = Number(r.quantity ?? 0);
-      const unitCost = r.unitCost !== null && r.unitCost !== undefined ? Number(r.unitCost) : null;
-      const totalCost = r.totalCost !== null && r.totalCost !== undefined ? Number(r.totalCost) : null;
+      const unitCost =
+        r.unitCost !== null && r.unitCost !== undefined
+          ? Number(r.unitCost)
+          : null;
+      const totalCost =
+        r.totalCost !== null && r.totalCost !== undefined
+          ? Number(r.totalCost)
+          : null;
 
       if (qty < -EPS_QTY) {
         anomalies.push({
@@ -1344,7 +1450,8 @@ async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]>
           anomalies.push({
             domain: 'inventory-inbound',
             code: 'INBOUND_TOTAL_COST_MISMATCH',
-            message: 'totalCost != unitCost * quantity（可能存在费用分摊/历史写入差异）',
+            message:
+              'totalCost != unitCost * quantity（可能存在费用分摊/历史写入差异）',
             entityType: 'InboundRecord',
             entityId: r.id,
             entityNumber: r.recordNumber,
@@ -1361,7 +1468,8 @@ async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]>
         anomalies.push({
           domain: 'inventory-inbound',
           code: 'INBOUND_PURCHASE_ORDER_LINK_MISSING',
-          message: "reason='purchase' 但未关联 purchaseOrderId（导致采购-入库链路断）",
+          message:
+            "reason='purchase' 但未关联 purchaseOrderId（导致采购-入库链路断）",
           entityType: 'InboundRecord',
           entityId: r.id,
           entityNumber: r.recordNumber,
@@ -1398,8 +1506,14 @@ async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]>
 
     for (const r of outbound) {
       const qty = Number(r.quantity ?? 0);
-      const unitCost = r.unitCost !== null && r.unitCost !== undefined ? Number(r.unitCost) : null;
-      const totalCost = r.totalCost !== null && r.totalCost !== undefined ? Number(r.totalCost) : null;
+      const unitCost =
+        r.unitCost !== null && r.unitCost !== undefined
+          ? Number(r.unitCost)
+          : null;
+      const totalCost =
+        r.totalCost !== null && r.totalCost !== undefined
+          ? Number(r.totalCost)
+          : null;
 
       if (qty < -EPS_QTY) {
         anomalies.push({
@@ -1420,7 +1534,8 @@ async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]>
           anomalies.push({
             domain: 'inventory-outbound',
             code: 'OUTBOUND_TOTAL_COST_MISMATCH',
-            message: 'totalCost != unitCost * quantity（含分摊费用时可能合理，但需一致口径）',
+            message:
+              'totalCost != unitCost * quantity（含分摊费用时可能合理，但需一致口径）',
             entityType: 'OutboundRecord',
             entityId: r.id,
             entityNumber: r.recordNumber,
@@ -1428,7 +1543,12 @@ async function auditInboundOutboundRecords(options: Options): Promise<Anomaly[]>
             expected,
             actual: roundCurrency(totalCost),
             diff: roundCurrency(totalCost - expected),
-            extra: { productId: r.productId, batchNumber: r.batchNumber, reason: r.reason, salesOrderId: r.salesOrderId },
+            extra: {
+              productId: r.productId,
+              batchNumber: r.batchNumber,
+              reason: r.reason,
+              salesOrderId: r.salesOrderId,
+            },
           });
         }
       }

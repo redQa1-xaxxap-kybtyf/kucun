@@ -39,7 +39,8 @@ async function main() {
   console.log('订单总额:', order?.totalAmount);
 
   const itemsTotal =
-    order?.items.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0) || 0;
+    order?.items.reduce((sum, item) => sum + Number(item.subtotal ?? 0), 0) ||
+    0;
   console.log('明细合计:', itemsTotal);
 
   const feesTotal =

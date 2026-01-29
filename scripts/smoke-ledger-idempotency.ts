@@ -13,7 +13,9 @@ const databaseUrl = process.env.DATABASE_URL;
 if (databaseUrl) {
   try {
     const url = new URL(databaseUrl);
-    const connectionLimit = Number(url.searchParams.get('connection_limit') ?? '0');
+    const connectionLimit = Number(
+      url.searchParams.get('connection_limit') ?? '0'
+    );
     const poolTimeout = Number(url.searchParams.get('pool_timeout') ?? '0');
 
     if (!connectionLimit || connectionLimit < DESIRED_CONNECTION_LIMIT) {
@@ -24,7 +26,10 @@ if (databaseUrl) {
     }
 
     if (!poolTimeout || poolTimeout < DESIRED_POOL_TIMEOUT_SECONDS) {
-      url.searchParams.set('pool_timeout', String(DESIRED_POOL_TIMEOUT_SECONDS));
+      url.searchParams.set(
+        'pool_timeout',
+        String(DESIRED_POOL_TIMEOUT_SECONDS)
+      );
     }
 
     process.env.DATABASE_URL = url.toString();
@@ -99,7 +104,9 @@ async function main() {
       )
     );
 
-    const uniqueTransactionIds = new Set([seeded, ...results].map(row => row.id));
+    const uniqueTransactionIds = new Set(
+      [seeded, ...results].map(row => row.id)
+    );
     const count = await prisma.statementTransaction.count({
       where: {
         referenceId,
@@ -131,7 +138,9 @@ async function main() {
       await prisma.accountStatement
         .deleteMany({ where: { entityId: customerId } })
         .catch(() => undefined);
-      await prisma.customer.delete({ where: { id: customerId } }).catch(() => undefined);
+      await prisma.customer
+        .delete({ where: { id: customerId } })
+        .catch(() => undefined);
     }
 
     await prisma.$disconnect();

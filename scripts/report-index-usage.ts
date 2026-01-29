@@ -109,7 +109,10 @@ function formatMsFromPicoSeconds(pico: bigint): string {
   return `${ms.toFixed(2)}ms`;
 }
 
-function printTable(rows: Array<Record<string, unknown>>, keys: string[]): void {
+function printTable(
+  rows: Array<Record<string, unknown>>,
+  keys: string[]
+): void {
   if (rows.length === 0) {
     return;
   }
@@ -124,10 +127,7 @@ function printTable(rows: Array<Record<string, unknown>>, keys: string[]): void 
   );
 
   const widths = keys.map((key, i) =>
-    Math.max(
-      key.length,
-      ...normalized.map(cols => cols[i]?.length ?? 0)
-    )
+    Math.max(key.length, ...normalized.map(cols => cols[i]?.length ?? 0))
   );
 
   const header = keys
@@ -186,7 +186,15 @@ async function main(): Promise<void> {
         '@unique': schemaStats.fieldLevelUnique,
       },
     ],
-    ['schemaPath', 'modelCount', '@@index', '@@unique', '@@fulltext', '@index', '@unique']
+    [
+      'schemaPath',
+      'modelCount',
+      '@@index',
+      '@@unique',
+      '@@fulltext',
+      '@index',
+      '@unique',
+    ]
   );
 
   if (!process.env.DATABASE_URL) {
@@ -227,13 +235,14 @@ async function main(): Promise<void> {
 
     // eslint-disable-next-line no-console
     console.log('\n[db] top tables by index count');
-    printTable(indexCounts.slice(0, top) as unknown as Array<Record<string, unknown>>, [
-      'TABLE_NAME',
-      'indexCount',
-      'uniqueIndexCount',
-    ]);
+    printTable(
+      indexCounts.slice(0, top) as unknown as Array<Record<string, unknown>>,
+      ['TABLE_NAME', 'indexCount', 'uniqueIndexCount']
+    );
 
-    const perfSchemaExists = await prisma.$queryRawUnsafe<Array<{ ok: number }>>(
+    const perfSchemaExists = await prisma.$queryRawUnsafe<
+      Array<{ ok: number }>
+    >(
       "SELECT 1 AS ok FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='performance_schema' LIMIT 1"
     );
 
@@ -323,7 +332,9 @@ async function main(): Promise<void> {
 
     if (topNoIndex.length === 0) {
       // eslint-disable-next-line no-console
-      console.log('\n[performance_schema] no statements flagged as NO_INDEX_USED / NO_GOOD_INDEX_USED.');
+      console.log(
+        '\n[performance_schema] no statements flagged as NO_INDEX_USED / NO_GOOD_INDEX_USED.'
+      );
     } else {
       // eslint-disable-next-line no-console
       console.log(`\n[performance_schema] top ${top} digests by no-index-used`);

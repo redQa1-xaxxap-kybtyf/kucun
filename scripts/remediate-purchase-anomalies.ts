@@ -51,7 +51,9 @@ Notes:
     const idx = argv.findIndex(a => a === '--batchSize');
     return idx >= 0 ? argv[idx + 1] : undefined;
   })();
-  const batchSize = batchSizeRaw ? Math.max(10, Number(batchSizeRaw) || 200) : 200;
+  const batchSize = batchSizeRaw
+    ? Math.max(10, Number(batchSizeRaw) || 200)
+    : 200;
 
   const readMode = (
     key: string,
@@ -180,12 +182,16 @@ async function main() {
 
       // 2) 回写明细 totalPrice
       const itemUpdates: Array<Promise<unknown>> = [];
-      const computedItemTotals: Array<{ quantity: number; unitPrice: number }> = [];
+      const computedItemTotals: Array<{ quantity: number; unitPrice: number }> =
+        [];
 
       for (const item of order.items) {
         const quantity = Number(item.quantity ?? 0);
         const unitPrice = Number(item.unitPrice ?? 0);
-        const computed = computePurchaseOrderItemTotalPrice(quantity, unitPrice);
+        const computed = computePurchaseOrderItemTotalPrice(
+          quantity,
+          unitPrice
+        );
         computedItemTotals.push({ quantity, unitPrice });
 
         const stored = roundToTwoDecimals(Number(item.totalPrice ?? 0));
@@ -207,8 +213,11 @@ async function main() {
       }
 
       // 3) 回写订单 totalAmount
-      const computedOrderTotal = calculatePurchaseOrderTotal(computedItemTotals);
-      const storedOrderTotal = roundToTwoDecimals(Number(order.totalAmount ?? 0));
+      const computedOrderTotal =
+        calculatePurchaseOrderTotal(computedItemTotals);
+      const storedOrderTotal = roundToTwoDecimals(
+        Number(order.totalAmount ?? 0)
+      );
       if (Math.abs(storedOrderTotal - computedOrderTotal) > 0.01) {
         if (options.apply) {
           await prisma.purchaseOrder.update({
@@ -395,7 +404,9 @@ async function main() {
     }
   }
 
-  console.log('======================================================================');
+  console.log(
+    '======================================================================'
+  );
   console.log(`✅ 扫描采购单：${scannedOrders}`);
   console.log(
     `📌 结果：fixedItems=${fixedItems} fixedOrders=${fixedOrders} fixedEmptyOrders=${fixedEmptyOrders}`
