@@ -97,6 +97,11 @@ const UNIT_MAPPING: Record<string, string> = {
   ml: 'mL',
 };
 
+const coerceNumeric = (value: unknown): number => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
 // 记住“新建销售订单”页面最近一次选择的订单类型，避免刷新/重载后总是回到 NORMAL
 const ORDER_TYPE_STORAGE_KEY = 'salesOrders.create.defaultOrderType';
 
@@ -470,11 +475,6 @@ export function ERPSalesOrderForm({
     }
   }, [form, mode, supplierId]);
 
-  const coerceNumeric = (value: unknown): number => {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-
   const { customerPaidFees, companyPaidFees } = React.useMemo(
     () =>
       (feeItems || []).reduce(
@@ -492,30 +492,62 @@ export function ERPSalesOrderForm({
     [feeItems]
   );
 
-  const totalAmount = watchedItems.reduce((sum, item) => {
-    // 计算片单价（如果当前显示单位是件，需要转换为片单价）
-    // 修复: 避免在单价换算时提前四舍五入导致的合计误差。
-    // 统一与每行金额相同的计算方式：若显示单位为“件”，用 (片数/每件片数)*件单价；否则用 片数*片单价。
-    const piecePriceForCalculation =
-      item.displayUnit === '件' && item.unitPrice && item.piecesPerUnit
-        ? item.unitPrice / item.piecesPerUnit // 不做2位小数的提前舍入
-        : item.unitPrice || 0;
+  const totalAmount = React.useMemo(
+    () =>
+      watchedItems.reduce((sum, item) => {
+        // 计算片单价（如果当前显示单位是件，需要转换为片单价）
+        // 修复: 避免在单价换算时提前四舍五入导致的合计误差。
+        // 统一与每行金额相同的计算方式：若显示单位为“件”，用 (片数/每件片数)*件单价；否则用 片数*片单价。
+        const piecePriceForCalculation =
+          item.displayUnit === '件' && item.unitPrice && item.piecesPerUnit
+            ? item.unitPrice / item.piecesPerUnit // 不做2位小数的提前舍入
+            : item.unitPrice || 0;
 
-    // 金额 = 系统数量（片数） × 片单价
-    return sum + (item.quantity || 0) * piecePriceForCalculation;
-  }, 0);
+        // 金额 = 系统数量（片数） × 片单价
+        return sum + coerceNumeric(item.quantity) * piecePriceForCalculation;
+      }, 0),
+    [watchedItems]
+  );
+
+  const totalQuantityPieces = React.useMemo(
+    () =>
+      watchedItems.reduce((sum, item) => sum + coerceNumeric(item.quantity), 0),
+    [watchedItems]
+  );
 
   const orderTotalWithFees =
     totalAmount + customerPaidFees + roundingAdjustment;
 
-  const totalLocalQuantity = watchedItems.reduce(
-    (sum, item) => sum + coerceNumeric(item.localQuantity),
-    0
+  const totalLocalQuantity = React.useMemo(
+    () =>
+      watchedItems.reduce(
+        (sum, item) => sum + coerceNumeric(item.localQuantity),
+        0
+      ),
+    [watchedItems]
   );
-  const totalTransferQuantity = watchedItems.reduce(
-    (sum, item) => sum + coerceNumeric(item.transferQuantity),
-    0
+  const totalTransferQuantity = React.useMemo(
+    () =>
+      watchedItems.reduce(
+        (sum, item) => sum + coerceNumeric(item.transferQuantity),
+        0
+      ),
+    [watchedItems]
   );
+
+  const totalTransferCost = React.useMemo(
+    () =>
+      watchedItems.reduce((sum, item) => {
+        const unitCost = coerceNumeric(item.unitCost);
+        const effectiveQuantity =
+          transferMode === 'MIXED'
+            ? coerceNumeric(item.transferQuantity)
+            : coerceNumeric(item.quantity);
+        return sum + unitCost * effectiveQuantity;
+      }, 0),
+    [watchedItems, transferMode]
+  );
+
   const formatCurrency = (value: number) =>
     value.toLocaleString('zh-CN', {
       minimumFractionDigits: 2,
@@ -1499,12 +1531,10 @@ export function ERPSalesOrderForm({
                 <div className="flex items-center justify-between rounded border bg-green-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">总数量</span>
                   <span className="text-sm font-semibold text-green-600">
-                    {watchedItems
-                      .reduce((sum, item) => sum + (item.quantity || 0), 0)
-                      .toLocaleString('zh-CN', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}{' '}
+                    {totalQuantityPieces.toLocaleString('zh-CN', {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}{' '}
                     片
                   </span>
                 </div>
@@ -1599,17 +1629,7 @@ export function ERPSalesOrderForm({
                       总成本
                     </span>
                     <span className="text-sm font-semibold text-[hsl(var(--color-primary))]">
-                      ￥
-                      {formatCurrency(
-                        watchedItems.reduce((sum, item) => {
-                          const unitCost = Number(item.unitCost) || 0;
-                          const effectiveQuantity =
-                            transferMode === 'MIXED'
-                              ? Number(item.transferQuantity) || 0
-                              : Number(item.quantity) || 0;
-                          return sum + unitCost * effectiveQuantity;
-                        }, 0)
-                      )}
+                      ￥{formatCurrency(totalTransferCost)}
                     </span>
                   </div>
                 )}
