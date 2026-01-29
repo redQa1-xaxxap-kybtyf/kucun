@@ -2,8 +2,8 @@
 
 import { ImageIcon, ZoomIn } from 'lucide-react';
 import Image from 'next/image';
-import { useMemo } from 'react';
-import { PhotoProvider, PhotoView } from 'react-photo-view';
+import dynamic from 'next/dynamic';
+import { useMemo, useState } from 'react';
 
 import type { ProductImage } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
@@ -47,6 +47,23 @@ interface GroupedImages {
   main: DisplayImage[];
   effect: DisplayImage[];
 }
+
+interface LightboxImage {
+  key: string;
+  src: string;
+}
+
+const PhotoSlider = dynamic(
+  () => import('react-photo-view').then(mod => mod.PhotoSlider),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70">
+        <div className="text-sm text-white">加载预览组件...</div>
+      </div>
+    ),
+  }
+);
 
 /**
  * 产品图片展示组件（按类型分组）
@@ -96,6 +113,23 @@ export function ProductImageGallery({
     groupedImages.main.length +
     groupedImages.effect.length;
 
+  const lightboxImages: LightboxImage[] = useMemo(() => {
+    const allImages = [
+      ...groupedImages.thumbnail,
+      ...groupedImages.main,
+      ...groupedImages.effect,
+    ];
+
+    return allImages.map((img, index) => ({
+      key: `${img.type}-${index}`,
+      src: img.url,
+    }));
+  }, [groupedImages.effect, groupedImages.main, groupedImages.thumbnail]);
+
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxMounted, setLightboxMounted] = useState(false);
+
   // 无图片
   if (totalCount === 0) {
     return (
@@ -121,7 +155,11 @@ export function ProductImageGallery({
   }
 
   // 渲染图片组
-  const renderImageGroup = (type: ImageType, images: DisplayImage[]) => {
+  const renderImageGroup = (
+    type: ImageType,
+    images: DisplayImage[],
+    offset: number
+  ) => {
     if (images.length === 0) return null;
 
     const config = IMAGE_TYPE_CONFIG[type];
@@ -139,25 +177,31 @@ export function ProductImageGallery({
         </div>
         <div className="flex flex-wrap gap-2">
           {images.map((img, index) => (
-            <PhotoView key={`${type}-${index}`} src={img.url}>
-              <div
-                className={cn(
-                  'group relative h-20 w-20 cursor-zoom-in overflow-hidden rounded-lg border-2 bg-white shadow-sm transition-all hover:shadow-md',
-                  config.borderColor
-                )}
-              >
-                <Image
-                  src={img.url}
-                  alt={`${productName} - ${config.label} ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="80px"
-                />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
-                  <ZoomIn className="h-4 w-4 text-white drop-shadow" />
-                </div>
+            <button
+              key={`${type}-${index}`}
+              type="button"
+              onClick={() => {
+                setLightboxIndex(offset + index);
+                setLightboxMounted(true);
+                setLightboxVisible(true);
+              }}
+              className={cn(
+                'group relative h-20 w-20 cursor-zoom-in overflow-hidden rounded-lg border-2 bg-white shadow-sm transition-all hover:shadow-md',
+                config.borderColor
+              )}
+              aria-label={`预览 ${productName} - ${config.label} ${index + 1}`}
+            >
+              <Image
+                src={img.url}
+                alt={`${productName} - ${config.label} ${index + 1}`}
+                fill
+                className="object-cover"
+                sizes="80px"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+                <ZoomIn className="h-4 w-4 text-white drop-shadow" />
               </div>
-            </PhotoView>
+            </button>
           ))}
         </div>
       </div>
@@ -176,7 +220,29 @@ export function ProductImageGallery({
         </h4>
       </div>
       <div className="p-4">
-        <PhotoProvider
+        <div className="space-y-4">
+          {renderImageGroup('thumbnail', groupedImages.thumbnail, 0)}
+          {renderImageGroup(
+            'main',
+            groupedImages.main,
+            groupedImages.thumbnail.length
+          )}
+          {renderImageGroup(
+            'effect',
+            groupedImages.effect,
+            groupedImages.thumbnail.length + groupedImages.main.length
+          )}
+        </div>
+      </div>
+
+      {lightboxMounted && (
+        <PhotoSlider
+          images={lightboxImages}
+          visible={lightboxVisible}
+          index={lightboxIndex}
+          onIndexChange={setLightboxIndex}
+          onClose={() => setLightboxVisible(false)}
+          afterClose={() => setLightboxMounted(false)}
           speed={() => 300}
           maskOpacity={0.9}
           toolbarRender={({ onScale, scale, onRotate, rotate }) => (
@@ -234,14 +300,8 @@ export function ProductImageGallery({
               </button>
             </div>
           )}
-        >
-          <div className="space-y-4">
-            {renderImageGroup('thumbnail', groupedImages.thumbnail)}
-            {renderImageGroup('main', groupedImages.main)}
-            {renderImageGroup('effect', groupedImages.effect)}
-          </div>
-        </PhotoProvider>
-      </div>
+        />
+      )}
     </div>
   );
 }
