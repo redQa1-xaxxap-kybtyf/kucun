@@ -514,7 +514,10 @@ export function ReturnOrderForm({
                                                 {...quantityField}
                                                 onChange={e => {
                                                   quantityField.onChange(
-                                                    parseInt(e.target.value, 10) || 0
+                                                    parseInt(
+                                                      e.target.value,
+                                                      10
+                                                    ) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
@@ -541,7 +544,10 @@ export function ReturnOrderForm({
                                                 {...damagedField}
                                                 onChange={e => {
                                                   damagedField.onChange(
-                                                    parseInt(e.target.value, 10) || 0
+                                                    parseInt(
+                                                      e.target.value,
+                                                      10
+                                                    ) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
@@ -611,7 +617,10 @@ export function ReturnOrderForm({
                                                 {...quantityField}
                                                 onChange={e => {
                                                   quantityField.onChange(
-                                                    parseInt(e.target.value, 10) || 0
+                                                    parseInt(
+                                                      e.target.value,
+                                                      10
+                                                    ) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
@@ -638,7 +647,10 @@ export function ReturnOrderForm({
                                                 {...damagedField}
                                                 onChange={e => {
                                                   damagedField.onChange(
-                                                    parseInt(e.target.value, 10) || 0
+                                                    parseInt(
+                                                      e.target.value,
+                                                      10
+                                                    ) || 0
                                                   );
                                                   calculateSubtotal(index);
                                                 }}
