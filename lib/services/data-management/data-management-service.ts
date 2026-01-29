@@ -13,10 +13,10 @@ import { clearAllInventoryCache } from '@/lib/cache/inventory-cache';
 import { clearAllProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
-import { getFinanceOverview } from '@/lib/services/finance-statistics';
 import { getAnnualReport } from '@/lib/services/annual-report-service';
+import { getFinanceOverview } from '@/lib/services/finance-statistics';
 import { getMonthlyReport } from '@/lib/services/monthly-report-service';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { getProfitLossAnalysis } from '@/lib/services/profit-loss-service';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 import {
@@ -544,7 +544,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     verify: async ({ action }) => {
       if (action !== 'reset_trial') return [];
       const count = await prisma.returnOrderItem.count();
-      return count === 0 ? [] : [buildResidueError('return_order_items', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('return_order_items', count)];
     },
   },
   {
@@ -590,7 +592,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     verify: async ({ action }) => {
       if (action !== 'reset_trial') return [];
       const count = await prisma.purchaseOrderItem.count();
-      return count === 0 ? [] : [buildResidueError('purchase_order_items', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('purchase_order_items', count)];
     },
   },
   {
@@ -604,7 +608,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     verify: async ({ action }) => {
       if (action !== 'reset_trial') return [];
       const count = await prisma.salesOrderFeeItem.count();
-      return count === 0 ? [] : [buildResidueError('sales_order_fee_items', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('sales_order_fee_items', count)];
     },
   },
   {
@@ -633,7 +639,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     verify: async ({ action }) => {
       if (action !== 'reset_trial') return [];
       const count = await prisma.inventoryCostQueue.count();
-      return count === 0 ? [] : [buildResidueError('inventory_cost_queue', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('inventory_cost_queue', count)];
     },
   },
   {
@@ -767,7 +775,11 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     showInPreview: true,
     preview: async () => {
       const count = await prisma.fifoConsumptionLedger.count();
-      return { id: 'fifo_consumption_ledger', label: 'FIFO 成本消耗台账', count };
+      return {
+        id: 'fifo_consumption_ledger',
+        label: 'FIFO 成本消耗台账',
+        count,
+      };
     },
     execute: async () => {
       await prisma.fifoConsumptionLedger.deleteMany();
@@ -796,7 +808,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     verify: async ({ action }) => {
       if (action !== 'reset_trial') return [];
       const count = await prisma.batchSpecification.count();
-      return count === 0 ? [] : [buildResidueError('batch_specifications', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('batch_specifications', count)];
     },
   },
   {
@@ -815,7 +829,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
     verify: async ({ action }) => {
       if (action !== 'reset_trial') return [];
       const count = await prisma.temporaryProduct.count();
-      return count === 0 ? [] : [buildResidueError('temporary_products', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('temporary_products', count)];
     },
   },
   {
@@ -899,7 +915,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       const count =
         action === 'reset_trial'
           ? await prisma.returnOrder.count()
-          : await prisma.returnOrder.count({ where: buildActiveTestWhere() as any });
+          : await prisma.returnOrder.count({
+              where: buildActiveTestWhere() as any,
+            });
       return count === 0 ? [] : [buildResidueError('return_orders', count)];
     },
   },
@@ -943,7 +961,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       const count =
         action === 'reset_trial'
           ? await prisma.paymentRecord.count()
-          : await prisma.paymentRecord.count({ where: buildActiveTestWhere() as any });
+          : await prisma.paymentRecord.count({
+              where: buildActiveTestWhere() as any,
+            });
       return count === 0 ? [] : [buildResidueError('payment_records', count)];
     },
   },
@@ -987,7 +1007,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       const count =
         action === 'reset_trial'
           ? await prisma.refundRecord.count()
-          : await prisma.refundRecord.count({ where: buildActiveTestWhere() as any });
+          : await prisma.refundRecord.count({
+              where: buildActiveTestWhere() as any,
+            });
       return count === 0 ? [] : [buildResidueError('refund_records', count)];
     },
   },
@@ -1031,7 +1053,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       const count =
         action === 'reset_trial'
           ? await prisma.purchaseOrder.count()
-          : await prisma.purchaseOrder.count({ where: buildActiveTestWhere() as any });
+          : await prisma.purchaseOrder.count({
+              where: buildActiveTestWhere() as any,
+            });
       return count === 0 ? [] : [buildResidueError('purchase_orders', count)];
     },
   },
@@ -1123,7 +1147,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       const count =
         action === 'reset_trial'
           ? await prisma.payableRecord.count()
-          : await prisma.payableRecord.count({ where: buildActiveTestWhere() as any });
+          : await prisma.payableRecord.count({
+              where: buildActiveTestWhere() as any,
+            });
       return count === 0 ? [] : [buildResidueError('payable_records', count)];
     },
   },
@@ -1215,7 +1241,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
       const count =
         action === 'reset_trial'
           ? await prisma.expenseRecord.count()
-          : await prisma.expenseRecord.count({ where: buildActiveTestWhere() as any });
+          : await prisma.expenseRecord.count({
+              where: buildActiveTestWhere() as any,
+            });
       return count === 0 ? [] : [buildResidueError('expense_records', count)];
     },
   },
@@ -1296,7 +1324,10 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
         referenceIds: string[];
         types: TransactionType[];
       }> = [
-        { referenceIds: ids.salesOrderIds, types: ['sale', 'order_cancellation'] },
+        {
+          referenceIds: ids.salesOrderIds,
+          types: ['sale', 'order_cancellation'],
+        },
         { referenceIds: ids.returnOrderIds, types: ['sales_return'] },
         {
           referenceIds: ids.paymentRecordIds,
@@ -1392,7 +1423,9 @@ const CLEANUP_REGISTRY: CleanupRegistryEntry[] = [
         return [];
       }
       const count = await prisma.accountStatement.count();
-      return count === 0 ? [] : [buildResidueError('account_statements', count)];
+      return count === 0
+        ? []
+        : [buildResidueError('account_statements', count)];
     },
   },
 ];
@@ -1475,7 +1508,9 @@ async function writeSystemLog(
   action: DataManagementAction,
   level: 'info' | 'warning' | 'error',
   description: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  ipAddress?: string | null,
+  userAgent?: string | null
 ) {
   try {
     await prisma.systemLog.create({
@@ -1485,6 +1520,8 @@ async function writeSystemLog(
         action: `data-management:${action}`,
         description: description.slice(0, 191),
         userId,
+        ipAddress: ipAddress || null,
+        userAgent: userAgent || null,
         metadata: metadata ? JSON.stringify(metadata).slice(0, 191) : null,
       },
     });
@@ -1513,14 +1550,20 @@ function buildWriteLock(
   };
 }
 
-function getCleanupStageEntries(stage: CleanupStage, action: DataManagementAction) {
+function getCleanupStageEntries(
+  stage: CleanupStage,
+  action: DataManagementAction
+) {
   return CLEANUP_REGISTRY.filter(entry => {
     if (entry.stage !== stage) return false;
     return Boolean(entry.methodByAction[action]);
   });
 }
 
-async function executeCleanupStage(stage: CleanupStage, ctx: CleanupExecuteContext) {
+async function executeCleanupStage(
+  stage: CleanupStage,
+  ctx: CleanupExecuteContext
+) {
   const entries = getCleanupStageEntries(stage, ctx.action);
   for (const entry of entries) {
     await entry.execute(ctx);
@@ -2189,6 +2232,12 @@ export async function runDataManagementTask(taskId: string) {
 
   const action = task.action as DataManagementAction;
   const userId = task.requestedBy;
+  const scope = parseJson<{
+    ipAddress?: string | null;
+    userAgent?: string | null;
+  }>(task.scope);
+  const ipAddress = scope?.ipAddress ?? null;
+  const userAgent = scope?.userAgent ?? null;
 
   const updated = await prisma.dataManagementTask.updateMany({
     where: { id: taskId, status: 'queued' },
@@ -2204,10 +2253,19 @@ export async function runDataManagementTask(taskId: string) {
 
     const lock = buildWriteLock(taskId, userId, action);
     await setSystemWriteLock(lock);
-    await writeSystemLog(taskId, userId, action, 'info', '数据管理任务开始', {
+    await writeSystemLog(
       taskId,
+      userId,
       action,
-    });
+      'info',
+      '数据管理任务开始',
+      {
+        taskId,
+        action,
+      },
+      ipAddress,
+      userAgent
+    );
 
     // 预览统计可能非常耗时（大表 COUNT/SUM），执行阶段优先保证“尽快开始清理”，
     // 预览快照可由前端在执行前调用 /preview 并随执行请求传入（存入 task.preview）。
@@ -2270,7 +2328,9 @@ export async function runDataManagementTask(taskId: string) {
           taskId,
           action,
           verification,
-        }
+        },
+        ipAddress,
+        userAgent
       );
       return;
     }
@@ -2282,11 +2342,20 @@ export async function runDataManagementTask(taskId: string) {
       stage: 'S6',
     });
 
-    await writeSystemLog(taskId, userId, action, 'info', '数据管理任务完成', {
+    await writeSystemLog(
       taskId,
+      userId,
       action,
-      verification,
-    });
+      'info',
+      '数据管理任务完成',
+      {
+        taskId,
+        action,
+        verification,
+      },
+      ipAddress,
+      userAgent
+    );
   } catch (error) {
     await markTaskFailed(taskId, error);
     await writeSystemLog(
@@ -2299,7 +2368,9 @@ export async function runDataManagementTask(taskId: string) {
         taskId,
         action,
         error: error instanceof Error ? error.message : String(error),
-      }
+      },
+      ipAddress,
+      userAgent
     );
   } finally {
     await clearSystemWriteLock(taskId);

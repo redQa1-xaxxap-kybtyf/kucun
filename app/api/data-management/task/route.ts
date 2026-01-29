@@ -25,4 +25,3 @@ export const GET = withAuth(
   },
   { permissions: ['finance:manage'] }
 );
-

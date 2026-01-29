@@ -86,6 +86,11 @@ export const GET = withAuth(
       settings.forEach(setting => {
         const { key, value, dataType } = setting;
 
+        // systemVersion 由应用自身版本提供，忽略数据库中历史遗留的 systemVersion 设置值
+        if (key === 'systemVersion') {
+          return;
+        }
+
         // 根据数据类型转换值
         let parsedValue: unknown = value;
         try {

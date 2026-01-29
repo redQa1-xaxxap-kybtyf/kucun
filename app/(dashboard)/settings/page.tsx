@@ -9,7 +9,6 @@ import { Settings } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
-import { can } from '@/lib/auth/permissions';
 import {
   Card,
   CardContent,
@@ -17,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { can } from '@/lib/auth/permissions';
 
 // 未登录状态组件
 const LoginRequiredView = () => (
@@ -126,20 +126,20 @@ const SettingsPage = () => {
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
                 <Settings className="h-6 w-6 text-white" />
               </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    系统设置
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    {isAdmin ? '正在跳转到基本设置...' : '正在跳转到数据管理...'}
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  系统设置
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {isAdmin ? '正在跳转到基本设置...' : '正在跳转到数据管理...'}
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
 export default SettingsPage;
