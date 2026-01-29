@@ -1,13 +1,28 @@
 'use client';
 
 import { Package, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { ERPProductList } from '@/components/products/erp-product-list';
 import { Button } from '@/components/ui/button';
 import type { ProductQueryParams } from '@/lib/types/product';
+
+const ERPProductList = dynamic(
+  () =>
+    import('@/components/products/erp-product-list').then(
+      mod => mod.ERPProductList
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        产品列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface ProductsPageClientProps {
   initialParams: ProductQueryParams;
