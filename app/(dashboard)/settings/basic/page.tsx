@@ -7,13 +7,28 @@
 'use client';
 
 import { ArrowLeft, Settings } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-import { BasicSettingsForm } from '@/components/settings/BasicSettingsForm';
 import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { Button } from '@/components/ui/button';
 import { usePermissions } from '@/lib/utils/permissions';
+
+const BasicSettingsForm = dynamic(
+  () =>
+    import('@/components/settings/BasicSettingsForm').then(
+      mod => mod.BasicSettingsForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 const BasicSettingsPage = () => {
   const router = useRouter();
