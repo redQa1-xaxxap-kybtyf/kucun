@@ -1,10 +1,10 @@
 'use client';
 
 import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import React, { useCallback, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
-import { PricingResultDialog } from '@/components/factory-shipments/pricing-result-dialog';
 import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { Button } from '@/components/ui/button';
@@ -33,14 +33,19 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { getLatestPrice } from '@/hooks/use-price-history';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
-import {
-  calculateOrderPricing,
-  type ItemPricingResult,
-} from '@/lib/services/factory-shipment-pricing-service';
+import type { ItemPricingResult } from '@/lib/services/factory-shipment-pricing-service';
 import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
+
+const PricingResultDialog = dynamic(
+  () =>
+    import('@/components/factory-shipments/pricing-result-dialog').then(
+      mod => mod.PricingResultDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface ItemsTableProps {
   form: UseFormReturn<FactoryShipmentOrderFormData, any, any>;
@@ -86,7 +91,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     };
 
     // 计算建议销售价
-    const handleCalculatePricing = useCallback(() => {
+    const handleCalculatePricing = useCallback(async () => {
       setIsCalculating(true);
 
       try {
@@ -169,6 +174,10 @@ export const ItemsTable = React.memo<ItemsTableProps>(
               },
             } as FactoryShipmentOrderItem;
           }
+        );
+
+        const { calculateOrderPricing } = await import(
+          '@/lib/services/factory-shipment-pricing-service'
         );
 
         // 计算建议销售价
@@ -864,13 +873,15 @@ export const ItemsTable = React.memo<ItemsTableProps>(
         </div>
 
         {/* 定价结果对话框 */}
-        <PricingResultDialog
-          open={showPricingDialog}
-          onOpenChange={setShowPricingDialog}
-          results={pricingResults}
-          totalExpenses={totalExpenses}
-          onConfirm={handleApplyPricing}
-        />
+        {showPricingDialog && (
+          <PricingResultDialog
+            open={showPricingDialog}
+            onOpenChange={setShowPricingDialog}
+            results={pricingResults}
+            totalExpenses={totalExpenses}
+            onConfirm={handleApplyPricing}
+          />
+        )}
       </div>
     );
   }
