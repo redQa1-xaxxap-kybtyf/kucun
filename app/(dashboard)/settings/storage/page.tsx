@@ -8,12 +8,11 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Cloud } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import React from 'react';
 
-import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
-import { StorageTestConnection } from '@/components/settings/StorageTestConnection';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,6 +30,29 @@ import type {
   SettingsApiResponse,
 } from '@/lib/types/settings';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+
+const QiniuStorageForm = dynamic(
+  () =>
+    import('@/components/settings/QiniuStorageForm').then(
+      mod => mod.QiniuStorageForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
+
+const StorageTestConnection = dynamic(
+  () =>
+    import('@/components/settings/StorageTestConnection').then(
+      mod => mod.StorageTestConnection
+    ),
+  { ssr: false, loading: () => null }
+);
 
 export default function StorageSettingsPage() {
   const router = useRouter();
@@ -222,6 +244,10 @@ export default function StorageSettingsPage() {
     }
   };
 
+  const shouldRenderTestConnection = Boolean(
+    testResult || testError || testConnectionMutation.isPending
+  );
+
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
       <div className="mx-auto w-full max-w-[1680px] space-y-12">
@@ -300,12 +326,14 @@ export default function StorageSettingsPage() {
             </section>
 
             {/* 连接测试结果：转化为结构化悬浮条或模块 */}
-            <StorageTestConnection
-              testResult={testResult}
-              isTesting={testConnectionMutation.isPending}
-              testError={testError}
-              onRetry={handleRetryTest}
-            />
+            {shouldRenderTestConnection && (
+              <StorageTestConnection
+                testResult={testResult}
+                isTesting={testConnectionMutation.isPending}
+                testError={testError}
+                onRetry={handleRetryTest}
+              />
+            )}
           </div>
 
           <div className="space-y-8">
