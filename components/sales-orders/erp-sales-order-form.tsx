@@ -4,6 +4,7 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Loader2, Save } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import {
@@ -17,7 +18,6 @@ import {
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { FeeItemsFormField } from '@/components/sales-orders/fee-items';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
-import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +71,14 @@ import {
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
 import { PrepaymentSection } from './erp-sales-order-form/PrepaymentSection';
+
+const SupplierSelector = dynamic(
+  () =>
+    import('@/components/sales-orders/supplier-selector').then(
+      mod => mod.SupplierSelector
+    ),
+  { ssr: false, loading: () => null }
+);
 
 const EMPTY_SALES_ORDER_ITEMS: SalesOrderItemFormData[] = [];
 const EMPTY_FEE_ITEMS: SalesOrderFeeItem[] = [];
