@@ -1,9 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
-import { PayableForm } from '@/components/finance/payable-form';
 import type { PayableRecordDetail } from '@/lib/types/payable';
+
+const PayableForm = dynamic(
+  () =>
+    import('@/components/finance/payable-form').then(mod => mod.PayableForm),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 应付款创建客户端组件
