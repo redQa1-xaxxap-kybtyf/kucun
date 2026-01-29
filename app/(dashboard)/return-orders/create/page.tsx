@@ -1,12 +1,27 @@
 'use client';
 
 import { ArrowLeft, PackageX } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/common/page-header';
-import { ERPReturnOrderForm } from '@/components/return-orders/erp-return-order-form';
 import { Button } from '@/components/ui/button';
+
+const ERPReturnOrderForm = dynamic(
+  () =>
+    import('@/components/return-orders/erp-return-order-form').then(
+      mod => mod.ERPReturnOrderForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 新建退货订单页面
