@@ -9,7 +9,7 @@
  * - 非核心操作(批次规格、产品同步、缓存)移到异步队列
  */
 
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { ApiError } from '@/lib/api/errors';
 import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
@@ -235,7 +235,30 @@ export async function executeMinimalInboundTransaction(
     return run(options.tx);
   }
 
-  return await prisma.$transaction(run, getStandardTransactionOptions()); // 🚀 使用标准事务超时(10秒),事务更快,超时风险极低
+  // ✅ P2034: 事务写冲突/死锁，属于可重试的瞬时错误（生产/测试均可能遇到）
+  const maxRetries = 3;
+  const baseDelayMs = 50;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // 🚀 使用标准事务超时(10秒),事务更快,超时风险极低
+      return await prisma.$transaction(run, getStandardTransactionOptions());
+    } catch (error) {
+      const isRetryable =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034';
+
+      if (!isRetryable || attempt === maxRetries) {
+        throw error;
+      }
+
+      // 指数退避：避免立刻重试再次竞争同一把锁
+      const delayMs = baseDelayMs * 2 ** (attempt - 1);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw new Error('unreachable');
 }
 
 /**
