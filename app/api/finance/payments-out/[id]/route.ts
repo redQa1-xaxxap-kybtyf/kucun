@@ -6,16 +6,20 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
 import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { clearCacheAfterPaymentOut } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { syncExpensePaymentStatusFromPayable } from '@/lib/services/expense-payable-integration';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import type { PaymentOutRecordDetail } from '@/lib/types/payable';
+import { parseLocalDateString } from '@/lib/utils/datetime';
+import { withIdempotency } from '@/lib/utils/idempotency';
 import { toNumber } from '@/lib/utils/number';
 import { updatePaymentOutRecordSchema } from '@/lib/validations/payable';
 
@@ -168,6 +172,18 @@ const getPaymentHandler = withAuth(
         data: serializePaymentOutRecordDetail(payment),
       });
     } catch (error) {
+      if (error instanceof ApiError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: error.message,
+            errorId: error.errorId,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        );
+      }
+
       logger.error(
         'finance-payments-out',
         '获取付款记录详情失败',
@@ -216,8 +232,18 @@ const putPaymentHandler = withAuth(
         );
       }
 
-      const updateData = { ...validationResult.data };
-      delete (updateData as { id?: string }).id;
+      const { idempotencyKey, ...rawUpdateData } = validationResult.data;
+
+      const updateData = rawUpdateData as Prisma.PaymentOutRecordUpdateInput & {
+        id?: string;
+      };
+      delete updateData.id;
+
+      if (typeof updateData.paymentDate === 'string') {
+        updateData.paymentDate =
+          parseLocalDateString(updateData.paymentDate) ??
+          new Date(updateData.paymentDate);
+      }
 
       const existingPayment = await prisma.paymentOutRecord.findUnique({
         where: { id },
@@ -249,13 +275,63 @@ const putPaymentHandler = withAuth(
 
       const existingPaymentAmount = toNumber(existingPayment.paymentAmount);
 
-      const updatedPayment = await prisma.$transaction(async tx => {
-        // ✅ 修复：如果更新了付款金额，需要先校验
-        if (updateData.paymentAmount !== undefined) {
-          // 如果关联应付款记录，校验金额范围
-          if (existingPayment.payableRecordId) {
+      const executeUpdate = async () =>
+        await prisma.$transaction(async tx => {
+          // ✅ 修复：如果更新了付款金额，需要先校验
+          if (updateData.paymentAmount !== undefined) {
+            // 如果关联应付款记录，校验金额范围
+            if (existingPayment.payableRecordId) {
+              const payableRecord = await tx.payableRecord.findUnique({
+                where: { id: existingPayment.payableRecordId },
+                select: {
+                  id: true,
+                  payableAmount: true,
+                  paidAmount: true,
+                },
+              });
+
+              if (payableRecord) {
+                const updatedPaymentAmount = toNumber(updateData.paymentAmount);
+                const payablePaidAmount = toNumber(payableRecord.paidAmount);
+                const payableAmount = toNumber(payableRecord.payableAmount);
+
+                // 计算新的已付金额
+                const newPaidAmount =
+                  payablePaidAmount -
+                  existingPaymentAmount +
+                  updatedPaymentAmount;
+
+                // ✅ 校验：付款金额不能为负数
+                if (newPaidAmount < 0) {
+                  throw ApiError.badRequest('付款金额不能为负数');
+                }
+
+                // ✅ 校验：付款金额不能超过应付金额
+                if (newPaidAmount > payableAmount) {
+                  throw ApiError.badRequest(
+                    `付款金额不能超过应付金额 ${payableAmount}`
+                  );
+                }
+              }
+            }
+          }
+
+          // 更新付款记录
+          const payment = await tx.paymentOutRecord.update({
+            where: { id },
+            data: updateData,
+            include: paymentInclude,
+          });
+
+          const currentPaymentAmount = toNumber(payment.paymentAmount);
+          const paymentAmountDelta =
+            Math.round((currentPaymentAmount - existingPaymentAmount) * 100) /
+            100;
+
+          // 如果关联应付款记录，需要同步更新应付款状态
+          if (payment.payableRecordId) {
             const payableRecord = await tx.payableRecord.findUnique({
-              where: { id: existingPayment.payableRecordId },
+              where: { id: payment.payableRecordId },
               select: {
                 id: true,
                 payableAmount: true,
@@ -264,120 +340,86 @@ const putPaymentHandler = withAuth(
             });
 
             if (payableRecord) {
-              const updatedPaymentAmount = toNumber(updateData.paymentAmount);
-              const payablePaidAmount = toNumber(payableRecord.paidAmount);
               const payableAmount = toNumber(payableRecord.payableAmount);
+              const payablePaidAmount = toNumber(payableRecord.paidAmount);
 
-              // 计算新的已付金额
               const newPaidAmount =
                 payablePaidAmount -
                 existingPaymentAmount +
-                updatedPaymentAmount;
+                currentPaymentAmount;
+              const newRemainingAmount = payableAmount - newPaidAmount;
 
-              // ✅ 校验：付款金额不能为负数
-              if (newPaidAmount < 0) {
-                throw new Error('付款金额不能为负数');
+              let newStatus = 'pending';
+              if (newRemainingAmount <= 0) {
+                newStatus = 'paid';
+              } else if (newPaidAmount > 0) {
+                newStatus = 'partial';
               }
 
-              // ✅ 校验：付款金额不能超过应付金额
-              if (newPaidAmount > payableAmount) {
-                throw new Error(`付款金额不能超过应付金额 ${payableAmount}`);
-              }
-            }
-          }
-        }
-
-        // 更新付款记录
-        const payment = await tx.paymentOutRecord.update({
-          where: { id },
-          data: updateData,
-          include: paymentInclude,
-        });
-
-        const currentPaymentAmount = toNumber(payment.paymentAmount);
-        const paymentAmountDelta =
-          Math.round((currentPaymentAmount - existingPaymentAmount) * 100) /
-          100;
-
-        // 如果关联应付款记录，需要同步更新应付款状态
-        if (payment.payableRecordId) {
-          const payableRecord = await tx.payableRecord.findUnique({
-            where: { id: payment.payableRecordId },
-            select: {
-              id: true,
-              payableAmount: true,
-              paidAmount: true,
-            },
-          });
-
-          if (payableRecord) {
-            const payableAmount = toNumber(payableRecord.payableAmount);
-            const payablePaidAmount = toNumber(payableRecord.paidAmount);
-
-            const newPaidAmount =
-              payablePaidAmount - existingPaymentAmount + currentPaymentAmount;
-            const newRemainingAmount = payableAmount - newPaidAmount;
-
-            let newStatus = 'pending';
-            if (newRemainingAmount <= 0) {
-              newStatus = 'paid';
-            } else if (newPaidAmount > 0) {
-              newStatus = 'partial';
-            }
-
-            await tx.payableRecord.update({
-              where: { id: payableRecord.id },
-              data: {
-                paidAmount: newPaidAmount,
-                remainingAmount: newRemainingAmount,
-                status: newStatus,
-              },
-            });
-
-            // 阶段3：付款金额变更后联动更新关联费用支付状态（支持回滚）
-            if (env.EXPENSE_TO_PAYABLE_ENABLED) {
-              await syncExpensePaymentStatusFromPayable({
-                payableRecordId: payableRecord.id,
-                tx,
+              await tx.payableRecord.update({
+                where: { id: payableRecord.id },
+                data: {
+                  paidAmount: newPaidAmount,
+                  remainingAmount: newRemainingAmount,
+                  status: newStatus,
+                },
               });
+
+              // 阶段3：付款金额变更后联动更新关联费用支付状态（支持回滚）
+              if (env.EXPENSE_TO_PAYABLE_ENABLED) {
+                await syncExpensePaymentStatusFromPayable({
+                  payableRecordId: payableRecord.id,
+                  tx,
+                });
+              }
             }
           }
-        }
 
-        // ✅ 付款金额变更需同步供应商往来账单（追加差额流水，避免重算历史余额）
-        if (paymentAmountDelta !== 0) {
-          const transactionType =
-            paymentAmountDelta > 0 ? 'payment_out' : 'payment_out_reversal';
-          const amount = Math.abs(paymentAmountDelta);
+          // ✅ 付款金额变更需同步供应商往来账单（追加差额流水，避免重算历史余额）
+          if (paymentAmountDelta !== 0) {
+            const transactionType =
+              paymentAmountDelta > 0 ? 'payment_out' : 'payment_out_reversal';
+            const amount = Math.abs(paymentAmountDelta);
 
-          await recordPartnerTransaction(
-            {
-              partnerId: payment.supplierId,
-              partnerName: payment.supplier.name,
-              partnerRole: 'supplier',
-              entityType: 'supplier',
-              transactionType: transactionType as any,
-              amount,
-              referenceId: randomUUID(),
-              referenceNumber: payment.paymentNumber,
-              description:
-                paymentAmountDelta > 0
-                  ? `付款 ${payment.paymentNumber} 金额调增`
-                  : `付款 ${payment.paymentNumber} 金额调减`,
-              userId: user.id,
-              occurredAt: payment.paymentDate,
-              metadata: {
-                triggeredBy: 'payment_out:update',
-                source: payment.id,
+            await recordPartnerTransaction(
+              {
+                partnerId: payment.supplierId,
+                partnerName: payment.supplier.name,
+                partnerRole: 'supplier',
+                entityType: 'supplier',
+                transactionType,
+                amount,
+                referenceId: idempotencyKey ?? randomUUID(),
+                referenceNumber: payment.paymentNumber,
+                description:
+                  paymentAmountDelta > 0
+                    ? `付款 ${payment.paymentNumber} 金额调增`
+                    : `付款 ${payment.paymentNumber} 金额调减`,
                 userId: user.id,
+                occurredAt: payment.paymentDate,
+                metadata: {
+                  triggeredBy: 'payment_out:update',
+                  source: payment.id,
+                  userId: user.id,
+                },
               },
-            },
-            tx
-          );
-        }
+              tx
+            );
+          }
 
-        return payment;
-      });
+          return payment;
+        }, getStandardTransactionOptions());
+
+      const updatedPayment = idempotencyKey
+        ? await withIdempotency(
+            idempotencyKey,
+            'payment_out_update',
+            id,
+            user.id,
+            validationResult.data,
+            executeUpdate
+          )
+        : await executeUpdate();
 
       // 清除相关缓存（避免统计/对账单/列表读到旧值）
       await clearCacheAfterPaymentOut();
@@ -388,6 +430,18 @@ const putPaymentHandler = withAuth(
         message: '付款记录更新成功',
       });
     } catch (error) {
+      if (error instanceof ApiError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: error.message,
+            errorId: error.errorId,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        );
+      }
+
       logger.error(
         'finance-payments-out',
         '更新付款记录失败',
@@ -449,109 +503,145 @@ const deletePaymentHandler = withAuth(
 
       // 尝试读取作废原因（可选）
       let voidReason: string | null = null;
+      let idempotencyKey: string | null = null;
       try {
         const body = await request.json();
-        if (body && typeof body.voidReason === 'string' && body.voidReason) {
-          voidReason = body.voidReason.slice(0, 64);
+        if (body && typeof body === 'object') {
+          const maybeBody = body as {
+            voidReason?: unknown;
+            idempotencyKey?: unknown;
+          };
+          if (
+            typeof maybeBody.voidReason === 'string' &&
+            maybeBody.voidReason
+          ) {
+            voidReason = maybeBody.voidReason.slice(0, 64);
+          }
+          if (
+            typeof maybeBody.idempotencyKey === 'string' &&
+            maybeBody.idempotencyKey
+          ) {
+            idempotencyKey = maybeBody.idempotencyKey;
+          }
         }
       } catch (_error) {
         // ignore
       }
 
-      await prisma.$transaction(async tx => {
-        const now = new Date();
-        const paymentAmount = toNumber(existingPayment.paymentAmount);
+      const executeVoid = async () =>
+        await prisma.$transaction(async tx => {
+          const now = new Date();
+          const paymentAmount = toNumber(existingPayment.paymentAmount);
 
-        // 1) 回滚关联应付款（若存在）
-        if (existingPayment.payableRecordId) {
-          const payableRecord = await tx.payableRecord.findUnique({
-            where: { id: existingPayment.payableRecordId },
-            select: {
-              id: true,
-              payableAmount: true,
-              paidAmount: true,
-            },
-          });
-
-          if (payableRecord) {
-            const payableAmount = toNumber(payableRecord.payableAmount);
-            const payablePaidAmount = toNumber(payableRecord.paidAmount);
-
-            const newPaidAmount = Math.max(
-              0,
-              Math.round((payablePaidAmount - paymentAmount) * 100) / 100
-            );
-            const newRemainingAmount =
-              Math.round((payableAmount - newPaidAmount) * 100) / 100;
-
-            let newStatus = 'pending';
-            if (newRemainingAmount <= 0) {
-              newStatus = 'paid';
-            } else if (newPaidAmount > 0) {
-              newStatus = 'partial';
-            }
-
-            await tx.payableRecord.update({
-              where: { id: payableRecord.id },
-              data: {
-                paidAmount: newPaidAmount,
-                remainingAmount: newRemainingAmount,
-                status: newStatus,
+          // 1) 回滚关联应付款（若存在）
+          if (existingPayment.payableRecordId) {
+            const payableRecord = await tx.payableRecord.findUnique({
+              where: { id: existingPayment.payableRecordId },
+              select: {
+                id: true,
+                payableAmount: true,
+                paidAmount: true,
               },
             });
 
-            if (env.EXPENSE_TO_PAYABLE_ENABLED) {
-              await syncExpensePaymentStatusFromPayable({
-                payableRecordId: payableRecord.id,
-                tx,
+            if (payableRecord) {
+              const payableAmount = toNumber(payableRecord.payableAmount);
+              const payablePaidAmount = toNumber(payableRecord.paidAmount);
+
+              const newPaidAmount = Math.max(
+                0,
+                Math.round((payablePaidAmount - paymentAmount) * 100) / 100
+              );
+              const newRemainingAmount =
+                Math.round((payableAmount - newPaidAmount) * 100) / 100;
+
+              let newStatus = 'pending';
+              if (newRemainingAmount <= 0) {
+                newStatus = 'paid';
+              } else if (newPaidAmount > 0) {
+                newStatus = 'partial';
+              }
+
+              await tx.payableRecord.update({
+                where: { id: payableRecord.id },
+                data: {
+                  paidAmount: newPaidAmount,
+                  remainingAmount: newRemainingAmount,
+                  status: newStatus,
+                },
               });
+
+              if (env.EXPENSE_TO_PAYABLE_ENABLED) {
+                await syncExpensePaymentStatusFromPayable({
+                  payableRecordId: payableRecord.id,
+                  tx,
+                });
+              }
             }
           }
-        }
 
-        // 2) 标记付款记录作废（不做物理删除，便于报表口径过滤 voidedAt）
-        await tx.paymentOutRecord.update({
-          where: { id },
-          data: {
+          // 2) 标记付款记录作废（不做物理删除，便于报表口径过滤 voidedAt）
+          await tx.paymentOutRecord.update({
+            where: { id },
+            data: {
+              status: 'cancelled',
+              voidedAt: now,
+              voidedBy: user.id,
+              voidReason: voidReason ?? 'voided',
+            },
+          });
+
+          // 3) 写入供应商往来账反向流水（幂等：referenceId+type 唯一）
+          const supplier = await tx.supplier.findUnique({
+            where: { id: existingPayment.supplierId },
+            select: { id: true, name: true },
+          });
+
+          if (!supplier) {
+            throw ApiError.badRequest('供应商不存在');
+          }
+
+          await recordPartnerTransaction(
+            {
+              partnerId: existingPayment.supplierId,
+              partnerName: supplier.name,
+              partnerRole: 'supplier',
+              entityType: 'supplier',
+              transactionType: 'payment_out_reversal',
+              amount: paymentAmount,
+              referenceId: existingPayment.id,
+              referenceNumber: existingPayment.paymentNumber,
+              description: `付款 ${existingPayment.paymentNumber} 作废`,
+              userId: user.id,
+              occurredAt: now,
+              metadata: {
+                triggeredBy: 'payment_out:void',
+                source: existingPayment.id,
+                userId: user.id,
+              },
+            },
+            tx
+          );
+
+          return {
+            id: existingPayment.id,
             status: 'cancelled',
             voidedAt: now,
-            voidedBy: user.id,
-            voidReason: voidReason ?? 'voided',
-          },
-        });
+          };
+        }, getStandardTransactionOptions());
 
-        // 3) 写入供应商往来账反向流水（幂等：referenceId+type 唯一）
-        const supplier = await tx.supplier.findUnique({
-          where: { id: existingPayment.supplierId },
-          select: { id: true, name: true },
-        });
-
-        if (!supplier) {
-          throw new Error('供应商不存在');
-        }
-
-        await recordPartnerTransaction(
-          {
-            partnerId: existingPayment.supplierId,
-            partnerName: supplier.name,
-            partnerRole: 'supplier',
-            entityType: 'supplier',
-            transactionType: 'payment_out_reversal',
-            amount: paymentAmount,
-            referenceId: existingPayment.id,
-            referenceNumber: existingPayment.paymentNumber,
-            description: `付款 ${existingPayment.paymentNumber} 作废`,
-            userId: user.id,
-            occurredAt: now,
-            metadata: {
-              triggeredBy: 'payment_out:void',
-              source: existingPayment.id,
-              userId: user.id,
-            },
-          },
-          tx
+      if (idempotencyKey) {
+        await withIdempotency(
+          idempotencyKey,
+          'payment_out_void',
+          id,
+          user.id,
+          { id, voidReason },
+          executeVoid
         );
-      });
+      } else {
+        await executeVoid();
+      }
 
       // 清除相关缓存（避免统计/对账单/列表读到旧值）
       await clearCacheAfterPaymentOut();
@@ -561,6 +651,18 @@ const deletePaymentHandler = withAuth(
         message: '付款记录作废成功',
       });
     } catch (error) {
+      if (error instanceof ApiError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: error.message,
+            errorId: error.errorId,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        );
+      }
+
       logger.error(
         'finance-payments-out',
         '作废付款记录失败',

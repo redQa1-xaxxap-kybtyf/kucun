@@ -20,7 +20,9 @@ export type OperationType =
   | 'sales_order_update'
   | 'sales_order_status_change'
   | 'purchase_order_status_change'
-  | 'payment_out_create';
+  | 'payment_out_create'
+  | 'payment_out_update'
+  | 'payment_out_void';
 
 export interface IdempotencyResult<T> {
   isNew: boolean;
@@ -44,6 +46,8 @@ const DEFAULT_ENTITY_TYPE_BY_OPERATION: Record<OperationType, string> = {
   sales_order_status_change: 'sales_order',
   purchase_order_status_change: 'purchase_order',
   payment_out_create: 'payment_out',
+  payment_out_update: 'payment_out',
+  payment_out_void: 'payment_out',
 };
 
 const resolveEntityType = (operationType: OperationType, override?: string) =>

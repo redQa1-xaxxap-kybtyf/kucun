@@ -101,6 +101,7 @@ export const createPaymentOutRecordSchema = z.object({
 // 更新付款记录验证规则
 export const updatePaymentOutRecordSchema = z.object({
   id: z.string().min(1, '付款记录ID不能为空'),
+  idempotencyKey: z.string().uuid('幂等性键格式不正确').optional(),
   paymentMethod: paymentOutMethodSchema.optional(),
   paymentAmount: z
     .number()
