@@ -169,6 +169,7 @@ export function PaymentsOutClient({
           },
           body: JSON.stringify({
             status: 'confirmed',
+            idempotencyKey: crypto.randomUUID(),
           }),
         })
       );
