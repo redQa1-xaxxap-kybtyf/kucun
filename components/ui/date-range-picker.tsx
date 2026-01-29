@@ -29,11 +29,11 @@ import {
 } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
@@ -41,6 +41,16 @@ import {
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
+
+const Calendar = dynamic(
+  () => import('@/components/ui/calendar').then(mod => mod.Calendar),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[296px] w-[280px] animate-pulse rounded-lg bg-slate-50" />
+    ),
+  }
+);
 
 /**
  * 日期范围值接口

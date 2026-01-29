@@ -11,6 +11,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { ArrowLeft, Calendar as CalendarIcon, Save } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -18,7 +19,6 @@ import { z } from 'zod';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -54,6 +54,16 @@ import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+
+const Calendar = dynamic(
+  () => import('@/components/ui/calendar').then(mod => mod.Calendar),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[296px] w-[280px] animate-pulse rounded-lg bg-slate-50" />
+    ),
+  }
+);
 
 // 创建付款记录表单Schema
 const createPaymentOutSchema = z.object({
