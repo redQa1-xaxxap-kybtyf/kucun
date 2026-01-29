@@ -1,12 +1,27 @@
 'use client';
 
 import { ArrowLeft, Truck } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { FactoryShipmentOrderForm } from '@/components/factory-shipments/factory-shipment-order-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+
+const FactoryShipmentOrderForm = dynamic(
+  () =>
+    import('@/components/factory-shipments/factory-shipment-order-form').then(
+      mod => mod.FactoryShipmentOrderForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 创建厂家发货订单页面
