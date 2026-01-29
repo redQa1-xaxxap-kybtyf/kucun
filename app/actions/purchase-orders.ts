@@ -1,8 +1,6 @@
 'use server';
 
-import type {
-  Prisma,
-} from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
@@ -11,10 +9,7 @@ import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import {
-  allocatePurchaseOrderExpensesByQuantity,
-  type PurchaseOrderExpenseAllocationResult,
-} from '@/lib/services/purchase-order-cost-service';
+import { ensurePurchaseOrderCostAllocatedBeforeInbound } from '@/lib/services/purchase-order-cost-service';
 import type { ExpenseRecord as ExpenseRecordType } from '@/lib/types/expense';
 import {
   PURCHASE_ORDER_STATUS,
@@ -210,14 +205,6 @@ export async function confirmPurchaseOrder(
           select: {
             id: true,
             status: true,
-            expenseAmount: true,
-            items: {
-              select: {
-                id: true,
-                quantity: true,
-                unitPrice: true,
-              },
-            },
           },
         });
 
@@ -229,58 +216,14 @@ export async function confirmPurchaseOrder(
           return buildErrorResult('仅草稿状态的订单可以确认');
         }
 
-        if (!order.items.length) {
-          return buildErrorResult('采购订单没有明细项');
-        }
-
-        // ✅ 修复：如果 expenseAmount 为 null，从费用记录即时求和
-        let actualExpenseAmount = toNumber(order.expenseAmount);
-        if (order.expenseAmount === null || order.expenseAmount === undefined) {
-          const expenseSum = await tx.expenseRecord.aggregate({
-            where: {
-              relatedType: 'purchase_order',
-              relatedId: orderId,
-            },
-            _sum: {
-              expenseAmount: true,
-            },
-          });
-          actualExpenseAmount = toNumber(expenseSum._sum.expenseAmount);
-
-          // 同步更新订单的 expenseAmount
-          await tx.purchaseOrder.update({
-            where: { id: orderId },
-            data: { expenseAmount: actualExpenseAmount },
-          });
-        }
-
-        let allocations: PurchaseOrderExpenseAllocationResult[];
         try {
-          allocations = allocatePurchaseOrderExpensesByQuantity(
-            order.items.map(item => ({
-              id: item.id,
-              quantity: item.quantity,
-              unitPrice: toNumber(item.unitPrice),
-            })),
-            actualExpenseAmount
-          );
+          await ensurePurchaseOrderCostAllocatedBeforeInbound(tx, orderId);
         } catch (allocationError) {
-          const errorMessage =
+          return buildErrorResult(
             allocationError instanceof Error
               ? allocationError.message
-              : '采购费用分摊失败';
-          return buildErrorResult(errorMessage);
-        }
-
-        for (const allocation of allocations) {
-          await tx.purchaseOrderItem.update({
-            where: { id: allocation.id },
-            data: {
-              allocatedExpense: allocation.allocatedExpense,
-              unitCostWithExpense: allocation.unitCostWithExpense,
-              unitCost: allocation.unitCostWithExpense,
-            },
-          });
+              : '采购费用分摊失败'
+          );
         }
 
         await tx.purchaseOrder.update({
@@ -564,7 +507,8 @@ export async function getPurchaseOrderById(
       totalAmount: Number(order.totalAmount),
       expenseAmount:
         order.expenseAmount === null ? undefined : Number(order.expenseAmount),
-      costAmount: order.costAmount === null ? undefined : Number(order.costAmount),
+      costAmount:
+        order.costAmount === null ? undefined : Number(order.costAmount),
       remarks: order.remarks ?? undefined,
       shippingCompany: order.shippingCompany ?? undefined,
       orderDate: order.orderDate ?? undefined,
@@ -643,7 +587,8 @@ function mapPurchaseOrderItem(
         ? undefined
         : toNumber(item.allocatedExpense),
     unitCostWithExpense:
-      item.unitCostWithExpense === null || item.unitCostWithExpense === undefined
+      item.unitCostWithExpense === null ||
+      item.unitCostWithExpense === undefined
         ? undefined
         : toNumber(item.unitCostWithExpense),
     product: item.product
@@ -652,13 +597,13 @@ function mapPurchaseOrderItem(
           code: item.product.code,
           name: item.product.name,
           specification: item.product.specification ?? undefined,
-           unit: item.product.unit,
-           weight:
-             item.product.weight === null || item.product.weight === undefined
-               ? undefined
-               : toNumber(item.product.weight),
-         }
-       : undefined,
+          unit: item.product.unit,
+          weight:
+            item.product.weight === null || item.product.weight === undefined
+              ? undefined
+              : toNumber(item.product.weight),
+        }
+      : undefined,
     supplier: {
       id: item.supplier.id,
       name: item.supplier.name,

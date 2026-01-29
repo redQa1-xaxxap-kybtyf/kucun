@@ -1,4 +1,7 @@
+import type { Prisma } from '@prisma/client';
+
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
+import { toNumber } from '@/lib/utils/number';
 
 export interface PurchaseOrderExpenseAllocationInput {
   id: string;
@@ -101,4 +104,112 @@ export function resolveInboundUnitCost(options: {
   }
 
   return roundToTwoDecimals(fallback);
+}
+
+export async function ensurePurchaseOrderCostAllocatedBeforeInbound(
+  tx: Prisma.TransactionClient,
+  orderId: string
+): Promise<{
+  totalExpenseAmount: number;
+  allocationsByItemId: Map<string, PurchaseOrderExpenseAllocationResult>;
+}> {
+  const order = await tx.purchaseOrder.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      expenseAmount: true,
+      items: {
+        select: {
+          id: true,
+          quantity: true,
+          unitPrice: true,
+        },
+      },
+    },
+  });
+
+  if (!order) {
+    throw new Error('采购订单不存在');
+  }
+
+  if (!order.items.length) {
+    throw new Error('采购订单没有明细项');
+  }
+
+  const expenseSum = await tx.expenseRecord.aggregate({
+    where: {
+      relatedType: 'purchase_order',
+      relatedId: orderId,
+      voidedAt: null,
+    },
+    _sum: {
+      expenseAmount: true,
+    },
+  });
+
+  const totalExpenseAmount = roundToTwoDecimals(
+    Math.max(0, toNumber(expenseSum._sum.expenseAmount, 0))
+  );
+
+  const storedExpenseAmount = roundToTwoDecimals(
+    Math.max(0, toNumber(order.expenseAmount, 0))
+  );
+
+  // 同步订单级费用汇总，避免“费用台账 != 订单汇总”导致分摊不一致
+  if (Math.abs(storedExpenseAmount - totalExpenseAmount) > 0.009) {
+    await tx.purchaseOrder.update({
+      where: { id: orderId },
+      data: {
+        expenseAmount: totalExpenseAmount,
+      },
+    });
+  }
+
+  const allocations = allocatePurchaseOrderExpensesByQuantity(
+    order.items.map(item => ({
+      id: item.id,
+      quantity: item.quantity,
+      unitPrice: toNumber(item.unitPrice),
+    })),
+    totalExpenseAmount
+  );
+
+  const allocationsByItemId = new Map<
+    string,
+    PurchaseOrderExpenseAllocationResult
+  >();
+  const quantityByItemId = new Map<string, number>();
+
+  for (const item of order.items) {
+    quantityByItemId.set(item.id, item.quantity);
+  }
+
+  for (const allocation of allocations) {
+    allocationsByItemId.set(allocation.id, allocation);
+    await tx.purchaseOrderItem.update({
+      where: { id: allocation.id },
+      data: {
+        allocatedExpense: allocation.allocatedExpense,
+        unitCostWithExpense: allocation.unitCostWithExpense,
+        unitCost: allocation.unitCostWithExpense,
+      },
+    });
+  }
+
+  const costAmount = roundToTwoDecimals(
+    allocations.reduce((sum, allocation) => {
+      const qty = quantityByItemId.get(allocation.id) ?? 0;
+      return sum + allocation.unitCostWithExpense * qty;
+    }, 0)
+  );
+
+  await tx.purchaseOrder.update({
+    where: { id: orderId },
+    data: { costAmount },
+  });
+
+  return {
+    totalExpenseAmount,
+    allocationsByItemId,
+  };
 }

@@ -11,7 +11,10 @@ import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
-import { resolveInboundUnitCost } from '@/lib/services/purchase-order-cost-service';
+import {
+  ensurePurchaseOrderCostAllocatedBeforeInbound,
+  resolveInboundUnitCost,
+} from '@/lib/services/purchase-order-cost-service';
 import {
   ensurePurchaseOrderPayable,
   shouldCreatePayable,
@@ -176,8 +179,17 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
           });
 
           const createdInboundRecords: MinimalInboundTransactionResult[] = [];
+          let payableExpenseAmount: number | null | undefined =
+            order.expenseAmount === null
+              ? null
+              : toNumber(order.expenseAmount, 0);
 
           if (normalizedPayload.status === PURCHASE_ORDER_STATUS.ARRIVED) {
+            const { totalExpenseAmount, allocationsByItemId } =
+              await ensurePurchaseOrderCostAllocatedBeforeInbound(tx, order.id);
+            // ✅ 费用分摊会在入库前把“费用台账汇总”同步回订单，这里必须把最新费用带入应付生成兜底逻辑
+            payableExpenseAmount = totalExpenseAmount;
+
             const itemIds = order.items.map(item => item.id);
             const inboundTotals = itemIds.length
               ? await tx.inboundRecord.groupBy({
@@ -215,11 +227,10 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
                 continue;
               }
 
+              const allocation = allocationsByItemId.get(item.id);
+
               const inboundUnitCost = resolveInboundUnitCost({
-                unitCostWithExpense:
-                  item.unitCostWithExpense === null
-                    ? null
-                    : toNumber(item.unitCostWithExpense, Number.NaN),
+                unitCostWithExpense: allocation?.unitCostWithExpense ?? null,
                 unitPrice:
                   item.unitPrice === null
                     ? null
@@ -239,6 +250,7 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
                   userId: user.id,
                   purchaseOrderId: order.id,
                   purchaseOrderItemId: item.id,
+                  supplierId: order.supplierId,
                 },
                 { tx }
               );
@@ -256,10 +268,7 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
               userId: order.userId,
               orderNumber: order.orderNumber,
               totalAmount: toNumber(order.totalAmount, 0),
-              expenseAmount:
-                order.expenseAmount === null
-                  ? null
-                  : toNumber(order.expenseAmount, 0), // ✅ 修复：传递费用金额
+              expenseAmount: payableExpenseAmount, // ✅ 最新费用汇总（用于兜底合并进应付）
             });
           }
 

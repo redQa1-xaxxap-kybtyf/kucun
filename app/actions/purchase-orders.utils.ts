@@ -13,7 +13,10 @@ import {
   createPurchaseOrderExpenses,
   replacePurchaseOrderExpenses,
 } from '@/lib/services/purchase-expense-service';
-import { resolveInboundUnitCost } from '@/lib/services/purchase-order-cost-service';
+import {
+  ensurePurchaseOrderCostAllocatedBeforeInbound,
+  resolveInboundUnitCost,
+} from '@/lib/services/purchase-order-cost-service';
 import {
   ensurePurchaseOrderPayable,
   shouldCreatePayable,
@@ -95,8 +98,7 @@ export async function createPurchaseOrderInternal(
       data: {
         orderNumber,
         containerNumber: data.containerNumber?.trim() || null,
-        shippingCompany:
-          normalizeOptionalString(data.shippingCompany) ?? null,
+        shippingCompany: normalizeOptionalString(data.shippingCompany) ?? null,
         status,
         totalAmount,
         orderDate: data.orderDate ? new Date(data.orderDate) : null,
@@ -129,13 +131,19 @@ export async function createPurchaseOrderInternal(
     });
 
     // ✅ P1修复：使用统一的费用创建服务（带幂等性）
-    await createPurchaseOrderExpenses({
+    const expenseResult = await createPurchaseOrderExpenses({
       tx,
       orderId: order.id,
       orderNumber: order.orderNumber,
       supplierId: primarySupplierId,
       userId,
       feeItems: data.feeItems ?? [],
+    });
+
+    // 同步写回订单级汇总，避免后续分摊/对账依赖到旧的默认值(0)
+    await tx.purchaseOrder.update({
+      where: { id: order.id },
+      data: { expenseAmount: expenseResult.totalAmount },
     });
 
     // 按供应商分组创建应付账款
@@ -231,7 +239,7 @@ export async function updatePurchaseOrderInternal({
             : existingOrder.containerNumber,
         shippingCompany:
           data.shippingCompany !== undefined
-            ? normalizeOptionalString(data.shippingCompany) ?? null
+            ? (normalizeOptionalString(data.shippingCompany) ?? null)
             : existingOrder.shippingCompany,
         remarks: data.remarks?.trim() ?? existingOrder.remarks ?? null,
         totalAmount,
@@ -386,6 +394,9 @@ async function createArrivalInboundRecords(
   order: NonNullable<Awaited<ReturnType<typeof fetchOrderForStatusChange>>>,
   userId: string
 ): Promise<MinimalInboundTransactionResult[]> {
+  const { allocationsByItemId } =
+    await ensurePurchaseOrderCostAllocatedBeforeInbound(tx, order.id);
+
   const itemIds = order.items.map(item => item.id);
   if (itemIds.length === 0) {
     return [];
@@ -424,11 +435,10 @@ async function createArrivalInboundRecords(
       continue;
     }
 
+    const allocation = allocationsByItemId.get(item.id);
+
     const inboundUnitCost = resolveInboundUnitCost({
-      unitCostWithExpense:
-        item.unitCostWithExpense === null || item.unitCostWithExpense === undefined
-          ? null
-          : toNumber(item.unitCostWithExpense),
+      unitCostWithExpense: allocation?.unitCostWithExpense ?? null,
       unitPrice:
         item.unitPrice === null || item.unitPrice === undefined
           ? null
