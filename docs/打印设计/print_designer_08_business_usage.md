@@ -41,13 +41,13 @@
 
 ## 4. 单据类型与路由映射（当前范围）
 
-| 模板类型（type） | 业务含义 | 典型入口 |
-|---|---|---|
-| `sales-order` | 销售订单/销售发货单 | `/sales-orders/[id]` |
-| `purchase-order` | 采购订单 | `/purchase-orders/[id]` |
-| `factory-shipment` | 厂家发货订单 | `/factory-shipments/[id]` |
-| `inbound-record` | 仓库进货（入库记录） | `/inventory/inbound/[recordNumber]` |
-| `return-order` | 退货订单 | `/return-orders/[id]` |
+| 模板类型（type）   | 业务含义             | 典型入口                            |
+| ------------------ | -------------------- | ----------------------------------- |
+| `sales-order`      | 销售订单/销售发货单  | `/sales-orders/[id]`                |
+| `purchase-order`   | 采购订单             | `/purchase-orders/[id]`             |
+| `factory-shipment` | 厂家发货订单         | `/factory-shipments/[id]`           |
+| `inbound-record`   | 仓库进货（入库记录） | `/inventory/inbound/[recordNumber]` |
+| `return-order`     | 退货订单             | `/return-orders/[id]`               |
 
 ---
 
@@ -84,4 +84,3 @@
 - 模板编辑器：`/settings/print-designer`
 - 模板渲染器：`components/print-designer/renderer/PrintCanvas.tsx`
 - 单据→打印数据映射：`lib/print-designer/actions/preview-data.ts`
-

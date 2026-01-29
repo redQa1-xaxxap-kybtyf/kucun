@@ -57,21 +57,25 @@
 ## 2. 状态管理 (Zustand Store)
 
 ### 2.1 Store 定义
+
 ```typescript
 // stores/designer-store.ts
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { PrintTemplate, DesignElement } from '@/lib/print-designer/schemas';
+import type {
+  PrintTemplate,
+  DesignElement,
+} from '@/lib/print-designer/schemas';
 
 interface DesignerState {
   // 模板数据
   template: PrintTemplate | null;
-  
+
   // UI 状态
   selectedElementId: string | null;
   zoom: number; // 0.25 - 4
   isDragging: boolean;
-  
+
   // Actions
   setTemplate: (template: PrintTemplate) => void;
   selectElement: (id: string | null) => void;
@@ -82,42 +86,48 @@ interface DesignerState {
 }
 
 export const useDesignerStore = create<DesignerState>()(
-  immer((set) => ({
+  immer(set => ({
     template: null,
     selectedElementId: null,
     zoom: 1,
     isDragging: false,
 
-    setTemplate: (template) => set({ template }),
-    
-    selectElement: (id) => set({ selectedElementId: id }),
-    
-    updateElement: (id, updates) => set((state) => {
-      if (!state.template) return;
-      const idx = state.template.elements.findIndex(el => el.id === id);
-      if (idx !== -1) {
-        Object.assign(state.template.elements[idx], updates);
-      }
-    }),
-    
-    addElement: (element) => set((state) => {
-      state.template?.elements.push(element);
-    }),
-    
-    removeElement: (id) => set((state) => {
-      if (!state.template) return;
-      state.template.elements = state.template.elements.filter(el => el.id !== id);
-      if (state.selectedElementId === id) {
-        state.selectedElementId = null;
-      }
-    }),
-    
-    setZoom: (zoom) => set({ zoom: Math.max(0.25, Math.min(4, zoom)) }),
+    setTemplate: template => set({ template }),
+
+    selectElement: id => set({ selectedElementId: id }),
+
+    updateElement: (id, updates) =>
+      set(state => {
+        if (!state.template) return;
+        const idx = state.template.elements.findIndex(el => el.id === id);
+        if (idx !== -1) {
+          Object.assign(state.template.elements[idx], updates);
+        }
+      }),
+
+    addElement: element =>
+      set(state => {
+        state.template?.elements.push(element);
+      }),
+
+    removeElement: id =>
+      set(state => {
+        if (!state.template) return;
+        state.template.elements = state.template.elements.filter(
+          el => el.id !== id
+        );
+        if (state.selectedElementId === id) {
+          state.selectedElementId = null;
+        }
+      }),
+
+    setZoom: zoom => set({ zoom: Math.max(0.25, Math.min(4, zoom)) }),
   }))
 );
 ```
 
 ### 2.2 历史记录 (撤销/重做)
+
 ```typescript
 // stores/history-store.ts
 import { temporal } from 'zundo';
@@ -126,13 +136,14 @@ import { useDesignerStore } from './designer-store';
 // 包装 temporal 中间件
 export const useTemporalStore = create(
   temporal(useDesignerStore, {
-    partialize: (state) => ({ template: state.template }),
+    partialize: state => ({ template: state.template }),
     limit: 50,
   })
 );
 
 // 使用
-const { undo, redo, pastStates, futureStates } = useTemporalStore.temporal.getState();
+const { undo, redo, pastStates, futureStates } =
+  useTemporalStore.temporal.getState();
 ```
 
 ---
@@ -140,6 +151,7 @@ const { undo, redo, pastStates, futureStates } = useTemporalStore.temporal.getSt
 ## 3. 核心交互实现
 
 ### 3.1 拖拽添加元素 (HTML5 Drag and Drop)
+
 ```typescript
 // components/print-designer/editor/components/ComponentToolbar.tsx
 function DraggableItem({ type }: { type: string }) {
@@ -153,6 +165,7 @@ function DraggableItem({ type }: { type: string }) {
 ```
 
 ### 3.2 画布放置区
+
 ```typescript
 // components/print-designer/editor/components/DesignerCanvas.tsx
 <div onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
@@ -161,6 +174,7 @@ function DraggableItem({ type }: { type: string }) {
 ```
 
 ### 3.3 智能对齐辅助线
+
 ```typescript
 // hooks/useAlignmentGuides.ts
 interface Guide {
@@ -177,7 +191,7 @@ function useAlignmentGuides(
   const guides: Guide[] = [];
   const threshold = 2; // mm
 
-  allElements.forEach((el) => {
+  allElements.forEach(el => {
     if (el.id === draggingElement.id) return;
 
     // 左边对齐
@@ -192,7 +206,8 @@ function useAlignmentGuides(
     }
     // 中心对齐
     const elCenterX = el.position.x + el.size.width / 2;
-    const dragCenterX = draggingElement.position.x + draggingElement.size.width / 2;
+    const dragCenterX =
+      draggingElement.position.x + draggingElement.size.width / 2;
     if (Math.abs(elCenterX - dragCenterX) < threshold) {
       guides.push({ type: 'vertical', position: elCenterX });
     }
@@ -214,15 +229,17 @@ function useAlignmentGuides(
 ## 4. 属性面板配置
 
 ### 4.1 面板结构
-| 选中类型 | 显示面板 |
-|---|---|
-| 无选中 | 页面设置 (纸张大小、边距、方向) |
-| 文本 | 位置尺寸、字体排版、颜色 |
-| 占位符 | 位置尺寸、数据绑定、格式化、字体 |
-| 表格 | 位置尺寸、列管理、样式、合计行 |
-| 图片 | 位置尺寸、图片源、适应方式 |
+
+| 选中类型 | 显示面板                         |
+| -------- | -------------------------------- |
+| 无选中   | 页面设置 (纸张大小、边距、方向)  |
+| 文本     | 位置尺寸、字体排版、颜色         |
+| 占位符   | 位置尺寸、数据绑定、格式化、字体 |
+| 表格     | 位置尺寸、列管理、样式、合计行   |
+| 图片     | 位置尺寸、图片源、适应方式       |
 
 ### 4.2 列管理器 (表格专用)
+
 ```typescript
 // components/print-designer/editor/components/TableColumnManager.tsx
 // 采用 HTML5 Drag and Drop：从“拖拽手柄(Grip)”开始拖拽，在列表中放置完成排序
@@ -244,16 +261,16 @@ function useAlignmentGuides(
 
 ## 5. 键盘快捷键
 
-| 快捷键 | 功能 |
-|---|---|
-| `Ctrl + S` | 保存 |
-| `Ctrl + Z` | 撤销 |
-| `Ctrl + Shift + Z` | 重做 |
+| 快捷键                 | 功能         |
+| ---------------------- | ------------ |
+| `Ctrl + S`             | 保存         |
+| `Ctrl + Z`             | 撤销         |
+| `Ctrl + Shift + Z`     | 重做         |
 | `Delete` / `Backspace` | 删除选中元素 |
-| `Ctrl + C` | 复制 |
-| `Ctrl + V` | 粘贴 |
-| `Ctrl + D` | 原位复制 |
-| `Arrow Keys` | 微移 1px |
-| `Shift + Arrow` | 微移 10px |
-| `Ctrl + =` / `-` | 缩放画布 |
-| `Escape` | 取消选中 |
+| `Ctrl + C`             | 复制         |
+| `Ctrl + V`             | 粘贴         |
+| `Ctrl + D`             | 原位复制     |
+| `Arrow Keys`           | 微移 1px     |
+| `Shift + Arrow`        | 微移 10px    |
+| `Ctrl + =` / `-`       | 缩放画布     |
+| `Escape`               | 取消选中     |

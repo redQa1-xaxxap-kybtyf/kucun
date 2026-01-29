@@ -19,44 +19,52 @@
 ### 核心技术栈
 
 #### UI层
+
 - **Jetpack Compose** - 声明式UI框架
 - **Material Design 3** - 现代化设计系统
 - **Compose Navigation** - 类型安全的导航系统
 - **Accompanist** - Compose辅助库（权限、系统UI控制等）
 
 #### 架构模式
+
 - **Clean Architecture** - 清晰的层次划分
 - **MVVM Pattern** - Model-View-ViewModel架构
 - **Repository Pattern** - 数据访问抽象层
 - **Use Cases** - 业务逻辑封装
 
 #### 依赖注入
+
 - **Hilt** - 官方推荐的依赖注入框架
 - 模块化配置
 - 编译时验证
 
 #### 异步处理
+
 - **Kotlin Coroutines** - 协程处理异步操作
 - **Flow** - 响应式数据流
 - **StateFlow/SharedFlow** - 状态管理
 - **Channel** - 事件通信
 
 #### 本地存储
+
 - **Room Database** - 类型安全的SQLite抽象层
 - **DataStore** - 现代化的数据存储方案（替代SharedPreferences）
 - **加密存储** - 敏感数据加密（使用EncryptedSharedPreferences）
 
 #### 网络层
+
 - **Retrofit** - REST API客户端
 - **OkHttp** - HTTP客户端
 - **Kotlin Serialization** - JSON序列化（性能优于Gson）
 - **Coil** - 图片加载库（Compose优化）
 
 #### 实时通信
+
 - **Socket.IO Client** - WebSocket通信
 - **Server-Sent Events** - 服务器推送
 
 #### 测试
+
 - **JUnit5** - 单元测试框架
 - **MockK** - Kotlin Mock框架
 - **Turbine** - Flow测试工具
@@ -64,6 +72,7 @@
 - **Hilt Testing** - 依赖注入测试
 
 #### 工具链
+
 - **Gradle Version Catalog** - 统一依赖管理
 - **Detekt** - Kotlin代码静态分析
 - **ktlint** - Kotlin代码格式化
@@ -234,11 +243,13 @@ anzhuo/
 ### 数据同步策略
 
 #### 单一真相来源 (Single Source of Truth)
+
 - **数据库为主**：本地Room数据库作为唯一数据源
 - **网络为辅**：API数据更新本地数据库
 - **UI观察**：UI层观察数据库Flow
 
 #### 同步流程
+
 ```kotlin
 // Repository实现示例
 class InventoryRepositoryImpl(
@@ -268,17 +279,20 @@ class InventoryRepositoryImpl(
 ## 🎨 UI/UX设计原则
 
 ### Material Design 3
+
 - **动态配色**：支持Material You主题
 - **自适应布局**：支持手机、平板多种屏幕
 - **深色模式**：完整的深色主题支持
 
 ### 交互设计
+
 - **手势操作**：滑动删除、下拉刷新
 - **即时反馈**：操作立即响应
 - **错误恢复**：友好的错误提示和重试机制
 - **加载状态**：明确的加载指示器
 
 ### 性能优化
+
 - **懒加载**：LazyColumn虚拟化长列表
 - **图片优化**：Coil自动缓存和压缩
 - **后台工作**：WorkManager处理后台任务
@@ -287,17 +301,20 @@ class InventoryRepositoryImpl(
 ## 🔐 安全机制
 
 ### 身份认证
+
 - **JWT Token**：与Web端统一的认证机制
 - **Token刷新**：自动刷新过期Token
 - **安全存储**：EncryptedDataStore存储Token
 
 ### 数据安全
+
 - **HTTPS**：强制使用加密传输
 - **证书固定**：防止中间人攻击
 - **本地加密**：敏感数据SQLCipher加密
 - **权限最小化**：仅申请必要权限
 
 ### 代码安全
+
 - **ProGuard/R8**：代码混淆
 - **签名验证**：防止应用篡改
 - **Root检测**：检测越狱设备
@@ -305,31 +322,37 @@ class InventoryRepositoryImpl(
 ## 📊 监控与分析
 
 ### 崩溃监控
+
 - **Firebase Crashlytics**：崩溃日志收集
 - **自定义日志**：业务关键点日志
 
 ### 性能监控
+
 - **App Startup**：启动性能分析
 - **Baseline Profiles**：性能优化配置
 - **Systrace**：系统级性能追踪
 
 ### 用户分析
+
 - **Firebase Analytics**：用户行为分析
 - **自定义事件**：业务关键指标
 
 ## 🚀 部署流程
 
 ### 构建变体
+
 - **Debug**：开发调试版本
 - **Staging**：测试环境版本
 - **Release**：生产环境版本
 
 ### CI/CD
+
 - **GitHub Actions**：自动化构建和测试
 - **自动签名**：Gradle配置签名
 - **版本管理**：语义化版本号
 
 ### 发布渠道
+
 - **内部测试**：Alpha测试轨道
 - **公开测试**：Beta测试轨道
 - **正式发布**：生产轨道
@@ -337,16 +360,19 @@ class InventoryRepositoryImpl(
 ## 📝 开发规范
 
 ### Kotlin编码规范
+
 - 遵循官方Kotlin编码规范
 - 使用ktlint自动格式化
 - Detekt静态代码分析
 
 ### Compose规范
+
 - 无状态Composable优先
 - 状态提升原则
 - 副作用正确使用
 
 ### Git规范
+
 - 功能分支开发
 - Commit Message规范
 - Code Review流程
@@ -354,16 +380,19 @@ class InventoryRepositoryImpl(
 ## 🧪 测试策略
 
 ### 单元测试
+
 - Repository测试（使用Fake实现）
 - ViewModel测试（使用Turbine）
 - Use Case测试
 
 ### UI测试
+
 - Compose UI测试
 - 关键业务流程测试
 - 无障碍功能测试
 
 ### 集成测试
+
 - API集成测试
 - 数据库迁移测试
 - 端到端测试
@@ -371,15 +400,18 @@ class InventoryRepositoryImpl(
 ## 📚 参考资源
 
 ### 官方文档
+
 - [Android开发者文档](https://developer.android.com)
 - [Jetpack Compose文档](https://developer.android.com/compose)
 - [Material Design 3](https://m3.material.io)
 
 ### 学习资源
+
 - [Now in Android](https://github.com/android/nowinandroid) - Google官方示例项目
 - [Android Architecture Samples](https://github.com/android/architecture-samples)
 
 ### 社区资源
+
 - [Android Weekly](https://androidweekly.net)
 - [Kotlin Weekly](https://kotlinweekly.net)
 

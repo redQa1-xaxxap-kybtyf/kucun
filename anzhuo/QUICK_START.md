@@ -5,6 +5,7 @@
 ## 🎯 项目目标
 
 为瓷砖行业ERP系统开发**现代化Android原生客户端**，提供：
+
 - ✨ 流畅的原生体验
 - 🔄 离线优先功能
 - 📱 Material Design 3设计
@@ -17,6 +18,7 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ```
 
 ### 完整技术栈
+
 - **UI**: Jetpack Compose + Material Design 3
 - **架构**: MVVM + Clean Architecture
 - **DI**: Hilt
@@ -26,18 +28,20 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 
 ## 📅 时间规划
 
-| 阶段 | 时间 | 交付物 |
-|------|------|--------|
-| Phase 1 | 2周 | 基础架构 + 登录功能 |
-| Phase 2 | 6周 | 核心业务功能 |
-| Phase 3 | 2周 | 优化与测试 |
-| Phase 4 | 1周 | 发布准备 |
-| **总计** | **11周** | **完整MVP** |
+| 阶段     | 时间     | 交付物              |
+| -------- | -------- | ------------------- |
+| Phase 1  | 2周      | 基础架构 + 登录功能 |
+| Phase 2  | 6周      | 核心业务功能        |
+| Phase 3  | 2周      | 优化与测试          |
+| Phase 4  | 1周      | 发布准备            |
+| **总计** | **11周** | **完整MVP**         |
 
 ## 🚀 下一步行动
 
 ### 立即开始
+
 1. **创建Android项目**
+
    ```bash
    # 使用Android Studio创建新项目
    # 选择Empty Activity
@@ -56,6 +60,7 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
    - 设置Git hooks
 
 ### 第一周任务
+
 - [ ] 项目初始化
 - [ ] 配置Hilt DI
 - [ ] 搭建网络层（Retrofit）
@@ -63,6 +68,7 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 - [ ] 设计系统基础
 
 ### 关键里程碑
+
 - **Week 2**: 完成登录功能
 - **Week 4**: 库存管理完成
 - **Week 8**: 所有核心功能完成
@@ -71,10 +77,12 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ## 📚 学习资源
 
 ### 必看项目
+
 1. [Now in Android](https://github.com/android/nowinandroid) - Google官方示例
 2. [Architecture Samples](https://github.com/android/architecture-samples) - 架构模式示例
 
 ### 推荐文档
+
 1. [Jetpack Compose文档](https://developer.android.com/compose)
 2. [Modern App Architecture](https://developer.android.com/topic/architecture)
 3. [Kotlin协程指南](https://kotlinlang.org/docs/coroutines-guide.html)
@@ -82,11 +90,13 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ## 🎓 团队配置
 
 ### 建议规模
+
 - **Android开发**: 2-3人
 - **UI/UX设计**: 1人（兼职）
 - **测试工程师**: 1人（兼职）
 
 ### 技能要求
+
 - Kotlin熟练
 - Jetpack Compose基础
 - 理解MVVM架构
@@ -95,11 +105,13 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ## 📞 获取帮助
 
 ### 文档位置
+
 - `README.md` - 项目概览和技术架构
 - `IMPLEMENTATION_PLAN.md` - 详细实施计划
 - `TECH_STACK_COMPARISON.md` - 技术选型对比
 
 ### 开发规范
+
 - 遵循Kotlin编码规范
 - 使用ktlint自动格式化
 - 所有代码必须通过Code Review
@@ -108,18 +120,21 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ## ✅ 开发检查清单
 
 ### 开始前
+
 - [ ] 理解Clean Architecture
 - [ ] 熟悉Jetpack Compose
 - [ ] 学习Hilt依赖注入
 - [ ] 了解Kotlin Coroutines
 
 ### 开发中
+
 - [ ] 每日代码提交
 - [ ] 及时更新文档
 - [ ] 定期代码审查
 - [ ] 持续集成测试
 
 ### 发布前
+
 - [ ] 测试覆盖率 > 70%
 - [ ] 性能测试通过
 - [ ] 安全审计通过
@@ -128,12 +143,14 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ## 🎯 成功标准
 
 ### 技术指标
+
 - ✅ 启动时间 < 2秒
 - ✅ 关键页面加载 < 1秒
 - ✅ 崩溃率 < 0.5%
 - ✅ 代码测试覆盖 > 70%
 
 ### 业务指标
+
 - ✅ 核心功能完整度 100%
 - ✅ 用户体验评分 > 4.5
 - ✅ 日活用户 > 100
@@ -163,6 +180,7 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 ## 🚦 风险提醒
 
 ### 需要注意的问题
+
 1. **架构设计**
    - 过度设计会增加复杂度
    - 保持YAGNI原则
@@ -187,6 +205,7 @@ Kotlin + Jetpack Compose + MVVM + Clean Architecture
 3. 按照IMPLEMENTATION_PLAN.md逐步实施
 
 **记住**：
+
 - 🎯 保持专注，一次完成一个功能
 - 📝 及时文档化决策和变更
 - 🤝 定期团队沟通

@@ -33,7 +33,10 @@ toast({
   title: '订单创建成功',
   description: `订单 ${orderNumber} 已创建`,
   action: (
-    <ToastAction altText="查看订单" onClick={() => router.push(`/sales-orders/${id}`)}>
+    <ToastAction
+      altText="查看订单"
+      onClick={() => router.push(`/sales-orders/${id}`)}
+    >
       查看
     </ToastAction>
   ),
@@ -62,7 +65,11 @@ toast({
 toast({
   title: '创建成功',
   description: `${entityType} ${identifier} 已创建`,
-  action: <ToastAction altText="查看详情" onClick={handleView}>查看</ToastAction>,
+  action: (
+    <ToastAction altText="查看详情" onClick={handleView}>
+      查看
+    </ToastAction>
+  ),
 });
 ```
 
@@ -105,12 +112,12 @@ toast({
 
 ## variant 使用规范
 
-| variant | 使用场景 |
-|---------|---------|
-| `default` | 普通信息提示 |
-| `success` | 操作成功 |
-| `destructive` | 错误或失败 |
-| `warning` | 警告信息 |
+| variant       | 使用场景     |
+| ------------- | ------------ |
+| `default`     | 普通信息提示 |
+| `success`     | 操作成功     |
+| `destructive` | 错误或失败   |
+| `warning`     | 警告信息     |
 
 ## 注意事项
 

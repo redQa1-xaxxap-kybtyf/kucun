@@ -66,4 +66,3 @@ created_at: 2025-12-25
 3. 门禁策略决策：
    - 若 `lint`/`format:check` 作为上线硬门禁：需要集中治理（先 `npm run format`，再分批处理 ESLint 规则告警或调整规则为 warning 不阻断）。
    - 若暂不作为硬门禁：在 release note 里记录为“技术债”，并约定治理窗口与负责人。
-

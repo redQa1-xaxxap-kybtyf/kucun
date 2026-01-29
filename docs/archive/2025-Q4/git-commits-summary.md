@@ -11,6 +11,7 @@
 ### 提交 1: 修复重置筛选按钮功能
 
 **提交信息**:
+
 ```
 fix(inventory): 修复重置筛选按钮不清空搜索词的问题
 
@@ -20,13 +21,14 @@ fix(inventory): 修复重置筛选按钮不清空搜索词的问题
 ```
 
 **修改的文件**:
+
 - `components/inventory/InventorySearchToolbar.tsx`
 - `app/(dashboard)/inventory/page-client.tsx`
 
 **修改内容**:
+
 1. `InventorySearchToolbar.tsx`:
    - 在 `hasActiveFilters` 计算中添加 `!!(queryParams.search && queryParams.search.trim())`
-   
 2. `page-client.tsx`:
    - 在 `handleClearFilters` 函数中添加 `search: undefined`
 
@@ -35,6 +37,7 @@ fix(inventory): 修复重置筛选按钮不清空搜索词的问题
 ### 提交 2: 修复排序选项和单字符搜索
 
 **提交信息**:
+
 ```
 fix(inventory): 修复排序选项不匹配和单字符搜索问题
 
@@ -50,6 +53,7 @@ Bug 3: 单字符搜索返回空列表
 ```
 
 **修改的文件**:
+
 - `lib/schemas/inventory-params.ts`
 - `lib/api/inventory-query-builder.ts`
 - `lib/configs/filter-configs.ts`
@@ -65,7 +69,6 @@ Bug 3: 单字符搜索返回空列表
    - **排序修复**：
      - 在 `buildOrderByClause` 函数中添加 `reservedQuantity: 'i.reserved_quantity'` 映射
      - 确保所有 Schema 定义的排序字段都有对应的数据库字段映射
-   
    - **搜索修复**：
      - 移除单字符搜索的 `1=0` 限制
      - 单字符搜索支持：产品编码前缀匹配 + 产品名称包含匹配
@@ -121,6 +124,7 @@ Bug 3: 单字符搜索返回空列表
 ### 未提交的文件
 
 以下文件已创建但未提交（按照用户要求）：
+
 - `scripts/test-inventory-bugs.ts` - 测试脚本
 - `docs/bug-fixes/inventory-overview-bugs-fix.md` - 详细修复文档
 - `docs/git-commits-summary.md` - 本文件（提交总结）
@@ -130,6 +134,7 @@ Bug 3: 单字符搜索返回空列表
 ## ✅ 验证清单
 
 ### 提交前检查
+
 - [x] 所有修改的文件已暂存
 - [x] 提交信息符合项目规范（`type(scope): subject`）
 - [x] 提交信息清晰描述了修复内容
@@ -137,6 +142,7 @@ Bug 3: 单字符搜索返回空列表
 - [x] 未提交数据库文件或临时文件
 
 ### 提交后验证
+
 - [ ] 运行 `git log` 查看提交历史
 - [ ] 运行 `git show <commit-hash>` 查看提交详情
 - [ ] 运行 `npm run lint` 确保代码规范
@@ -184,4 +190,3 @@ git push origin <branch-name>
 
 **最后更新**: 2025-01-13  
 **状态**: ✅ 提交完成，待测试验证
-

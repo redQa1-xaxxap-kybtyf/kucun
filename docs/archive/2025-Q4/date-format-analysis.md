@@ -16,22 +16,22 @@
 
 项目已经有一个完善的日期时间工具文件，包含：
 
-| 函数名 | 用途 | 默认格式 | 状态 |
-|--------|------|----------|------|
-| `formatDate()` | 格式化日期 | `yyyy-MM-dd` | ✅ 已有 |
-| `formatDateTime()` | 格式化日期时间 | `yyyy-MM-dd HH:mm` | ⚠️ 缺少秒 |
-| `formatDateTimeCN()` | 中文日期时间 | `yyyy年MM月dd日 HH:mm` | ⚠️ 缺少秒 |
-| `formatTimeAgo()` | 相对时间 | `X分钟前` | ✅ 已有 |
-| `toISOString()` | ISO格式 | `2025-01-14T10:30:45.000Z` | ✅ 已有 |
+| 函数名               | 用途           | 默认格式                   | 状态      |
+| -------------------- | -------------- | -------------------------- | --------- |
+| `formatDate()`       | 格式化日期     | `yyyy-MM-dd`               | ✅ 已有   |
+| `formatDateTime()`   | 格式化日期时间 | `yyyy-MM-dd HH:mm`         | ⚠️ 缺少秒 |
+| `formatDateTimeCN()` | 中文日期时间   | `yyyy年MM月dd日 HH:mm`     | ⚠️ 缺少秒 |
+| `formatTimeAgo()`    | 相对时间       | `X分钟前`                  | ✅ 已有   |
+| `toISOString()`      | ISO格式        | `2025-01-14T10:30:45.000Z` | ✅ 已有   |
 
 #### 📋 日期格式常量
 
 ```typescript
 export const DATE_FORMATS = {
-  DATE: 'yyyy-MM-dd',                    // ✅ 正确
-  DATETIME: 'yyyy-MM-dd HH:mm',          // ⚠️ 缺少秒
-  DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss',  // ✅ 正确（但未被广泛使用）
-  TIME: 'HH:mm',                         // ⚠️ 缺少秒
+  DATE: 'yyyy-MM-dd', // ✅ 正确
+  DATETIME: 'yyyy-MM-dd HH:mm', // ⚠️ 缺少秒
+  DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss', // ✅ 正确（但未被广泛使用）
+  TIME: 'HH:mm', // ⚠️ 缺少秒
   DATE_CN: 'yyyy年MM月dd日',
   DATETIME_CN: 'yyyy年MM月dd日 HH:mm',
   DATETIME_FULL_CN: 'yyyy年MM月dd日 HH:mm:ss',
@@ -46,16 +46,17 @@ export const DATE_FORMATS = {
 
 #### 📈 格式分布统计
 
-| 格式类型 | 使用次数 | 占比 | 示例 |
-|---------|---------|------|------|
-| `yyyy-MM-dd` | ~45 | 35% | `2025-01-14` |
-| `yyyy-MM-dd HH:mm` | ~30 | 23% | `2025-01-14 10:30` |
-| `yyyy-MM-dd HH:mm:ss` | ~8 | 6% | `2025-01-14 10:30:45` |
-| `toLocaleDateString()` | ~12 | 9% | `2025/1/14` |
-| `toLocaleString()` | ~15 | 12% | `2025/1/14 10:30:45` |
-| ISO 8601 | ~20 | 15% | `2025-01-14T10:30:45.000Z` |
+| 格式类型               | 使用次数 | 占比 | 示例                       |
+| ---------------------- | -------- | ---- | -------------------------- |
+| `yyyy-MM-dd`           | ~45      | 35%  | `2025-01-14`               |
+| `yyyy-MM-dd HH:mm`     | ~30      | 23%  | `2025-01-14 10:30`         |
+| `yyyy-MM-dd HH:mm:ss`  | ~8       | 6%   | `2025-01-14 10:30:45`      |
+| `toLocaleDateString()` | ~12      | 9%   | `2025/1/14`                |
+| `toLocaleString()`     | ~15      | 12%  | `2025/1/14 10:30:45`       |
+| ISO 8601               | ~20      | 15%  | `2025-01-14T10:30:45.000Z` |
 
-**结论**: 
+**结论**:
+
 - ✅ 只有 **6%** 的地方使用完整的 `HH:mm:ss` 格式
 - ⚠️ **23%** 的地方缺少秒显示
 - ❌ **21%** 的地方使用原生 JS 方法，格式不统一
@@ -73,14 +74,15 @@ export const DATE_FORMATS = {
 
 ```typescript
 // ❌ 错误示例
-new Date(payment.createdAt).toLocaleString('zh-CN')
+new Date(payment.createdAt).toLocaleString('zh-CN');
 // 输出: "2025/1/14 10:30:45" (斜杠分隔，不统一)
 
-new Date(customer.createdAt).toLocaleDateString('zh-CN')
+new Date(customer.createdAt).toLocaleDateString('zh-CN');
 // 输出: "2025/1/14" (缺少时间)
 ```
 
 **影响文件**:
+
 - `app/(dashboard)/customers/[id]/page.tsx`
 - `app/(dashboard)/finance/payments/[id]/page-client.tsx`
 - `app/(dashboard)/finance/refunds/[id]/page.tsx`
@@ -100,14 +102,15 @@ new Date(customer.createdAt).toLocaleDateString('zh-CN')
 ```typescript
 // ❌ 错误示例
 import { format } from 'date-fns';
-format(new Date(), 'yyyy-MM-dd')  // 应该使用 formatDate()
+format(new Date(), 'yyyy-MM-dd'); // 应该使用 formatDate()
 
 // ✅ 正确示例
 import { formatDate } from '@/lib/utils/datetime';
-formatDate(new Date())
+formatDate(new Date());
 ```
 
 **影响文件**:
+
 - `app/(dashboard)/finance/customer-statements/[customerId]/page.tsx`
 - `app/(dashboard)/finance/payments/create/page.tsx`
 - `app/(dashboard)/finance/statements/[id]/page.tsx`
@@ -126,15 +129,16 @@ formatDate(new Date())
 
 ```typescript
 // ⚠️ 当前格式（缺少秒）
-formatDateTime(payment.createdAt)
+formatDateTime(payment.createdAt);
 // 输出: "2025-01-14 10:30"
 
 // ✅ 应该使用完整格式
-formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL)
+formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL);
 // 输出: "2025-01-14 10:30:45"
 ```
 
 **影响文件**:
+
 - `app/(dashboard)/finance/statements/[id]/components/statement-basic-info.tsx`
 - `components/finance/payables-client/PayableTableList.tsx`
 - `components/finance/receivables-client/ReceivablesTableList.tsx`
@@ -151,11 +155,11 @@ formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL)
 
 ```typescript
 // 💡 当前格式（只有日期）
-formatDate(order.createdAt)
+formatDate(order.createdAt);
 // 输出: "2025-01-14"
 
 // ✅ 建议使用完整格式
-formatDateTime(order.createdAt, DATE_FORMATS.DATETIME_FULL)
+formatDateTime(order.createdAt, DATE_FORMATS.DATETIME_FULL);
 // 输出: "2025-01-14 10:30:45"
 ```
 
@@ -169,12 +173,12 @@ formatDateTime(order.createdAt, DATE_FORMATS.DATETIME_FULL)
 
 #### 显示格式标准
 
-| 场景 | 推荐格式 | 函数 | 示例 |
-|------|---------|------|------|
-| **时间戳字段** | `yyyy-MM-dd HH:mm:ss` | `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` | `2025-01-14 10:30:45` |
-| **业务日期** | `yyyy-MM-dd` | `formatDate(date)` | `2025-01-14` |
-| **相对时间** | `X分钟前` | `formatTimeAgo(date)` | `5分钟前` |
-| **API 响应** | ISO 8601 | `toISOString(date)` | `2025-01-14T10:30:45.000Z` |
+| 场景           | 推荐格式              | 函数                                               | 示例                       |
+| -------------- | --------------------- | -------------------------------------------------- | -------------------------- |
+| **时间戳字段** | `yyyy-MM-dd HH:mm:ss` | `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` | `2025-01-14 10:30:45`      |
+| **业务日期**   | `yyyy-MM-dd`          | `formatDate(date)`                                 | `2025-01-14`               |
+| **相对时间**   | `X分钟前`             | `formatTimeAgo(date)`                              | `5分钟前`                  |
+| **API 响应**   | ISO 8601              | `toISOString(date)`                                | `2025-01-14T10:30:45.000Z` |
 
 #### 核心原则
 
@@ -190,13 +194,13 @@ formatDateTime(order.createdAt, DATE_FORMATS.DATETIME_FULL)
 ```typescript
 // 修改前
 export const DATE_FORMATS = {
-  DATETIME: 'yyyy-MM-dd HH:mm',  // ❌ 缺少秒
+  DATETIME: 'yyyy-MM-dd HH:mm', // ❌ 缺少秒
 };
 
 // 修改后
 export const DATE_FORMATS = {
-  DATETIME: 'yyyy-MM-dd HH:mm:ss',  // ✅ 包含秒
-  DATETIME_SHORT: 'yyyy-MM-dd HH:mm',  // 保留短格式供特殊场景使用
+  DATETIME: 'yyyy-MM-dd HH:mm:ss', // ✅ 包含秒
+  DATETIME_SHORT: 'yyyy-MM-dd HH:mm', // 保留短格式供特殊场景使用
 };
 ```
 
@@ -210,29 +214,29 @@ export const DATE_FORMATS = {
 
 #### P0 - 立即修复（用户高频使用页面）
 
-| 文件 | 问题 | 修改内容 |
-|------|------|----------|
-| `app/(dashboard)/finance/payments/[id]/page-client.tsx` | 使用 `toLocaleString()` | 替换为 `formatDateTime()` |
-| `app/(dashboard)/finance/refunds/[id]/page.tsx` | 使用 `toLocaleString()` | 替换为 `formatDateTime()` |
-| `components/customers/erp-customer-list.tsx` | 使用 `toLocaleString()` | 替换为 `formatDateTime()` |
-| `components/finance/payables-client/PayableTableList.tsx` | 缺少秒 | 使用 `DATETIME_FULL` |
-| `components/finance/receivables-client/ReceivablesTableList.tsx` | 缺少秒 | 使用 `DATETIME_FULL` |
+| 文件                                                             | 问题                    | 修改内容                  |
+| ---------------------------------------------------------------- | ----------------------- | ------------------------- |
+| `app/(dashboard)/finance/payments/[id]/page-client.tsx`          | 使用 `toLocaleString()` | 替换为 `formatDateTime()` |
+| `app/(dashboard)/finance/refunds/[id]/page.tsx`                  | 使用 `toLocaleString()` | 替换为 `formatDateTime()` |
+| `components/customers/erp-customer-list.tsx`                     | 使用 `toLocaleString()` | 替换为 `formatDateTime()` |
+| `components/finance/payables-client/PayableTableList.tsx`        | 缺少秒                  | 使用 `DATETIME_FULL`      |
+| `components/finance/receivables-client/ReceivablesTableList.tsx` | 缺少秒                  | 使用 `DATETIME_FULL`      |
 
 #### P1 - 逐步修复（其他页面）
 
-| 文件类型 | 数量 | 修改策略 |
-|---------|------|----------|
-| 财务模块 | ~15 | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
-| 库存模块 | ~10 | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
-| 客户模块 | ~8 | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
-| 仪表盘 | ~5 | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
+| 文件类型 | 数量 | 修改策略                                                    |
+| -------- | ---- | ----------------------------------------------------------- |
+| 财务模块 | ~15  | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
+| 库存模块 | ~10  | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
+| 客户模块 | ~8   | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
+| 仪表盘   | ~5   | 统一使用 `formatDateTime(date, DATE_FORMATS.DATETIME_FULL)` |
 
 #### P2 - 可选修复（低频页面）
 
-| 文件类型 | 数量 | 修改策略 |
-|---------|------|----------|
-| 设置页面 | ~5 | 根据需要修复 |
-| 帮助页面 | ~2 | 根据需要修复 |
+| 文件类型 | 数量 | 修改策略     |
+| -------- | ---- | ------------ |
+| 设置页面 | ~5   | 根据需要修复 |
+| 帮助页面 | ~2   | 根据需要修复 |
 
 ### 3.2 实施步骤
 
@@ -241,41 +245,45 @@ export const DATE_FORMATS = {
 ```typescript
 // lib/utils/datetime.ts
 export const DATE_FORMATS = {
-  DATETIME: 'yyyy-MM-dd HH:mm:ss',  // 修改默认格式
-  DATETIME_SHORT: 'yyyy-MM-dd HH:mm',  // 新增短格式
+  DATETIME: 'yyyy-MM-dd HH:mm:ss', // 修改默认格式
+  DATETIME_SHORT: 'yyyy-MM-dd HH:mm', // 新增短格式
 };
 ```
 
 #### 第二步：替换原生 JS 方法
 
 **查找模式**:
+
 ```bash
 toLocaleDateString|toLocaleString
 ```
 
 **替换方案**:
+
 ```typescript
 // 替换前
-new Date(payment.createdAt).toLocaleString('zh-CN')
+new Date(payment.createdAt).toLocaleString('zh-CN');
 
 // 替换后
-formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL)
+formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL);
 ```
 
 #### 第三步：统一 `format()` 调用
 
 **查找模式**:
+
 ```bash
 format\(.*'yyyy-MM-dd HH:mm'\)
 ```
 
 **替换方案**:
+
 ```typescript
 // 替换前
-format(new Date(expense.createdAt), 'yyyy-MM-dd HH:mm:ss')
+format(new Date(expense.createdAt), 'yyyy-MM-dd HH:mm:ss');
 
 // 替换后
-formatDateTime(expense.createdAt, DATE_FORMATS.DATETIME_FULL)
+formatDateTime(expense.createdAt, DATE_FORMATS.DATETIME_FULL);
 ```
 
 #### 第四步：验证修改
@@ -296,13 +304,13 @@ npm run type-check
 
 ### 4.1 修改范围
 
-| 模块 | 文件数 | 修改行数 | 风险等级 |
-|------|--------|----------|----------|
-| 财务模块 | ~15 | ~50 | 🟡 中等 |
-| 库存模块 | ~10 | ~30 | 🟢 低 |
-| 客户模块 | ~8 | ~25 | 🟢 低 |
-| 仪表盘 | ~5 | ~15 | 🟢 低 |
-| 其他 | ~10 | ~20 | 🟢 低 |
+| 模块     | 文件数  | 修改行数 | 风险等级    |
+| -------- | ------- | -------- | ----------- |
+| 财务模块 | ~15     | ~50      | 🟡 中等     |
+| 库存模块 | ~10     | ~30      | 🟢 低       |
+| 客户模块 | ~8      | ~25      | 🟢 低       |
+| 仪表盘   | ~5      | ~15      | 🟢 低       |
+| 其他     | ~10     | ~20      | 🟢 低       |
 | **总计** | **~48** | **~140** | **🟡 中等** |
 
 ### 4.2 风险分析
@@ -361,4 +369,3 @@ npm run type-check
 **最后更新**: 2025-01-14  
 **维护者**: Augment Agent  
 **版本**: 1.0.0
-

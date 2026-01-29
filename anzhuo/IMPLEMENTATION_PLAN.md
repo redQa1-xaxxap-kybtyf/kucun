@@ -5,6 +5,7 @@
 ## 📋 项目实施概览
 
 ### 总体时间规划
+
 - **Phase 1**: 基础架构搭建（2周）
 - **Phase 2**: 核心功能开发（6周）
 - **Phase 3**: 优化与测试（2周）
@@ -18,9 +19,11 @@
 ### Week 1: 项目初始化与核心配置
 
 #### 1.1 项目创建与配置
+
 **时间**: 1天
 
 **任务清单**:
+
 - [ ] 创建Android项目（最小SDK 26，目标SDK 35）
 - [ ] 配置Gradle Version Catalog
 - [ ] 配置多模块项目结构
@@ -28,6 +31,7 @@
 - [ ] 配置Git hooks（pre-commit检查）
 
 **技术决策**:
+
 ```kotlin
 // gradle/libs.versions.toml
 [versions]
@@ -45,20 +49,24 @@ hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref
 ```
 
 **交付物**:
+
 - ✅ 可运行的空白项目
 - ✅ 完整的模块结构
 - ✅ 配置好的构建脚本
 
 #### 1.2 依赖注入配置
+
 **时间**: 1天
 
 **任务清单**:
+
 - [ ] 配置Hilt Application
 - [ ] 创建核心DI模块（AppModule, NetworkModule, DatabaseModule）
 - [ ] 配置CoroutineDispatcher注入
 - [ ] 配置Application Scope
 
 **代码示例**:
+
 ```kotlin
 @HiltAndroidApp
 class KucunApplication : Application() {
@@ -89,13 +97,16 @@ object AppModule {
 ```
 
 **交付物**:
+
 - ✅ 完整的DI配置
 - ✅ 单元测试验证DI工作正常
 
 #### 1.3 网络层搭建
+
 **时间**: 2天
 
 **任务清单**:
+
 - [ ] 配置Retrofit + OkHttp
 - [ ] 创建API接口定义
 - [ ] 实现认证拦截器（Token注入）
@@ -104,6 +115,7 @@ object AppModule {
 - [ ] 配置Kotlin Serialization
 
 **代码示例**:
+
 ```kotlin
 @Module
 @InstallIn(SingletonComponent::class)
@@ -150,6 +162,7 @@ class AuthInterceptor @Inject constructor(
 ```
 
 **API接口定义**:
+
 ```kotlin
 interface AuthApi {
     @POST("auth/login")
@@ -178,15 +191,18 @@ interface InventoryApi {
 ```
 
 **交付物**:
+
 - ✅ 完整的网络层配置
 - ✅ API接口定义（Auth, Inventory, Product等）
 - ✅ 拦截器实现
 - ✅ 单元测试（使用MockWebServer）
 
 #### 1.4 本地数据库搭建
+
 **时间**: 2天
 
 **任务清单**:
+
 - [ ] 配置Room Database
 - [ ] 定义核心Entity（User, Product, Inventory等）
 - [ ] 创建DAO接口
@@ -194,6 +210,7 @@ interface InventoryApi {
 - [ ] 配置DataStore（替代SharedPreferences）
 
 **数据库设计**:
+
 ```kotlin
 @Database(
     entities = [
@@ -249,6 +266,7 @@ interface ProductDao {
 ```
 
 **DataStore配置**:
+
 ```kotlin
 @Singleton
 class PreferencesManager @Inject constructor(
@@ -273,6 +291,7 @@ class PreferencesManager @Inject constructor(
 ```
 
 **交付物**:
+
 - ✅ 完整的数据库配置
 - ✅ 核心Entity和DAO定义
 - ✅ DataStore配置
@@ -281,9 +300,11 @@ class PreferencesManager @Inject constructor(
 ### Week 2: 设计系统与导航架构
 
 #### 1.5 设计系统搭建
+
 **时间**: 2天
 
 **任务清单**:
+
 - [ ] 配置Material Design 3主题
 - [ ] 定义颜色系统（亮色/暗色主题）
 - [ ] 定义字体系统
@@ -291,6 +312,7 @@ class PreferencesManager @Inject constructor(
 - [ ] 实现设计Token
 
 **主题配置**:
+
 ```kotlin
 // Color.kt
 val md_theme_light_primary = Color(0xFF006C4C)
@@ -328,6 +350,7 @@ fun KucunTheme(
 ```
 
 **通用组件**:
+
 ```kotlin
 // KucunButton.kt
 @Composable
@@ -380,14 +403,17 @@ fun KucunTopBar(
 ```
 
 **交付物**:
+
 - ✅ 完整的主题配置
 - ✅ 通用组件库（Button, Card, TextField等）
 - ✅ 组件预览（Compose Previews）
 
 #### 1.6 导航架构
+
 **时间**: 2天
 
 **任务清单**:
+
 - [ ] 配置Compose Navigation
 - [ ] 定义导航路由（类型安全）
 - [ ] 实现底部导航栏
@@ -395,6 +421,7 @@ fun KucunTopBar(
 - [ ] 实现导航动画
 
 **导航配置**:
+
 ```kotlin
 // NavigationRoutes.kt
 sealed class Screen(val route: String) {
@@ -499,21 +526,25 @@ fun BottomNavigationBar(
 ```
 
 **交付物**:
+
 - ✅ 完整的导航配置
 - ✅ 类型安全的路由定义
 - ✅ 底部导航栏实现
 - ✅ 导航动画配置
 
 #### 1.7 基础功能验证
+
 **时间**: 1天
 
 **任务清单**:
+
 - [ ] 实现简单的登录界面
 - [ ] 实现API调用测试
 - [ ] 实现数据库读写测试
 - [ ] 端到端流程验证
 
 **登录流程示例**:
+
 ```kotlin
 // LoginViewModel.kt
 @HiltViewModel
@@ -587,6 +618,7 @@ fun LoginScreen(
 ```
 
 **交付物**:
+
 - ✅ 可运行的登录功能
 - ✅ 验证网络层、数据库、导航全部工作正常
 
@@ -597,9 +629,11 @@ fun LoginScreen(
 ### Week 3-4: 认证与库存管理
 
 #### 2.1 完整认证系统
+
 **时间**: 3天
 
 **功能清单**:
+
 - [ ] 登录界面（用户名/密码）
 - [ ] Token管理（存储、刷新）
 - [ ] 自动刷新Token逻辑
@@ -607,9 +641,11 @@ fun LoginScreen(
 - [ ] 用户资料显示
 
 #### 2.2 库存管理模块
+
 **时间**: 5天
 
 **功能清单**:
+
 - [ ] 库存列表（分页加载）
 - [ ] 搜索和筛选
 - [ ] 库存详情
@@ -619,6 +655,7 @@ fun LoginScreen(
 - [ ] 下拉刷新和上拉加载
 
 **Repository实现**:
+
 ```kotlin
 @Singleton
 class InventoryRepositoryImpl @Inject constructor(
@@ -662,6 +699,7 @@ class InventoryRepositoryImpl @Inject constructor(
 ```
 
 **ViewModel实现**:
+
 ```kotlin
 @HiltViewModel
 class InventoryListViewModel @Inject constructor(
@@ -719,9 +757,11 @@ fun InventoryListScreen(
 ### Week 5-6: 产品与销售管理
 
 #### 2.3 产品管理模块
+
 **时间**: 4天
 
 **功能清单**:
+
 - [ ] 产品列表（分类筛选）
 - [ ] 产品搜索
 - [ ] 产品详情（图片查看）
@@ -729,9 +769,11 @@ fun InventoryListScreen(
 - [ ] 图片上传（七牛云）
 
 #### 2.4 销售订单模块
+
 **时间**: 6天
 
 **功能清单**:
+
 - [ ] 订单列表（状态筛选）
 - [ ] 订单详情
 - [ ] 创建订单（产品选择、数量输入）
@@ -742,26 +784,32 @@ fun InventoryListScreen(
 ### Week 7-8: 客户、供应商与财务
 
 #### 2.5 客户管理
+
 **时间**: 3天
 
 **功能清单**:
+
 - [ ] 客户列表
 - [ ] 客户详情（交易历史）
 - [ ] 客户创建/编辑
 - [ ] 客户层级关系
 
 #### 2.6 供应商管理
+
 **时间**: 2天
 
 **功能清单**:
+
 - [ ] 供应商列表
 - [ ] 供应商详情
 - [ ] 供应商创建/编辑
 
 #### 2.7 财务管理
+
 **时间**: 5天
 
 **功能清单**:
+
 - [ ] 对账单列表
 - [ ] 对账单详情
 - [ ] 收款记录
@@ -776,9 +824,11 @@ fun InventoryListScreen(
 ### Week 9: 性能优化与用户体验
 
 #### 3.1 性能优化
+
 **时间**: 3天
 
 **优化清单**:
+
 - [ ] Baseline Profiles配置
 - [ ] 图片加载优化
 - [ ] 数据库查询优化
@@ -786,9 +836,11 @@ fun InventoryListScreen(
 - [ ] 启动速度优化
 
 #### 3.2 用户体验优化
+
 **时间**: 2天
 
 **优化清单**:
+
 - [ ] 加载状态优化
 - [ ] 错误处理优化
 - [ ] 动画效果调整
@@ -798,18 +850,22 @@ fun InventoryListScreen(
 ### Week 10: 测试与Bug修复
 
 #### 3.3 测试覆盖
+
 **时间**: 3天
 
 **测试清单**:
+
 - [ ] 单元测试（Repository, ViewModel, UseCase）
 - [ ] UI测试（关键流程）
 - [ ] 集成测试（API + Database）
 - [ ] 性能测试
 
 #### 3.4 Bug修复
+
 **时间**: 2天
 
 **任务**:
+
 - [ ] 修复测试发现的Bug
 - [ ] 用户反馈问题修复
 - [ ] 边界情况处理
@@ -821,9 +877,11 @@ fun InventoryListScreen(
 ### Week 11: 发布与部署
 
 #### 4.1 发布配置
+
 **时间**: 2天
 
 **任务清单**:
+
 - [ ] ProGuard/R8混淆配置
 - [ ] 签名配置
 - [ ] 版本号管理
@@ -831,18 +889,22 @@ fun InventoryListScreen(
 - [ ] 应用图标和启动屏幕
 
 #### 4.2 应用商店准备
+
 **时间**: 2天
 
 **任务清单**:
+
 - [ ] 应用描述撰写
 - [ ] 应用截图准备
 - [ ] 隐私政策页面
 - [ ] 用户协议页面
 
 #### 4.3 CI/CD配置
+
 **时间**: 1天
 
 **任务清单**:
+
 - [ ] GitHub Actions配置
 - [ ] 自动化测试流程
 - [ ] 自动化构建流程
@@ -852,20 +914,21 @@ fun InventoryListScreen(
 
 ## 📊 关键里程碑
 
-| 里程碑 | 完成日期 | 交付物 |
-|--------|---------|--------|
-| **M1**: 基础架构完成 | Week 2 | 可运行的基础框架 + 登录功能 |
-| **M2**: 核心功能50% | Week 4 | 认证 + 库存管理 |
-| **M3**: 核心功能100% | Week 8 | 所有核心模块完成 |
-| **M4**: Alpha版本 | Week 10 | 测试版本，内部测试 |
-| **M5**: Beta版本 | Week 11 | 公开测试版本 |
-| **M6**: 正式发布 | Week 11+ | 正式发布到应用商店 |
+| 里程碑               | 完成日期 | 交付物                      |
+| -------------------- | -------- | --------------------------- |
+| **M1**: 基础架构完成 | Week 2   | 可运行的基础框架 + 登录功能 |
+| **M2**: 核心功能50%  | Week 4   | 认证 + 库存管理             |
+| **M3**: 核心功能100% | Week 8   | 所有核心模块完成            |
+| **M4**: Alpha版本    | Week 10  | 测试版本，内部测试          |
+| **M5**: Beta版本     | Week 11  | 公开测试版本                |
+| **M6**: 正式发布     | Week 11+ | 正式发布到应用商店          |
 
 ---
 
 ## 🎯 成功指标
 
 ### 技术指标
+
 - [ ] 代码测试覆盖率 > 70%
 - [ ] 应用启动时间 < 2秒
 - [ ] 关键页面加载时间 < 1秒
@@ -873,6 +936,7 @@ fun InventoryListScreen(
 - [ ] ANR率 < 0.1%
 
 ### 业务指标
+
 - [ ] 核心功能完成度 100%
 - [ ] 用户体验评分 > 4.5
 - [ ] 日活用户 > 100
@@ -883,25 +947,28 @@ fun InventoryListScreen(
 ## ⚠️ 风险与应对
 
 ### 技术风险
-| 风险 | 影响 | 应对措施 |
-|------|------|----------|
-| 网络层不稳定 | 高 | 实现离线缓存，添加重试机制 |
-| 数据库迁移失败 | 高 | 完善迁移测试，提供回滚方案 |
-| 性能问题 | 中 | 持续性能监控，及早发现问题 |
-| 设备兼容性 | 中 | 扩大测试设备范围 |
+
+| 风险           | 影响 | 应对措施                   |
+| -------------- | ---- | -------------------------- |
+| 网络层不稳定   | 高   | 实现离线缓存，添加重试机制 |
+| 数据库迁移失败 | 高   | 完善迁移测试，提供回滚方案 |
+| 性能问题       | 中   | 持续性能监控，及早发现问题 |
+| 设备兼容性     | 中   | 扩大测试设备范围           |
 
 ### 业务风险
-| 风险 | 影响 | 应对措施 |
-|------|------|----------|
-| 需求变更 | 中 | 敏捷开发，快速响应 |
-| 人力资源不足 | 高 | 合理分配任务，考虑外包 |
-| 时间延期 | 中 | 优先级排序，MVP优先 |
+
+| 风险         | 影响 | 应对措施               |
+| ------------ | ---- | ---------------------- |
+| 需求变更     | 中   | 敏捷开发，快速响应     |
+| 人力资源不足 | 高   | 合理分配任务，考虑外包 |
+| 时间延期     | 中   | 优先级排序，MVP优先    |
 
 ---
 
 ## 📚 开发团队配置
 
 ### 建议团队规模
+
 - **Android开发工程师**: 2-3人
   - 1人负责架构和核心功能
   - 1-2人负责业务功能开发
@@ -910,6 +977,7 @@ fun InventoryListScreen(
 - **项目经理**: 1人（兼职）
 
 ### 技能要求
+
 - **必备技能**:
   - Kotlin编程（熟练）
   - Jetpack Compose（熟练）
@@ -929,23 +997,27 @@ fun InventoryListScreen(
 ### 版本规划
 
 #### v1.0 (MVP - 11周完成)
+
 - ✅ 核心功能：认证、库存、产品、销售、客户、财务
 - ✅ 离线支持基础
 - ✅ Material Design 3主题
 
 #### v1.1 (MVP后2周)
+
 - [ ] 数据同步优化
 - [ ] 用户反馈功能
 - [ ] 性能持续优化
 - [ ] Bug修复
 
 #### v1.2 (MVP后4周)
+
 - [ ] 高级筛选功能
 - [ ] 数据导出功能
 - [ ] 批量操作
 - [ ] 更多图表和报表
 
 #### v2.0 (MVP后8周)
+
 - [ ] 多语言支持
 - [ ] 平板优化
 - [ ] Widget支持
@@ -981,16 +1053,19 @@ fun InventoryListScreen(
 ## 🎓 学习资源推荐
 
 ### 必看资源
+
 1. **Now in Android** - Google官方示例项目
 2. **Android Architecture Samples** - 架构示例
 3. **Compose Samples** - Compose组件示例
 
 ### 推荐课程
+
 1. Android Basics with Compose (Google)
 2. Advanced Android with Kotlin (Udacity)
 3. Jetpack Compose Masterclass (Udemy)
 
 ### 社区资源
+
 1. Android Developers YouTube频道
 2. Medium - Android Development
 3. Reddit - r/androiddev
@@ -1000,11 +1075,13 @@ fun InventoryListScreen(
 ## 📞 支持与沟通
 
 ### 技术支持
+
 - **技术问题**: 在项目Issue中提问
 - **代码审查**: Pull Request流程
 - **架构讨论**: 每周架构会议
 
 ### 项目沟通
+
 - **每日站会**: 9:30 AM（15分钟）
 - **周会**: 每周五下午（1小时）
 - **Sprint回顾**: 每两周（2小时）
@@ -1016,6 +1093,7 @@ fun InventoryListScreen(
 这份实施计划提供了一个结构化、可执行的路线图，帮助团队在11周内完成一个功能完整、架构清晰的Android ERP应用。通过遵循现代Android开发最佳实践，我们将构建一个高性能、易维护、可扩展的移动应用。
 
 **关键成功因素**:
+
 1. 严格遵循Clean Architecture
 2. 持续集成和持续测试
 3. 定期代码审查和知识分享

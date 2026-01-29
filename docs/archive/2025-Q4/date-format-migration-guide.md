@@ -41,13 +41,14 @@ npm install date-fns@^4.1.0
 **位置**: `lib/utils/datetime.ts`
 
 **核心函数**:
+
 ```typescript
 import {
-  formatDate,           // 格式化日期: yyyy-MM-dd
-  formatDateTime,       // 格式化日期时间: yyyy-MM-dd HH:mm:ss
-  formatTimeAgo,        // 相对时间: X分钟前
-  toISOString,          // ISO格式: 2025-01-14T10:30:45.000Z
-  DATE_FORMATS,         // 格式常量
+  formatDate, // 格式化日期: yyyy-MM-dd
+  formatDateTime, // 格式化日期时间: yyyy-MM-dd HH:mm:ss
+  formatTimeAgo, // 相对时间: X分钟前
+  toISOString, // ISO格式: 2025-01-14T10:30:45.000Z
+  DATE_FORMATS, // 格式常量
 } from '@/lib/utils/datetime';
 ```
 
@@ -65,7 +66,7 @@ import {
 // 修改前
 export const DATE_FORMATS = {
   DATE: 'yyyy-MM-dd',
-  DATETIME: 'yyyy-MM-dd HH:mm',          // ❌ 缺少秒
+  DATETIME: 'yyyy-MM-dd HH:mm', // ❌ 缺少秒
   DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss',
   TIME: 'HH:mm',
   DATE_CN: 'yyyy年MM月dd日',
@@ -76,14 +77,14 @@ export const DATE_FORMATS = {
 // 修改后
 export const DATE_FORMATS = {
   DATE: 'yyyy-MM-dd',
-  DATETIME: 'yyyy-MM-dd HH:mm:ss',       // ✅ 包含秒（默认格式）
-  DATETIME_SHORT: 'yyyy-MM-dd HH:mm',    // ✅ 新增短格式（特殊场景）
-  DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss',  // 保持不变
-  TIME: 'HH:mm:ss',                      // ✅ 包含秒
-  TIME_SHORT: 'HH:mm',                   // ✅ 新增短格式
+  DATETIME: 'yyyy-MM-dd HH:mm:ss', // ✅ 包含秒（默认格式）
+  DATETIME_SHORT: 'yyyy-MM-dd HH:mm', // ✅ 新增短格式（特殊场景）
+  DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss', // 保持不变
+  TIME: 'HH:mm:ss', // ✅ 包含秒
+  TIME_SHORT: 'HH:mm', // ✅ 新增短格式
   DATE_CN: 'yyyy年MM月dd日',
-  DATETIME_CN: 'yyyy年MM月dd日 HH:mm:ss',  // ✅ 包含秒
-  DATETIME_SHORT_CN: 'yyyy年MM月dd日 HH:mm',  // ✅ 新增短格式
+  DATETIME_CN: 'yyyy年MM月dd日 HH:mm:ss', // ✅ 包含秒
+  DATETIME_SHORT_CN: 'yyyy年MM月dd日 HH:mm', // ✅ 新增短格式
   DATETIME_FULL_CN: 'yyyy年MM月dd日 HH:mm:ss',
 } as const;
 ```
@@ -100,14 +101,14 @@ export const DATE_FORMATS = {
 
 ```typescript
 // 问题：格式不可控，输出 "2025/1/14 10:30:45"
-new Date(payment.createdAt).toLocaleString('zh-CN')
+new Date(payment.createdAt).toLocaleString('zh-CN');
 
 // 问题：缺少时间配置
 new Date(payment.createdAt).toLocaleString('zh-CN', {
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
-})
+});
 ```
 
 #### ✅ 正确示例
@@ -116,15 +117,15 @@ new Date(payment.createdAt).toLocaleString('zh-CN', {
 import { formatDateTime, DATE_FORMATS } from '@/lib/utils/datetime';
 
 // 方案 1: 使用默认格式（推荐）
-formatDateTime(payment.createdAt)
+formatDateTime(payment.createdAt);
 // 输出: "2025-01-14 10:30:45"
 
 // 方案 2: 使用完整格式常量
-formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL)
+formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_FULL);
 // 输出: "2025-01-14 10:30:45"
 
 // 方案 3: 使用中文格式
-formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_CN)
+formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_CN);
 // 输出: "2025年01月14日 10:30:45"
 ```
 
@@ -134,7 +135,7 @@ formatDateTime(payment.createdAt, DATE_FORMATS.DATETIME_CN)
 
 ```typescript
 // 问题：只有日期，缺少时间
-new Date(order.createdAt).toLocaleDateString('zh-CN')
+new Date(order.createdAt).toLocaleDateString('zh-CN');
 // 输出: "2025/1/14"
 ```
 
@@ -144,11 +145,11 @@ new Date(order.createdAt).toLocaleDateString('zh-CN')
 import { formatDate, formatDateTime, DATE_FORMATS } from '@/lib/utils/datetime';
 
 // 方案 1: 如果确实只需要日期
-formatDate(order.createdAt)
+formatDate(order.createdAt);
 // 输出: "2025-01-14"
 
 // 方案 2: 如果需要完整时间（推荐用于 createdAt/updatedAt）
-formatDateTime(order.createdAt)
+formatDateTime(order.createdAt);
 // 输出: "2025-01-14 10:30:45"
 ```
 
@@ -160,8 +161,8 @@ formatDateTime(order.createdAt)
 import { format } from 'date-fns';
 
 // 问题：绕过统一工具，格式不统一
-format(new Date(expense.createdAt), 'yyyy-MM-dd HH:mm:ss')
-format(new Date(payment.paymentDate), 'yyyy-MM-dd')
+format(new Date(expense.createdAt), 'yyyy-MM-dd HH:mm:ss');
+format(new Date(payment.paymentDate), 'yyyy-MM-dd');
 ```
 
 #### ✅ 正确示例
@@ -170,8 +171,8 @@ format(new Date(payment.paymentDate), 'yyyy-MM-dd')
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 // 使用统一工具函数
-formatDateTime(expense.createdAt)  // "2025-01-14 10:30:45"
-formatDate(payment.paymentDate)    // "2025-01-14"
+formatDateTime(expense.createdAt); // "2025-01-14 10:30:45"
+formatDate(payment.paymentDate); // "2025-01-14"
 ```
 
 ### 3.4 替换表单默认值
@@ -183,8 +184,8 @@ import { format } from 'date-fns';
 
 const form = useForm({
   defaultValues: {
-    paymentDate: format(new Date(), 'yyyy-MM-dd'),  // ❌ 直接使用 format
-  }
+    paymentDate: format(new Date(), 'yyyy-MM-dd'), // ❌ 直接使用 format
+  },
 });
 ```
 
@@ -195,8 +196,8 @@ import { formatDate } from '@/lib/utils/datetime';
 
 const form = useForm({
   defaultValues: {
-    paymentDate: formatDate(new Date()),  // ✅ 使用统一工具
-  }
+    paymentDate: formatDate(new Date()), // ✅ 使用统一工具
+  },
 });
 ```
 
@@ -246,19 +247,23 @@ import { formatDate } from '@/lib/utils/datetime';
 
 ```typescript
 // 修改前
-{new Date(payment.createdAt).toLocaleString('zh-CN', {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-})}
+{
+  new Date(payment.createdAt).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+}
 
 // 修改后
 import { formatDateTime } from '@/lib/utils/datetime';
 
-{formatDateTime(payment.createdAt)}
+{
+  formatDateTime(payment.createdAt);
+}
 ```
 
 ### 4.2 客户模块（P0 - 高优先级）
@@ -305,12 +310,16 @@ formatDateTime(customer.createdAt)
 // 修改前
 import { format } from 'date-fns';
 
-{format(new Date(count.planDate), 'yyyy-MM-dd')}
+{
+  format(new Date(count.planDate), 'yyyy-MM-dd');
+}
 
 // 修改后
 import { formatDate } from '@/lib/utils/datetime';
 
-{formatDate(count.planDate)}
+{
+  formatDate(count.planDate);
+}
 ```
 
 ### 4.4 仪表盘模块（P1 - 中优先级）
@@ -328,12 +337,16 @@ import { formatDate } from '@/lib/utils/datetime';
 
 ```typescript
 // 修改前
-{new Date(todo.dueDate).toLocaleDateString('zh-CN')}
+{
+  new Date(todo.dueDate).toLocaleDateString('zh-CN');
+}
 
 // 修改后
 import { formatDate } from '@/lib/utils/datetime';
 
-{formatDate(todo.dueDate)}
+{
+  formatDate(todo.dueDate);
+}
 ```
 
 ---
@@ -394,20 +407,20 @@ Get-ChildItem -Path app,components -Recurse -Include *.tsx,*.ts | Select-String 
 
 ### 6.1 进度表
 
-| 模块 | 文件数 | 已完成 | 进度 | 负责人 |
-|------|--------|--------|------|--------|
-| 财务模块 | 15 | 0 | 0% | - |
-| 客户模块 | 8 | 0 | 0% | - |
-| 库存模块 | 10 | 0 | 0% | - |
-| 仪表盘 | 5 | 0 | 0% | - |
-| 其他 | 10 | 0 | 0% | - |
-| **总计** | **48** | **0** | **0%** | - |
+| 模块     | 文件数 | 已完成 | 进度   | 负责人 |
+| -------- | ------ | ------ | ------ | ------ |
+| 财务模块 | 15     | 0      | 0%     | -      |
+| 客户模块 | 8      | 0      | 0%     | -      |
+| 库存模块 | 10     | 0      | 0%     | -      |
+| 仪表盘   | 5      | 0      | 0%     | -      |
+| 其他     | 10     | 0      | 0%     | -      |
+| **总计** | **48** | **0**  | **0%** | -      |
 
 ### 6.2 问题记录
 
 | 日期 | 文件 | 问题描述 | 解决方案 | 状态 |
-|------|------|----------|----------|------|
-| - | - | - | - | - |
+| ---- | ---- | -------- | -------- | ---- |
+| -    | -    | -        | -        | -    |
 
 ---
 
@@ -475,4 +488,3 @@ git commit -m "refactor(finance): 统一财务模块所有日期格式
 **最后更新**: 2025-01-14  
 **维护者**: Augment Agent  
 **版本**: 1.0.0
-

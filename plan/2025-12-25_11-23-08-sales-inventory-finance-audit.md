@@ -42,10 +42,10 @@ created_at: 2025-12-25T11:23:18.9412397+08:00
   - 可选回填命令（本次未执行）：`npm run backfill:cost-queue -- --apply`（生产库需谨慎执行）
   - 采购入库强约束（防新增断链）：通用入库接口禁止 purchase；采购到货入库强制 `purchaseOrderId + purchaseOrderItemId`
 - 优先修复顺序建议：
-  1) `TOTAL_AMOUNT_*` / `ADDITIONAL_FEES_*` / `EXPENSE_AMOUNT_*`（直接影响应收与报表收入/费用）
-  2) `OUTBOUND_*`（直接影响库存与成本）
-  3) `COST_AMOUNT_*` / `PROFIT_AMOUNT_*`（直接影响利润与经营分析）
-  4) `MIXED_*` / `TRANSFER_*`（结构性偏差高发）
+  1. `TOTAL_AMOUNT_*` / `ADDITIONAL_FEES_*` / `EXPENSE_AMOUNT_*`（直接影响应收与报表收入/费用）
+  2. `OUTBOUND_*`（直接影响库存与成本）
+  3. `COST_AMOUNT_*` / `PROFIT_AMOUNT_*`（直接影响利润与经营分析）
+  4. `MIXED_*` / `TRANSFER_*`（结构性偏差高发）
 
 ⚠️ 风险与阻塞
 

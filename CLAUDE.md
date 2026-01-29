@@ -21,18 +21,18 @@
 
 ### 技术栈
 
-| 类别 | 技术 |
-|------|------|
-| **前端框架** | Next.js 15.4.7 (App Router), React 18.3.1 |
-| **UI 组件** | Radix UI, Tailwind CSS 4.1.14, shadcn/ui |
+| 类别         | 技术                                          |
+| ------------ | --------------------------------------------- |
+| **前端框架** | Next.js 15.4.7 (App Router), React 18.3.1     |
+| **UI 组件**  | Radix UI, Tailwind CSS 4.1.14, shadcn/ui      |
 | **状态管理** | TanStack Query 5.79.0, React Hook Form 7.63.0 |
-| **数据库** | MySQL + Prisma ORM 5.22.0 |
-| **认证** | NextAuth 4.24.11 |
-| **队列** | BullMQ 5.61.0 + Redis (IORedis 5.8.0) |
-| **文件存储** | 七牛云 (qiniu 7.14.0) |
-| **数据验证** | Zod 4.1.11 |
-| **测试** | Jest 30.2.0, Playwright 1.56.0 |
-| **部署** | PM2 (Cluster Mode) |
+| **数据库**   | MySQL + Prisma ORM 5.22.0                     |
+| **认证**     | NextAuth 4.24.11                              |
+| **队列**     | BullMQ 5.61.0 + Redis (IORedis 5.8.0)         |
+| **文件存储** | 七牛云 (qiniu 7.14.0)                         |
+| **数据验证** | Zod 4.1.11                                    |
+| **测试**     | Jest 30.2.0, Playwright 1.56.0                |
+| **部署**     | PM2 (Cluster Mode)                            |
 
 ---
 
@@ -175,6 +175,7 @@ E:\kucun/
 **职责**: 管理库存的入库、出库、调整、盘点等操作
 
 **关键文件**:
+
 - `app/api/inventory/inbound/route.ts` - 入库 API
 - `app/api/inventory/outbound/route.ts` - 出库 API
 - `app/api/inventory/adjust/route.ts` - 库存调整 API
@@ -191,6 +192,7 @@ E:\kucun/
 **职责**: 管理销售订单的创建、编辑、审批、发货等流程
 
 **关键文件**:
+
 - `app/api/sales-orders/route.ts` - 销售订单 API
 - `app/api/sales-orders/[id]/route.ts` - 单个订单 API
 - `lib/api/handlers/sales-orders/create.ts` - 创建订单处理器
@@ -206,6 +208,7 @@ E:\kucun/
 **职责**: 管理退货订单的创建、审批、入库等流程
 
 **关键文件**:
+
 - `app/api/return-orders/route.ts` - 退货订单 API
 - `app/api/return-orders/[id]/route.ts` - 单个退货订单 API
 - `app/api/return-orders/[id]/approve/route.ts` - 审批 API
@@ -219,6 +222,7 @@ E:\kucun/
 **职责**: 管理应收应付、支付退款、财务报表等
 
 **关键文件**:
+
 - `app/api/finance/receivables/route.ts` - 应收账款 API
 - `app/api/finance/payables/route.ts` - 应付账款 API
 - `app/api/finance/payments/route.ts` - 支付记录 API
@@ -235,6 +239,7 @@ E:\kucun/
 **职责**: 管理产品信息、规格、价格、库存等
 
 **关键文件**:
+
 - `app/api/products/route.ts` - 产品 API
 - `app/api/products/[id]/route.ts` - 单个产品 API
 - `app/api/product-variants/route.ts` - 产品规格 API
@@ -249,6 +254,7 @@ E:\kucun/
 **职责**: 管理客户和供应商信息、价格历史等
 
 **关键文件**:
+
 - `app/api/customers/route.ts` - 客户 API
 - `app/api/suppliers/route.ts` - 供应商 API
 - `app/api/price-history/customer/route.ts` - 客户价格历史
@@ -263,6 +269,7 @@ E:\kucun/
 **职责**: 管理工厂发货订单、物流追踪等
 
 **关键文件**:
+
 - `app/api/factory-shipments/route.ts` - 工厂发货 API
 - `app/api/factory-shipments/[id]/route.ts` - 单个发货订单 API
 - `app/api/factory-shipments/[id]/shipping-query/route.ts` - 物流查询 API
@@ -276,6 +283,7 @@ E:\kucun/
 **职责**: 管理采购订单的创建、审批、入库等流程
 
 **关键文件**:
+
 - `app/api/purchase-orders/route.ts` - 采购订单 API
 - `app/api/purchase-orders/[id]/route.ts` - 单个采购订单 API
 
@@ -392,12 +400,12 @@ npm run test:coverage
 
 ## 🔗 模块导航
 
-- [库存管理模块](./app/(dashboard)/inventory/CLAUDE.md) *(待生成)*
-- [销售订单模块](./app/(dashboard)/sales-orders/CLAUDE.md) *(待生成)*
-- [财务管理模块](./app/(dashboard)/finance/CLAUDE.md) *(待生成)*
-- [产品管理模块](./app/(dashboard)/products/CLAUDE.md) *(待生成)*
-- [API 处理器模块](./lib/api/handlers/CLAUDE.md) *(待生成)*
-- [业务服务模块](./lib/services/CLAUDE.md) *(待生成)*
+- [库存管理模块](<./app/(dashboard)/inventory/CLAUDE.md>) _(待生成)_
+- [销售订单模块](<./app/(dashboard)/sales-orders/CLAUDE.md>) _(待生成)_
+- [财务管理模块](<./app/(dashboard)/finance/CLAUDE.md>) _(待生成)_
+- [产品管理模块](<./app/(dashboard)/products/CLAUDE.md>) _(待生成)_
+- [API 处理器模块](./lib/api/handlers/CLAUDE.md) _(待生成)_
+- [业务服务模块](./lib/services/CLAUDE.md) _(待生成)_
 
 ---
 

@@ -15,6 +15,7 @@
 ## 2. 完整 Schema 定义
 
 ### 2.1 基础类型
+
 ```typescript
 // lib/print-designer/schemas/base.ts
 import { z } from 'zod';
@@ -33,7 +34,10 @@ export const SizeSchema = z.object({
 
 /** 通用样式 */
 export const BaseStyleSchema = z.object({
-  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  backgroundColor: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/)
+    .optional(),
   borderWidth: z.number().min(0).optional(),
   borderColor: z.string().optional(),
   borderRadius: z.number().min(0).optional(),
@@ -53,13 +57,20 @@ export const BaseElementSchema = z.object({
 ```
 
 ### 2.2 文本元素
+
 ```typescript
 // lib/print-designer/schemas/text-element.ts
 import { z } from 'zod';
 import { BaseElementSchema } from './base';
 
 export const TextStyleSchema = z.object({
-  fontFamily: z.enum(['SimSun', 'SimHei', 'Microsoft YaHei', 'Arial', 'Times New Roman']),
+  fontFamily: z.enum([
+    'SimSun',
+    'SimHei',
+    'Microsoft YaHei',
+    'Arial',
+    'Times New Roman',
+  ]),
   fontSize: z.number().min(6).max(200).describe('字号 (pt)'),
   fontWeight: z.enum(['normal', 'bold']),
   fontStyle: z.enum(['normal', 'italic']).default('normal'),
@@ -79,6 +90,7 @@ export type TextElement = z.infer<typeof TextElementSchema>;
 ```
 
 ### 2.3 占位符元素 (数据绑定)
+
 ```typescript
 // lib/print-designer/schemas/placeholder-element.ts
 import { z } from 'zod';
@@ -86,11 +98,11 @@ import { BaseElementSchema, BaseStyleSchema } from './base';
 import { TextStyleSchema } from './text-element';
 
 export const PlaceholderFormatSchema = z.enum([
-  'text',           // 原样输出
-  'date_cn',        // YYYY年MM月DD日
-  'currency',       // 1,234.56
-  'currency_cap',   // 壹仟贰佰叁拾肆元伍角陆分
-  'number',         // 数字保留小数
+  'text', // 原样输出
+  'date_cn', // YYYY年MM月DD日
+  'currency', // 1,234.56
+  'currency_cap', // 壹仟贰佰叁拾肆元伍角陆分
+  'number', // 数字保留小数
 ]);
 
 export const PlaceholderElementSchema = BaseElementSchema.extend({
@@ -111,6 +123,7 @@ export type PlaceholderElement = z.infer<typeof PlaceholderElementSchema>;
 ```
 
 ### 2.4 表格元素
+
 ```typescript
 // lib/print-designer/schemas/table-element.ts
 import { z } from 'zod';
@@ -155,6 +168,7 @@ export type TableElement = z.infer<typeof TableElementSchema>;
 ```
 
 ### 2.5 图片与条码元素
+
 ```typescript
 // lib/print-designer/schemas/visual-elements.ts
 import { z } from 'zod';
@@ -179,6 +193,7 @@ export const BarcodeElementSchema = BaseElementSchema.extend({
 ```
 
 ### 2.6 聚合元素类型
+
 ```typescript
 // lib/print-designer/schemas/index.ts
 import { z } from 'zod';
@@ -212,12 +227,14 @@ export const PageSettingsSchema = z.object({
   width: z.number().default(210).describe('mm'),
   height: z.number().default(297).describe('mm'),
   orientation: z.enum(['portrait', 'landscape']).default('portrait'),
-  padding: z.tuple([
-    z.number(), // top
-    z.number(), // right
-    z.number(), // bottom
-    z.number(), // left
-  ]).default([10, 10, 10, 10]),
+  padding: z
+    .tuple([
+      z.number(), // top
+      z.number(), // right
+      z.number(), // bottom
+      z.number(), // left
+    ])
+    .default([10, 10, 10, 10]),
 });
 
 export const PrintTemplateSchema = z.object({
@@ -260,8 +277,12 @@ lib/print-designer/
 ## 5. 使用示例
 
 ### 5.1 创建新模板
+
 ```typescript
-import { PrintTemplateSchema, type PrintTemplate } from '@/lib/print-designer/schemas';
+import {
+  PrintTemplateSchema,
+  type PrintTemplate,
+} from '@/lib/print-designer/schemas';
 import { v4 as uuid } from 'uuid';
 
 const newTemplate: PrintTemplate = {
@@ -284,6 +305,7 @@ PrintTemplateSchema.parse(newTemplate);
 ```
 
 ### 5.2 后端存储前校验
+
 ```typescript
 // actions/print-template.ts
 import { PrintTemplateSchema } from '@/lib/print-designer/schemas';
@@ -291,7 +313,7 @@ import { PrintTemplateSchema } from '@/lib/print-designer/schemas';
 export async function saveTemplate(rawData: unknown) {
   // 严格校验，剔除未知字段
   const template = PrintTemplateSchema.parse(rawData);
-  
+
   await prisma.printTemplate.upsert({
     where: { id: template.id },
     update: { content: template, updatedAt: new Date() },

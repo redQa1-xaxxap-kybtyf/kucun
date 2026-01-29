@@ -7,11 +7,13 @@
 ## 1. 渲染器架构
 
 ### 1.1 核心原则
+
 - **纯净渲染**: `PrintCanvas` 组件只负责渲染，不包含任何交互逻辑。
 - **复用**: 编辑器预览和实际打印都使用同一个渲染器。
 - **数据驱动**: 渲染器接收 `template` + `data`，输出 DOM。
 
 ### 1.2 组件结构
+
 ```
 components/print-designer/renderer/
 ├── PrintCanvas.tsx       # 画布容器
@@ -34,6 +36,7 @@ components/print-designer/renderer/
 ## 2. 核心实现
 
 ### 2.1 PrintCanvas (画布容器)
+
 ```typescript
 // components/print-designer/renderer/PrintCanvas.tsx
 import { type PrintTemplate, type DesignElement } from '@/lib/print-designer/schemas';
@@ -48,7 +51,7 @@ interface PrintCanvasProps {
 
 export function PrintCanvas({ template, data, scale = 1 }: PrintCanvasProps) {
   const { pageSettings, elements } = template;
-  
+
   const pageStyle: React.CSSProperties = {
     width: mmToPx(pageSettings.width) * scale,
     height: mmToPx(pageSettings.height) * scale,
@@ -81,6 +84,7 @@ export function PrintCanvas({ template, data, scale = 1 }: PrintCanvasProps) {
 ```
 
 ### 2.2 ElementRenderer (元素分发器)
+
 ```typescript
 // components/print-designer/renderer/ElementRenderer.tsx
 import { type DesignElement } from '@/lib/print-designer/schemas';
@@ -133,6 +137,7 @@ export function ElementRenderer({ element, data, scale }: ElementRendererProps) 
 ## 3. 各类型渲染器
 
 ### 3.1 文本渲染器
+
 ```typescript
 // components/print-designer/renderer/elements/TextRenderer.tsx
 import { type TextElement } from '@/lib/print-designer/schemas';
@@ -164,6 +169,7 @@ export function TextRenderer({ element, scale }: Props) {
 ```
 
 ### 3.2 占位符渲染器 (数据绑定)
+
 ```typescript
 // components/print-designer/renderer/elements/PlaceholderRenderer.tsx
 import { type PlaceholderElement } from '@/lib/print-designer/schemas';
@@ -179,7 +185,7 @@ interface Props {
 export function PlaceholderRenderer({ element, data, scale }: Props) {
   // 解析数据路径
   const rawValue = getNestedValue(data, element.field);
-  
+
   // 格式化
   const displayValue = rawValue != null
     ? formatValue(rawValue, element.format)
@@ -200,6 +206,7 @@ export function PlaceholderRenderer({ element, data, scale }: Props) {
 ```
 
 ### 3.3 表格渲染器
+
 ```typescript
 // components/print-designer/renderer/elements/TableRenderer.tsx
 import { type TableElement } from '@/lib/print-designer/schemas';
@@ -314,6 +321,7 @@ export function TableRenderer({ element, data, scale }: Props) {
 ## 4. 工具函数
 
 ### 4.1 数据绑定
+
 ```typescript
 // components/print-designer/renderer/utils/data-binder.ts
 
@@ -327,6 +335,7 @@ export function getNestedValue(obj: any, path: string): any {
 ```
 
 ### 4.2 格式化函数
+
 ```typescript
 // components/print-designer/renderer/utils/formatters.ts
 
@@ -344,7 +353,9 @@ export function formatValue(value: any, format: string): string {
     case 'currency_cap':
       return numberToChineseCurrency(value);
     case 'number':
-      return typeof value === 'number' ? value.toLocaleString('zh-CN') : String(value);
+      return typeof value === 'number'
+        ? value.toLocaleString('zh-CN')
+        : String(value);
     default:
       return String(value);
   }
@@ -409,6 +420,7 @@ export function numberToChineseCurrency(num: number): string {
 ```
 
 ### 4.3 单位转换
+
 ```typescript
 // components/print-designer/renderer/utils/unit-converter.ts
 
@@ -450,5 +462,5 @@ import { PrintCanvas } from '@/components/print-designer/renderer';
     totalAmount: 11000,
   }}
   scale={0.8} // 预览缩小
-/>
+/>;
 ```

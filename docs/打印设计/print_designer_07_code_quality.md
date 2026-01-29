@@ -7,15 +7,17 @@
 ## 1. 核心原则
 
 ### 1.1 设计原则速查
-| 原则 | 要求 | 示例 |
-|---|---|---|
-| **KISS** | 保持简单，能用 3 行代码解决的不要写 30 行 | 避免过度抽象 |
-| **YAGNI** | 只实现当前需要的功能，不预设未来需求 | 不提前写"可能用到"的配置 |
-| **DRY** | 相同逻辑只写一次 | 提取 `formatCurrency` 工具函数 |
-| **SRP** | 一个函数/组件只做一件事 | `TextRenderer` 只渲染文本 |
-| **OCP** | 对扩展开放，对修改关闭 | 用 `switch` 分发元素类型 |
+
+| 原则      | 要求                                      | 示例                           |
+| --------- | ----------------------------------------- | ------------------------------ |
+| **KISS**  | 保持简单，能用 3 行代码解决的不要写 30 行 | 避免过度抽象                   |
+| **YAGNI** | 只实现当前需要的功能，不预设未来需求      | 不提前写"可能用到"的配置       |
+| **DRY**   | 相同逻辑只写一次                          | 提取 `formatCurrency` 工具函数 |
+| **SRP**   | 一个函数/组件只做一件事                   | `TextRenderer` 只渲染文本      |
+| **OCP**   | 对扩展开放，对修改关闭                    | 用 `switch` 分发元素类型       |
 
 ### 1.2 反模式警示
+
 ```typescript
 // ❌ 过度设计 - 违反 KISS/YAGNI
 interface ElementConfig<T extends BaseElement = BaseElement> {
@@ -37,12 +39,15 @@ interface ElementConfig {
 ## 2. TypeScript 规范
 
 ### 2.1 严格模式
+
 项目已启用严格模式，以下规则**必须遵守**：
+
 - `noImplicitAny`: 禁止隐式 any
 - `strictNullChecks`: 严格空值检查
 - `strictFunctionTypes`: 严格函数类型
 
 ### 2.2 类型定义要求
+
 ```typescript
 // ✅ 显式声明返回类型
 function formatValue(value: unknown, format: string): string {
@@ -64,6 +69,7 @@ function handleData(data: unknown) {
 ```
 
 ### 2.3 类型守卫模式
+
 ```typescript
 // 标准类型守卫
 function isTextElement(el: DesignElement): el is TextElement {
@@ -81,6 +87,7 @@ if (isTextElement(element)) {
 ## 3. 组件规范
 
 ### 3.1 文件命名
+
 ```
 components/print-designer/
 ├── PrintCanvas.tsx           # PascalCase 组件文件
@@ -92,6 +99,7 @@ components/print-designer/
 ```
 
 ### 3.2 组件结构模板
+
 ```typescript
 // 1. 类型定义在顶部
 interface Props {
@@ -103,24 +111,25 @@ interface Props {
 export function TextRenderer({ element, scale }: Props) {
   // 3. hooks 最先调用
   const store = useDesignerStore();
-  
+
   // 4. 派生状态用 useMemo
   const style = useMemo(() => computeStyle(element, scale), [element, scale]);
-  
+
   // 5. 事件处理用 useCallback
   const handleClick = useCallback(() => {
     store.selectElement(element.id);
   }, [element.id]);
-  
+
   // 6. 提前返回处理边界情况
   if (!element.visible) return null;
-  
+
   // 7. 主渲染
   return <div style={style} onClick={handleClick}>{element.content}</div>;
 }
 ```
 
 ### 3.3 Props 设计原则
+
 ```typescript
 // ✅ 最小化 Props，只传必要数据
 interface Props {
@@ -146,16 +155,17 @@ interface Props {
 ## 4. 状态管理规范
 
 ### 4.1 Zustand Store 结构
+
 ```typescript
 // ✅ 按功能分组
 interface DesignerState {
   // 数据
   template: PrintTemplate | null;
-  
+
   // UI 状态
   selectedElementId: string | null;
   zoom: number;
-  
+
   // Actions (动词开头)
   setTemplate: (t: PrintTemplate) => void;
   selectElement: (id: string | null) => void;
@@ -164,6 +174,7 @@ interface DesignerState {
 ```
 
 ### 4.2 Immer 使用
+
 ```typescript
 // ✅ 使用 immer 简化不可变更新
 updateElement: (id, updates) => set((state) => {
@@ -175,7 +186,7 @@ updateElement: (id, updates) => set((state) => {
 updateElement: (id, updates) => set((state) => ({
   template: {
     ...state.template,
-    elements: state.template.elements.map(e => 
+    elements: state.template.elements.map(e =>
       e.id === id ? { ...e, ...updates } : e
     ),
   },
@@ -201,12 +212,14 @@ updateElement: (id, updates) => set((state) => ({
 ## 6. ESLint 规则 (项目已配置)
 
 关键规则：
+
 - `@typescript-eslint/no-explicit-any`: error
 - `@typescript-eslint/explicit-function-return-type`: warn
 - `react-hooks/exhaustive-deps`: warn
 - `max-lines-per-function`: warn (默认 150)
 
 **例外**: 如需禁用规则，必须附带注释说明原因：
+
 ```typescript
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 第三方库类型定义不完整
 const result = externalLib.call(data as any);

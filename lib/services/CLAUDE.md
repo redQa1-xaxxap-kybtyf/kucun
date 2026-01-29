@@ -27,126 +27,126 @@
 
 ### 1. 库存相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `fifo-cost-service.ts` | FIFO 成本计算 | `calculateFIFOCost()`, `updateInventoryCost()` |
-| `fifo-outbound-service.ts` | FIFO 出库处理 | `processOutbound()`, `allocateInventory()` |
-| `inventory-count-service.ts` | 库存盘点服务 | `createCount()`, `submitCount()`, `completeCount()` |
-| `inventory-realtime-service.ts` | 实时库存查询 | `getRealtimeInventory()`, `checkAvailability()` |
-| `inventory-count/` | 盘点子模块 | 创建、查询、统计、变更 |
+| 服务文件                        | 职责          | 关键方法                                            |
+| ------------------------------- | ------------- | --------------------------------------------------- |
+| `fifo-cost-service.ts`          | FIFO 成本计算 | `calculateFIFOCost()`, `updateInventoryCost()`      |
+| `fifo-outbound-service.ts`      | FIFO 出库处理 | `processOutbound()`, `allocateInventory()`          |
+| `inventory-count-service.ts`    | 库存盘点服务  | `createCount()`, `submitCount()`, `completeCount()` |
+| `inventory-realtime-service.ts` | 实时库存查询  | `getRealtimeInventory()`, `checkAvailability()`     |
+| `inventory-count/`              | 盘点子模块    | 创建、查询、统计、变更                              |
 
 ### 2. 财务相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `receivables-service.ts` | 应收账款服务 | `calculateReceivables()`, `getReceivablesList()` |
-| `receivables-helpers.ts` | 应收辅助函数 | `calculateBalance()`, `formatAmount()` |
-| `payable-query-service.ts` | 应付账款查询 | `getPayablesList()`, `getPayableDetail()` |
-| `partner-ledger-service.ts` | 往来账服务 | `getPartnerLedger()`, `calculateBalance()` |
-| `customer-statement-service.ts` | 客户对账单 | `generateStatement()`, `getTransactions()` |
-| `finance-statistics.ts` | 财务统计 | `getFinanceOverview()`, `getStatistics()` |
-| `finance-statistics-cached.ts` | 财务统计（缓存版） | 带 Redis 缓存的统计查询 |
-| `finance-statistics-optimized.ts` | 财务统计（优化版） | 性能优化的统计查询 |
+| 服务文件                          | 职责               | 关键方法                                         |
+| --------------------------------- | ------------------ | ------------------------------------------------ |
+| `receivables-service.ts`          | 应收账款服务       | `calculateReceivables()`, `getReceivablesList()` |
+| `receivables-helpers.ts`          | 应收辅助函数       | `calculateBalance()`, `formatAmount()`           |
+| `payable-query-service.ts`        | 应付账款查询       | `getPayablesList()`, `getPayableDetail()`        |
+| `partner-ledger-service.ts`       | 往来账服务         | `getPartnerLedger()`, `calculateBalance()`       |
+| `customer-statement-service.ts`   | 客户对账单         | `generateStatement()`, `getTransactions()`       |
+| `finance-statistics.ts`           | 财务统计           | `getFinanceOverview()`, `getStatistics()`        |
+| `finance-statistics-cached.ts`    | 财务统计（缓存版） | 带 Redis 缓存的统计查询                          |
+| `finance-statistics-optimized.ts` | 财务统计（优化版） | 性能优化的统计查询                               |
 
 ### 3. 报表相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `profit-loss-service.ts` | 利润表服务 | `generateProfitLoss()`, `calculateProfit()` |
-| `annual-report-service.ts` | 年度报表服务 | `generateAnnualReport()` |
-| `monthly-report-service.ts` | 月度报表服务 | `generateMonthlyReport()` |
-| `report-helpers.ts` | 报表辅助函数 | `formatReportData()`, `calculateTotals()` |
+| 服务文件                    | 职责         | 关键方法                                    |
+| --------------------------- | ------------ | ------------------------------------------- |
+| `profit-loss-service.ts`    | 利润表服务   | `generateProfitLoss()`, `calculateProfit()` |
+| `annual-report-service.ts`  | 年度报表服务 | `generateAnnualReport()`                    |
+| `monthly-report-service.ts` | 月度报表服务 | `generateMonthlyReport()`                   |
+| `report-helpers.ts`         | 报表辅助函数 | `formatReportData()`, `calculateTotals()`   |
 
 ### 4. 订单相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `sales-order-service.ts` | 销售订单服务 | `createOrder()`, `updateOrder()` |
-| `sales-order-expense-service.ts` | 销售订单费用 | `calculateExpenses()`, `allocateExpenses()` |
-| `factory-shipment-expense-service.ts` | 工厂发货费用 | `calculateShippingExpenses()` |
-| `factory-shipment-profit-service.ts` | 工厂发货利润 | `calculateProfit()`, `analyzeMargin()` |
-| `factory-shipment-pricing-service.ts` | 工厂发货定价 | `calculatePricing()`, `applyDiscount()` |
-| `factory-shipment-item-service.ts` | 工厂发货项目 | `manageItems()`, `validateItems()` |
-| `purchase-order-cost-service.ts` | 采购订单成本 | `calculatePurchaseCost()` |
-| `purchase-order-payable.ts` | 采购订单应付 | `createPayable()`, `updatePayable()` |
-| `purchase-expense-service.ts` | 采购费用服务 | `allocatePurchaseExpenses()` |
+| 服务文件                              | 职责         | 关键方法                                    |
+| ------------------------------------- | ------------ | ------------------------------------------- |
+| `sales-order-service.ts`              | 销售订单服务 | `createOrder()`, `updateOrder()`            |
+| `sales-order-expense-service.ts`      | 销售订单费用 | `calculateExpenses()`, `allocateExpenses()` |
+| `factory-shipment-expense-service.ts` | 工厂发货费用 | `calculateShippingExpenses()`               |
+| `factory-shipment-profit-service.ts`  | 工厂发货利润 | `calculateProfit()`, `analyzeMargin()`      |
+| `factory-shipment-pricing-service.ts` | 工厂发货定价 | `calculatePricing()`, `applyDiscount()`     |
+| `factory-shipment-item-service.ts`    | 工厂发货项目 | `manageItems()`, `validateItems()`          |
+| `purchase-order-cost-service.ts`      | 采购订单成本 | `calculatePurchaseCost()`                   |
+| `purchase-order-payable.ts`           | 采购订单应付 | `createPayable()`, `updatePayable()`        |
+| `purchase-expense-service.ts`         | 采购费用服务 | `allocatePurchaseExpenses()`                |
 
 ### 5. 销售订单管理系统 (`sales-order-management/`)
 
 完整的销售订单管理子系统：
 
-| 服务文件 | 职责 |
-|---------|------|
-| `SalesOrderManagementSystem.ts` | 主系统入口 |
-| `OrderProcessingService.ts` | 订单处理服务 |
+| 服务文件                        | 职责         |
+| ------------------------------- | ------------ |
+| `SalesOrderManagementSystem.ts` | 主系统入口   |
+| `OrderProcessingService.ts`     | 订单处理服务 |
 | `InventoryManagementService.ts` | 库存管理服务 |
-| `ExpenseManagementService.ts` | 费用管理服务 |
-| `ProfitAnalysisService.ts` | 利润分析服务 |
-| `ValidationService.ts` | 验证服务 |
-| `ExceptionHandlingService.ts` | 异常处理服务 |
-| `ReportGenerationService.ts` | 报表生成服务 |
+| `ExpenseManagementService.ts`   | 费用管理服务 |
+| `ProfitAnalysisService.ts`      | 利润分析服务 |
+| `ValidationService.ts`          | 验证服务     |
+| `ExceptionHandlingService.ts`   | 异常处理服务 |
+| `ReportGenerationService.ts`    | 报表生成服务 |
 
 ### 6. 导出相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `export-service.ts` | 通用导出服务 | `exportToCSV()`, `exportToExcel()` |
-| `csv-export-service.ts` | CSV 导出 | `generateCSV()`, `streamCSV()` |
-| `streaming-csv-export-service.ts` | 流式 CSV 导出 | `streamLargeDataset()` |
-| `enhanced-excel-export-service.ts` | 增强 Excel 导出 | `exportWithFormatting()` |
-| `sales-order-export-service.ts` | 销售订单导出 | `exportSalesOrders()` |
-| `factory-shipments-export-service.ts` | 工厂发货导出 | `exportShipments()` |
-| `receivables-export-service.ts` | 应收账款导出 | `exportReceivables()` |
-| `payables-export-service.ts` | 应付账款导出 | `exportPayables()` |
-| `export-audit-service.ts` | 导出审计 | `logExport()`, `trackDownload()` |
-| `field-selection-storage.ts` | 字段选择存储 | `saveFieldSelection()`, `loadFieldSelection()` |
+| 服务文件                              | 职责            | 关键方法                                       |
+| ------------------------------------- | --------------- | ---------------------------------------------- |
+| `export-service.ts`                   | 通用导出服务    | `exportToCSV()`, `exportToExcel()`             |
+| `csv-export-service.ts`               | CSV 导出        | `generateCSV()`, `streamCSV()`                 |
+| `streaming-csv-export-service.ts`     | 流式 CSV 导出   | `streamLargeDataset()`                         |
+| `enhanced-excel-export-service.ts`    | 增强 Excel 导出 | `exportWithFormatting()`                       |
+| `sales-order-export-service.ts`       | 销售订单导出    | `exportSalesOrders()`                          |
+| `factory-shipments-export-service.ts` | 工厂发货导出    | `exportShipments()`                            |
+| `receivables-export-service.ts`       | 应收账款导出    | `exportReceivables()`                          |
+| `payables-export-service.ts`          | 应付账款导出    | `exportPayables()`                             |
+| `export-audit-service.ts`             | 导出审计        | `logExport()`, `trackDownload()`               |
+| `field-selection-storage.ts`          | 字段选择存储    | `saveFieldSelection()`, `loadFieldSelection()` |
 
 ### 7. 物流相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `shipping-tracking-service.ts` | 物流追踪服务 | `trackShipment()`, `queryLogistics()` |
-| `shipping-query-cache.ts` | 物流查询缓存 | `cacheQuery()`, `getCachedResult()` |
-| `universal-ship-extractor.ts` | 通用物流提取器 | `extractShippingInfo()` |
-| `factory-shipment-enrichment.ts` | 工厂发货增强 | `enrichShipmentData()` |
+| 服务文件                         | 职责           | 关键方法                              |
+| -------------------------------- | -------------- | ------------------------------------- |
+| `shipping-tracking-service.ts`   | 物流追踪服务   | `trackShipment()`, `queryLogistics()` |
+| `shipping-query-cache.ts`        | 物流查询缓存   | `cacheQuery()`, `getCachedResult()`   |
+| `universal-ship-extractor.ts`    | 通用物流提取器 | `extractShippingInfo()`               |
+| `factory-shipment-enrichment.ts` | 工厂发货增强   | `enrichShipmentData()`                |
 
 ### 8. 打印相关服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `print-service.ts` | 打印服务 | `generatePrintDocument()` |
-| `print-template-service.ts` | 打印模板服务 | `renderTemplate()`, `applyTemplate()` |
-| `puppeteer-service.ts` | Puppeteer 服务 | `generatePDF()`, `screenshot()` |
+| 服务文件                    | 职责           | 关键方法                              |
+| --------------------------- | -------------- | ------------------------------------- |
+| `print-service.ts`          | 打印服务       | `generatePrintDocument()`             |
+| `print-template-service.ts` | 打印模板服务   | `renderTemplate()`, `applyTemplate()` |
+| `puppeteer-service.ts`      | Puppeteer 服务 | `generatePDF()`, `screenshot()`       |
 
 ### 9. 认证与安全服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `captcha-service.ts` | 验证码服务 | `generateCaptcha()`, `verifyCaptcha()` |
-| `login-log-service.ts` | 登录日志服务 | `logLogin()`, `getLoginHistory()` |
-| `ip-location.ts` | IP 定位服务 | `getLocationByIP()` |
-| `rate-limiter.ts` | 速率限制器 | `checkRateLimit()`, `incrementCounter()` |
+| 服务文件               | 职责         | 关键方法                                 |
+| ---------------------- | ------------ | ---------------------------------------- |
+| `captcha-service.ts`   | 验证码服务   | `generateCaptcha()`, `verifyCaptcha()`   |
+| `login-log-service.ts` | 登录日志服务 | `logLogin()`, `getLoginHistory()`        |
+| `ip-location.ts`       | IP 定位服务  | `getLocationByIP()`                      |
+| `rate-limiter.ts`      | 速率限制器   | `checkRateLimit()`, `incrementCounter()` |
 
 ### 10. 其他服务
 
-| 服务文件 | 职责 | 关键方法 |
-|---------|------|---------|
-| `order-number-generator.ts` | 订单号生成器 | `generateOrderNumber()` |
-| `simple-order-number-generator.ts` | 简单订单号生成器 | `generateSimpleNumber()` |
-| `category-service.ts` | 分类服务 | `getCategoryTree()`, `manageCategories()` |
-| `supplier-service.ts` | 供应商服务 | `getSuppliers()`, `manageSuppliers()` |
-| `notification-service.ts` | 通知服务 | `sendNotification()`, `getNotifications()` |
-| `qiniu-upload.ts` | 七牛云上传 | `uploadFile()`, `getUploadToken()` |
-| `error-reporting-service.ts` | 错误报告服务 | `reportError()`, `logException()` |
-| `expense-service.ts` | 费用服务 | `createExpense()`, `approveExpense()` |
-| `expense-idempotency.ts` | 费用幂等性 | `ensureIdempotency()` |
-| `expense-payable-integration.ts` | 费用应付集成 | `integrateExpensePayable()` |
-| `refund-query-service.ts` | 退款查询服务 | `getRefunds()`, `getRefundDetail()` |
-| `address.ts` | 地址服务 | `parseAddress()`, `validateAddress()` |
-| `address-parser.ts` | 地址解析器 | `parseAddressString()` |
-| `address-client.ts` | 地址客户端 | `getAddressData()` |
-| `smart-wait-strategy.ts` | 智能等待策略 | `waitForElement()`, `retryWithBackoff()` |
-| `enhanced-selector-engine.ts` | 增强选择器引擎 | `selectElement()`, `findBestMatch()` |
+| 服务文件                           | 职责             | 关键方法                                   |
+| ---------------------------------- | ---------------- | ------------------------------------------ |
+| `order-number-generator.ts`        | 订单号生成器     | `generateOrderNumber()`                    |
+| `simple-order-number-generator.ts` | 简单订单号生成器 | `generateSimpleNumber()`                   |
+| `category-service.ts`              | 分类服务         | `getCategoryTree()`, `manageCategories()`  |
+| `supplier-service.ts`              | 供应商服务       | `getSuppliers()`, `manageSuppliers()`      |
+| `notification-service.ts`          | 通知服务         | `sendNotification()`, `getNotifications()` |
+| `qiniu-upload.ts`                  | 七牛云上传       | `uploadFile()`, `getUploadToken()`         |
+| `error-reporting-service.ts`       | 错误报告服务     | `reportError()`, `logException()`          |
+| `expense-service.ts`               | 费用服务         | `createExpense()`, `approveExpense()`      |
+| `expense-idempotency.ts`           | 费用幂等性       | `ensureIdempotency()`                      |
+| `expense-payable-integration.ts`   | 费用应付集成     | `integrateExpensePayable()`                |
+| `refund-query-service.ts`          | 退款查询服务     | `getRefunds()`, `getRefundDetail()`        |
+| `address.ts`                       | 地址服务         | `parseAddress()`, `validateAddress()`      |
+| `address-parser.ts`                | 地址解析器       | `parseAddressString()`                     |
+| `address-client.ts`                | 地址客户端       | `getAddressData()`                         |
+| `smart-wait-strategy.ts`           | 智能等待策略     | `waitForElement()`, `retryWithBackoff()`   |
+| `enhanced-selector-engine.ts`      | 增强选择器引擎   | `selectElement()`, `findBestMatch()`       |
 
 ---
 

@@ -7,6 +7,7 @@
 ## 1. 数据库模型 (Prisma)
 
 ### 1.1 完整 Schema
+
 ```prisma
 // prisma/schema.prisma (新增部分)
 
@@ -14,25 +15,25 @@ model PrintTemplate {
   id          String   @id @default(uuid()) @db.Char(36)
   name        String   @db.VarChar(100)
   description String?  @db.VarChar(500)
-  
+
   /// 模板类型
   type        String   @map("template_type") @db.VarChar(50)
-  
+
   /// 是否为该类型的默认模板
   isDefault   Boolean  @default(false) @map("is_default")
-  
+
   /// 模板配置 JSON (Zod Schema 验证)
   content     Json     @map("content")
-  
+
   /// 缩略图 (可选, base64 或 URL)
   thumbnail   String?  @db.Text
-  
+
   /// 状态
   status      String   @default("active") @db.VarChar(20)
-  
+
   /// 是否为系统内置模板 (不可删除)
   isSystem    Boolean  @default(false) @map("is_system")
-  
+
   /// 审计
   createdBy   String   @map("created_by") @db.Char(36)
   updatedBy   String   @map("updated_by") @db.Char(36)
@@ -50,10 +51,11 @@ model PrintTemplate {
 ```
 
 ### 1.2 User 模型扩展
+
 ```prisma
 model User {
   // ... 现有字段
-  
+
   createdTemplates PrintTemplate[] @relation("TemplateCreator")
   updatedTemplates PrintTemplate[] @relation("TemplateUpdater")
 }
@@ -64,6 +66,7 @@ model User {
 ## 2. Server Actions
 
 ### 2.1 模板 CRUD
+
 ```typescript
 // actions/print-template.ts
 'use server';
@@ -138,10 +141,7 @@ export async function getTemplates(type?: string) {
       thumbnail: true,
       updatedAt: true,
     },
-    orderBy: [
-      { isDefault: 'desc' },
-      { updatedAt: 'desc' },
-    ],
+    orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }],
   });
 }
 
@@ -172,7 +172,7 @@ export async function setDefaultTemplate(id: string, type: string) {
       data: { isDefault: true },
     }),
   ]);
-  
+
   revalidatePath('/settings/print-templates');
 }
 
@@ -182,12 +182,12 @@ export async function setDefaultTemplate(id: string, type: string) {
 export async function deleteTemplate(id: string) {
   const template = await prisma.printTemplate.findUnique({ where: { id } });
   if (template?.isSystem) throw new Error('Cannot delete system template');
-  
+
   await prisma.printTemplate.update({
     where: { id },
     data: { status: 'deleted' },
   });
-  
+
   revalidatePath('/settings/print-templates');
 }
 ```
@@ -197,15 +197,17 @@ export async function deleteTemplate(id: string) {
 ## 3. PDF 生成服务
 
 ### 3.1 架构选择
-| 方案 | 适用场景 | 优缺点 |
-|---|---|---|
-| `window.print()` | 用户主动打印 | ✅ 简单 ❌ 无法自动化 |
-| `jsPDF` | 简单文档 | ✅ 前端运行 ❌ 中文支持差、排版弱 |
-| `Puppeteer` | 复杂报表 | ✅ 像素级还原 ❌ 需后端资源 |
+
+| 方案             | 适用场景     | 优缺点                            |
+| ---------------- | ------------ | --------------------------------- |
+| `window.print()` | 用户主动打印 | ✅ 简单 ❌ 无法自动化             |
+| `jsPDF`          | 简单文档     | ✅ 前端运行 ❌ 中文支持差、排版弱 |
+| `Puppeteer`      | 复杂报表     | ✅ 像素级还原 ❌ 需后端资源       |
 
 **推荐**: 用户手动打印用 `window.print()`，自动化场景（邮件发送）用 Puppeteer。
 
 ### 3.2 Puppeteer 服务实现
+
 ```typescript
 // lib/services/pdf-generator.ts
 import puppeteer from 'puppeteer-core';
@@ -227,7 +229,7 @@ export async function generatePdf(options: PdfOptions): Promise<Buffer> {
 
   try {
     const page = await browser.newPage();
-    
+
     // 构建 HTML
     const html = buildPrintHtml(options.template, options.data);
     await page.setContent(html, { waitUntil: 'networkidle0' });
@@ -263,6 +265,7 @@ function buildPrintHtml(template: any, data: any): string {
 ```
 
 ### 3.3 API Route 封装
+
 ```typescript
 // app/api/print/generate-pdf/route.ts
 import { generatePdf } from '@/lib/services/pdf-generator';
@@ -271,13 +274,16 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const { templateId, data } = await request.json();
-    
+
     // 获取模板
     const template = await prisma.printTemplate.findUnique({
       where: { id: templateId },
     });
     if (!template) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 }
+      );
     }
 
     // 生成 PDF
@@ -294,7 +300,10 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('PDF generation failed:', error);
-    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'PDF generation failed' },
+      { status: 500 }
+    );
   }
 }
 ```
@@ -304,6 +313,7 @@ export async function POST(request: NextRequest) {
 ## 4. 缓存策略
 
 ### 4.1 默认模板缓存
+
 ```typescript
 // lib/cache/template-cache.ts
 import { unstable_cache } from 'next/cache';
@@ -320,6 +330,7 @@ export const getDefaultTemplate = unstable_cache(
 ```
 
 ### 4.2 缓存失效
+
 ```typescript
 // 在 saveTemplate / setDefaultTemplate 后
 import { revalidateTag } from 'next/cache';
@@ -330,11 +341,11 @@ revalidateTag('print-templates');
 
 ## 5. 权限控制
 
-| 角色 | 查看模板 | 编辑模板 | 删除模板 | 设置默认 |
-|---|---|---|---|---|
-| 普通员工 | ✅ | ❌ | ❌ | ❌ |
-| 运营 | ✅ | ✅ | ❌ | ❌ |
-| 管理员 | ✅ | ✅ | ✅ | ✅ |
+| 角色     | 查看模板 | 编辑模板 | 删除模板 | 设置默认 |
+| -------- | -------- | -------- | -------- | -------- |
+| 普通员工 | ✅       | ❌       | ❌       | ❌       |
+| 运营     | ✅       | ✅       | ❌       | ❌       |
+| 管理员   | ✅       | ✅       | ✅       | ✅       |
 
 ```typescript
 // lib/auth/permissions.ts

@@ -81,7 +81,10 @@ try {
   // 业务逻辑
 } catch (error) {
   console.error('Error:', error);
-  return NextResponse.json({ success: false, error: '操作失败' }, { status: 500 });
+  return NextResponse.json(
+    { success: false, error: '操作失败' },
+    { status: 500 }
+  );
 }
 ```
 
@@ -179,7 +182,9 @@ export const GET = withAuth(
       orderBy: buildOrderBy(sortBy, sortOrder), // sortBy 白名单 + 稳定排序
       skip,
       take: limit + 1,
-      select: { /* 列表字段 */ },
+      select: {
+        /* 列表字段 */
+      },
     });
 
     const hasMore = rows.length > limit;
@@ -235,4 +240,3 @@ export const GET = withAuth(
 - `lib/api/sort.ts`：对每个资源定义 `sortBy` 白名单与稳定 `orderBy`。
 - `lib/api/search.ts`：统一 `search` 的长度限制、字段映射与索引友好策略。
 - `lib/api/route.ts`：一个“组合式 wrapper”，把 auth + error + validation 组装为单一入口，降低每个路由的样板代码。
-
