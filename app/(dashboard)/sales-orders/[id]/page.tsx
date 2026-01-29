@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
@@ -15,16 +16,54 @@ import { getErrorMessage } from '@/lib/utils/error-handler';
 
 import { AmountSummaryCards } from './components/AmountSummaryCards';
 import { BasicInfoCard } from './components/BasicInfoCard';
-import { FeeItemsCard } from './components/FeeItemsCard';
 import { HeaderCard } from './components/HeaderCard';
-import { OperationHistoryCard } from './components/OperationHistoryCard';
-import { OrderItemsTable } from './components/OrderItemsTable';
 import { OrderReconciliationSummaryCard } from './components/OrderReconciliationSummaryCard';
-import { PaymentsCard } from './components/PaymentsCard';
-import { PrepaymentUsageCard } from './components/PrepaymentUsageCard';
-import { RelatedReturnOrdersCard } from './components/RelatedReturnOrdersCard';
 import { TransferModeInfoCard } from './components/TransferModeInfoCard';
 import type { SalesOrderDetail } from './components/types';
+
+const RelatedReturnOrdersCard = dynamic(
+  () =>
+    import('./components/RelatedReturnOrdersCard').then(
+      mod => mod.RelatedReturnOrdersCard
+    ),
+  { ssr: false, loading: () => null }
+);
+
+const OrderItemsTable = dynamic(
+  () => import('./components/OrderItemsTable').then(mod => mod.OrderItemsTable),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        明细加载中...
+      </div>
+    ),
+  }
+);
+
+const FeeItemsCard = dynamic(
+  () => import('./components/FeeItemsCard').then(mod => mod.FeeItemsCard),
+  { ssr: false, loading: () => null }
+);
+
+const PaymentsCard = dynamic(
+  () => import('./components/PaymentsCard').then(mod => mod.PaymentsCard),
+  { ssr: false, loading: () => null }
+);
+
+const PrepaymentUsageCard = dynamic(
+  () =>
+    import('./components/PrepaymentUsageCard').then(mod => mod.PrepaymentUsageCard),
+  { ssr: false, loading: () => null }
+);
+
+const OperationHistoryCard = dynamic(
+  () =>
+    import('./components/OperationHistoryCard').then(
+      mod => mod.OperationHistoryCard
+    ),
+  { ssr: false, loading: () => null }
+);
 
 async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
   const response = await fetch(`/api/sales-orders/${id}`, {
