@@ -21,4 +21,3 @@ export const userBasicSelect = {
   name: true,
   email: true,
 } satisfies Prisma.UserSelect;
-

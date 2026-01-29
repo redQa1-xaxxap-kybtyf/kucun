@@ -50,4 +50,3 @@ function replaceValue(value: unknown): unknown {
 export function replacePrismaDecimals<T>(input: T): T {
   return replaceValue(input) as T;
 }
-

@@ -243,11 +243,11 @@ export function withAuth(
       // 1.1 会话并发/空闲超时校验（仅对带 sessionId 的会话生效）
       if (user.sessionId) {
         try {
-           const sessionResult = await validateAndTouchUserSession({
-             userId: user.id,
-             sessionId: user.sessionId,
-             idleTimeoutSeconds: env.USER_SESSION_TIMEOUT * 60,
-           });
+          const sessionResult = await validateAndTouchUserSession({
+            userId: user.id,
+            sessionId: user.sessionId,
+            idleTimeoutSeconds: env.USER_SESSION_TIMEOUT * 60,
+          });
 
           if (!sessionResult.valid) {
             return unauthorizedResponse(sessionResult.reason || '会话已失效');

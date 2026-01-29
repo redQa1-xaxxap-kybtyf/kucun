@@ -31,7 +31,9 @@ export function generateMemoryReport(): {
   }
 
   if (cacheStats.size > cacheStats.maxSize * 0.9) {
-    recommendations.push('Redis内存缓存接近上限，考虑增加MAX_MEMORY_CACHE_SIZE');
+    recommendations.push(
+      'Redis内存缓存接近上限，考虑增加MAX_MEMORY_CACHE_SIZE'
+    );
   }
 
   if (stats.rssMB > 2000) {
@@ -55,11 +57,15 @@ export function generateMemoryReport(): {
   }
 
   if (redisPoolHealth.reconnecting > 0) {
-    recommendations.push(`⚠️ 有 ${redisPoolHealth.reconnecting} 个 Redis 连接正在重连`);
+    recommendations.push(
+      `⚠️ 有 ${redisPoolHealth.reconnecting} 个 Redis 连接正在重连`
+    );
   }
 
   if (redisPoolHealth.disconnected > 0) {
-    recommendations.push(`⚠️ 有 ${redisPoolHealth.disconnected} 个 Redis 连接已断开`);
+    recommendations.push(
+      `⚠️ 有 ${redisPoolHealth.disconnected} 个 Redis 连接已断开`
+    );
   }
 
   return {
@@ -70,4 +76,3 @@ export function generateMemoryReport(): {
     recommendations,
   };
 }
-

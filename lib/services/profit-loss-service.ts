@@ -19,12 +19,11 @@ import {
   calculateTotalExpenses,
   extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
-import { toNumber } from '@/lib/utils/number';
+import { toNumber, toNumberOrNull } from '@/lib/utils/number';
 
 import {
   applyReportVisibility,
   buildExpenseWhere,
-  buildRefundWhere,
   buildSalesOrderWhere,
   calculateComparison,
   calculateCostRate,
@@ -356,7 +355,9 @@ function generateDateRanges(
       );
       if (rangeEnd > endDate) rangeEnd = new Date(endDate);
       label = `${rangeStart.getFullYear()}-${String(rangeStart.getMonth() + 1).padStart(2, '0')}`;
-      current.setMonth(current.getMonth() + 1);
+      // ✅ 关键修复：推进到下个月的 1 号，避免从任意日开始导致整月区间出现缺口
+      // 例如：start=1/15 时，下一段应从 2/1 开始，而不是 2/15
+      current.setMonth(current.getMonth() + 1, 1);
     }
 
     if (rangeStart <= endDate) {
@@ -368,6 +369,123 @@ function generateDateRanges(
 }
 
 // ==================== 主服务函数 ====================
+
+async function getReturnAdjustments(
+  startDate: Date,
+  endDate: Date,
+  visibility: ReportVisibility
+): Promise<{ returnAmountTotal: number; returnCostReversalTotal: number }> {
+  const returnOrderItemModel = (prisma as any)?.returnOrderItem;
+  if (
+    !returnOrderItemModel ||
+    typeof returnOrderItemModel.findMany !== 'function'
+  ) {
+    return { returnAmountTotal: 0, returnCostReversalTotal: 0 };
+  }
+
+  const returnOrderWhere = applyReportVisibility(
+    {
+      status: 'completed',
+      completedAt: {
+        gte: startDate,
+        lte: endDate,
+      },
+    } as any,
+    visibility
+  );
+
+  const items = await returnOrderItemModel.findMany({
+    where: {
+      returnOrder: returnOrderWhere,
+    },
+    select: {
+      subtotal: true,
+      returnQuantity: true,
+      damagedQuantity: true,
+      salesOrderItem: {
+        select: {
+          unitCost: true,
+          quantity: true,
+          costSubtotal: true,
+        },
+      },
+    },
+  });
+
+  let returnAmountTotal = 0;
+  let returnCostReversalTotal = 0;
+
+  for (const item of items) {
+    returnAmountTotal += toNumber(item.subtotal);
+
+    const returnQty = Number(item.returnQuantity ?? 0);
+    const damagedQty = Number(item.damagedQuantity ?? 0);
+    const reversibleQty = Math.max(0, returnQty - damagedQty);
+
+    const explicitUnitCost = toNumberOrNull(item.salesOrderItem?.unitCost);
+    const costSubtotal = toNumber(item.salesOrderItem?.costSubtotal);
+    const originalQty = Number(item.salesOrderItem?.quantity ?? 0);
+    const derivedUnitCost = originalQty > 0 ? costSubtotal / originalQty : 0;
+    const unitCost = explicitUnitCost ?? derivedUnitCost;
+
+    returnCostReversalTotal += reversibleQty * unitCost;
+  }
+
+  return {
+    returnAmountTotal: roundToTwoDecimals(returnAmountTotal),
+    returnCostReversalTotal: roundToTwoDecimals(returnCostReversalTotal),
+  };
+}
+
+async function getCompensationRefundTotal(
+  startDate: Date,
+  endDate: Date,
+  visibility: ReportVisibility
+): Promise<number> {
+  const refundModel = (prisma as any)?.refundRecord;
+  if (!refundModel || typeof refundModel.aggregate !== 'function') {
+    return 0;
+  }
+
+  const baseWhere = applyReportVisibility(
+    {
+      status: 'completed',
+      refundDate: {
+        gte: startDate,
+        lte: endDate,
+      },
+      returnOrderId: null,
+    } as any,
+    visibility
+  );
+
+  const [processedAgg, fallbackAgg] = await Promise.all([
+    refundModel.aggregate({
+      where: {
+        ...baseWhere,
+        processedAmount: { gt: 0 },
+      },
+      _sum: {
+        processedAmount: true,
+      },
+    }),
+    // ✅ 兼容历史数据：已完成退款但 processedAmount 仍为 0（用 refundAmount 兜底）
+    refundModel.aggregate({
+      where: {
+        ...baseWhere,
+        processedAmount: 0,
+      },
+      _sum: {
+        refundAmount: true,
+      },
+    }),
+  ]);
+
+  return roundToTwoDecimals(
+    toNumber(processedAgg._sum.processedAmount) +
+      toNumber(fallbackAgg._sum.refundAmount)
+  );
+}
 
 /**
  * 获取盈亏分析
@@ -383,36 +501,56 @@ export async function getProfitLossAnalysis(
   end.setHours(23, 59, 59, 999);
   const visibility: ReportVisibility = { systemMode: await getSystemMode() };
 
-  // 获取退款金额
-  const refundWhere = applyReportVisibility(
-    buildRefundWhere(start, end),
-    visibility
-  );
-  const refundStats = await prisma.refundRecord.aggregate({
-    where: refundWhere,
-    _sum: {
-      processedAmount: true,
-    },
-  });
-  const refundAmount = toNumber(refundStats._sum.processedAmount);
-
   // 并行获取所有数据
-  const [revenue, trend] = await Promise.all([
-    getRevenueDetail(start, end, visibility),
-    getProfitLossTrend(start, end, groupBy, visibility),
-  ]);
+  const [returnAdjustments, compensationRefundTotal, revenueRaw, trend] =
+    await Promise.all([
+      getReturnAdjustments(start, end, visibility),
+      getCompensationRefundTotal(start, end, visibility),
+      getRevenueDetail(start, end, visibility),
+      getProfitLossTrend(start, end, groupBy, visibility),
+    ]);
+
+  const adjustments = {
+    ...returnAdjustments,
+    compensationRefundTotal,
+  };
+
+  // ✅ 退货按 completedAt 入账：冲减销售收入（不影响厂家直发收入）
+  const revenue: RevenueDetail = {
+    ...revenueRaw,
+    salesRevenue: revenueRaw.salesRevenue - adjustments.returnAmountTotal,
+    totalRevenue: revenueRaw.totalRevenue - adjustments.returnAmountTotal,
+  };
 
   // 获取成本、费用和厂家发货利润（需要总收入）
-  const [costs, expenses, factoryShipmentProfit] = await Promise.all([
-    getCostDetail(start, end, revenue.totalRevenue, visibility),
-    getExpenseDetail(start, end, revenue.totalRevenue, visibility),
+  const [costsRaw, expenses, factoryShipmentProfit] = await Promise.all([
+    getCostDetail(start, end, revenueRaw.totalRevenue, visibility),
+    getExpenseDetail(start, end, revenueRaw.totalRevenue, visibility),
     getFactoryShipmentProfitDetail(
       start,
       end,
-      revenue.totalRevenue,
+      revenueRaw.totalRevenue,
       visibility
     ),
   ]);
+
+  // ✅ 退货成本回冲：减少当期 COGS（仅非破损部分可回冲）
+  const costs: CostDetail = {
+    ...costsRaw,
+    salesCost: costsRaw.salesCost - adjustments.returnCostReversalTotal,
+    totalCost: costsRaw.totalCost - adjustments.returnCostReversalTotal,
+    costRate: calculateCostRate(
+      costsRaw.totalCost - adjustments.returnCostReversalTotal,
+      revenue.totalRevenue
+    ),
+  };
+
+  // 同步重算费用率（收入口径已被退货冲减）
+  expenses.expenseRate = calculateExpenseRate(
+    expenses.totalExpenses,
+    revenue.totalRevenue
+  );
+
   // 先计算主营业务的基础利润（不含厂家直发收入）
   const coreRevenue: RevenueDetail = {
     ...revenue,
@@ -423,7 +561,7 @@ export async function getProfitLossAnalysis(
     coreRevenue,
     costs,
     expenses,
-    refundAmount
+    adjustments.compensationRefundTotal
   );
 
   // 厂家直发利润视为额外的经营利润块，并入整体利润
@@ -486,6 +624,7 @@ export async function getProfitLossAnalysis(
     factoryShipmentProfit: normalizedFactoryShipmentProfit,
     trend,
     alerts,
+    adjustments,
   };
 
   // 如果需要对比数据（对比上一个相同时间段）

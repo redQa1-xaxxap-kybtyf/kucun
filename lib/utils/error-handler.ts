@@ -400,8 +400,12 @@ export function getErrorDetails(error: unknown): ErrorDetails {
   const code = appError.code || ErrorCode.UNKNOWN;
 
   return {
-    message: appError.message || ERROR_MESSAGES[code] || ERROR_MESSAGES[ErrorCode.UNKNOWN],
-    recoveryHint: ERROR_RECOVERY_HINTS[code] || ERROR_RECOVERY_HINTS[ErrorCode.UNKNOWN],
+    message:
+      appError.message ||
+      ERROR_MESSAGES[code] ||
+      ERROR_MESSAGES[ErrorCode.UNKNOWN],
+    recoveryHint:
+      ERROR_RECOVERY_HINTS[code] || ERROR_RECOVERY_HINTS[ErrorCode.UNKNOWN],
     code,
     isRetryable: [
       'NETWORK_ERROR',

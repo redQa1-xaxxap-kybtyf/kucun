@@ -7,7 +7,6 @@ import { timingSafeEqual } from 'crypto';
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-
 import { logger } from '@/lib/logger';
 import { getMemoryStats } from '@/lib/monitoring/memory-monitor';
 import { generateMemoryReport } from '@/lib/monitoring/memory-monitor-report';
@@ -60,7 +59,10 @@ async function handleMemoryMonitoring(request: NextRequest) {
 
     if (isProduction) {
       if (!expectedToken || isWeakProdToken(expectedToken)) {
-        logger.error('monitoring-memory', 'MONITORING_TOKEN 未配置或过弱，已禁用监控端点');
+        logger.error(
+          'monitoring-memory',
+          'MONITORING_TOKEN 未配置或过弱，已禁用监控端点'
+        );
         return NextResponse.json(
           { success: false, error: 'Not Found' },
           { status: 404 }

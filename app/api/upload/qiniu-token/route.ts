@@ -36,7 +36,10 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   // 对 product 图片按用途做子目录，便于管理（不影响现有 web 端）
   const prefix = type === 'product' && kind ? `${type}/${kind}` : type;
-  const params = await createQiniuDirectUploadParams(normalizedFileName, prefix);
+  const params = await createQiniuDirectUploadParams(
+    normalizedFileName,
+    prefix
+  );
 
   if (!params.success) {
     return NextResponse.json(
@@ -57,4 +60,3 @@ export const POST = withAuth(async (request: NextRequest) => {
     },
   });
 });
-

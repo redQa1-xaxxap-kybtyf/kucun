@@ -1,7 +1,10 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig, returnRefundConfig } from '@/lib/env';

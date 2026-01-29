@@ -229,15 +229,19 @@ export function extractRequestInfo(request: Request): {
   ipAddress: string | null;
   userAgent: string | null;
 } {
+  const rawForwarded = request.headers.get('x-forwarded-for');
+  const primaryForwardedIp = rawForwarded
+    ?.split(',')
+    ?.map(value => value.trim())
+    ?.find(Boolean);
+
   const ipAddress =
-    request.headers.get('x-forwarded-for') ||
-    request.headers.get('x-real-ip') ||
-    '127.0.0.1';
+    primaryForwardedIp || request.headers.get('x-real-ip') || '127.0.0.1';
 
   const userAgent = request.headers.get('user-agent');
 
   return {
-    ipAddress,
-    userAgent,
+    ipAddress: ipAddress ? ipAddress.slice(0, 191) : null,
+    userAgent: userAgent ? userAgent.slice(0, 191) : null,
   };
 }

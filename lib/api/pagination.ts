@@ -93,7 +93,10 @@ export function parseOffsetPagination(
 /**
  * 将 take=limit+1 的结果裁剪回 limit，并返回 hasMore。
  */
-export function sliceLimitPlusOne<T>(rows: T[], limit: number): {
+export function sliceLimitPlusOne<T>(
+  rows: T[],
+  limit: number
+): {
   items: T[];
   hasMore: boolean;
 } {

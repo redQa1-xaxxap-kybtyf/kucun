@@ -8,15 +8,15 @@ import { z } from 'zod';
 import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
 
 import {
-    factoryShipmentFeeItemSchema,
-    factoryShipmentOrderItemSchema,
-    factoryShipmentOrderListParamsSchema,
-    factoryShipmentStatusSchema,
-    updateFactoryShipmentOrderStatusSchema,
+  factoryShipmentFeeItemSchema,
+  factoryShipmentOrderItemSchema,
+  factoryShipmentOrderListParamsSchema,
+  factoryShipmentStatusSchema,
+  updateFactoryShipmentOrderStatusSchema,
 } from './schemas';
 import {
-    validateFactoryShipmentItems,
-    validateStatusFieldRequirements,
+  validateFactoryShipmentItems,
+  validateStatusFieldRequirements,
 } from './validators';
 
 /**
@@ -345,10 +345,10 @@ export * from './schemas';
 
 // 导出验证函数（供测试使用）
 export {
-    validateFactoryShipmentItems,
-    validateManualProductFields,
-    validateRequiredFieldsByStatus,
-    validateStatusFieldRequirements
+  validateFactoryShipmentItems,
+  validateManualProductFields,
+  validateRequiredFieldsByStatus,
+  validateStatusFieldRequirements,
 } from './validators';
 
 // 导出类型
@@ -365,8 +365,8 @@ export type FactoryShipmentOrderFormData = z.input<
 
 // 兼容性导出（用于现有代码）
 export {
-    factoryShipmentOrderListParamsSchema,
-    updateFactoryShipmentOrderStatusSchema
+  factoryShipmentOrderListParamsSchema,
+  updateFactoryShipmentOrderStatusSchema,
 };
 export type FactoryShipmentOrderListParams = z.infer<
   typeof factoryShipmentOrderListParamsSchema

@@ -83,7 +83,8 @@ export async function updateInventoryWithNotification(
         throw new Error('库存记录不存在');
       }
 
-      const quantityDelta = type === 'reserve' || type === 'release' ? 0 : quantity;
+      const quantityDelta =
+        type === 'reserve' || type === 'release' ? 0 : quantity;
 
       const updatedInventory = await tx.inventory.update({
         where: { id: inventory.id },
@@ -134,12 +135,17 @@ export async function updateInventoryWithNotification(
     afterQuantity = result.afterQuantity;
     reservedQuantity = result.reservedQuantity;
   } catch (error) {
-    logger.error('inventory-realtime', 'Failed to update inventory (db)', error, {
-      productId,
-      variantId: variantId || undefined,
-      quantity,
-      type,
-    });
+    logger.error(
+      'inventory-realtime',
+      'Failed to update inventory (db)',
+      error,
+      {
+        productId,
+        variantId: variantId || undefined,
+        quantity,
+        type,
+      }
+    );
     return false;
   }
 
@@ -155,10 +161,15 @@ export async function updateInventoryWithNotification(
       return pipeline.exec();
     });
   } catch (error) {
-    logger.error('inventory-realtime', 'Failed to update inventory cache', error, {
-      productId,
-      variantId: variantId || undefined,
-    });
+    logger.error(
+      'inventory-realtime',
+      'Failed to update inventory cache',
+      error,
+      {
+        productId,
+        variantId: variantId || undefined,
+      }
+    );
   }
 
   const event: InventoryChangeEvent = {
@@ -187,19 +198,29 @@ export async function updateInventoryWithNotification(
         }),
     ]);
   } catch (error) {
-    logger.error('inventory-realtime', 'Failed to publish inventory events', error, {
-      productId,
-      variantId: variantId || undefined,
-    });
+    logger.error(
+      'inventory-realtime',
+      'Failed to publish inventory events',
+      error,
+      {
+        productId,
+        variantId: variantId || undefined,
+      }
+    );
   }
 
   try {
     await revalidateInventory(productId);
   } catch (error) {
-    logger.error('inventory-realtime', 'Failed to revalidate inventory cache', error, {
-      productId,
-      variantId: variantId || undefined,
-    });
+    logger.error(
+      'inventory-realtime',
+      'Failed to revalidate inventory cache',
+      error,
+      {
+        productId,
+        variantId: variantId || undefined,
+      }
+    );
   }
 
   return true;
@@ -288,9 +309,14 @@ export async function batchUpdateInventory(
         return pipeline.exec();
       });
     } catch (error) {
-      logger.error('inventory-realtime', 'Failed to update batch inventory cache', error, {
-        count: updates.length,
-      });
+      logger.error(
+        'inventory-realtime',
+        'Failed to update batch inventory cache',
+        error,
+        {
+          count: updates.length,
+        }
+      );
     }
 
     try {
@@ -300,9 +326,14 @@ export async function batchUpdateInventory(
         timestamp: nowIso,
       });
     } catch (error) {
-      logger.error('inventory-realtime', 'Failed to publish batch inventory event', error, {
-        count: updates.length,
-      });
+      logger.error(
+        'inventory-realtime',
+        'Failed to publish batch inventory event',
+        error,
+        {
+          count: updates.length,
+        }
+      );
     }
 
     return {
@@ -315,7 +346,8 @@ export async function batchUpdateInventory(
     });
     return {
       success: false,
-      failed: failed.size > 0 ? Array.from(failed) : updates.map(u => u.productId),
+      failed:
+        failed.size > 0 ? Array.from(failed) : updates.map(u => u.productId),
     };
   }
 }

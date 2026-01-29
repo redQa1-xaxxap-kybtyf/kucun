@@ -136,11 +136,11 @@ async function extractUploadPayload(
   const formData = await request.formData();
   const rawFile = formData.get('file');
   const type = (formData.get('type') as string) || 'product';
-   const kindRaw = formData.get('kind');
-   const kind =
-     typeof kindRaw === 'string' && kindRaw.trim().length > 0
-       ? (kindRaw as ProductImageKind)
-       : undefined;
+  const kindRaw = formData.get('kind');
+  const kind =
+    typeof kindRaw === 'string' && kindRaw.trim().length > 0
+      ? (kindRaw as ProductImageKind)
+      : undefined;
 
   const validationResult = uploadValidation.safeParse({ type });
   if (!validationResult.success) {
@@ -190,8 +190,9 @@ async function extractUploadPayload(
   const maxSizeForKind = getMaxSizeForKind(type, kind);
   if (file.size > maxSizeForKind) {
     const maxMb = maxSizeForKind / 1024 / 1024;
-    const sizeText =
-      Number.isInteger(maxMb) ? maxMb.toString() : maxMb.toFixed(2);
+    const sizeText = Number.isInteger(maxMb)
+      ? maxMb.toString()
+      : maxMb.toFixed(2);
 
     let prefix = '文件';
     if (type === 'product' && kind) {
@@ -328,7 +329,8 @@ async function handleUploadWithFallback(
     cloudError: uploadResult.error,
   });
 
-  const fallbackEnabled = uploadConfig.fallbackEnabled || !!options?.forceFallback;
+  const fallbackEnabled =
+    uploadConfig.fallbackEnabled || !!options?.forceFallback;
 
   if (!fallbackEnabled) {
     return NextResponse.json(
@@ -396,9 +398,14 @@ async function handleUploadWithFallback(
       }
     }
   } catch (error) {
-    logger.warn('upload', '生成本地文件访问 token 失败，将使用原始 URL', undefined, {
-      error: error instanceof Error ? error.message : String(error),
-    });
+    logger.warn(
+      'upload',
+      '生成本地文件访问 token 失败，将使用原始 URL',
+      undefined,
+      {
+        error: error instanceof Error ? error.message : String(error),
+      }
+    );
   }
 
   const absoluteUrl =
@@ -418,7 +425,8 @@ async function handleUploadWithFallback(
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    const isMiniProgram = request.headers.get('x-client-from') === 'mini-program';
+    const isMiniProgram =
+      request.headers.get('x-client-from') === 'mini-program';
 
     const payload = await extractUploadPayload(request);
     if (!payload.ok) {

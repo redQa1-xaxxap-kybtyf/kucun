@@ -314,7 +314,10 @@ export async function updateAllShippingStatuses(): Promise<{
   try {
     const baseWhere: Prisma.FactoryShipmentOrderWhereInput = {
       status: {
-        in: [FACTORY_SHIPMENT_STATUS.SHIPPED, FACTORY_SHIPMENT_STATUS.IN_TRANSIT],
+        in: [
+          FACTORY_SHIPMENT_STATUS.SHIPPED,
+          FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
+        ],
       },
       shippingCompany: {
         not: null,
@@ -379,25 +382,25 @@ export async function updateAllShippingStatuses(): Promise<{
 
       for (const order of orders) {
         try {
-        const updated = await updateOrderShippingStatus(order.id);
+          const updated = await updateOrderShippingStatus(order.id);
 
-        if (updated) {
-          stats.success++;
-        } else {
+          if (updated) {
+            stats.success++;
+          } else {
+            stats.failed++;
+          }
+
+          // 添加延迟避免API限流(每个查询间隔1秒)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } catch (error) {
+          logger.error(
+            'shipping-tracking',
+            `处理订单失败: ${order.orderNumber}`,
+            error
+          );
           stats.failed++;
         }
-
-        // 添加延迟避免API限流(每个查询间隔1秒)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      } catch (error) {
-        logger.error(
-          'shipping-tracking',
-          `处理订单失败: ${order.orderNumber}`,
-          error
-        );
-        stats.failed++;
       }
-    }
 
       cursor = orders[orders.length - 1].id;
     }

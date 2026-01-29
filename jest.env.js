@@ -73,7 +73,8 @@ try {
   if (typeof global !== 'undefined') targets.add(global);
   if (typeof globalThis !== 'undefined') targets.add(globalThis);
   if (typeof window !== 'undefined') targets.add(window);
-  if (typeof global !== 'undefined' && global.window) targets.add(global.window);
+  if (typeof global !== 'undefined' && global.window)
+    targets.add(global.window);
 
   const defineIfMissing = (target, key, value) => {
     if (typeof target[key] !== 'undefined') return;

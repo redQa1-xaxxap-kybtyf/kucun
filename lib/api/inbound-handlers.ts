@@ -184,7 +184,8 @@ export function buildInboundOrderBy(queryData: {
 
   // 默认按创建时间排序
   const primary =
-    orderByMap[queryData.sortBy] ?? ({ createdAt: queryData.sortOrder } as const);
+    orderByMap[queryData.sortBy] ??
+    ({ createdAt: queryData.sortOrder } as const);
 
   return [primary, { id: 'desc' }];
 }
@@ -239,7 +240,8 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
               record.batchSpecification.piecesPerUnit ??
               record.product.piecesPerUnit ??
               1,
-            weight: toNumberOrNull(record.batchSpecification.weight) ?? undefined,
+            weight:
+              toNumberOrNull(record.batchSpecification.weight) ?? undefined,
             thickness:
               toNumberOrNull(record.batchSpecification.thickness) ?? undefined,
           }

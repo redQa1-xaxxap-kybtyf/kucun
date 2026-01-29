@@ -46,13 +46,7 @@ export function errorResponse(
   };
 
   if (details) {
-    logger.error(
-      'api:response',
-      'API错误响应',
-      error,
-      { status },
-      { details }
-    );
+    logger.error('api:response', 'API错误响应', error, { status }, { details });
   }
 
   return NextResponse.json(response, { status });

@@ -248,7 +248,8 @@ export async function getOptimizedInventoryList(
         ? Number(record.product_weight)
         : null,
     batch_piecesPerUnit:
-      record.batch_piecesPerUnit !== null && record.batch_piecesPerUnit !== undefined
+      record.batch_piecesPerUnit !== null &&
+      record.batch_piecesPerUnit !== undefined
         ? Number(record.batch_piecesPerUnit)
         : null,
     batch_weight:

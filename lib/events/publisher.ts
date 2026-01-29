@@ -20,7 +20,7 @@ const REDIS_CHANNEL_PREFIX = 'ws:';
 export async function publishEvent(
   channel: EventChannel,
   event: BusinessEvent
-  ): Promise<void> {
+): Promise<void> {
   try {
     const redisChannel = `${REDIS_CHANNEL_PREFIX}${channel}`;
     const payload = JSON.stringify({

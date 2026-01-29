@@ -46,10 +46,8 @@ const DEFAULT_ENTITY_TYPE_BY_OPERATION: Record<OperationType, string> = {
   payment_out_create: 'payment_out',
 };
 
-const resolveEntityType = (
-  operationType: OperationType,
-  override?: string
-) => override ?? DEFAULT_ENTITY_TYPE_BY_OPERATION[operationType] ?? 'generic';
+const resolveEntityType = (operationType: OperationType, override?: string) =>
+  override ?? DEFAULT_ENTITY_TYPE_BY_OPERATION[operationType] ?? 'generic';
 
 // ⚙️ 幂等性控制参数
 // 结合最小化事务 (≈200-500ms) 后, 正常入库应在 < 1秒 完成。
@@ -74,8 +72,10 @@ const isIdempotencyKeyUniqueConstraintError = (
   const target = (error.meta as { target?: unknown } | undefined)?.target;
 
   if (Array.isArray(target)) {
-    return target.some(item =>
-      typeof item === 'string' && /idempotency(_key)?|idempotencyKey/i.test(item)
+    return target.some(
+      item =>
+        typeof item === 'string' &&
+        /idempotency(_key)?|idempotencyKey/i.test(item)
     );
   }
 

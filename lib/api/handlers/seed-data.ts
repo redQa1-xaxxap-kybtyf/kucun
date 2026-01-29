@@ -141,13 +141,11 @@ export async function createTestProductVariants(
         productId: product.id,
         sku: `${product.code}-RED`,
         colorCode: 'RED',
-        productionDate: new Date('2024-01-15'),
       },
       {
         productId: product.id,
         sku: `${product.code}-BLUE`,
         colorCode: 'BLUE',
-        productionDate: new Date('2024-01-20'),
       },
     ];
 
@@ -247,11 +245,13 @@ export async function createTestInventory(
     const productVariants = variants.filter(v => v.productId === product.id);
 
     for (const variant of productVariants) {
+      const dateStr = variant.colorCode === 'BLUE' ? '20240120' : '20240115';
+
       const inventory = await prisma.inventory.create({
         data: {
           productId: product.id,
           variantId: variant.id,
-          batchNumber: `BATCH-${product.code}-${variant.colorCode ?? 'DEFAULT'}-001`,
+          batchNumber: `${product.code}-${dateStr}-001`,
           quantity: Math.floor(Math.random() * 100) + 10,
           reservedQuantity: Math.floor(Math.random() * 10),
         },

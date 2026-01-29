@@ -1,1 +1,18 @@
-const { getCustomerStatements } = require('./lib/services/customer-statement-service');\n(async () => {\n  try {\n    const result = await getCustomerStatements({ page: 1, pageSize: 20, balanceType: 'all', sortBy: 'customerName', sortOrder: 'desc' });\n    console.log('ok', result.statements.length);\n  } catch (err) {\n    console.error('error', err);\n  }\n})();
+const {
+  getCustomerStatements,
+} = require('./lib/services/customer-statement-service');
+
+(async () => {
+  try {
+    const result = await getCustomerStatements({
+      page: 1,
+      pageSize: 20,
+      balanceType: 'all',
+      sortBy: 'customerName',
+      sortOrder: 'desc',
+    });
+    console.log('ok', result.statements.length);
+  } catch (err) {
+    console.error('error', err);
+  }
+})();

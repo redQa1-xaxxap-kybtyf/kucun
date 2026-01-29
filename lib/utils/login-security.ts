@@ -1,20 +1,20 @@
 /**
  * 登录安全控制工具
- * 
+ *
  * 架构说明:
  * - 本模块主要用于管理员手动锁定/解锁账户
  * - 自动登录限制已统一到 login-log-service.ts (基于Redis)
  * - 避免双重机制导致的逻辑冗余和不一致
- * 
+ *
  * 遵循全局约定规范和唯一真理原则
  */
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
-    isLoginBlocked as checkIfBlocked,
-    logLoginFailure,
-    logLoginSuccess,
+  isLoginBlocked as checkIfBlocked,
+  logLoginFailure,
+  logLoginSuccess,
 } from '@/lib/services/login-log-service';
 
 // 登录安全策略配置

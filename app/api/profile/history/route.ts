@@ -16,7 +16,10 @@ function isMissingTableError(error: unknown): boolean {
   }
 
   const message = String(anyErr?.message || '');
-  return message.includes('does not exist') && message.includes('product_view_history');
+  return (
+    message.includes('does not exist') &&
+    message.includes('product_view_history')
+  );
 }
 
 interface HistoryProductDto {
@@ -30,7 +33,12 @@ interface HistoryProductDto {
 // 获取当前用户的产品浏览历史
 export const GET = withAuth(async (_request, { user }) => {
   let history: Array<{
-    product: { id: string; code: string; name: string; thumbnailUrl: string | null };
+    product: {
+      id: string;
+      code: string;
+      name: string;
+      thumbnailUrl: string | null;
+    };
     viewedAt: Date;
   }> = [];
 
@@ -57,9 +65,14 @@ export const GET = withAuth(async (_request, { user }) => {
     if (!isMissingTableError(error)) {
       throw error;
     }
-    logger.warn('profile-history', 'product_view_history table missing; return empty history', undefined, {
-      userId: user.id,
-    });
+    logger.warn(
+      'profile-history',
+      'product_view_history table missing; return empty history',
+      undefined,
+      {
+        userId: user.id,
+      }
+    );
     history = [];
   }
 
@@ -117,10 +130,15 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     if (!isMissingTableError(error)) {
       throw error;
     }
-    logger.warn('profile-history', 'product_view_history table missing; skip upsert', undefined, {
-      userId: user.id,
-      productId,
-    });
+    logger.warn(
+      'profile-history',
+      'product_view_history table missing; skip upsert',
+      undefined,
+      {
+        userId: user.id,
+        productId,
+      }
+    );
     return successResponse<{ updated: boolean }>({ updated: false });
   }
 
@@ -137,9 +155,14 @@ export const DELETE = withAuth(async (_request, { user }) => {
     if (!isMissingTableError(error)) {
       throw error;
     }
-    logger.warn('profile-history', 'product_view_history table missing; skip deleteMany', undefined, {
-      userId: user.id,
-    });
+    logger.warn(
+      'profile-history',
+      'product_view_history table missing; skip deleteMany',
+      undefined,
+      {
+        userId: user.id,
+      }
+    );
     return successResponse<{ cleared: boolean }>({ cleared: false });
   }
 

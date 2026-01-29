@@ -8,7 +8,6 @@ import { timingSafeEqual } from 'crypto';
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
@@ -66,7 +65,10 @@ async function handleRedisMonitoring(request: NextRequest) {
 
     if (isProduction) {
       if (!expectedToken || isWeakProdToken(expectedToken)) {
-        logger.error('monitoring-redis', 'MONITORING_TOKEN 未配置或过弱，已禁用监控端点');
+        logger.error(
+          'monitoring-redis',
+          'MONITORING_TOKEN 未配置或过弱，已禁用监控端点'
+        );
         return NextResponse.json(
           { success: false, error: 'Not Found' },
           { status: 404 }

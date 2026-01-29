@@ -90,7 +90,9 @@ export const GET = withAuth(async (request, { user }) => {
         error.message.includes('Cannot read properties of undefined') ||
         error.message.includes('notification'))
     ) {
-      const { page, limit } = parseOffsetPagination(request.nextUrl.searchParams);
+      const { page, limit } = parseOffsetPagination(
+        request.nextUrl.searchParams
+      );
       return NextResponse.json({
         notifications: [],
         unreadCount: 0,

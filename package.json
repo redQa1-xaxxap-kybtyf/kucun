@@ -1,6 +1,6 @@
 {
   "name": "kucun",
-  "version": "1.0.58",
+  "version": "1.0.72",
   "description": "瓷砖行业库存管理工具",
   "private": true,
   "scripts": {
@@ -28,7 +28,7 @@
     "ledger:backfill": "tsx scripts/backfill-ledger-returns-refunds.ts",
     "cache:clear": "tsx scripts/clear-cache.ts",
     "format:check": "prettier --check .",
-    "prepare": "husky install",
+    "prepare": "node -e \"if(process.env.HUSKY==='0'||process.env.NODE_ENV==='production')process.exit(0);require('child_process').execSync('husky install',{stdio:'inherit'});\"",
     "lint:staged": "lint-staged",
     "pre-commit": "lint-staged",
     "pre-push": "npm run type-check && npm run lint && npm run format:check && npm run build",
@@ -103,6 +103,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.1.1",
+    "coffee-script": "^1.12.7",
     "convert-units": "^2.3.4",
     "critters": "^0.0.23",
     "date-fns": "^4.1.0",
@@ -111,6 +112,7 @@
     "immer": "^11.1.3",
     "ioredis": "^5.8.0",
     "isomorphic-dompurify": "^2.28.0",
+    "jsbarcode": "^3.12.3",
     "jspdf": "^3.0.4",
     "lucide-react": "^0.544.0",
     "maxmind": "^5.0.0",

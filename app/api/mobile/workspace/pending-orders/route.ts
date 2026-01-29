@@ -1,7 +1,11 @@
 // 工作台待处理订单 API
 import type { NextRequest } from 'next/server';
 
-import { errorResponse, successResponse, withAuth } from '@/lib/auth/api-helpers';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +38,7 @@ async function handleGetPendingOrders(request: NextRequest, userRole: string) {
   });
 
   return successResponse({
-    orders: orders.map((order) => ({
+    orders: orders.map(order => ({
       id: order.id,
       orderNumber: order.orderNumber,
       customer: order.customer,
@@ -45,4 +49,6 @@ async function handleGetPendingOrders(request: NextRequest, userRole: string) {
   });
 }
 
-export const GET = withAuth(async (request: NextRequest, { user }) => handleGetPendingOrders(request, user.role));
+export const GET = withAuth(async (request: NextRequest, { user }) =>
+  handleGetPendingOrders(request, user.role)
+);

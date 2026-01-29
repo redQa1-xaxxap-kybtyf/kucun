@@ -7,8 +7,8 @@ import { z } from 'zod';
 
 import { paginationConfig } from '@/lib/env';
 import {
-    FACTORY_SHIPMENT_ITEM_OWNERSHIP,
-    FACTORY_SHIPMENT_STATUS,
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
 
 /**

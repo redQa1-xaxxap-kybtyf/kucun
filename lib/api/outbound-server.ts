@@ -333,7 +333,8 @@ export async function getOutboundRecordByNumber(recordNumber: string): Promise<
           >['unit'],
           piecesPerUnit: record.product.piecesPerUnit ?? 0,
           weight:
-            record.product.weight === null || record.product.weight === undefined
+            record.product.weight === null ||
+            record.product.weight === undefined
               ? undefined
               : toNumber(record.product.weight),
         } satisfies NonNullable<OutboundRecord['product']>)

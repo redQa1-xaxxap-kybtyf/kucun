@@ -49,11 +49,17 @@ export async function GET(
 
     // 仅允许已知类型目录
     if (!['product', 'avatar', 'document'].includes(type)) {
-      return NextResponse.json({ success: false, error: '无效的文件类型' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: '无效的文件类型' },
+        { status: 400 }
+      );
     }
 
     if (!isSafeSegment(file)) {
-      return NextResponse.json({ success: false, error: '无效的文件名' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: '无效的文件名' },
+        { status: 400 }
+      );
     }
 
     // 读取本地兜底图片默认不公开：
@@ -95,7 +101,9 @@ export async function GET(
         });
 
         if (payload && typeof payload === 'object') {
-          const userId = String((payload as any).sub || (payload as any).id || '');
+          const userId = String(
+            (payload as any).sub || (payload as any).id || ''
+          );
           const username = String((payload as any).username || '');
           if (userId && username) {
             authed = true;
@@ -121,7 +129,10 @@ export async function GET(
     }
 
     if (!authed) {
-      return NextResponse.json({ success: false, error: '未授权访问' }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     const baseDir = path.resolve(process.cwd(), uploadConfig.directory);
@@ -130,7 +141,10 @@ export async function GET(
 
     // 防止路径穿越：确保最终路径仍在 typeDir 内
     if (!absolutePath.startsWith(path.resolve(typeDir) + path.sep)) {
-      return NextResponse.json({ success: false, error: '无效的文件路径' }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: '无效的文件路径' },
+        { status: 400 }
+      );
     }
 
     const buffer = await fs.readFile(absolutePath);
@@ -149,6 +163,9 @@ export async function GET(
     });
   } catch (error) {
     logger.error('upload', '读取本地上传文件失败', error);
-    return NextResponse.json({ success: false, error: '文件不存在' }, { status: 404 });
+    return NextResponse.json(
+      { success: false, error: '文件不存在' },
+      { status: 404 }
+    );
   }
 }

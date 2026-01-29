@@ -1,8 +1,29 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { redis } from '@/lib/redis';
+
+function readPackageVersionFromDisk(): string | null {
+  try {
+    const pkgPath = path.join(process.cwd(), 'package.json');
+    const raw = fs.readFileSync(pkgPath, 'utf8');
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    const version = typeof parsed.version === 'string' ? parsed.version : null;
+    return version && version.trim().length > 0 ? version.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+const APP_VERSION =
+  process.env.APP_VERSION ||
+  process.env.npm_package_version ||
+  readPackageVersionFromDisk() ||
+  '1.0.0';
 
 /**
  * 健康检查接口
@@ -48,7 +69,7 @@ async function handleHealthCheck(_request: NextRequest) {
     application: {
       status: 'up',
       uptime: process.uptime(),
-      version: process.env.npm_package_version || '1.0.0',
+      version: APP_VERSION,
     },
   };
 

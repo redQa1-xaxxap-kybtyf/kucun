@@ -1,9 +1,9 @@
 /**
  * 统一响应式断点系统
- * 
+ *
  * 遵循项目设计规范，提供一致的断点定义和工具函数
  * 与 Tailwind CSS 默认断点保持一致
- * 
+ *
  * 使用方式:
  * - CSS/Tailwind: 使用 BREAKPOINT_QUERIES 或直接使用 Tailwind 类
  * - JavaScript: 使用 isBreakpoint() 或 useBreakpoint() Hook
@@ -94,7 +94,7 @@ export function getDeviceType(width: number): DeviceType {
 /**
  * 检查屏幕宽度是否满足断点条件
  * 可用于服务端渲染或构建时逻辑
- * 
+ *
  * @example
  * isBreakpoint(1200, 'lg') // true (>= 1024px)
  * isBreakpoint(600, 'md') // false (< 768px)
@@ -105,12 +105,14 @@ export function isBreakpoint(
   direction: 'min' | 'max' = 'min'
 ): boolean {
   const breakpointValue = BREAKPOINTS[breakpoint];
-  return direction === 'min' ? width >= breakpointValue : width < breakpointValue;
+  return direction === 'min'
+    ? width >= breakpointValue
+    : width < breakpointValue;
 }
 
 /**
  * 获取当前断点名称
- * 
+ *
  * @example
  * getCurrentBreakpoint(800) // 'md'
  * getCurrentBreakpoint(1200) // 'lg'
@@ -131,7 +133,7 @@ export function getCurrentBreakpoint(width: number): BreakpointKey {
 
 /**
  * 生成 CSS 自定义属性（用于主题或动态样式）
- * 
+ *
  * 输出示例:
  * --breakpoint-xs: 480px;
  * --breakpoint-sm: 640px;
@@ -149,7 +151,7 @@ export function generateBreakpointCSSVariables(): string {
 
 /**
  * 用于扩展 Tailwind 配置的断点对象
- * 
+ *
  * @example
  * // tailwind.config.js
  * module.exports = {

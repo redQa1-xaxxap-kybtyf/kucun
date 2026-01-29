@@ -467,9 +467,7 @@ async function generateBulkTestData({
     const orderRefundAmount = Number(returnOrder.refundAmount ?? 0);
     const baseRefundAmount =
       orderRefundAmount > 0 ? orderRefundAmount : randomFloat(80, 600);
-    const refundAmount = Number(
-      Math.max(20, baseRefundAmount).toFixed(2)
-    );
+    const refundAmount = Number(Math.max(20, baseRefundAmount).toFixed(2));
     const processedAmount =
       refundStatus === 'completed'
         ? refundAmount
@@ -692,7 +690,7 @@ async function main() {
     prisma.inventory.create({
       data: {
         productId: products[0].id,
-        batchNumber: 'BATCH-2024-001',
+        batchNumber: 'TC001-20240115-001',
         quantity: 100,
         reservedQuantity: 0,
       },
@@ -700,7 +698,7 @@ async function main() {
     prisma.inventory.create({
       data: {
         productId: products[0].id,
-        batchNumber: 'BATCH-2024-002',
+        batchNumber: 'TC001-20240115-002',
         quantity: 80,
         reservedQuantity: 0,
       },
@@ -709,7 +707,7 @@ async function main() {
     prisma.inventory.create({
       data: {
         productId: products[1].id,
-        batchNumber: 'BATCH-2024-003',
+        batchNumber: 'TC002-20240120-001',
         quantity: 150,
         reservedQuantity: 0,
       },
@@ -718,7 +716,7 @@ async function main() {
     prisma.inventory.create({
       data: {
         productId: products[2].id,
-        batchNumber: 'BATCH-2024-004',
+        batchNumber: 'TC003-20240120-001',
         quantity: 200,
         reservedQuantity: 0,
       },
@@ -775,7 +773,7 @@ async function main() {
           {
             productId: products[0].id,
             productCode: products[0].code,
-            batchNumber: 'BATCH-2024-001',
+            batchNumber: 'TC001-20240115-001',
             quantity: 20,
             unitPrice: 35,
             subtotal: 700,
@@ -788,7 +786,7 @@ async function main() {
           {
             productId: products[1].id,
             productCode: products[1].code,
-            batchNumber: 'BATCH-2024-003',
+            batchNumber: 'TC002-20240120-001',
             quantity: 10,
             unitPrice: 28,
             subtotal: 280,
@@ -838,7 +836,7 @@ async function main() {
       recordNumber: 'CK20240126001',
       productId: products[0].id,
       inventoryId: inventoryRecords[0].id,
-      batchNumber: 'BATCH-2024-001',
+      batchNumber: 'TC001-20240115-001',
       quantity: 20,
       unitCost: 25,
       totalCost: 500,
@@ -855,7 +853,7 @@ async function main() {
       recordNumber: 'CK20240126002',
       productId: products[1].id,
       inventoryId: inventoryRecords[2].id,
-      batchNumber: 'BATCH-2024-003',
+      batchNumber: 'TC002-20240120-001',
       quantity: 10,
       unitCost: 18,
       totalCost: 180,
@@ -913,7 +911,7 @@ async function main() {
           {
             productId: products[2].id,
             productCode: products[2].code,
-            batchNumber: 'BATCH-2024-004',
+            batchNumber: 'TC003-20240120-001',
             quantity: 30,
             unitPrice: 20,
             subtotal: 600,
@@ -963,7 +961,7 @@ async function main() {
       recordNumber: 'CK20240206001',
       productId: products[2].id,
       inventoryId: inventoryRecords[3].id,
-      batchNumber: 'BATCH-2024-004',
+      batchNumber: 'TC003-20240120-001',
       quantity: 20,
       unitCost: 12,
       totalCost: 240,
