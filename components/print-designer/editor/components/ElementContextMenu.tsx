@@ -7,11 +7,11 @@
 import { Copy, Layers, Trash2 } from 'lucide-react';
 
 import {
-    ContextMenu,
-    ContextMenuContent,
-    ContextMenuItem,
-    ContextMenuSeparator,
-    ContextMenuTrigger,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
 } from '@/components/ui/context-menu';
 
 import { useDesignerStore } from '../stores';
@@ -25,11 +25,11 @@ export function ElementContextMenu({
   elementId,
   children,
 }: ElementContextMenuProps) {
-  const duplicateElement = useDesignerStore((s) => s.duplicateElement);
-  const removeElement = useDesignerStore((s) => s.removeElement);
-  const bringToFront = useDesignerStore((s) => s.bringToFront);
-  const sendToBack = useDesignerStore((s) => s.sendToBack);
-  const copyElement = useDesignerStore((s) => s.copyElement);
+  const duplicateElement = useDesignerStore(s => s.duplicateElement);
+  const removeElement = useDesignerStore(s => s.removeElement);
+  const bringToFront = useDesignerStore(s => s.bringToFront);
+  const sendToBack = useDesignerStore(s => s.sendToBack);
+  const copyElement = useDesignerStore(s => s.copyElement);
 
   return (
     <ContextMenu>

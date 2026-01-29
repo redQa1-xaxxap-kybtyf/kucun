@@ -11,21 +11,21 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-    getRecentSalesOrders,
-    getSalesOrderForPrint,
+  getRecentSalesOrders,
+  getSalesOrderForPrint,
 } from '@/lib/print-designer/actions';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
 
@@ -136,7 +136,8 @@ export function PreviewDialog({
   const [dataSource, setDataSource] = useState<'mock' | 'real'>('mock');
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [recentOrders, setRecentOrders] = useState<OrderOption[]>([]);
-  const [previewData, setPreviewData] = useState<Record<string, unknown>>(mockSalesOrderData);
+  const [previewData, setPreviewData] =
+    useState<Record<string, unknown>>(mockSalesOrderData);
   const [isPending, startTransition] = useTransition();
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -226,7 +227,7 @@ export function PreviewDialog({
             {/* 数据源选择 */}
             <Select
               value={dataSource}
-              onValueChange={(v) => setDataSource(v as 'mock' | 'real')}
+              onValueChange={v => setDataSource(v as 'mock' | 'real')}
             >
               <SelectTrigger className="h-8 w-28">
                 <SelectValue />
@@ -247,7 +248,7 @@ export function PreviewDialog({
                   <SelectValue placeholder="选择订单" />
                 </SelectTrigger>
                 <SelectContent>
-                  {recentOrders.map((o) => (
+                  {recentOrders.map(o => (
                     <SelectItem key={o.id} value={o.id}>
                       {o.orderNumber}
                     </SelectItem>
@@ -265,14 +266,16 @@ export function PreviewDialog({
                 onClick={handleRefresh}
                 disabled={isPending}
               >
-                <RefreshCw className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
+                />
               </Button>
             )}
 
             {/* 缩放 */}
             <Select
               value={String(scale)}
-              onValueChange={(v) => setScale(parseFloat(v))}
+              onValueChange={v => setScale(parseFloat(v))}
             >
               <SelectTrigger className="h-8 w-24">
                 <SelectValue />

@@ -8,8 +8,8 @@ import { revalidatePath } from 'next/cache';
 
 import { prisma } from '@/lib/db';
 import {
-    PrintTemplateSchema,
-    type PrintTemplate,
+  PrintTemplateSchema,
+  type PrintTemplate,
 } from '@/lib/print-designer/schemas';
 
 import { requireAdminUser, requireAuthUser } from './auth';
@@ -65,7 +65,7 @@ export async function getTemplates(
 
     return {
       success: true,
-      data: templates.map((t) => ({
+      data: templates.map(t => ({
         ...t,
         createdAt: t.createdAt.toISOString(),
         updatedAt: t.updatedAt.toISOString(),
@@ -255,11 +255,13 @@ export async function duplicateTemplate(
         id: newId,
         name: `${original.name} (副本)`,
         type: original.type,
-        content: JSON.parse(JSON.stringify({
-          ...content,
-          id: newId,
-          name: `${content.name} (副本)`,
-        })),
+        content: JSON.parse(
+          JSON.stringify({
+            ...content,
+            id: newId,
+            name: `${content.name} (副本)`,
+          })
+        ),
         isDefault: false,
         createdBy: userId,
         updatedBy: userId,

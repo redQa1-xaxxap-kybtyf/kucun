@@ -3,21 +3,20 @@
  */
 
 export {
-    ComponentToolbar,
-    DesignerCanvas,
-    DesignerHeader,
-    PropertiesPanel
+  ComponentToolbar,
+  DesignerCanvas,
+  DesignerHeader,
+  PropertiesPanel,
 } from './components';
 export {
-    useAlignmentGuides,
-    useKeyboardShortcuts,
-    type AlignmentGuide
+  useAlignmentGuides,
+  useKeyboardShortcuts,
+  type AlignmentGuide,
 } from './hooks';
 export { PrintDesignerEditor } from './PrintDesignerEditor';
 export {
-    useDesignerStore,
-    useElements,
-    usePageSettings,
-    useSelectedElement
+  useDesignerStore,
+  useElements,
+  usePageSettings,
+  useSelectedElement,
 } from './stores';
-

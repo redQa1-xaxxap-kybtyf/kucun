@@ -3,22 +3,21 @@
  */
 
 export {
-    getRecentSalesOrders,
-    getSalesOrderForPrint,
-    getPurchaseOrderForPrint,
-    getFactoryShipmentForPrint,
-    getInboundRecordForPrint,
-    getReturnOrderForPrint,
-    getPrintDataForTemplate
+  getRecentSalesOrders,
+  getSalesOrderForPrint,
+  getPurchaseOrderForPrint,
+  getFactoryShipmentForPrint,
+  getInboundRecordForPrint,
+  getReturnOrderForPrint,
+  getPrintDataForTemplate,
 } from './preview-data';
 
 export {
-    deleteTemplate,
-    duplicateTemplate,
-    getDefaultTemplate,
-    getTemplate,
-    getTemplates,
-    saveTemplate,
-    setDefaultTemplate
+  deleteTemplate,
+  duplicateTemplate,
+  getDefaultTemplate,
+  getTemplate,
+  getTemplates,
+  saveTemplate,
+  setDefaultTemplate,
 } from './template-crud';
-

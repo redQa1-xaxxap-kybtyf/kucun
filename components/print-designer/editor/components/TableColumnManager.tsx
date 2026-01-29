@@ -11,11 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import type { FieldDefinition } from '@/lib/print-designer/field-registry';
 import type { TableColumn } from '@/lib/print-designer/schemas';
@@ -104,10 +104,7 @@ export function TableColumnManager({
     onChange(columns.filter((_, i) => i !== index));
   };
 
-  const handleUpdateColumn = (
-    index: number,
-    updates: Partial<TableColumn>
-  ) => {
+  const handleUpdateColumn = (index: number, updates: Partial<TableColumn>) => {
     onChange(
       columns.map((col, i) => (i === index ? { ...col, ...updates } : col))
     );
@@ -136,7 +133,9 @@ export function TableColumnManager({
   const handleDrop =
     (index: number) => (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
-      const rawFrom = e.dataTransfer.getData('application/x-table-column-index');
+      const rawFrom = e.dataTransfer.getData(
+        'application/x-table-column-index'
+      );
       const fromIndex = Number.parseInt(rawFrom, 10);
       setDraggingIndex(null);
       setDragOverIndex(null);
@@ -151,7 +150,7 @@ export function TableColumnManager({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <Label className="text-xs text-muted-foreground">列定义</Label>
+        <Label className="text-muted-foreground text-xs">列定义</Label>
         <div className="flex items-center gap-1">
           <FieldPicker
             templateType={templateType}
@@ -192,10 +191,12 @@ export function TableColumnManager({
             <div className="flex-1 space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">标题</Label>
+                  <Label className="text-muted-foreground text-[10px]">
+                    标题
+                  </Label>
                   <Input
                     value={col.label}
-                    onChange={(e) =>
+                    onChange={e =>
                       handleUpdateColumn(index, { label: e.target.value })
                     }
                     placeholder="例如: 名称"
@@ -203,22 +204,24 @@ export function TableColumnManager({
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">绑定字段</Label>
+                  <Label className="text-muted-foreground text-[10px]">
+                    绑定字段
+                  </Label>
                   <div className="relative">
                     <Input
                       value={col.key}
-                      onChange={(e) =>
+                      onChange={e =>
                         handleUpdateColumn(index, { key: e.target.value })
                       }
                       placeholder="选择字段或手动输入"
                       className="h-8 pr-8 font-mono text-xs"
                     />
-                    <div className="absolute right-0 top-0">
+                    <div className="absolute top-0 right-0">
                       <FieldPicker
                         templateType={templateType}
                         scope="table"
                         currentField={col.key}
-                        onSelect={(field) => handlePickField(index, field)}
+                        onSelect={field => handlePickField(index, field)}
                       >
                         <Button
                           type="button"
@@ -227,7 +230,7 @@ export function TableColumnManager({
                           className="h-8 w-8"
                           title="选择字段"
                         >
-                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                          <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
                         </Button>
                       </FieldPicker>
                     </div>
@@ -238,11 +241,13 @@ export function TableColumnManager({
               <div className="grid grid-cols-4 gap-1">
                 <div className="col-span-2 flex items-end gap-1">
                   <div className="flex-1 space-y-1">
-                    <Label className="text-[10px] text-muted-foreground">宽度</Label>
+                    <Label className="text-muted-foreground text-[10px]">
+                      宽度
+                    </Label>
                     <Input
                       type="number"
                       value={col.width}
-                      onChange={(e) =>
+                      onChange={e =>
                         handleUpdateColumn(index, {
                           width: parseInt(e.target.value) || 10,
                         })
@@ -252,7 +257,7 @@ export function TableColumnManager({
                   </div>
                   <Select
                     value={col.widthUnit}
-                    onValueChange={(v) =>
+                    onValueChange={v =>
                       handleUpdateColumn(index, {
                         widthUnit: v as '%' | 'mm',
                       })
@@ -269,10 +274,12 @@ export function TableColumnManager({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">对齐</Label>
+                  <Label className="text-muted-foreground text-[10px]">
+                    对齐
+                  </Label>
                   <Select
                     value={col.align}
-                    onValueChange={(v) =>
+                    onValueChange={v =>
                       handleUpdateColumn(index, {
                         align: v as 'left' | 'center' | 'right',
                       })
@@ -290,10 +297,12 @@ export function TableColumnManager({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-[10px] text-muted-foreground">格式</Label>
+                  <Label className="text-muted-foreground text-[10px]">
+                    格式
+                  </Label>
                   <Select
                     value={col.format}
-                    onValueChange={(v) =>
+                    onValueChange={v =>
                       handleUpdateColumn(index, {
                         format: v as TableColumn['format'],
                       })
@@ -324,7 +333,7 @@ export function TableColumnManager({
             </Button>
 
             {draggingIndex !== null && dragOverIndex === index && (
-              <div className="pointer-events-none absolute inset-0 rounded-md ring-2 ring-primary/40" />
+              <div className="ring-primary/40 pointer-events-none absolute inset-0 rounded-md ring-2" />
             )}
           </div>
         ))}

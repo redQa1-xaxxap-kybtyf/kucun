@@ -7,4 +7,3 @@ export { ImageRenderer } from './ImageRenderer';
 export { PlaceholderRenderer } from './PlaceholderRenderer';
 export { TableRenderer } from './TableRenderer';
 export { TextRenderer } from './TextRenderer';
-

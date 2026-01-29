@@ -58,7 +58,7 @@ export function useAlignmentGuides(
     }
 
     // 检查与其他元素的对齐
-    allElements.forEach((el) => {
+    allElements.forEach(el => {
       if (el.id === draggingElement.id) return;
 
       const elLeft = el.position.x;
@@ -115,10 +115,10 @@ export function useAlignmentGuides(
 
     // 去重
     const uniqueGuides: AlignmentGuide[] = [];
-    guides.forEach((g) => {
+    guides.forEach(g => {
       if (
         !uniqueGuides.some(
-          (ug) => ug.type === g.type && Math.abs(ug.position - g.position) < 0.1
+          ug => ug.type === g.type && Math.abs(ug.position - g.position) < 0.1
         )
       ) {
         uniqueGuides.push(g);
@@ -140,7 +140,7 @@ export function snapToGuides(
 ): { x: number; y: number } {
   let { x, y } = position;
 
-  guides.forEach((guide) => {
+  guides.forEach(guide => {
     if (guide.type === 'vertical') {
       // 左边吸附
       if (Math.abs(x - guide.position) < threshold) {

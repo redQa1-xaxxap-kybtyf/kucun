@@ -17,7 +17,13 @@ import {
 } from '@/components/ui/select';
 import type { TemplateType } from '@/lib/print-designer/schemas';
 
-import { useCanRedo, useCanUndo, useDesignerStore, useRedo, useUndo } from '../stores';
+import {
+  useCanRedo,
+  useCanUndo,
+  useDesignerStore,
+  useRedo,
+  useUndo,
+} from '../stores';
 
 interface DesignerHeaderProps {
   onSave?: () => void;
@@ -35,8 +41,8 @@ const typeLabels: Record<TemplateType, string> = {
 };
 
 export function DesignerHeader({ onSave, onPreview }: DesignerHeaderProps) {
-  const template = useDesignerStore((s) => s.template);
-  const updateTemplate = useDesignerStore((s) => s.updateTemplate);
+  const template = useDesignerStore(s => s.template);
+  const updateTemplate = useDesignerStore(s => s.updateTemplate);
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
@@ -53,14 +59,12 @@ export function DesignerHeader({ onSave, onPreview }: DesignerHeaderProps) {
         <Input
           value={template?.name ?? '未命名模板'}
           onChange={handleNameChange}
-          className="h-8 w-48 border-transparent bg-transparent text-base font-medium hover:border-input focus:border-input"
+          className="hover:border-input focus:border-input h-8 w-48 border-transparent bg-transparent text-base font-medium"
         />
 
         <Select
           value={template?.type ?? 'sales-order'}
-          onValueChange={(v) =>
-            updateTemplate({ type: v as TemplateType })
-          }
+          onValueChange={v => updateTemplate({ type: v as TemplateType })}
         >
           <SelectTrigger className="h-8 w-44">
             <SelectValue />

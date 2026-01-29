@@ -49,7 +49,7 @@ export function Ruler({ direction, length, zoom, offset = 0 }: RulerProps) {
 
   return (
     <div
-      className="relative select-none bg-slate-100 text-[10px] text-slate-500"
+      className="relative bg-slate-100 text-[10px] text-slate-500 select-none"
       style={{
         width: isHorizontal ? size : 20,
         height: isHorizontal ? 20 : size,

@@ -11,22 +11,22 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
-    getDefaultTemplate,
-    getPrintDataForTemplate,
+  getDefaultTemplate,
+  getPrintDataForTemplate,
 } from '@/lib/print-designer/actions';
 import type { PrintTemplate, TemplateType } from '@/lib/print-designer/schemas';
 
@@ -96,16 +96,25 @@ export function PrintTemplatePreviewDialog({
       }
 
       if (!templateResult.data) {
-        const msg = '该单据类型未配置默认打印模板，请联系管理员在系统设置中配置。';
+        const msg =
+          '该单据类型未配置默认打印模板，请联系管理员在系统设置中配置。';
         setError(msg);
-        toast({ title: '模板未配置', description: msg, variant: 'destructive' });
+        toast({
+          title: '模板未配置',
+          description: msg,
+          variant: 'destructive',
+        });
         return;
       }
 
       if (!printData) {
         const msg = '未找到可打印的数据';
         setError(msg);
-        toast({ title: '数据加载失败', description: msg, variant: 'destructive' });
+        toast({
+          title: '数据加载失败',
+          description: msg,
+          variant: 'destructive',
+        });
         return;
       }
 
@@ -120,7 +129,11 @@ export function PrintTemplatePreviewDialog({
 
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      toast({ title: '打印失败', description: '无法打开打印窗口，请检查浏览器拦截设置', variant: 'destructive' });
+      toast({
+        title: '打印失败',
+        description: '无法打开打印窗口，请检查浏览器拦截设置',
+        variant: 'destructive',
+      });
       return;
     }
 
@@ -169,7 +182,7 @@ export function PrintTemplatePreviewDialog({
             {/* 缩放仅影响预览，实际打印固定 100% */}
             <Select
               value={String(previewScale)}
-              onValueChange={(v) => setPreviewScale(parseFloat(v))}
+              onValueChange={v => setPreviewScale(parseFloat(v))}
               disabled={isPending}
             >
               <SelectTrigger className="h-8 w-24">
@@ -201,11 +214,11 @@ export function PrintTemplatePreviewDialog({
         <div className="flex-1 overflow-auto bg-slate-100 p-8">
           {error ? (
             <div className="flex h-64 items-center justify-center">
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <p className="text-muted-foreground text-sm">{error}</p>
             </div>
           ) : !template || !data ? (
             <div className="flex h-64 items-center justify-center">
-              <p className="text-sm text-muted-foreground">加载中...</p>
+              <p className="text-muted-foreground text-sm">加载中...</p>
             </div>
           ) : (
             <>
@@ -222,7 +235,7 @@ export function PrintTemplatePreviewDialog({
               <div
                 ref={printRef}
                 aria-hidden
-                className="pointer-events-none fixed left-[-100000px] top-0 opacity-0"
+                className="pointer-events-none fixed top-0 left-[-100000px] opacity-0"
               >
                 <PrintCanvas template={template} data={data} scale={1} />
               </div>

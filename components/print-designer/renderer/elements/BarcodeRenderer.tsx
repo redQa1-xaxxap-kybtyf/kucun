@@ -37,7 +37,6 @@ export function BarcodeRenderer({
     // 如果项目中未安装 jsbarcode，则显示占位内容
     const renderBarcode = async () => {
       try {
-        // @ts-expect-error -- jsbarcode is an optional dependency
         const JsBarcode = (await import('jsbarcode')).default;
 
         if (format === 'QR') {

@@ -29,4 +29,3 @@ export async function requireAdminUser(): Promise<AuthUser> {
   }
   return user;
 }
-

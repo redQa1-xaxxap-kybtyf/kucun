@@ -15,4 +15,3 @@ export { Ruler } from './Ruler';
 export { TableColumnManager } from './TableColumnManager';
 export { TypographySection } from './TypographySection';
 export { VariableDisplay, VariableTag } from './VariableTag';
-

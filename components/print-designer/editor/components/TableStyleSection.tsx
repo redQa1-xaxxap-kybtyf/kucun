@@ -17,7 +17,7 @@ interface TableStyleSectionProps {
 export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
   return (
     <div className="space-y-4">
-      <Label className="text-xs text-muted-foreground">表格样式</Label>
+      <Label className="text-muted-foreground text-xs">表格样式</Label>
 
       {/* 字体大小 */}
       <div className="grid grid-cols-2 gap-2">
@@ -28,7 +28,7 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
             min={6}
             max={72}
             value={style.headerFontSize}
-            onChange={(e) =>
+            onChange={e =>
               onChange({ headerFontSize: parseInt(e.target.value) || 10 })
             }
             className="h-8"
@@ -41,7 +41,7 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
             min={6}
             max={72}
             value={style.bodyFontSize}
-            onChange={(e) =>
+            onChange={e =>
               onChange({ bodyFontSize: parseInt(e.target.value) || 10 })
             }
             className="h-8"
@@ -58,7 +58,7 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
             min={1}
             step={0.5}
             value={style.rowHeight}
-            onChange={(e) =>
+            onChange={e =>
               onChange({ rowHeight: parseFloat(e.target.value) || 8 })
             }
             className="h-8"
@@ -71,7 +71,7 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
             min={0}
             step={0.1}
             value={style.borderWidth}
-            onChange={(e) =>
+            onChange={e =>
               onChange({ borderWidth: parseFloat(e.target.value) || 0.5 })
             }
             className="h-8"
@@ -85,12 +85,14 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">表头背景</Label>
+            <Label className="text-muted-foreground text-[10px]">
+              表头背景
+            </Label>
             <div className="flex items-center gap-2 overflow-hidden rounded-md border px-2 py-1">
               <input
                 type="color"
                 value={style.headerBgColor}
-                onChange={(e) => onChange({ headerBgColor: e.target.value })}
+                onChange={e => onChange({ headerBgColor: e.target.value })}
                 className="h-5 w-5 cursor-pointer rounded border-none bg-transparent p-0"
               />
               <span className="font-mono text-[10px] uppercase">
@@ -100,12 +102,14 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">表头文字</Label>
+            <Label className="text-muted-foreground text-[10px]">
+              表头文字
+            </Label>
             <div className="flex items-center gap-2 overflow-hidden rounded-md border px-2 py-1">
               <input
                 type="color"
                 value={style.headerTextColor}
-                onChange={(e) => onChange({ headerTextColor: e.target.value })}
+                onChange={e => onChange({ headerTextColor: e.target.value })}
                 className="h-5 w-5 cursor-pointer rounded border-none bg-transparent p-0"
               />
               <span className="font-mono text-[10px] uppercase">
@@ -115,12 +119,14 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">条纹颜色</Label>
+            <Label className="text-muted-foreground text-[10px]">
+              条纹颜色
+            </Label>
             <div className="flex items-center gap-2 overflow-hidden rounded-md border px-2 py-1">
               <input
                 type="color"
                 value={style.stripedColor}
-                onChange={(e) => onChange({ stripedColor: e.target.value })}
+                onChange={e => onChange({ stripedColor: e.target.value })}
                 className="h-5 w-5 cursor-pointer rounded border-none bg-transparent p-0"
                 disabled={!style.stripedRows}
               />
@@ -131,12 +137,14 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-[10px] text-muted-foreground">边框颜色</Label>
+            <Label className="text-muted-foreground text-[10px]">
+              边框颜色
+            </Label>
             <div className="flex items-center gap-2 overflow-hidden rounded-md border px-2 py-1">
               <input
                 type="color"
                 value={style.borderColor}
-                onChange={(e) => onChange({ borderColor: e.target.value })}
+                onChange={e => onChange({ borderColor: e.target.value })}
                 className="h-5 w-5 cursor-pointer rounded border-none bg-transparent p-0"
               />
               <span className="font-mono text-[10px] uppercase">
@@ -152,7 +160,7 @@ export function TableStyleSection({ style, onChange }: TableStyleSectionProps) {
         <Label className="text-xs">启用斑马纹</Label>
         <Switch
           checked={style.stripedRows}
-          onCheckedChange={(checked) => onChange({ stripedRows: checked })}
+          onCheckedChange={checked => onChange({ stripedRows: checked })}
         />
       </div>
     </div>

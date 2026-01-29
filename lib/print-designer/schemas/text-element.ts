@@ -7,12 +7,12 @@
 import { z } from 'zod';
 
 import {
-    BaseElementSchema,
-    FontFamilySchema,
-    FontStyleSchema,
-    FontWeightSchema,
-    HexColorSchema,
-    TextAlignSchema,
+  BaseElementSchema,
+  FontFamilySchema,
+  FontStyleSchema,
+  FontWeightSchema,
+  HexColorSchema,
+  TextAlignSchema,
 } from './base';
 
 // ============================================================================

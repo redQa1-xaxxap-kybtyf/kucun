@@ -17,14 +17,8 @@ interface TableRendererProps {
 }
 
 export function TableRenderer({ element, data, scale }: TableRendererProps) {
-  const {
-    dataSource,
-    columns,
-    style,
-    showSummary,
-    summaryColumns,
-    minRows,
-  } = element;
+  const { dataSource, columns, style, showSummary, summaryColumns, minRows } =
+    element;
 
   // 获取数据源
   const items = (getNestedValue(data, dataSource) as unknown[]) || [];
@@ -39,7 +33,7 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
   // 计算合计
   const summaryData: Record<string, number> = {};
   if (showSummary && summaryColumns) {
-    summaryColumns.forEach((colKey) => {
+    summaryColumns.forEach(colKey => {
       summaryData[colKey] = items.reduce<number>((sum, item) => {
         const val = getNestedValue(item, colKey);
         return sum + (typeof val === 'number' ? val : 0);
@@ -90,7 +84,7 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
             fontWeight: 'bold',
           }}
         >
-          {columns.map((col) => (
+          {columns.map(col => (
             <th
               key={col.key}
               style={{
@@ -115,7 +109,7 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
               height: mmToPx(style.rowHeight) * scale,
             }}
           >
-            {columns.map((col) => (
+            {columns.map(col => (
               <td key={col.key} style={tableCellStyle(col.align)}>
                 {renderCellContent(item, col)}
               </td>

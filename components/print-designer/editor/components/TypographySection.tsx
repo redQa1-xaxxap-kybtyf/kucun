@@ -7,11 +7,11 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import type { TextStyle } from '@/lib/print-designer/schemas';
@@ -24,14 +24,16 @@ interface TypographySectionProps {
 export function TypographySection({ style, onChange }: TypographySectionProps) {
   return (
     <div className="space-y-3">
-      <Label className="text-xs text-muted-foreground">字体排版</Label>
+      <Label className="text-muted-foreground text-xs">字体排版</Label>
 
       {/* 字体 */}
       <div className="space-y-1">
         <Label className="text-xs">字体</Label>
         <Select
           value={style.fontFamily}
-          onValueChange={(v) => onChange({ fontFamily: v as TextStyle['fontFamily'] })}
+          onValueChange={v =>
+            onChange({ fontFamily: v as TextStyle['fontFamily'] })
+          }
         >
           <SelectTrigger className="h-8">
             <SelectValue />
@@ -55,7 +57,7 @@ export function TypographySection({ style, onChange }: TypographySectionProps) {
             min={6}
             max={200}
             value={style.fontSize}
-            onChange={(e) =>
+            onChange={e =>
               onChange({ fontSize: parseInt(e.target.value) || 12 })
             }
             className="h-8"
@@ -69,7 +71,7 @@ export function TypographySection({ style, onChange }: TypographySectionProps) {
             max={3}
             step={0.1}
             value={style.lineHeight}
-            onChange={(e) =>
+            onChange={e =>
               onChange({ lineHeight: parseFloat(e.target.value) || 1.2 })
             }
             className="h-8"
@@ -84,21 +86,24 @@ export function TypographySection({ style, onChange }: TypographySectionProps) {
           <ToggleGroup
             type="single"
             value={style.fontWeight}
-            onValueChange={(v) =>
+            onValueChange={v =>
               v && onChange({ fontWeight: v as 'normal' | 'bold' })
             }
           >
             <ToggleGroupItem value="normal" className="h-8 px-3 text-xs">
               常规
             </ToggleGroupItem>
-            <ToggleGroupItem value="bold" className="h-8 px-3 text-xs font-bold">
+            <ToggleGroupItem
+              value="bold"
+              className="h-8 px-3 text-xs font-bold"
+            >
               粗体
             </ToggleGroupItem>
           </ToggleGroup>
           <ToggleGroup
             type="single"
             value={style.fontStyle}
-            onValueChange={(v) =>
+            onValueChange={v =>
               v && onChange({ fontStyle: v as 'normal' | 'italic' })
             }
           >
@@ -118,7 +123,7 @@ export function TypographySection({ style, onChange }: TypographySectionProps) {
         <ToggleGroup
           type="single"
           value={style.textAlign}
-          onValueChange={(v) =>
+          onValueChange={v =>
             v && onChange({ textAlign: v as 'left' | 'center' | 'right' })
           }
           className="justify-start"
@@ -142,10 +147,10 @@ export function TypographySection({ style, onChange }: TypographySectionProps) {
           <input
             type="color"
             value={style.color}
-            onChange={(e) => onChange({ color: e.target.value })}
+            onChange={e => onChange({ color: e.target.value })}
             className="h-6 w-6 cursor-pointer rounded border-none bg-transparent p-0"
           />
-          <span className="font-mono text-xs uppercase text-muted-foreground">
+          <span className="text-muted-foreground font-mono text-xs uppercase">
             {style.color}
           </span>
         </div>

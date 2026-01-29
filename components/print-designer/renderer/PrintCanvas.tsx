@@ -9,7 +9,10 @@
 
 import { useMemo } from 'react';
 
-import { getPaperDimensions, type PrintTemplate } from '@/lib/print-designer/schemas';
+import {
+  getPaperDimensions,
+  type PrintTemplate,
+} from '@/lib/print-designer/schemas';
 
 import { ElementRenderer } from './ElementRenderer';
 import { mmToPx } from './utils';
@@ -64,20 +67,26 @@ export function PrintCanvas({
       // 预览模式阴影
       boxShadow: showShadow ? '0 4px 24px rgba(0,0,0,0.08)' : undefined,
     };
-  }, [pageDimensions.height, pageDimensions.width, pageSettings.padding, scale, showShadow]);
+  }, [
+    pageDimensions.height,
+    pageDimensions.width,
+    pageSettings.padding,
+    scale,
+    showShadow,
+  ]);
 
   // 按 zIndex 排序元素
   const sortedElements = useMemo(
     () =>
       [...elements]
-        .filter((el) => el.visible)
+        .filter(el => el.visible)
         .sort((a, b) => a.zIndex - b.zIndex),
     [elements]
   );
 
   return (
     <div className={className} style={pageStyle}>
-      {sortedElements.map((element) => (
+      {sortedElements.map(element => (
         <ElementRenderer
           key={element.id}
           element={element}

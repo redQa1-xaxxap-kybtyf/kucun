@@ -28,8 +28,8 @@ export function MoveableElement({
   const targetRef = useRef<HTMLDivElement>(null);
   const moveableRef = useRef<Moveable>(null);
 
-  const selectedId = useDesignerStore((s) => s.selectedElementId);
-  const updateElement = useDesignerStore((s) => s.updateElement);
+  const selectedId = useDesignerStore(s => s.selectedElementId);
+  const updateElement = useDesignerStore(s => s.updateElement);
 
   const isSelected = selectedId === element.id;
 

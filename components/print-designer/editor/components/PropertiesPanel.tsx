@@ -9,19 +9,22 @@ import { Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { getPaperDimensions, type TableElement } from '@/lib/print-designer/schemas';
+import {
+  getPaperDimensions,
+  type TableElement,
+} from '@/lib/print-designer/schemas';
 
 import {
-    useDesignerStore,
-    usePageSettings,
-    useSelectedElement,
+  useDesignerStore,
+  usePageSettings,
+  useSelectedElement,
 } from '../stores';
 
 import { DataBindingSection } from './DataBindingSection';
@@ -32,9 +35,9 @@ import { TypographySection } from './TypographySection';
 export function PropertiesPanel() {
   const selectedElement = useSelectedElement();
   const pageSettings = usePageSettings();
-  const templateType = useDesignerStore((s) => s.template?.type ?? 'sales-order');
-  const updateElement = useDesignerStore((s) => s.updateElement);
-  const updatePageSettings = useDesignerStore((s) => s.updatePageSettings);
+  const templateType = useDesignerStore(s => s.template?.type ?? 'sales-order');
+  const updateElement = useDesignerStore(s => s.updateElement);
+  const updatePageSettings = useDesignerStore(s => s.updatePageSettings);
 
   // 未选中元素时显示页面设置
   if (!selectedElement) {
@@ -63,7 +66,7 @@ export function PropertiesPanel() {
               <Label className="text-xs font-medium">纸张大小</Label>
               <Select
                 value={pageSettings?.size}
-                onValueChange={(v) => {
+                onValueChange={v => {
                   if (!pageSettings) return;
 
                   const nextSize = v as 'A4' | 'A5' | 'Letter' | 'Custom';
@@ -90,8 +93,9 @@ export function PropertiesPanel() {
                   <SelectItem value="Custom">自定义</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">
-                当前尺寸：{computedDimensions.width} × {computedDimensions.height} mm
+              <p className="text-muted-foreground text-[11px]">
+                当前尺寸：{computedDimensions.width} ×{' '}
+                {computedDimensions.height} mm
               </p>
             </div>
 
@@ -100,7 +104,7 @@ export function PropertiesPanel() {
               <Label className="text-xs font-medium">页面方向</Label>
               <Select
                 value={pageSettings?.orientation}
-                onValueChange={(v) => {
+                onValueChange={v => {
                   if (!pageSettings) return;
 
                   const nextOrientation = v as 'portrait' | 'landscape';
@@ -115,7 +119,10 @@ export function PropertiesPanel() {
                     return;
                   }
 
-                  const dims = getPaperDimensions(pageSettings.size, nextOrientation);
+                  const dims = getPaperDimensions(
+                    pageSettings.size,
+                    nextOrientation
+                  );
                   updatePageSettings({
                     orientation: nextOrientation,
                     width: dims.width,
@@ -139,7 +146,7 @@ export function PropertiesPanel() {
                 <Label className="text-xs font-medium">自定义尺寸 (mm)</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <Label className="mb-1 text-[10px] text-muted-foreground">
+                    <Label className="text-muted-foreground mb-1 text-[10px]">
                       宽
                     </Label>
                     <Input
@@ -147,15 +154,17 @@ export function PropertiesPanel() {
                       step="0.1"
                       min={10}
                       value={pageSettings.width}
-                      onChange={(e) => {
+                      onChange={e => {
                         const val = parseFloat(e.target.value);
-                        updatePageSettings({ width: Number.isFinite(val) ? val : 0 });
+                        updatePageSettings({
+                          width: Number.isFinite(val) ? val : 0,
+                        });
                       }}
                       className="h-8"
                     />
                   </div>
                   <div>
-                    <Label className="mb-1 text-[10px] text-muted-foreground">
+                    <Label className="text-muted-foreground mb-1 text-[10px]">
                       高
                     </Label>
                     <Input
@@ -163,9 +172,11 @@ export function PropertiesPanel() {
                       step="0.1"
                       min={10}
                       value={pageSettings.height}
-                      onChange={(e) => {
+                      onChange={e => {
                         const val = parseFloat(e.target.value);
-                        updatePageSettings({ height: Number.isFinite(val) ? val : 0 });
+                        updatePageSettings({
+                          height: Number.isFinite(val) ? val : 0,
+                        });
                       }}
                       className="h-8"
                     />
@@ -181,13 +192,13 @@ export function PropertiesPanel() {
               <Label className="text-xs font-medium">边距 (mm)</Label>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <Label className="mb-1 text-[10px] text-muted-foreground">
+                  <Label className="text-muted-foreground mb-1 text-[10px]">
                     上
                   </Label>
                   <Input
                     type="number"
                     value={pageSettings?.padding[0] ?? 10}
-                    onChange={(e) => {
+                    onChange={e => {
                       if (!pageSettings) return;
                       const val = parseFloat(e.target.value) || 0;
                       updatePageSettings({
@@ -203,13 +214,13 @@ export function PropertiesPanel() {
                   />
                 </div>
                 <div>
-                  <Label className="mb-1 text-[10px] text-muted-foreground">
+                  <Label className="text-muted-foreground mb-1 text-[10px]">
                     右
                   </Label>
                   <Input
                     type="number"
                     value={pageSettings?.padding[1] ?? 10}
-                    onChange={(e) => {
+                    onChange={e => {
                       if (!pageSettings) return;
                       const val = parseFloat(e.target.value) || 0;
                       updatePageSettings({
@@ -225,13 +236,13 @@ export function PropertiesPanel() {
                   />
                 </div>
                 <div>
-                  <Label className="mb-1 text-[10px] text-muted-foreground">
+                  <Label className="text-muted-foreground mb-1 text-[10px]">
                     下
                   </Label>
                   <Input
                     type="number"
                     value={pageSettings?.padding[2] ?? 10}
-                    onChange={(e) => {
+                    onChange={e => {
                       if (!pageSettings) return;
                       const val = parseFloat(e.target.value) || 0;
                       updatePageSettings({
@@ -247,13 +258,13 @@ export function PropertiesPanel() {
                   />
                 </div>
                 <div>
-                  <Label className="mb-1 text-[10px] text-muted-foreground">
+                  <Label className="text-muted-foreground mb-1 text-[10px]">
                     左
                   </Label>
                   <Input
                     type="number"
                     value={pageSettings?.padding[3] ?? 10}
-                    onChange={(e) => {
+                    onChange={e => {
                       if (!pageSettings) return;
                       const val = parseFloat(e.target.value) || 0;
                       updatePageSettings({
@@ -292,19 +303,19 @@ export function PropertiesPanel() {
       <div className="flex-1 overflow-auto p-3">
         {/* 通用属性: 位置与尺寸 */}
         <div className="mb-6 space-y-3">
-          <Label className="text-xs font-semibold text-muted-foreground">
+          <Label className="text-muted-foreground text-xs font-semibold">
             位置与尺寸
           </Label>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="mb-1 text-[10px] text-muted-foreground">
+              <Label className="text-muted-foreground mb-1 text-[10px]">
                 X (mm)
               </Label>
               <Input
                 type="number"
                 step="0.1"
                 value={Number(selectedElement.position.x.toFixed(2))}
-                onChange={(e) =>
+                onChange={e =>
                   updateElement(selectedElement.id, {
                     position: {
                       ...selectedElement.position,
@@ -316,14 +327,14 @@ export function PropertiesPanel() {
               />
             </div>
             <div>
-              <Label className="mb-1 text-[10px] text-muted-foreground">
+              <Label className="text-muted-foreground mb-1 text-[10px]">
                 Y (mm)
               </Label>
               <Input
                 type="number"
                 step="0.1"
                 value={Number(selectedElement.position.y.toFixed(2))}
-                onChange={(e) =>
+                onChange={e =>
                   updateElement(selectedElement.id, {
                     position: {
                       ...selectedElement.position,
@@ -335,14 +346,14 @@ export function PropertiesPanel() {
               />
             </div>
             <div>
-              <Label className="mb-1 text-[10px] text-muted-foreground">
+              <Label className="text-muted-foreground mb-1 text-[10px]">
                 宽度 (mm)
               </Label>
               <Input
                 type="number"
                 step="0.1"
                 value={Number(selectedElement.size.width.toFixed(2))}
-                onChange={(e) =>
+                onChange={e =>
                   updateElement(selectedElement.id, {
                     size: {
                       ...selectedElement.size,
@@ -354,14 +365,14 @@ export function PropertiesPanel() {
               />
             </div>
             <div>
-              <Label className="mb-1 text-[10px] text-muted-foreground">
+              <Label className="text-muted-foreground mb-1 text-[10px]">
                 高度 (mm)
               </Label>
               <Input
                 type="number"
                 step="0.1"
                 value={Number(selectedElement.size.height.toFixed(2))}
-                onChange={(e) =>
+                onChange={e =>
                   updateElement(selectedElement.id, {
                     size: {
                       ...selectedElement.size,
@@ -380,15 +391,15 @@ export function PropertiesPanel() {
         {/* 文本内容 (仅文本元素) */}
         {selectedElement.type === 'text' && (
           <div className="mb-6 space-y-2">
-            <Label className="text-xs font-semibold text-muted-foreground">
+            <Label className="text-muted-foreground text-xs font-semibold">
               文本内容
             </Label>
             <textarea
               value={selectedElement.content}
-              onChange={(e) =>
+              onChange={e =>
                 updateElement(selectedElement.id, { content: e.target.value })
               }
-              className="h-20 w-full resize-none rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              className="focus:ring-primary h-20 w-full resize-none rounded-md border px-3 py-2 text-sm focus:ring-1 focus:outline-none"
             />
           </div>
         )}
@@ -403,10 +414,10 @@ export function PropertiesPanel() {
               onFieldChange={(field, label) =>
                 updateElement(selectedElement.id, { field, label })
               }
-              onFormatChange={(format) =>
+              onFormatChange={format =>
                 updateElement(selectedElement.id, { format })
               }
-              onFallbackChange={(fallback) =>
+              onFallbackChange={fallback =>
                 updateElement(selectedElement.id, { fallback })
               }
             />
@@ -414,26 +425,28 @@ export function PropertiesPanel() {
           </>
         )}
 
-
         {/* 表格列管理 (仅表格) */}
         {selectedElement.type === 'table' && (
           <>
             <TableColumnManager
               templateType={templateType}
               columns={(selectedElement as TableElement).columns}
-              onChange={(columns) =>
+              onChange={columns =>
                 updateElement(selectedElement.id, { columns })
               }
             />
             <Separator className="my-4" />
-            
+
             <TableStyleSection
-               style={(selectedElement as TableElement).style}
-               onChange={(styleUpdates) => 
-                 updateElement(selectedElement.id, {
-                    style: { ...(selectedElement as TableElement).style, ...styleUpdates }
-                 })
-               }
+              style={(selectedElement as TableElement).style}
+              onChange={styleUpdates =>
+                updateElement(selectedElement.id, {
+                  style: {
+                    ...(selectedElement as TableElement).style,
+                    ...styleUpdates,
+                  },
+                })
+              }
             />
           </>
         )}
@@ -443,7 +456,7 @@ export function PropertiesPanel() {
           selectedElement.type === 'placeholder') && (
           <TypographySection
             style={selectedElement.style}
-            onChange={(styleUpdates) =>
+            onChange={styleUpdates =>
               updateElement(selectedElement.id, {
                 style: { ...selectedElement.style, ...styleUpdates },
               })

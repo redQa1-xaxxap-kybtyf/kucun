@@ -78,7 +78,7 @@ export function useBatchPrint() {
 
           // 批次间隔
           if (i + batchSize < dataList.length) {
-            await new Promise((resolve) => setTimeout(resolve, intervalMs));
+            await new Promise(resolve => setTimeout(resolve, intervalMs));
           }
         }
 
@@ -220,7 +220,7 @@ export function BatchPrintProgress({
       <div className="w-96 rounded-lg bg-white p-6 shadow-xl">
         <h3 className="mb-4 text-lg font-semibold">批量打印</h3>
 
-        <div className="mb-2 flex justify-between text-sm text-muted-foreground">
+        <div className="text-muted-foreground mb-2 flex justify-between text-sm">
           <span>
             {current} / {total}
           </span>
@@ -229,7 +229,7 @@ export function BatchPrintProgress({
 
         <div className="mb-4 h-2 overflow-hidden rounded-full bg-slate-100">
           <div
-            className="h-full bg-primary transition-all duration-300"
+            className="bg-primary h-full transition-all duration-300"
             style={{ width: `${percentage}%` }}
           />
         </div>

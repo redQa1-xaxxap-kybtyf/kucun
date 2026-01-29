@@ -16,8 +16,8 @@ import {
   type DesignElement,
 } from '@/lib/print-designer/schemas';
 import {
-    createDefaultBarcodeElement,
-    createDefaultImageElement,
+  createDefaultBarcodeElement,
+  createDefaultImageElement,
 } from '@/lib/print-designer/schemas/visual-elements';
 import { cn } from '@/lib/utils';
 
@@ -74,31 +74,35 @@ function AlignmentGuidesOverlay({
   );
 }
 
-
 export function DesignerCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [draggingElementId, setDraggingElementId] = useState<string | null>(null);
+  const [draggingElementId, setDraggingElementId] = useState<string | null>(
+    null
+  );
 
   const pageSettings = usePageSettings();
   const elements = useElements();
-  const selectedElementId = useDesignerStore((s) => s.selectedElementId);
-  const zoom = useDesignerStore((s) => s.zoom);
-  const isDragging = useDesignerStore((s) => s.isDragging);
+  const selectedElementId = useDesignerStore(s => s.selectedElementId);
+  const zoom = useDesignerStore(s => s.zoom);
+  const isDragging = useDesignerStore(s => s.isDragging);
 
-  const setZoom = useDesignerStore((s) => s.setZoom);
-  const addElement = useDesignerStore((s) => s.addElement);
-  const selectElement = useDesignerStore((s) => s.selectElement);
-  const updateElement = useDesignerStore((s) => s.updateElement);
-  const setDragging = useDesignerStore((s) => s.setDragging);
+  const setZoom = useDesignerStore(s => s.setZoom);
+  const addElement = useDesignerStore(s => s.addElement);
+  const selectElement = useDesignerStore(s => s.selectElement);
+  const updateElement = useDesignerStore(s => s.updateElement);
+  const setDragging = useDesignerStore(s => s.setDragging);
 
   // 计算对齐辅助线
   const draggingElement = draggingElementId
-    ? elements.find((el) => el.id === draggingElementId) ?? null
+    ? (elements.find(el => el.id === draggingElementId) ?? null)
     : null;
   const pageDimensions =
     pageSettings?.size === 'Custom'
       ? { width: pageSettings.width, height: pageSettings.height }
-      : getPaperDimensions(pageSettings?.size ?? 'A4', pageSettings?.orientation ?? 'portrait');
+      : getPaperDimensions(
+          pageSettings?.size ?? 'A4',
+          pageSettings?.orientation ?? 'portrait'
+        );
   const alignmentGuides = useAlignmentGuides(
     draggingElement,
     elements,
@@ -198,7 +202,7 @@ export function DesignerCanvas() {
           ref={containerRef}
           className={cn(
             'relative bg-white shadow-lg',
-            isDragging && 'ring-2 ring-primary ring-offset-2'
+            isDragging && 'ring-primary ring-2 ring-offset-2'
           )}
           style={{
             width: pageWidth,
@@ -216,14 +220,14 @@ export function DesignerCanvas() {
           />
 
           {/* 渲染元素 */}
-          {elements.map((element) => (
+          {elements.map(element => (
             <CanvasElement
               key={element.id}
               element={element}
               zoom={zoom}
               isSelected={element.id === selectedElementId}
               onSelect={() => selectElement(element.id)}
-              onUpdate={(updates) => updateElement(element.id, updates)}
+              onUpdate={updates => updateElement(element.id, updates)}
               onDragStart={() => setDraggingElementId(element.id)}
               onDragEnd={() => setDraggingElementId(null)}
             />
@@ -232,7 +236,7 @@ export function DesignerCanvas() {
       </div>
 
       {/* 缩放控制 */}
-      <div className="absolute bottom-4 right-4 flex items-center gap-1 rounded-full bg-white px-2 py-1 shadow">
+      <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-full bg-white px-2 py-1 shadow">
         <Button
           variant="ghost"
           size="icon"
@@ -280,7 +284,12 @@ function CanvasElement({
   onDragStart,
   onDragEnd,
 }: CanvasElementProps) {
-  const dragRef = useRef<{ startX: number; startY: number; elemX: number; elemY: number } | null>(null);
+  const dragRef = useRef<{
+    startX: number;
+    startY: number;
+    elemX: number;
+    elemY: number;
+  } | null>(null);
   const resizeRef = useRef<{
     handle: 'nw' | 'ne' | 'sw' | 'se';
     startClientX: number;
@@ -469,12 +478,12 @@ function CanvasElement({
             element={element}
             zoom={zoom}
             isSelected={isSelected}
-            onColumnsChange={(columns) => onUpdate({ columns })}
+            onColumnsChange={columns => onUpdate({ columns })}
           />
         );
       case 'image':
         return (
-          <div className="flex h-full w-full items-center justify-center bg-slate-100 text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex h-full w-full items-center justify-center bg-slate-100 text-xs">
             图片
           </div>
         );
@@ -493,7 +502,7 @@ function CanvasElement({
     <div
       className={cn(
         'absolute cursor-move select-none',
-        isSelected && 'ring-2 ring-primary'
+        isSelected && 'ring-primary ring-2'
       )}
       style={{
         left: x,
@@ -510,20 +519,20 @@ function CanvasElement({
       {isSelected && !element.locked && (
         <>
           <div
-            className="absolute -left-1 -top-1 h-2 w-2 cursor-nwse-resize rounded-full bg-primary"
-            onMouseDown={(e) => handleResizeMouseDown('nw', e)}
+            className="bg-primary absolute -top-1 -left-1 h-2 w-2 cursor-nwse-resize rounded-full"
+            onMouseDown={e => handleResizeMouseDown('nw', e)}
           />
           <div
-            className="absolute -right-1 -top-1 h-2 w-2 cursor-nesw-resize rounded-full bg-primary"
-            onMouseDown={(e) => handleResizeMouseDown('ne', e)}
+            className="bg-primary absolute -top-1 -right-1 h-2 w-2 cursor-nesw-resize rounded-full"
+            onMouseDown={e => handleResizeMouseDown('ne', e)}
           />
           <div
-            className="absolute -bottom-1 -left-1 h-2 w-2 cursor-nesw-resize rounded-full bg-primary"
-            onMouseDown={(e) => handleResizeMouseDown('sw', e)}
+            className="bg-primary absolute -bottom-1 -left-1 h-2 w-2 cursor-nesw-resize rounded-full"
+            onMouseDown={e => handleResizeMouseDown('sw', e)}
           />
           <div
-            className="absolute -bottom-1 -right-1 h-2 w-2 cursor-nwse-resize rounded-full bg-primary"
-            onMouseDown={(e) => handleResizeMouseDown('se', e)}
+            className="bg-primary absolute -right-1 -bottom-1 h-2 w-2 cursor-nwse-resize rounded-full"
+            onMouseDown={e => handleResizeMouseDown('se', e)}
           />
         </>
       )}

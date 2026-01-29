@@ -9,9 +9,9 @@ import { create, useStore } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
 import type {
-    DesignElement,
-    PageSettings,
-    PrintTemplate,
+  DesignElement,
+  PageSettings,
+  PrintTemplate,
 } from '@/lib/print-designer/schemas';
 
 // ============================================================================
@@ -108,7 +108,7 @@ export const useDesignerStore = create<DesignerStore>()(
       updateElement: (id: string, updates: Partial<DesignElement>) => {
         set((state: DesignerStore) => {
           if (!state.template) return;
-          const element = state.template.elements.find((el) => el.id === id);
+          const element = state.template.elements.find(el => el.id === id);
           if (element) {
             Object.assign(element, updates);
           }
@@ -119,7 +119,7 @@ export const useDesignerStore = create<DesignerStore>()(
         set((state: DesignerStore) => {
           if (!state.template) return;
           state.template.elements = state.template.elements.filter(
-            (el) => el.id !== id
+            el => el.id !== id
           );
           if (state.selectedElementId === id) {
             state.selectedElementId = null;
@@ -131,7 +131,7 @@ export const useDesignerStore = create<DesignerStore>()(
         const state = get();
         if (!state.template) return;
 
-        const element = state.template.elements.find((el) => el.id === id);
+        const element = state.template.elements.find(el => el.id === id);
         if (!element) return;
 
         const newElement: DesignElement = {
@@ -163,9 +163,9 @@ export const useDesignerStore = create<DesignerStore>()(
         set((state: DesignerStore) => {
           if (!state.template) return;
           const maxZ = Math.max(
-            ...state.template.elements.map((el) => el.zIndex)
+            ...state.template.elements.map(el => el.zIndex)
           );
-          const element = state.template.elements.find((el) => el.id === id);
+          const element = state.template.elements.find(el => el.id === id);
           if (element) {
             element.zIndex = maxZ + 1;
           }
@@ -176,9 +176,9 @@ export const useDesignerStore = create<DesignerStore>()(
         set((state: DesignerStore) => {
           if (!state.template) return;
           const minZ = Math.min(
-            ...state.template.elements.map((el) => el.zIndex)
+            ...state.template.elements.map(el => el.zIndex)
           );
-          const element = state.template.elements.find((el) => el.id === id);
+          const element = state.template.elements.find(el => el.id === id);
           if (element) {
             element.zIndex = minZ - 1;
           }
@@ -201,7 +201,7 @@ export const useDesignerStore = create<DesignerStore>()(
         const state = get();
         if (!state.template) return;
 
-        const element = state.template.elements.find((el) => el.id === id);
+        const element = state.template.elements.find(el => el.id === id);
         if (element) {
           set({ clipboard: JSON.parse(JSON.stringify(element)) });
         }
@@ -234,7 +234,7 @@ export const useDesignerStore = create<DesignerStore>()(
     })),
     {
       // 只跟踪模板数据变化
-      partialize: (state) => ({ template: state.template }),
+      partialize: state => ({ template: state.template }),
       // template 未变化时不记录历史（避免选中/缩放等 UI 操作污染撤销栈）
       equality: (pastState, currentState) =>
         pastState.template === currentState.template,
@@ -249,29 +249,23 @@ export const useDesignerStore = create<DesignerStore>()(
 // ============================================================================
 
 export function useUndo() {
-  return useStore(useDesignerStore.temporal, (s) => s.undo);
+  return useStore(useDesignerStore.temporal, s => s.undo);
 }
 
 export function useRedo() {
-  return useStore(useDesignerStore.temporal, (s) => s.redo);
+  return useStore(useDesignerStore.temporal, s => s.redo);
 }
 
 export function useClearHistory() {
-  return useStore(useDesignerStore.temporal, (s) => s.clear);
+  return useStore(useDesignerStore.temporal, s => s.clear);
 }
 
 export function useCanUndo() {
-  return useStore(
-    useDesignerStore.temporal,
-    (s) => s.pastStates.length > 0
-  );
+  return useStore(useDesignerStore.temporal, s => s.pastStates.length > 0);
 }
 
 export function useCanRedo() {
-  return useStore(
-    useDesignerStore.temporal,
-    (s) => s.futureStates.length > 0
-  );
+  return useStore(useDesignerStore.temporal, s => s.futureStates.length > 0);
 }
 
 // ============================================================================
@@ -282,18 +276,23 @@ export function useCanRedo() {
 const EMPTY_ELEMENTS: DesignElement[] = [];
 
 /** 获取当前选中的元素 */
-export const useSelectedElement = (): DesignElement | null | undefined => useDesignerStore((state: DesignerStore) => {
+export const useSelectedElement = (): DesignElement | null | undefined =>
+  useDesignerStore((state: DesignerStore) => {
     if (!state.template || !state.selectedElementId) return null;
-    return state.template.elements.find((el) => el.id === state.selectedElementId);
+    return state.template.elements.find(
+      el => el.id === state.selectedElementId
+    );
   });
 
 /** 获取所有元素 */
-export const useElements = (): DesignElement[] => useDesignerStore(
+export const useElements = (): DesignElement[] =>
+  useDesignerStore(
     (state: DesignerStore) => state.template?.elements ?? EMPTY_ELEMENTS
   );
 
 /** 获取页面设置 */
-export const usePageSettings = (): PageSettings | undefined => useDesignerStore((state: DesignerStore) => state.template?.pageSettings);
+export const usePageSettings = (): PageSettings | undefined =>
+  useDesignerStore((state: DesignerStore) => state.template?.pageSettings);
 
 // 兼容旧命名：历史版本曾导出 useDesignerStoreWithHistory
 export const useDesignerStoreWithHistory = useDesignerStore;

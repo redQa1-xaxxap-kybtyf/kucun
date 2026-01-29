@@ -51,7 +51,7 @@ export function VariableTag({
         <button
           type="button"
           className="ml-0.5 rounded-full p-0.5 hover:bg-blue-200"
-          onClick={(e) => {
+          onClick={e => {
             e.stopPropagation();
             onRemove();
           }}

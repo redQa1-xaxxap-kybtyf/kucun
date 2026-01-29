@@ -4,14 +4,7 @@
 
 'use client';
 
-import {
-    FileText,
-    Hash,
-    Image,
-    QrCode,
-    Table,
-    Type,
-} from 'lucide-react';
+import { FileText, Hash, Image, QrCode, Table, Type } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -49,11 +42,21 @@ const componentItems = [
 const fieldItems = [
   // 订单信息
   { field: 'order.orderNumber', label: '订单编号', icon: Hash, group: '订单' },
-  { field: 'order.createdAt', label: '订单日期', icon: FileText, group: '订单' },
+  {
+    field: 'order.createdAt',
+    label: '订单日期',
+    icon: FileText,
+    group: '订单',
+  },
   // 客户信息
   { field: 'customer.name', label: '客户名称', icon: FileText, group: '客户' },
   { field: 'customer.phone', label: '客户电话', icon: FileText, group: '客户' },
-  { field: 'customer.address', label: '客户地址', icon: FileText, group: '客户' },
+  {
+    field: 'customer.address',
+    label: '客户地址',
+    icon: FileText,
+    group: '客户',
+  },
   // 汇总信息
   { field: 'totalAmount', label: '总金额', icon: Hash, group: '汇总' },
   { field: 'totalAmountCap', label: '大写金额', icon: FileText, group: '汇总' },
@@ -71,8 +74,13 @@ interface DraggableItemProps {
   onDragStart?: () => void;
 }
 
-function DraggableItem({ type, label, icon: Icon, onDragStart }: DraggableItemProps) {
-  const setDragging = useDesignerStore((s) => s.setDragging);
+function DraggableItem({
+  type,
+  label,
+  icon: Icon,
+  onDragStart,
+}: DraggableItemProps) {
+  const setDragging = useDesignerStore(s => s.setDragging);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('elementType', type);
@@ -92,11 +100,11 @@ function DraggableItem({ type, label, icon: Icon, onDragStart }: DraggableItemPr
       onDragEnd={handleDragEnd}
       className={cn(
         'flex cursor-grab items-center gap-2 rounded-md border bg-white px-3 py-2',
-        'transition-colors hover:border-primary hover:bg-primary/5',
+        'hover:border-primary hover:bg-primary/5 transition-colors',
         'active:cursor-grabbing'
       )}
     >
-      <Icon className="h-4 w-4 text-muted-foreground" />
+      <Icon className="text-muted-foreground h-4 w-4" />
       <span className="text-sm">{label}</span>
     </div>
   );
@@ -109,7 +117,7 @@ interface FieldItemProps {
 }
 
 function FieldItem({ field, label, icon: Icon }: FieldItemProps) {
-  const setDragging = useDesignerStore((s) => s.setDragging);
+  const setDragging = useDesignerStore(s => s.setDragging);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('elementType', 'placeholder');
@@ -145,11 +153,11 @@ export function ComponentToolbar() {
     <aside className="flex w-60 flex-col border-r bg-slate-50">
       {/* 基础组件 */}
       <div className="border-b p-3">
-        <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
           基础组件
         </h3>
         <div className="grid grid-cols-2 gap-2">
-          {componentItems.map((item) => (
+          {componentItems.map(item => (
             <DraggableItem
               key={item.type}
               type={item.type}
@@ -162,11 +170,11 @@ export function ComponentToolbar() {
 
       {/* 数据字段 */}
       <div className="flex-1 overflow-auto p-3">
-        <h3 className="mb-2 text-xs font-medium text-muted-foreground">
+        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
           数据字段
         </h3>
         <div className="flex flex-wrap gap-2">
-          {fieldItems.map((item) => (
+          {fieldItems.map(item => (
             <FieldItem
               key={item.field}
               field={item.field}

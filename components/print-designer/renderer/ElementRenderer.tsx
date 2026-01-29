@@ -9,11 +9,11 @@
 import type { DesignElement } from '@/lib/print-designer/schemas';
 
 import {
-    BarcodeRenderer,
-    ImageRenderer,
-    PlaceholderRenderer,
-    TableRenderer,
-    TextRenderer,
+  BarcodeRenderer,
+  ImageRenderer,
+  PlaceholderRenderer,
+  TableRenderer,
+  TextRenderer,
 } from './elements';
 import { mmToPx } from './utils';
 

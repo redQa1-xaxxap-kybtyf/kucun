@@ -28,10 +28,13 @@ function roundTo(value: number, decimals: number): number {
   return Math.round(value * factor) / factor;
 }
 
-function buildNestedData(path: string, value: unknown): Record<string, unknown> {
+function buildNestedData(
+  path: string,
+  value: unknown
+): Record<string, unknown> {
   const keys = path
     .split('.')
-    .map((k) => k.trim())
+    .map(k => k.trim())
     .filter(Boolean);
 
   if (keys.length === 0) return {};
@@ -91,16 +94,15 @@ export function TableElementPreview({
       return;
     }
 
-    const thList = container.querySelectorAll<HTMLTableCellElement>(
-      'table thead th'
-    );
+    const thList =
+      container.querySelectorAll<HTMLTableCellElement>('table thead th');
     if (thList.length === 0) {
       setHeaderCells([]);
       return;
     }
 
     const containerRect = container.getBoundingClientRect();
-    const cells: HeaderCellMetrics[] = Array.from(thList).map((th) => {
+    const cells: HeaderCellMetrics[] = Array.from(thList).map(th => {
       const rect = th.getBoundingClientRect();
       return {
         left: rect.left - containerRect.left,
@@ -133,7 +135,12 @@ export function TableElementPreview({
   }, [measureHeaderCells]);
 
   const applyColumnResizeByPx = useCallback(
-    (boundaryIndex: number, leftWidthPx: number, rightWidthPx: number, tableWidthPx: number) => {
+    (
+      boundaryIndex: number,
+      leftWidthPx: number,
+      rightWidthPx: number,
+      tableWidthPx: number
+    ) => {
       const leftColumn = element.columns[boundaryIndex];
       const rightColumn = element.columns[boundaryIndex + 1];
 
@@ -167,7 +174,7 @@ export function TableElementPreview({
       e.stopPropagation();
 
       const tableWidthPx = containerRef.current.getBoundingClientRect().width;
-      const startWidthsPx = headerCells.map((c) => c.width);
+      const startWidthsPx = headerCells.map(c => c.width);
       resizeStateRef.current = {
         boundaryIndex,
         startClientX: e.clientX,
@@ -226,19 +233,13 @@ export function TableElementPreview({
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
     },
-    [
-      applyColumnResizeByPx,
-      element.columns,
-      headerCells,
-      isSelected,
-      zoom,
-    ]
+    [applyColumnResizeByPx, element.columns, headerCells, isSelected, zoom]
   );
 
   const boundaries = useMemo(() => {
     if (headerCells.length !== element.columns.length) return [];
     if (element.columns.length < 2) return [];
-    return headerCells.slice(0, -1).map((cell) => cell.left + cell.width);
+    return headerCells.slice(0, -1).map(cell => cell.left + cell.width);
   }, [element.columns.length, headerCells]);
 
   return (
@@ -253,12 +254,11 @@ export function TableElementPreview({
             key={`col-resize-${index}`}
             className="absolute top-0 h-full cursor-col-resize"
             style={{ left: x - 3, width: 6 }}
-            onMouseDown={(e) => handleResizeMouseDown(index, e)}
+            onMouseDown={e => handleResizeMouseDown(index, e)}
           >
-            <div className="mx-auto h-full w-px bg-primary/40" />
+            <div className="bg-primary/40 mx-auto h-full w-px" />
           </div>
         ))}
     </div>
   );
 }
-

@@ -27,11 +27,15 @@ function PrintDesignerContent() {
     if (templateId) {
       setIsLoading(true);
       getTemplate(templateId)
-        .then((result) => {
+        .then(result => {
           if (result.success && result.data) {
             setTemplate(result.data);
           } else {
-            toast({ title: '加载失败', description: result.error ?? '加载模板失败', variant: 'destructive' });
+            toast({
+              title: '加载失败',
+              description: result.error ?? '加载模板失败',
+              variant: 'destructive',
+            });
             router.push('/settings/print-templates');
           }
         })
@@ -43,13 +47,21 @@ function PrintDesignerContent() {
     startTransition(async () => {
       const result = await saveTemplate(templateData);
       if (result.success) {
-        toast({ title: '保存成功', description: '模板已保存', variant: 'success' });
+        toast({
+          title: '保存成功',
+          description: '模板已保存',
+          variant: 'success',
+        });
         // 如果是新建，更新 URL
         if (!templateId && result.data) {
           router.replace(`/settings/print-designer?id=${result.data.id}`);
         }
       } else {
-        toast({ title: '保存失败', description: result.error ?? '保存模板失败', variant: 'destructive' });
+        toast({
+          title: '保存失败',
+          description: result.error ?? '保存模板失败',
+          variant: 'destructive',
+        });
       }
     });
   };

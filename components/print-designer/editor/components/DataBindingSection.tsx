@@ -10,11 +10,11 @@ import { useMemo, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import type { PlaceholderFormat } from '@/lib/print-designer/schemas';
 
@@ -59,7 +59,7 @@ export function DataBindingSection({
     if (!search) return fieldRegistry;
     const lower = search.toLowerCase();
     return fieldRegistry.filter(
-      (f) =>
+      f =>
         f.label.toLowerCase().includes(lower) ||
         f.path.toLowerCase().includes(lower)
     );
@@ -68,18 +68,18 @@ export function DataBindingSection({
   // 按组分类
   const groupedFields = useMemo(() => {
     const groups: Record<string, typeof filteredFields> = {};
-    filteredFields.forEach((f) => {
+    filteredFields.forEach(f => {
       if (!groups[f.group]) groups[f.group] = [];
       groups[f.group].push(f);
     });
     return groups;
   }, [filteredFields]);
 
-  const currentField = fieldRegistry.find((f) => f.path === field);
+  const currentField = fieldRegistry.find(f => f.path === field);
 
   return (
     <div className="space-y-3">
-      <Label className="text-xs text-muted-foreground">数据绑定</Label>
+      <Label className="text-muted-foreground text-xs">数据绑定</Label>
 
       {/* 当前绑定字段 */}
       <div className="rounded-md border bg-blue-50 p-2">
@@ -93,10 +93,10 @@ export function DataBindingSection({
       {/* 字段选择器 */}
       <div className="space-y-2">
         <div className="relative">
-          <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-2 h-4 w-4 -translate-y-1/2" />
           <Input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             placeholder="搜索字段..."
             className="h-8 pl-8"
           />
@@ -108,7 +108,7 @@ export function DataBindingSection({
               <div className="sticky top-0 bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
                 {group}
               </div>
-              {fields.map((f) => (
+              {fields.map(f => (
                 <button
                   key={f.path}
                   type="button"
@@ -147,7 +147,7 @@ export function DataBindingSection({
         <Label className="text-xs">空值显示</Label>
         <Input
           value={fallback}
-          onChange={(e) => onFallbackChange(e.target.value)}
+          onChange={e => onFallbackChange(e.target.value)}
           placeholder="-"
           className="h-8"
         />

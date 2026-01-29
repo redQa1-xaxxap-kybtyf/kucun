@@ -10,32 +10,32 @@ import { useEffect, useState, useTransition } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
-    deleteTemplate,
-    duplicateTemplate,
-    getTemplates,
-    setDefaultTemplate,
+  deleteTemplate,
+  duplicateTemplate,
+  getTemplates,
+  setDefaultTemplate,
 } from '@/lib/print-designer/actions';
 
 interface TemplateItem {
@@ -73,7 +73,11 @@ export function TemplateList() {
       if (result.success && result.data) {
         setTemplates(result.data);
       } else {
-        toast({ title: '加载失败', description: result.error ?? '加载模板列表失败', variant: 'destructive' });
+        toast({
+          title: '加载失败',
+          description: result.error ?? '加载模板列表失败',
+          variant: 'destructive',
+        });
       }
     });
   };
@@ -96,30 +100,54 @@ export function TemplateList() {
 
     const result = await deleteTemplate(id);
     if (result.success) {
-      toast({ title: '删除成功', description: '模板已删除', variant: 'success' });
+      toast({
+        title: '删除成功',
+        description: '模板已删除',
+        variant: 'success',
+      });
       loadTemplates();
     } else {
-      toast({ title: '删除失败', description: result.error ?? '删除模板失败', variant: 'destructive' });
+      toast({
+        title: '删除失败',
+        description: result.error ?? '删除模板失败',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleDuplicate = async (id: string) => {
     const result = await duplicateTemplate(id);
     if (result.success) {
-      toast({ title: '复制成功', description: '模板已复制', variant: 'success' });
+      toast({
+        title: '复制成功',
+        description: '模板已复制',
+        variant: 'success',
+      });
       loadTemplates();
     } else {
-      toast({ title: '复制失败', description: result.error ?? '复制模板失败', variant: 'destructive' });
+      toast({
+        title: '复制失败',
+        description: result.error ?? '复制模板失败',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleSetDefault = async (id: string, type: string) => {
     const result = await setDefaultTemplate(id, type);
     if (result.success) {
-      toast({ title: '设置成功', description: '已设为默认模板', variant: 'success' });
+      toast({
+        title: '设置成功',
+        description: '已设为默认模板',
+        variant: 'success',
+      });
       loadTemplates();
     } else {
-      toast({ title: '设置失败', description: result.error ?? '设置默认模板失败', variant: 'destructive' });
+      toast({
+        title: '设置失败',
+        description: result.error ?? '设置默认模板失败',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -157,7 +185,7 @@ export function TemplateList() {
       ) : templates.length === 0 ? (
         <Card>
           <CardContent className="flex h-64 flex-col items-center justify-center text-center">
-            <p className="mb-4 text-muted-foreground">还没有打印模板</p>
+            <p className="text-muted-foreground mb-4">还没有打印模板</p>
             <Button onClick={handleCreate}>
               <Plus className="mr-1.5 h-4 w-4" />
               创建第一个模板
@@ -166,7 +194,7 @@ export function TemplateList() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {templates.map((template) => (
+          {templates.map(template => (
             <Card
               key={template.id}
               className="group cursor-pointer transition-shadow hover:shadow-md"
@@ -183,7 +211,7 @@ export function TemplateList() {
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       asChild
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={e => e.stopPropagation()}
                     >
                       <Button
                         variant="ghost"
@@ -195,7 +223,7 @@ export function TemplateList() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           handleEdit(template.id);
                         }}
@@ -204,7 +232,7 @@ export function TemplateList() {
                         编辑
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           handleDuplicate(template.id);
                         }}
@@ -214,7 +242,7 @@ export function TemplateList() {
                       </DropdownMenuItem>
                       {!template.isDefault && (
                         <DropdownMenuItem
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             handleSetDefault(template.id, template.type);
                           }}
@@ -226,7 +254,7 @@ export function TemplateList() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         className="text-destructive"
-                        onClick={(e) => {
+                        onClick={e => {
                           e.stopPropagation();
                           handleDelete(template.id);
                         }}
@@ -242,8 +270,9 @@ export function TemplateList() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-xs text-muted-foreground">
-                  更新于 {new Date(template.updatedAt).toLocaleDateString('zh-CN')}
+                <p className="text-muted-foreground text-xs">
+                  更新于{' '}
+                  {new Date(template.updatedAt).toLocaleDateString('zh-CN')}
                 </p>
               </CardContent>
             </Card>

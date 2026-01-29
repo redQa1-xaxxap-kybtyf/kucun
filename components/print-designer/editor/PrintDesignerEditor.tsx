@@ -6,14 +6,17 @@
 
 import { useEffect, useState } from 'react';
 
-import { createEmptyTemplate, type PrintTemplate } from '@/lib/print-designer/schemas';
+import {
+  createEmptyTemplate,
+  type PrintTemplate,
+} from '@/lib/print-designer/schemas';
 
 import {
-    ComponentToolbar,
-    DesignerCanvas,
-    DesignerHeader,
-    PreviewDialog,
-    PropertiesPanel,
+  ComponentToolbar,
+  DesignerCanvas,
+  DesignerHeader,
+  PreviewDialog,
+  PropertiesPanel,
 } from './components';
 import { useKeyboardShortcuts } from './hooks';
 import { useClearHistory, useDesignerStore } from './stores';
@@ -31,8 +34,8 @@ export function PrintDesignerEditor({
 }: PrintDesignerEditorProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const setTemplate = useDesignerStore((s) => s.setTemplate);
-  const currentTemplate = useDesignerStore((s) => s.template);
+  const setTemplate = useDesignerStore(s => s.setTemplate);
+  const currentTemplate = useDesignerStore(s => s.template);
   const clearHistory = useClearHistory();
 
   // 初始化模板

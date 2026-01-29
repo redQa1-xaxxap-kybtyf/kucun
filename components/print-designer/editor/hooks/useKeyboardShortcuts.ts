@@ -20,17 +20,19 @@ interface UseKeyboardShortcutsOptions {
   onSave?: () => void;
 }
 
-export function useKeyboardShortcuts({ onSave }: UseKeyboardShortcutsOptions = {}) {
-  const selectedElementId = useDesignerStore((s) => s.selectedElementId);
-  const selectElement = useDesignerStore((s) => s.selectElement);
-  const removeElement = useDesignerStore((s) => s.removeElement);
-  const duplicateElement = useDesignerStore((s) => s.duplicateElement);
-  const copyElement = useDesignerStore((s) => s.copyElement);
-  const pasteElement = useDesignerStore((s) => s.pasteElement);
-  const updateElement = useDesignerStore((s) => s.updateElement);
-  const setZoom = useDesignerStore((s) => s.setZoom);
-  const zoom = useDesignerStore((s) => s.zoom);
-  const template = useDesignerStore((s) => s.template);
+export function useKeyboardShortcuts({
+  onSave,
+}: UseKeyboardShortcutsOptions = {}) {
+  const selectedElementId = useDesignerStore(s => s.selectedElementId);
+  const selectElement = useDesignerStore(s => s.selectElement);
+  const removeElement = useDesignerStore(s => s.removeElement);
+  const duplicateElement = useDesignerStore(s => s.duplicateElement);
+  const copyElement = useDesignerStore(s => s.copyElement);
+  const pasteElement = useDesignerStore(s => s.pasteElement);
+  const updateElement = useDesignerStore(s => s.updateElement);
+  const setZoom = useDesignerStore(s => s.setZoom);
+  const zoom = useDesignerStore(s => s.zoom);
+  const template = useDesignerStore(s => s.template);
   const undo = useUndo();
   const redo = useRedo();
   const canUndo = useCanUndo();
@@ -79,7 +81,7 @@ export function useKeyboardShortcuts({ onSave }: UseKeyboardShortcutsOptions = {
       if (!selectedElementId || !template) return;
 
       const selectedElement = template.elements.find(
-        (el) => el.id === selectedElementId
+        el => el.id === selectedElementId
       );
       if (!selectedElement) return;
 

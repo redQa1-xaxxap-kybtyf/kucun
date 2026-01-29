@@ -50,11 +50,14 @@ export async function getSalesOrderForPrint(orderId: string) {
   const items = order.items;
 
   // 转换为打印模板需要的格式
-  const mappedItems = items.map((item) => {
+  const mappedItems = items.map(item => {
     const name = item.product?.name ?? item.manualProductName ?? '';
     const code = item.product?.code ?? item.productCode ?? '';
     const spec =
-      item.specification ?? item.manualSpecification ?? item.product?.specification ?? '';
+      item.specification ??
+      item.manualSpecification ??
+      item.product?.specification ??
+      '';
     const unit = resolveUnitLabel(
       item.displayUnit ?? item.manualUnit ?? item.product?.unit ?? 'sheet'
     );
@@ -138,12 +141,18 @@ export async function getPurchaseOrderForPrint(orderId: string) {
 
   if (!order) return null;
 
-  const mappedItems = order.items.map((item) => {
-    const name = item.displayName ?? item.product?.name ?? item.manualProductName ?? '';
+  const mappedItems = order.items.map(item => {
+    const name =
+      item.displayName ?? item.product?.name ?? item.manualProductName ?? '';
     const code = item.productCode ?? item.product?.code ?? '';
     const spec =
-      item.specification ?? item.manualSpecification ?? item.product?.specification ?? '';
-    const unit = resolveUnitLabel(item.manualUnit ?? item.unit ?? item.product?.unit ?? 'sheet');
+      item.specification ??
+      item.manualSpecification ??
+      item.product?.specification ??
+      '';
+    const unit = resolveUnitLabel(
+      item.manualUnit ?? item.unit ?? item.product?.unit ?? 'sheet'
+    );
 
     return {
       name,
@@ -220,11 +229,18 @@ export async function getFactoryShipmentForPrint(orderId: string) {
 
   if (!order) return null;
 
-  const mappedItems = order.items.map((item) => {
-    const name = item.displayName ?? item.product?.name ?? item.manualProductName ?? '';
+  const mappedItems = order.items.map(item => {
+    const name =
+      item.displayName ?? item.product?.name ?? item.manualProductName ?? '';
     const code = item.productCode ?? item.product?.code ?? '';
-    const spec = item.specification ?? item.manualSpecification ?? item.product?.specification ?? '';
-    const unit = resolveUnitLabel(item.manualUnit ?? item.unit ?? item.product?.unit ?? 'sheet');
+    const spec =
+      item.specification ??
+      item.manualSpecification ??
+      item.product?.specification ??
+      '';
+    const unit = resolveUnitLabel(
+      item.manualUnit ?? item.unit ?? item.product?.unit ?? 'sheet'
+    );
 
     return {
       name,
@@ -305,7 +321,8 @@ export async function getInboundRecordForPrint(recordNumber: string) {
   const name = record.product?.name ?? '';
   const spec = record.product?.specification ?? '';
   const unit = resolveUnitLabel(record.product?.unit ?? 'sheet') || '片';
-  const batchNumber = record.batchNumber ?? record.batchSpecification?.batchNumber ?? '';
+  const batchNumber =
+    record.batchNumber ?? record.batchSpecification?.batchNumber ?? '';
 
   const itemRow = {
     name,
@@ -381,12 +398,15 @@ export async function getReturnOrderForPrint(orderId: string) {
 
   if (!order) return null;
 
-  const mappedItems = order.items.map((item) => {
+  const mappedItems = order.items.map(item => {
     const name = item.product?.name ?? '';
     const code = item.product?.code ?? '';
     const spec = item.product?.specification ?? '';
     const unit = resolveUnitLabel(
-      item.salesOrderItem?.displayUnit ?? item.salesOrderItem?.manualUnit ?? item.product?.unit ?? 'sheet'
+      item.salesOrderItem?.displayUnit ??
+        item.salesOrderItem?.manualUnit ??
+        item.product?.unit ??
+        'sheet'
     );
     const batchNumber = item.salesOrderItem?.batchNumber ?? '';
 
@@ -492,17 +512,19 @@ export async function getRecentSalesOrders(limit = 10) {
   });
 
   // 获取客户名称
-  const customerIds = orders.map((o) => o.customerId).filter(Boolean) as string[];
+  const customerIds = orders.map(o => o.customerId).filter(Boolean) as string[];
   const customers = await prisma.customer.findMany({
     where: { id: { in: customerIds } },
     select: { id: true, name: true },
   });
-  const customerMap = new Map(customers.map((c) => [c.id, c.name]));
+  const customerMap = new Map(customers.map(c => [c.id, c.name]));
 
-  return orders.map((o) => ({
+  return orders.map(o => ({
     id: o.id,
     orderNumber: o.orderNumber,
     createdAt: o.createdAt.toISOString().split('T')[0],
-    customerName: o.customerId ? customerMap.get(o.customerId) ?? '未知客户' : '未知客户',
+    customerName: o.customerId
+      ? (customerMap.get(o.customerId) ?? '未知客户')
+      : '未知客户',
   }));
 }

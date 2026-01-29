@@ -11,15 +11,15 @@ import { useMemo, useState } from 'react';
 
 import { Input } from '@/components/ui/input';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-    type FieldDefinition,
-    getFieldsForTemplateType,
-    getTableFieldsForTemplateType,
-    groupFields,
+  type FieldDefinition,
+  getFieldsForTemplateType,
+  getTableFieldsForTemplateType,
+  groupFields,
 } from '@/lib/print-designer/field-registry';
 
 interface FieldPickerProps {
@@ -52,7 +52,7 @@ export function FieldPicker({
     if (!search) return fields;
     const lower = search.toLowerCase();
     return fields.filter(
-      (f) =>
+      f =>
         f.label.toLowerCase().includes(lower) ||
         f.path.toLowerCase().includes(lower)
     );
@@ -75,10 +75,10 @@ export function FieldPicker({
       <PopoverContent className="w-72 p-0" align="start">
         <div className="border-b p-2">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={e => setSearch(e.target.value)}
               placeholder="搜索字段..."
               className="h-8 pl-8"
             />
@@ -91,7 +91,7 @@ export function FieldPicker({
               <div className="sticky top-0 bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-500">
                 {group}
               </div>
-              {groupFields.map((f) => (
+              {groupFields.map(f => (
                 <button
                   key={f.path}
                   type="button"
@@ -101,7 +101,7 @@ export function FieldPicker({
                   onClick={() => handleSelect(f)}
                 >
                   <span>{f.label}</span>
-                  <span className="font-mono text-xs text-muted-foreground">
+                  <span className="text-muted-foreground font-mono text-xs">
                     {f.path}
                   </span>
                 </button>
@@ -110,7 +110,7 @@ export function FieldPicker({
           ))}
 
           {Object.keys(groupedFields).length === 0 && (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground p-4 text-center text-sm">
               未找到匹配的字段
             </div>
           )}
