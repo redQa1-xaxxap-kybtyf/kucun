@@ -1,14 +1,29 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { ERPSalesOrderList } from '@/components/sales-orders/erp-sales-order-list';
 import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { salesOrderParamsSchema } from '@/lib/schemas/sales-order-params';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
+
+const ERPSalesOrderList = dynamic(
+  () =>
+    import('@/components/sales-orders/erp-sales-order-list').then(
+      mod => mod.ERPSalesOrderList
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface SalesOrdersPageClientProps {
   initialParams: SalesOrderQueryParams;
@@ -142,7 +157,7 @@ function useSalesOrderSearch(
 
       if (trimmed === '') {
         setIsSearching(false);
-        updateParams({ search: undefined, page: 1 });
+        updateParams({ search: '', page: 1 });
         return;
       }
 
