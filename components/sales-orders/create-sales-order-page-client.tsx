@@ -1,8 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
-import { ERPSalesOrderForm } from './erp-sales-order-form';
+const ERPSalesOrderForm = dynamic(
+  () =>
+    import('@/components/sales-orders/erp-sales-order-form').then(
+      mod => mod.ERPSalesOrderForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 interface CreateSalesOrderPageClientProps {
   initialOrderNumber: string;
