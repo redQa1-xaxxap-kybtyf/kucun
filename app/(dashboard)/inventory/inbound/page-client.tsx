@@ -1,8 +1,24 @@
 'use client';
 
-import { ERPInboundRecords } from '@/components/inventory/erp-inbound-records';
+import dynamic from 'next/dynamic';
+
 import { InboundPageHeader } from '@/components/inventory/inbound-page-header';
 import type { InboundQueryParams } from '@/lib/types/inbound';
+
+const ERPInboundRecords = dynamic(
+  () =>
+    import('@/components/inventory/erp-inbound-records').then(
+      mod => mod.ERPInboundRecords
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 入库记录客户端组件
