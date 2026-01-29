@@ -92,7 +92,7 @@ export interface SalesOrder {
 
   // 关联数据（可选，根据查询需要包含）
   customer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
-  user?: User;
+  user?: Pick<User, 'id' | 'name'>;
   supplier?: {
     id: string;
     name: string;

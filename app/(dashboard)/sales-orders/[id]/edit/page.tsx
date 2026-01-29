@@ -1,90 +1,40 @@
-'use client';
-
-import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import * as React from 'react';
+import { notFound, redirect } from 'next/navigation';
 
-import { ContentLoading } from '@/components/common/loading';
-import { ERPSalesOrderForm } from '@/components/sales-orders/erp-sales-order-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ErrorMessage } from '@/components/ui/error-message';
-import { queryKeys } from '@/lib/queryKeys';
+import { getSalesOrderById } from '@/lib/api/handlers/sales-orders';
+import { requirePagePermission } from '@/lib/auth/page-permission';
 import type { SalesOrder } from '@/lib/types/sales-order';
-import { getErrorMessage } from '@/lib/utils/error-handler';
 
-type SalesOrderDetail = SalesOrder;
-
-async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
-  const response = await fetch(`/api/sales-orders/${id}`, {
-    credentials: 'include',
-  });
-
-  if (!response.ok) {
-    throw new Error('获取销售订单详情失败');
-  }
-
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || '获取销售订单详情失败');
-  }
-
-  return result.data;
-}
+import { EditSalesOrderPageClient } from './page-client';
 
 /**
  * 编辑销售订单页面
  * 仅允许编辑草稿状态的订单
  */
-export default function EditSalesOrderPage() {
-  const params = useParams();
-  const router = useRouter();
-  const id = params.id as string;
-  const hasRedirectedRef = React.useRef(false);
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
-  const {
-    data: order,
-    isLoading,
-    error,
-  } = useQuery<SalesOrderDetail>({
-    queryKey: queryKeys.salesOrders.detail(id),
-    queryFn: () => fetchSalesOrderDetail(id),
-    enabled: !!id,
-  });
+export default async function EditSalesOrderPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  await requirePagePermission('sales:manage', { redirectTo: '/sales-orders' });
 
-  // 检查订单状态：只允许编辑草稿状态的订单（必须在所有 Hooks 之后，条件返回之前）
-  React.useEffect(() => {
-    if (!hasRedirectedRef.current && order && order.status !== 'draft') {
-      hasRedirectedRef.current = true;
-      // 非草稿状态，跳转回详情页
-      router.replace(`/sales-orders/${id}`);
-    }
-  }, [order, id, router]);
-
-  if (isLoading) {
-    return <ContentLoading />;
-  }
-
-  if (error) {
-    return (
-      <ErrorMessage
-        title="加载失败"
-        message={getErrorMessage(error)}
-        onRetry={() => window.location.reload()}
-      />
-    );
-  }
+  const { id } = await params;
+  const order = (await getSalesOrderById(id)) as unknown as SalesOrder | null;
 
   if (!order) {
-    return (
-      <ErrorMessage
-        title="订单不存在"
-        message="未找到指定的销售订单"
-        onRetry={() => router.push('/sales-orders')}
-      />
-    );
+    notFound();
+  }
+
+  if (order.status !== 'draft') {
+    redirect(`/sales-orders/${id}`);
   }
 
   return (
@@ -123,18 +73,7 @@ export default function EditSalesOrderPage() {
         </Card>
 
         {/* 表单 */}
-        <ERPSalesOrderForm
-          mode="edit"
-          orderId={id}
-          initialData={order}
-          onSuccess={() => {
-            // 编辑成功后返回订单列表
-            router.push('/sales-orders');
-          }}
-          onCancel={() => {
-            router.push(`/sales-orders/${id}`);
-          }}
-        />
+        <EditSalesOrderPageClient orderId={id} initialData={order} />
       </div>
     </div>
   );

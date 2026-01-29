@@ -1,6 +1,10 @@
 import type { Prisma } from '@prisma/client';
 
-import type { SalesOrderStatus, SalesOrderType } from '@/lib/types/sales-order';
+import type {
+  SalesOrderStatus,
+  SalesOrderType,
+  TransferFulfillmentMode,
+} from '@/lib/types/sales-order';
 
 export const salesOrderItemSelect = {
   id: true,
@@ -124,6 +128,13 @@ export function mapOrderBaseFields<
   T extends {
     status: Prisma.SalesOrderUpdateInput['status'];
     orderType: Prisma.SalesOrderCreateInput['orderType'];
+    transferMode: unknown;
+    customer?: {
+      id: string;
+      name: string;
+      phone: string | null;
+      address: string | null;
+    } | null;
     supplierId: string | null;
     costAmount: Prisma.Decimal | number | null;
     expenseAmount: Prisma.Decimal | number | null;
@@ -148,6 +159,14 @@ export function mapOrderBaseFields<
     ...order,
     status: order.status as SalesOrderStatus,
     orderType: order.orderType as SalesOrderType,
+    transferMode: order.transferMode as TransferFulfillmentMode,
+    customer: order.customer
+      ? {
+          ...order.customer,
+          phone: order.customer.phone ?? undefined,
+          address: order.customer.address ?? undefined,
+        }
+      : undefined,
     supplierId: order.supplierId ?? undefined,
     // 金额字段转换
     costAmount: toNumber(order.costAmount),
