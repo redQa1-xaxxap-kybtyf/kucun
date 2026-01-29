@@ -1,8 +1,8 @@
 'use client';
 
 import { ImageIcon, ZoomIn } from 'lucide-react';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useMemo, useState } from 'react';
 
 import type { ProductImage } from '@/lib/types/product';

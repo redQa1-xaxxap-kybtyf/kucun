@@ -1,8 +1,8 @@
 'use client';
 
 import { Boxes, Eye, ImageIcon } from 'lucide-react';
-import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { memo } from 'react';
 
 import { RelativeTime } from '@/components/common/relative-time';

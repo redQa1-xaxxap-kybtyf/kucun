@@ -6,7 +6,6 @@ import {
   ArrowUpIcon,
   Calendar,
   MinusIcon,
-  Package,
   Receipt,
   RefreshCw,
   TrendingUp,

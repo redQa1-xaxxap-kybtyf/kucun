@@ -2,8 +2,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
