@@ -2,14 +2,16 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 import { Suspense } from 'react';
 
 import { ErrorBoundaryFallback } from '@/components/common/error-boundary-fallback';
-import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryPageOverviewHeader } from '@/components/inventory/inventory-page-overview-header';
-import { InventoryStatisticsCards } from '@/components/inventory/inventory-statistics-cards';
-import { InventoryListSkeleton } from '@/components/ui/skeleton-compositions';
+import {
+  InventoryListSkeleton,
+  StatsCardsSkeleton,
+} from '@/components/ui/skeleton-compositions';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
@@ -21,6 +23,22 @@ import type {
   InventoryListResponse,
   InventoryQueryParams,
 } from '@/lib/types/inventory';
+
+const InventoryStatisticsCards = dynamic(
+  () =>
+    import('@/components/inventory/inventory-statistics-cards').then(
+      mod => mod.InventoryStatisticsCards
+    ),
+  { ssr: false, loading: () => <StatsCardsSkeleton count={4} /> }
+);
+
+const ERPInventoryList = dynamic(
+  () =>
+    import('@/components/inventory/erp-inventory-list').then(
+      mod => mod.ERPInventoryList
+    ),
+  { ssr: false, loading: () => <InventoryListSkeleton /> }
+);
 
 interface InventoryPageClientProps {
   initialParams: Partial<InventoryQueryParams>;
