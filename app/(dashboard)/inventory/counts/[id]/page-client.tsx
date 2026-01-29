@@ -9,12 +9,12 @@ import {
   Play,
   Trash2,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
-import { CountItemsTable } from '@/components/inventory/counts/count-items-table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,21 @@ import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 import { AddProductDialog, DeleteCountDialog } from './count-dialogs';
 import { useCountItems } from './use-count-items';
+
+const CountItemsTable = dynamic(
+  () =>
+    import('@/components/inventory/counts/count-items-table').then(
+      mod => mod.CountItemsTable
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        明细加载中...
+      </div>
+    ),
+  }
+);
 
 interface CountDetailPageClientProps {
   countId: string;
