@@ -2,13 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Download, PackageX, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { Suspense } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { ReturnOrderListView } from '@/components/return-orders/return-order-list-view';
 import { Button } from '@/components/ui/button';
 import { getReturnOrders } from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/env';
@@ -20,6 +19,21 @@ import type {
   ReturnOrderType,
   ReturnProcessType,
 } from '@/lib/types/return-order';
+
+const ReturnOrderListView = dynamic(
+  () =>
+    import('@/components/return-orders/return-order-list-view').then(
+      mod => mod.ReturnOrderListView
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface ReturnOrdersPageClientProps {
   initialParams: ReturnOrderQueryParams;
@@ -247,42 +261,34 @@ export function ReturnOrdersPageClient({
           }
         />
 
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
-          <ReturnOrderListView
-            searchValue={initialParams?.search || ''}
-            statusFilter={initialParams?.status || 'all'}
-            typeFilter={initialParams?.type || 'all'}
-            processTypeFilter={initialParams?.processType || 'all'}
-            includeTest={initialParams?.includeTest}
-            includeVoided={initialParams?.includeVoided}
-            dateRange={{
-              startDate: initialParams?.startDate,
-              endDate: initialParams?.endDate,
-            }}
-            isSearching={isLoading}
-            onSearch={handleSearch}
-            onStatusChange={handleStatusChange}
-            onTypeChange={handleTypeChange}
-            onProcessTypeChange={handleProcessTypeChange}
-            onIncludeTestToggle={handleIncludeTestToggle}
-            onIncludeVoidedToggle={handleIncludeVoidedToggle}
-            onDateRangeChange={handleDateRangeChange}
-            onClearFilters={handleClearFilters}
-            orders={orders}
-            isLoading={isLoading}
-            error={error}
-            pagination={paginationInfo}
-            onPageChange={handlePageChange}
-            onDeleteRequest={handleDeleteRequest}
-            onRetry={handleRetry}
-          />
-        </Suspense>
+        <ReturnOrderListView
+          searchValue={initialParams?.search || ''}
+          statusFilter={initialParams?.status || 'all'}
+          typeFilter={initialParams?.type || 'all'}
+          processTypeFilter={initialParams?.processType || 'all'}
+          includeTest={initialParams?.includeTest}
+          includeVoided={initialParams?.includeVoided}
+          dateRange={{
+            startDate: initialParams?.startDate,
+            endDate: initialParams?.endDate,
+          }}
+          isSearching={isLoading}
+          onSearch={handleSearch}
+          onStatusChange={handleStatusChange}
+          onTypeChange={handleTypeChange}
+          onProcessTypeChange={handleProcessTypeChange}
+          onIncludeTestToggle={handleIncludeTestToggle}
+          onIncludeVoidedToggle={handleIncludeVoidedToggle}
+          onDateRangeChange={handleDateRangeChange}
+          onClearFilters={handleClearFilters}
+          orders={orders}
+          isLoading={isLoading}
+          error={error}
+          pagination={paginationInfo}
+          onPageChange={handlePageChange}
+          onDeleteRequest={handleDeleteRequest}
+          onRetry={handleRetry}
+        />
       </div>
     </div>
   );
