@@ -1,8 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
-import { ExpenseForm } from '@/components/finance/expenses/expense-form';
+const ExpenseForm = dynamic(
+  () =>
+    import('@/components/finance/expenses/expense-form').then(
+      mod => mod.ExpenseForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 费用记录创建客户端组件
