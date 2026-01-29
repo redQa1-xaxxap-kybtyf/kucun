@@ -1,13 +1,13 @@
 'use client';
 
 import { ClipboardCheck, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { CountList } from '@/components/inventory/counts/count-list';
 import { Button } from '@/components/ui/button';
 import { can } from '@/lib/auth/permissions';
 import type {
@@ -32,6 +32,19 @@ interface CountsPageClientProps {
     sortOrder: 'asc' | 'desc';
   };
 }
+
+const CountList = dynamic(
+  () =>
+    import('@/components/inventory/counts/count-list').then(mod => mod.CountList),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 export function CountsPageClient({ initialParams }: CountsPageClientProps) {
   const router = useRouter();
