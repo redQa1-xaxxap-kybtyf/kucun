@@ -1,11 +1,11 @@
 'use client';
 
 import { ArrowLeft, Edit, FileText } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,10 +15,32 @@ import {
 } from '@/components/ui/dialog';
 import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
-import { AdjustmentDetailDialog } from './components/AdjustmentDetailDialog';
 import { AdjustmentRecordsFilters } from './components/AdjustmentRecordsFilters';
 import { AdjustmentRecordsTable } from './components/AdjustmentRecordsTable';
 import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
+
+const InventoryOperationForm = dynamic(
+  () =>
+    import('@/components/inventory/inventory-operation-form').then(
+      mod => mod.InventoryOperationForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground flex items-center justify-center py-10 text-sm">
+        加载中...
+      </div>
+    ),
+  }
+);
+
+const AdjustmentDetailDialog = dynamic(
+  () =>
+    import('./components/AdjustmentDetailDialog').then(
+      mod => mod.AdjustmentDetailDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 /**
  * 库存调整记录客户端组件
@@ -166,24 +188,28 @@ export function AdjustmentRecordsPageClient({
             <DialogHeader>
               <DialogTitle>库存调整</DialogTitle>
             </DialogHeader>
-            <InventoryOperationForm
-              mode="adjust"
-              onSuccess={handleAdjustSuccess}
-              onCancel={handleCloseAdjust}
-            />
+            {showAdjustDialog && (
+              <InventoryOperationForm
+                mode="adjust"
+                onSuccess={handleAdjustSuccess}
+                onCancel={handleCloseAdjust}
+              />
+            )}
           </DialogContent>
         </Dialog>
 
         {/* 详情对话框 */}
-        <AdjustmentDetailDialog
-          adjustment={selectedAdjustment}
-          open={showDetailDialog}
-          onOpenChange={open => {
-            if (!open) {
-              closeDetailDialog();
-            }
-          }}
-        />
+        {showDetailDialog && selectedAdjustment && (
+          <AdjustmentDetailDialog
+            adjustment={selectedAdjustment}
+            open={showDetailDialog}
+            onOpenChange={open => {
+              if (!open) {
+                closeDetailDialog();
+              }
+            }}
+          />
+        )}
       </div>
     </div>
   );
