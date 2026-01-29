@@ -2,13 +2,28 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Users } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { ERPCustomerForm } from '@/components/customers/erp-customer-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
+
+const ERPCustomerForm = dynamic(
+  () =>
+    import('@/components/customers/erp-customer-form').then(
+      mod => mod.ERPCustomerForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 /**
  * 客户编辑页面
