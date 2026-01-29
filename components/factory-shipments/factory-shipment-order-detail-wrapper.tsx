@@ -1,8 +1,22 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
-import { FactoryShipmentOrderDetail } from '@/components/factory-shipments/factory-shipment-order-detail';
+const FactoryShipmentOrderDetail = dynamic(
+  () =>
+    import('@/components/factory-shipments/factory-shipment-order-detail').then(
+      mod => mod.FactoryShipmentOrderDetail
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        详情加载中...
+      </div>
+    ),
+  }
+);
 
 interface FactoryShipmentOrderDetailWrapperProps {
   orderId: string;
