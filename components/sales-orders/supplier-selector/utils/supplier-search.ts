@@ -1,8 +1,5 @@
 import type { Supplier } from '@/lib/types/supplier';
-import {
-  chineseToPinyinInitialsUppercase,
-  chineseToPinyinUppercase,
-} from '@/lib/utils/pinyin';
+import type { PinyinUtils } from '@/lib/utils/pinyin-loader';
 
 const collapseSpaces = (value: string) => value.replace(/\s+/g, '');
 
@@ -11,7 +8,8 @@ const toSafeLowerCase = (value: string | undefined | null) =>
 
 export function filterSuppliers(
   suppliers: Supplier[],
-  rawQuery: string
+  rawQuery: string,
+  pinyinUtils?: PinyinUtils
 ): Supplier[] {
   const query = rawQuery.trim().toLowerCase();
   if (!query) {
@@ -19,6 +17,8 @@ export function filterSuppliers(
   }
 
   const normalizedQueryNoSpaces = collapseSpaces(query);
+
+  const shouldUsePinyin = Boolean(pinyinUtils && /[a-z]/i.test(query));
 
   return suppliers.filter(supplier => {
     const name = supplier.name ?? '';
@@ -37,18 +37,20 @@ export function filterSuppliers(
       return true;
     }
 
-    const fullPinyin = collapseSpaces(
-      chineseToPinyinUppercase(name).toLowerCase()
-    );
-    if (fullPinyin && fullPinyin.includes(normalizedQueryNoSpaces)) {
-      return true;
-    }
+    if (shouldUsePinyin && pinyinUtils) {
+      const fullPinyin = collapseSpaces(
+        pinyinUtils.chineseToPinyinUppercase(name).toLowerCase()
+      );
+      if (fullPinyin && fullPinyin.includes(normalizedQueryNoSpaces)) {
+        return true;
+      }
 
-    const initials = collapseSpaces(
-      chineseToPinyinInitialsUppercase(name).toLowerCase()
-    );
-    if (initials && initials.includes(normalizedQueryNoSpaces)) {
-      return true;
+      const initials = collapseSpaces(
+        pinyinUtils.chineseToPinyinInitialsUppercase(name).toLowerCase()
+      );
+      if (initials && initials.includes(normalizedQueryNoSpaces)) {
+        return true;
+      }
     }
 
     return false;

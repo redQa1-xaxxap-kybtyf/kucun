@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { ZodError } from 'zod';
 
-import { QuickAddSupplierDialog } from '@/components/suppliers/quick-add-supplier-dialog';
 import {
   Command,
   CommandEmpty,
@@ -22,6 +22,14 @@ import { SupplierSearchResults } from './components/SupplierSearchResults';
 import { SupplierSelectorTrigger } from './components/SupplierSelectorTrigger';
 import { useSupplierSelectorController } from './hooks/useSupplierSelectorController';
 import type { SupplierSelectorProps } from './types';
+
+const QuickAddSupplierDialog = dynamic(
+  () =>
+    import('@/components/suppliers/quick-add-supplier-dialog').then(
+      mod => mod.QuickAddSupplierDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 export function SupplierSelector(props: SupplierSelectorProps) {
   const {
@@ -137,12 +145,14 @@ export function SupplierSelector(props: SupplierSelectorProps) {
         </PopoverContent>
       </Popover>
 
-      <QuickAddSupplierDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onSupplierCreated={handleSupplierCreated}
-        initialName={searchValue}
-      />
+      {createDialogOpen && (
+        <QuickAddSupplierDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          onSupplierCreated={handleSupplierCreated}
+          initialName={searchValue}
+        />
+      )}
     </>
   );
 }

@@ -3,6 +3,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Plus, Search, User } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 import { ZodError } from 'zod';
 
@@ -27,11 +28,16 @@ import {
 import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
 import { cn } from '@/lib/utils';
 import {
-  chineseToPinyinInitialsUppercase,
-  chineseToPinyinUppercase,
-} from '@/lib/utils/pinyin';
+  isPinyinSearchQuery,
+  loadPinyinUtils,
+  type PinyinUtils,
+} from '@/lib/utils/pinyin-loader';
 
-import { CustomerCreateDialog } from './customer-create-dialog';
+const CustomerCreateDialog = dynamic(
+  () =>
+    import('./customer-create-dialog').then(mod => mod.CustomerCreateDialog),
+  { ssr: false, loading: () => null }
+);
 
 interface CustomerSelectorProps {
   value?: string;
@@ -80,6 +86,9 @@ export function CustomerSelector({
   const [searchValue, setSearchValue] = React.useState('');
   const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const [pinyinUtils, setPinyinUtils] = React.useState<PinyinUtils | null>(
+    null
+  );
   const [selectedCustomer, setSelectedCustomer] = React.useState<
     Customer | undefined
   >(initialCustomer as Customer | undefined); // ✅ 类型断言
@@ -117,6 +126,31 @@ export function CustomerSelector({
   // 允许1个字符开始搜索，支持中文单字搜索（如"张"、"李"等）
   const shouldSearch = normalizedSearch.length >= 1;
 
+  const shouldLoadPinyin = open && isPinyinSearchQuery(searchValue);
+
+  React.useEffect(() => {
+    if (!shouldLoadPinyin || pinyinUtils) {
+      return;
+    }
+
+    let cancelled = false;
+
+    loadPinyinUtils()
+      .then(utils => {
+        if (cancelled) {
+          return;
+        }
+        setPinyinUtils(utils);
+      })
+      .catch(() => {
+        // 拼音库加载失败时，降级为基础搜索（不影响业务正确性）
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pinyinUtils, shouldLoadPinyin]);
+
   // ✅ 明确指定泛型类型,匹配API返回值
   const { data: searchResults, isFetching: isSearching } = useQuery<
     Pick<Customer, 'id' | 'name' | 'phone' | 'address'>[]
@@ -136,16 +170,19 @@ export function CustomerSelector({
     [searchResults]
   );
 
-  // 前端拼音过滤（增强搜索体验）
+  // 前端过滤：服务端已做基础搜索，这里只做展示前的轻量过滤
   const filteredCustomers = React.useMemo(() => {
     if (!shouldSearch) {
       return [];
     }
 
     const collapseSpaces = (value: string) => value.replace(/\s+/g, '');
-    const normalized = collapseSpaces(normalizedSearch);
+    const normalizedQueryNoSpaces = collapseSpaces(normalizedSearch);
 
-    // 服务端已经做了基础搜索，这里只做拼音增强
+    const shouldUsePinyin = Boolean(
+      pinyinUtils && isPinyinSearchQuery(normalizedSearch)
+    );
+
     return customers.filter((customer: Customer) => {
       const name = customer.name ?? '';
       const nameLower = name.toLowerCase();
@@ -160,24 +197,25 @@ export function CustomerSelector({
         return true;
       }
 
-      // 拼音匹配（前端增强）
-      const pinyinFull = collapseSpaces(
-        chineseToPinyinUppercase(name).toLowerCase()
-      );
-      if (pinyinFull && pinyinFull.includes(normalized)) {
-        return true;
-      }
+      if (shouldUsePinyin && pinyinUtils) {
+        const fullPinyin = collapseSpaces(
+          pinyinUtils.chineseToPinyinUppercase(name).toLowerCase()
+        );
+        if (fullPinyin && fullPinyin.includes(normalizedQueryNoSpaces)) {
+          return true;
+        }
 
-      const pinyinInitials = collapseSpaces(
-        chineseToPinyinInitialsUppercase(name).toLowerCase()
-      );
-      if (pinyinInitials && pinyinInitials.includes(normalized)) {
-        return true;
+        const initials = collapseSpaces(
+          pinyinUtils.chineseToPinyinInitialsUppercase(name).toLowerCase()
+        );
+        if (initials && initials.includes(normalizedQueryNoSpaces)) {
+          return true;
+        }
       }
 
       return false;
     });
-  }, [customers, normalizedSearch, shouldSearch]);
+  }, [customers, normalizedSearch, pinyinUtils, shouldSearch]);
 
   // 处理客户选择
   const handleSelect = (customer: Customer) => {
@@ -391,12 +429,14 @@ export function CustomerSelector({
       </Popover>
 
       {/* 客户创建对话框 */}
-      <CustomerCreateDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-        onCustomerCreated={handleCustomerCreated}
-        initialName={searchValue}
-      />
+      {createDialogOpen && (
+        <CustomerCreateDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+          onCustomerCreated={handleCustomerCreated}
+          initialName={searchValue}
+        />
+      )}
     </>
   );
 }

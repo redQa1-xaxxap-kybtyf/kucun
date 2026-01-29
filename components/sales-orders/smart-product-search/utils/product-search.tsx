@@ -1,10 +1,7 @@
 import React from 'react';
 
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
-import {
-  chineseToPinyinInitialsUppercase,
-  chineseToPinyinUppercase,
-} from '@/lib/utils/pinyin';
+import type { PinyinUtils } from '@/lib/utils/pinyin-loader';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 
 import type { ProductWithInventory } from '../types';
@@ -38,29 +35,45 @@ export interface SearchTokenInfo {
   initials: string;
 }
 
-export function buildProductSearchIndex(products: ProductWithInventory[]) {
+export function buildProductSearchIndex(
+  products: ProductWithInventory[],
+  pinyinUtils?: PinyinUtils
+) {
   const productMap = new Map<string, ProductWithInventory>();
   const entries: ProductSearchIndexEntry[] = products.map(product => {
     productMap.set(product.id, product);
     const specification = formatProductSpecification(product.specification);
+    const hasPinyin = Boolean(pinyinUtils);
     return {
       product,
       normalized: {
         code: (product.code || '').toLowerCase(),
-        codePinyin: chineseToPinyinUppercase(product.code || '').toLowerCase(),
-        codeInitials: chineseToPinyinInitialsUppercase(
-          product.code || ''
-        ).toLowerCase(),
+        codePinyin: hasPinyin
+          ? pinyinUtils!.chineseToPinyinUppercase(product.code || '').toLowerCase()
+          : '',
+        codeInitials: hasPinyin
+          ? pinyinUtils!
+              .chineseToPinyinInitialsUppercase(product.code || '')
+              .toLowerCase()
+          : '',
         name: (product.name || '').toLowerCase(),
-        namePinyin: chineseToPinyinUppercase(product.name || '').toLowerCase(),
-        nameInitials: chineseToPinyinInitialsUppercase(
-          product.name || ''
-        ).toLowerCase(),
+        namePinyin: hasPinyin
+          ? pinyinUtils!.chineseToPinyinUppercase(product.name || '').toLowerCase()
+          : '',
+        nameInitials: hasPinyin
+          ? pinyinUtils!
+              .chineseToPinyinInitialsUppercase(product.name || '')
+              .toLowerCase()
+          : '',
         specification: specification.toLowerCase(),
-        specificationPinyin:
-          chineseToPinyinUppercase(specification).toLowerCase(),
-        specificationInitials:
-          chineseToPinyinInitialsUppercase(specification).toLowerCase(),
+        specificationPinyin: hasPinyin
+          ? pinyinUtils!.chineseToPinyinUppercase(specification).toLowerCase()
+          : '',
+        specificationInitials: hasPinyin
+          ? pinyinUtils!
+              .chineseToPinyinInitialsUppercase(specification)
+              .toLowerCase()
+          : '',
         id: product.id.toLowerCase(),
         status: product.status,
         availableInventory: product.inventory?.availableInventory ?? 0,
@@ -111,14 +124,12 @@ export function computeSearchTokens(query: string): SearchTokenInfo[] {
     .map(token => token.trim().toLowerCase())
     .filter(Boolean)
     .map(token => {
-      const pinyinValue = chineseToPinyinUppercase(token).toLowerCase();
-      const initialsValue =
-        chineseToPinyinInitialsUppercase(token).toLowerCase();
+      const isPinyinQuery = /[a-z]/i.test(token);
       return {
         original: token,
         normalized: token,
-        pinyin: pinyinValue !== token ? pinyinValue : '',
-        initials: initialsValue !== token ? initialsValue : '',
+        pinyin: isPinyinQuery ? token : '',
+        initials: isPinyinQuery ? token : '',
       };
     });
 }

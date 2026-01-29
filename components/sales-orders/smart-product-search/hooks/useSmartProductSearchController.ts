@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
+import {
+  isPinyinSearchQuery,
+  loadPinyinUtils,
+  type PinyinUtils,
+} from '@/lib/utils/pinyin-loader';
 
 import type { ProductWithInventory, SmartProductSearchProps } from '../types';
 import {
@@ -216,9 +221,35 @@ function useProductSearchState(
     clearSearch,
   } = useDebouncedSearch({ delay: 250 });
 
+  const [pinyinUtils, setPinyinUtils] = useState<PinyinUtils | null>(null);
+  const needsPinyin = useMemo(() => isPinyinSearchQuery(searchValue), [searchValue]);
+
+  useEffect(() => {
+    if (!needsPinyin || pinyinUtils) {
+      return;
+    }
+
+    let cancelled = false;
+
+    loadPinyinUtils()
+      .then(utils => {
+        if (cancelled) {
+          return;
+        }
+        setPinyinUtils(utils);
+      })
+      .catch(() => {
+        // 拼音库加载失败时，降级为基础搜索（不影响业务正确性）
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [needsPinyin, pinyinUtils]);
+
   const searchIndex = useMemo(
-    () => buildProductSearchIndex(products),
-    [products]
+    () => buildProductSearchIndex(products, needsPinyin ? pinyinUtils ?? undefined : undefined),
+    [products, needsPinyin, pinyinUtils]
   );
 
   const filteredProducts = useMemo(() => {
