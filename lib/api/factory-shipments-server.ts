@@ -10,10 +10,8 @@ import { cache } from 'react';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { enrichFactoryShipmentOrders } from '@/lib/services/factory-shipment-enrichment';
+import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import { replacePrismaDecimals } from '@/lib/utils/prisma-serialization';
-import {
-  type FactoryShipmentOrder,
-} from '@/lib/types/factory-shipment';
 import type { FactoryShipmentOrderListParams } from '@/lib/validations/factory-shipment';
 
 const factoryShipmentItemSelect = {
@@ -132,7 +130,7 @@ export const getFactoryShipmentOrdersServer = cache(
     const {
       page = 1,
       limit = paginationConfig.defaultPageSize,
-      mode,
+      mode: _mode,
       status,
       customerId,
       search,

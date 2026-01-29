@@ -9,33 +9,33 @@ import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-p
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { Button } from '@/components/ui/button';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import { getLatestPrice } from '@/hooks/use-price-history';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import {
-    calculateOrderPricing,
-    type ItemPricingResult,
+  calculateOrderPricing,
+  type ItemPricingResult,
 } from '@/lib/services/factory-shipment-pricing-service';
 import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
 import type { PriceHistoryData } from '@/lib/types/price-history';

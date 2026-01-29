@@ -519,48 +519,53 @@ async function createInitialReceivableForShipment(
 }
 
 // 获取厂家发货订单列表
-export const GET = withAuth(async (request: NextRequest, { user }) => {
-  try {
-    const params = parseAndValidateListParams(request);
-    const where = buildWhere(params);
-    const skip = (params.page - 1) * params.limit;
+export const GET = withAuth(
+  async (request: NextRequest, { user }) => {
+    try {
+      const params = parseAndValidateListParams(request);
+      const where = buildWhere(params);
+      const skip = (params.page - 1) * params.limit;
 
-    // ✅ 优化关联查询,只查询必要字段,减少数据传输量
-    // 从查询所有字段改为 select 指定字段
-    const [orders, totalCount] = await Promise.all([
-      prisma.factoryShipmentOrder.findMany({
-        where,
-        skip,
-        take: params.limit,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        select: orderListSelect,
-      }),
-      prisma.factoryShipmentOrder.count({ where }),
-    ]);
+      // ✅ 优化关联查询,只查询必要字段,减少数据传输量
+      // 从查询所有字段改为 select 指定字段
+      const [orders, totalCount] = await Promise.all([
+        prisma.factoryShipmentOrder.findMany({
+          where,
+          skip,
+          take: params.limit,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          select: orderListSelect,
+        }),
+        prisma.factoryShipmentOrder.count({ where }),
+      ]);
 
-    // ✅ P1修复: 使用共享的字段增强函数
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const normalizedOrders = replacePrismaDecimals(orders);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const enrichedOrders = await enrichFactoryShipmentOrders(normalizedOrders as any);
+      // ✅ P1修复: 使用共享的字段增强函数
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const normalizedOrders = replacePrismaDecimals(orders);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const enrichedOrders = await enrichFactoryShipmentOrders(
+        normalizedOrders as any
+      );
 
-    return NextResponse.json({
-      data: enrichedOrders,
-      total: totalCount,
-      page: params.page,
-      limit: params.limit,
-    });
-  } catch (error) {
-    logger.error('factory-shipments', '获取厂家发货订单列表失败', error, {
-      userId: user.id,
-      url: request.url,
-    });
-    return NextResponse.json(
-      { success: false, error: '获取订单列表失败' },
-      { status: 500 }
-    );
-  }
-}, { permissions: ['shipments:view'] });
+      return NextResponse.json({
+        data: enrichedOrders,
+        total: totalCount,
+        page: params.page,
+        limit: params.limit,
+      });
+    } catch (error) {
+      logger.error('factory-shipments', '获取厂家发货订单列表失败', error, {
+        userId: user.id,
+        url: request.url,
+      });
+      return NextResponse.json(
+        { success: false, error: '获取订单列表失败' },
+        { status: 500 }
+      );
+    }
+  },
+  { permissions: ['shipments:view'] }
+);
 
 // 创建厂家发货订单
 export const POST = withAuth(async (request: NextRequest, { user }) => {

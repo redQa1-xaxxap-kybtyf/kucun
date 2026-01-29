@@ -160,71 +160,71 @@ export const FactoryShipmentFeeItemsInput =
               {localItems.map((item, index) => (
                 <div
                   key={index}
-                className="space-y-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-card))] p-4"
+                  className="space-y-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-card))] p-4"
                 >
                   <div className="grid grid-cols-12 gap-3">
                     {/* 费用类型 */}
                     <div className="col-span-3">
-                    <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                      费用类型
-                    </Label>
-                    <Select
-                      value={item.feeType}
-                      onValueChange={(value: FactoryShipmentFeeType) =>
-                        handleUpdateFeeItem(index, 'feeType', value)
-                      }
-                      disabled={disabled}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FACTORY_SHIPMENT_FEE_TYPE_OPTIONS.map(option => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        费用类型
+                      </Label>
+                      <Select
+                        value={item.feeType}
+                        onValueChange={(value: FactoryShipmentFeeType) =>
+                          handleUpdateFeeItem(index, 'feeType', value)
+                        }
+                        disabled={disabled}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FACTORY_SHIPMENT_FEE_TYPE_OPTIONS.map(option => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* 费用名称 */}
                     <div className="col-span-3">
-                    <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                      费用名称
-                    </Label>
-                    <Input
-                      className="mt-1"
-                      placeholder={`如：${FACTORY_SHIPMENT_FEE_TYPE_LABELS[item.feeType]}`}
-                      value={item.feeName}
-                      onChange={e =>
-                        handleUpdateFeeItem(index, 'feeName', e.target.value)
-                      }
-                      disabled={disabled}
-                    />
+                      <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        费用名称
+                      </Label>
+                      <Input
+                        className="mt-1"
+                        placeholder={`如：${FACTORY_SHIPMENT_FEE_TYPE_LABELS[item.feeType]}`}
+                        value={item.feeName}
+                        onChange={e =>
+                          handleUpdateFeeItem(index, 'feeName', e.target.value)
+                        }
+                        disabled={disabled}
+                      />
                     </div>
 
                     {/* 费用金额 */}
                     <div className="col-span-2">
-                    <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                      费用金额
-                    </Label>
-                    <Input
-                      className="mt-1"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={item.feeAmount ?? ''}
-                      onChange={e =>
-                        handleUpdateFeeItem(
-                          index,
-                          'feeAmount',
-                          parseFloat(e.target.value) || 0
-                        )
-                      }
-                      disabled={disabled}
-                    />
+                      <Label className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        费用金额
+                      </Label>
+                      <Input
+                        className="mt-1"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={item.feeAmount ?? ''}
+                        onChange={e =>
+                          handleUpdateFeeItem(
+                            index,
+                            'feeAmount',
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        disabled={disabled}
+                      />
                     </div>
 
                     {/* 费用供应商（可选，用于应付归属，如物流公司） */}
@@ -246,16 +246,16 @@ export const FactoryShipmentFeeItemsInput =
 
                     {/* 删除按钮 */}
                     <div className="col-span-1 flex items-end justify-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFeeItem(index)}
-                      disabled={disabled}
-                      className="text-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error))]/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveFeeItem(index)}
+                        disabled={disabled}
+                        className="text-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error))]/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
 

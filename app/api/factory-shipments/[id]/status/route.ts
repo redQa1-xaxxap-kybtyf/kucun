@@ -10,16 +10,9 @@ import { logger } from '@/lib/logger';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import { withIdempotency } from '@/lib/utils/idempotency-redis';
 import {
-    updateFactoryShipmentOrderStatusSchema,
-    type UpdateFactoryShipmentOrderStatusData,
+  updateFactoryShipmentOrderStatusSchema,
+  type UpdateFactoryShipmentOrderStatusData,
 } from '@/lib/validations/factory-shipment';
-
-interface RouteParams {
-  params: Promise<{
-    id: string;
-  }>;
-}
-
 /**
  * 更新厂家发货订单状态
  * PATCH /api/factory-shipments/[id]/status

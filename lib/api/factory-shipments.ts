@@ -9,10 +9,10 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import { csrfFetch } from '@/lib/utils/csrf';
 import type {
-    CreateFactoryShipmentOrderData,
-    FactoryShipmentOrderListParams,
-    UpdateFactoryShipmentOrderData,
-    UpdateFactoryShipmentOrderStatusData,
+  CreateFactoryShipmentOrderData,
+  FactoryShipmentOrderListParams,
+  UpdateFactoryShipmentOrderData,
+  UpdateFactoryShipmentOrderStatusData,
 } from '@/lib/validations/factory-shipment';
 
 export type FactoryShipmentValidationIssue = {

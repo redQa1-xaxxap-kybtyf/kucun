@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 import {
-    FACTORY_SHIPMENT_STATUS,
-    type FactoryShipmentStatus,
+  FACTORY_SHIPMENT_STATUS,
+  type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
 const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(

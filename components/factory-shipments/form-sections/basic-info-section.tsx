@@ -8,18 +8,18 @@ import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import {
-    FACTORY_SHIPMENT_STATUS,
-    FACTORY_SHIPMENT_STATUS_LABELS,
+  FACTORY_SHIPMENT_STATUS,
+  FACTORY_SHIPMENT_STATUS_LABELS,
 } from '@/lib/types/factory-shipment';
 import type { Customer } from '@/lib/types/models';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
@@ -119,7 +119,7 @@ export function BasicInfoSection({
                 </FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Truck className="absolute left-3 top-2.5 h-4 w-4 text-[hsl(var(--color-text-secondary))]" />
+                    <Truck className="absolute top-2.5 left-3 h-4 w-4 text-[hsl(var(--color-text-secondary))]" />
                     <Input
                       placeholder="请输入集装箱号"
                       className="pl-9 transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
@@ -128,9 +128,7 @@ export function BasicInfoSection({
                     />
                   </div>
                 </FormControl>
-                <FormDescription>
-                  可选，用于追踪货物运输状态
-                </FormDescription>
+                <FormDescription>可选，用于追踪货物运输状态</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

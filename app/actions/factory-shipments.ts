@@ -487,50 +487,52 @@ export async function recalculateProfitAndCost(
     );
 
     // 4. 分摊费用
-    const normalizedItems: FactoryShipmentOrderItem[] = order.items.map(item => ({
-      ...item,
-      quantity: Number(item.quantity),
-      unitPrice: toNumber(item.unitPrice),
-      totalPrice: toNumber(item.totalPrice),
-      manualWeight:
-        item.manualWeight === null || item.manualWeight === undefined
-          ? null
-          : toNumber(item.manualWeight),
-      piecesPerUnit:
-        item.piecesPerUnit === null || item.piecesPerUnit === undefined
-          ? null
-          : toNumber(item.piecesPerUnit),
-      weight:
-        item.weight === null || item.weight === undefined
-          ? null
-          : toNumber(item.weight),
-      unitCost:
-        item.unitCost === null || item.unitCost === undefined
-          ? null
-          : toNumber(item.unitCost),
-      allocatedExpense:
-        item.allocatedExpense === null || item.allocatedExpense === undefined
-          ? null
-          : toNumber(item.allocatedExpense),
-      profitAmount:
-        item.profitAmount === null || item.profitAmount === undefined
-          ? null
-          : toNumber(item.profitAmount),
-      profitMargin:
-        item.profitMargin === null || item.profitMargin === undefined
-          ? null
-          : toNumber(item.profitMargin),
-      ownership: (item.ownership ||
-        FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) as FactoryShipmentItemOwnership,
-      customerDeliveryStatus: (item.customerDeliveryStatus ?? undefined) as
-        | FactoryShipmentItemDeliveryStatus
-        | undefined,
-      selfInboundStatus: (item.selfInboundStatus ?? undefined) as
-        | FactoryShipmentItemInboundStatus
-        | undefined,
-      ownershipRemarks: item.ownershipRemarks ?? undefined,
-      isManualProduct: item.isManualProduct ?? undefined,
-    }));
+    const normalizedItems: FactoryShipmentOrderItem[] = order.items.map(
+      item => ({
+        ...item,
+        quantity: Number(item.quantity),
+        unitPrice: toNumber(item.unitPrice),
+        totalPrice: toNumber(item.totalPrice),
+        manualWeight:
+          item.manualWeight === null || item.manualWeight === undefined
+            ? null
+            : toNumber(item.manualWeight),
+        piecesPerUnit:
+          item.piecesPerUnit === null || item.piecesPerUnit === undefined
+            ? null
+            : toNumber(item.piecesPerUnit),
+        weight:
+          item.weight === null || item.weight === undefined
+            ? null
+            : toNumber(item.weight),
+        unitCost:
+          item.unitCost === null || item.unitCost === undefined
+            ? null
+            : toNumber(item.unitCost),
+        allocatedExpense:
+          item.allocatedExpense === null || item.allocatedExpense === undefined
+            ? null
+            : toNumber(item.allocatedExpense),
+        profitAmount:
+          item.profitAmount === null || item.profitAmount === undefined
+            ? null
+            : toNumber(item.profitAmount),
+        profitMargin:
+          item.profitMargin === null || item.profitMargin === undefined
+            ? null
+            : toNumber(item.profitMargin),
+        ownership: (item.ownership ||
+          FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER) as FactoryShipmentItemOwnership,
+        customerDeliveryStatus: (item.customerDeliveryStatus ?? undefined) as
+          | FactoryShipmentItemDeliveryStatus
+          | undefined,
+        selfInboundStatus: (item.selfInboundStatus ?? undefined) as
+          | FactoryShipmentItemInboundStatus
+          | undefined,
+        ownershipRemarks: item.ownershipRemarks ?? undefined,
+        isManualProduct: item.isManualProduct ?? undefined,
+      })
+    );
 
     const expenseAllocation = allocateExpenses(
       normalizedItems,

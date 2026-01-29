@@ -17,25 +17,25 @@ import { useToast } from '@/components/ui/use-toast';
 import { useCustomerPriceHistory } from '@/hooks/use-price-history';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
-    FactoryShipmentValidationError,
-    useCreateFactoryShipmentOrder,
-    useFactoryShipmentOrder,
-    useUpdateFactoryShipmentOrder,
+  FactoryShipmentValidationError,
+  useCreateFactoryShipmentOrder,
+  useFactoryShipmentOrder,
+  useUpdateFactoryShipmentOrder,
 } from '@/lib/api/factory-shipments';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { useFormErrorHandling } from '@/lib/hooks/useFormErrorHandling';
 import type { Customer } from '@/lib/types/customer';
 import {
-    FACTORY_SHIPMENT_STATUS,
-    type FactoryShipmentOrder,
+  FACTORY_SHIPMENT_STATUS,
+  type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import {
-    prepareFactoryShipmentForSubmit,
-    transformFactoryShipmentFromAPI,
+  prepareFactoryShipmentForSubmit,
+  transformFactoryShipmentFromAPI,
 } from '@/lib/utils/factory-shipment-transforms';
 import {
-    factoryShipmentOrderFormSchema,
-    type FactoryShipmentOrderFormData,
+  factoryShipmentOrderFormSchema,
+  type FactoryShipmentOrderFormData,
 } from '@/lib/validations/factory-shipment';
 
 const generateIdempotencyKey = (): string => {

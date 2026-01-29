@@ -397,9 +397,7 @@ export async function updateFactoryShipmentStatus(
           const paidAmount = toNumber(order.paidAmount);
 
           const outstandingAmount = Math.max(
-            customerTotal -
-              depositAmount -
-              paidAmount,
+            customerTotal - depositAmount - paidAmount,
             0
           );
 
@@ -482,12 +480,12 @@ export async function updateFactoryShipmentStatus(
     }
 
     // 记录厂家直发订单的往来账(应收), 保证伙伴账本与利润表口径一致
+    const receivableAmount = toNumber(order.receivableAmount, 0);
     if (
       order.customerId &&
       (finalStatus === FACTORY_SHIPMENT_STATUS.ARRIVED ||
         finalStatus === FACTORY_SHIPMENT_STATUS.SHIPPED) &&
-      typeof order.receivableAmount === 'number' &&
-      order.receivableAmount > 0
+      receivableAmount > 0
     ) {
       try {
         await recordPartnerTransaction(
@@ -496,7 +494,7 @@ export async function updateFactoryShipmentStatus(
             partnerRole: 'customer',
             entityType: 'customer',
             transactionType: 'sale',
-            amount: order.receivableAmount,
+            amount: receivableAmount,
             referenceId: order.id,
             referenceNumber: order.orderNumber,
             description: `厂家直发订单 ${order.orderNumber} 确认应收`,
@@ -561,13 +559,11 @@ export async function updateFactoryShipmentStatus(
           for (const item of orderItems) {
             if (!item.supplierId) continue;
             const quantity = Number(item.quantity ?? 0);
-            const unitCost =
-              typeof item.unitCost === 'number' && !Number.isNaN(item.unitCost)
-                ? item.unitCost
-                : null;
-            const fallbackTotal = Number(item.totalPrice ?? 0);
-            const computedCost =
-              unitCost !== null ? quantity * unitCost : fallbackTotal;
+            const unitCost = toNumber(item.unitCost, Number.NaN);
+            const fallbackTotal = toNumber(item.totalPrice, 0);
+            const computedCost = Number.isFinite(unitCost)
+              ? quantity * unitCost
+              : fallbackTotal;
             const roundedCost = roundCurrency(computedCost);
             if (roundedCost <= 0) {
               continue;
@@ -618,12 +614,7 @@ export async function updateFactoryShipmentStatus(
               const depositAmount = roundCurrency(
                 Math.min(
                   baseCost,
-                  Math.max(
-                    0,
-                    typeof order.depositAmount === 'number'
-                      ? order.depositAmount
-                      : 0
-                  )
+                  Math.max(0, toNumber(order.depositAmount, 0))
                 )
               );
 

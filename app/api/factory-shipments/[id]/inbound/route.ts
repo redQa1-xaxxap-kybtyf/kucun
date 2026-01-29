@@ -91,7 +91,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           continue;
         }
 
-        if (!item.productId || item.isManualProduct || item.temporaryProductId) {
+        if (
+          !item.productId ||
+          item.isManualProduct ||
+          item.temporaryProductId
+        ) {
           throw new Error(
             `BAD_REQUEST:自用补货明细缺少标准产品信息，无法入库: ${item.displayName}`
           );
@@ -225,7 +229,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    logger.error('factory-shipments', '标记自用货入库失败', error, { orderId: id });
+    logger.error('factory-shipments', '标记自用货入库失败', error, {
+      orderId: id,
+    });
     return NextResponse.json(
       { success: false, error: '更新自用货入库状态失败' },
       { status: 500 }

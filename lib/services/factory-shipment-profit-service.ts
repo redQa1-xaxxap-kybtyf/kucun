@@ -320,7 +320,7 @@ export async function getFactoryShipmentExpenses(
     amount: number;
     description?: string;
   }>;
-  }> {
+}> {
   const { prisma } = await import('@/lib/db');
 
   let totalExpenses = 0;

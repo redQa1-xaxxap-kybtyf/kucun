@@ -6,12 +6,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,8 +21,8 @@ import { useCreateInboundRecord } from '@/lib/api/inbound';
 import { queryKeys } from '@/lib/queryKeys';
 import { useUpdateFactoryShipmentItemInboundStatus } from '@/lib/services/factory-shipment-item-service';
 import {
-    FACTORY_SHIPMENT_ITEM_OWNERSHIP,
-    type FactoryShipmentOrder,
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import type { CreateInboundRequest } from '@/lib/types/inbound';
 
@@ -78,7 +78,7 @@ function buildInboundPayload(
   const unitCost =
     state?.unitCost !== undefined && state.unitCost >= 0
       ? state.unitCost
-      : (item as any).unitCost ?? 0;
+      : ((item as any).unitCost ?? 0);
   return {
     idempotencyKey: crypto.randomUUID(),
     productId: item.productId,
@@ -376,7 +376,9 @@ function useInboundDialogState({
       [itemId]: {
         ...prev[itemId],
         [field]:
-          field === 'quantity' || field === 'piecesPerUnit' || field === 'unitCost'
+          field === 'quantity' ||
+          field === 'piecesPerUnit' ||
+          field === 'unitCost'
             ? Number(value)
             : value,
       },

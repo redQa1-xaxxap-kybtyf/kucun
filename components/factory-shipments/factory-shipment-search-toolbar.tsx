@@ -11,8 +11,8 @@ import * as React from 'react';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-    FACTORY_SHIPMENT_STATUS_LABELS,
-    type FactoryShipmentStatus,
+  FACTORY_SHIPMENT_STATUS_LABELS,
+  type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentSearchToolbarProps {
