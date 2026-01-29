@@ -496,7 +496,7 @@ const product = await getOrSetJSON(
   3600, // 正常数据 1 小时
   {
     enableNullCache: true,
-    // 库内部会自动使用 NULL_CACHE_TTL (10秒)
+    // 库内部会自动使用 NULL_CACHE_TTL (3600秒)
   }
 );
 ```

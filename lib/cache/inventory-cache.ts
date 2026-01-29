@@ -1,6 +1,11 @@
-import { getOrSetJSON, invalidateNamespace } from '@/lib/cache/cache';
+import {
+  getOrSetJSON,
+  getRandomTTL,
+  invalidateNamespace,
+} from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
@@ -101,6 +106,7 @@ export async function getBatchCachedInventorySummary(
 
   const inventoryMap = new Map<string, InventorySummary>();
   const uncachedIds: string[] = [];
+  const namespace = redis.getConfig().namespace;
 
   // 批量从缓存获取
   // 由于 checkRedisAvailability 的修复，如果 Redis 不可用，
@@ -178,50 +184,114 @@ export async function getBatchCachedInventorySummary(
     }
 
     // 处理查询结果并设置缓存
-    const setCachePromises = inventorySummary.map(async item => {
-      const summary: InventorySummary = {
+    const summaryByProductId = new Map<
+      string,
+      { totalQuantity: number; reservedQuantity: number }
+    >();
+    for (const item of inventorySummary) {
+      summaryByProductId.set(item.productId, {
         totalQuantity: item._sum.quantity || 0,
         reservedQuantity: item._sum.reservedQuantity || 0,
-        availableQuantity:
-          (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
-        batches: batchesArrayByProduct[item.productId] || [],
+      });
+    }
+
+    const toCache: Array<{ productId: string; summary: InventorySummary }> = [];
+
+    for (const productId of uncachedIds) {
+      const totals = summaryByProductId.get(productId);
+      const totalQuantity = totals?.totalQuantity ?? 0;
+      const reservedQuantity = totals?.reservedQuantity ?? 0;
+
+      const summary: InventorySummary = {
+        totalQuantity,
+        reservedQuantity,
+        availableQuantity: totalQuantity - reservedQuantity,
+        batches: batchesArrayByProduct[productId] || [],
       };
 
-      inventoryMap.set(item.productId, summary);
+      inventoryMap.set(productId, summary);
+      toCache.push({ productId, summary });
+    }
 
-      // 同步设置缓存
-      const cacheKey = `inventory:summary:${item.productId}`;
-      await getOrSetJSON(
-        cacheKey,
-        async () => summary,
-        cacheConfig.inventoryTtl
+    const keysToWatch = toCache.map(
+      ({ productId }) => `${namespace}:inventory:summary:${productId}`
+    );
+
+    const writeCacheAtomically = async (): Promise<void> => {
+      const MAX_RETRIES = 5;
+      let execAbortedCount = 0;
+      let conflictRetryCount = 0;
+
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        const client = redis.getClient();
+        try {
+          await client.watch(...keysToWatch);
+          const pipeline = client.multi();
+
+          for (const { productId, summary } of toCache) {
+            const key = `${namespace}:inventory:summary:${productId}`;
+            const ttl = getRandomTTL(cacheConfig.inventoryTtl);
+            pipeline.set(key, JSON.stringify(summary), 'EX', ttl);
+          }
+
+          const execResult = await pipeline.exec();
+          if (execResult) {
+            if (execAbortedCount > 0) {
+              logger.info(
+                'inventory-cache',
+                '库存汇总缓存写入并发冲突已解决',
+                undefined,
+                {
+                  conflictRetryCount,
+                  execAbortedCount,
+                }
+              );
+            }
+            return;
+          }
+
+          execAbortedCount += 1;
+          conflictRetryCount += 1;
+          logger.warn(
+            'inventory-cache',
+            '库存汇总缓存写入发生并发冲突，准备重试',
+            undefined,
+            {
+              conflictRetryCount,
+              execAbortedCount,
+            }
+          );
+        } catch (error) {
+          logger.error('inventory-cache', '库存汇总缓存写入失败', error);
+          return;
+        } finally {
+          try {
+            await client.unwatch();
+          } catch {
+            // 忽略 unwatch 失败，避免影响业务返回
+          }
+        }
+
+        if (attempt < MAX_RETRIES) {
+          const delay = 20 + Math.floor(Math.random() * 61); // 20-80ms
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      logger.warn(
+        'inventory-cache',
+        '库存汇总缓存写入多次冲突，已放弃缓存回填',
+        undefined,
+        {
+          conflictRetryCount,
+          execAbortedCount,
+        }
       );
-    });
+    };
 
-    await Promise.all(setCachePromises);
-
-    // 为没有库存记录的产品设置默认值
-    const defaultCachePromises = uncachedIds
-      .filter(productId => !inventoryMap.has(productId))
-      .map(async productId => {
-        const defaultSummary: InventorySummary = {
-          totalQuantity: 0,
-          reservedQuantity: 0,
-          availableQuantity: 0,
-          batches: [],
-        };
-        inventoryMap.set(productId, defaultSummary);
-
-        // 同步设置缓存
-        const cacheKey = `inventory:summary:${productId}`;
-        await getOrSetJSON(
-          cacheKey,
-          async () => defaultSummary,
-          cacheConfig.inventoryTtl
-        );
-      });
-
-    await Promise.all(defaultCachePromises);
+    if (toCache.length > 0) {
+      await writeCacheAtomically();
+    }
   }
 
   return inventoryMap;

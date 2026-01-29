@@ -280,8 +280,8 @@ async function cascadeInvalidate(tag: string): Promise<void> {
     if (tag === key || tag.startsWith(`${key}:`)) {
       const relatedTags = deferredCascadeMap[key];
 
-      // 延迟1秒执行，避免阻塞主流程
-      setTimeout(async () => {
+      // 异步执行（不阻塞主流程），且不再使用 setTimeout 延迟
+      void (async () => {
         try {
           await Promise.all(
             relatedTags.map(relatedTag =>
@@ -289,13 +289,12 @@ async function cascadeInvalidate(tag: string): Promise<void> {
             )
           );
         } catch (error) {
-          logger.error('cache-revalidate', '延迟失效执行失败', error, {
+          logger.error('cache-revalidate', '级联失效执行失败', error, {
             tag,
             relatedTags: relatedTags.join(','),
           });
-          // 不抛出错误，避免影响后台任务
         }
-      }, 1000);
+      })();
 
       break; // 只执行第一个匹配的规则
     }

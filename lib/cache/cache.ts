@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
 export interface CacheOptions {
@@ -15,9 +16,9 @@ export const NULL_CACHE_VALUE = '__NULL__';
 
 /**
  * 空值缓存TTL（秒）
- * 空值缓存时间短一些，避免占用过多缓存空间
+ * 用于缓存“确实不存在”的结果，避免缓存穿透导致的反复回源
  */
-export const NULL_CACHE_TTL = 10;
+export const NULL_CACHE_TTL = 3600;
 
 /**
  * 生成随机TTL，防止缓存雪崩
@@ -159,7 +160,29 @@ export async function getOrSetWithLock<T>(
     enableRandomTTL = true,
   } = options || {};
 
-  // 1. 尝试从缓存获取
+  const namespace = redis.getConfig().namespace;
+  const lockKey = `${namespace}:lock:${key}`;
+  const lockValue = crypto.randomBytes(16).toString('hex');
+  const lockTTLms = Math.max(1, Math.floor(lockTTL * 1000));
+  const client = redis.getClient();
+
+  const releaseScript = `
+    if redis.call("get", KEYS[1]) == ARGV[1] then
+      return redis.call("del", KEYS[1])
+    else
+      return 0
+    end
+  `;
+
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const computeBackoffMs = (attempt: number) => {
+    const maxDelayMs = 1000;
+    const exp = Math.min(maxDelayMs, retryDelay * 2 ** attempt);
+    const jitter = Math.floor(Math.random() * exp);
+    return Math.max(1, jitter);
+  };
+
+  // 1. 先检查缓存（快路径）
   const cached = await redis.getJson<T>(key);
   if (cached !== null) {
     if (enableNullCache && cached === (NULL_CACHE_VALUE as unknown as T)) {
@@ -168,82 +191,100 @@ export async function getOrSetWithLock<T>(
     return cached;
   }
 
-  // 2. 尝试获取分布式锁
-  const lockKey = `lock:${key}`;
-  const lockValue = `${Date.now()}-${Math.random()}`;
+  // 2. 分布式锁：重试获取锁（指数退避 + jitter）
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const locked = await client.set(lockKey, lockValue, 'PX', lockTTLms, 'NX');
 
-  const locked = await redis.getClient().set(
-    lockKey,
-    lockValue,
-    'EX',
-    lockTTL,
-    'NX' // 只在键不存在时设置
-  );
+    if (locked === 'OK') {
+      try {
+        // 3. 双重检查缓存（避免重复回源）
+        const cachedAgain = await redis.getJson<T>(key);
+        if (cachedAgain !== null) {
+          if (
+            enableNullCache &&
+            cachedAgain === (NULL_CACHE_VALUE as unknown as T)
+          ) {
+            return null;
+          }
+          return cachedAgain;
+        }
 
-  if (locked === 'OK') {
-    try {
-      // 3. 获取锁成功，再次检查缓存（双重检查）
-      const cachedAgain = await redis.getJson<T>(key);
-      if (cachedAgain !== null) {
-        if (
-          enableNullCache &&
-          cachedAgain === (NULL_CACHE_VALUE as unknown as T)
-        ) {
+        // 4. 回源查询
+        const fresh = await fetcher();
+
+        // 5. 空值缓存（防穿透）
+        if (fresh === null && enableNullCache) {
+          await redis.setJson<T>(
+            key,
+            NULL_CACHE_VALUE as unknown as T,
+            NULL_CACHE_TTL
+          );
           return null;
         }
-        return cachedAgain;
+
+        // 6. 正常缓存
+        if (fresh !== null) {
+          const finalTTL = enableRandomTTL
+            ? getRandomTTL(ttlSeconds)
+            : ttlSeconds;
+          await redis.setJson<T>(key, fresh, finalTTL);
+        }
+
+        return fresh;
+      } finally {
+        // 7. 释放锁：Lua compare-and-del，确保仅 token 持有者可释放
+        try {
+          const released = await client.eval(
+            releaseScript,
+            1,
+            lockKey,
+            lockValue
+          );
+
+          if (released !== 1) {
+            logger.warn(
+              'cache',
+              `lock release token mismatch: ${key}`,
+              undefined,
+              {
+                key,
+                lockReleaseMismatch: 1,
+              }
+            );
+          }
+        } catch (error) {
+          logger.error(
+            'cache',
+            `lock release failed: ${key}`,
+            error,
+            undefined,
+            {
+              key,
+            }
+          );
+        }
       }
+    }
 
-      // 4. 查询数据库
-      const fresh = await fetcher();
-
-      // 5. 处理空值缓存
-      if (fresh === null && enableNullCache) {
-        await redis.setJson<T>(
-          key,
-          NULL_CACHE_VALUE as unknown as T,
-          NULL_CACHE_TTL
-        );
+    // 8. 未抢到锁：先读缓存再等待
+    const cachedRetry = await redis.getJson<T>(key);
+    if (cachedRetry !== null) {
+      if (
+        enableNullCache &&
+        cachedRetry === (NULL_CACHE_VALUE as unknown as T)
+      ) {
         return null;
       }
-
-      // 6. 缓存正常数据
-      if (fresh !== null) {
-        const finalTTL = enableRandomTTL
-          ? getRandomTTL(ttlSeconds)
-          : ttlSeconds;
-        await redis.setJson<T>(key, fresh, finalTTL);
-      }
-
-      return fresh;
-    } finally {
-      // 7. 释放锁（只释放自己的锁）
-      const currentLock = await redis.getClient().get(lockKey);
-      if (currentLock === lockValue) {
-        await redis.del(lockKey);
-      }
-    }
-  } else {
-    // 8. 获取锁失败，等待并重试
-    for (let i = 0; i < maxRetries; i++) {
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-
-      // 重试时先检查缓存
-      const cachedRetry = await redis.getJson<T>(key);
-      if (cachedRetry !== null) {
-        if (
-          enableNullCache &&
-          cachedRetry === (NULL_CACHE_VALUE as unknown as T)
-        ) {
-          return null;
-        }
-        return cachedRetry;
-      }
+      return cachedRetry;
     }
 
-    // 9. 重试次数用尽，直接查询数据库（降级策略）
-    return fetcher();
+    if (attempt < maxRetries) {
+      await sleep(computeBackoffMs(attempt));
+    }
   }
+
+  // 9. 降级：重试用尽仍未命中缓存，直接回源
+  return fetcher();
 }
 
 export async function invalidateNamespace(

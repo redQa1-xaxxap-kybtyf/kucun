@@ -185,14 +185,9 @@ export async function executeInvalidation(
           deferredPatterns.map(pattern => invalidateNamespace(pattern))
         );
       } catch (error) {
-        logger.error(
-          'cache:invalidation',
-          '缓存延迟失效执行失败',
-          error,
-          {
-            deferredPatternCount: strategy.deferred.length,
-          }
-        );
+        logger.error('cache:invalidation', '缓存延迟失效执行失败', error, {
+          deferredPatternCount: strategy.deferred.length,
+        });
         // 不抛出错误，避免影响后台任务
       }
     }, deferredDelay);
@@ -279,17 +274,12 @@ export function createInvalidationWithWarmup<_T>(
         try {
           await warmupFn(options);
         } catch (error) {
-          logger.error(
-            'cache:invalidation',
-            '缓存预热执行失败',
-            error,
-            {
-              // 记录当前失效策略的模式集合，便于排查问题
-              immediatePatternCount: invalidationStrategy.immediate.length,
-              deferredPatternCount: invalidationStrategy.deferred.length,
-              optionalPatternCount: invalidationStrategy.optional.length,
-            }
-          );
+          logger.error('cache:invalidation', '缓存预热执行失败', error, {
+            // 记录当前失效策略的模式集合，便于排查问题
+            immediatePatternCount: invalidationStrategy.immediate.length,
+            deferredPatternCount: invalidationStrategy.deferred.length,
+            optionalPatternCount: invalidationStrategy.optional.length,
+          });
         }
       }, 100); // 延迟100ms执行预热
     }
