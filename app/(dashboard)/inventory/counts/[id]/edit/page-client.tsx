@@ -2,13 +2,26 @@
 
 import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { CountForm } from '@/components/inventory/counts/count-form';
 import { Button } from '@/components/ui/button';
 import type { InventoryCountDetail } from '@/lib/types/inventory-count';
+
+const CountForm = dynamic(
+  () =>
+    import('@/components/inventory/counts/count-form').then(mod => mod.CountForm),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 interface EditCountPageClientProps {
   countId: string;

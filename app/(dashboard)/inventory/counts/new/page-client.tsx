@@ -1,12 +1,25 @@
 'use client';
 
 import { ArrowLeft, ClipboardCheck } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/common/page-header';
-import { CountForm } from '@/components/inventory/counts/count-form';
 import { Button } from '@/components/ui/button';
+
+const CountForm = dynamic(
+  () =>
+    import('@/components/inventory/counts/count-form').then(mod => mod.CountForm),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 export function NewCountPageClient() {
   const router = useRouter();
