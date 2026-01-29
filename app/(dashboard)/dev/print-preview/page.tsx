@@ -6,8 +6,22 @@
 
 'use client';
 
-import { PrintCanvas } from '@/components/print-designer';
+import dynamic from 'next/dynamic';
+
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
+
+const PrintCanvas = dynamic(
+  () =>
+    import('@/components/print-designer/renderer/PrintCanvas').then(
+      mod => mod.PrintCanvas
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[70vh] w-full animate-pulse rounded-lg bg-white/60" />
+    ),
+  }
+);
 
 // 测试模板
 const testTemplate: PrintTemplate = {
