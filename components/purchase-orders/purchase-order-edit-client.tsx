@@ -1,13 +1,28 @@
 'use client';
 
 import { ArrowLeft, Package } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { PurchaseOrderForm } from '@/components/purchase-orders/purchase-order-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { PurchaseOrder } from '@/lib/types/purchase-order';
+
+const PurchaseOrderForm = dynamic(
+  () =>
+    import('@/components/purchase-orders/purchase-order-form').then(
+      mod => mod.PurchaseOrderForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 interface PurchaseOrderEditClientProps {
   orderId: string;
