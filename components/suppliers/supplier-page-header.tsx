@@ -10,12 +10,12 @@ export function SupplierPageHeader() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between animate-in fade-in slide-in-from-top-4 duration-500">
+    <div className="animate-in fade-in slide-in-from-top-4 flex flex-col gap-6 duration-500 lg:flex-row lg:items-end lg:justify-between">
       <div className="space-y-2">
         <h2 className="text-3xl font-black tracking-tighter text-slate-900">
           供应商管理
         </h2>
-        <p className="text-slate-400 text-sm font-bold max-w-2xl leading-relaxed">
+        <p className="max-w-2xl text-sm leading-relaxed font-bold text-slate-400">
           建立供应链中枢记录，监控供货频次、应付清算及合作伙伴信誉评价。
         </p>
       </div>
@@ -25,7 +25,7 @@ export function SupplierPageHeader() {
           variant="ghost"
           size="lg"
           asChild
-          className="h-12 rounded-2xl border-none bg-white font-black text-slate-600 shadow-sm hover:bg-slate-900 hover:text-white transition-all active:scale-95 px-6"
+          className="h-12 rounded-2xl border-none bg-white px-6 font-black text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
         >
           <Link href="/suppliers/export">
             <Download className="mr-2 h-4 w-4" />
@@ -35,7 +35,7 @@ export function SupplierPageHeader() {
         <Button
           size="lg"
           onClick={() => router.push('/suppliers/create')}
-          className="h-12 rounded-2xl border-none bg-slate-900 font-black text-white shadow-xl hover:shadow-slate-200 transition-all active:scale-95 px-6"
+          className="h-12 rounded-2xl border-none bg-slate-900 px-6 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
         >
           <Plus className="mr-2 h-4 w-4" />
           新建供应商

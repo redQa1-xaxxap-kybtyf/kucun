@@ -103,7 +103,14 @@ export const PUT = withAuth(
         validatedData.status === 'inactive' &&
         existingSupplier.status !== 'inactive'
       ) {
-        await ensureSupplierCanBeDeactivated(id, existingSupplier.name);
+        try {
+          await ensureSupplierCanBeDeactivated(id, existingSupplier.name);
+        } catch (error) {
+          if (error instanceof Error) {
+            throw ApiError.badRequest(error.message);
+          }
+          throw error;
+        }
       }
 
       // 更新供应商 - 使用 select 指定返回字段
@@ -167,7 +174,16 @@ export const DELETE = withAuth(
         throw ApiError.notFound('供应商');
       }
 
-      await ensureSupplierCanBeDeleted(id, existingSupplier.name);
+      // ensureSupplierCanBeDeleted 当前会抛出 Error（业务校验），这里统一映射到 400，避免被 withErrorHandling 误判为 500
+      // 备注：保持服务层可复用（不强耦合 ApiError），由接口层负责错误类型转换
+      try {
+        await ensureSupplierCanBeDeleted(id, existingSupplier.name);
+      } catch (error) {
+        if (error instanceof Error) {
+          throw ApiError.badRequest(error.message);
+        }
+        throw error;
+      }
 
       // 所有检查通过,可以安全删除
       await prisma.supplier.delete({

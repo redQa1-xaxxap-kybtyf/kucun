@@ -8,55 +8,55 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    Briefcase,
-    Building2,
-    Clock,
-    Edit,
-    Loader2,
-    MapPin,
-    MoreHorizontal,
-    Trash2,
-    TrendingUp,
-    Truck
+  AlertCircle,
+  Briefcase,
+  Building2,
+  Clock,
+  Edit,
+  Loader2,
+  MapPin,
+  MoreHorizontal,
+  Trash2,
+  TrendingUp,
+  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-    useTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
 } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierPageHeader } from '@/components/suppliers/supplier-page-header';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
 import {
-    deleteSupplier,
-    getSuppliers,
-    supplierQueryKeys,
+  deleteSupplier,
+  getSuppliers,
+  supplierQueryKeys,
 } from '@/lib/api/suppliers';
 import { SEARCH_CONFIG } from '@/lib/config/search';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
@@ -266,125 +266,149 @@ export function SuppliersPageClient({
 
         {/* Search & Filters */}
         <div className="relative z-10">
-          <div className="absolute -inset-4 bg-gradient-to-tr from-slate-100/40 to-white/0 blur-2xl -z-10 rounded-full opacity-50" />
-              <SearchFilterCard
-                 searchValue={searchInput}
-                 onSearchChange={handleSearch}
-                searchPlaceholder="搜索供应商名称、证照编号或联系人..."
-                 filters={[
-                   {
-                     key: 'status',
-                     label: '合作状态',
-                     options: [
-                       { label: '启用中', value: 'active' },
-                       { label: '已停用', value: 'inactive' },
-                       { label: '已暂停', value: 'suspended' },
-                     ],
-                     width: 'w-36',
-                   },
-                 ]}
-                 filterValues={{
-                   status,
-                 }}
-                 onFilterChange={(key, value) => {
-                   if (key === 'status') {
-                     handleStatusChange(value as Supplier['status'] | undefined);
-                   }
-                 }}
-                 variant="pro"
-                 compact={true}
+          <div className="absolute -inset-4 -z-10 rounded-full bg-gradient-to-tr from-slate-100/40 to-white/0 opacity-50 blur-2xl" />
+          <SearchFilterCard
+            searchValue={searchInput}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索供应商名称、证照编号或联系人..."
+            filters={[
+              {
+                key: 'status',
+                label: '合作状态',
+                options: [
+                  { label: '启用中', value: 'active' },
+                  { label: '已停用', value: 'inactive' },
+                  { label: '已暂停', value: 'suspended' },
+                ],
+                width: 'w-36',
+              },
+            ]}
+            filterValues={{
+              status,
+            }}
+            onFilterChange={(key, value) => {
+              if (key === 'status') {
+                handleStatusChange(value as Supplier['status'] | undefined);
+              }
+            }}
+            variant="pro"
+            compact={true}
+          />
+        </div>
+
+        {/* Error State */}
+        {isError && (
+          <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
+            同步供应中枢数据失败：
+            {error instanceof Error ? error.message : '发生未知错误'}
+          </div>
+        )}
+
+        {/* List Content */}
+        <div className="relative">
+          {isLoading ? (
+            <div className="flex min-h-[400px] items-center justify-center rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md">
+              <EmptyState
+                title="正在同步供应中枢..."
+                icon={
+                  <Loader2 className="h-10 w-10 animate-spin text-slate-300" />
+                }
+                compact
               />
             </div>
-
-            {/* Error State */}
-            {isError && (
-              <div className="border-rose-100 bg-rose-50/50 text-rose-600 mb-8 rounded-2xl border px-6 py-4 text-sm font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-                同步供应中枢数据失败：{error instanceof Error ? error.message : '发生未知错误'}
-              </div>
-            )}
-
-            {/* List Content */}
-            <div className="relative">
-              {isLoading ? (
-                <div className="flex min-h-[400px] items-center justify-center rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md">
-                  <EmptyState
-                    title="正在同步供应中枢..."
-                    icon={<Loader2 className="h-10 w-10 animate-spin text-slate-300" />}
-                    compact
-                  />
-                </div>
-              ) : suppliers.length === 0 ? (
-                <div className="rounded-[2.5rem] border border-dashed border-slate-200 p-20 text-center bg-white/20">
-                  <EmptyState 
-                    title="暂无往来供应商登记" 
-                    description="完善供应链的第一步从这里开始"
-                    action={<Button onClick={() => router.push('/suppliers/create')} className="h-12 rounded-2xl bg-slate-900 px-8 font-black">登记首位供应商</Button>}
-                    compact 
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {suppliers.map((supplier, index) => (
-                    <div
-                      key={supplier.id}
-                      onClick={() => router.push(`/suppliers/${supplier.id}`)}
-                      className={cn(
-                        "group relative flex flex-col gap-6 rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500",
-                        "hover:bg-white hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)] hover:-translate-y-1 cursor-pointer",
-                        "animate-in fade-in slide-in-from-bottom-4",
-                        `duration-${(index + 1) * 100}`
-                      )}
-                    >
-                      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                        {/* Left: Identity Section */}
-                        <div className="flex items-center gap-5 min-w-[300px]">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl transition-transform group-hover:scale-110 duration-500">
-                            <Building2 className="h-7 w-7" />
-                          </div>
-                          <div className="space-y-1">
-                            <h3 className="text-xl font-black tracking-tight text-slate-900 group-hover:text-amber-600 transition-colors">
-                              {supplier.name}
-                            </h3>
-                            <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                合作始于 {formatDate(supplier.createdAt)}
+          ) : suppliers.length === 0 ? (
+            <div className="rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 p-20 text-center">
+              <EmptyState
+                title="暂无往来供应商登记"
+                description="完善供应链的第一步从这里开始"
+                action={
+                  <Button
+                    onClick={() => router.push('/suppliers/create')}
+                    className="h-12 rounded-2xl bg-slate-900 px-8 font-black"
+                  >
+                    登记首位供应商
+                  </Button>
+                }
+                compact
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {suppliers.map((supplier, index) => (
+                <div
+                  key={supplier.id}
+                  onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                  className={cn(
+                    'group relative flex flex-col gap-6 rounded-[2rem] border border-white bg-white/60 p-6 backdrop-blur-xl transition-all duration-500',
+                    'cursor-pointer hover:-translate-y-1 hover:bg-white hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.08)]',
+                    'animate-in fade-in slide-in-from-bottom-4',
+                    `duration-${(index + 1) * 100}`
+                  )}
+                >
+                  <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                    {/* Left: Identity Section */}
+                    <div className="flex min-w-[300px] items-center gap-5">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-xl transition-transform duration-500 group-hover:scale-110">
+                        <Building2 className="h-7 w-7" />
+                      </div>
+                      <div className="space-y-1">
+                        <h3 className="text-xl font-black tracking-tight text-slate-900 transition-colors group-hover:text-amber-600">
+                          {supplier.name}
+                        </h3>
+                        <div className="flex items-center gap-3 text-xs font-bold text-slate-400">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            合作始于 {formatDate(supplier.createdAt)}
                           </span>
                           <span className="h-1 w-1 rounded-full bg-slate-200" />
-                          <span className="uppercase text-xs font-bold tracking-widest text-slate-400">编号：{supplier.id.slice(-6)}</span>
+                          <span className="text-xs font-bold tracking-widest text-slate-400 uppercase">
+                            编号：{supplier.id.slice(-6)}
+                          </span>
                         </div>
                       </div>
                     </div>
 
                     {/* Middle: Contact & Status */}
                     <div className="flex flex-wrap items-center gap-4 lg:flex-1 lg:px-8">
-                      <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100">
+                      <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
                         <Briefcase className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-sm font-bold text-slate-600">{supplier.phone || '未留联系电话'}</span>
+                        <span className="text-sm font-bold text-slate-600">
+                          {supplier.phone || '未留联系电话'}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-1.5 border border-slate-100 max-w-[240px] truncate">
+                      <div className="flex max-w-[240px] items-center gap-2 truncate rounded-xl border border-slate-100 bg-slate-50 px-3 py-1.5">
                         <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                        <span className="text-sm font-bold text-slate-600 truncate">{supplier.address || '无登记地址'}</span>
+                        <span className="truncate text-sm font-bold text-slate-600">
+                          {supplier.address || '无登记地址'}
+                        </span>
                       </div>
                     </div>
 
                     {/* Right: Business Insights */}
-                    <div className="grid grid-cols-2 gap-3 min-w-[240px]">
-                       <div className="flex flex-col items-center justify-center rounded-2xl bg-amber-50/50 px-4 py-3 border border-amber-100/50">
-                          <span className="text-xs font-black uppercase tracking-widest text-amber-600 mb-1">供应频次</span>
-                          <div className="flex items-center gap-1 text-amber-700">
-                             <Truck className="h-3 w-3" />
-                             <span className="text-sm font-black text-amber-900/40">活跃数据</span>
-                          </div>
-                       </div>
-                       <div className="flex flex-col items-center justify-center rounded-2xl bg-blue-50/50 px-4 py-3 border border-blue-100/50">
-                          <span className="text-xs font-black uppercase tracking-widest text-blue-600 mb-1">结算信用</span>
-                          <div className="flex items-center gap-1 text-blue-700">
-                             <TrendingUp className="h-3 w-3" />
-                             <span className="text-sm font-black text-blue-900/40">优秀</span>
-                          </div>
-                       </div>
+                    <div className="grid min-w-[240px] grid-cols-2 gap-3">
+                      <div className="flex flex-col items-center justify-center rounded-2xl border border-amber-100/50 bg-amber-50/50 px-4 py-3">
+                        <span className="mb-1 text-xs font-black tracking-widest text-amber-600 uppercase">
+                          供应频次
+                        </span>
+                        <div className="flex items-center gap-1 text-amber-700">
+                          <Truck className="h-3 w-3" />
+                          <span className="text-sm font-black text-amber-900/40">
+                            活跃数据
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-center justify-center rounded-2xl border border-blue-100/50 bg-blue-50/50 px-4 py-3">
+                        <span className="mb-1 text-xs font-black tracking-widest text-blue-600 uppercase">
+                          结算信用
+                        </span>
+                        <div className="flex items-center gap-1 text-blue-700">
+                          <TrendingUp className="h-3 w-3" />
+                          <span className="text-sm font-black text-blue-900/40">
+                            优秀
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Action Menu */}
@@ -400,26 +424,39 @@ export function SuppliersPageClient({
                             <MoreHorizontal className="h-5 w-5 text-slate-400" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2">
-                          <DropdownMenuItem 
-                            className="rounded-xl font-bold py-2.5"
+                        <DropdownMenuContent
+                          align="end"
+                          className="rounded-2xl border-none p-2 shadow-2xl"
+                        >
+                          <DropdownMenuItem
+                            className="rounded-xl py-2.5 font-bold"
                             asChild
                           >
-                            <Link href={`/suppliers/${supplier.id}`} onClick={e => e.stopPropagation()}>
-                              <TrendingUp className="mr-2 h-4 w-4" /> 察看合作详情
+                            <Link
+                              href={`/suppliers/${supplier.id}`}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <TrendingUp className="mr-2 h-4 w-4" />{' '}
+                              察看合作详情
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="rounded-xl font-bold py-2.5"
+                          <DropdownMenuItem
+                            className="rounded-xl py-2.5 font-bold"
                             asChild
                           >
-                             <Link href={`/suppliers/${supplier.id}/edit`} onClick={e => e.stopPropagation()}>
-                                <Edit className="mr-2 h-4 w-4" /> 修订档案
-                             </Link>
+                            <Link
+                              href={`/suppliers/${supplier.id}/edit`}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <Edit className="mr-2 h-4 w-4" /> 修订档案
+                            </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="rounded-xl font-bold py-2.5 text-rose-600 focus:text-white focus:bg-rose-500"
-                            onClick={e => { e.stopPropagation(); handleDelete(supplier); }}
+                          <DropdownMenuItem
+                            className="rounded-xl py-2.5 font-bold text-rose-600 focus:bg-rose-500 focus:text-white"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDelete(supplier);
+                            }}
                           >
                             <Trash2 className="mr-2 h-4 w-4" /> 归档并中止
                           </DropdownMenuItem>
@@ -428,15 +465,19 @@ export function SuppliersPageClient({
                     </div>
                   </div>
 
-                   {/* Status Badges Overlay */}
-                   <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "text-xs uppercase font-black tracking-[0.2em] px-3 py-1 rounded-full",
-                        supplier.status === 'active' ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"
-                      )}>
-                        {formatSupplierStatus(supplier.status)}
-                      </div>
-                   </div>
+                  {/* Status Badges Overlay */}
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={cn(
+                        'rounded-full px-3 py-1 text-xs font-black tracking-[0.2em] uppercase',
+                        supplier.status === 'active'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-100 text-slate-500'
+                      )}
+                    >
+                      {formatSupplierStatus(supplier.status)}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -447,30 +488,35 @@ export function SuppliersPageClient({
         {pagination && pagination.total > 0 && (
           <div className="flex items-center justify-center py-10">
             <div className="group flex h-16 items-center gap-6 rounded-3xl border border-white bg-white/60 px-8 py-3 shadow-sm backdrop-blur-xl transition-all hover:bg-white hover:shadow-xl">
-               <div className="flex items-center gap-1.5 border-r border-slate-100 pr-6 mr-2">
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-500">供应规模</span>
-                  <span className="text-sm font-black text-slate-900">{pagination.total} 家合作伙伴</span>
-               </div>
-               <Pagination
-                  pagination={pagination}
-                  onPageChange={handlePageChange}
-                  showRange={false}
-                  showTotal={false}
-               />
+              <div className="mr-2 flex items-center gap-1.5 border-r border-slate-100 pr-6">
+                <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                  供应规模
+                </span>
+                <span className="text-sm font-black text-slate-900">
+                  {pagination.total} 家合作伙伴
+                </span>
+              </div>
+              <Pagination
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                showRange={false}
+                showTotal={false}
+              />
             </div>
           </div>
         )}
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8">
+        <AlertDialogContent className="rounded-[2.5rem] border-none p-8 shadow-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
-              <AlertCircle className="text-rose-500 h-6 w-6" />
+            <AlertDialogTitle className="flex items-center gap-3 text-2xl font-black tracking-tighter text-slate-900">
+              <AlertCircle className="h-6 w-6 text-rose-500" />
               中止供应协议
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-slate-500 font-bold leading-relaxed py-4">
-              您正在归档供应商 &quot;{supplierToDelete?.name}&quot;。<br />
+            <AlertDialogDescription className="py-4 leading-relaxed font-bold text-slate-500">
+              您正在归档供应商 &quot;{supplierToDelete?.name}&quot;。
+              <br />
               此操作将中止双方建立的供应关系标识，过往所有交易数据将变为只读归档状态。该操作具备审计追溯性，无法即时物理撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -485,7 +531,7 @@ export function SuppliersPageClient({
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="h-12 rounded-2xl border-none bg-rose-600 font-black text-white hover:bg-rose-700 shadow-xl shadow-rose-200"
+              className="h-12 rounded-2xl border-none bg-rose-600 font-black text-white shadow-xl shadow-rose-200 hover:bg-rose-700"
             >
               {deleteMutation.isPending ? '归档中...' : '确认归档删除'}
             </AlertDialogAction>
