@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
@@ -463,7 +465,9 @@ export async function executeOutboundTransaction(
     });
 
     // 4. 创建出库记录（包含成本信息）
-    const recordNumber = `OUT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
+    const now = new Date();
+    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const recordNumber = `OUT-${dateStr}-${randomUUID().slice(0, 8).toUpperCase()}`;
     const notesParts = [reason, notes, remarks]
       .map(value => (typeof value === 'string' ? value.trim() : ''))
       .filter(value => value.length > 0);
