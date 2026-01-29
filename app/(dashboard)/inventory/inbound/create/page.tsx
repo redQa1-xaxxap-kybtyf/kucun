@@ -1,4 +1,4 @@
-import { ERPInboundForm } from '@/components/inventory/erp-inbound-form';
+import { ERPInboundFormLazy } from '@/components/inventory/erp-inbound-form-lazy';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 
 /**
@@ -10,5 +10,5 @@ export default async function CreateInboundPage() {
   // ✅ 权限检查：要求用户拥有入库操作权限
   await requirePagePermission('inventory:inbound');
 
-  return <ERPInboundForm />;
+  return <ERPInboundFormLazy />;
 }
