@@ -1,13 +1,13 @@
 'use client';
 
 import { Download, Plus, TrendingDown } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { RefundsClient } from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useRefundsQuery } from '@/hooks/use-refunds-query';
@@ -18,6 +18,18 @@ import type {
 } from '@/lib/types/refund';
 
 type RefundsQueryParams = RefundListQueryParams;
+
+const RefundsClient = dynamic(
+  () => import('@/components/finance/refunds-client').then(mod => mod.RefundsClient),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface RefundsPageClientProps {
   initialParams: RefundListQueryParams;
