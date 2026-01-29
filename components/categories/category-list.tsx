@@ -12,32 +12,37 @@
  * - 优化操作交互:状态切换改为Switch,常用操作独立显示
  */
 
-import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 
+import {
+  CategoryQuickCreateDialog,
+  type CategoryQuickCreateParent,
+} from '@/components/categories/category-quick-create-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Switch } from '@/components/ui/switch';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Category } from '@/lib/api/categories';
 import { formatDateTime } from '@/lib/utils/datetime';
@@ -174,15 +179,35 @@ export function CategoryList({
   onDeleteCategory,
 }: CategoryListProps) {
   const router = useRouter();
+  const [createDialog, setCreateDialog] = useState<{
+    open: boolean;
+    parent: CategoryQuickCreateParent | null;
+  }>({ open: false, parent: null });
 
-  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(() => 
-    // 按父子层级顺序展开，避免所有二级分类挤在一起
-     buildCategoriesWithLevel(categories)
-  , [categories]);
+  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(
+    () =>
+      // 按父子层级顺序展开，避免所有二级分类挤在一起
+      buildCategoriesWithLevel(categories),
+    [categories]
+  );
 
   const handleEdit = useMemo(
     () => (categoryId: string) => router.push(`/categories/${categoryId}/edit`),
     [router]
+  );
+
+  const openCreateRoot = useMemo(
+    () => () => setCreateDialog({ open: true, parent: null }),
+    []
+  );
+
+  const openCreateChild = useMemo(
+    () => (category: CategoryWithLevel) =>
+      setCreateDialog({
+        open: true,
+        parent: { id: category.id, name: category.name, level: category.level },
+      }),
+    []
   );
 
   if (categories.length === 0) {
@@ -192,9 +217,31 @@ export function CategoryList({
           <CardTitle>分类列表</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-muted-foreground py-8 text-center">
-            暂无分类数据
+          <div className="flex flex-col items-center justify-center gap-4 py-8">
+            <div className="text-muted-foreground text-center">
+              暂无分类数据
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={openCreateRoot}
+              className="h-8"
+            >
+              <Plus className="h-4 w-4" />
+              新增一级分类
+            </Button>
           </div>
+
+          <CategoryQuickCreateDialog
+            open={createDialog.open}
+            parent={createDialog.parent}
+            onOpenChange={open =>
+              setCreateDialog(prev =>
+                open ? { ...prev, open } : { open: false, parent: null }
+              )
+            }
+          />
         </CardContent>
       </Card>
     );
@@ -202,6 +249,19 @@ export function CategoryList({
 
   return (
     <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div className="flex items-center justify-between border-b bg-gray-50/50 px-4 py-3">
+        <div className="text-sm font-medium text-gray-700">分类列表</div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={openCreateRoot}
+          className="h-8"
+        >
+          <Plus className="h-4 w-4" />
+          新增一级分类
+        </Button>
+      </div>
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50/50">
@@ -223,10 +283,21 @@ export function CategoryList({
               onToggleStatus={onToggleStatus}
               onDeleteCategory={onDeleteCategory}
               onEditCategory={handleEdit}
+              onAddChildCategory={openCreateChild}
             />
           ))}
         </TableBody>
       </Table>
+
+      <CategoryQuickCreateDialog
+        open={createDialog.open}
+        parent={createDialog.parent}
+        onOpenChange={open =>
+          setCreateDialog(prev =>
+            open ? { ...prev, open } : { open: false, parent: null }
+          )
+        }
+      />
     </div>
   );
 }
@@ -237,6 +308,7 @@ interface CategoryRowProps {
   onToggleStatus: (category: Category) => void;
   onDeleteCategory: (categoryId: string, categoryName: string) => void;
   onEditCategory: (categoryId: string) => void;
+  onAddChildCategory: (category: CategoryWithLevel) => void;
 }
 
 function CategoryRow({
@@ -245,6 +317,7 @@ function CategoryRow({
   onToggleStatus,
   onDeleteCategory,
   onEditCategory,
+  onAddChildCategory,
 }: CategoryRowProps) {
   // 计算缩进距离: 每级20px
   const indentPx = category.level * 20;
@@ -291,6 +364,7 @@ function CategoryRow({
         category={category}
         onEditCategory={onEditCategory}
         onDeleteCategory={onDeleteCategory}
+        onAddChildCategory={onAddChildCategory}
       />
     </TableRow>
   );
@@ -383,20 +457,44 @@ interface CategoryActionCellProps {
   category: CategoryWithLevel;
   onEditCategory: (categoryId: string) => void;
   onDeleteCategory: (categoryId: string, categoryName: string) => void;
+  onAddChildCategory: (category: CategoryWithLevel) => void;
 }
 
 function CategoryActionCell({
   category,
   onEditCategory,
   onDeleteCategory,
+  onAddChildCategory,
 }: CategoryActionCellProps) {
+  const canAddChildCategory =
+    category.level < 2 && category.status === 'active';
+  const isAtMaxLevel = category.level >= 2;
+
+  const addChildTitle = isAtMaxLevel
+    ? '最多支持3级分类'
+    : category.status !== 'active'
+      ? '父级分类未启用，无法添加子分类'
+      : '添加子分类';
+
   return (
     <TableCell className="text-right">
       <div className="flex items-center justify-end gap-1">
         <Button
           variant="ghost"
-          size="sm"
-          className="text-primary hover:text-primary/80 h-8 px-2 hover:bg-[hsl(var(--color-primary-light))]"
+          size="icon"
+          className="h-8 w-8 text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary-hover))]"
+          onClick={() => onAddChildCategory(category)}
+          disabled={!canAddChildCategory}
+          aria-label="添加子分类"
+          title={addChildTitle}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary-hover))]"
           onClick={() => onEditCategory(category.id)}
         >
           <Edit className="h-4 w-4" />
@@ -409,6 +507,15 @@ function CategoryActionCell({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => onAddChildCategory(category)}
+              disabled={!canAddChildCategory}
+              title={addChildTitle}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              添加子分类
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => onDeleteCategory(category.id, category.name)}
               className="text-[hsl(var(--color-error))] focus:bg-[hsl(var(--color-error-light))] focus:text-[hsl(var(--color-error))]"

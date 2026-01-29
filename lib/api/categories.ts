@@ -118,6 +118,7 @@ export async function createCategory(data: {
   description?: string | null;
   parentId?: string | null;
   sortOrder?: number;
+  status?: 'active' | 'inactive';
 }): Promise<ApiResponse<Category>> {
   const baseUrl = getApiBaseUrl();
   const response = await fetch(

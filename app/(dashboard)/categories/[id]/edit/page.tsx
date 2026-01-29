@@ -171,7 +171,8 @@ function useCategoryData(categoryId: string, parentSearch: string) {
   const parentCategories = React.useMemo(() => {
     type ParentWithParentId = ParentCategory & { parentId?: string | null };
 
-    const categories = (categoriesQuery.data?.data || []) as ParentWithParentId[];
+    const categories = (categoriesQuery.data?.data ||
+      []) as ParentWithParentId[];
 
     if (!categories.length) {
       return [] as ParentCategory[];
@@ -204,7 +205,9 @@ function useCategoryData(categoryId: string, parentSearch: string) {
       }
 
       ancestry.add(category.id);
-      const parent = category.parentId ? byId.get(category.parentId) : undefined;
+      const parent = category.parentId
+        ? byId.get(category.parentId)
+        : undefined;
 
       if (!parent) {
         depthCache.set(category.id, 2);

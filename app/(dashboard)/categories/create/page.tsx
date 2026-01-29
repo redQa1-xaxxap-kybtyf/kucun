@@ -9,7 +9,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FolderTree, Save, ShieldAlert, X } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
@@ -190,10 +190,13 @@ interface CreateCategoryController {
 
 function useCreateCategoryController(): CreateCategoryController {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [parentSearchTerm, setParentSearchTerm] = React.useState('');
   const deferredSearchTerm = React.useDeferredValue(parentSearchTerm);
+  const presetParentId = searchParams.get('parentId');
+  const presetAppliedRef = React.useRef(false);
 
   const form = useForm<CreateCategoryData, any, CreateCategoryData>({
     resolver: standardSchemaResolver(CreateCategorySchema),
@@ -264,7 +267,9 @@ function useCreateCategoryController(): CreateCategoryController {
       }
 
       ancestry.add(category.id);
-      const parent = category.parentId ? byId.get(category.parentId) : undefined;
+      const parent = category.parentId
+        ? byId.get(category.parentId)
+        : undefined;
 
       if (!parent) {
         depthCache.set(category.id, 2);
@@ -337,13 +342,9 @@ function useCreateCategoryController(): CreateCategoryController {
 
       // 3) 同层级内部：按 sortOrder + 名称排序
       const sortOrderA =
-        typeof a.sortOrder === 'number'
-          ? a.sortOrder
-          : Number.MAX_SAFE_INTEGER;
+        typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
       const sortOrderB =
-        typeof b.sortOrder === 'number'
-          ? b.sortOrder
-          : Number.MAX_SAFE_INTEGER;
+        typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
 
       if (sortOrderA !== sortOrderB) {
         return sortOrderA - sortOrderB;
@@ -357,6 +358,19 @@ function useCreateCategoryController(): CreateCategoryController {
     isLoading || isFetching || parentSearchTerm !== deferredSearchTerm;
   const disableParentSelect =
     isParentOptionsLoading && parentOptions.length === 0;
+
+  React.useEffect(() => {
+    if (presetAppliedRef.current) return;
+    if (!presetParentId) return;
+    if (!parentOptions.some(category => category.id === presetParentId)) return;
+
+    form.setValue('parentId', presetParentId, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: true,
+    });
+    presetAppliedRef.current = true;
+  }, [form, parentOptions, presetParentId]);
 
   const handleParentSearchChange = React.useCallback((value: string) => {
     setParentSearchTerm(value);
