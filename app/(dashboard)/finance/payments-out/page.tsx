@@ -120,7 +120,25 @@ async function getPaymentsOutData(searchParams: {
   }
 
   // 查询付款记录
-  const [payments, total] = await Promise.all([
+  // ✅ 优化：减少 DB 往返次数（保持语义不变）
+  // - 合并 total/confirmed/pending 为一次 groupBy(status)
+  // - total 直接由 groupBy 结果累加得到（替代 count）
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const startOfPreviousMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1
+  );
+
+  // 并行执行聚合查询
+  const [
+    payments,
+    overallStats,
+    currentMonthStats,
+    previousMonthStats,
+  ] = await Promise.all([
     prisma.paymentOutRecord.findMany({
       where: whereConditions,
       include: {
@@ -145,51 +163,12 @@ async function getPaymentsOutData(searchParams: {
       skip,
       take: limit,
     }),
-    prisma.paymentOutRecord.count({ where: whereConditions }),
-  ]);
-
-  // ✅ 优化：使用聚合查询替代全表扫描
-  // 修复前：3 次 findMany 全表扫描（总计、当月、上月）
-  // 修复后：5 次 aggregate/groupBy 查询，只返回标量结果
-
-  const now = new Date();
-  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const startOfPreviousMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() - 1,
-    1
-  );
-
-  // 并行执行聚合查询
-  const [
-    totalStats,
-    confirmedStats,
-    pendingStats,
-    currentMonthStats,
-    previousMonthStats,
-  ] = await Promise.all([
-    // 总体统计
-    prisma.paymentOutRecord.aggregate({
+    // 总体统计（按状态分组）
+    prisma.paymentOutRecord.groupBy({
+      by: ['status'],
       where: whereConditions,
       _sum: { paymentAmount: true },
-      _count: { _all: true },
-    }),
-    // 已确认金额
-    prisma.paymentOutRecord.aggregate({
-      where: {
-        ...whereConditions,
-        status: 'confirmed',
-      },
-      _sum: { paymentAmount: true },
-    }),
-    // 待确认金额
-    prisma.paymentOutRecord.aggregate({
-      where: {
-        ...whereConditions,
-        status: 'pending',
-      },
-      _sum: { paymentAmount: true },
+      _count: true,
     }),
     // 当月统计
     prisma.paymentOutRecord.groupBy({
@@ -220,9 +199,26 @@ async function getPaymentsOutData(searchParams: {
   ]);
 
   // 计算总体指标
-  const totalAmount = Number(totalStats._sum.paymentAmount ?? 0);
-  const confirmedAmount = Number(confirmedStats._sum.paymentAmount ?? 0);
-  const pendingAmount = Number(pendingStats._sum.paymentAmount ?? 0);
+  const total = overallStats.reduce((sum, stat) => sum + (stat._count ?? 0), 0);
+
+  const totalAmount = overallStats.reduce(
+    (sum, stat) => sum + Number(stat._sum.paymentAmount ?? 0),
+    0
+  );
+
+  const calculateStatusAmount = (
+    groupedStats: Array<{
+      status: string;
+      _sum: { paymentAmount: unknown };
+    }>,
+    targetStatus: string
+  ) => {
+    const found = groupedStats.find(stat => stat.status === targetStatus);
+    return Number(found?._sum.paymentAmount ?? 0);
+  };
+
+  const confirmedAmount = calculateStatusAmount(overallStats, 'confirmed');
+  const pendingAmount = calculateStatusAmount(overallStats, 'pending');
 
   // ✅ 优化：从 groupBy 结果计算月度已确认金额
   const calculateMonthlyConfirmedAmount = (
@@ -255,7 +251,7 @@ async function getPaymentsOutData(searchParams: {
     totalAmount,
     confirmedAmount,
     pendingAmount,
-    recordCount: totalStats._count?._all ?? 0,
+    recordCount: total,
     currentMonthConfirmedAmount: Number(currentMonthConfirmedAmount.toFixed(2)),
     previousMonthConfirmedAmount:
       previousMonthConfirmedAmount > 0
