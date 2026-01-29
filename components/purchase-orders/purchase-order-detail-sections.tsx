@@ -10,9 +10,9 @@ import {
   User,
   Warehouse,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useState, type Dispatch, type SetStateAction } from 'react';
 
-import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +47,14 @@ import {
   formatCurrency,
 } from './purchase-order-detail-constants';
 import type { PurchaseOrderDetailData } from './purchase-order-detail.types';
+
+const PrintTemplatePreviewDialog = dynamic(
+  () =>
+    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
+      mod => mod.PrintTemplatePreviewDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface OrderSummaryCardProps {
   order: PurchaseOrderDetailData;

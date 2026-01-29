@@ -10,12 +10,12 @@ import {
   Printer,
   XCircle,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
-import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +51,14 @@ import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+
+const PrintTemplatePreviewDialog = dynamic(
+  () =>
+    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
+      mod => mod.PrintTemplatePreviewDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface ReturnOrderDetail {
   id: string;

@@ -13,6 +13,7 @@ import {
   Truck,
   User,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
@@ -22,7 +23,6 @@ import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-sh
 import { FeeItemsSection } from '@/components/factory-shipments/fee-items-section';
 import { SupplementShippingInfoDialog } from '@/components/factory-shipments/supplement-shipping-info-dialog';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,14 @@ import {
   formatUnit,
   getFactoryShipmentStatusBadgeVariant,
 } from '@/lib/utils/factory-shipment-helpers';
+
+const PrintTemplatePreviewDialog = dynamic(
+  () =>
+    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
+      mod => mod.PrintTemplatePreviewDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface FactoryShipmentOrderDetailProps {
   orderId: string;

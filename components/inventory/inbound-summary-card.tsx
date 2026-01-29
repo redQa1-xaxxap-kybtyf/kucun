@@ -9,10 +9,10 @@ import {
   Printer,
   Warehouse,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
-import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +20,14 @@ import { can } from '@/lib/auth/permissions';
 import type { InboundRecordDetail } from '@/lib/types/inbound';
 import { formatCurrency, formatNumber } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
+
+const PrintTemplatePreviewDialog = dynamic(
+  () =>
+    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
+      mod => mod.PrintTemplatePreviewDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 type ReasonVariant = 'default' | 'secondary' | 'info' | 'outline' | 'success';
 

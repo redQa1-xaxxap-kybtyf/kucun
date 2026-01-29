@@ -8,10 +8,10 @@ import {
   Printer,
   Truck,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
-import { PrintTemplatePreviewDialog } from '@/components/print-designer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -29,6 +29,14 @@ import {
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 import type { SalesOrderDetail } from './types';
+
+const PrintTemplatePreviewDialog = dynamic(
+  () =>
+    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
+      mod => mod.PrintTemplatePreviewDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface Props {
   order: SalesOrderDetail;
