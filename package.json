@@ -14,6 +14,7 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "bundle:check": "node scripts/check-client-bundle.js",
+    "bundle:report": "tsx scripts/report-client-route-sizes.ts",
     "format": "prettier --write .",
     "test": "jest",
     "test:watch": "jest --watch",
