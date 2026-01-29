@@ -8,15 +8,13 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FolderTree } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { use } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
-import {
-  CategoryEditFormCard,
-  type ParentCategory,
-} from '@/components/categories/category-edit-form-card';
+import type { ParentCategory } from '@/components/categories/category-edit-form-card';
 import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +30,21 @@ import { queryKeys } from '@/lib/queryKeys';
 import { UpdateCategorySchema } from '@/lib/validations/category';
 
 type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
+
+const CategoryEditFormCard = dynamic(
+  () =>
+    import('@/components/categories/category-edit-form-card').then(
+      mod => mod.CategoryEditFormCard
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        表单加载中...
+      </div>
+    ),
+  }
+);
 
 interface CategoryEditPageProps {
   params: Promise<{ id: string }>;
