@@ -53,4 +53,3 @@ describe('receivables SSoT regression', () => {
     expect(detail.paymentStatus).toBe('partial');
   });
 });
-

@@ -339,6 +339,11 @@ export interface ProfitLossAnalysis {
   profit: ProfitCalculation; // 利润计算
   factoryShipmentProfit: FactoryShipmentProfitDetail; // 厂家发货利润明细
   trend: ProfitLossTrend[]; // 趋势数据
+  adjustments: {
+    returnAmountTotal: number; // 退货金额合计（冲减收入）
+    returnCostReversalTotal: number; // 退货成本回冲合计（减少 COGS）
+    compensationRefundTotal: number; // 补偿退款合计（计入费用/冲减利润）
+  };
   comparison?: {
     revenue: ComparisonData; // 收入对比
     profit: ComparisonData; // 利润对比

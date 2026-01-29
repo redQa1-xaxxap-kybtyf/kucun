@@ -6,8 +6,8 @@ import * as React from 'react';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type {
-    ReceivableItem,
-    ReceivablesResult,
+  ReceivableItem,
+  ReceivablesResult,
 } from '@/lib/services/receivables-service';
 
 import { ReceivablesTableList } from './ReceivablesTableList';

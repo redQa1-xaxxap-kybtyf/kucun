@@ -78,10 +78,7 @@ export const POST = withAuth(
           success: false,
           errorMessage: message,
         });
-        return errorResponse(
-          message,
-          400
-        );
+        return errorResponse(message, 400);
       }
 
       requestedFilters = {
@@ -150,10 +147,7 @@ export const POST = withAuth(
           success: false,
           errorMessage: message,
         });
-        return errorResponse(
-          message,
-          400
-        );
+        return errorResponse(message, 400);
       }
 
       // 动态导入导出服务（避免服务端加载客户端代码）

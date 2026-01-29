@@ -76,7 +76,7 @@ function FinancePageHeader({ dateLabel }: { dateLabel: string }) {
           管理应收账款、退款处理、费用记录和往来账单
         </p>
       </div>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+      <div className="text-muted-foreground flex items-center gap-2 text-xs sm:text-sm">
         <Calendar className="h-4 w-4" />
         <span>{dateLabel}</span>
       </div>

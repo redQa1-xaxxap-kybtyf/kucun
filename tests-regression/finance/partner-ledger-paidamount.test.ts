@@ -106,9 +106,12 @@ describe('recordPartnerTransaction paidAmount delta', () => {
             throw new Error('statement not created');
           }
 
-          if (data.entityName !== undefined) state.statement.entityName = data.entityName;
-          if (data.partnerRole !== undefined) state.statement.partnerRole = data.partnerRole;
-          if (data.entityType !== undefined) state.statement.entityType = data.entityType;
+          if (data.entityName !== undefined)
+            state.statement.entityName = data.entityName;
+          if (data.partnerRole !== undefined)
+            state.statement.partnerRole = data.partnerRole;
+          if (data.entityType !== undefined)
+            state.statement.entityType = data.entityType;
           if (data.currentBalance !== undefined)
             state.statement.currentBalance = data.currentBalance;
           if (data.pendingAmount !== undefined)
@@ -193,11 +196,11 @@ describe('recordPartnerTransaction paidAmount delta', () => {
     );
 
     expect(state.statement?.paidAmount).toBe(90);
-    expect(state.statement?.currentBalance).toBe(-10);
+    expect(state.statement?.currentBalance).toBe(10);
 
     const refundTx = state.createdTransactions.find(
       txRow => txRow.transactionType === 'refund'
     );
-    expect(refundTx).toEqual(expect.objectContaining({ direction: 'credit' }));
+    expect(refundTx).toEqual(expect.objectContaining({ direction: 'debit' }));
   });
 });

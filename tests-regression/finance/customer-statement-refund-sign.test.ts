@@ -44,7 +44,9 @@ describe('customer-statement-service refund sign', () => {
     });
     prisma.factoryShipmentOrder.findMany.mockResolvedValue([]);
 
-    prisma.returnOrder.aggregate.mockResolvedValue({ _sum: { refundAmount: 0 } });
+    prisma.returnOrder.aggregate.mockResolvedValue({
+      _sum: { refundAmount: 0 },
+    });
     prisma.returnOrder.findMany.mockResolvedValue([]);
 
     prisma.refundRecord.findMany.mockResolvedValue([]);
@@ -72,7 +74,7 @@ describe('customer-statement-service refund sign', () => {
     mockZeroAggregates();
   });
 
-  test('sale=100, payment_in=100, refund=10 => closingBalance=-10（退款不推高应收）', async () => {
+  test('sale=100, payment_in=100, refund=10 => closingBalance=10（退款冲回已收款）', async () => {
     // openingBalance(before startDate) 与 period summary 复用同一批 aggregate mock；
     // 这里按 where 的时间过滤区分，避免把当期数据算进期初导致 closingBalance 偏移。
     prisma.salesOrder.aggregate.mockImplementation(({ where }: any) => {
@@ -116,14 +118,16 @@ describe('customer-statement-service refund sign', () => {
       '2025-01-31'
     );
 
-    expect(detail.summary.receivables.receivableBalance).toBe(-10);
-    expect(detail.closingBalance).toBe(-10);
+    expect(detail.summary.receivables.receivableBalance).toBe(10);
+    expect(detail.closingBalance).toBe(10);
 
-    const refundTx = detail.transactions.find(tx => tx.transactionType === 'refund_out');
+    const refundTx = detail.transactions.find(
+      tx => tx.transactionType === 'refund_out'
+    );
     expect(refundTx).toEqual(
       expect.objectContaining({
-        debitAmount: 0,
-        creditAmount: 10,
+        debitAmount: 10,
+        creditAmount: 0,
         status: 'completed',
       })
     );

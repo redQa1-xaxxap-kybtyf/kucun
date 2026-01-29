@@ -40,9 +40,9 @@ export function StatementHeader({
   const statusInfo = STATUS_BADGE_MAP[status] ?? STATUS_BADGE_MAP.active;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 backdrop-blur-xl shadow-sm">
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white/70 shadow-sm backdrop-blur-xl">
       {/* 装饰背景 - 调淡 */}
-      <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
+      <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-500/5 blur-3xl" />
       <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-indigo-500/5 blur-3xl" />
 
       <CardContent className="relative z-10 p-6 sm:p-8">
@@ -56,7 +56,7 @@ export function StatementHeader({
                 <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
                   往来明细账
                 </h1>
-                <Badge className="bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
+                <Badge className="border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100">
                   {TYPE_LABEL_MAP[type]}
                 </Badge>
                 <Badge
@@ -72,7 +72,7 @@ export function StatementHeader({
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-500">
                 <span className="text-lg font-bold text-slate-800">{name}</span>
-                <span className="h-4 w-px bg-slate-200 hidden sm:block" />
+                <span className="hidden h-4 w-px bg-slate-200 sm:block" />
                 <div className="flex items-center gap-1.5 text-sm">
                   <span className="font-medium">账面余额：</span>
                   <span
@@ -106,7 +106,7 @@ export function StatementHeader({
               <ArrowLeft className="mr-2 h-4 w-4" />
               返回
             </Button>
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <div className="hidden h-8 w-px bg-slate-200 sm:block" />
             <Button
               variant="outline"
               size="lg"
@@ -115,9 +115,7 @@ export function StatementHeader({
               <Download className="mr-2 h-4 w-4" />
               导出账单
             </Button>
-            <Button
-              className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-700 hover:scale-105 active:scale-95"
-            >
+            <Button className="h-12 bg-blue-600 text-white shadow-lg shadow-blue-500/20 transition-all hover:scale-105 hover:bg-blue-700 active:scale-95">
               <Receipt className="mr-2 h-4 w-4" />
               核销处理
             </Button>

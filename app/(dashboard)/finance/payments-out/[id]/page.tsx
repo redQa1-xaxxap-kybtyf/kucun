@@ -60,7 +60,9 @@ interface PaymentOutRecord {
 /**
  * 获取付款记录详情数据
  */
-async function getPaymentOutDetail(id: string): Promise<PaymentOutRecord | null> {
+async function getPaymentOutDetail(
+  id: string
+): Promise<PaymentOutRecord | null> {
   try {
     const payment = await prisma.paymentOutRecord.findUnique({
       where: { id },

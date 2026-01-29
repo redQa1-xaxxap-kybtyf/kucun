@@ -567,7 +567,7 @@ export function PaymentDetailClient({
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           冲抵金额
                         </p>
                         <p className="text-base font-semibold text-emerald-600">

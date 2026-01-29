@@ -1,11 +1,11 @@
 'use client';
 
 import {
-    Download,
-    FileSpreadsheet,
-    FileText,
-    Plus,
-    TrendingUp,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Plus,
+  TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback } from 'react';
@@ -14,12 +14,12 @@ import { PageHeader } from '@/components/common/page-header';
 import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
@@ -100,9 +100,7 @@ export function ReceivablesPageClient({
           }
         />
 
-        <ReceivablesClient
-          initialParams={initialParams}
-        />
+        <ReceivablesClient initialParams={initialParams} />
       </div>
     </div>
   );

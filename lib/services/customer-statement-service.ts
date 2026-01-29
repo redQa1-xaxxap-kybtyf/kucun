@@ -41,11 +41,12 @@ function computeReceivableBalance(params: {
   prepaymentReceived: number;
   refundPaid: number;
 }): number {
+  // ✅ 退款为“结清应退余额”的现金流：salesReturnAmount 会把余额冲到负数（应退），refundPaid 应加回抵消应退
   return roundCurrency(
     params.salesAmount -
       params.salesReturnAmount -
       params.paymentReceived -
-      params.prepaymentReceived -
+      params.prepaymentReceived +
       params.refundPaid
   );
 }
@@ -119,7 +120,10 @@ export async function getCustomerStatements(
     customerWhere.name = { contains: customerName };
   }
 
-  const parsedDateFilter = buildDateTimeRangeFromDateStrings(startDate, endDate);
+  const parsedDateFilter = buildDateTimeRangeFromDateStrings(
+    startDate,
+    endDate
+  );
   const hasDateFilter = Boolean(parsedDateFilter);
   const dateFilter: Prisma.DateTimeFilter = parsedDateFilter ?? {};
 
@@ -787,7 +791,8 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
     activeCustomerIds.add(row.customerId);
     salesAmountByCustomer.set(
       row.customerId,
-      Number(row._sum.totalAmount ?? 0) + Number(row._sum.roundingAdjustment ?? 0)
+      Number(row._sum.totalAmount ?? 0) +
+        Number(row._sum.roundingAdjustment ?? 0)
     );
   }
 
@@ -879,29 +884,26 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
     }
   }
 
-  const [
-    payableAggregate,
-    paymentPaidAggregate,
-    prepaymentPaidAggregate,
-  ] = await Promise.all([
-    prisma.payableRecord.aggregate({
-      _sum: { payableAmount: true },
-    }),
-    prisma.paymentOutRecord.aggregate({
-      where: {
-        status: 'confirmed',
-        payableRecordId: { not: null },
-      },
-      _sum: { paymentAmount: true },
-    }),
-    prisma.paymentOutRecord.aggregate({
-      where: {
-        status: 'confirmed',
-        payableRecordId: null,
-      },
-      _sum: { paymentAmount: true },
-    }),
-  ]);
+  const [payableAggregate, paymentPaidAggregate, prepaymentPaidAggregate] =
+    await Promise.all([
+      prisma.payableRecord.aggregate({
+        _sum: { payableAmount: true },
+      }),
+      prisma.paymentOutRecord.aggregate({
+        where: {
+          status: 'confirmed',
+          payableRecordId: { not: null },
+        },
+        _sum: { paymentAmount: true },
+      }),
+      prisma.paymentOutRecord.aggregate({
+        where: {
+          status: 'confirmed',
+          payableRecordId: null,
+        },
+        _sum: { paymentAmount: true },
+      }),
+    ]);
 
   let totalPayableBalance = computePayableBalance({
     purchaseAmount: Number(payableAggregate._sum.payableAmount ?? 0),
@@ -1398,7 +1400,8 @@ async function getCustomerTransactions(
         referenceId: order.id,
         description: `销售订单 ${order.orderNumber}`,
         debitAmount:
-          Number(order.totalAmount ?? 0) + Number(order.roundingAdjustment ?? 0),
+          Number(order.totalAmount ?? 0) +
+          Number(order.roundingAdjustment ?? 0),
         creditAmount: 0,
         status: order.status,
       });
@@ -1568,7 +1571,9 @@ async function getCustomerTransactions(
       const processType = returnOrder.processType;
       const completedAt = returnOrder.completedAt;
       const isBalanceEffective =
-        status === 'completed' && processType === 'refund' && Boolean(completedAt);
+        status === 'completed' &&
+        processType === 'refund' &&
+        Boolean(completedAt);
 
       // ✅ P0 口径统一：退货仅在 completed 时冲减余额（历史记录可展示多状态）
       const rawRefundAmount = Number(returnOrder.refundAmount);
@@ -1579,7 +1584,11 @@ async function getCustomerTransactions(
         descriptionParts.push('(已取消)');
       } else if (status === 'rejected') {
         descriptionParts.push('(已拒绝)');
-      } else if (status === 'completed' && processType === 'refund' && !completedAt) {
+      } else if (
+        status === 'completed' &&
+        processType === 'refund' &&
+        !completedAt
+      ) {
         descriptionParts.push('(completedAt缺失)');
         logger.warn(
           'customer-statement',
@@ -1596,7 +1605,9 @@ async function getCustomerTransactions(
       }
       const description = descriptionParts.join(' ');
 
-      const transactionDate = isBalanceEffective ? completedAt! : returnOrder.createdAt;
+      const transactionDate = isBalanceEffective
+        ? completedAt!
+        : returnOrder.createdAt;
 
       transactionEntries.push({
         id: returnOrder.id,
@@ -1676,8 +1687,11 @@ async function getCustomerTransactions(
         referenceNumber: refund.refundNumber,
         referenceId: refund.id,
         description: descriptionParts.join(' / '),
-        debitAmount: 0,
-        creditAmount: effectiveProcessed,
+        // ✅ 统一口径：退款在往来账中视为“冲回已收款”（payment_in 的反向）
+        // - 会减少已收款
+        // - 会增加应收余额（用于抵消 sales_return 造成的负余额/应退）
+        debitAmount: effectiveProcessed,
+        creditAmount: 0,
         status: refund.status,
       });
     }

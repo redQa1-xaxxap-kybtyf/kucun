@@ -29,26 +29,28 @@ describe('finance-statistics getStatementsList date filtering', () => {
     });
 
     // 若实现回退到 updatedAt 过滤，该 mock 会返回一条记录导致断言失败
-    prisma.accountStatement.findMany.mockImplementation(async ({ where }: any) => {
-      if (where?.updatedAt) {
-        return [
-          {
-            entityId: 'customer-001',
-            entityName: '测试客户',
-            entityType: 'customer',
-            partnerRole: 'customer',
-            status: 'active',
-            totalOrders: 1,
-            totalAmount: 100,
-            paidAmount: 100,
-            currentBalance: 0,
-            lastTransactionDate: new Date('2024-12-31'),
-            lastPaymentDate: new Date('2025-01-15'),
-          },
-        ];
+    prisma.accountStatement.findMany.mockImplementation(
+      async ({ where }: any) => {
+        if (where?.updatedAt) {
+          return [
+            {
+              entityId: 'customer-001',
+              entityName: '测试客户',
+              entityType: 'customer',
+              partnerRole: 'customer',
+              status: 'active',
+              totalOrders: 1,
+              totalAmount: 100,
+              paidAmount: 100,
+              currentBalance: 0,
+              lastTransactionDate: new Date('2024-12-31'),
+              lastPaymentDate: new Date('2025-01-15'),
+            },
+          ];
+        }
+        return [];
       }
-      return [];
-    });
+    );
   });
 
   test('期间筛选不再使用 updatedAt，应使用 lastTransactionDate/lastPaymentDate', async () => {
@@ -62,7 +64,9 @@ describe('finance-statistics getStatementsList date filtering', () => {
     expect(result.data).toEqual([]);
 
     expect(prisma.accountStatement.findMany).toHaveBeenCalledTimes(1);
-    const [{ where }] = prisma.accountStatement.findMany.mock.calls[0] as [{ where: any }];
+    const [{ where }] = prisma.accountStatement.findMany.mock.calls[0] as [
+      { where: any },
+    ];
 
     expect(where.updatedAt).toBeUndefined();
     expect(where.AND).toEqual(
@@ -85,4 +89,3 @@ describe('finance-statistics getStatementsList date filtering', () => {
     );
   });
 });
-

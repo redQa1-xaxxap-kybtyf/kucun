@@ -427,14 +427,12 @@ export async function generateSupplierStatementsOptimized(
           }
         });
 
-        const factoryTotalAmount = Array.from(uniqueFactoryOrders.values()).reduce(
-          (sum, o) => sum + o.totalAmount,
-          0
-        );
-        const factoryPaidAmount = Array.from(uniqueFactoryOrders.values()).reduce(
-          (sum, o) => sum + o.paidAmount,
-          0
-        );
+        const factoryTotalAmount = Array.from(
+          uniqueFactoryOrders.values()
+        ).reduce((sum, o) => sum + o.totalAmount, 0);
+        const factoryPaidAmount = Array.from(
+          uniqueFactoryOrders.values()
+        ).reduce((sum, o) => sum + o.paidAmount, 0);
 
         // 合计
         const totalOrders = transferOrders.length + uniqueFactoryOrders.size;

@@ -60,7 +60,9 @@ describe('customer-statement-service supplier(payables) side', () => {
     prisma.factoryShipmentOrder.aggregate.mockResolvedValue({
       _sum: { receivableAmount: 0 },
     });
-    prisma.returnOrder.aggregate.mockResolvedValue({ _sum: { refundAmount: 0 } });
+    prisma.returnOrder.aggregate.mockResolvedValue({
+      _sum: { refundAmount: 0 },
+    });
     prisma.paymentRecord.groupBy.mockResolvedValue([]);
     prisma.refundRecord.aggregate.mockResolvedValue({
       _sum: { processedAmount: 0, refundAmount: 0 },
@@ -147,8 +149,11 @@ describe('customer-statement-service supplier(payables) side', () => {
     expect(detail.closingBalance).toBe(-30);
 
     expect(detail.transactions.map(tx => tx.transactionType)).toEqual(
-      expect.arrayContaining(['purchase_order', 'payment_out', 'prepayment_out'])
+      expect.arrayContaining([
+        'purchase_order',
+        'payment_out',
+        'prepayment_out',
+      ])
     );
   });
 });
-

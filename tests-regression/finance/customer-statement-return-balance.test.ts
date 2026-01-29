@@ -72,7 +72,9 @@ describe('customer-statement-service return order balance gating', () => {
   });
 
   test('submitted/approved/processing 退货：history 可出现但 balance 不变化', async () => {
-    prisma.returnOrder.aggregate.mockResolvedValue({ _sum: { refundAmount: 0 } });
+    prisma.returnOrder.aggregate.mockResolvedValue({
+      _sum: { refundAmount: 0 },
+    });
     prisma.returnOrder.findMany.mockResolvedValue([
       {
         id: 'return-001',
@@ -86,7 +88,11 @@ describe('customer-statement-service return order balance gating', () => {
       },
     ]);
 
-    const detail = await getCustomerStatementDetail('customer-001', '2025-01-01', '2025-01-31');
+    const detail = await getCustomerStatementDetail(
+      'customer-001',
+      '2025-01-01',
+      '2025-01-31'
+    );
 
     expect(detail.summary.receivables.salesReturnAmount).toBe(0);
     expect(detail.openingBalance).toBe(0);
@@ -113,7 +119,8 @@ describe('customer-statement-service return order balance gating', () => {
       const gte = filter?.gte ? new Date(filter.gte).getTime() : null;
       const lte = filter?.lte ? new Date(filter.lte).getTime() : null;
       const time = completedAt.getTime();
-      const matches = (gte === null || time >= gte) && (lte === null || time <= lte);
+      const matches =
+        (gte === null || time >= gte) && (lte === null || time <= lte);
       return Promise.resolve({ _sum: { refundAmount: matches ? 10 : 0 } });
     });
 
@@ -130,7 +137,11 @@ describe('customer-statement-service return order balance gating', () => {
       },
     ]);
 
-    const detail = await getCustomerStatementDetail('customer-001', '2025-01-01', '2025-01-31');
+    const detail = await getCustomerStatementDetail(
+      'customer-001',
+      '2025-01-01',
+      '2025-01-31'
+    );
 
     expect(detail.summary.receivables.salesReturnAmount).toBe(10);
     expect(detail.openingBalance).toBe(0);
@@ -164,7 +175,9 @@ describe('customer-statement-service return order balance gating', () => {
   });
 
   test('completed 但 completedAt 为空：明细可见但不影响 balance', async () => {
-    prisma.returnOrder.aggregate.mockResolvedValue({ _sum: { refundAmount: 0 } });
+    prisma.returnOrder.aggregate.mockResolvedValue({
+      _sum: { refundAmount: 0 },
+    });
     prisma.returnOrder.findMany.mockResolvedValue([
       {
         id: 'return-003',
@@ -178,7 +191,11 @@ describe('customer-statement-service return order balance gating', () => {
       },
     ]);
 
-    const detail = await getCustomerStatementDetail('customer-001', '2025-01-01', '2025-01-31');
+    const detail = await getCustomerStatementDetail(
+      'customer-001',
+      '2025-01-01',
+      '2025-01-31'
+    );
 
     expect(detail.summary.receivables.salesReturnAmount).toBe(0);
     expect(detail.closingBalance).toBe(0);

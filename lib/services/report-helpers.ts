@@ -292,7 +292,7 @@ export function generateProfitAlerts(
   }
 
   // 收入过低预警
-  if (revenue < 10000) {
+  if (revenue > 0 && revenue < 10000) {
     alerts.push({
       type: 'warning',
       title: '收入偏低',

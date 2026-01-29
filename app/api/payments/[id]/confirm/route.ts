@@ -29,10 +29,7 @@ function appendRemark(existing: string | null, note?: string): string | null {
 }
 
 export const POST = withAuth(
-  async (
-    request: NextRequest,
-    { user, params }
-  ) => {
+  async (request: NextRequest, { user, params }) => {
     let paymentId: string | undefined;
     try {
       const { id } = await resolveParams(params);

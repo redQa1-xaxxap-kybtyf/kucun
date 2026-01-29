@@ -71,14 +71,19 @@ describe('partner-ledger-service metadata truncation', () => {
         }),
         update: jest.fn().mockImplementation(({ data }: any) => {
           if (!state.statement) throw new Error('statement not created');
-          if (data.paidAmount?.increment) state.statement.paidAmount += data.paidAmount.increment;
-          if (data.currentBalance !== undefined) state.statement.currentBalance = data.currentBalance;
+          if (data.paidAmount?.increment)
+            state.statement.paidAmount += data.paidAmount.increment;
+          if (data.currentBalance !== undefined)
+            state.statement.currentBalance = data.currentBalance;
           return state.statement;
         }),
       },
       statementTransaction: {
         create: jest.fn().mockImplementation(({ data }: any) => {
-          const txRow = { id: `tx-${state.createdTransactions.length + 1}`, ...data };
+          const txRow = {
+            id: `tx-${state.createdTransactions.length + 1}`,
+            ...data,
+          };
           state.createdTransactions.push(txRow);
           return txRow;
         }),
@@ -113,7 +118,8 @@ describe('partner-ledger-service metadata truncation', () => {
     expect(refundTx?.metadata.length).toBeLessThanOrEqual(191);
 
     const parsed = JSON.parse(refundTx.metadata);
-    expect(parsed).toEqual(expect.objectContaining({ truncated: true, userId: 'operator-001' }));
+    expect(parsed).toEqual(
+      expect.objectContaining({ truncated: true, userId: 'operator-001' })
+    );
   });
 });
-

@@ -40,37 +40,37 @@ export const GET = withAuth(async (request: NextRequest) => {
     // 获取销售订单统计
     const [salesOrderStats, paymentStats, prepaymentUsageStats] =
       await Promise.all([
-      prisma.salesOrder.aggregate({
-        where: whereConditions,
-        _sum: {
-          totalAmount: true,
-        },
-        _count: {
-          id: true,
-        },
-      }),
-      prisma.paymentRecord.aggregate({
-        where: {
-          status: 'confirmed',
-          paymentType: 'order_payment',
-          salesOrder: whereConditions,
-        },
-        _sum: {
-          paymentAmount: true,
-        },
-        _count: {
-          id: true,
-        },
-      }),
-      prisma.prepaymentUsage.aggregate({
-        where: {
-          salesOrder: whereConditions,
-        },
-        _sum: {
-          appliedAmount: true,
-        },
-      }),
-    ]);
+        prisma.salesOrder.aggregate({
+          where: whereConditions,
+          _sum: {
+            totalAmount: true,
+          },
+          _count: {
+            id: true,
+          },
+        }),
+        prisma.paymentRecord.aggregate({
+          where: {
+            status: 'confirmed',
+            paymentType: 'order_payment',
+            salesOrder: whereConditions,
+          },
+          _sum: {
+            paymentAmount: true,
+          },
+          _count: {
+            id: true,
+          },
+        }),
+        prisma.prepaymentUsage.aggregate({
+          where: {
+            salesOrder: whereConditions,
+          },
+          _sum: {
+            appliedAmount: true,
+          },
+        }),
+      ]);
 
     // 计算基础统计数据（注意 Prisma Decimal 类型统一转为 number）
     const totalReceivable = Number(salesOrderStats._sum.totalAmount ?? 0);

@@ -160,10 +160,7 @@ export const PUT = withAuth(
         });
 
         // ✅ 更新为已完成时补写往来账退款流水（幂等：referenceId+type 唯一）
-        if (
-          updatedRefund.status === 'completed' &&
-          updatedRefund.customerId
-        ) {
+        if (updatedRefund.status === 'completed' && updatedRefund.customerId) {
           const processedAmount = toNumber(updatedRefund.processedAmount, 0);
           const fallbackAmount = toNumber(updatedRefund.refundAmount, 0);
           const effectiveAmount =

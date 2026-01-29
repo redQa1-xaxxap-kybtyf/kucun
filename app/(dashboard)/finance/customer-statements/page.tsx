@@ -1,7 +1,7 @@
 import {
-    HydrationBoundary,
-    QueryClient,
-    dehydrate,
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
 } from '@tanstack/react-query';
 import type { Metadata } from 'next';
 

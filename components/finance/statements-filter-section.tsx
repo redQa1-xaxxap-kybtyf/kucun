@@ -1,17 +1,32 @@
-import { ArrowUpDown, Calendar, FileText, Search, SlidersHorizontal } from 'lucide-react';
+import {
+  ArrowUpDown,
+  Calendar,
+  FileText,
+  Search,
+  SlidersHorizontal,
+} from 'lucide-react';
 
 import { EmptyState } from '@/components/common/empty-state';
-import { DateRangePicker, type DateRangeValue } from '@/components/ui/date-range-picker';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 import { StatementCardItem } from './statements-card-item';
 import type {
-    AccountStatementItem,
-    StatementsFiltersState,
-    StatementsPagination,
+  AccountStatementItem,
+  StatementsFiltersState,
+  StatementsPagination,
 } from './statements-types';
 
 interface StatementsFilterSectionProps {
@@ -72,23 +87,29 @@ function FilterControls({
       {/* Search & Main Filters Layer */}
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
         {/* Search Input */}
-        <div className="relative flex-1 group">
+        <div className="group relative flex-1">
           <Input
             placeholder="输入伙伴名称、编号、联系方式或经营范围关键词..."
             value={filters.search || ''}
             onChange={e => onSearch?.(e.target.value)}
-            className="h-14 rounded-2xl border-none bg-white shadow-[0_8px_30px_rgba(0,0,0,0.04)] pl-12 font-bold transition-all focus:ring-2 focus:ring-blue-500/10 group-hover:shadow-md"
+            className="h-14 rounded-2xl border-none bg-white pl-12 font-bold shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all group-hover:shadow-md focus:ring-2 focus:ring-blue-500/10"
           />
-          <Search className={cn(
-            "absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 transition-colors",
-            isSearching ? "text-blue-500" : "text-slate-300 group-hover:text-blue-500"
-          )} />
+          <Search
+            className={cn(
+              'absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 transition-colors',
+              isSearching
+                ? 'text-blue-500'
+                : 'text-slate-300 group-hover:text-blue-500'
+            )}
+          />
         </div>
 
         {/* Type Filter */}
         <Select
           value={filters.type || 'all'}
-          onValueChange={value => onFilter?.('type', value === 'all' ? undefined : value)}
+          onValueChange={value =>
+            onFilter?.('type', value === 'all' ? undefined : value)
+          }
         >
           <SelectTrigger className="h-14 w-full rounded-2xl border-none bg-white font-black shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md sm:w-[200px] lg:w-[180px]">
             <div className="flex items-center gap-2">
@@ -97,10 +118,30 @@ function FilterControls({
             </div>
           </SelectTrigger>
           <SelectContent className="rounded-2xl border-none shadow-2xl">
-            <SelectItem value="all" className="rounded-xl font-black text-xs uppercase tracking-widest">全部伙伴类型</SelectItem>
-            <SelectItem value="customer" className="rounded-xl font-black text-xs uppercase tracking-widest text-blue-600">战略合作客户</SelectItem>
-            <SelectItem value="supplier" className="rounded-xl font-black text-xs uppercase tracking-widest text-purple-600">核心供应厂家</SelectItem>
-            <SelectItem value="partner" className="rounded-xl font-black text-xs uppercase tracking-widest text-amber-600">其他往来单位</SelectItem>
+            <SelectItem
+              value="all"
+              className="rounded-xl text-xs font-black tracking-widest uppercase"
+            >
+              全部伙伴类型
+            </SelectItem>
+            <SelectItem
+              value="customer"
+              className="rounded-xl text-xs font-black tracking-widest text-blue-600 uppercase"
+            >
+              战略合作客户
+            </SelectItem>
+            <SelectItem
+              value="supplier"
+              className="rounded-xl text-xs font-black tracking-widest text-purple-600 uppercase"
+            >
+              核心供应厂家
+            </SelectItem>
+            <SelectItem
+              value="partner"
+              className="rounded-xl text-xs font-black tracking-widest text-amber-600 uppercase"
+            >
+              其他往来单位
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -110,34 +151,49 @@ function FilterControls({
           onValueChange={value => onFilter?.('sortBy', value)}
         >
           <SelectTrigger className="h-14 w-full rounded-2xl border-none bg-white font-black shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md sm:w-[200px] lg:w-[180px]">
-             <div className="flex items-center gap-2">
-               <ArrowUpDown className="h-4 w-4 text-slate-400" />
-               <SelectValue placeholder="排序准则" />
-             </div>
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-slate-400" />
+              <SelectValue placeholder="排序准则" />
+            </div>
           </SelectTrigger>
           <SelectContent className="rounded-2xl border-none shadow-2xl">
-            <SelectItem value="totalAmount" className="rounded-xl font-black text-xs uppercase tracking-widest">按累计流水金额</SelectItem>
-            <SelectItem value="pendingAmount" className="rounded-xl font-black text-xs uppercase tracking-widest text-rose-600">按当前欠款余额</SelectItem>
-            <SelectItem value="totalOrders" className="rounded-xl font-black text-xs uppercase tracking-widest">按对账单项总数</SelectItem>
+            <SelectItem
+              value="totalAmount"
+              className="rounded-xl text-xs font-black tracking-widest uppercase"
+            >
+              按累计流水金额
+            </SelectItem>
+            <SelectItem
+              value="pendingAmount"
+              className="rounded-xl text-xs font-black tracking-widest text-rose-600 uppercase"
+            >
+              按当前欠款余额
+            </SelectItem>
+            <SelectItem
+              value="totalOrders"
+              className="rounded-xl text-xs font-black tracking-widest uppercase"
+            >
+              按对账单项总数
+            </SelectItem>
           </SelectContent>
         </Select>
 
         {/* Date Range Picker Area */}
         <div className="flex-none lg:w-[320px]">
           <div className="relative rounded-2xl border-none bg-white px-4 py-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md">
-             <DateRangePicker
-               value={{
-                 startDate: filters.startDate,
-                 endDate: filters.endDate,
-               }}
-               onChange={range => onDateRangeChange?.(range)}
-               label=""
-               placeholder="账单审计时段"
-               showPresets={true}
-               showClearButton={false}
-               className="border-none bg-transparent shadow-none"
-             />
-             <Calendar className="absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-300 pointer-events-none" />
+            <DateRangePicker
+              value={{
+                startDate: filters.startDate,
+                endDate: filters.endDate,
+              }}
+              onChange={range => onDateRangeChange?.(range)}
+              label=""
+              placeholder="账单审计时段"
+              showPresets={true}
+              showClearButton={false}
+              className="border-none bg-transparent shadow-none"
+            />
+            <Calendar className="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-slate-300" />
           </div>
         </div>
       </div>

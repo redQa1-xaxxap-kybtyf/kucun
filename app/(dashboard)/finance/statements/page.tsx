@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 import {
-    getStatementsList,
-    type StatementQueryParams,
+  getStatementsList,
+  type StatementQueryParams,
 } from '@/lib/services/finance-statistics';
 
 import { StatementsPageClient } from './page-client';

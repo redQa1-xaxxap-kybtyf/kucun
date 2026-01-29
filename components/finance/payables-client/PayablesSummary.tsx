@@ -73,9 +73,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
       {/* 采购货款 + 运费 + 总成本 总览 */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            采购货款 + 运费
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">采购货款 + 运费</CardTitle>
           <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-primary))]" />
         </CardHeader>
         <CardContent className="space-y-1">

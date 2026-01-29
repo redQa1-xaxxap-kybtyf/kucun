@@ -14,10 +14,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
-    PAYMENT_OUT_SORT_OPTIONS,
-    type PaymentOutMethod,
-    type PaymentOutRecordDetail,
-    type PaymentOutStatus,
+  PAYMENT_OUT_SORT_OPTIONS,
+  type PaymentOutMethod,
+  type PaymentOutRecordDetail,
+  type PaymentOutStatus,
 } from '@/lib/types/payable';
 
 type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';

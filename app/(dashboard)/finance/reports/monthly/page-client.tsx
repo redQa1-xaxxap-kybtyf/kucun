@@ -2,14 +2,14 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ArrowDownIcon,
-    ArrowUpIcon,
-    Calendar,
-    MinusIcon,
-    Package,
-    Receipt,
-    RefreshCw,
-    TrendingUp
+  ArrowDownIcon,
+  ArrowUpIcon,
+  Calendar,
+  MinusIcon,
+  Package,
+  Receipt,
+  RefreshCw,
+  TrendingUp,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -17,11 +17,11 @@ import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
@@ -330,16 +330,16 @@ export function MonthlyReportClient() {
             title="异常提醒"
             value={report.alerts?.length || 0}
             icon={<Receipt className="h-4 w-4" />}
-            variant={(report.alerts?.length ?? 0) > 0 ? "warning" : "default"}
+            variant={(report.alerts?.length ?? 0) > 0 ? 'warning' : 'default'}
             isCurrency={false}
             subtitle="待处理审计项"
           />
         </div>
 
         {/* 收入与支出明细 - 高清晰分组区 */}
-        <div className="rounded-2xl bg-slate-50/80 p-6 border border-slate-100">
+        <div className="rounded-2xl border border-slate-100 bg-slate-50/80 p-6">
           <div className="mb-6 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+            <h2 className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               收支明细中心
             </h2>
@@ -351,35 +351,56 @@ export function MonthlyReportClient() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-             <StatCard
-                title="日均销售"
-                value={report.revenue.salesRevenue / 30}
-                icon={<TrendingUp className="h-4 w-4" />}
-                variant="default"
-              />
+            <StatCard
+              title="日均销售"
+              value={report.revenue.salesRevenue / 30}
+              icon={<TrendingUp className="h-4 w-4" />}
+              variant="default"
+            />
+            <StatCard
+              title="平均客单价"
+              value={report.revenue.averageOrderValue}
+              icon={<ChineseYuan className="h-4 w-4" />}
+              variant="default"
+            />
+            <div className="my-2 h-px bg-slate-200 sm:col-span-2 lg:col-span-4 xl:col-span-5" />
+            {[
+              {
+                label: '运费',
+                value: report.expenses.byType.shipping,
+                icon: <Package className="h-3 w-3" />,
+              },
+              {
+                label: '仓储费',
+                value: report.expenses.byType.storage,
+                icon: <ChineseYuan className="h-3 w-3" />,
+              },
+              {
+                label: '人工费',
+                value: report.expenses.byType.labor,
+                icon: <ChineseYuan className="h-3 w-3" />,
+              },
+              {
+                label: '装卸费',
+                value: report.expenses.byType.loading_unloading,
+                icon: <ChineseYuan className="h-3 w-3" />,
+              },
+              {
+                label: '其他费用',
+                value:
+                  report.expenses.byType.travel + report.expenses.byType.living,
+                icon: <ChineseYuan className="h-3 w-3" />,
+              },
+            ].map(item => (
               <StatCard
-                title="平均客单价"
-                value={report.revenue.averageOrderValue}
-                icon={<ChineseYuan className="h-4 w-4" />}
-                variant="default"
+                key={item.label}
+                title={item.label}
+                value={item.value}
+                icon={item.icon}
+                variant="neutral"
+                subtitle={`${report.expenses.totalExpenses > 0 ? ((item.value / report.expenses.totalExpenses) * 100).toFixed(1) : '0.0'}% 总支出`}
               />
-              <div className="h-px bg-slate-200 sm:col-span-2 lg:col-span-4 xl:col-span-5 my-2" />
-              {[
-                { label: '运费', value: report.expenses.byType.shipping, icon: <Package className="h-3 w-3" /> },
-                { label: '仓储费', value: report.expenses.byType.storage, icon: <ChineseYuan className="h-3 w-3" /> },
-                { label: '人工费', value: report.expenses.byType.labor, icon: <ChineseYuan className="h-3 w-3" /> },
-                { label: '装卸费', value: report.expenses.byType.loading_unloading, icon: <ChineseYuan className="h-3 w-3" /> },
-                { label: '其他费用', value: report.expenses.byType.travel + report.expenses.byType.living, icon: <ChineseYuan className="h-3 w-3" /> },
-              ].map((item) => (
-                <StatCard
-                  key={item.label}
-                  title={item.label}
-                  value={item.value}
-                  icon={item.icon}
-                  variant="neutral"
-                  subtitle={`${report.expenses.totalExpenses > 0 ? ((item.value / report.expenses.totalExpenses) * 100).toFixed(1) : '0.0'}% 总支出`}
-                />
-              ))}
+            ))}
           </div>
         </div>
 
@@ -387,56 +408,116 @@ export function MonthlyReportClient() {
         <div className="grid gap-6 lg:grid-cols-2">
           {/* 资金回收看板 */}
           <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <ChineseYuan className="h-4 w-4 text-blue-500" />
               资金回收看板
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-xl bg-blue-50/50 p-4 border border-blue-100/50">
-                <div className="text-[10px] font-bold text-blue-600 uppercase">累计应收 (回款率)</div>
+              <div className="rounded-xl border border-blue-100/50 bg-blue-50/50 p-4">
+                <div className="text-[10px] font-bold text-blue-600 uppercase">
+                  累计应收 (回款率)
+                </div>
                 <div className="mt-1 flex items-baseline justify-between">
-                  <div className="text-xl font-black text-slate-900">{formatCurrency(report.receivables.totalReceivable)}</div>
-                  <div className="text-xs font-bold text-blue-700">{report.receivables.totalReceivable > 0 ? ((report.receivables.receivedAmount / report.receivables.totalReceivable) * 100).toFixed(1) : '0.0'}%</div>
+                  <div className="text-xl font-black text-slate-900">
+                    {formatCurrency(report.receivables.totalReceivable)}
+                  </div>
+                  <div className="text-xs font-bold text-blue-700">
+                    {report.receivables.totalReceivable > 0
+                      ? (
+                          (report.receivables.receivedAmount /
+                            report.receivables.totalReceivable) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %
+                  </div>
                 </div>
                 <div className="mt-3 h-1.5 w-full rounded-full bg-blue-200/50">
-                   <div className="h-full rounded-full bg-blue-500" style={{ width: `${report.receivables.totalReceivable > 0 ? (report.receivables.receivedAmount / report.receivables.totalReceivable) * 100 : 0}%` }} />
+                  <div
+                    className="h-full rounded-full bg-blue-500"
+                    style={{
+                      width: `${report.receivables.totalReceivable > 0 ? (report.receivables.receivedAmount / report.receivables.totalReceivable) * 100 : 0}%`,
+                    }}
+                  />
                 </div>
               </div>
-              <div className="rounded-xl bg-slate-50 p-4 border border-slate-200/50">
-                <div className="text-[10px] font-bold text-slate-500 uppercase">业务应付 (结算进度)</div>
+              <div className="rounded-xl border border-slate-200/50 bg-slate-50 p-4">
+                <div className="text-[10px] font-bold text-slate-500 uppercase">
+                  业务应付 (结算进度)
+                </div>
                 <div className="mt-1 flex items-baseline justify-between">
-                  <div className="text-xl font-black text-slate-900">{formatCurrency(report.receivables.totalPayable)}</div>
-                  <div className="text-xs font-bold text-slate-600">{report.receivables.totalPayable > 0 ? ((report.receivables.paidAmount / report.receivables.totalPayable) * 100).toFixed(1) : '0.0'}%</div>
+                  <div className="text-xl font-black text-slate-900">
+                    {formatCurrency(report.receivables.totalPayable)}
+                  </div>
+                  <div className="text-xs font-bold text-slate-600">
+                    {report.receivables.totalPayable > 0
+                      ? (
+                          (report.receivables.paidAmount /
+                            report.receivables.totalPayable) *
+                          100
+                        ).toFixed(1)
+                      : '0.0'}
+                    %
+                  </div>
                 </div>
                 <div className="mt-3 h-1.5 w-full rounded-full bg-slate-200">
-                   <div className="h-full rounded-full bg-slate-500" style={{ width: `${report.receivables.totalPayable > 0 ? (report.receivables.paidAmount / report.receivables.totalPayable) * 100 : 0}%` }} />
+                  <div
+                    className="h-full rounded-full bg-slate-500"
+                    style={{
+                      width: `${report.receivables.totalPayable > 0 ? (report.receivables.paidAmount / report.receivables.totalPayable) * 100 : 0}%`,
+                    }}
+                  />
                 </div>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between rounded-lg bg-red-50 px-4 py-3 border border-red-100">
-              <span className="text-xs font-bold text-red-700">待收余额 (欠款):</span>
-              <span className="text-lg font-black text-red-700">{formatCurrency(report.receivables.receivableBalance)}</span>
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+              <span className="text-xs font-bold text-red-700">
+                待收余额 (欠款):
+              </span>
+              <span className="text-lg font-black text-red-700">
+                {formatCurrency(report.receivables.receivableBalance)}
+              </span>
             </div>
           </div>
 
           {/* 供应链与直发分析 */}
-          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm text-sm">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-800">
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 text-sm shadow-sm">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-slate-800 uppercase">
               <RefreshCw className="h-4 w-4 text-emerald-500" />
               效率与直发绩效
             </h2>
             <div className="grid gap-3">
               {[
-                { label: '库存周转周期', value: `${report.inventoryTurnover?.turnoverDays?.toFixed(0) ?? 'N/A'} 天`, icon: <RefreshCw className="h-3 w-3" />, color: 'text-emerald-600' },
-                { label: '厂家直发利润率', value: `${report.factoryShipmentProfit?.averageProfitMargin?.toFixed(2) ?? '0.00'}%`, icon: <TrendingUp className="h-3 w-3" />, color: 'text-blue-600' },
-                { label: '直发订单贡献', value: `${report.factoryShipmentProfit?.totalOrders ?? 0} 笔`, icon: <Package className="h-3 w-3" />, color: 'text-slate-600' },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between p-3 rounded-xl border border-dashed border-slate-200">
-                  <div className="flex items-center gap-2 text-slate-600 font-bold">
+                {
+                  label: '库存周转周期',
+                  value: `${report.inventoryTurnover?.turnoverDays?.toFixed(0) ?? 'N/A'} 天`,
+                  icon: <RefreshCw className="h-3 w-3" />,
+                  color: 'text-emerald-600',
+                },
+                {
+                  label: '厂家直发利润率',
+                  value: `${report.factoryShipmentProfit?.averageProfitMargin?.toFixed(2) ?? '0.00'}%`,
+                  icon: <TrendingUp className="h-3 w-3" />,
+                  color: 'text-blue-600',
+                },
+                {
+                  label: '直发订单贡献',
+                  value: `${report.factoryShipmentProfit?.totalOrders ?? 0} 笔`,
+                  icon: <Package className="h-3 w-3" />,
+                  color: 'text-slate-600',
+                },
+              ].map(item => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between rounded-xl border border-dashed border-slate-200 p-3"
+                >
+                  <div className="flex items-center gap-2 font-bold text-slate-600">
                     {item.icon}
                     {item.label}
                   </div>
-                  <div className={cn("font-black text-lg", item.color)}>{item.value}</div>
+                  <div className={cn('text-lg font-black', item.color)}>
+                    {item.value}
+                  </div>
                 </div>
               ))}
             </div>
@@ -445,32 +526,43 @@ export function MonthlyReportClient() {
 
         {/* 异常审计 - v3 风格内容 */}
         {report.alerts && report.alerts.length > 0 && (
-          <div className="rounded-2xl bg-amber-50 p-6 border border-amber-100">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-amber-800">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50 p-6">
+            <h2 className="mb-4 flex items-center gap-2 text-sm font-black tracking-widest text-amber-800 uppercase">
               <Receipt className="h-4 w-4" />
               智能风险审计建议
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-               {report.alerts.map((alert, index) => (
-                  <div key={index} className="flex flex-col gap-2 rounded-xl bg-white p-4 shadow-sm border border-amber-200/50">
-                    <div className="flex items-center justify-between">
-                      <span className={cn(
-                        "rounded-full px-2 py-0.5 text-[9px] font-black uppercase",
-                        alert.type === 'danger' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                      )}>
-                        {alert.type === 'danger' ? '高风险' : '建议关注'}
-                      </span>
-                    </div>
-                    <div className="text-sm font-black text-slate-800">{alert.title}</div>
-                    <div className="text-xs leading-relaxed text-slate-500">{alert.message}</div>
+              {report.alerts.map((alert, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col gap-2 rounded-xl border border-amber-200/50 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={cn(
+                        'rounded-full px-2 py-0.5 text-[9px] font-black uppercase',
+                        alert.type === 'danger'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-amber-100 text-amber-700'
+                      )}
+                    >
+                      {alert.type === 'danger' ? '高风险' : '建议关注'}
+                    </span>
                   </div>
-               ))}
+                  <div className="text-sm font-black text-slate-800">
+                    {alert.title}
+                  </div>
+                  <div className="text-xs leading-relaxed text-slate-500">
+                    {alert.message}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* 报表导出区域 (v3 PRO: 专用于图片导出，格式化为专业纸质报表感) */}
-        <div className="overflow-hidden h-0 w-0 opacity-0 pointer-events-none">
+        <div className="pointer-events-none h-0 w-0 overflow-hidden opacity-0">
           <Card
             ref={exportRef}
             className="w-[1000px] border-none bg-white p-10 text-slate-900 shadow-none"
@@ -479,30 +571,47 @@ export function MonthlyReportClient() {
             <div className="mb-8 flex items-end justify-between border-b-2 border-slate-900 pb-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 bg-slate-900 flex items-center justify-center rounded text-white font-black italic">反</div>
-                  <h1 className="text-2xl font-black uppercase tracking-tighter text-slate-900">
-                    反重力 <span className="font-light text-slate-500">系统</span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-900 font-black text-white italic">
+                    反
+                  </div>
+                  <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">
+                    反重力{' '}
+                    <span className="font-light text-slate-500">系统</span>
                   </h1>
                 </div>
-                <div className="text-[10px] font-bold tracking-widest text-slate-500">财务报表中心</div>
+                <div className="text-[10px] font-bold tracking-widest text-slate-500">
+                  财务报表中心
+                </div>
               </div>
-              <div className="text-right space-y-0.5">
-                <h2 className="text-xl font-black tracking-tight">{year}年{month}月度财务分析报表</h2>
-                <div className="text-[10px] uppercase font-bold text-slate-400">报告编号：财报-{year}{month.toString().padStart(2, '0')}-001</div>
+              <div className="space-y-0.5 text-right">
+                <h2 className="text-xl font-black tracking-tight">
+                  {year}年{month}月度财务分析报表
+                </h2>
+                <div className="text-[10px] font-bold text-slate-400 uppercase">
+                  报告编号：财报-{year}
+                  {month.toString().padStart(2, '0')}-001
+                </div>
               </div>
             </div>
 
             {/* 元数据行 */}
-            <div className="mb-6 grid grid-cols-4 gap-4 rounded-lg bg-slate-50 p-4 border border-slate-100">
+            <div className="mb-6 grid grid-cols-4 gap-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
               {[
                 { label: '报表类型', value: '月度经营分析' },
-                { label: '统计周期', value: `${report.period.startDate} / ${report.period.endDate}` },
+                {
+                  label: '统计周期',
+                  value: `${report.period.startDate} / ${report.period.endDate}`,
+                },
                 { label: '币种', value: '人民币（元）' },
                 { label: '保密级别', value: '内部机密' },
-              ].map((item) => (
+              ].map(item => (
                 <div key={item.label}>
-                  <div className="text-[9px] font-black uppercase text-slate-400">{item.label}</div>
-                  <div className="text-xs font-bold text-slate-700">{item.value}</div>
+                  <div className="text-[9px] font-black text-slate-400 uppercase">
+                    {item.label}
+                  </div>
+                  <div className="text-xs font-bold text-slate-700">
+                    {item.value}
+                  </div>
                 </div>
               ))}
             </div>
@@ -511,31 +620,64 @@ export function MonthlyReportClient() {
             <div className="mb-8">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-1 w-8 bg-slate-900" />
-                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-900">第一部分：经营业绩汇总</h3>
+                <h3 className="text-[11px] font-black tracking-widest text-slate-900 uppercase">
+                  第一部分：经营业绩汇总
+                </h3>
               </div>
-              <div className="grid grid-cols-4 gap-px bg-slate-200 border border-slate-200">
+              <div className="grid grid-cols-4 gap-px border border-slate-200 bg-slate-200">
                 {[
-                  { label: '销售总收入', value: report.revenue.salesRevenue, sub: `订单量: ${report.revenue.orderCount}` },
-                  { label: '营业总成本', value: report.costs.totalCost, sub: `销售毛利: ${formatCurrency(report.profit.grossProfit)}` },
-                  { label: '经营总费用', value: report.expenses.totalExpenses, sub: `费用占比: ${report.revenue.salesRevenue > 0 ? ((report.expenses.totalExpenses / report.revenue.salesRevenue) * 100).toFixed(1) : '0.0'}%` },
-                  { label: '本月净利润', value: report.profit.netProfit, sub: `净利率: ${report.profit.profitMargin.toFixed(2)}%`, highlight: true },
-                ].map((item) => (
-                  <div key={item.label} className={cn("bg-white p-5", item.highlight && "bg-slate-50")}>
-                    <div className="text-[10px] font-bold text-slate-500 mb-1">{item.label}</div>
-                    <div className="text-xl font-black font-mono text-slate-900">{formatCurrency(item.value)}</div>
-                    <div className="mt-1 text-[9px] font-medium text-slate-400">{item.sub}</div>
+                  {
+                    label: '销售总收入',
+                    value: report.revenue.salesRevenue,
+                    sub: `订单量: ${report.revenue.orderCount}`,
+                  },
+                  {
+                    label: '营业总成本',
+                    value: report.costs.totalCost,
+                    sub: `销售毛利: ${formatCurrency(report.profit.grossProfit)}`,
+                  },
+                  {
+                    label: '经营总费用',
+                    value: report.expenses.totalExpenses,
+                    sub: `费用占比: ${report.revenue.salesRevenue > 0 ? ((report.expenses.totalExpenses / report.revenue.salesRevenue) * 100).toFixed(1) : '0.0'}%`,
+                  },
+                  {
+                    label: '本月净利润',
+                    value: report.profit.netProfit,
+                    sub: `净利率: ${report.profit.profitMargin.toFixed(2)}%`,
+                    highlight: true,
+                  },
+                ].map(item => (
+                  <div
+                    key={item.label}
+                    className={cn(
+                      'bg-white p-5',
+                      item.highlight && 'bg-slate-50'
+                    )}
+                  >
+                    <div className="mb-1 text-[10px] font-bold text-slate-500">
+                      {item.label}
+                    </div>
+                    <div className="font-mono text-xl font-black text-slate-900">
+                      {formatCurrency(item.value)}
+                    </div>
+                    <div className="mt-1 text-[9px] font-medium text-slate-400">
+                      {item.sub}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* B. 细分指标矩阵 */}
-            <div className="grid grid-cols-2 gap-8 mb-8">
+            <div className="mb-8 grid grid-cols-2 gap-8">
               {/* 支出构成明细表 */}
               <div>
                 <div className="mb-3 flex items-center gap-2">
                   <div className="h-1 w-4 bg-slate-400" />
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">第二部分：费用分布</h3>
+                  <h3 className="text-[10px] font-black tracking-widest text-slate-700 uppercase">
+                    第二部分：费用分布
+                  </h3>
                 </div>
                 <table className="w-full text-left text-[11px]">
                   <thead className="border-b-2 border-slate-900">
@@ -550,19 +692,36 @@ export function MonthlyReportClient() {
                       { l: '运费', v: report.expenses.byType.shipping },
                       { l: '仓储费', v: report.expenses.byType.storage },
                       { l: '人工费', v: report.expenses.byType.labor },
-                      { l: '其他费用', v: report.expenses.byType.travel + report.expenses.byType.living },
-                    ].map((row) => (
+                      {
+                        l: '其他费用',
+                        v:
+                          report.expenses.byType.travel +
+                          report.expenses.byType.living,
+                      },
+                    ].map(row => (
                       <tr key={row.l}>
-                        <td className="py-2 text-slate-600 font-bold">{row.l}</td>
-                        <td className="py-2 text-right font-mono font-bold">{formatCurrency(row.v)}</td>
-                        <td className="py-2 text-right font-bold">{((row.v / report.expenses.totalExpenses) * 100).toFixed(1)}%</td>
+                        <td className="py-2 font-bold text-slate-600">
+                          {row.l}
+                        </td>
+                        <td className="py-2 text-right font-mono font-bold">
+                          {formatCurrency(row.v)}
+                        </td>
+                        <td className="py-2 text-right font-bold">
+                          {(
+                            (row.v / report.expenses.totalExpenses) *
+                            100
+                          ).toFixed(1)}
+                          %
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot className="border-t-2 border-slate-900">
                     <tr className="font-black">
                       <td className="py-2">合计</td>
-                      <td className="py-2 text-right font-mono">{formatCurrency(report.expenses.totalExpenses)}</td>
+                      <td className="py-2 text-right font-mono">
+                        {formatCurrency(report.expenses.totalExpenses)}
+                      </td>
                       <td className="py-2 text-right">100.0%</td>
                     </tr>
                   </tfoot>
@@ -574,37 +733,68 @@ export function MonthlyReportClient() {
                 <div>
                   <div className="mb-3 flex items-center gap-2">
                     <div className="h-1 w-4 bg-slate-400" />
-                    <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-700">第三部分：现金流与周转</h3>
+                    <h3 className="text-[10px] font-black tracking-widest text-slate-700 uppercase">
+                      第三部分：现金流与周转
+                    </h3>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded border border-slate-200 p-3">
-                      <div className="text-[9px] font-black text-slate-400 uppercase">应收账款回收率</div>
-                      <div className="text-lg font-black font-mono">
-                        {report.receivables.totalReceivable > 0 ? ((report.receivables.receivedAmount / report.receivables.totalReceivable) * 100).toFixed(1) : '0.0'}%
+                      <div className="text-[9px] font-black text-slate-400 uppercase">
+                        应收账款回收率
                       </div>
-                      <div className="text-[9px] text-slate-400 mt-1">余额: {formatCurrency(report.receivables.receivableBalance)}</div>
+                      <div className="font-mono text-lg font-black">
+                        {report.receivables.totalReceivable > 0
+                          ? (
+                              (report.receivables.receivedAmount /
+                                report.receivables.totalReceivable) *
+                              100
+                            ).toFixed(1)
+                          : '0.0'}
+                        %
+                      </div>
+                      <div className="mt-1 text-[9px] text-slate-400">
+                        余额:{' '}
+                        {formatCurrency(report.receivables.receivableBalance)}
+                      </div>
                     </div>
                     <div className="rounded border border-slate-200 p-3">
-                      <div className="text-[9px] font-black text-slate-400 uppercase">库存周转周期 (天)</div>
-                      <div className="text-lg font-black font-mono">
-                        {report.inventoryTurnover?.turnoverDays.toFixed(0) || '0'} 天
+                      <div className="text-[9px] font-black text-slate-400 uppercase">
+                        库存周转周期 (天)
                       </div>
-                      <div className="text-[9px] text-slate-400 mt-1">周转率: {report.inventoryTurnover?.turnoverRate.toFixed(2)}x</div>
+                      <div className="font-mono text-lg font-black">
+                        {report.inventoryTurnover?.turnoverDays.toFixed(0) ||
+                          '0'}{' '}
+                        天
+                      </div>
+                      <div className="mt-1 text-[9px] text-slate-400">
+                        周转率:{' '}
+                        {report.inventoryTurnover?.turnoverRate.toFixed(2)}x
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="rounded bg-slate-900 p-4 text-white">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">直发业务绩效汇报</div>
-                    <span className="text-[9px] bg-slate-700 px-1.5 py-0.5 rounded">厂家直发</span>
+                  <div className="mb-2 flex items-start justify-between">
+                    <div className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+                      直发业务绩效汇报
+                    </div>
+                    <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[9px]">
+                      厂家直发
+                    </span>
                   </div>
-                  <div className="flex justify-between items-baseline">
-                    <div className="text-2xl font-black font-mono">
-                      {formatCurrency(report.factoryShipmentProfit?.customerProfit || 0)}
+                  <div className="flex items-baseline justify-between">
+                    <div className="font-mono text-2xl font-black">
+                      {formatCurrency(
+                        report.factoryShipmentProfit?.customerProfit || 0
+                      )}
                     </div>
                     <div className="text-xs font-bold text-slate-300">
-                      Margin: {report.factoryShipmentProfit?.averageProfitMargin.toFixed(2)}%
+                      Margin:{' '}
+                      {report.factoryShipmentProfit?.averageProfitMargin.toFixed(
+                        2
+                      )}
+                      %
                     </div>
                   </div>
                 </div>
@@ -613,18 +803,26 @@ export function MonthlyReportClient() {
 
             {/* C. 审计预警摘要 */}
             {report.alerts && report.alerts.length > 0 && (
-              <div className="bg-slate-50 border-2 border-slate-900 rounded-lg p-5">
+              <div className="rounded-lg border-2 border-slate-900 bg-slate-50 p-5">
                 <div className="mb-3 flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
-                  <h3 className="text-xs font-black uppercase tracking-widest">管理审计与预警</h3>
+                  <h3 className="text-xs font-black tracking-widest uppercase">
+                    管理审计与预警
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                   {report.alerts.map((alert, idx) => (
                     <div key={idx} className="flex gap-3">
-                      <span className="font-black text-slate-400">{String(idx + 1).padStart(2, '0')}.</span>
+                      <span className="font-black text-slate-400">
+                        {String(idx + 1).padStart(2, '0')}.
+                      </span>
                       <div>
-                        <div className="text-xs font-bold text-slate-800">{alert.title}</div>
-                        <div className="text-[10px] leading-relaxed text-slate-500 mt-0.5 italic">{alert.message}</div>
+                        <div className="text-xs font-bold text-slate-800">
+                          {alert.title}
+                        </div>
+                        <div className="mt-0.5 text-[10px] leading-relaxed text-slate-500 italic">
+                          {alert.message}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -633,7 +831,7 @@ export function MonthlyReportClient() {
             )}
 
             {/* 页脚 - 报表鉴真 */}
-            <div className="mt-12 flex items-center justify-between text-[9px] font-bold uppercase text-slate-400">
+            <div className="mt-12 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">
               <div className="flex gap-4">
                 <span>生成模块：智能财务模块</span>
                 <span>生成时间：{new Date().toLocaleString('zh-CN')}</span>
@@ -654,7 +852,14 @@ interface StatCardProps {
   icon: React.ReactNode;
   subtitle?: string;
   isCurrency?: boolean;
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'neutral';
+  variant?:
+    | 'default'
+    | 'primary'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'info'
+    | 'neutral';
   size?: 'sm' | 'md' | 'lg';
   comparison?: {
     current: number;
@@ -699,14 +904,14 @@ function StatCard({
   return (
     <Card
       className={cn(
-        'group relative overflow-hidden border transition-all duration-300 hover:shadow-md hover:border-opacity-50',
+        'group hover:border-opacity-50 relative overflow-hidden border transition-all duration-300 hover:shadow-md',
         themeStyles[variant],
         size === 'lg' ? 'md:col-span-2 lg:col-span-1' : ''
       )}
     >
       <CardHeader className="flex flex-row items-start justify-between space-y-0 px-5 pt-5 pb-2">
         <div className="space-y-1">
-          <CardTitle className="text-xs font-bold uppercase tracking-wider opacity-80">
+          <CardTitle className="text-xs font-bold tracking-wider uppercase opacity-80">
             {title}
           </CardTitle>
           <div
@@ -718,11 +923,16 @@ function StatCard({
             {isCurrency ? formatCurrency(value) : value.toLocaleString()}
           </div>
         </div>
-        <div className={cn('rounded-lg p-2 transition-transform group-hover:scale-110', iconStyles[variant])}>
+        <div
+          className={cn(
+            'rounded-lg p-2 transition-transform group-hover:scale-110',
+            iconStyles[variant]
+          )}
+        >
           {icon}
         </div>
       </CardHeader>
-      
+
       <CardContent className="px-5 pb-4">
         <div className="flex flex-col gap-2">
           {comparison && (
@@ -737,34 +947,48 @@ function StatCard({
                       : 'bg-slate-400 text-white'
                 )}
               >
-                {comparison.trend === 'up' && <ArrowUpIcon className="mr-0.5 h-3 w-3" />}
-                {comparison.trend === 'down' && <ArrowDownIcon className="mr-0.5 h-3 w-3" />}
-                {comparison.trend === 'stable' && <MinusIcon className="mr-0.5 h-3 w-3" />}
+                {comparison.trend === 'up' && (
+                  <ArrowUpIcon className="mr-0.5 h-3 w-3" />
+                )}
+                {comparison.trend === 'down' && (
+                  <ArrowDownIcon className="mr-0.5 h-3 w-3" />
+                )}
+                {comparison.trend === 'stable' && (
+                  <MinusIcon className="mr-0.5 h-3 w-3" />
+                )}
                 {Math.abs(comparison.changeRate).toFixed(1)}%
               </div>
-              <span className="text-[10px] font-medium text-slate-500 italic">较上月</span>
+              <span className="text-[10px] font-medium text-slate-500 italic">
+                较上月
+              </span>
             </div>
           )}
           {subtitle && (
-            <p className="text-[11px] leading-relaxed text-slate-500 line-clamp-1 border-t border-slate-200/50 pt-2 mt-1">
+            <p className="mt-1 line-clamp-1 border-t border-slate-200/50 pt-2 text-[11px] leading-relaxed text-slate-500">
               {subtitle}
             </p>
           )}
         </div>
       </CardContent>
-      
+
       {/* 底部装饰线条，增加专业感 */}
-      <div className={cn(
-        'h-1 w-full opacity-30',
-        variant === 'primary' ? 'bg-blue-600' :
-        variant === 'success' ? 'bg-emerald-600' :
-        variant === 'error' ? 'bg-red-600' :
-        variant === 'warning' ? 'bg-amber-600' : 'bg-slate-300'
-      )} />
+      <div
+        className={cn(
+          'h-1 w-full opacity-30',
+          variant === 'primary'
+            ? 'bg-blue-600'
+            : variant === 'success'
+              ? 'bg-emerald-600'
+              : variant === 'error'
+                ? 'bg-red-600'
+                : variant === 'warning'
+                  ? 'bg-amber-600'
+                  : 'bg-slate-300'
+        )}
+      />
     </Card>
   );
 }
-
 
 // 加载骨架屏
 function MonthlyReportSkeleton() {

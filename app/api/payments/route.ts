@@ -294,8 +294,12 @@ export const POST = withAuth(
             roundingAdjustment: true,
             status: true,
             payments: {
-              where: { status: 'confirmed' },
+              // ✅ 应收校验只计入已确认/已冲抵的收款，避免把“待确认/系统应收占位”误算为已收
+              where: { status: { in: ['confirmed', 'applied'] } },
               select: { paymentAmount: true },
+            },
+            prepaymentUsages: {
+              select: { appliedAmount: true },
             },
           },
         });
@@ -323,7 +327,14 @@ export const POST = withAuth(
           (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
           0
         );
-        const remainingCents = Math.max(orderTotalCents - totalPaidCents, 0);
+        const totalPrepaymentAppliedCents = salesOrder.prepaymentUsages.reduce(
+          (sum, usage) => sum + toMinorUnits(usage.appliedAmount),
+          0
+        );
+        const remainingCents = Math.max(
+          orderTotalCents - totalPaidCents - totalPrepaymentAppliedCents,
+          0
+        );
         const paymentCents = toMinorUnits(data.paymentAmount);
 
         // 验证收款金额不超过剩余应收金额
@@ -403,60 +414,6 @@ export const POST = withAuth(
               },
             },
           });
-
-          // ✅ 仅订单付款需要验证金额和更新订单状态
-          if (data.paymentType === 'order_payment' && data.salesOrderId) {
-            // 从之前的验证中获取订单信息(避免重复查询)
-            const salesOrder = await tx.salesOrder.findUnique({
-              where: { id: data.salesOrderId },
-              select: {
-                totalAmount: true,
-                roundingAdjustment: true,
-                status: true,
-                payments: {
-                  where: {
-                    status: { in: ['confirmed', 'pending'] },
-                    NOT: { id: newPayment.id }, // 排除当前事务中新建的待确认收款，避免重复计入
-                  },
-                  select: { paymentAmount: true, status: true },
-                },
-              },
-            });
-
-            if (!salesOrder) {
-              throw new Error('销售订单不存在');
-            }
-
-            // 计算已确认的收款金额
-            const confirmedAmountCents = salesOrder.payments
-              .filter(payment => payment.status === 'confirmed')
-              .reduce(
-                (sum, payment) => sum + toMinorUnits(payment.paymentAmount),
-                0
-              );
-            const orderTotalCents =
-              toMinorUnits(salesOrder.totalAmount) +
-              toMinorUnits(salesOrder.roundingAdjustment);
-            const newPaymentCents = toMinorUnits(data.paymentAmount);
-
-            // 注意：金额验证已在事务前完成（第252-273行），此处不再重复验证
-            // 事务中只需要判断是否需要更新订单状态
-
-            // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
-            const newTotalPaidCents = confirmedAmountCents + newPaymentCents;
-            if (
-              newTotalPaidCents >= orderTotalCents &&
-              salesOrder.status === 'shipped'
-            ) {
-              await tx.salesOrder.update({
-                where: { id: data.salesOrderId },
-                data: {
-                  status: 'completed', // 已发货 + 全额收款 = 已完成
-                  updatedAt: new Date(),
-                },
-              });
-            }
-          }
 
           return newPayment;
         },

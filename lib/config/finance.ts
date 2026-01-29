@@ -191,7 +191,6 @@ export const RECEIVABLE_STATUS_LABELS = {
   [RECEIVABLE_STATUSES.PAID]: '已收款',
 } as const;
 
-
 // 财务配置常量
 export const FINANCE_CONFIG = {
   // 默认付款期限（天）
@@ -246,56 +245,52 @@ export const FINANCE_PERMISSIONS = {
 
 // 导出所有枚举值的数组形式，便于表单选项使用
 export const PAYMENT_METHOD_OPTIONS = Object.values(PAYMENT_METHODS).map(
-  (value) => ({
+  value => ({
     label: PAYMENT_METHOD_LABELS[value],
     value,
   })
 );
 
 export const PAYMENT_STATUS_OPTIONS = Object.values(PAYMENT_STATUSES).map(
-  (value) => ({
+  value => ({
     label: PAYMENT_STATUS_LABELS[value],
     value,
   })
 );
 
-export const REFUND_TYPE_OPTIONS = Object.values(REFUND_TYPES).map(
-  (value) => ({
-    label: REFUND_TYPE_LABELS[value],
-    value,
-  })
-);
+export const REFUND_TYPE_OPTIONS = Object.values(REFUND_TYPES).map(value => ({
+  label: REFUND_TYPE_LABELS[value],
+  value,
+}));
 
 export const REFUND_METHOD_OPTIONS = Object.values(REFUND_METHODS).map(
-  (value) => ({
+  value => ({
     label: REFUND_METHOD_LABELS[value],
     value,
   })
 );
 
 export const REFUND_STATUS_OPTIONS = Object.values(REFUND_STATUSES).map(
-  (value) => ({
+  value => ({
     label: REFUND_STATUS_LABELS[value],
     value,
   })
 );
 
-export const ENTITY_TYPE_OPTIONS = Object.values(ENTITY_TYPES).map(
-  (value) => ({
-    label: ENTITY_TYPE_LABELS[value],
-    value,
-  })
-);
+export const ENTITY_TYPE_OPTIONS = Object.values(ENTITY_TYPES).map(value => ({
+  label: ENTITY_TYPE_LABELS[value],
+  value,
+}));
 
 export const STATEMENT_STATUS_OPTIONS = Object.values(STATEMENT_STATUSES).map(
-  (value) => ({
+  value => ({
     label: STATEMENT_STATUS_LABELS[value],
     value,
   })
 );
 
 export const TRANSACTION_TYPE_OPTIONS = Object.values(TRANSACTION_TYPES).map(
-  (value) => ({
+  value => ({
     label: TRANSACTION_TYPE_LABELS[value],
     value,
   })
@@ -303,18 +298,17 @@ export const TRANSACTION_TYPE_OPTIONS = Object.values(TRANSACTION_TYPES).map(
 
 export const TRANSACTION_STATUS_OPTIONS = Object.values(
   TRANSACTION_STATUSES
-).map((value) => ({
+).map(value => ({
   label: TRANSACTION_STATUS_LABELS[value],
   value,
 }));
 
-export const RECEIVABLE_STATUS_OPTIONS = Object.values(
-  RECEIVABLE_STATUSES
-).map((value) => ({
-  label: RECEIVABLE_STATUS_LABELS[value as ReceivableStatus],
-  value,
-}));
-
+export const RECEIVABLE_STATUS_OPTIONS = Object.values(RECEIVABLE_STATUSES).map(
+  value => ({
+    label: RECEIVABLE_STATUS_LABELS[value as ReceivableStatus],
+    value,
+  })
+);
 
 // TypeScript 类型推导
 export type PaymentMethod =

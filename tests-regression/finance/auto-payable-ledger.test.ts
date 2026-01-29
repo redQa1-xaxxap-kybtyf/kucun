@@ -37,9 +37,11 @@ describe('purchase-order-payable auto payable ledger', () => {
         }),
       },
       purchaseOrderItem: {
-        groupBy: jest.fn().mockResolvedValue([
-          { supplierId: 'supplier-001', _sum: { totalPrice: 100 } },
-        ]),
+        groupBy: jest
+          .fn()
+          .mockResolvedValue([
+            { supplierId: 'supplier-001', _sum: { totalPrice: 100 } },
+          ]),
       },
       expenseRecord: {
         groupBy: jest.fn().mockResolvedValue([]),
@@ -79,4 +81,3 @@ describe('purchase-order-payable auto payable ledger', () => {
     );
   });
 });
-

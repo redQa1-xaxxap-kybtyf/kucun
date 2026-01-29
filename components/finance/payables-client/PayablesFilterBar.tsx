@@ -3,9 +3,9 @@
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type {
-    PayableRecordQuery,
-    PayableSourceType,
-    PayableStatus,
+  PayableRecordQuery,
+  PayableSourceType,
+  PayableStatus,
 } from '@/lib/types/payable';
 
 interface Props {

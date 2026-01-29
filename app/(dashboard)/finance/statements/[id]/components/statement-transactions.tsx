@@ -7,12 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import type { StatementTransaction } from '@/lib/types/statement';
 import { cn } from '@/lib/utils';
@@ -62,10 +62,10 @@ export function StatementTransactions({
     return (
       <Badge
         className={cn(
-          "font-bold uppercase tracking-wider",
+          'font-bold tracking-wider uppercase',
           isPending
-            ? "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-            : "border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            ? 'border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+            : 'border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
         )}
       >
         {isPending ? '待入账' : '已核销'}
@@ -75,8 +75,8 @@ export function StatementTransactions({
 
   return (
     <Card>
-      <CardHeader className="bg-slate-50 border-b border-slate-200 px-6 py-4">
-        <CardTitle className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-slate-500 italic">
+      <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-500 uppercase italic">
           <FileText className="h-4 w-4" />
           全业务往来明细账
         </CardTitle>
@@ -85,15 +85,33 @@ export function StatementTransactions({
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="border-b border-slate-200 hover:bg-transparent">
-              <TableHead className="py-4 font-black text-slate-700">业务类型</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">单据编号</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">科目摘要</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-700">借方 (应收+)</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-700">贷方 (应收-)</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-700">余额 (元)</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">记账时间</TableHead>
-              <TableHead className="py-4 font-black text-slate-700">核销状态</TableHead>
-              <TableHead className="py-4 text-right font-black text-slate-700">操作</TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                业务类型
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                单据编号
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                科目摘要
+              </TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">
+                借方 (应收+)
+              </TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">
+                贷方 (应收-)
+              </TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">
+                余额 (元)
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                记账时间
+              </TableHead>
+              <TableHead className="py-4 font-black text-slate-700">
+                核销状态
+              </TableHead>
+              <TableHead className="py-4 text-right font-black text-slate-700">
+                操作
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -103,7 +121,7 @@ export function StatementTransactions({
               const isPositive = transaction.balance >= 0;
 
               return (
-                <TableRow 
+                <TableRow
                   key={transaction.id}
                   className="group transition-colors hover:bg-blue-50/30"
                 >
@@ -135,14 +153,18 @@ export function StatementTransactions({
                     )}
                   </TableCell>
                   <TableCell className="py-4 text-right">
-                    <span className={cn(
-                      "font-mono text-sm font-black tracking-tight",
-                      isPositive ? 'text-orange-500' : 'text-rose-500'
-                    )}>
-                      {formatCurrency(transaction.afterBalance ?? transaction.balance).replace('¥', '')}
+                    <span
+                      className={cn(
+                        'font-mono text-sm font-black tracking-tight',
+                        isPositive ? 'text-orange-500' : 'text-rose-500'
+                      )}
+                    >
+                      {formatCurrency(
+                        transaction.afterBalance ?? transaction.balance
+                      ).replace('¥', '')}
                     </span>
                   </TableCell>
-                  <TableCell className="py-4 text-[10px] font-bold uppercase text-slate-400">
+                  <TableCell className="py-4 text-[10px] font-bold text-slate-400 uppercase">
                     {formatDateTime(transaction.transactionDate)}
                   </TableCell>
                   <TableCell className="py-4">

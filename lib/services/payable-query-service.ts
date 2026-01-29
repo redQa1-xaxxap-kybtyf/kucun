@@ -112,7 +112,8 @@ function serializePayables(
     supplier: {
       id: payable.supplier.id,
       name: payable.supplier.name,
-      ...(payable.supplier.phone !== null && payable.supplier.phone !== undefined
+      ...(payable.supplier.phone !== null &&
+      payable.supplier.phone !== undefined
         ? { phone: payable.supplier.phone }
         : {}),
       ...(payable.supplier.address !== null &&
@@ -128,7 +129,8 @@ function serializePayables(
     paymentOutRecords: payable.paymentOutRecords.map(record => ({
       id: record.id,
       paymentNumber: record.paymentNumber,
-      ...(record.payableRecordId !== null && record.payableRecordId !== undefined
+      ...(record.payableRecordId !== null &&
+      record.payableRecordId !== undefined
         ? { payableRecordId: record.payableRecordId }
         : {}),
       supplierId: record.supplierId,

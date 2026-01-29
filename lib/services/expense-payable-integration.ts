@@ -366,8 +366,18 @@ export async function updateExpensePaymentStatusAfterPayment(params: {
   payableRecordId: string;
   paymentAmount: number;
   tx?: Prisma.TransactionClient;
+  /**
+   * 当付款逻辑已经在上层（例如 payments-out 路由）完成了应付款 paid/remaining 的更新时，
+   * 这里应只负责同步费用状态，避免重复叠加付款金额。
+   */
+  payableAlreadyUpdated?: boolean;
 }): Promise<void> {
-  const { payableRecordId, paymentAmount, tx: providedTx } = params;
+  const {
+    payableRecordId,
+    paymentAmount,
+    tx: providedTx,
+    payableAlreadyUpdated = false,
+  } = params;
   const _db = providedTx || prisma;
 
   const runUpdate = async (db: Prisma.TransactionClient) => {
@@ -396,25 +406,29 @@ export async function updateExpensePaymentStatusAfterPayment(params: {
     const paidAmount = toNumber(payable.paidAmount);
     const remainingAmount = toNumber(payable.remainingAmount);
 
-    // 更新应付款金额
-    const newPaidAmount = roundCurrency(paidAmount + paymentAmount);
-    const newRemainingAmount = roundCurrency(
-      Math.max(0, remainingAmount - paymentAmount)
-    );
+    const newPaidAmount = payableAlreadyUpdated
+      ? paidAmount
+      : roundCurrency(paidAmount + paymentAmount);
+    const newRemainingAmount = payableAlreadyUpdated
+      ? remainingAmount
+      : roundCurrency(Math.max(0, remainingAmount - paymentAmount));
 
-    await db.payableRecord.update({
-      where: { id: payableRecordId },
-      data: {
-        paidAmount: newPaidAmount,
-        remainingAmount: newRemainingAmount,
-        status: isWithinTolerance(newRemainingAmount, 0)
-          ? 'paid'
-          : newPaidAmount > 0
-            ? 'partial'
-            : 'pending',
-        updatedAt: new Date(),
-      },
-    });
+    if (!payableAlreadyUpdated) {
+      // 更新应付款金额
+      await db.payableRecord.update({
+        where: { id: payableRecordId },
+        data: {
+          paidAmount: newPaidAmount,
+          remainingAmount: newRemainingAmount,
+          status: isWithinTolerance(newRemainingAmount, 0)
+            ? 'paid'
+            : newPaidAmount > 0
+              ? 'partial'
+              : 'pending',
+          updatedAt: new Date(),
+        },
+      });
+    }
 
     // 更新关联费用的支付状态
     if (payable.expenseRecords.length === 0) {
@@ -462,5 +476,66 @@ export async function updateExpensePaymentStatusAfterPayment(params: {
     await runUpdate(providedTx);
   } else {
     await prisma.$transaction(runUpdate);
+  }
+}
+
+/**
+ * 基于“应付款当前金额状态”同步费用支付状态（可回滚）
+ *
+ * 使用场景：
+ * - 付款作废 / 付款金额下调：需要把已标记为 paid 的费用回滚为 partial/unpaid
+ * - 付款金额上调：需要把费用从 unpaid/partial 推进为 paid/partial
+ *
+ * 当前采用简化口径：
+ * - remaining=0   -> 全部费用标记 paid
+ * - paid>0        -> 全部费用标记 partial
+ * - paid=0        -> 全部费用标记 unpaid
+ */
+export async function syncExpensePaymentStatusFromPayable(params: {
+  payableRecordId: string;
+  tx?: Prisma.TransactionClient;
+}): Promise<void> {
+  const { payableRecordId, tx: providedTx } = params;
+  const _db = providedTx || prisma;
+
+  const runSync = async (db: Prisma.TransactionClient) => {
+    const payable = await db.payableRecord.findUnique({
+      where: { id: payableRecordId },
+      select: {
+        id: true,
+        paidAmount: true,
+        remainingAmount: true,
+      },
+    });
+
+    if (!payable) {
+      logger.warn('expense-payable', '应付款不存在，跳过费用状态同步', {
+        payableRecordId,
+      });
+      return;
+    }
+
+    const paidAmount = toNumber(payable.paidAmount);
+    const remainingAmount = toNumber(payable.remainingAmount);
+
+    const nextStatus = isWithinTolerance(remainingAmount, 0)
+      ? 'paid'
+      : paidAmount > 0
+        ? 'partial'
+        : 'unpaid';
+
+    await db.expenseRecord.updateMany({
+      where: {
+        payableId: payableRecordId,
+        paymentStatus: { not: nextStatus },
+      },
+      data: { paymentStatus: nextStatus },
+    });
+  };
+
+  if (providedTx) {
+    await runSync(providedTx);
+  } else {
+    await prisma.$transaction(runSync);
   }
 }

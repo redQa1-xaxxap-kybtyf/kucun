@@ -91,7 +91,8 @@ export const POST = withAuth(
             await recordPartnerTransaction(
               {
                 partnerId: updatedRefund.customerId,
-                partnerName: updatedRefund.salesOrder?.customer?.name ?? undefined,
+                partnerName:
+                  updatedRefund.salesOrder?.customer?.name ?? undefined,
                 partnerRole: 'customer',
                 entityType: 'customer',
                 transactionType: 'refund',
@@ -100,7 +101,8 @@ export const POST = withAuth(
                 referenceNumber: updatedRefund.refundNumber,
                 description: `退款 ${updatedRefund.refundNumber} 入账`,
                 userId: user.id,
-                occurredAt: updatedRefund.processedDate ?? updatedRefund.refundDate,
+                occurredAt:
+                  updatedRefund.processedDate ?? updatedRefund.refundDate,
                 metadata: {
                   source: 'refund_record',
                   salesOrderId: updatedRefund.salesOrderId,

@@ -3,11 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
 import {
-    ArrowLeft,
-    FileText,
-    RefreshCw,
-    TrendingDown,
-    TrendingUp,
+  ArrowLeft,
+  FileText,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -242,13 +242,19 @@ export default function StatementDetailPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100/80 text-blue-600 transition-transform group-hover:scale-110">
                     <FileText className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">成交笔数</span>
+                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                    成交笔数
+                  </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-2xl font-black tracking-tight text-slate-900">{statement.totalOrders}</span>
-                  <span className="text-[10px] font-bold text-slate-400">单</span>
+                  <span className="text-2xl font-black tracking-tight text-slate-900">
+                    {statement.totalOrders}
+                  </span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    单
+                  </span>
                 </div>
-                <div className="absolute inset-y-6 right-0 w-px bg-slate-100 hidden lg:block" />
+                <div className="absolute inset-y-6 right-0 hidden w-px bg-slate-100 lg:block" />
               </div>
 
               {/* 总交易额 */}
@@ -257,15 +263,22 @@ export default function StatementDetailPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-100/80 text-purple-600 transition-transform group-hover:scale-110">
                     <ChineseYuan className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">往来总额</span>
+                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                    往来总额
+                  </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-2xl font-black tracking-tight text-slate-900">
-                    {formatCurrency(Math.abs(statement.totalAmount)).replace('¥', '')}
+                    {formatCurrency(Math.abs(statement.totalAmount)).replace(
+                      '¥',
+                      ''
+                    )}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">元</span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    元
+                  </span>
                 </div>
-                <div className="absolute inset-y-6 right-0 w-px bg-slate-100 hidden lg:block" />
+                <div className="absolute inset-y-6 right-0 hidden w-px bg-slate-100 lg:block" />
               </div>
 
               {/* 累计收付 */}
@@ -274,46 +287,68 @@ export default function StatementDetailPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100/80 text-emerald-600 transition-transform group-hover:scale-110">
                     <TrendingUp className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">已结清额</span>
+                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
+                    已结清额
+                  </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-2xl font-black tracking-tight text-slate-900">
-                    {formatCurrency(Math.abs(statement.paidAmount)).replace('¥', '')}
+                    {formatCurrency(Math.abs(statement.paidAmount)).replace(
+                      '¥',
+                      ''
+                    )}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">元</span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    元
+                  </span>
                 </div>
-                <div className="absolute inset-y-6 right-0 w-px bg-slate-100 hidden lg:block" />
+                <div className="absolute inset-y-6 right-0 hidden w-px bg-slate-100 lg:block" />
               </div>
 
               {/* 余额 */}
-              <div className={`group relative flex flex-col p-6 transition-colors ${
-                statement.currentBalance > 0 ? 'hover:bg-orange-50/30' : 'hover:bg-rose-50/30'
-              }`}>
+              <div
+                className={`group relative flex flex-col p-6 transition-colors ${
+                  statement.currentBalance > 0
+                    ? 'hover:bg-orange-50/30'
+                    : 'hover:bg-rose-50/30'
+                }`}
+              >
                 <div className="flex items-center gap-2">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                    statement.currentBalance > 0 
-                      ? 'bg-orange-100/80 text-orange-600' 
-                      : 'bg-rose-100/80 text-rose-600'
-                  } transition-transform group-hover:scale-110`}>
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                      statement.currentBalance > 0
+                        ? 'bg-orange-100/80 text-orange-600'
+                        : 'bg-rose-100/80 text-rose-600'
+                    } transition-transform group-hover:scale-110`}
+                  >
                     <TrendingDown className="h-4 w-4" />
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  <span className="text-xs font-black tracking-widest text-slate-400 uppercase">
                     {statement.currentBalance > 0 ? '应收余额' : '应付余额'}
                   </span>
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className={`text-2xl font-black tracking-tight ${
-                    statement.currentBalance > 0 ? 'text-orange-600' : 'text-rose-600'
-                  }`}>
-                    {formatCurrency(Math.abs(statement.currentBalance)).replace('¥', '')}
+                  <span
+                    className={`text-2xl font-black tracking-tight ${
+                      statement.currentBalance > 0
+                        ? 'text-orange-600'
+                        : 'text-rose-600'
+                    }`}
+                  >
+                    {formatCurrency(Math.abs(statement.currentBalance)).replace(
+                      '¥',
+                      ''
+                    )}
                   </span>
-                  <span className="text-[10px] font-bold text-slate-400">元</span>
+                  <span className="text-[10px] font-bold text-slate-400">
+                    元
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* 第二层：筛选器控制条 */}
-            <div className="flex flex-col gap-4 border-t border-slate-100 bg-slate-50/50 p-4 lg:flex-row lg:items-center lg:justify-between sm:px-6">
+            <div className="flex flex-col gap-4 border-t border-slate-100 bg-slate-50/50 p-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                 <div className="min-w-[320px]">
                   <DateRangePicker
@@ -334,9 +369,13 @@ export default function StatementDetailPage() {
                     className="border-none bg-transparent p-0 shadow-none ring-0 focus-visible:ring-0"
                   />
                 </div>
-                <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+                <div className="hidden h-6 w-px bg-slate-200 sm:block" />
                 <div className="text-xs font-bold text-slate-400">
-                  查询周期内共涉及 <span className="font-mono text-slate-700">{statement.totalOrders}</span> 笔业务往来
+                  查询周期内共涉及{' '}
+                  <span className="font-mono text-slate-700">
+                    {statement.totalOrders}
+                  </span>{' '}
+                  笔业务往来
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -345,7 +384,7 @@ export default function StatementDetailPage() {
                   size="sm"
                   onClick={() => refetch()}
                   disabled={isFetching}
-                  className="h-9 px-4 text-xs font-bold uppercase tracking-widest text-slate-500 hover:bg-white hover:text-blue-600"
+                  className="h-9 px-4 text-xs font-bold tracking-widest text-slate-500 uppercase hover:bg-white hover:text-blue-600"
                 >
                   <RefreshCw
                     className={`mr-2 h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`}

@@ -258,7 +258,7 @@ export function PaymentsOutClient({
       </div>
 
       {/* 付款记录列表 */}
-      <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="animate-in fade-in slide-in-from-bottom-4 mt-6 duration-700">
         <PaymentsOutTableList
           payments={payments}
           pagination={pagination}

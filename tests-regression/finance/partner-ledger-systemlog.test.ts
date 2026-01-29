@@ -41,7 +41,11 @@ type StatementRow = {
   lastPaymentDate: Date | null;
 };
 
-function createStatementRow(entityId: string, entityType: string, partnerRole: string) {
+function createStatementRow(
+  entityId: string,
+  entityType: string,
+  partnerRole: string
+) {
   return {
     id: `stmt-${entityId}`,
     entityId,
@@ -66,16 +70,22 @@ function applyStatementUpdate(statement: StatementRow, data: any) {
   if (data.entityName !== undefined) statement.entityName = data.entityName;
   if (data.partnerRole !== undefined) statement.partnerRole = data.partnerRole;
   if (data.entityType !== undefined) statement.entityType = data.entityType;
-  if (data.currentBalance !== undefined) statement.currentBalance = data.currentBalance;
-  if (data.pendingAmount !== undefined) statement.pendingAmount = data.pendingAmount;
+  if (data.currentBalance !== undefined)
+    statement.currentBalance = data.currentBalance;
+  if (data.pendingAmount !== undefined)
+    statement.pendingAmount = data.pendingAmount;
   if (data.lastTransactionDate !== undefined)
     statement.lastTransactionDate = data.lastTransactionDate;
-  if (data.lastPaymentDate !== undefined) statement.lastPaymentDate = data.lastPaymentDate;
+  if (data.lastPaymentDate !== undefined)
+    statement.lastPaymentDate = data.lastPaymentDate;
   if (data.status !== undefined) statement.status = data.status;
 
-  if (data.totalOrders?.increment) statement.totalOrders += data.totalOrders.increment;
-  if (data.totalAmount?.increment) statement.totalAmount += data.totalAmount.increment;
-  if (data.paidAmount?.increment) statement.paidAmount += data.paidAmount.increment;
+  if (data.totalOrders?.increment)
+    statement.totalOrders += data.totalOrders.increment;
+  if (data.totalAmount?.increment)
+    statement.totalAmount += data.totalAmount.increment;
+  if (data.paidAmount?.increment)
+    statement.paidAmount += data.paidAmount.increment;
 
   return statement;
 }
@@ -103,18 +113,54 @@ describe('partner-ledger-service SystemLog audit', () => {
       },
     ]
   >([
-    ['sale', { partnerId: 'customer-001', partnerRole: 'customer', entityType: 'customer' }],
+    [
+      'sale',
+      {
+        partnerId: 'customer-001',
+        partnerRole: 'customer',
+        entityType: 'customer',
+      },
+    ],
     [
       'sales_return',
-      { partnerId: 'customer-001', partnerRole: 'customer', entityType: 'customer' },
+      {
+        partnerId: 'customer-001',
+        partnerRole: 'customer',
+        entityType: 'customer',
+      },
     ],
     [
       'payment_in',
-      { partnerId: 'customer-001', partnerRole: 'customer', entityType: 'customer' },
+      {
+        partnerId: 'customer-001',
+        partnerRole: 'customer',
+        entityType: 'customer',
+      },
     ],
-    ['refund', { partnerId: 'customer-001', partnerRole: 'customer', entityType: 'customer' }],
-    ['payment_out', { partnerId: 'supplier-001', partnerRole: 'supplier', entityType: 'supplier' }],
-    ['purchase', { partnerId: 'supplier-001', partnerRole: 'supplier', entityType: 'supplier' }],
+    [
+      'refund',
+      {
+        partnerId: 'customer-001',
+        partnerRole: 'customer',
+        entityType: 'customer',
+      },
+    ],
+    [
+      'payment_out',
+      {
+        partnerId: 'supplier-001',
+        partnerRole: 'supplier',
+        entityType: 'supplier',
+      },
+    ],
+    [
+      'purchase',
+      {
+        partnerId: 'supplier-001',
+        partnerRole: 'supplier',
+        entityType: 'supplier',
+      },
+    ],
   ])('%s 会写入一条 SystemLog', async (transactionType, base) => {
     prisma.customer.findUnique.mockImplementation(({ where }: any) => {
       if (where?.id === 'customer-001') {
@@ -145,7 +191,11 @@ describe('partner-ledger-service SystemLog audit', () => {
       accountStatement: {
         findUnique: jest.fn().mockImplementation(() => state.statement),
         create: jest.fn().mockImplementation(({ data }: any) => {
-          state.statement = createStatementRow(data.entityId, data.entityType, data.partnerRole);
+          state.statement = createStatementRow(
+            data.entityId,
+            data.entityType,
+            data.partnerRole
+          );
           return state.statement;
         }),
         update: jest.fn().mockImplementation(({ data }: any) => {
@@ -191,4 +241,3 @@ describe('partner-ledger-service SystemLog audit', () => {
     );
   });
 });
-

@@ -342,8 +342,10 @@ export function transformToReceivable(order: {
   const paidAgainstOrder = confirmedActual + confirmedRounding;
   const pendingAgainstOrder = pendingActual + pendingRounding;
   const prepaymentApplied =
-    order.prepaymentUsages?.reduce((sum, usage) => sum + usage.appliedAmount, 0) ??
-    0;
+    order.prepaymentUsages?.reduce(
+      (sum, usage) => sum + usage.appliedAmount,
+      0
+    ) ?? 0;
   const paidTotal = paidAgainstOrder + prepaymentApplied;
   const remainingAmount = Math.max(0, orderDue - paidTotal);
 
@@ -464,58 +466,59 @@ export async function aggregatePaymentsByOrder(
     batches.push(orderIds.slice(i, i + batchSize));
   }
 
-  const [allPaymentAggregations, allPrepaymentAggregations] = await Promise.all([
-    Promise.all(
-      batches.map(batch =>
-        prisma.paymentRecord.groupBy({
-          by: ['salesOrderId', 'status'],
-          where: {
-            salesOrderId: { in: batch },
-            status: { in: ['confirmed', 'pending'] },
-            paymentType: 'order_payment',
-          },
-          _sum: { actualPaymentAmount: true, roundingAmount: true },
-        })
-      )
-    ),
-    Promise.all(
-      batches.map(batch =>
-        prisma.prepaymentUsage.groupBy({
-          by: ['salesOrderId'],
-          where: {
-            salesOrderId: { in: batch },
-          },
-          _sum: { appliedAmount: true },
-        })
-      )
-    ),
-  ]);
+  const [allPaymentAggregations, allPrepaymentAggregations] = await Promise.all(
+    [
+      Promise.all(
+        batches.map(batch =>
+          prisma.paymentRecord.groupBy({
+            by: ['salesOrderId', 'status'],
+            where: {
+              salesOrderId: { in: batch },
+              status: { in: ['confirmed', 'pending'] },
+              paymentType: 'order_payment',
+            },
+            _sum: { actualPaymentAmount: true, roundingAmount: true },
+          })
+        )
+      ),
+      Promise.all(
+        batches.map(batch =>
+          prisma.prepaymentUsage.groupBy({
+            by: ['salesOrderId'],
+            where: {
+              salesOrderId: { in: batch },
+            },
+            _sum: { appliedAmount: true },
+          })
+        )
+      ),
+    ]
+  );
 
   const paymentAggregations = allPaymentAggregations.flat();
   const prepaymentAggregations = allPrepaymentAggregations.flat();
 
-  const totalsByOrder = paymentAggregations.reduce<Record<string, PaymentTotals>>(
-    (acc, item) => {
-      if (!item.salesOrderId) return acc;
-      const existing = acc[item.salesOrderId] ?? {
-        confirmed: { actual: 0, rounding: 0 },
-        pending: { actual: 0, rounding: 0 },
-        prepaymentApplied: 0,
-      };
-      const amount = Number(item._sum.actualPaymentAmount ?? 0);
-      const rounding = Number(item._sum.roundingAmount ?? 0);
-      if (item.status === 'confirmed') {
-        existing.confirmed.actual += amount;
-        existing.confirmed.rounding += rounding;
-      } else if (item.status === 'pending') {
-        existing.pending.actual += amount;
-        existing.pending.rounding += rounding;
-      }
-      acc[item.salesOrderId] = existing;
-      return acc;
-    },
-    {}
-  );
+  const totalsByOrder = paymentAggregations.reduce<
+    Record<string, PaymentTotals>
+  >((acc, item) => {
+    if (!item.salesOrderId) return acc;
+    const existing = acc[item.salesOrderId] ?? {
+      confirmed: { actual: 0, rounding: 0 },
+      pending: { actual: 0, rounding: 0 },
+      prepaymentApplied: 0,
+    };
+    const amount = Number(item._sum.actualPaymentAmount ?? 0);
+    const rounding = Number(item._sum.roundingAmount ?? 0);
+    if (item.status === 'confirmed') {
+      existing.confirmed.actual += amount;
+      existing.confirmed.rounding += rounding;
+    } else if (item.status === 'pending') {
+      existing.pending.actual += amount;
+      existing.pending.rounding += rounding;
+    }
+    acc[item.salesOrderId] = existing;
+    return acc;
+  }, {});
 
   prepaymentAggregations.forEach(item => {
     if (!item.salesOrderId) return;
@@ -646,7 +649,8 @@ export async function fetchReceivableDetails(orderIds: string[]) {
     ...order,
     totalAmount: Number(order.totalAmount ?? 0),
     roundingAdjustment:
-      order.roundingAdjustment === null || order.roundingAdjustment === undefined
+      order.roundingAdjustment === null ||
+      order.roundingAdjustment === undefined
         ? null
         : Number(order.roundingAdjustment),
     prepaymentUsages:
@@ -658,8 +662,7 @@ export async function fetchReceivableDetails(orderIds: string[]) {
       ...payment,
       actualPaymentAmount: Number(payment.actualPaymentAmount ?? 0),
       roundingAmount:
-        payment.roundingAmount === null ||
-        payment.roundingAmount === undefined
+        payment.roundingAmount === null || payment.roundingAmount === undefined
           ? null
           : Number(payment.roundingAmount),
     })),

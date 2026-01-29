@@ -188,15 +188,18 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     paidDelta: amount => -amount,
   },
   refund: {
-    direction: 'credit',
-    balanceDelta: amount => -amount,
+    // ✅ 退款是“退回客户已收款”，本质为 payment_in 的反向
+    // - 会减少 paidAmount
+    // - 会增加 currentBalance（用于抵消 sales_return 造成的负余额/应退）
+    direction: 'debit',
+    balanceDelta: amount => amount,
     affectsPaidAmount: true,
     paidDelta: amount => -amount,
     updateLastPaymentDate: true,
   },
   refund_reversal: {
-    direction: 'debit',
-    balanceDelta: amount => amount,
+    direction: 'credit',
+    balanceDelta: amount => -amount,
     affectsPaidAmount: true,
     paidDelta: amount => amount,
     updateLastPaymentDate: true,
@@ -321,7 +324,9 @@ function serialiseMetadata(
     }
 
     const compactJson = JSON.stringify(compact);
-    return compactJson.length <= 191 ? compactJson : JSON.stringify({ truncated: true });
+    return compactJson.length <= 191
+      ? compactJson
+      : JSON.stringify({ truncated: true });
   } catch (_error) {
     throw new Error('Failed to serialise transaction metadata');
   }
@@ -585,12 +590,14 @@ export async function recordPartnerTransaction(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        const existingTransaction = await prisma.statementTransaction.findFirst({
-          where: {
-            referenceId: input.referenceId,
-            transactionType: input.transactionType,
-          },
-        });
+        const existingTransaction = await prisma.statementTransaction.findFirst(
+          {
+            where: {
+              referenceId: input.referenceId,
+              transactionType: input.transactionType,
+            },
+          }
+        );
 
         if (existingTransaction) {
           logger.warn(
@@ -630,7 +637,9 @@ export async function recordPartnerTransaction(
     }
 
     if (rule.affectsPaidAmount) {
-      const paidDelta = rule.paidDelta ? rule.paidDelta(input.amount) : input.amount;
+      const paidDelta = rule.paidDelta
+        ? rule.paidDelta(input.amount)
+        : input.amount;
       if (paidDelta !== 0) {
         updateData.paidAmount = { increment: paidDelta };
       }
@@ -648,7 +657,9 @@ export async function recordPartnerTransaction(
     if (AUDIT_TRANSACTION_TYPES.has(input.transactionType)) {
       const operatorId =
         input.userId ??
-        (typeof input.metadata?.userId === 'string' ? input.metadata.userId : null);
+        (typeof input.metadata?.userId === 'string'
+          ? input.metadata.userId
+          : null);
 
       try {
         const auditMetadata = JSON.stringify({
@@ -664,25 +675,22 @@ export async function recordPartnerTransaction(
             type: 'business_operation',
             level: 'info',
             action: `ledger:${input.transactionType}`,
-            description: `${input.transactionType} ${referenceNumber} ${input.amount} ${beforeBalance} -> ${afterBalance}`.slice(
-              0,
-              191
-            ),
+            description:
+              `${input.transactionType} ${referenceNumber} ${input.amount} ${beforeBalance} -> ${afterBalance}`.slice(
+                0,
+                191
+              ),
             userId: operatorId,
             metadata: auditMetadata,
           },
         });
       } catch (logError) {
-        logger.warn(
-          'partner-ledger',
-          '记录账本审计日志失败(忽略)',
-          undefined,
-          {
-            transactionType: input.transactionType,
-            referenceId: input.referenceId,
-            error: logError instanceof Error ? logError.message : String(logError),
-          }
-        );
+        logger.warn('partner-ledger', '记录账本审计日志失败(忽略)', undefined, {
+          transactionType: input.transactionType,
+          referenceId: input.referenceId,
+          error:
+            logError instanceof Error ? logError.message : String(logError),
+        });
       }
     }
 
@@ -825,7 +833,8 @@ export async function getPartnerStatementDetail(
 
   const mappedTransactions: StatementTransactionType[] = transactions.map(
     transaction => {
-      const direction = (transaction.direction as 'debit' | 'credit') ?? 'debit';
+      const direction =
+        (transaction.direction as 'debit' | 'credit') ?? 'debit';
       const amount = toNumber(transaction.amount);
       const debitAmount = direction === 'debit' ? amount : 0;
       const creditAmount = direction === 'credit' ? amount : 0;
@@ -896,7 +905,9 @@ export async function getPartnerStatementDetail(
   const currentMonthAmount = aggregateByPeriod(startOfMonth, null);
   const lastMonthAmount = aggregateByPeriod(lastMonthStart, lastMonthEnd);
   const averageMonthlyAmount =
-    totalOrders > 0 ? Math.abs(totalAmount) / totalOrders : Math.abs(totalAmount);
+    totalOrders > 0
+      ? Math.abs(totalAmount) / totalOrders
+      : Math.abs(totalAmount);
 
   const paymentRate =
     Math.abs(totalAmount) > 0

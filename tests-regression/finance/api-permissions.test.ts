@@ -12,12 +12,17 @@ jest.mock('@/lib/auth/api-helpers', () => ({
         permissions: [] as string[],
       };
       const required = options?.permissions ?? [];
-      const hasAll = required.every(permission => user.permissions.includes(permission));
+      const hasAll = required.every(permission =>
+        user.permissions.includes(permission)
+      );
       if (!hasAll) {
-        return new Response(JSON.stringify({ success: false, error: 'FORBIDDEN' }), {
-          status: 403,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return new Response(
+          JSON.stringify({ success: false, error: 'FORBIDDEN' }),
+          {
+            status: 403,
+            headers: { 'Content-Type': 'application/json' },
+          }
+        );
       }
       return handler(request, { ...(context ?? {}), user });
     };
@@ -28,7 +33,9 @@ describe('API permissions regression', () => {
   test('GET /api/finance/reports/monthly 无权限返回 403', async () => {
     const { GET } = await import('@/app/api/finance/reports/monthly/route');
     const response = await GET({
-      nextUrl: new URL('http://localhost/api/finance/reports/monthly?year=2025&month=1'),
+      nextUrl: new URL(
+        'http://localhost/api/finance/reports/monthly?year=2025&month=1'
+      ),
     } as any);
     expect(response.status).toBe(403);
   });
@@ -54,13 +61,17 @@ describe('API permissions regression', () => {
   test('GET /api/factory-shipments 无权限返回 403', async () => {
     const { GET } = await import('@/app/api/factory-shipments/route');
     const response = await GET({
-      nextUrl: new URL('http://localhost/api/factory-shipments?page=1&limit=10'),
+      nextUrl: new URL(
+        'http://localhost/api/factory-shipments?page=1&limit=10'
+      ),
     } as any);
     expect(response.status).toBe(403);
   });
 
   test('PATCH /api/factory-shipments/[id]/status 无权限返回 403', async () => {
-    const { PATCH } = await import('@/app/api/factory-shipments/[id]/status/route');
+    const { PATCH } = await import(
+      '@/app/api/factory-shipments/[id]/status/route'
+    );
     const response = await PATCH(
       {
         json: async () => ({ status: 'shipped' }),
@@ -70,4 +81,3 @@ describe('API permissions regression', () => {
     expect(response.status).toBe(403);
   });
 });
-

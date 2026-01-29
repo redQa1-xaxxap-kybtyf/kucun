@@ -178,7 +178,9 @@ const buildStatistics = ({
   return {
     totalPayables: toNumber(totalPayablesResult._sum.payableAmount),
     totalPaidAmount: toNumber(totalPaidAmountResult._sum.paidAmount),
-    totalRemainingAmount: toNumber(totalRemainingAmountResult._sum.remainingAmount),
+    totalRemainingAmount: toNumber(
+      totalRemainingAmountResult._sum.remainingAmount
+    ),
     pendingCount: statusCountMap.pending || 0,
     partialCount: statusCountMap.partial || 0,
     paidCount: statusCountMap.paid || 0,

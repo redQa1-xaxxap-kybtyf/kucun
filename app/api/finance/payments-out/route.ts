@@ -65,17 +65,26 @@ type PaymentOutRecordWithInclude = {
     payableAmount: unknown;
     remainingAmount: unknown;
   } | null;
-  supplier: { id: string; name: string; phone: string | null; address: string | null };
+  supplier: {
+    id: string;
+    name: string;
+    phone: string | null;
+    address: string | null;
+  };
   user: { id: string; name: string; email: string | null };
 };
 
-function normalizePaymentOutStatus(value: string): PaymentOutRecordDetail['status'] {
+function normalizePaymentOutStatus(
+  value: string
+): PaymentOutRecordDetail['status'] {
   return (PAYMENT_OUT_STATUSES as readonly string[]).includes(value)
     ? (value as PaymentOutRecordDetail['status'])
     : 'pending';
 }
 
-function normalizePaymentOutMethod(value: string): PaymentOutRecordDetail['paymentMethod'] {
+function normalizePaymentOutMethod(
+  value: string
+): PaymentOutRecordDetail['paymentMethod'] {
   return (PAYMENT_OUT_METHODS as readonly string[]).includes(value)
     ? (value as PaymentOutRecordDetail['paymentMethod'])
     : 'other';
@@ -93,7 +102,8 @@ function serializePaymentOutRecordDetail(
     paymentAmount: toNumber(payment.paymentAmount),
     paymentDate: payment.paymentDate,
     status: normalizePaymentOutStatus(payment.status),
-    ...(payment.payableRecordId !== null && payment.payableRecordId !== undefined
+    ...(payment.payableRecordId !== null &&
+    payment.payableRecordId !== undefined
       ? { payableRecordId: payment.payableRecordId }
       : {}),
     ...(payment.remarks !== null && payment.remarks !== undefined
@@ -120,7 +130,8 @@ function serializePaymentOutRecordDetail(
     supplier: {
       id: payment.supplier.id,
       name: payment.supplier.name,
-      ...(payment.supplier.phone !== null && payment.supplier.phone !== undefined
+      ...(payment.supplier.phone !== null &&
+      payment.supplier.phone !== undefined
         ? { phone: payment.supplier.phone }
         : {}),
       ...(payment.supplier.address !== null &&
@@ -340,7 +351,10 @@ export const POST = withAuth(
       }
 
       // 金额验证：检查付款金额是否超过剩余应付金额
-      const existingRemainingAmount = toNumber(payableRecord.remainingAmount, 0);
+      const existingRemainingAmount = toNumber(
+        payableRecord.remainingAmount,
+        0
+      );
       if (data.paymentAmount > existingRemainingAmount) {
         return errorResponse(
           `付款金额超过应付金额。应付: ￥${existingRemainingAmount.toFixed(2)}, 本次付款: ￥${data.paymentAmount.toFixed(2)}`,
@@ -368,6 +382,8 @@ export const POST = withAuth(
                 ...data,
                 paymentNumber,
                 userId: user.id,
+                // ✅ 付款核销创建即为“已确认”状态（与统计口径、账本描述一致）
+                status: 'confirmed',
                 paymentDate:
                   parseLocalDateString(data.paymentDate) ??
                   new Date(data.paymentDate),
@@ -419,7 +435,11 @@ export const POST = withAuth(
 
               const refreshedPayable = await tx.payableRecord.findUnique({
                 where: { id: data.payableRecordId },
-                select: { status: true, paidAmount: true, remainingAmount: true },
+                select: {
+                  status: true,
+                  paidAmount: true,
+                  remainingAmount: true,
+                },
               });
 
               if (!refreshedPayable) {
@@ -447,6 +467,7 @@ export const POST = withAuth(
                   await updateExpensePaymentStatusAfterPayment({
                     payableRecordId: data.payableRecordId,
                     paymentAmount: data.paymentAmount,
+                    payableAlreadyUpdated: true,
                     tx,
                   });
                 } catch (error) {

@@ -1,6 +1,9 @@
 import { type NextRequest } from 'next/server';
 
-import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
@@ -380,8 +383,12 @@ export const POST = withAuth(
       });
 
       const orderTotalAmount = toNumber(salesOrderWithRefunds.totalAmount, 0);
-      const existingRefundAmount = toNumber(existingRefunds._sum.refundAmount, 0);
-      const totalRefundAmount = existingRefundAmount + validatedData.refundAmount;
+      const existingRefundAmount = toNumber(
+        existingRefunds._sum.refundAmount,
+        0
+      );
+      const totalRefundAmount =
+        existingRefundAmount + validatedData.refundAmount;
 
       if (totalRefundAmount > orderTotalAmount) {
         throw new Error(
