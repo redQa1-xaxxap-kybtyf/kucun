@@ -5,14 +5,28 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import dynamic from 'next/dynamic';
+
 import { CategoryDeleteDialogs } from '@/components/categories/category-delete-dialogs';
-import { CategoryList } from '@/components/categories/category-list';
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
 import { CategorySearchFilters } from '@/components/categories/category-search-filters';
 import { ContentLoading } from '@/components/common/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
+
+const CategoryList = dynamic(
+  () =>
+    import('@/components/categories/category-list').then(mod => mod.CategoryList),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface DeleteDialogState {
   open: boolean;
