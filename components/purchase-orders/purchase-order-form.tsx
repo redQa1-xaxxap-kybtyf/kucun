@@ -3,13 +3,13 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { CalendarIcon, Loader2, Save } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useFieldArray, useForm, type FieldErrors } from 'react-hook-form';
 
 import { FactoryShipmentFeeItemsInput } from '@/components/factory-shipments/factory-shipment-fee-items-input';
 import { PurchaseOrderItemsTable } from '@/components/purchase-orders/purchase-order-items-table';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
@@ -43,6 +43,16 @@ import {
   updatePurchaseOrderSchema,
   type PurchaseOrderFormData,
 } from '@/lib/validations/purchase-order-form';
+
+const Calendar = dynamic(
+  () => import('@/components/ui/calendar').then(mod => mod.Calendar),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[296px] w-[280px] animate-pulse rounded-lg bg-slate-50" />
+    ),
+  }
+);
 
 const generateIdempotencyKey = (): string => {
   if (
