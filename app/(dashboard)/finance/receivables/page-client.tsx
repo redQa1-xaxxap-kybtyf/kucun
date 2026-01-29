@@ -7,11 +7,11 @@ import {
   Plus,
   TrendingUp,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useCallback } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -25,6 +25,21 @@ import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
 
 type ReceivablesPageQueryParams = ReceivablesParams;
+
+const ReceivablesClient = dynamic(
+  () =>
+    import('@/components/finance/receivables-client').then(
+      mod => mod.ReceivablesClient
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface ReceivablesPageClientProps {
   initialParams: ReceivablesPageQueryParams;
