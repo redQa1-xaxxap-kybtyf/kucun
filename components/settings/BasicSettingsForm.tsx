@@ -14,21 +14,21 @@ import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -291,16 +291,20 @@ export function BasicSettingsForm() {
               control={form.control}
               name="systemName"
               render={({ field }) => (
-                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">系统显示名称 *</FormLabel>
-                    <p className="text-xs font-medium text-slate-500">展示于浏览器标签与侧边栏顶部</p>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      系统显示名称 *
+                    </FormLabel>
+                    <p className="text-xs font-medium text-slate-500">
+                      展示于浏览器标签与侧边栏顶部
+                    </p>
                   </div>
                   <FormControl>
-                    <Input 
-                      placeholder="如：反重力系统" 
-                      className="h-11 border-slate-100 bg-slate-50/50 px-4 font-bold text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all" 
-                      {...field} 
+                    <Input
+                      placeholder="如：反重力系统"
+                      className="h-11 border-slate-100 bg-slate-50/50 px-4 font-bold text-slate-900 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage className="absolute -bottom-6 left-2" />
@@ -312,23 +316,31 @@ export function BasicSettingsForm() {
               control={form.control}
               name="defaultLanguage"
               render={({ field }) => (
-                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">系统默认语言</FormLabel>
-                    <p className="text-xs font-medium text-slate-500">全局多语言切换的基础预设</p>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      系统默认语言
+                    </FormLabel>
+                    <p className="text-xs font-medium text-slate-500">
+                      全局多语言切换的基础预设
+                    </p>
                   </div>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
                   >
                     <FormControl>
-                      <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 px-4 font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all">
+                      <SelectTrigger className="h-11 border-slate-100 bg-slate-50/50 px-4 font-medium text-slate-700 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10">
                         <SelectValue placeholder="选择语言" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="zh" className="font-medium">简体中文</SelectItem>
-                      <SelectItem value="en" className="font-medium">英语（美国）</SelectItem>
+                      <SelectItem value="zh" className="font-medium">
+                        简体中文
+                      </SelectItem>
+                      <SelectItem value="en" className="font-medium">
+                        英语（美国）
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="absolute -bottom-6 left-2" />
@@ -343,13 +355,17 @@ export function BasicSettingsForm() {
             render={({ field }) => (
               <FormItem className="relative flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                 <div className="space-y-1">
-                  <FormLabel className="text-sm font-black text-slate-900">系统全局描述 / 标语</FormLabel>
-                  <p className="text-xs font-medium text-slate-500">展示于登录页及关于页面，体现企业文化</p>
+                  <FormLabel className="text-sm font-black text-slate-900">
+                    系统全局描述 / 标语
+                  </FormLabel>
+                  <p className="text-xs font-medium text-slate-500">
+                    展示于登录页及关于页面，体现企业文化
+                  </p>
                 </div>
                 <FormControl>
                   <Textarea
                     placeholder="请输入系统描述，例如：专业的库存管理解决方案"
-                    className="min-h-[100px] resize-none border-slate-100 bg-slate-50/50 p-4 font-medium italic focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                    className="min-h-[100px] resize-none border-slate-100 bg-slate-50/50 p-4 font-medium italic transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
                     {...field}
                   />
                 </FormControl>
@@ -369,27 +385,29 @@ export function BasicSettingsForm() {
               control={form.control}
               name="lowStockThreshold"
               render={({ field }) => (
-                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900">
                       <RefreshCw className="h-4 w-4 text-blue-500" />
                       低库存全局预警值
                     </FormLabel>
-                    <p className="text-xs font-medium text-slate-500">分界值，低于此值将被标记为“库存不足”</p>
+                    <p className="text-xs font-medium text-slate-500">
+                      分界值，低于此值将被标记为“库存不足”
+                    </p>
                   </div>
                   <FormControl>
                     <div className="relative mt-2 w-full max-w-[180px]">
-                       <Input
-                         type="number"
-                         className="h-11 border-slate-100 bg-slate-50/50 px-4 font-mono text-lg font-black text-slate-900 focus:bg-white focus:ring-blue-500"
-                         {...field}
-                         onChange={e => {
-                           const value = e.target.value;
-                           if (value === '' || /^[1-9]\d*$/.test(value)) {
-                             field.onChange(value === '' ? '' : Number(value));
-                           }
-                         }}
-                       />
+                      <Input
+                        type="number"
+                        className="h-11 border-slate-100 bg-slate-50/50 px-4 font-mono text-lg font-black text-slate-900 focus:bg-white focus:ring-blue-500"
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value;
+                          if (value === '' || /^[1-9]\d*$/.test(value)) {
+                            field.onChange(value === '' ? '' : Number(value));
+                          }
+                        }}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage className="absolute -bottom-6 left-2" />
@@ -401,10 +419,12 @@ export function BasicSettingsForm() {
               control={form.control}
               name="enableStockAlerts"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">自动预警通知</FormLabel>
-                    <FormDescription className="text-[11px] font-medium text-slate-400 leading-relaxed max-w-[240px]">
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      自动预警通知
+                    </FormLabel>
+                    <FormDescription className="max-w-[240px] text-[11px] leading-relaxed font-medium text-slate-400">
                       启用后，系统将在看板首页显著位置推送预警简报。
                     </FormDescription>
                   </div>
@@ -415,10 +435,12 @@ export function BasicSettingsForm() {
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <span className={cn(
-                        "text-xs font-black uppercase tracking-tighter transition-colors",
-                        field.value ? "text-blue-600" : "text-slate-300"
-                    )}>
+                    <span
+                      className={cn(
+                        'text-xs font-black tracking-tighter uppercase transition-colors',
+                        field.value ? 'text-blue-600' : 'text-slate-300'
+                      )}
+                    >
                       {field.value ? '已开启' : '已关闭'}
                     </span>
                   </div>
@@ -438,19 +460,21 @@ export function BasicSettingsForm() {
               control={form.control}
               name="orderNumberPrefix"
               render={({ field }) => (
-                <FormItem className="relative flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                <FormItem className="relative flex h-[130px] flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
                     <FormLabel className="flex items-center gap-2 text-sm font-black text-slate-900 uppercase">
                       订单唯一识别前缀
                     </FormLabel>
-                    <p className="text-[11px] font-medium text-slate-400">如：销售订单（SO）</p>
+                    <p className="text-[11px] font-medium text-slate-400">
+                      如：销售订单（SO）
+                    </p>
                   </div>
                   <FormControl>
-                    <Input 
-                        placeholder="如: SO" 
-                        maxLength={10} 
-                        className="mt-2 h-11 w-full max-w-[180px] border-slate-100 bg-slate-50/50 font-mono font-black text-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 uppercase transition-all"
-                        {...field} 
+                    <Input
+                      placeholder="如: SO"
+                      maxLength={10}
+                      className="mt-2 h-11 w-full max-w-[180px] border-slate-100 bg-slate-50/50 font-mono font-black text-blue-600 uppercase transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/10"
+                      {...field}
                     />
                   </FormControl>
                   <FormMessage className="absolute -bottom-6 left-2" />
@@ -462,10 +486,12 @@ export function BasicSettingsForm() {
               control={form.control}
               name="enableOrderApproval"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md h-[130px]">
+                <FormItem className="flex h-[130px] flex-row items-center justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-[0_2px_12px_rgba(0,0,0,0.02)] transition-all hover:border-blue-100 hover:shadow-md">
                   <div className="space-y-1">
-                    <FormLabel className="text-sm font-black text-slate-900">强制订单审批</FormLabel>
-                    <FormDescription className="text-[11px] font-medium text-slate-400 leading-relaxed max-w-[240px]">
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      强制订单审批
+                    </FormLabel>
+                    <FormDescription className="max-w-[240px] text-[11px] leading-relaxed font-medium text-slate-400">
                       所有新建订单必须经过后台审批后方可启动出库流程。
                     </FormDescription>
                   </div>
@@ -476,10 +502,12 @@ export function BasicSettingsForm() {
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <span className={cn(
-                        "text-xs font-black uppercase tracking-tighter transition-colors",
-                        field.value ? "text-blue-600" : "text-slate-300"
-                    )}>
+                    <span
+                      className={cn(
+                        'text-xs font-black tracking-tighter uppercase transition-colors',
+                        field.value ? 'text-blue-600' : 'text-slate-300'
+                      )}
+                    >
                       {field.value ? 'Require / 已开启' : 'Bypass / 已关闭'}
                     </span>
                   </div>
@@ -498,12 +526,14 @@ export function BasicSettingsForm() {
             disabled={isSubmitting || !hasChanges}
             className="h-11 rounded-full px-6 font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-30"
           >
-            <RefreshCw className={cn("mr-2 h-4 w-4", isSubmitting && "animate-spin")} />
+            <RefreshCw
+              className={cn('mr-2 h-4 w-4', isSubmitting && 'animate-spin')}
+            />
             撤销更改
           </Button>
 
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isSubmitting || !hasChanges}
             className="h-11 rounded-full bg-slate-900 px-10 font-black text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200"
           >

@@ -19,53 +19,53 @@ import { useSession } from 'next-auth/react';
 import React from 'react';
 
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardDescription,
-    CardHeader,
-    CardTitle
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
-    ExtractField,
-    ShippingSite,
-    ShippingSitesResponse,
+  ExtractField,
+  ShippingSite,
+  ShippingSitesResponse,
 } from '@/lib/types/shipping';
 import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import {
-    normalizeSelector,
-    normalizeSelectorGroup,
+  normalizeSelector,
+  normalizeSelectorGroup,
 } from '@/lib/utils/selector-normalizer';
 
 // 固定的3个提取字段配置
@@ -377,7 +377,9 @@ export default function ShippingSitesPage() {
       <div className="flex h-full items-center justify-center p-6">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-          <p className="text-sm font-bold text-slate-400 animate-pulse">正在验证权限...</p>
+          <p className="animate-pulse text-sm font-bold text-slate-400">
+            正在验证权限...
+          </p>
         </div>
       </div>
     );
@@ -446,14 +448,14 @@ export default function ShippingSitesPage() {
             </div>
           </div>
           {/* 装饰性背景层 */}
-          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-500 opacity-5 blur-3xl" />
+          <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-blue-500 opacity-5 blur-3xl" />
         </div>
 
         {/* 站点列表 */}
         <div className="rounded-[32px] border border-white bg-white/60 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1">
-              <p className="text-xs font-black uppercase tracking-widest text-slate-500">
+              <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
                 Data Management / 站点配置
               </p>
               <h3 className="text-lg font-black tracking-tight text-slate-900">
@@ -463,8 +465,8 @@ export default function ShippingSitesPage() {
                 管理查询网点的 CSS 选择器，使用固定的 3 个提取字段。
               </p>
             </div>
-            <Button 
-              onClick={handleCreate} 
+            <Button
+              onClick={handleCreate}
               disabled={isLoading}
               className="h-12 rounded-2xl bg-blue-600 px-6 font-black shadow-lg shadow-blue-600/20 transition-all hover:scale-105 active:scale-95"
             >
@@ -472,77 +474,98 @@ export default function ShippingSitesPage() {
               新增站点
             </Button>
           </div>
-            {isLoading ? (
-              <div className="flex h-32 items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="ml-2">加载中...</span>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-slate-50 hover:bg-transparent">
-                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-500">站点名称</TableHead>
-                    {isAdmin && <TableHead className="text-xs font-black uppercase tracking-widest text-slate-500">查询 URL</TableHead>}
-                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-500">功能描述</TableHead>
-                    <TableHead className="text-xs font-black uppercase tracking-widest text-slate-500">当前状态</TableHead>
-                    <TableHead className="text-right text-xs font-black uppercase tracking-widest text-slate-500">管理操作</TableHead>
+          {isLoading ? (
+            <div className="flex h-32 items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">加载中...</span>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="border-slate-50 hover:bg-transparent">
+                  <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                    站点名称
+                  </TableHead>
+                  {isAdmin && (
+                    <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                      查询 URL
+                    </TableHead>
+                  )}
+                  <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                    功能描述
+                  </TableHead>
+                  <TableHead className="text-xs font-black tracking-widest text-slate-500 uppercase">
+                    当前状态
+                  </TableHead>
+                  <TableHead className="text-right text-xs font-black tracking-widest text-slate-500 uppercase">
+                    管理操作
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sitesData?.data.map(site => (
+                  <TableRow
+                    key={site.id}
+                    className="group border-slate-50 transition-all hover:bg-slate-50/50"
+                  >
+                    <TableCell className="py-5">
+                      <span className="text-sm font-black text-slate-900 transition-colors group-hover:text-blue-600">
+                        {site.name}
+                      </span>
+                    </TableCell>
+                    {isAdmin && (
+                      <TableCell className="max-w-xs truncate font-mono text-xs text-slate-500">
+                        {'url' in site ? site.url : '***'}
+                      </TableCell>
+                    )}
+                    <TableCell className="max-w-xs truncate text-xs font-bold text-slate-500">
+                      {site.description || '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div
+                        className={cn(
+                          'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black tracking-widest uppercase outline outline-1',
+                          site.status === 'active'
+                            ? 'bg-emerald-50 text-emerald-600 outline-emerald-100'
+                            : 'bg-slate-50 text-slate-500 outline-slate-100'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'h-1.5 w-1.5 rounded-full',
+                            site.status === 'active'
+                              ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                              : 'bg-slate-400'
+                          )}
+                        />
+                        {site.status === 'active' ? 'ACTIVE' : 'DISABLED'}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex translate-x-1 justify-end gap-2 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(site)}
+                          className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm hover:bg-slate-50"
+                        >
+                          编辑配置
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDelete(site)}
+                          className="h-9 rounded-xl font-black shadow-sm"
+                        >
+                          删除
+                        </Button>
+                      </div>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sitesData?.data.map(site => (
-                    <TableRow 
-                      key={site.id} 
-                      className="group border-slate-50 transition-all hover:bg-slate-50/50"
-                    >
-                      <TableCell className="py-5">
-                        <span className="text-sm font-black text-slate-900 group-hover:text-blue-600 transition-colors">
-                          {site.name}
-                        </span>
-                      </TableCell>
-                      {isAdmin && (
-                        <TableCell className="max-w-xs truncate font-mono text-xs text-slate-500">
-                          {'url' in site ? site.url : '***'}
-                        </TableCell>
-                      )}
-                      <TableCell className="max-w-xs truncate text-xs font-bold text-slate-500">
-                        {site.description || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <div className={cn(
-                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest outline outline-1",
-                          site.status === 'active' 
-                            ? "bg-emerald-50 text-emerald-600 outline-emerald-100" 
-                            : "bg-slate-50 text-slate-500 outline-slate-100"
-                        )}>
-                          <div className={cn("h-1.5 w-1.5 rounded-full", site.status === 'active' ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" : "bg-slate-400")} />
-                          {site.status === 'active' ? 'ACTIVE' : 'DISABLED'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2 opacity-0 transition-all group-hover:opacity-100 group-hover:translate-x-0 translate-x-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(site)}
-                            className="h-9 rounded-xl border-slate-100 bg-white font-black text-slate-600 shadow-sm hover:bg-slate-50"
-                          >
-                            编辑配置
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDelete(site)}
-                            className="h-9 rounded-xl font-black shadow-sm"
-                          >
-                            删除
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
 
         {/* 站点表单对话框 */}
@@ -571,12 +594,17 @@ export default function ShippingSitesPage() {
                   <div className="rounded-[24px] border border-white bg-white/40 p-6 shadow-sm">
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                      <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">基本信息</h4>
+                      <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                        基本信息
+                      </h4>
                     </div>
 
                     <div className="grid gap-6 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="name" className="text-xs font-black uppercase tracking-widest text-slate-500">
+                        <Label
+                          htmlFor="name"
+                          className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                        >
                           站点名称 <span className="text-rose-500">*</span>
                         </Label>
                         <Input
@@ -592,8 +620,12 @@ export default function ShippingSitesPage() {
 
                       {isAdmin && (
                         <div className="space-y-2">
-                          <Label htmlFor="url" className="text-xs font-black uppercase tracking-widest text-slate-500">
-                            站点主页 URL <span className="text-rose-500">*</span>
+                          <Label
+                            htmlFor="url"
+                            className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                          >
+                            站点主页 URL{' '}
+                            <span className="text-rose-500">*</span>
                           </Label>
                           <Input
                             id="url"
@@ -607,8 +639,11 @@ export default function ShippingSitesPage() {
                         </div>
                       )}
 
-                      <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="description" className="text-xs font-black uppercase tracking-widest text-slate-500">
+                      <div className="space-y-2 md:col-span-2">
+                        <Label
+                          htmlFor="description"
+                          className="text-xs font-black tracking-widest text-slate-500 uppercase"
+                        >
                           业务描述 / 备注
                         </Label>
                         <Textarea
@@ -622,7 +657,7 @@ export default function ShippingSitesPage() {
                           }
                           placeholder="简要说明站点用途和特点..."
                           rows={2}
-                          className="rounded-xl border-slate-100 bg-white/80 font-bold focus:bg-white resize-none"
+                          className="resize-none rounded-xl border-slate-100 bg-white/80 font-bold focus:bg-white"
                         />
                       </div>
                     </div>
@@ -632,12 +667,17 @@ export default function ShippingSitesPage() {
                   <div className="rounded-[24px] border border-white bg-white/40 p-6 shadow-sm">
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                      <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">核心交互选择器</h4>
+                      <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                        核心交互选择器
+                      </h4>
                     </div>
 
                     <div className="grid gap-6 md:grid-cols-3">
                       <div className="space-y-3 rounded-2xl bg-blue-50/50 p-4 ring-1 ring-blue-100">
-                        <Label htmlFor="searchInput" className="text-[11px] font-black uppercase tracking-widest text-blue-600">
+                        <Label
+                          htmlFor="searchInput"
+                          className="text-[11px] font-black tracking-widest text-blue-600 uppercase"
+                        >
                           搜索框定位 <span className="text-rose-500">*</span>
                         </Label>
                         <Input
@@ -655,7 +695,10 @@ export default function ShippingSitesPage() {
                       </div>
 
                       <div className="space-y-3 rounded-2xl bg-emerald-50/50 p-4 ring-1 ring-emerald-100">
-                        <Label htmlFor="searchButton" className="text-[11px] font-black uppercase tracking-widest text-emerald-600">
+                        <Label
+                          htmlFor="searchButton"
+                          className="text-[11px] font-black tracking-widest text-emerald-600 uppercase"
+                        >
                           触发按钮定位 <span className="text-rose-500">*</span>
                         </Label>
                         <Input
@@ -673,7 +716,10 @@ export default function ShippingSitesPage() {
                       </div>
 
                       <div className="space-y-3 rounded-2xl bg-purple-50/50 p-4 ring-1 ring-purple-100">
-                        <Label htmlFor="resultContainer" className="text-[11px] font-black uppercase tracking-widest text-purple-600">
+                        <Label
+                          htmlFor="resultContainer"
+                          className="text-[11px] font-black tracking-widest text-purple-600 uppercase"
+                        >
                           结果容器定位 <span className="text-rose-500">*</span>
                         </Label>
                         <Input
@@ -696,14 +742,16 @@ export default function ShippingSitesPage() {
                   <div className="rounded-[24px] border border-white bg-white/40 p-6 shadow-sm">
                     <div className="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
                       <div className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                      <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">数据提取映射表</h4>
+                      <h4 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                        数据提取映射表
+                      </h4>
                     </div>
 
                     <div className="grid gap-4">
                       {FIXED_EXTRACT_FIELDS.map(fieldConfig => (
                         <div
                           key={fieldConfig.key}
-                          className="flex items-center gap-6 rounded-2xl bg-white/60 p-5 ring-1 ring-slate-100 transition-all hover:ring-blue-200 hover:bg-white"
+                          className="flex items-center gap-6 rounded-2xl bg-white/60 p-5 ring-1 ring-slate-100 transition-all hover:bg-white hover:ring-blue-200"
                         >
                           <div className="flex-1 space-y-1">
                             <h5 className="text-sm font-black text-slate-900">
@@ -713,10 +761,11 @@ export default function ShippingSitesPage() {
                               {fieldConfig.description}
                             </p>
                           </div>
-                          
+
                           <div className="w-1/2 space-y-2">
-                            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                              CSS 选择器 <span className="text-rose-500">*</span>
+                            <Label className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
+                              CSS 选择器{' '}
+                              <span className="text-rose-500">*</span>
                             </Label>
                             <Input
                               value={

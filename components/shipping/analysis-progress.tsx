@@ -6,13 +6,13 @@
 'use client';
 
 import {
-    AlertCircle,
-    Brain,
-    CheckCircle,
-    Loader2,
-    Search,
-    Table,
-    Zap,
+  AlertCircle,
+  Brain,
+  CheckCircle,
+  Loader2,
+  Search,
+  Table,
+  Zap,
 } from 'lucide-react';
 import React from 'react';
 

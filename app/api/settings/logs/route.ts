@@ -312,10 +312,9 @@ export async function DELETE(
     const clearAll = searchParams.get('clearAll') === 'true';
 
     if (clearAll) {
-      // 先记录清空操作日志（在清空之前记录）
       await logSystemEventInfo(
-        'clear_business_logs',
-        `管理员清空业务日志 - 操作者：${session.user.name} (${session.user.username})，保留关键系统日志以维护审计痕迹`,
+        'clear_audit_logs_blocked',
+        `已阻止清空审计日志 - 操作者：${session.user.name} (${session.user.username})`,
         session.user.id,
         requestInfo.ipAddress,
         requestInfo.userAgent,
@@ -323,7 +322,7 @@ export async function DELETE(
           operatorId: session.user.id,
           operatorName: session.user.name,
           operatorUsername: session.user.username,
-          operationType: 'clear_business_logs',
+          operationType: 'clear_audit_logs',
           timestamp: new Date().toISOString(),
           preservedLogTypes: CRITICAL_LOG_TYPES,
           preservedLogActions: CRITICAL_LOG_ACTIONS,
@@ -331,42 +330,13 @@ export async function DELETE(
         }
       );
 
-      // 构建删除条件：排除关键日志
-      const deleteCondition = {
-        AND: [
-          {
-            // 排除关键日志类型
-            type: {
-              notIn: CRITICAL_LOG_TYPES,
-            },
-          },
-          {
-            // 排除关键日志级别
-            level: {
-              notIn: CRITICAL_LOG_LEVELS,
-            },
-          },
-          {
-            // 排除关键操作
-            action: {
-              notIn: CRITICAL_LOG_ACTIONS,
-            },
-          },
-        ],
-      };
-
-      // 执行清空操作（只删除非关键日志）
-      const result = await prisma.systemLog.deleteMany({
-        where: deleteCondition,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: {
-          message: `已清空业务日志，保留 ${CRITICAL_LOG_TYPES.length} 种关键日志类型、${CRITICAL_LOG_LEVELS.length} 种关键日志级别和 ${CRITICAL_LOG_ACTIONS.length} 种关键操作的审计记录`,
-          deletedCount: result.count,
+      return NextResponse.json(
+        {
+          success: false,
+          error: '已禁用：不允许手动清空审计日志',
         },
-      });
+        { status: 403 }
+      );
     }
 
     // 原有的按条件清理逻辑

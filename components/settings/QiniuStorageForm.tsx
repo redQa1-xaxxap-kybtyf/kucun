@@ -13,25 +13,25 @@ import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import type { QiniuStorageConfig } from '@/lib/types/settings';
 import {
-    QiniuStorageConfigFormSchema,
-    QiniuStorageConfigSchema,
+  QiniuStorageConfigFormSchema,
+  QiniuStorageConfigSchema,
 } from '@/lib/validations/settings';
 
 interface QiniuStorageFormProps {
@@ -208,7 +208,7 @@ export const QiniuStorageForm = ({
         )}
         className="space-y-10"
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* 访问密钥 */}
           <div className="group relative flex h-[130px] flex-col justify-center rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:border-blue-100 hover:shadow-md">
             <FormField
@@ -217,8 +217,12 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">访问密钥（AK）</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">七牛云账户的公钥，用于接口调用鉴权</span>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      访问密钥（AK）
+                    </FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      七牛云账户的公钥，用于接口调用鉴权
+                    </span>
                   </div>
                   <FormControl>
                     <div className="relative">
@@ -233,7 +237,7 @@ export const QiniuStorageForm = ({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent text-slate-400 hover:text-slate-600"
+                        className="absolute top-0 right-0 h-full px-3 py-2 text-slate-400 hover:bg-transparent hover:text-slate-600"
                         onClick={() => setShowAccessKey(!showAccessKey)}
                         disabled={isFormDisabled}
                       >
@@ -245,7 +249,7 @@ export const QiniuStorageForm = ({
                       </Button>
                     </div>
                   </FormControl>
-                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                  <FormMessage className="absolute bottom-2 left-6 text-[10px]" />
                 </FormItem>
               )}
             />
@@ -259,8 +263,12 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">私有密钥（SK）</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">七牛云账户的私钥，请妥善保管</span>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      私有密钥（SK）
+                    </FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      七牛云账户的私钥，请妥善保管
+                    </span>
                   </div>
                   <FormControl>
                     <div className="relative">
@@ -275,7 +283,7 @@ export const QiniuStorageForm = ({
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent text-slate-400 hover:text-slate-600"
+                        className="absolute top-0 right-0 h-full px-3 py-2 text-slate-400 hover:bg-transparent hover:text-slate-600"
                         onClick={() => setShowSecretKey(!showSecretKey)}
                         disabled={isFormDisabled}
                       >
@@ -287,7 +295,7 @@ export const QiniuStorageForm = ({
                       </Button>
                     </div>
                   </FormControl>
-                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                  <FormMessage className="absolute bottom-2 left-6 text-[10px]" />
                 </FormItem>
               )}
             />
@@ -301,8 +309,12 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">存储空间名称</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">在对象存储中创建的存储空间唯一名称</span>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      存储空间名称
+                    </FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      在对象存储中创建的存储空间唯一名称
+                    </span>
                   </div>
                   <FormControl>
                     <Input
@@ -312,7 +324,7 @@ export const QiniuStorageForm = ({
                       disabled={isFormDisabled}
                     />
                   </FormControl>
-                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                  <FormMessage className="absolute bottom-2 left-6 text-[10px]" />
                 </FormItem>
               )}
             />
@@ -326,8 +338,12 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">外部访问域名</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">已绑定至存储空间的加速域名或临时域名</span>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      外部访问域名
+                    </FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      已绑定至存储空间的加速域名或临时域名
+                    </span>
                   </div>
                   <FormControl>
                     <Input
@@ -337,7 +353,7 @@ export const QiniuStorageForm = ({
                       disabled={isFormDisabled}
                     />
                   </FormControl>
-                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                  <FormMessage className="absolute bottom-2 left-6 text-[10px]" />
                 </FormItem>
               )}
             />
@@ -351,8 +367,12 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">物理存储区域</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">存储空间所在的地理机房位置</span>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      物理存储区域
+                    </FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      存储空间所在的地理机房位置
+                    </span>
                   </div>
                   <Select
                     onValueChange={field.onChange}
@@ -366,13 +386,17 @@ export const QiniuStorageForm = ({
                     </FormControl>
                     <SelectContent>
                       {QINIU_REGIONS.map(region => (
-                        <SelectItem key={region.value} value={region.value} className="text-xs font-bold">
+                        <SelectItem
+                          key={region.value}
+                          value={region.value}
+                          className="text-xs font-bold"
+                        >
                           {region.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                  <FormMessage className="absolute bottom-2 left-6 text-[10px]" />
                 </FormItem>
               )}
             />
@@ -386,8 +410,12 @@ export const QiniuStorageForm = ({
               render={({ field }) => (
                 <FormItem className="space-y-3">
                   <div className="flex flex-col">
-                    <FormLabel className="text-sm font-black text-slate-900">预设存储路径格式</FormLabel>
-                    <span className="text-[11px] font-medium text-slate-400">支持日期变量，如 {'{y}/{m}/{d}'}</span>
+                    <FormLabel className="text-sm font-black text-slate-900">
+                      预设存储路径格式
+                    </FormLabel>
+                    <span className="text-[11px] font-medium text-slate-400">
+                      支持日期变量，如 {'{y}/{m}/{d}'}
+                    </span>
                   </div>
                   <FormControl>
                     <Input
@@ -397,7 +425,7 @@ export const QiniuStorageForm = ({
                       disabled={isFormDisabled}
                     />
                   </FormControl>
-                  <FormMessage className="text-[10px] absolute bottom-2 left-6" />
+                  <FormMessage className="absolute bottom-2 left-6 text-[10px]" />
                 </FormItem>
               )}
             />
@@ -406,37 +434,37 @@ export const QiniuStorageForm = ({
 
         {/* 操作按钮区 */}
         <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/10 pt-8">
-           <p className="text-[11px] font-medium text-slate-400">
-             修改配置后建议先进行连接诊断，确保服务可用性。
-           </p>
-           <div className="flex items-center gap-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleTestConnection}
-                disabled={isFormDisabled}
-                className="h-11 rounded-2xl border-slate-200 bg-white px-8 text-xs font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-95"
-              >
-                {isTesting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <TestTube className="mr-2 h-4 w-4" />
-                )}
-                连接性诊断
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isFormDisabled}
-                className="h-11 rounded-2xl bg-slate-900 px-10 text-xs font-black shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-95"
-              >
-                {isSaving ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 h-4 w-4" />
-                )}
-                更新存储密钥
-              </Button>
-           </div>
+          <p className="text-[11px] font-medium text-slate-400">
+            修改配置后建议先进行连接诊断，确保服务可用性。
+          </p>
+          <div className="flex items-center gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleTestConnection}
+              disabled={isFormDisabled}
+              className="h-11 rounded-2xl border-slate-200 bg-white px-8 text-xs font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-95"
+            >
+              {isTesting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <TestTube className="mr-2 h-4 w-4" />
+              )}
+              连接性诊断
+            </Button>
+            <Button
+              type="submit"
+              disabled={isFormDisabled}
+              className="h-11 rounded-2xl bg-slate-900 px-10 text-xs font-black shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
+            >
+              {isSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              更新存储密钥
+            </Button>
+          </div>
         </div>
       </form>
     </Form>

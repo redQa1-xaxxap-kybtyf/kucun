@@ -12,16 +12,16 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import type {
-    SystemLogFilters,
-    SystemLogLevel,
-    SystemLogType,
+  SystemLogFilters,
+  SystemLogLevel,
+  SystemLogType,
 } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
 
@@ -96,7 +96,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">
+            <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
               Filter / 条件筛选
             </p>
           </div>
@@ -105,11 +105,11 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           </p>
         </div>
         {hasActiveFilters && (
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={clearFilters}
-            className="rounded-xl border-slate-200 font-bold text-slate-500 hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+            className="rounded-xl border-slate-200 font-bold text-slate-500 transition-all hover:bg-slate-900 hover:text-white active:scale-95"
           >
             <X className="mr-2 h-4 w-4" />
             清空所有条件
@@ -120,22 +120,29 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* 关键词搜索 */}
         <div className="space-y-2.5">
-          <Label htmlFor="search" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">关键词检索</Label>
+          <Label
+            htmlFor="search"
+            className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase"
+          >
+            关键词检索
+          </Label>
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <Input
               id="search"
               placeholder="搜索描述、操作、摘要..."
               value={filters.search || ''}
               onChange={e => handleFilterChange('search', e.target.value)}
-              className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 pl-11 font-bold text-slate-900 focus:bg-white focus:ring-slate-900/5 transition-all"
+              className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 pl-11 font-bold text-slate-900 transition-all focus:bg-white focus:ring-slate-900/5"
             />
           </div>
         </div>
 
         {/* 日志类型 */}
         <div className="space-y-2.5">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">日志类型</Label>
+          <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            日志类型
+          </Label>
           <Select
             value={filters.type || 'all'}
             onValueChange={value => handleFilterChange('type', value)}
@@ -144,9 +151,15 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
               <SelectValue placeholder="选择日志类型" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-              <SelectItem value="all" className="font-bold">全部类型</SelectItem>
+              <SelectItem value="all" className="font-bold">
+                全部类型
+              </SelectItem>
               {LOG_TYPE_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value} className="font-bold">
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="font-bold"
+                >
                   {option.label}
                 </SelectItem>
               ))}
@@ -156,7 +169,9 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
 
         {/* 日志级别 */}
         <div className="space-y-2.5">
-          <Label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">风险级别</Label>
+          <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            风险级别
+          </Label>
           <Select
             value={filters.level || 'all'}
             onValueChange={value => handleFilterChange('level', value)}
@@ -165,11 +180,22 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
               <SelectValue placeholder="选择日志级别" />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-              <SelectItem value="all" className="font-bold">全部级别</SelectItem>
+              <SelectItem value="all" className="font-bold">
+                全部级别
+              </SelectItem>
               {LOG_LEVEL_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value} className="font-bold text-slate-900">
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="font-bold text-slate-900"
+                >
                   <span className={cn('flex items-center gap-2')}>
-                    <div className={cn("h-1.5 w-1.5 rounded-full", option.color.replace('text-', 'bg-'))} />
+                    <div
+                      className={cn(
+                        'h-1.5 w-1.5 rounded-full',
+                        option.color.replace('text-', 'bg-')
+                      )}
+                    />
                     {option.label}
                   </span>
                 </SelectItem>
@@ -180,7 +206,12 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
 
         {/* 操作动作 */}
         <div className="space-y-2.5">
-          <Label htmlFor="action" className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">操作指令</Label>
+          <Label
+            htmlFor="action"
+            className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase"
+          >
+            操作指令
+          </Label>
           <Input
             id="action"
             placeholder="如：login, sync_data..."
@@ -205,7 +236,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           />
         </div>
       </div>
-      
+
       {/* 背景装饰轨迹 */}
       <div className="absolute -right-4 -bottom-4 h-32 w-32 rounded-full bg-slate-900 opacity-5 blur-3xl transition-all group-hover:opacity-10" />
     </div>

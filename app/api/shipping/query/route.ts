@@ -1,7 +1,10 @@
 import type { NextRequest } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
-import { buildOffsetPaginationMeta, parseOffsetPagination } from '@/lib/api/pagination';
+import {
+  buildOffsetPaginationMeta,
+  parseOffsetPagination,
+} from '@/lib/api/pagination';
 import {
   errorResponse,
   successResponse,
