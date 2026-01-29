@@ -1,10 +1,10 @@
 'use client';
 
 import { ArrowLeft, PackagePlus, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/common/page-header';
-import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -15,6 +15,14 @@ import {
 
 import { InventoryAdjustTable } from './components/InventoryAdjustTable';
 import { useInventoryAdjustPage } from './hooks/useInventoryAdjustPage';
+
+const InventoryOperationForm = dynamic(
+  () =>
+    import('@/components/inventory/inventory-operation-form').then(
+      mod => mod.InventoryOperationForm
+    ),
+  { ssr: false, loading: () => null }
+);
 
 /**
  * 库存调整页面
@@ -74,11 +82,13 @@ export default function InventoryAdjustPage() {
             <DialogHeader>
               <DialogTitle>库存调整</DialogTitle>
             </DialogHeader>
-            <InventoryOperationForm
-              mode="adjust"
-              onSuccess={handleAdjustSuccess}
-              onCancel={closeAdjustDialog}
-            />
+            {showAdjustDialog && (
+              <InventoryOperationForm
+                mode="adjust"
+                onSuccess={handleAdjustSuccess}
+                onCancel={closeAdjustDialog}
+              />
+            )}
           </DialogContent>
         </Dialog>
 
