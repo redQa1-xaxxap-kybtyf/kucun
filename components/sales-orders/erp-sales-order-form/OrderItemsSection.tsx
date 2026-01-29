@@ -7,12 +7,12 @@ import type {
   UseFormReturn,
 } from 'react-hook-form';
 
-import { OrderItemRow } from '@/components/sales-orders/order-item-row';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
+  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -37,6 +37,25 @@ const HistoricalTemporaryProductDialog = dynamic(
       '@/components/sales-orders/historical-temporary-product-dialog'
     ).then(mod => mod.HistoricalTemporaryProductDialog),
   { ssr: false, loading: () => null }
+);
+
+const OrderItemRow = dynamic(
+  () =>
+    import('@/components/sales-orders/order-item-row').then(
+      mod => mod.OrderItemRow
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <TableRow>
+        <TableCell colSpan={20} className="px-3 py-2">
+          <div className="text-muted-foreground text-center text-xs">
+            加载明细中...
+          </div>
+        </TableCell>
+      </TableRow>
+    ),
+  }
 );
 
 interface OrderItemsSectionProps {
