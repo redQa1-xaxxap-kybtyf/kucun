@@ -1,10 +1,18 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
-import { PayablePaymentDialog } from '@/components/finance/payables-client/PayablePaymentDialog';
 import { PayableTableList } from '@/components/finance/payables-client/PayableTableList';
 import type { PayableRecordDetail } from '@/lib/types/payable';
+
+const PayablePaymentDialog = dynamic(
+  () =>
+    import('@/components/finance/payables-client/PayablePaymentDialog').then(
+      mod => mod.PayablePaymentDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 interface Props {
   items: PayableRecordDetail[];
@@ -52,7 +60,7 @@ export function PayableList({ items, isLoading, onView, onPayNow }: Props) {
       />
 
       {/* 付款模态框 */}
-      {selectedPayable && (
+      {paymentDialogOpen && selectedPayable && (
         <PayablePaymentDialog
           open={paymentDialogOpen}
           onOpenChange={handlePaymentDialogClose}
