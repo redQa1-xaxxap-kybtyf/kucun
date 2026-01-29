@@ -14,7 +14,10 @@ export function normalizePurchaseOrderItems<
 >(items: T[]): Array<Omit<T, 'totalPrice'> & { totalPrice: number }> {
   return items.map(item => ({
     ...(item as Omit<T, 'totalPrice'>),
-    totalPrice: computePurchaseOrderItemTotalPrice(item.quantity, item.unitPrice),
+    totalPrice: computePurchaseOrderItemTotalPrice(
+      item.quantity,
+      item.unitPrice
+    ),
   }));
 }
 
@@ -22,9 +25,9 @@ export function calculatePurchaseOrderTotal(
   items: Array<{ quantity: number; unitPrice: number }>
 ): number {
   const total = items.reduce(
-    (sum, item) => sum + computePurchaseOrderItemTotalPrice(item.quantity, item.unitPrice),
+    (sum, item) =>
+      sum + computePurchaseOrderItemTotalPrice(item.quantity, item.unitPrice),
     0
   );
   return roundToTwoDecimals(total);
 }
-

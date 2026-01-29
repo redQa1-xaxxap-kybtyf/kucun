@@ -1,12 +1,10 @@
 import { z } from 'zod';
 
 import {
-    PURCHASE_ORDER_STATUS,
-    type PurchaseOrderStatus,
+  PURCHASE_ORDER_STATUS,
+  type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
-import {
-    updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema,
-} from '@/lib/validations/purchase-order';
+import { updatePurchaseOrderStatusSchema as baseUpdatePurchaseOrderStatusSchema } from '@/lib/validations/purchase-order';
 
 const PURCHASE_ORDER_STATUS_VALUES = Object.values(
   PURCHASE_ORDER_STATUS
@@ -94,7 +92,11 @@ const baseFormSchema = z.object({
   idempotencyKey: z.string().optional(), // 创建时可选,编辑时必填
   containerNumber: z.string().optional().or(z.literal('')),
   // 船运公司(可选) - 用于仓库进货场景记录船公司信息
-  shippingCompany: z.string().max(100, '船运公司名称不能超过100个字符').optional().or(z.literal('')),
+  shippingCompany: z
+    .string()
+    .max(100, '船运公司名称不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
   status: purchaseOrderStatusEnum, // 移除.default(),在表单中设置默认值
   orderDate: z.string().optional().or(z.literal('')),
   shipmentDate: z.string().optional().or(z.literal('')),

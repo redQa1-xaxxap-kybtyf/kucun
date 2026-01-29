@@ -5,8 +5,8 @@ import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-    PURCHASE_ORDER_STATUS_LABELS,
-    type PurchaseOrderStatus,
+  PURCHASE_ORDER_STATUS_LABELS,
+  type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 
 interface PurchaseOrderSearchToolbarProps {

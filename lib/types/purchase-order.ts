@@ -265,7 +265,6 @@ export const PURCHASE_EXPENSE_ALLOCATION_METHOD_OPTIONS = Object.entries(
   label,
 }));
 
-
 /**
  * 费用分摊结果（单个明细）
  */
@@ -318,4 +317,3 @@ export interface OrderCostSummary {
   itemResults: ItemCostResult[]; // 各明细成本
 }
 import type { ExpenseRecord } from './expense';
-

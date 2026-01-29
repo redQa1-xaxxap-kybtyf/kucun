@@ -7,11 +7,11 @@ import type { UseFormReturn } from 'react-hook-form';
 import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
-    Table,
-    TableBody,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
 import type { Product } from '@/lib/types/product';

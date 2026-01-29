@@ -6,8 +6,8 @@ import { z } from 'zod';
 import { PRODUCT_UNIT_VALUES } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 import {
-    PURCHASE_ORDER_STATUS,
-    type PurchaseOrderStatus,
+  PURCHASE_ORDER_STATUS,
+  type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
 
 // 采购订单费用项验证（复用厂家发货的费用项验证）
