@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -35,8 +36,36 @@ import type {
 } from '@/lib/types/batch-specification';
 
 import { BatchRecordsFilters } from './components/BatchRecordsFilters';
-import { BatchSpecificationForm } from './components/BatchSpecificationForm';
-import { BatchSpecificationsTable } from './components/BatchSpecificationsTable';
+
+const BatchSpecificationForm = dynamic(
+  () =>
+    import('./components/BatchSpecificationForm').then(
+      mod => mod.BatchSpecificationForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        表单加载中...
+      </div>
+    ),
+  }
+);
+
+const BatchSpecificationsTable = dynamic(
+  () =>
+    import('./components/BatchSpecificationsTable').then(
+      mod => mod.BatchSpecificationsTable
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-6 text-sm">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
