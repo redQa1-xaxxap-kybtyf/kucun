@@ -1,19 +1,31 @@
 'use client';
 
 import { Download, Plus } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { PaymentsClient } from '@/components/finance/payments-client';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { PaymentStatus } from '@/lib/types/payment';
+
+const PaymentsClient = dynamic(
+  () => import('@/components/finance/payments-client').then(mod => mod.PaymentsClient),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface PaymentRecord {
   id: string;
