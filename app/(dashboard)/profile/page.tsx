@@ -11,11 +11,7 @@
 'use client';
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import {
-    KeyRound,
-    Loader2,
-    Shield
-} from 'lucide-react';
+import { KeyRound, Loader2, Shield } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,12 +21,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
@@ -338,16 +334,16 @@ export default function ProfilePage() {
     <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
       <div className="mx-auto w-full max-w-[1680px] space-y-10">
         {/* 1. Identity Header: 简化并增强对齐 */}
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between px-2">
+        <div className="flex flex-col gap-6 px-2 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-6">
             <div className="relative">
-              <Avatar className="h-20 w-20 ring-4 ring-white shadow-xl">
+              <Avatar className="h-20 w-20 shadow-xl ring-4 ring-white">
                 <AvatarFallback className="bg-slate-900 text-2xl font-black text-white">
                   {displayUser ? getInitials(displayUser.name) : '用户'}
                 </AvatarFallback>
               </Avatar>
-              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white">
-                 <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+              <div className="absolute -right-1 -bottom-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white">
+                <div className="h-2 w-2 animate-pulse rounded-full bg-white" />
               </div>
             </div>
             <div className="space-y-1">
@@ -355,12 +351,14 @@ export default function ProfilePage() {
                 <h1 className="text-3xl font-black tracking-tighter text-slate-900">
                   {displayUser?.name || '我的资料'}
                 </h1>
-                <Badge className="bg-slate-900 text-white hover:bg-slate-800 text-[10px] font-black uppercase tracking-widest px-2.5 py-1">
+                <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-black tracking-widest text-white uppercase hover:bg-slate-800">
                   {getUserRoleLabel(displayUser?.role || '')}
                 </Badge>
               </div>
               <p className="text-sm font-bold text-slate-400">
-                {displayUser?.email} <span className="mx-2 text-slate-200">|</span> 登录账号: {displayUser?.username}
+                {displayUser?.email}{' '}
+                <span className="mx-2 text-slate-200">|</span> 登录账号:{' '}
+                {displayUser?.username}
               </p>
             </div>
           </div>
@@ -371,18 +369,29 @@ export default function ProfilePage() {
           <div className="space-y-8">
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">基本信息管理</h3>
-                <p className="text-[11px] font-medium text-slate-400">在此管理您的显示姓名和联系方式</p>
+                <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                  基本信息管理
+                </h3>
+                <p className="text-[11px] font-medium text-slate-400">
+                  在此管理您的显示姓名和联系方式
+                </p>
               </div>
-              
+
               <Form {...profileForm}>
-                <form onSubmit={handleProfileSubmit} className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:shadow-md">
+                <form
+                  onSubmit={handleProfileSubmit}
+                  className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-all hover:shadow-md"
+                >
                   <div className="divide-y divide-slate-100">
                     {/* 姓名行 */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8">
+                    <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <FormLabel className="text-sm font-black text-slate-900">您的姓名</FormLabel>
-                        <p className="text-[11px] font-medium text-slate-400 mt-1">系统内部显示的名称</p>
+                        <FormLabel className="text-sm font-black text-slate-900">
+                          您的姓名
+                        </FormLabel>
+                        <p className="mt-1 text-[11px] font-medium text-slate-400">
+                          系统内部显示的名称
+                        </p>
                       </div>
                       <div className="flex-1">
                         <FormField
@@ -406,10 +415,14 @@ export default function ProfilePage() {
                     </div>
 
                     {/* 邮箱行 */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8 bg-slate-50/20">
+                    <div className="flex flex-col gap-6 bg-slate-50/20 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <FormLabel className="text-sm font-black text-slate-900">电子邮箱</FormLabel>
-                        <p className="text-[11px] font-medium text-slate-400 mt-1">用于接收系统通知和找回密码</p>
+                        <FormLabel className="text-sm font-black text-slate-900">
+                          电子邮箱
+                        </FormLabel>
+                        <p className="mt-1 text-[11px] font-medium text-slate-400">
+                          用于接收系统通知和找回密码
+                        </p>
                       </div>
                       <div className="flex-1">
                         <FormField
@@ -434,38 +447,54 @@ export default function ProfilePage() {
                     </div>
 
                     {/* 只读项：账号标识 */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8">
+                    <div className="flex flex-col gap-6 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <span className="text-sm font-black text-slate-900">登录账号 (ID)</span>
-                        <p className="text-[11px] font-medium text-slate-400 mt-1">您的系统唯一账号标识，不可更改</p>
+                        <span className="text-sm font-black text-slate-900">
+                          登录账号 (ID)
+                        </span>
+                        <p className="mt-1 text-[11px] font-medium text-slate-400">
+                          您的系统唯一账号标识，不可更改
+                        </p>
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm font-mono font-black text-slate-500 bg-slate-100/50 px-4 py-2 rounded-lg inline-block">
+                        <div className="inline-block rounded-lg bg-slate-100/50 px-4 py-2 font-mono text-sm font-black text-slate-500">
                           {displayUser?.username || '—'}
                         </div>
                       </div>
                     </div>
 
                     {/* 只读项：周期信息 */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-6 p-8 bg-slate-50/20">
+                    <div className="flex flex-col gap-6 bg-slate-50/20 p-8 md:flex-row md:items-center">
                       <div className="w-full md:w-1/3">
-                        <span className="text-sm font-black text-slate-900">账户信息</span>
-                        <p className="text-[11px] font-medium text-slate-400 mt-1">您的注册日期与当前身份角色</p>
+                        <span className="text-sm font-black text-slate-900">
+                          账户信息
+                        </span>
+                        <p className="mt-1 text-[11px] font-medium text-slate-400">
+                          您的注册日期与当前身份角色
+                        </p>
                       </div>
-                      <div className="flex-1 flex items-center gap-6">
-                         <div className="space-y-1">
-                            <span className="text-[10px] font-black uppercase text-slate-300 block">注册于</span>
-                            <span className="text-xs font-bold text-slate-600">
-                               {displayUser?.createdAt ? new Date(displayUser.createdAt).toLocaleDateString() : '—'}
-                            </span>
-                         </div>
-                         <div className="h-8 w-px bg-slate-200" />
-                         <div className="space-y-1">
-                            <span className="text-[10px] font-black uppercase text-slate-300 block">账户角色</span>
-                            <span className="text-xs font-bold text-slate-600">
-                               {getUserRoleLabel(displayUser?.role || '')}
-                            </span>
-                         </div>
+                      <div className="flex flex-1 items-center gap-6">
+                        <div className="space-y-1">
+                          <span className="block text-[10px] font-black text-slate-300 uppercase">
+                            注册于
+                          </span>
+                          <span className="text-xs font-bold text-slate-600">
+                            {displayUser?.createdAt
+                              ? new Date(
+                                  displayUser.createdAt
+                                ).toLocaleDateString()
+                              : '—'}
+                          </span>
+                        </div>
+                        <div className="h-8 w-px bg-slate-200" />
+                        <div className="space-y-1">
+                          <span className="block text-[10px] font-black text-slate-300 uppercase">
+                            账户角色
+                          </span>
+                          <span className="text-xs font-bold text-slate-600">
+                            {getUserRoleLabel(displayUser?.role || '')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -477,7 +506,7 @@ export default function ProfilePage() {
                     </p>
                     <Button
                       type="submit"
-                      className="h-11 rounded-2xl bg-slate-900 px-8 text-xs font-black shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-95"
+                      className="h-11 rounded-2xl bg-slate-900 px-8 text-xs font-black shadow-lg shadow-slate-900/10 transition-all hover:bg-slate-800 active:scale-95"
                       disabled={isLoadingProfile || isSavingProfile}
                     >
                       {isSavingProfile ? (
@@ -497,8 +526,12 @@ export default function ProfilePage() {
           <div className="space-y-8">
             <section className="space-y-4">
               <div className="flex flex-col gap-1 px-1">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">账号安全管理</h3>
-                <p className="text-[11px] font-medium text-slate-400">建议定期修改密码以保障账号安全</p>
+                <h3 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                  账号安全管理
+                </h3>
+                <p className="text-[11px] font-medium text-slate-400">
+                  建议定期修改密码以保障账号安全
+                </p>
               </div>
 
               <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-md">
@@ -509,12 +542,14 @@ export default function ProfilePage() {
                       name="currentPassword"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-[11px] font-black uppercase tracking-wider text-slate-400">验证当前密码</FormLabel>
+                          <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+                            验证当前密码
+                          </FormLabel>
                           <FormControl>
                             <Input
                               {...field}
                               type="password"
-                              className="h-11 border-slate-100 bg-slate-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 font-bold"
+                              className="h-11 border-slate-100 bg-slate-50/30 font-bold focus:bg-white focus:ring-4 focus:ring-blue-500/5"
                               disabled={isChangingPassword}
                             />
                           </FormControl>
@@ -528,12 +563,14 @@ export default function ProfilePage() {
                       name="newPassword"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-[11px] font-black uppercase tracking-wider text-slate-400">设置新密码</FormLabel>
+                          <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+                            设置新密码
+                          </FormLabel>
                           <FormControl>
                             <Input
                               {...field}
                               type="password"
-                              className="h-11 border-slate-100 bg-slate-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 font-bold"
+                              className="h-11 border-slate-100 bg-slate-50/30 font-bold focus:bg-white focus:ring-4 focus:ring-blue-500/5"
                               disabled={isChangingPassword}
                             />
                           </FormControl>
@@ -547,12 +584,14 @@ export default function ProfilePage() {
                       name="confirmNewPassword"
                       render={({ field }) => (
                         <FormItem className="space-y-2">
-                          <FormLabel className="text-[11px] font-black uppercase tracking-wider text-slate-400">再次确认新密码</FormLabel>
+                          <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
+                            再次确认新密码
+                          </FormLabel>
                           <FormControl>
                             <Input
                               {...field}
                               type="password"
-                              className="h-11 border-slate-100 bg-slate-50/30 focus:bg-white focus:ring-4 focus:ring-blue-500/5 font-bold"
+                              className="h-11 border-slate-100 bg-slate-50/30 font-bold focus:bg-white focus:ring-4 focus:ring-blue-500/5"
                               disabled={isChangingPassword}
                             />
                           </FormControl>
@@ -564,7 +603,7 @@ export default function ProfilePage() {
                     <Button
                       type="submit"
                       variant="outline"
-                      className="w-full h-12 rounded-2xl border-slate-200 text-xs font-black text-slate-900 hover:bg-slate-50 transition-all active:scale-[0.98]"
+                      className="h-12 w-full rounded-2xl border-slate-200 text-xs font-black text-slate-900 transition-all hover:bg-slate-50 active:scale-[0.98]"
                       disabled={isChangingPassword}
                     >
                       {isChangingPassword ? (
@@ -581,34 +620,48 @@ export default function ProfilePage() {
 
             {/* 精简登录日志 */}
             <section className="space-y-4">
-              <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 px-1">最近登录记录</h3>
-              <div className="rounded-2xl border border-slate-100 bg-white/60 p-2 overflow-hidden">
+              <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                最近登录记录
+              </h3>
+              <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white/60 p-2">
                 <div className="space-y-1">
                   {isLoadingLogs ? (
                     <div className="py-6 text-center text-slate-300">
-                      <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+                      <Loader2 className="mx-auto h-4 w-4 animate-spin" />
                     </div>
                   ) : loginLogs.length === 0 ? (
-                    <div className="py-6 text-center text-[10px] font-bold text-slate-300 uppercase">暂无登录历史</div>
+                    <div className="py-6 text-center text-[10px] font-bold text-slate-300 uppercase">
+                      暂无登录历史
+                    </div>
                   ) : (
                     loginLogs.slice(0, 3).map((log, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-xl hover:bg-white transition-all group">
+                      <div
+                        key={index}
+                        className="group flex items-center justify-between rounded-xl p-3 transition-all hover:bg-white"
+                      >
                         <div className="flex items-center gap-3">
-                          <div className={cn(
-                             "h-2 w-2 rounded-full",
-                             log.type === 'success' ? "bg-emerald-500 shadow-lg shadow-emerald-500/30" : "bg-rose-500 shadow-lg shadow-rose-500/30"
-                          )} />
+                          <div
+                            className={cn(
+                              'h-2 w-2 rounded-full',
+                              log.type === 'success'
+                                ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30'
+                                : 'bg-rose-500 shadow-lg shadow-rose-500/30'
+                            )}
+                          />
                           <div className="flex flex-col">
                             <span className="text-[11px] font-black text-slate-900">
-                               {log.type === 'success' ? '登录成功' : '非法拦截'}
+                              {log.type === 'success' ? '登录成功' : '非法拦截'}
                             </span>
-                            <span className="text-[9px] font-mono font-bold text-slate-400">
-                               IP: {log.clientIp}
+                            <span className="font-mono text-[9px] font-bold text-slate-400">
+                              IP: {log.clientIp}
                             </span>
                           </div>
                         </div>
-                        <span className="text-[9px] font-black text-slate-300 uppercase text-right">
-                           {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        <span className="text-right text-[9px] font-black text-slate-300 uppercase">
+                          {new Date(log.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </span>
                       </div>
                     ))

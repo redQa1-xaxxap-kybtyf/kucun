@@ -10,11 +10,11 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { getAccessibleNavItems } from '@/lib/auth/permissions';
 import type { NavigationItem } from '@/lib/types/layout';
@@ -22,8 +22,8 @@ import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
 
 import {
-    bottomNavigationItems,
-    navigationItems,
+  bottomNavigationItems,
+  navigationItems,
 } from './sidebar-navigation-config';
 
 interface MobileNavProps {
@@ -93,7 +93,6 @@ function MobileNavComponent({ open, onOpenChange, className }: MobileNavProps) {
         bottomNavItems={bottomNavItems}
         isPathActive={isPathActive}
         onItemClick={handleNavItemClick}
-        pathname={pathname}
       />
     </Sheet>
   );
@@ -175,7 +174,6 @@ interface MobileNavSheetContentProps {
   bottomNavItems: NavigationItem[];
   isPathActive: (href: string) => boolean;
   onItemClick: () => void;
-  pathname: string;
 }
 
 const MobileNavSheetContent = ({
@@ -185,7 +183,6 @@ const MobileNavSheetContent = ({
   bottomNavItems,
   isPathActive,
   onItemClick,
-  pathname,
 }: MobileNavSheetContentProps) => (
   <SheetContent
     side="left"
@@ -275,8 +272,7 @@ const MobileNavItem = React.memo(
 
     // 检查是否有激活的子菜单项
     const hasActiveChild = React.useMemo(
-      () =>
-        item.children?.some(child => isPathActive(child.href)) ?? false,
+      () => item.children?.some(child => isPathActive(child.href)) ?? false,
       [item.children, isPathActive]
     );
 

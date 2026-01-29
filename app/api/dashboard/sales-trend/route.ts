@@ -9,9 +9,7 @@ import type {
   TimeRange,
 } from '@/lib/types/dashboard';
 
-function resolveTimeRange(
-  timeRange: TimeRange | string | null
-): {
+function resolveTimeRange(timeRange: TimeRange | string | null): {
   startDate: Date;
   endDate: Date;
 } {
@@ -103,8 +101,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : '获取销售趋势数据失败',
+        error: error instanceof Error ? error.message : '获取销售趋势数据失败',
       },
       { status: 500 }
     );

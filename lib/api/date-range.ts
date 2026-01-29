@@ -8,8 +8,7 @@ function parseDateBoundaryFromString(
 ): Date {
   const trimmed = value.trim();
   if (DATE_ONLY_REGEX.test(trimmed)) {
-    const time =
-      boundary === 'start' ? '00:00:00.000' : '23:59:59.999';
+    const time = boundary === 'start' ? '00:00:00.000' : '23:59:59.999';
     return new Date(`${trimmed}T${time}`);
   }
 

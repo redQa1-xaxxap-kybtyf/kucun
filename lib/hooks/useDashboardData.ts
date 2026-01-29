@@ -4,13 +4,13 @@ import * as React from 'react';
 
 import { useBusinessOverview, useSalesTrend } from '@/lib/api/dashboard';
 import type {
-    BusinessOverview,
-    DashboardData,
-    DashboardFactoryShipmentSummary,
-    DashboardSalesOrderStatus,
-    DashboardSalesOrderSummary,
-    SalesTrendData,
-    TimeRange,
+  BusinessOverview,
+  DashboardData,
+  DashboardFactoryShipmentSummary,
+  DashboardSalesOrderStatus,
+  DashboardSalesOrderSummary,
+  SalesTrendData,
+  TimeRange,
 } from '@/lib/types/dashboard';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 import { logger } from '@/lib/utils/console-logger';
@@ -75,7 +75,9 @@ const toDashboardOrderStatus = (status: unknown): DashboardSalesOrderStatus => {
     if (mapped) {
       return mapped;
     }
-    if (DASHBOARD_ORDER_STATUSES.includes(normalized as DashboardSalesOrderStatus)) {
+    if (
+      DASHBOARD_ORDER_STATUSES.includes(normalized as DashboardSalesOrderStatus)
+    ) {
       return normalized as DashboardSalesOrderStatus;
     }
   }
@@ -285,9 +287,8 @@ export function useErpDashboardData(
     refetchOnMount: false,
   });
 
-  const { data: salesTrend, refetch: refetchSalesTrend } = useSalesTrend(
-    timeRange
-  );
+  const { data: salesTrend, refetch: refetchSalesTrend } =
+    useSalesTrend(timeRange);
 
   const loadDashboardData = React.useCallback(
     async (source?: BusinessOverview | null) => {

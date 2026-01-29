@@ -18,16 +18,16 @@ import { Filter, RotateCcw } from 'lucide-react';
 import * as React from 'react';
 
 import {
-    UnifiedSearchBar,
-    type ActionButton,
-    type FilterConfig,
-    type ToggleButton,
+  UnifiedSearchBar,
+  type ActionButton,
+  type FilterConfig,
+  type ToggleButton,
 } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-    DateRangePicker,
-    type DateRangeValue,
+  DateRangePicker,
+  type DateRangeValue,
 } from '@/components/ui/date-range-picker';
 import { cn } from '@/lib/utils';
 
@@ -165,10 +165,14 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
     }, [onClearFilters]);
 
     return (
-      <Card className={cn(CARD_VARIANTS[variant], isPro ? 'p-1' : '', className)}>
-        <CardContent className={cn(
-          isPro ? "bg-transparent p-6" : "bg-[hsl(var(--color-bg-card))] pt-6"
-        )}>
+      <Card
+        className={cn(CARD_VARIANTS[variant], isPro ? 'p-1' : '', className)}
+      >
+        <CardContent
+          className={cn(
+            isPro ? 'bg-transparent p-6' : 'bg-[hsl(var(--color-bg-card))] pt-6'
+          )}
+        >
           {/* 筛选条件标题 - Pro 模式下隐藏 */}
           {!isPro && (
             <div className="mb-3 flex items-center gap-2">
@@ -182,7 +186,7 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
           {/* 主搜索栏 */}
           <div className="flex flex-wrap items-end gap-4">
             {/* 搜索框 - Pro 模式下移除标签 */}
-            <div className="flex flex-1 flex-col gap-1.5 min-w-[300px]">
+            <div className="flex min-w-[300px] flex-1 flex-col gap-1.5">
               {!isPro && searchLabel && (
                 <label className="text-muted-foreground text-xs font-medium">
                   {searchLabel}
@@ -200,9 +204,9 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                 actionButtons={actionButtons}
                 compact={compact}
                 debounceDelay={0}
-                className={isPro ? "w-full" : ""}
+                className={isPro ? 'w-full' : ''}
                 // @ts-ignore - 传递 PRO 样式标识
-                variant={isPro ? "pro" : "default"}
+                variant={isPro ? 'pro' : 'default'}
               />
             </div>
 
@@ -215,8 +219,10 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
                 placeholder={dateRangeFilter.placeholder || '选择日期范围'}
                 showPresets={dateRangeFilter.showPresets ?? true}
                 className={cn(
-                  'min-w-[200px]', 
-                  isPro ? "h-14 rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md" : "",
+                  'min-w-[200px]',
+                  isPro
+                    ? 'h-14 rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md'
+                    : '',
                   dateRangeFilter.className
                 )}
               />
@@ -228,14 +234,14 @@ export const SearchFilterCard = React.memo<SearchFilterCardProps>(
             {/* 重置筛选按钮 */}
             {showClearButton && hasFilters && onClearFilters && (
               <Button
-                variant={isPro ? "ghost" : "outline"}
+                variant={isPro ? 'ghost' : 'outline'}
                 size="sm"
                 onClick={handleClearFilters}
                 className={cn(
-                  "h-8 gap-1.5 self-end transition-all",
-                  isPro 
-                    ? "font-black text-slate-400 hover:text-slate-900 hover:bg-white/50" 
-                    : "hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
+                  'h-8 gap-1.5 self-end transition-all',
+                  isPro
+                    ? 'font-black text-slate-400 hover:bg-white/50 hover:text-slate-900'
+                    : 'hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
                 )}
               >
                 <RotateCcw className="mr-1 h-3 w-3" />
@@ -256,8 +262,7 @@ SearchFilterCard.displayName = 'SearchFilterCard';
 // ============================================================================
 
 export type {
-    ActionButton,
-    FilterConfig,
-    ToggleButton
+  ActionButton,
+  FilterConfig,
+  ToggleButton,
 } from '@/components/common/unified-search-bar';
-

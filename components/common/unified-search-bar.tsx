@@ -12,11 +12,11 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
@@ -171,18 +171,19 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
         )}
       />
     )}
-      <Input
-        placeholder={searchPlaceholder}
-        value={searchValue}
-        onChange={onChange}
-        className={cn(
-          'pl-10',
-          showClearButton && searchValue && 'pr-10',
-          inputSize,
-          // Pro 样式覆盖
-          inputSize.includes('h-14') && "rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md shadow-sm focus:bg-white"
-        )}
-      />
+    <Input
+      placeholder={searchPlaceholder}
+      value={searchValue}
+      onChange={onChange}
+      className={cn(
+        'pl-10',
+        showClearButton && searchValue && 'pr-10',
+        inputSize,
+        // Pro 样式覆盖
+        inputSize.includes('h-14') &&
+          'rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md focus:bg-white'
+      )}
+    />
     {showClearButton && searchValue && (
       <Button
         type="button"
@@ -309,7 +310,8 @@ const FiltersSection: React.FC<FiltersSectionProps> = ({
                 filter.width || 'w-32',
                 compact && 'text-xs',
                 // Pro 样式覆盖
-                inputSize.includes('h-14') && "rounded-2xl border-white bg-white/40 font-bold backdrop-blur-md shadow-sm hover:bg-white"
+                inputSize.includes('h-14') &&
+                  'rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white'
               )}
             >
               <SelectValue placeholder={filter.placeholder || filter.label} />

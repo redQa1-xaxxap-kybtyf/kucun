@@ -10,19 +10,19 @@ import { ProductRanking } from '@/components/dashboard/product-ranking';
 import { StatCardsGrid } from '@/components/dashboard/stat-cards-enhanced';
 import { Button } from '@/components/ui/button';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useProductRanking } from '@/lib/api/dashboard';
 import { useErpDashboardData } from '@/lib/hooks/useDashboardData';
 import type {
-    DashboardData,
-    DashboardFactoryShipmentSummary,
-    DashboardSalesOrderSummary,
-    TimeRange,
+  DashboardData,
+  DashboardFactoryShipmentSummary,
+  DashboardSalesOrderSummary,
+  TimeRange,
 } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
@@ -71,25 +71,29 @@ export function ERPDashboard({
     initialOrders,
   });
 
-  const {
-    data: productRankingData,
-    isLoading: isLoadingRanking,
-  } = useProductRanking(selectedPeriod as TimeRange, 10);
+  const { data: productRankingData, isLoading: isLoadingRanking } =
+    useProductRanking(selectedPeriod as TimeRange, 10);
 
   if (!dashboardData) {
     return (
       <div className="flex h-full items-center justify-center p-12">
         <div className="flex flex-col items-center gap-4 text-center">
-           <div className="h-12 w-12 rounded-full bg-rose-50 flex items-center justify-center">
-              <RefreshCw className="h-6 w-6 text-rose-500" />
-           </div>
-           <div>
-              <h3 className="text-lg font-bold text-slate-900">数据加载失败</h3>
-              <p className="text-sm text-slate-400">请检查网络连接或尝试刷新页面</p>
-           </div>
-           <Button onClick={() => window.location.reload()} variant="outline" className="rounded-xl">
-             立即刷新
-           </Button>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-50">
+            <RefreshCw className="h-6 w-6 text-rose-500" />
+          </div>
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">数据加载失败</h3>
+            <p className="text-sm text-slate-400">
+              请检查网络连接或尝试刷新页面
+            </p>
+          </div>
+          <Button
+            onClick={() => window.location.reload()}
+            variant="outline"
+            className="rounded-xl"
+          >
+            立即刷新
+          </Button>
         </div>
       </div>
     );
@@ -125,19 +129,19 @@ export function ERPDashboard({
           )}
 
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.8fr_1fr]">
-             {/* 销售趋势图 */}
-             <div className="space-y-10">
-                {salesTrend && <DashboardTrendChart data={salesTrend} />}
-             </div>
+            {/* 销售趋势图 */}
+            <div className="space-y-10">
+              {salesTrend && <DashboardTrendChart data={salesTrend} />}
+            </div>
 
-             {/* 产品销售排行 */}
-             <div className="space-y-10">
-                <ProductRanking
-                  warehouse={productRankingData?.warehouse || []}
-                  factory={productRankingData?.factory || []}
-                  loading={isLoadingRanking}
-                />
-             </div>
+            {/* 产品销售排行 */}
+            <div className="space-y-10">
+              <ProductRanking
+                warehouse={productRankingData?.warehouse || []}
+                factory={productRankingData?.factory || []}
+                loading={isLoadingRanking}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -185,13 +189,15 @@ function DashboardHeader({
   ];
 
   return (
-    <div className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between px-2">
+    <div className="flex flex-col gap-8 px-2 md:flex-row md:items-end md:justify-between">
       <div className="space-y-2">
-           <h2 className="text-3xl font-black tracking-tighter text-slate-900">
-             经营看板
-           </h2>
-        <p className="text-slate-400 text-sm font-bold">
-          {getGreeting()} <span className="text-slate-900">{userName || '管理员'}</span>。这是系统为您汇总的实时业务动态。
+        <h2 className="text-3xl font-black tracking-tighter text-slate-900">
+          经营看板
+        </h2>
+        <p className="text-sm font-bold text-slate-400">
+          {getGreeting()}{' '}
+          <span className="text-slate-900">{userName || '管理员'}</span>
+          。这是系统为您汇总的实时业务动态。
         </p>
       </div>
 
@@ -203,7 +209,7 @@ function DashboardHeader({
               key={label}
               size="sm"
               variant="ghost"
-              className="h-10 rounded-xl px-4 font-bold text-slate-500 hover:bg-slate-900 hover:text-white transition-all active:scale-95"
+              className="h-10 rounded-xl px-4 font-bold text-slate-500 transition-all hover:bg-slate-900 hover:text-white active:scale-95"
               onClick={action}
             >
               <Icon className="mr-2 h-4 w-4" />
@@ -218,15 +224,23 @@ function DashboardHeader({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-              <SelectItem value="1d" className="font-bold">今天</SelectItem>
-              <SelectItem value="7d" className="font-bold">最近7天</SelectItem>
-              <SelectItem value="30d" className="font-bold">最近30天</SelectItem>
-              <SelectItem value="90d" className="font-bold">最近90天</SelectItem>
+              <SelectItem value="1d" className="font-bold">
+                今天
+              </SelectItem>
+              <SelectItem value="7d" className="font-bold">
+                最近7天
+              </SelectItem>
+              <SelectItem value="30d" className="font-bold">
+                最近30天
+              </SelectItem>
+              <SelectItem value="90d" className="font-bold">
+                最近90天
+              </SelectItem>
             </SelectContent>
           </Select>
-          
+
           <div className="h-6 w-px bg-slate-100" />
-          
+
           <Button
             variant="ghost"
             size="icon"

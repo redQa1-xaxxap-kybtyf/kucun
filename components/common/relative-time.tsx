@@ -3,17 +3,17 @@
 import * as React from 'react';
 
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
-    formatFullTimestamp,
-    getRelativeTimeText,
-    isWithin24Hours,
-    type DateInput,
+  formatFullTimestamp,
+  getRelativeTimeText,
+  isWithin24Hours,
+  type DateInput,
 } from '@/lib/utils/datetime';
 
 interface RelativeTimeProps {
@@ -79,12 +79,7 @@ export function RelativeTime({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <span
-            className={cn(
-              'text-muted-foreground',
-              className
-            )}
-          >
+          <span className={cn('text-muted-foreground', className)}>
             {relativeText}
           </span>
         </TooltipTrigger>

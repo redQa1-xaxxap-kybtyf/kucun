@@ -1,13 +1,13 @@
 'use client';
 
 import {
-    CartesianGrid,
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+  CartesianGrid,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,7 +25,7 @@ export function DashboardTrendChart({
 }: DashboardTrendChartProps) {
   if (loading) {
     return (
-      <div className="h-[480px] w-full rounded-3xl animate-pulse bg-white/40" />
+      <div className="h-[480px] w-full animate-pulse rounded-3xl bg-white/40" />
     );
   }
 
@@ -33,28 +33,46 @@ export function DashboardTrendChart({
     <div className="group relative flex flex-col rounded-3xl border border-white bg-white/60 p-8 shadow-sm backdrop-blur-md transition-all duration-500 hover:shadow-xl hover:shadow-slate-200/50">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-           <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
-              <p className="text-xs font-black uppercase tracking-widest text-slate-500">
-                Performance / 销售趋势
-              </p>
-           </div>
-           <p className="text-xl font-black tracking-tight text-slate-900">
-             销售业绩分析
-           </p>
+          <div className="flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-slate-900" />
+            <p className="text-xs font-black tracking-widest text-slate-500 uppercase">
+              Performance / 销售趋势
+            </p>
+          </div>
+          <p className="text-xl font-black tracking-tight text-slate-900">
+            销售业绩分析
+          </p>
         </div>
 
         <Tabs defaultValue="monthly" className="w-auto">
-          <TabsList className="bg-slate-100/50 p-1 rounded-2xl h-11 border border-slate-200/50">
-            <TabsTrigger value="weekly" className="rounded-xl px-4 text-xs font-black uppercase tracking-wider data-[state=active]:bg-slate-900 data-[state=active]:text-white">最近7天</TabsTrigger>
-            <TabsTrigger value="monthly" className="rounded-xl px-4 text-xs font-black uppercase tracking-wider data-[state=active]:bg-slate-900 data-[state=active]:text-white">最近30天</TabsTrigger>
-            <TabsTrigger value="yearly" className="rounded-xl px-4 text-xs font-black uppercase tracking-wider data-[state=active]:bg-slate-900 data-[state=active]:text-white">年度概览</TabsTrigger>
+          <TabsList className="h-11 rounded-2xl border border-slate-200/50 bg-slate-100/50 p-1">
+            <TabsTrigger
+              value="weekly"
+              className="rounded-xl px-4 text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              最近7天
+            </TabsTrigger>
+            <TabsTrigger
+              value="monthly"
+              className="rounded-xl px-4 text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              最近30天
+            </TabsTrigger>
+            <TabsTrigger
+              value="yearly"
+              className="rounded-xl px-4 text-xs font-black tracking-wider uppercase data-[state=active]:bg-slate-900 data-[state=active]:text-white"
+            >
+              年度概览
+            </TabsTrigger>
           </TabsList>
 
           <div className="mt-8">
             <TabsContent value="weekly" className="m-0 outline-none">
               <div className="h-[320px] w-full">
-                <ChartContainer chartData={data.weekly} color="hsl(var(--primary))" />
+                <ChartContainer
+                  chartData={data.weekly}
+                  color="hsl(var(--primary))"
+                />
               </div>
             </TabsContent>
             <TabsContent value="monthly" className="m-0 outline-none">
@@ -70,21 +88,31 @@ export function DashboardTrendChart({
           </div>
         </Tabs>
       </div>
-      
+
       {/* 背景装饰轨迹 */}
-      <div className="absolute -left-4 -bottom-4 h-32 w-32 rounded-full bg-slate-900 opacity-5 blur-3xl transition-all group-hover:opacity-10" />
+      <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-slate-900 opacity-5 blur-3xl transition-all group-hover:opacity-10" />
     </div>
   );
 }
 
-function ChartContainer({ chartData, color }: { chartData: any[], color: string }) {
+function ChartContainer({
+  chartData,
+  color,
+}: {
+  chartData: any[];
+  color: string;
+}) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart
         data={chartData}
         margin={{ top: 5, right: 10, left: -20, bottom: 0 }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+        <CartesianGrid
+          strokeDasharray="3 3"
+          vertical={false}
+          stroke="#f1f5f9"
+        />
         <XAxis
           dataKey="date"
           stroke="#94a3b8"
@@ -107,7 +135,9 @@ function ChartContainer({ chartData, color }: { chartData: any[], color: string 
             if (active && payload && payload.length) {
               return (
                 <div className="rounded-2xl border border-slate-100 bg-white/80 p-3 shadow-xl backdrop-blur-md">
-                  <p className="mb-1 text-xs font-black uppercase tracking-widest text-slate-500">{label}</p>
+                  <p className="mb-1 text-xs font-black tracking-widest text-slate-500 uppercase">
+                    {label}
+                  </p>
                   <p className="text-sm font-black text-slate-900">
                     {dashboardUtils.formatCurrency(payload[0].value as number)}
                   </p>

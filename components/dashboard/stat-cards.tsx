@@ -225,9 +225,11 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           change: {
             value: overview?.sales?.revenueGrowth || 0,
             type:
-              (overview?.sales?.revenueGrowth || 0) >= 0
+              (overview?.sales?.revenueGrowth || 0) > 0
                 ? 'increase'
-                : 'decrease',
+                : (overview?.sales?.revenueGrowth || 0) < 0
+                  ? 'decrease'
+                  : 'neutral',
             period: '上月',
           },
           icon: 'dollar-sign',
@@ -241,9 +243,11 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           change: {
             value: overview?.sales?.ordersGrowth || 0,
             type:
-              (overview?.sales?.ordersGrowth || 0) >= 0
+              (overview?.sales?.ordersGrowth || 0) > 0
                 ? 'increase'
-                : 'decrease',
+                : (overview?.sales?.ordersGrowth || 0) < 0
+                  ? 'decrease'
+                  : 'neutral',
             period: '上月',
           },
           icon: 'shopping-cart',

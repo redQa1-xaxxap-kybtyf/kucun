@@ -38,8 +38,7 @@ const SubMenuItem = React.memo(
     const hasChildren = item.children && item.children.length > 0;
 
     const hasActiveChild = React.useMemo(
-      () =>
-        item.children?.some(child => isPathActive(child.href)) ?? false,
+      () => item.children?.some(child => isPathActive(child.href)) ?? false,
       [item.children, isPathActive]
     );
 
@@ -58,25 +57,25 @@ const SubMenuItem = React.memo(
     // v3 PRO 子菜单项样式
     const itemClasses = cn(
       'group relative flex h-9 w-full items-center justify-start rounded-xl px-4 text-[13px] font-bold transition-all duration-300 active:scale-95',
-      isActive 
-        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20' 
+      isActive
+        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/20'
         : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
     );
 
     if (!hasChildren) {
       return (
-        <Link
-          href={item.href}
-          prefetch={false}
-          className={itemClasses}
-        >
+        <Link href={item.href} prefetch={false} className={itemClasses}>
           <div className="flex items-center gap-3">
-             {/* 活跃状态下的动态小圆点 */}
-             <div className={cn(
-               "h-1 w-1 rounded-full transition-all duration-300",
-               isActive ? "bg-white scale-125" : "bg-slate-200 group-hover:bg-slate-400"
-             )} />
-             <span className="flex-1 text-left">{item.title}</span>
+            {/* 活跃状态下的动态小圆点 */}
+            <div
+              className={cn(
+                'h-1 w-1 rounded-full transition-all duration-300',
+                isActive
+                  ? 'scale-125 bg-white'
+                  : 'bg-slate-200 group-hover:bg-slate-400'
+              )}
+            />
+            <span className="flex-1 text-left">{item.title}</span>
           </div>
         </Link>
       );
@@ -85,15 +84,22 @@ const SubMenuItem = React.memo(
     return (
       <div className="space-y-1">
         <button
-          className={cn(itemClasses, (isActive || hasActiveChild) && 'text-slate-900')}
+          className={cn(
+            itemClasses,
+            (isActive || hasActiveChild) && 'text-slate-900'
+          )}
           onClick={handleToggle}
           aria-expanded={isExpanded}
         >
           <div className="flex w-full items-center gap-3">
-            <div className={cn(
-               "h-1 w-1 rounded-full transition-all",
-               (isActive || hasActiveChild) ? "bg-blue-500 scale-125" : "bg-slate-200"
-            )} />
+            <div
+              className={cn(
+                'h-1 w-1 rounded-full transition-all',
+                isActive || hasActiveChild
+                  ? 'scale-125 bg-blue-500'
+                  : 'bg-slate-200'
+              )}
+            />
             <span className="flex-1 text-left">{item.title}</span>
             <ChevronDown
               className={cn(
@@ -105,10 +111,10 @@ const SubMenuItem = React.memo(
         </button>
 
         {isExpanded && (
-          <div className="relative ml-4 mt-1 space-y-1 pl-4">
-             {/* 垂直引导线 */}
-             <div className="absolute left-[18px] top-0 bottom-4 w-px bg-slate-100" />
-             {item.children?.map((child, index) => {
+          <div className="relative mt-1 ml-4 space-y-1 pl-4">
+            {/* 垂直引导线 */}
+            <div className="absolute top-0 bottom-4 left-[18px] w-px bg-slate-100" />
+            {item.children?.map((child, index) => {
               const isChildActive = isPathActive(child.href);
               const childKey = buildNavItemKey(nodeKey, child, index);
               return (
@@ -142,10 +148,7 @@ const ChildMenuList = React.memo(
     const bestMatch = React.useMemo(
       () =>
         items
-          .filter(
-            child =>
-              isPathActive(child.href)
-          )
+          .filter(child => isPathActive(child.href))
           .sort((a, b) => b.href.length - a.href.length)[0],
       [items, isPathActive]
     );
@@ -153,7 +156,7 @@ const ChildMenuList = React.memo(
     return (
       <div className="relative mt-2 ml-4 space-y-1 pl-4">
         {/* 垂直引导线 */}
-        <div className="absolute left-[6px] top-0 bottom-4 w-px bg-slate-100" />
+        <div className="absolute top-0 bottom-4 left-[6px] w-px bg-slate-100" />
         {items.map((child: NavigationItem, index) => {
           const isChildActive = bestMatch?.id === child.id;
           const childKey = buildNavItemKey(parentKey, child, index);
@@ -206,9 +209,7 @@ export const SidebarNavItem = React.memo(
       const hasActiveChild = React.useMemo(
         () =>
           item.children?.some(
-            child =>
-              isPathActive(child.href) &&
-              child.href !== item.href
+            child => isPathActive(child.href) && child.href !== item.href
           ) ?? false,
         [item.children, item.href, isPathActive]
       );
@@ -248,15 +249,19 @@ export const SidebarNavItem = React.memo(
                 className={cn(
                   'transition-all duration-500',
                   isCollapsed ? 'h-6 w-6' : 'h-5 w-5',
-                  isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-900 group-hover:scale-110'
+                  isActive
+                    ? 'text-white'
+                    : 'text-slate-400 group-hover:scale-110 group-hover:text-slate-900'
                 )}
               />
             )}
             {!isCollapsed && (
-              <span className={cn(
-                "flex-1 text-sm text-left truncate",
-                isActive ? "font-black" : "font-bold"
-              )}>
+              <span
+                className={cn(
+                  'flex-1 truncate text-left text-sm',
+                  isActive ? 'font-black' : 'font-bold'
+                )}
+              >
                 {item.title}
               </span>
             )}
@@ -277,7 +282,9 @@ export const SidebarNavItem = React.memo(
                 <Icon
                   className={cn(
                     'h-6 w-6 transition-all duration-500',
-                    isActive || hasActiveChild ? 'text-white' : 'text-slate-400 group-hover:text-slate-900 group-hover:scale-110'
+                    isActive || hasActiveChild
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:scale-110 group-hover:text-slate-900'
                   )}
                 />
               )}
@@ -287,7 +294,9 @@ export const SidebarNavItem = React.memo(
               <button
                 className={cn(
                   commonClasses,
-                  (isActive || hasActiveChild) && !isActive && 'bg-blue-50 text-blue-600 shadow-none border border-blue-100 hover:bg-blue-100'
+                  (isActive || hasActiveChild) &&
+                    !isActive &&
+                    'border border-blue-100 bg-blue-50 text-blue-600 shadow-none hover:bg-blue-100'
                 )}
                 onClick={handleSubMenuToggle}
                 aria-label={item.title}
@@ -298,14 +307,18 @@ export const SidebarNavItem = React.memo(
                   <Icon
                     className={cn(
                       'h-5 w-5 transition-all duration-500',
-                      isActive || hasActiveChild ? 'text-white' : 'text-slate-400 group-hover:text-slate-900'
+                      isActive || hasActiveChild
+                        ? 'text-white'
+                        : 'text-slate-400 group-hover:text-slate-900'
                     )}
                   />
                 )}
-                <span className={cn(
-                  "flex-1 text-sm text-left truncate",
-                  isActive || hasActiveChild ? "font-black" : "font-bold"
-                )}>
+                <span
+                  className={cn(
+                    'flex-1 truncate text-left text-sm',
+                    isActive || hasActiveChild ? 'font-black' : 'font-bold'
+                  )}
+                >
                   {item.title}
                 </span>
                 <ChevronDown

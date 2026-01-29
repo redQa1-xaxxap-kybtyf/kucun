@@ -2,15 +2,15 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import {
-    Bell,
-    Keyboard,
-    LogOut,
-    Menu,
-    Monitor,
-    Plus,
-    RefreshCw,
-    Search,
-    User
+  Bell,
+  Keyboard,
+  LogOut,
+  Menu,
+  Monitor,
+  Plus,
+  RefreshCw,
+  Search,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -27,7 +27,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
@@ -168,7 +172,7 @@ function HeaderComponent({
               variant="ghost"
               size="icon"
               onClick={onMobileMenuClick}
-              className="md:hidden h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900 md:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
@@ -176,15 +180,15 @@ function HeaderComponent({
 
           {/* 全域搜索占位框 - 桌面端 */}
           <div className="hidden md:flex">
-             <div className="group relative flex h-9 w-[280px] cursor-pointer items-center gap-2 rounded-full border border-slate-100 bg-slate-50/50 px-3 transition-all hover:border-blue-200 hover:bg-white hover:shadow-sm">
-                <Search className="h-4 w-4 text-slate-400 transition-colors group-hover:text-blue-500" />
-                <span className="text-xs font-medium text-slate-400 group-hover:text-slate-500">
-                  搜索功能、订单、报表...
-                </span>
-                <kbd className="pointer-events-none absolute right-2 flex h-5 select-none items-center gap-1 rounded border border-slate-200 bg-white px-1.5 font-mono text-xs font-medium text-slate-500 opacity-100 transition-opacity group-hover:opacity-0">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-             </div>
+            <div className="group relative flex h-9 w-[280px] cursor-pointer items-center gap-2 rounded-full border border-slate-100 bg-slate-50/50 px-3 transition-all hover:border-blue-200 hover:bg-white hover:shadow-sm">
+              <Search className="h-4 w-4 text-slate-400 transition-colors group-hover:text-blue-500" />
+              <span className="text-xs font-medium text-slate-400 group-hover:text-slate-500">
+                搜索功能、订单、报表...
+              </span>
+              <kbd className="pointer-events-none absolute right-2 flex h-5 items-center gap-1 rounded border border-slate-200 bg-white px-1.5 font-mono text-xs font-medium text-slate-500 opacity-100 transition-opacity select-none group-hover:opacity-0">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </div>
           </div>
         </div>
 
@@ -253,7 +257,7 @@ function HeaderComponent({
             variant="ghost"
             size="icon"
             onClick={handleRefreshData}
-            className="hidden sm:flex h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+            className="hidden h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900 sm:flex"
             title="一键刷新全局缓存"
           >
             <RefreshCw className="h-4 w-4" />
@@ -264,40 +268,54 @@ function HeaderComponent({
           {/* 快速添加按钮组 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="default" 
-                size="sm" 
+              <Button
+                variant="default"
+                size="sm"
                 className="h-9 gap-2 rounded-full bg-slate-900 px-4 text-xs font-bold hover:bg-slate-800"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden lg:inline">快速新建</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 rounded-xl border-slate-100 p-1.5 shadow-xl">
-              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-black uppercase tracking-wider text-slate-500">核心配置</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => router.push('/products/create')} className="rounded-lg py-2 cursor-pointer">
+            <DropdownMenuContent
+              align="end"
+              className="w-56 rounded-xl border-slate-100 p-1.5 shadow-xl"
+            >
+              <DropdownMenuLabel className="px-2 py-1.5 text-xs font-black tracking-wider text-slate-500 uppercase">
+                核心配置
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => router.push('/products/create')}
+                className="cursor-pointer rounded-lg py-2"
+              >
                 <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                        <Monitor className="h-4 w-4" />
-                    </div>
-                    <span>录入新产品</span>
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
+                    <Monitor className="h-4 w-4" />
+                  </div>
+                  <span>录入新产品</span>
                 </div>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/sales-orders/create')} className="rounded-lg py-2 cursor-pointer">
-                 <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
-                        <Plus className="h-4 w-4" />
-                    </div>
-                    <span>下达销售订单</span>
+              <DropdownMenuItem
+                onClick={() => router.push('/sales-orders/create')}
+                className="cursor-pointer rounded-lg py-2"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                    <Plus className="h-4 w-4" />
+                  </div>
+                  <span>下达销售订单</span>
                 </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-slate-50" />
-              <DropdownMenuItem onClick={() => router.push('/customers/create')} className="rounded-lg py-2 cursor-pointer">
-                 <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                        <User className="h-4 w-4" />
-                    </div>
-                    <span>登记新客户</span>
+              <DropdownMenuItem
+                onClick={() => router.push('/customers/create')}
+                className="cursor-pointer rounded-lg py-2"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <span>登记新客户</span>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -308,37 +326,56 @@ function HeaderComponent({
           {/* 通知按钮 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-9 w-9 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              >
                 <Bell className="h-[18px] w-[18px]" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 p-0 text-xs font-black leading-none text-white ring-2 ring-white">
+                  <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 p-0 text-xs leading-none font-black text-white ring-2 ring-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-[360px] rounded-2xl border-slate-100 p-0 shadow-2xl">
+            <DropdownMenuContent
+              align="end"
+              className="w-[360px] rounded-2xl border-slate-100 p-0 shadow-2xl"
+            >
               <div className="flex items-center justify-between border-b border-slate-50 p-4">
                 <h3 className="text-sm font-black text-slate-900">通知中心</h3>
                 {unreadCount > 0 && (
-                  <Badge variant="secondary" className="bg-blue-50 text-[10px] font-black text-blue-600">
+                  <Badge
+                    variant="secondary"
+                    className="bg-blue-50 text-[10px] font-black text-blue-600"
+                  >
                     {unreadCount} 条未读
                   </Badge>
                 )}
               </div>
               <div className="max-h-[400px] overflow-y-auto p-1.5">
                 {notifications.length > 0 ? (
-                  notifications.slice(0, 8).map((notification) => (
+                  notifications.slice(0, 8).map(notification => (
                     <DropdownMenuItem
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
                       className={cn(
                         'flex cursor-pointer flex-col items-start gap-1 rounded-xl p-3 transition-colors',
-                        !notification.isRead ? 'bg-blue-50/50 hover:bg-blue-50' : 'hover:bg-slate-50'
+                        !notification.isRead
+                          ? 'bg-blue-50/50 hover:bg-blue-50'
+                          : 'hover:bg-slate-50'
                       )}
                     >
                       <div className="flex w-full items-center justify-between">
-                        <span className={cn("text-sm font-bold", !notification.isRead ? "text-blue-900" : "text-slate-700")}>
+                        <span
+                          className={cn(
+                            'text-sm font-bold',
+                            !notification.isRead
+                              ? 'text-blue-900'
+                              : 'text-slate-700'
+                          )}
+                        >
                           {notification.title}
                         </span>
                         <span className="text-xs font-bold text-slate-500">
@@ -352,16 +389,28 @@ function HeaderComponent({
                   ))
                 ) : (
                   <div className="py-12 text-center">
-                    <p className="text-xs font-medium text-slate-400">暂无重要通知</p>
+                    <p className="text-xs font-medium text-slate-400">
+                      暂无重要通知
+                    </p>
                   </div>
                 )}
               </div>
               <DropdownMenuSeparator className="m-0 bg-slate-50" />
               <div className="flex gap-2 p-3">
-                <Button variant="ghost" size="sm" className="h-8 flex-1 text-xs font-bold text-slate-500" onClick={markAllAsRead}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 flex-1 text-xs font-bold text-slate-500"
+                  onClick={markAllAsRead}
+                >
                   一键忽略
                 </Button>
-                <Button variant="ghost" size="sm" className="h-8 flex-1 text-xs font-bold text-blue-600" onClick={() => router.push('/notifications')}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 flex-1 text-xs font-bold text-blue-600"
+                  onClick={() => router.push('/notifications')}
+                >
                   进入通知中心
                 </Button>
               </div>
@@ -371,42 +420,67 @@ function HeaderComponent({
           {/* 用户菜单 */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative ml-2 flex items-center gap-2 rounded-full p-0.5 pr-3 transition-all hover:bg-slate-100">
+              <Button
+                variant="ghost"
+                className="relative ml-2 flex items-center gap-2 rounded-full p-0.5 pr-3 transition-all hover:bg-slate-100"
+              >
                 <Avatar className="h-7 w-7 border-2 border-slate-200">
                   <AvatarImage
                     src={currentUser?.avatar}
                     alt={currentUser?.name || ''}
                   />
                   <AvatarFallback className="bg-slate-900 text-xs font-bold text-white">
-                    {currentUser?.name ? getUserInitials(currentUser.name) : 'U'}
+                    {currentUser?.name
+                      ? getUserInitials(currentUser.name)
+                      : 'U'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="hidden text-left lg:block">
-                   <p className="text-xs font-black leading-none text-slate-900">{currentUser?.name}</p>
-                   <p className="mt-1 text-xs font-bold text-slate-500 capitalize leading-none">{currentUser?.role}</p>
+                  <p className="text-xs leading-none font-black text-slate-900">
+                    {currentUser?.name}
+                  </p>
+                  <p className="mt-1 text-xs leading-none font-bold text-slate-500 capitalize">
+                    {currentUser?.role}
+                  </p>
                 </div>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64 rounded-2xl border-slate-100 p-2 shadow-2xl" align="end" forceMount>
+            <DropdownMenuContent
+              className="w-64 rounded-2xl border-slate-100 p-2 shadow-2xl"
+              align="end"
+              forceMount
+            >
               <div className="mb-2 flex items-center gap-3 p-3">
-                  <Avatar className="h-10 w-10 border-2 border-slate-100">
-                     <AvatarImage src={currentUser?.avatar} />
-                     <AvatarFallback className="bg-slate-900 font-bold text-white">{getUserInitials(currentUser?.name || '')}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <p className="text-sm font-black text-slate-900">{currentUser?.name}</p>
-                    <p className="text-xs font-bold text-slate-500">{currentUser?.email}</p>
-                  </div>
+                <Avatar className="h-10 w-10 border-2 border-slate-100">
+                  <AvatarImage src={currentUser?.avatar} />
+                  <AvatarFallback className="bg-slate-900 font-bold text-white">
+                    {getUserInitials(currentUser?.name || '')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <p className="text-sm font-black text-slate-900">
+                    {currentUser?.name}
+                  </p>
+                  <p className="text-xs font-bold text-slate-500">
+                    {currentUser?.email}
+                  </p>
+                </div>
               </div>
-              
+
               <DropdownMenuSeparator className="bg-slate-50" />
 
-              <DropdownMenuItem onClick={handleProfileClick} className="rounded-xl py-2 cursor-pointer">
+              <DropdownMenuItem
+                onClick={handleProfileClick}
+                className="cursor-pointer rounded-xl py-2"
+              >
                 <User className="mr-3 h-4 w-4 text-slate-400" />
                 <span className="font-bold text-slate-700">账户设置</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => router.push('/help/shortcuts')} className="rounded-xl py-2 cursor-pointer">
+              <DropdownMenuItem
+                onClick={() => router.push('/help/shortcuts')}
+                className="cursor-pointer rounded-xl py-2"
+              >
                 <Keyboard className="mr-3 h-4 w-4 text-slate-400" />
                 <span className="font-bold text-slate-700">键盘快捷键</span>
               </DropdownMenuItem>
@@ -415,7 +489,7 @@ function HeaderComponent({
 
               <DropdownMenuItem
                 onClick={handleSignOut}
-                className="rounded-xl py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600 cursor-pointer"
+                className="cursor-pointer rounded-xl py-2 text-rose-600 focus:bg-rose-50 focus:text-rose-600"
               >
                 <LogOut className="mr-3 h-4 w-4" />
                 <span className="font-bold">安全退出</span>

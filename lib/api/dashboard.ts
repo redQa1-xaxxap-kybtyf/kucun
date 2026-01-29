@@ -165,7 +165,10 @@ export const dashboardApi = {
   getProductRanking: async (
     timeRange: TimeRange,
     limit = 10
-  ): Promise<{ warehouse: ProductSalesRanking[]; factory: ProductSalesRanking[] }> => {
+  ): Promise<{
+    warehouse: ProductSalesRanking[];
+    factory: ProductSalesRanking[];
+  }> => {
     const response = await fetch(
       `${API_BASE}/product-ranking?timeRange=${timeRange}&limit=${limit}`
     );
@@ -365,7 +368,7 @@ export const dashboardUtils = {
   },
 
   formatPercentage: (percent: number): string =>
-    `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`,
+    `${percent > 0 ? '+' : ''}${percent.toFixed(1)}%`,
 
   calculateGrowth: (current: number, previous: number): number => {
     if (previous === 0) {

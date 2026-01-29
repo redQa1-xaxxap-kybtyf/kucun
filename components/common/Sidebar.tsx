@@ -10,8 +10,8 @@ import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
 import {
-    bottomNavigationItems,
-    navigationItems,
+  bottomNavigationItems,
+  navigationItems,
 } from './sidebar-navigation-config';
 import { buildNavItemKey, SidebarNavItem } from './SidebarNavItem';
 import { useSidebarKeyboard } from './useSidebarKeyboard';
@@ -97,26 +97,28 @@ function SidebarComponent({
       )}
     >
       {/* 侧边栏头部: Identity Area */}
-      <div className={cn(
-        "flex items-center border-b border-slate-50 transition-all duration-500 px-4",
-        state.isCollapsed ? "h-24 justify-center" : "h-24 justify-between"
-      )}>
+      <div
+        className={cn(
+          'flex items-center border-b border-slate-50 px-4 transition-all duration-500',
+          state.isCollapsed ? 'h-24 justify-center' : 'h-24 justify-between'
+        )}
+      >
         {!state.isCollapsed ? (
           <div className="flex items-center gap-3 px-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 shadow-lg shadow-slate-900/10 ring-4 ring-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 shadow-lg ring-4 shadow-slate-900/10 ring-white">
               <Package className="h-5 w-5 text-white" />
             </div>
             <div className="flex flex-col">
               <span className="text-base font-black tracking-tighter text-slate-900">
                 库存管理
               </span>
-              <span className="text-xs font-black uppercase tracking-widest text-slate-500">
+              <span className="text-xs font-black tracking-widest text-slate-500 uppercase">
                 Control Center
               </span>
             </div>
           </div>
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 shadow-xl shadow-slate-900/20 ring-4 ring-white">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 shadow-xl ring-4 shadow-slate-900/20 ring-white">
             <Package className="h-6 w-6 text-white" />
           </div>
         )}
@@ -138,7 +140,7 @@ function SidebarComponent({
       {state.isCollapsed && (
         <button
           onClick={state.toggle}
-          className="absolute -right-4 top-28 flex h-8 w-8 items-center justify-center rounded-full border border-slate-100 bg-white shadow-md transition-all hover:scale-110 active:scale-95 z-50 text-slate-400 hover:text-slate-900"
+          className="absolute top-28 -right-4 z-50 flex h-8 w-8 items-center justify-center rounded-full border border-slate-100 bg-white text-slate-400 shadow-md transition-all hover:scale-110 hover:text-slate-900 active:scale-95"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -167,11 +169,15 @@ function SidebarComponent({
         {accessibleBottomNavItems.length > 0 && (
           <div className="mt-10 space-y-6">
             <div className="px-4">
-              <div className="h-px bg-slate-100 w-full" />
+              <div className="h-px w-full bg-slate-100" />
             </div>
 
             {/* 底部辅助导航 */}
-            <nav className="space-y-1.5" role="navigation" aria-label="辅助导航">
+            <nav
+              className="space-y-1.5"
+              role="navigation"
+              aria-label="辅助导航"
+            >
               {accessibleBottomNavItems.map((item, index) => {
                 const globalIndex = accessibleNavItems.length + index;
                 return (

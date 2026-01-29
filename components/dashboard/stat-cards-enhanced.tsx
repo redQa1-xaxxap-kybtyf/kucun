@@ -4,13 +4,13 @@
 'use client';
 
 import {
-    AlertTriangle,
-    ArrowRight,
-    BadgeJapaneseYen,
-    Package,
-    RotateCcw,
-    ShoppingCart,
-    Users
+  AlertTriangle,
+  ArrowRight,
+  BadgeJapaneseYen,
+  Package,
+  RotateCcw,
+  ShoppingCart,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -107,7 +107,14 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
     if (loading) {
       return (
-        <Card className={cn('h-[160px] rounded-3xl animate-pulse bg-white/40', className)} ref={ref} {...props} />
+        <Card
+          className={cn(
+            'h-[160px] animate-pulse rounded-3xl bg-white/40',
+            className
+          )}
+          ref={ref}
+          {...props}
+        />
       );
     }
 
@@ -115,7 +122,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
       <div
         className={cn(
           'group relative flex h-[160px] flex-col justify-between overflow-hidden rounded-3xl border border-white bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-500',
-          'hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1',
+          'hover:-translate-y-1 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-200/50',
           href && 'cursor-pointer',
           className
         )}
@@ -123,54 +130,68 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
         {...props}
       >
         {/* 背景装饰轨迹 */}
-        <div className={cn("absolute -right-4 -top-4 h-24 w-24 rounded-full opacity-5 blur-2xl transition-all group-hover:opacity-10", colorClasses.dot)} />
+        <div
+          className={cn(
+            'absolute -top-4 -right-4 h-24 w-24 rounded-full opacity-5 blur-2xl transition-all group-hover:opacity-10',
+            colorClasses.dot
+          )}
+        />
 
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-             <div className="flex items-center gap-2">
-                <div className={cn("h-1.5 w-1.5 rounded-full", colorClasses.dot)} />
-                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
-                  {title}
-                </p>
-             </div>
-             <p className="text-3xl font-black tracking-tighter text-slate-900">
-                {typeof value === 'number'
-                  ? dashboardUtils.formatNumber(value)
-                  : value}
-             </p>
+            <div className="flex items-center gap-2">
+              <div
+                className={cn('h-1.5 w-1.5 rounded-full', colorClasses.dot)}
+              />
+              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                {title}
+              </p>
+            </div>
+            <p className="text-3xl font-black tracking-tighter text-slate-900">
+              {typeof value === 'number'
+                ? dashboardUtils.formatNumber(value)
+                : value}
+            </p>
           </div>
-          <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6", colorClasses.bg)}>
+          <div
+            className={cn(
+              'flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-6',
+              colorClasses.bg
+            )}
+          >
             <IconComponent className={cn('h-6 w-6', colorClasses.icon)} />
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-4">
-           {change ? (
-             <div className="flex items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "h-6 rounded-lg px-2 text-xs font-bold uppercase border-none tracking-tight",
-                    change.type === 'increase' ? "bg-emerald-50 text-emerald-700" : 
-                    change.type === 'decrease' ? "bg-rose-50 text-rose-700" : 
-                    "bg-slate-50 text-slate-500"
-                  )}
-                >
-                  {change.type === 'increase' && "+"}{dashboardUtils.formatPercentage(change.value)}
-                </Badge>
-                <span className="text-xs font-bold text-slate-400">
-                  较 {change.period}
-                </span>
-             </div>
-           ) : (
-             <div className="h-6" />
-           )}
-           
-           {href && (
-             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-all group-hover:bg-slate-900 group-hover:text-white">
-                <ArrowRight className="h-3 w-3" />
-             </div>
-           )}
+        <div className="mt-4 flex items-center justify-between">
+          {change ? (
+            <div className="flex items-center gap-2">
+              <Badge
+                variant="outline"
+                className={cn(
+                  'h-6 rounded-lg border-none px-2 text-xs font-bold tracking-tight uppercase',
+                  change.type === 'increase'
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : change.type === 'decrease'
+                      ? 'bg-rose-50 text-rose-700'
+                      : 'bg-slate-50 text-slate-500'
+                )}
+              >
+                {dashboardUtils.formatPercentage(change.value)}
+              </Badge>
+              <span className="text-xs font-bold text-slate-400">
+                较 {change.period}
+              </span>
+            </div>
+          ) : (
+            <div className="h-6" />
+          )}
+
+          {href && (
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-50 text-slate-400 transition-all group-hover:bg-slate-900 group-hover:text-white">
+              <ArrowRight className="h-3 w-3" />
+            </div>
+          )}
         </div>
       </div>
     );
@@ -204,9 +225,11 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           change: {
             value: overview?.sales?.revenueGrowth || 0,
             type:
-              (overview?.sales?.revenueGrowth || 0) >= 0
+              (overview?.sales?.revenueGrowth || 0) > 0
                 ? 'increase'
-                : 'decrease',
+                : (overview?.sales?.revenueGrowth || 0) < 0
+                  ? 'decrease'
+                  : 'neutral',
             period: '上月',
           },
           icon: 'dollar-sign',
@@ -220,9 +243,11 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           change: {
             value: overview?.sales?.ordersGrowth || 0,
             type:
-              (overview?.sales?.ordersGrowth || 0) >= 0
+              (overview?.sales?.ordersGrowth || 0) > 0
                 ? 'increase'
-                : 'decrease',
+                : (overview?.sales?.ordersGrowth || 0) < 0
+                  ? 'decrease'
+                  : 'neutral',
             period: '上月',
           },
           icon: 'shopping-cart',

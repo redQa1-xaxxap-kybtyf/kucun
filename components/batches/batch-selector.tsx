@@ -251,7 +251,7 @@ export function BatchSelector({
                   <Input
                     value={manualInput}
                     onChange={e => setManualInput(e.target.value)}
-                    placeholder="例如: BATCH-2025-001"
+                    placeholder="例如: 供应商批次号/色号（自由输入）"
                     autoFocus
                   />
                 </div>
