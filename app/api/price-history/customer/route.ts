@@ -17,101 +17,101 @@ import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history
  */
 export const GET = withAuth(
   async (request: NextRequest) => {
-  try {
-    const { searchParams } = new URL(request.url);
+    try {
+      const { searchParams } = new URL(request.url);
 
-    // 使用 Zod 进行参数验证
-    const validationResult = customerPriceHistoryQuerySchema.safeParse({
-      customerId: searchParams.get('customerId') || undefined,
-      productId: searchParams.get('productId') || undefined,
-      priceType: searchParams.get('priceType') || undefined,
-    });
+      // 使用 Zod 进行参数验证
+      const validationResult = customerPriceHistoryQuerySchema.safeParse({
+        customerId: searchParams.get('customerId') || undefined,
+        productId: searchParams.get('productId') || undefined,
+        priceType: searchParams.get('priceType') || undefined,
+      });
 
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '查询参数验证失败',
-          details: validationResult.error.issues,
-        },
-        { status: 400 }
-      );
-    }
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '查询参数验证失败',
+            details: validationResult.error.issues,
+          },
+          { status: 400 }
+        );
+      }
 
-    const { customerId, productId, priceType } = validationResult.data;
+      const { customerId, productId, priceType } = validationResult.data;
 
-    // 构建查询条件
-    const where: {
-      customerId: string;
-      productId?: string;
-      priceType?: string;
-    } = {
-      customerId,
-    };
+      // 构建查询条件
+      const where: {
+        customerId: string;
+        productId?: string;
+        priceType?: string;
+      } = {
+        customerId,
+      };
 
-    if (productId) {
-      where.productId = productId;
-    }
+      if (productId) {
+        where.productId = productId;
+      }
 
-    if (priceType) {
-      where.priceType = priceType;
-    }
+      if (priceType) {
+        where.priceType = priceType;
+      }
 
-    // 如果指定了产品ID，返回该产品的最新价格（按价格类型分组）
-    if (productId) {
-      const prices = await prisma.customerProductPrice.findMany({
-        where,
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 10, // 最多返回10条历史记录
-        include: {
-          product: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-              specification: true,
-              unit: true,
+      // 如果指定了产品ID，返回该产品的最新价格（按价格类型分组）
+      if (productId) {
+        const prices = await prisma.customerProductPrice.findMany({
+          where,
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 10, // 最多返回10条历史记录
+          include: {
+            product: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                specification: true,
+                unit: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      return NextResponse.json({
-        success: true,
-        data: prices,
-      });
-    }
+        return NextResponse.json({
+          success: true,
+          data: prices,
+        });
+      }
 
-    // 如果没有指定产品ID，返回该客户所有产品的最新价格
-    const latestConditions: Prisma.Sql[] = [
-      Prisma.sql`customer_id = ${customerId}`,
-    ];
+      // 如果没有指定产品ID，返回该客户所有产品的最新价格
+      const latestConditions: Prisma.Sql[] = [
+        Prisma.sql`customer_id = ${customerId}`,
+      ];
 
-    const outerConditions: Prisma.Sql[] = [
-      Prisma.sql`cpp.customer_id = ${customerId}`,
-    ];
+      const outerConditions: Prisma.Sql[] = [
+        Prisma.sql`cpp.customer_id = ${customerId}`,
+      ];
 
-    if (priceType) {
-      latestConditions.push(Prisma.sql`price_type = ${priceType}`);
-      outerConditions.push(Prisma.sql`cpp.price_type = ${priceType}`);
-    }
+      if (priceType) {
+        latestConditions.push(Prisma.sql`price_type = ${priceType}`);
+        outerConditions.push(Prisma.sql`cpp.price_type = ${priceType}`);
+      }
 
-    const latestPrices = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        customerId: string;
-        productId: string;
-        priceType: string;
-        unitPrice: unknown;
-        orderId: string | null;
-        orderType: string | null;
-        createdAt: Date;
-        updatedAt: Date;
-      }>
-    >(
-      Prisma.sql`
+      const latestPrices = await prisma.$queryRaw<
+        Array<{
+          id: string;
+          customerId: string;
+          productId: string;
+          priceType: string;
+          unitPrice: unknown;
+          orderId: string | null;
+          orderType: string | null;
+          createdAt: Date;
+          updatedAt: Date;
+        }>
+      >(
+        Prisma.sql`
         SELECT
           cpp.id as id,
           cpp.customer_id as customerId,
@@ -135,51 +135,53 @@ export const GET = withAuth(
         WHERE ${Prisma.join(outerConditions, ' AND ')}
         ORDER BY cpp.created_at DESC
       `
-    );
+      );
 
-    const productIds = latestPrices.map(price => price.productId);
-    const products =
-      productIds.length > 0
-        ? await prisma.product.findMany({
-            where: {
-              id: { in: productIds },
-            },
-            select: {
-              id: true,
-              code: true,
-              name: true,
-              specification: true,
-              unit: true,
-            },
-            take: productIds.length,
-          })
-        : [];
+      const productIds = latestPrices.map(price => price.productId);
+      const products =
+        productIds.length > 0
+          ? await prisma.product.findMany({
+              where: {
+                id: { in: productIds },
+              },
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                specification: true,
+                unit: true,
+              },
+              take: productIds.length,
+            })
+          : [];
 
-    const productsById = new Map(products.map(product => [product.id, product]));
+      const productsById = new Map(
+        products.map(product => [product.id, product])
+      );
 
-    const result = latestPrices.map(price => ({
-      ...price,
-      unitPrice: Number(price.unitPrice ?? 0),
-      product: productsById.get(price.productId),
-    }));
+      const result = latestPrices.map(price => ({
+        ...price,
+        unitPrice: Number(price.unitPrice ?? 0),
+        product: productsById.get(price.productId),
+      }));
 
-    return NextResponse.json({
-      success: true,
-      data: result,
-    });
-  } catch (error) {
-    logger.error('price-history', '获取客户价格历史失败', error, {
-      url: request.url,
-    });
-    return NextResponse.json(
-      {
-        success: false,
-        error: '获取价格历史失败',
-        details: error instanceof Error ? error.message : '未知错误',
-      },
-      { status: 500 }
-    );
-  }
+      return NextResponse.json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error('price-history', '获取客户价格历史失败', error, {
+        url: request.url,
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: '获取价格历史失败',
+          details: error instanceof Error ? error.message : '未知错误',
+        },
+        { status: 500 }
+      );
+    }
   },
   { allPermissions: ['customers:view', 'products:view'] }
 );
@@ -200,71 +202,77 @@ export const GET = withAuth(
  */
 export const POST = withAuth(
   async (request: NextRequest) => {
-  try {
-    const body = await request.json();
-    const { customerId, productId, priceType, unitPrice, orderId, orderType } =
-      body;
-
-    // 验证必填字段
-    if (!customerId || !productId || !priceType || unitPrice === undefined) {
-      return NextResponse.json(
-        { success: false, error: '缺少必填字段' },
-        { status: 400 }
-      );
-    }
-
-    // 验证价格类型
-    if (priceType !== 'SALES' && priceType !== 'FACTORY') {
-      return NextResponse.json(
-        { success: false, error: '价格类型必须是 SALES 或 FACTORY' },
-        { status: 400 }
-      );
-    }
-
-    // 创建价格历史记录
-    const priceHistory = await prisma.customerProductPrice.create({
-      data: {
+    try {
+      const body = await request.json();
+      const {
         customerId,
         productId,
         priceType,
         unitPrice,
         orderId,
         orderType,
-      },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
-            unit: true,
-          },
-        },
-        customer: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+      } = body;
 
-    return NextResponse.json({
-      success: true,
-      data: priceHistory,
-    });
-  } catch (error) {
-    logger.error('price-history', '记录客户价格历史失败', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: '记录价格历史失败',
-        details: error instanceof Error ? error.message : '未知错误',
-      },
-      { status: 500 }
-    );
-  }
+      // 验证必填字段
+      if (!customerId || !productId || !priceType || unitPrice === undefined) {
+        return NextResponse.json(
+          { success: false, error: '缺少必填字段' },
+          { status: 400 }
+        );
+      }
+
+      // 验证价格类型
+      if (priceType !== 'SALES' && priceType !== 'FACTORY') {
+        return NextResponse.json(
+          { success: false, error: '价格类型必须是 SALES 或 FACTORY' },
+          { status: 400 }
+        );
+      }
+
+      // 创建价格历史记录
+      const priceHistory = await prisma.customerProductPrice.create({
+        data: {
+          customerId,
+          productId,
+          priceType,
+          unitPrice,
+          orderId,
+          orderType,
+        },
+        include: {
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              specification: true,
+              unit: true,
+            },
+          },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: priceHistory,
+      });
+    } catch (error) {
+      logger.error('price-history', '记录客户价格历史失败', error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: '记录价格历史失败',
+          details: error instanceof Error ? error.message : '未知错误',
+        },
+        { status: 500 }
+      );
+    }
   },
   { allPermissions: ['customers:view', 'products:manage_price'] }
 );

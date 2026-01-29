@@ -1,16 +1,16 @@
 'use client';
 
 import {
-    Briefcase,
-    Building2,
-    CreditCard,
-    FileText,
-    Mail,
-    MapPin,
-    Phone,
-    Star,
-    User,
-    Wallet
+  Briefcase,
+  Building2,
+  CreditCard,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Star,
+  User,
+  Wallet,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
@@ -41,31 +41,59 @@ export function CustomerContactCard({
       {/* 核心联系人信息分区 */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
         <div className="mb-4">
-           <h3 className="text-sm font-bold text-slate-900">核心联系信息</h3>
+          <h3 className="text-sm font-bold text-slate-900">核心联系信息</h3>
         </div>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <SectionItem
-            icon={<IconBadge color="indigo" icon={<User className="h-3.5 w-3.5" />} />}
+            icon={
+              <IconBadge
+                color="indigo"
+                icon={<User className="h-3.5 w-3.5" />}
+              />
+            }
             label="档案联系人"
             value={extendedInfo.contactPerson || '未设置'}
           />
           <SectionItem
-            icon={<IconBadge color="emerald" icon={<Phone className="h-3.5 w-3.5" />} />}
+            icon={
+              <IconBadge
+                color="emerald"
+                icon={<Phone className="h-3.5 w-3.5" />}
+              />
+            }
             label="联系电话"
-            value={<span className="font-mono font-bold text-slate-900">{phone || '无'}</span>}
+            value={
+              <span className="font-mono font-bold text-slate-900">
+                {phone || '无'}
+              </span>
+            }
           />
           <SectionItem
-            icon={<IconBadge color="purple" icon={<Mail className="h-3.5 w-3.5" />} />}
+            icon={
+              <IconBadge
+                color="purple"
+                icon={<Mail className="h-3.5 w-3.5" />}
+              />
+            }
             label="电子邮箱"
-            value={<span className="font-mono text-slate-600 font-bold">{extendedInfo.email || '未绑定'}</span>}
+            value={
+              <span className="font-mono font-bold text-slate-600">
+                {extendedInfo.email || '未绑定'}
+              </span>
+            }
           />
         </div>
-        
+
         {address && (
           <div className="mt-8 flex items-start gap-3 border-t border-slate-50 pt-6">
-            <IconBadge color="slate" icon={<MapPin className="h-3.5 w-3.5" />} />
+            <IconBadge
+              color="slate"
+              icon={<MapPin className="h-3.5 w-3.5" />}
+            />
             <div className="flex-1">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">办公地址</p>
+              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                办公地址
+              </p>
               <p className="mt-1 text-sm font-bold text-slate-700">{address}</p>
             </div>
           </div>
@@ -76,75 +104,139 @@ export function CustomerContactCard({
       <div className="grid gap-6 md:grid-cols-2">
         {/* 客户画像属性 */}
         <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
-           <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-900">客户画像</h3>
-           </div>
-           <div className="grid gap-6">
-              <SectionItem
-                icon={<IconBadge color="amber" icon={<Building2 className="h-3.5 w-3.5" />} />}
-                label="组织类型"
-                value={<span className="font-bold text-slate-700">{getCustomerTypeLabel(extendedInfo.customerType)}</span>}
-              />
-              <SectionItem
-                icon={<IconBadge color="orange" icon={<Star className="h-3.5 w-3.5" />} />}
-                label="准入等级"
-                value={<span className="font-bold text-slate-700">{extendedInfo.level ? `${extendedInfo.level} 级客户` : '标准级'}</span>}
-              />
-              <SectionItem
-                icon={<IconBadge color="teal" icon={<Briefcase className="h-3.5 w-3.5" />} />}
-                label="所属行业"
-                value={<span className="font-bold text-slate-700">{extendedInfo.industry || '通用贸易'}</span>}
-              />
-           </div>
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-slate-900">客户画像</h3>
+          </div>
+          <div className="grid gap-6">
+            <SectionItem
+              icon={
+                <IconBadge
+                  color="amber"
+                  icon={<Building2 className="h-3.5 w-3.5" />}
+                />
+              }
+              label="组织类型"
+              value={
+                <span className="font-bold text-slate-700">
+                  {getCustomerTypeLabel(extendedInfo.customerType)}
+                </span>
+              }
+            />
+            <SectionItem
+              icon={
+                <IconBadge
+                  color="orange"
+                  icon={<Star className="h-3.5 w-3.5" />}
+                />
+              }
+              label="准入等级"
+              value={
+                <span className="font-bold text-slate-700">
+                  {extendedInfo.level
+                    ? `${extendedInfo.level} 级客户`
+                    : '标准级'}
+                </span>
+              }
+            />
+            <SectionItem
+              icon={
+                <IconBadge
+                  color="teal"
+                  icon={<Briefcase className="h-3.5 w-3.5" />}
+                />
+              }
+              label="所属行业"
+              value={
+                <span className="font-bold text-slate-700">
+                  {extendedInfo.industry || '通用贸易'}
+                </span>
+              }
+            />
+          </div>
         </section>
 
         {/* 财务授信用档案 */}
         <section className="rounded-2xl border border-slate-100 bg-slate-50/50 p-6">
-           <div className="mb-6">
-              <h3 className="text-sm font-bold text-slate-900">财务授信</h3>
-           </div>
-           <div className="grid gap-6">
-              <SectionItem
-                icon={<IconBadge color="emerald" icon={<Wallet className="h-3.5 w-3.5" />} />}
-                label="信用额度 (Credit)"
-                value={<span className="font-mono font-black text-emerald-600">{formatCurrency(extendedInfo.creditLimit || 0)}</span>}
-              />
-              <SectionItem
-                icon={<IconBadge color="blue" icon={<CreditCard className="h-3.5 w-3.5" />} />}
-                label="结算条款"
-                value={<span className="font-bold text-slate-700">{extendedInfo.paymentTerms || '现结/预付'}</span>}
-              />
-              <SectionItem
-                icon={<IconBadge color="slate" icon={<FileText className="h-3.5 w-3.5" />} />}
-                label="登记税号"
-                value={<span className="font-mono text-sm font-bold text-slate-700">{extendedInfo.taxNumber || '未登记'}</span>}
-              />
-           </div>
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-slate-900">财务授信</h3>
+          </div>
+          <div className="grid gap-6">
+            <SectionItem
+              icon={
+                <IconBadge
+                  color="emerald"
+                  icon={<Wallet className="h-3.5 w-3.5" />}
+                />
+              }
+              label="信用额度 (Credit)"
+              value={
+                <span className="font-mono font-black text-emerald-600">
+                  {formatCurrency(extendedInfo.creditLimit || 0)}
+                </span>
+              }
+            />
+            <SectionItem
+              icon={
+                <IconBadge
+                  color="blue"
+                  icon={<CreditCard className="h-3.5 w-3.5" />}
+                />
+              }
+              label="结算条款"
+              value={
+                <span className="font-bold text-slate-700">
+                  {extendedInfo.paymentTerms || '现结/预付'}
+                </span>
+              }
+            />
+            <SectionItem
+              icon={
+                <IconBadge
+                  color="slate"
+                  icon={<FileText className="h-3.5 w-3.5" />}
+                />
+              }
+              label="登记税号"
+              value={
+                <span className="font-mono text-sm font-bold text-slate-700">
+                  {extendedInfo.taxNumber || '未登记'}
+                </span>
+              }
+            />
+          </div>
         </section>
       </div>
 
       {/* 备注与时间印戳 */}
       <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-2xl flex-1">
-               <div className="mb-4">
-                  <h3 className="text-sm font-bold text-slate-900">补充备注</h3>
-               </div>
-               <p className="text-sm font-medium leading-relaxed text-slate-600 italic">
-                  {extendedInfo.notes || '暂无该客户的补充备考说明。'}
-               </p>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl flex-1">
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-900">补充备注</h3>
             </div>
-            <div className="flex shrink-0 flex-col gap-4 border-l border-slate-50 pl-6">
-               <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">创建时间</p>
-                  <p className="text-xs font-bold text-slate-700 font-mono">{formatDateTime(createdAt)}</p>
-               </div>
-               <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">最后更新</p>
-                  <p className="text-xs font-bold text-slate-700 font-mono">{formatDateTime(updatedAt)}</p>
-               </div>
+            <p className="text-sm leading-relaxed font-medium text-slate-600 italic">
+              {extendedInfo.notes || '暂无该客户的补充备考说明。'}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-4 border-l border-slate-50 pl-6">
+            <div className="space-y-1">
+              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                创建时间
+              </p>
+              <p className="font-mono text-xs font-bold text-slate-700">
+                {formatDateTime(createdAt)}
+              </p>
             </div>
-         </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+                最后更新
+              </p>
+              <p className="font-mono text-xs font-bold text-slate-700">
+                {formatDateTime(updatedAt)}
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );
@@ -173,19 +265,29 @@ function SectionItem({
     <div className="flex items-center gap-3">
       {icon}
       <div className="space-y-0.5">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+        <p className="text-xs font-bold tracking-wider text-slate-500 uppercase">
+          {label}
+        </p>
         <div className="text-sm font-bold text-slate-700">{value}</div>
       </div>
     </div>
   );
 }
 
-function IconBadge({ 
-  color, 
-  icon 
-}: { 
-  color: 'indigo' | 'emerald' | 'purple' | 'slate' | 'amber' | 'orange' | 'teal' | 'blue'; 
-  icon: ReactNode 
+function IconBadge({
+  color,
+  icon,
+}: {
+  color:
+    | 'indigo'
+    | 'emerald'
+    | 'purple'
+    | 'slate'
+    | 'amber'
+    | 'orange'
+    | 'teal'
+    | 'blue';
+  icon: ReactNode;
 }) {
   const styles = {
     indigo: 'bg-indigo-50 text-indigo-600 border-indigo-100',
@@ -199,10 +301,12 @@ function IconBadge({
   };
 
   return (
-    <div className={cn(
-      "flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition-transform hover:scale-110",
-      styles[color]
-    )}>
+    <div
+      className={cn(
+        'flex h-9 w-9 items-center justify-center rounded-xl border shadow-sm transition-transform hover:scale-110',
+        styles[color]
+      )}
+    >
       {icon}
     </div>
   );

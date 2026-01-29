@@ -316,7 +316,7 @@ export async function updateCustomer(
 
   // 处理扩展信息
   const extendedInfoStr = data.extendedInfo
-    ? processExtendedInfo(data.extendedInfo)
+    ? processExtendedInfo(mergedExtendedInfo)
     : undefined;
 
   const customer = await prisma.customer.update({

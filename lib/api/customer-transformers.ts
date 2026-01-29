@@ -106,7 +106,10 @@ function summarizeSalesOrders(
     createdAt: order.createdAt.toISOString(),
   }));
   const totalOrders = orders.length;
-  const totalAmount = summaries.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalAmount = summaries.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0
+  );
   const lastOrderDate = orders[0]?.createdAt.toISOString();
   return { summaries, totalOrders, totalAmount, lastOrderDate };
 }

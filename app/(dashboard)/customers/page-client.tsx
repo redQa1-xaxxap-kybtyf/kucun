@@ -12,9 +12,9 @@ import { ERPCustomerList } from '@/components/customers/erp-customer-list';
 import { Button } from '@/components/ui/button';
 import { useCustomersQuery } from '@/hooks/use-customers-query';
 import {
-    CUSTOMER_SORT_OPTIONS,
-    type Customer,
-    type CustomerQueryParams,
+  CUSTOMER_SORT_OPTIONS,
+  type Customer,
+  type CustomerQueryParams,
 } from '@/lib/types/customer';
 
 interface CustomersPageClientProps {
@@ -160,110 +160,110 @@ export function CustomersPageClient({
 
   return (
     <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1680px] space-y-12 p-4 lg:p-10 xl:p-14 transition-all duration-500">
-        
+      <div className="mx-auto max-w-[1680px] space-y-12 p-4 transition-all duration-500 lg:p-10 xl:p-14">
         {/* Identity Header */}
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
             <h2 className="text-3xl font-black tracking-tighter text-slate-900">
               客户管理
             </h2>
-            <p className="text-slate-400 text-sm font-bold max-w-2xl leading-relaxed">
+            <p className="max-w-2xl text-sm leading-relaxed font-bold text-slate-400">
               管理核心客群资产，跟踪交易频次、合作周期及往来账目。
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-             <Button
-                variant="ghost"
-                size="lg"
-                asChild
-                className="h-12 rounded-2xl border-none bg-white font-black text-slate-600 shadow-sm hover:bg-slate-900 hover:text-white transition-all active:scale-95 px-6"
-              >
-                <Link href="/customers/export">
-                  <Download className="mr-2 h-4 w-4" />
-                  导出报表
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                asChild
-                className="h-12 rounded-2xl border-none bg-slate-900 font-black text-white shadow-xl hover:shadow-slate-200 transition-all active:scale-95 px-6"
-              >
-                <Link href="/customers/create">
-                  <Plus className="mr-2 h-4 w-4" />
-                  新建客户
-                </Link>
-              </Button>
+            <Button
+              variant="ghost"
+              size="lg"
+              asChild
+              className="h-12 rounded-2xl border-none bg-white px-6 font-black text-slate-600 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-95"
+            >
+              <Link href="/customers/export">
+                <Download className="mr-2 h-4 w-4" />
+                导出报表
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              asChild
+              className="h-12 rounded-2xl border-none bg-slate-900 px-6 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
+            >
+              <Link href="/customers/create">
+                <Plus className="mr-2 h-4 w-4" />
+                新建客户
+              </Link>
+            </Button>
           </div>
         </div>
 
         {/* Search & Filters */}
         <div className="relative z-10">
-          <div className="absolute -inset-4 bg-gradient-to-tr from-slate-100/40 to-white/0 blur-2xl -z-10 rounded-full opacity-50" />
+          <div className="absolute -inset-4 -z-10 rounded-full bg-gradient-to-tr from-slate-100/40 to-white/0 opacity-50 blur-2xl" />
           <SearchFilterCard
-             // ... existing props
-          searchValue={search}
-          onSearchChange={handleSearch}
-          searchPlaceholder="搜索客户名称、电话或地址..."
-          filters={[
-            {
-              key: 'sortBy',
-              label: '排序字段',
-              options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
-              width: 'w-36',
-            },
-            {
-              key: 'sortOrder',
-              label: '排序方式',
-              options: [
-                { label: '升序', value: 'asc' },
-                { label: '降序', value: 'desc' },
-              ],
-              width: 'w-28',
-            },
-          ]}
-          filterValues={{
-            sortBy,
-            sortOrder,
-          }}
-          onFilterChange={(key, value) => {
-            if (key === 'sortBy' && value) {
-              handleSortChange(value, sortOrder);
-            } else if (key === 'sortOrder' && value) {
-              handleSortChange(sortBy, value as 'asc' | 'desc');
-            }
-          }}
-          variant="pro"
-          compact={true}
+            // ... existing props
+            searchValue={search}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索客户名称、电话或地址..."
+            filters={[
+              {
+                key: 'sortBy',
+                label: '排序字段',
+                options: CUSTOMER_SORT_OPTIONS.map(option => ({ ...option })),
+                width: 'w-36',
+              },
+              {
+                key: 'sortOrder',
+                label: '排序方式',
+                options: [
+                  { label: '升序', value: 'asc' },
+                  { label: '降序', value: 'desc' },
+                ],
+                width: 'w-28',
+              },
+            ]}
+            filterValues={{
+              sortBy,
+              sortOrder,
+            }}
+            onFilterChange={(key, value) => {
+              if (key === 'sortBy' && value) {
+                handleSortChange(value, sortOrder);
+              } else if (key === 'sortOrder' && value) {
+                handleSortChange(sortBy, value as 'asc' | 'desc');
+              }
+            }}
+            variant="pro"
+            compact={true}
+          />
+        </div>
+
+        {/* 客户列表 */}
+        <div className="relative">
+          {isError && (
+            <div className="animate-in fade-in slide-in-from-top-4 mb-8 flex items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50/50 px-6 py-4 text-sm font-bold text-rose-600 duration-500">
+              <div className="h-2 w-2 animate-pulse rounded-full bg-rose-500" />
+              加载客户数据失败：
+              {error instanceof Error ? error.message : '发生未知错误'}
+            </div>
+          )}
+
+          <ERPCustomerList
+            customers={customers}
+            pagination={pagination}
+            isLoading={isLoading}
+            onViewDetail={handleViewDetail}
+            onDelete={handleDelete}
+            onPageChange={handlePageChange}
+          />
+        </div>
+
+        <CustomerDeleteDialog
+          customer={selectedCustomer}
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
         />
       </div>
-
-      {/* 客户列表 */}
-      <div className="relative">
-        {isError && (
-          <div className="border-rose-100 bg-rose-50/50 text-rose-600 mb-8 rounded-2xl border px-6 py-4 text-sm font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-            加载客户数据失败：{error instanceof Error ? error.message : '发生未知错误'}
-          </div>
-        )}
-
-        <ERPCustomerList
-          customers={customers}
-          pagination={pagination}
-          isLoading={isLoading}
-          onViewDetail={handleViewDetail}
-          onDelete={handleDelete}
-          onPageChange={handlePageChange}
-        />
-      </div>
-
-      <CustomerDeleteDialog
-        customer={selectedCustomer}
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-      />
     </div>
-  </div>
-);
+  );
 }
