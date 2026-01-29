@@ -17,8 +17,16 @@
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(255, 255, 255, 0.06) 0%,
+      transparent 50%
+    );
   pointer-events: none;
   z-index: 0;
 }
@@ -46,14 +54,30 @@
   animation: fadeInUp 0.6s ease-out backwards;
 }
 
-.form-item:nth-child(1) { animation-delay: 0.1s; }
-.form-item:nth-child(2) { animation-delay: 0.15s; }
-.form-item:nth-child(3) { animation-delay: 0.2s; }
-.form-item:nth-child(4) { animation-delay: 0.25s; }
-.form-item:nth-child(5) { animation-delay: 0.3s; }
-.form-item:nth-child(6) { animation-delay: 0.35s; }
-.form-item:nth-child(7) { animation-delay: 0.4s; }
-.form-item:nth-child(8) { animation-delay: 0.45s; }
+.form-item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.form-item:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.form-item:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.form-item:nth-child(4) {
+  animation-delay: 0.25s;
+}
+.form-item:nth-child(5) {
+  animation-delay: 0.3s;
+}
+.form-item:nth-child(6) {
+  animation-delay: 0.35s;
+}
+.form-item:nth-child(7) {
+  animation-delay: 0.4s;
+}
+.form-item:nth-child(8) {
+  animation-delay: 0.45s;
+}
 
 @keyframes fadeInUp {
   from {
@@ -107,9 +131,11 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 252, 0.9) 100%);
+    rgba(250, 250, 252, 0.9) 100%
+  );
   border-radius: 20rpx;
   border: 2rpx solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -201,9 +227,11 @@
   height: 200rpx;
   border-radius: 28rpx;
   border: 2rpx dashed rgba(102, 126, 234, 0.3);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.9) 0%,
-    rgba(249, 249, 251, 0.8) 100%);
+    rgba(249, 249, 251, 0.8) 100%
+  );
   backdrop-filter: blur(10rpx);
   display: flex;
   flex-direction: column;
@@ -224,7 +252,11 @@
   width: 0;
   height: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+  background: radial-gradient(
+    circle,
+    rgba(102, 126, 234, 0.1) 0%,
+    transparent 70%
+  );
   transform: translate(-50%, -50%);
   transition: all 0.6s ease-out;
 }
@@ -324,9 +356,11 @@
   height: 200rpx;
   border-radius: 24rpx;
   border: 2rpx dashed rgba(102, 126, 234, 0.3);
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.9) 0%,
-    rgba(249, 249, 251, 0.8) 100%);
+    rgba(249, 249, 251, 0.8) 100%
+  );
   backdrop-filter: blur(10rpx);
   display: flex;
   flex-direction: column;
@@ -370,9 +404,11 @@
 
 .textarea-container {
   position: relative;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 252, 0.9) 100%);
+    rgba(250, 250, 252, 0.9) 100%
+  );
   border-radius: 20rpx;
   border: 2rpx solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -457,9 +493,11 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 252, 0.9) 100%);
+    rgba(250, 250, 252, 0.9) 100%
+  );
   border-radius: 20rpx;
   border: 2rpx solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -580,10 +618,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   transition: left 0.6s ease;
 }
 

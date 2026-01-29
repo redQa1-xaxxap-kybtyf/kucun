@@ -6,9 +6,11 @@ import { categoryService } from '../../services/category.service';
 import { productService } from '../../services/product.service';
 import qiniuService from '../../services/qiniu-upload.service';
 import type { Category } from '../../types/category';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 Page({
   data: {
+    enableBackdropBlur: getEnableBackdropBlur(),
     // 是否为编辑模式
     isEditMode: false,
     productId: '',
@@ -191,10 +193,49 @@ Page({
         if (fileInfo && typeof fileInfo.size === 'number') {
           const sizeMb = fileInfo.size / (1024 * 1024);
           if (sizeMb > maxSizeMb) {
+            // 尝试压缩后继续上传（避免用户来回选择）
             wx.showToast({
-              title: `${kind === 'effect' ? '效果图' : '图片'}不能超过 ${maxSizeMb}MB`,
+              title: '图片较大，正在压缩…',
               icon: 'none',
+              duration: 1200,
             });
+
+            wx.compressImage({
+              src: filePath,
+              quality: kind === 'effect' ? 80 : 75,
+              success: compRes => {
+                const compressedPath =
+                  (compRes as any)?.tempFilePath || filePath;
+
+                // 压缩后再检查一次大小（部分机型压缩后仍可能超过限制）
+                const fs = wx.getFileSystemManager();
+                fs.getFileInfo({
+                  filePath: compressedPath,
+                  success: info => {
+                    const mb = (info.size || 0) / (1024 * 1024);
+                    if (mb > maxSizeMb) {
+                      wx.showToast({
+                        title: `${kind === 'effect' ? '效果图' : '图片'}不能超过 ${maxSizeMb}MB`,
+                        icon: 'none',
+                      });
+                      return;
+                    }
+                    that.uploadImage(compressedPath, kind);
+                  },
+                  fail: () => {
+                    // 取不到大小就直接尝试上传
+                    that.uploadImage(compressedPath, kind);
+                  },
+                });
+              },
+              fail: () => {
+                wx.showToast({
+                  title: `${kind === 'effect' ? '效果图' : '图片'}不能超过 ${maxSizeMb}MB`,
+                  icon: 'none',
+                });
+              },
+            });
+
             return;
           }
         }
@@ -400,11 +441,25 @@ Page({
     this.setData({ submitting: true });
 
     try {
+      // 去重并清理图片列表（避免重复上传/重复保存同一 URL）
+      const mainImages = Array.from(
+        new Set(
+          (this.data.mainImages || [])
+            .map(u => (typeof u === 'string' ? u.trim() : ''))
+            .filter(Boolean)
+        )
+      );
+      const effectImages = Array.from(
+        new Set(
+          (this.data.effectImages || [])
+            .map(u => (typeof u === 'string' ? u.trim() : ''))
+            .filter(Boolean)
+        )
+      );
+
       // 如果缩略图没有选择，自动使用主图的第一张
-      const thumbnailUrl = this.data.thumbnailUrl ||
-                          (this.data.mainImages && this.data.mainImages.length > 0
-                            ? this.data.mainImages[0]
-                            : undefined);
+      const thumbnailUrlRaw = (this.data.thumbnailUrl || '').trim();
+      const thumbnailUrl = thumbnailUrlRaw || mainImages[0] || undefined;
 
       const payload = {
         code,
@@ -414,8 +469,8 @@ Page({
         thickness: thicknessNumber,
         categoryId,
         thumbnailUrl,
-        mainImages: this.data.mainImages || [],
-        effectImages: this.data.effectImages || [],
+        mainImages,
+        effectImages,
       };
 
       let product;
@@ -440,15 +495,35 @@ Page({
       }
 
       setTimeout(() => {
-        if (product && product.id) {
-          wx.redirectTo({
-            url: `/pages/products/detail?id=${product.id}`,
-          });
-        } else {
-          wx.redirectTo({
-            url: '/pages/products/list',
-          });
+        // 编辑模式：返回上一页（通常是详情页），并通过 eventChannel 通知刷新，避免产生“详情页叠加”的历史栈问题
+        if (this.data.isEditMode) {
+          try {
+            const channel = (this as any).getOpenerEventChannel?.();
+            channel?.emit('productUpdated', {
+              id: (product as any)?.id || this.data.productId,
+            });
+          } catch (_error) {
+            // ignore
+          }
+
+          const pages = getCurrentPages();
+          if (pages.length > 1) {
+            wx.navigateBack();
+            return;
+          }
         }
+
+        // 创建模式或兜底：跳转到详情/列表
+        if (product && (product as any).id) {
+          wx.redirectTo({
+            url: `/pages/products/detail?id=${(product as any).id}`,
+          });
+          return;
+        }
+
+        wx.redirectTo({
+          url: '/pages/products/list',
+        });
       }, 1500);
     } catch (error) {
       console.error('创建产品失败:', error);

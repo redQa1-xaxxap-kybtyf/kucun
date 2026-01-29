@@ -38,8 +38,15 @@ if (typeof globalObj.URLSearchParams === 'undefined') {
   globalObj.URLSearchParams = SimpleURLSearchParams;
 }
 
+import type { ColumnBuildState, GenerateSchemeResponse } from './types/column';
+
 App<IAppOption>({
-  globalData: {},
+  globalData: {
+    // 罗马柱拼柱状态
+    columnBuildState: undefined as ColumnBuildState | undefined,
+    // 罗马柱方案结果
+    columnSchemeResult: undefined as GenerateSchemeResponse | undefined,
+  },
   onLaunch() {
     // 展示本地存储能力
     const logs = wx.getStorageSync('logs') || [];

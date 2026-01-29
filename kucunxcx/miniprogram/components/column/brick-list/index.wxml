@@ -1,0 +1,72 @@
+<!-- 用砖清单组件 -->
+<view class="brick-list-component">
+  <!-- 高度状态 -->
+  <view class="height-summary">
+    <view class="summary-row">
+      <text class="summary-label">目标高度</text>
+      <text class="summary-value">{{targetHeight}} mm</text>
+    </view>
+    <view class="summary-row">
+      <text class="summary-label">用砖高度</text>
+      <text class="summary-value">{{buildHeight}} mm</text>
+    </view>
+    <view class="summary-row status {{statusType}}">
+      <text class="summary-label">状态</text>
+      <text class="summary-value">{{statusMessage}}</text>
+    </view>
+  </view>
+
+  <!-- 切割说明 -->
+  <view class="cut-info" wx:if="{{showCutInfo && needCut && cutPosition}}">
+    <view class="cut-badge">需切割</view>
+    <view class="cut-content">
+      <text class="cut-text">切割位置：{{cutPosition}}</text>
+      <view class="cut-edit" wx:if="{{showEdit}}" bindtap="onEditCut">修改</view>
+    </view>
+  </view>
+
+  <!-- 清单内容 -->
+  <view class="list-content">
+    <view class="list-title">用砖清单</view>
+
+    <!-- 按面型分组 -->
+    <view 
+      class="face-type-group" 
+      wx:for="{{brickList}}" 
+      wx:key="faceType"
+      wx:for-item="faceGroup"
+    >
+      <view class="group-header">
+        <text class="group-name">{{faceGroup.faceTypeDesc}}</text>
+      </view>
+      <view class="group-items">
+        <view 
+          class="brick-item {{item.cutHeight ? 'cut' : ''}}"
+          wx:for="{{faceGroup.items}}"
+          wx:for-item="item"
+          wx:key="index"
+          data-face-type="{{faceGroup.faceType}}"
+          data-item="{{item}}"
+          data-index="{{index}}"
+          bindtap="onItemTap"
+        >
+          <view class="item-slot">
+            <text class="slot-badge {{item.cutHeight ? 'cut' : ''}}">{{item.slotDesc}}</text>
+          </view>
+          <view class="item-info">
+            <text class="item-code">{{item.code}}</text>
+            <text class="item-note" wx:if="{{item.note}}">{{item.note}}</text>
+          </view>
+          <view class="item-quantity">
+            <text>× {{item.quantity}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{brickList.length === 0}}">
+      <text>暂无用砖数据</text>
+    </view>
+  </view>
+</view>

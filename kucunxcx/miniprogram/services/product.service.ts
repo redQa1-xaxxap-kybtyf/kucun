@@ -1,7 +1,7 @@
 // 产品服务
 // 封装所有产品相关的 API 请求
 
-import { API_ENDPOINTS, TOKEN_KEY } from '../config/api';
+import { API_ENDPOINTS } from '../config/api';
 import type { PaginationResponse } from '../types/common';
 import type {
   Product,
@@ -9,26 +9,9 @@ import type {
   ProductQueryParams,
 } from '../types/product';
 import { get, post, put } from '../utils/request';
+import { appendMiniTokenForLocalUploads } from '../utils/media';
 import authService from './auth.service';
 import inventoryService from './inventory.service';
-
-function appendMiniTokenForLocalUploads(url: string): string {
-  if (!url) return url;
-
-  // 本地兜底图片通过 /api/uploads/... 提供；小程序 <image> 无法设置 header，
-  // 这里对历史数据的旧 URL 追加 mt=token（服务端会校验）。
-  if (!url.includes('/api/uploads/')) return url;
-  if (/[?&](t|mt)=/.test(url)) return url;
-
-  try {
-    const token = wx.getStorageSync(TOKEN_KEY);
-    if (!token) return url;
-    const sep = url.includes('?') ? '&' : '?';
-    return `${url}${sep}mt=${encodeURIComponent(token)}`;
-  } catch (_error) {
-    return url;
-  }
-}
 
 /**
  * 产品服务类
@@ -87,8 +70,7 @@ class ProductService {
       // 1) 优先使用产品本身的 piecesPerUnit（>1 时认为是有效包装）
       // 2) 如未设置或为 1，则从批次规格 / 库存批次中推导（所有批次一致时采用）
       let effectivePiecesPerUnit: number | undefined =
-        typeof product.piecesPerUnit === 'number' &&
-        product.piecesPerUnit > 1
+        typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 1
           ? product.piecesPerUnit
           : undefined;
 
@@ -109,10 +91,7 @@ class ProductService {
         }
 
         // 兼容：从库存批次中收集 piecesPerUnit（如果后端有返回）
-        if (
-          product.inventory &&
-          Array.isArray(product.inventory.batches)
-        ) {
+        if (product.inventory && Array.isArray(product.inventory.batches)) {
           product.inventory.batches.forEach((batch: any) => {
             const v =
               batch && typeof batch.piecesPerUnit === 'number'
@@ -133,7 +112,9 @@ class ProductService {
       return {
         ...product,
         piecesPerUnit: effectivePiecesPerUnit ?? product.piecesPerUnit,
-        thumbnailUrl: appendMiniTokenForLocalUploads(product.thumbnailUrl || ''),
+        thumbnailUrl: appendMiniTokenForLocalUploads(
+          product.thumbnailUrl || ''
+        ),
         images,
       } as Product;
     });
@@ -208,12 +189,11 @@ class ProductService {
     // 尝试从库存批次信息中推导统一的“每件片数”
     if (!effectivePiecesPerUnit && authService.canViewNumericInventory()) {
       try {
-        const inventoryResponse =
-          await inventoryService.getInventoryList({
-            productId: id,
-            page: 1,
-            limit: 100,
-          });
+        const inventoryResponse = await inventoryService.getInventoryList({
+          productId: id,
+          page: 1,
+          limit: 100,
+        });
 
         const candidateValues: number[] = [];
 
@@ -296,45 +276,32 @@ class ProductService {
     effectImages?: string[];
   }): Promise<ProductDetail> {
     // 将小程序选择的图片列表转换为后端需要的 ProductImage 结构
+    // - 去重：避免缩略图与主图列表重复导致后端存储多份相同图片
     const images: Array<{
       url: string;
       type: 'main' | 'effect';
       order: number;
     }> = [];
+    const seen = new Set<string>();
     let order = 0;
 
+    const addImage = (url: string | undefined, type: 'main' | 'effect') => {
+      const normalized = typeof url === 'string' ? url.trim() : '';
+      if (!normalized) return;
+      const key = `${type}|${normalized}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      images.push({ url: normalized, type, order: order++ });
+    };
+
     // 缩略图优先作为主图
-    if (payload.thumbnailUrl) {
-      images.push({
-        url: payload.thumbnailUrl,
-        type: 'main',
-        order: order++,
-      });
-    }
+    addImage(payload.thumbnailUrl, 'main');
 
     // 其他主图
-    if (payload.mainImages && payload.mainImages.length > 0) {
-      payload.mainImages.forEach(url => {
-        if (!url) return;
-        images.push({
-          url,
-          type: 'main',
-          order: order++,
-        });
-      });
-    }
+    (payload.mainImages || []).forEach(url => addImage(url, 'main'));
 
     // 效果图
-    if (payload.effectImages && payload.effectImages.length > 0) {
-      payload.effectImages.forEach(url => {
-        if (!url) return;
-        images.push({
-          url,
-          type: 'effect',
-          order: order++,
-        });
-      });
-    }
+    (payload.effectImages || []).forEach(url => addImage(url, 'effect'));
 
     const body = {
       code: payload.code,
@@ -374,37 +341,21 @@ class ProductService {
       type: 'main' | 'effect';
       order: number;
     }> = [];
+    const seen = new Set<string>();
     let order = 0;
 
-    if (payload.thumbnailUrl) {
-      images.push({
-        url: payload.thumbnailUrl,
-        type: 'main',
-        order: order++,
-      });
-    }
+    const addImage = (url: string | undefined, type: 'main' | 'effect') => {
+      const normalized = typeof url === 'string' ? url.trim() : '';
+      if (!normalized) return;
+      const key = `${type}|${normalized}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      images.push({ url: normalized, type, order: order++ });
+    };
 
-    if (payload.mainImages && payload.mainImages.length > 0) {
-      payload.mainImages.forEach(url => {
-        if (!url) return;
-        images.push({
-          url,
-          type: 'main',
-          order: order++,
-        });
-      });
-    }
-
-    if (payload.effectImages && payload.effectImages.length > 0) {
-      payload.effectImages.forEach(url => {
-        if (!url) return;
-        images.push({
-          url,
-          type: 'effect',
-          order: order++,
-        });
-      });
-    }
+    addImage(payload.thumbnailUrl, 'main');
+    (payload.mainImages || []).forEach(url => addImage(url, 'main'));
+    (payload.effectImages || []).forEach(url => addImage(url, 'effect'));
 
     const body = {
       code: payload.code,

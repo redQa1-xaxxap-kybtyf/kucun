@@ -2,6 +2,7 @@
 // 效果图列表页
 
 import productService from '../../services/product.service';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 interface EffectItem {
   imageUrl: string;
@@ -20,7 +21,7 @@ const FAVORITES_KEY = 'effect_favorites';
 function getFixedIncrement(productId: string): number {
   let hash = 0;
   for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash = (hash << 5) - hash + productId.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash % 10) + 1;
@@ -29,6 +30,7 @@ function getFixedIncrement(productId: string): number {
 Page({
   data: {
     searchValue: '',
+    enableBackdropBlur: getEnableBackdropBlur(),
     effectList: [] as EffectItem[],
     allEffectList: [] as EffectItem[], // 用于搜索过滤
     loading: false,
@@ -82,14 +84,15 @@ Page({
         for (const product of response.items) {
           if (product.effectImages && product.effectImages.length > 0) {
             // 每张效果图单独作为一个条目
-            product.effectImages.forEach((imgUrl) => {
+            product.effectImages.forEach(imgUrl => {
               allEffects.push({
                 imageUrl: imgUrl,
                 productId: product.id,
                 productCode: product.code,
                 productName: product.name,
                 // 真实浏览量 + 固定增量（基于产品ID）
-                viewCount: (product.viewCount || 0) + getFixedIncrement(product.id),
+                viewCount:
+                  (product.viewCount || 0) + getFixedIncrement(product.id),
               });
             });
           }
@@ -106,11 +109,11 @@ Page({
       const favorites: string[] = wx.getStorageSync(FAVORITES_KEY) || [];
 
       this.setData({
-        effectList: allEffects.map((item) => ({
+        effectList: allEffects.map(item => ({
           ...item,
           isFavorite: favorites.includes(item.imageUrl),
         })),
-        allEffectList: allEffects.map((item) => ({
+        allEffectList: allEffects.map(item => ({
           ...item,
           isFavorite: favorites.includes(item.imageUrl),
         })),
@@ -156,7 +159,7 @@ Page({
 
     const lowerKeyword = keyword.toLowerCase();
     const filtered = this.data.allEffectList.filter(
-      (item) =>
+      item =>
         item.productCode.toLowerCase().includes(lowerKeyword) ||
         item.productName.toLowerCase().includes(lowerKeyword)
     );
@@ -191,7 +194,7 @@ Page({
 
     wx.showActionSheet({
       itemList: [isFavorite ? '取消收藏' : '收藏', '分享'],
-      success: (res) => {
+      success: res => {
         if (res.tapIndex === 0) {
           // 收藏/取消收藏
           this.toggleFavorite(item);
@@ -217,7 +220,7 @@ Page({
     let newFavorites: string[];
     if (isFavorite) {
       // 取消收藏
-      newFavorites = favorites.filter((url) => url !== imageUrl);
+      newFavorites = favorites.filter(url => url !== imageUrl);
       wx.showToast({ title: '已取消收藏', icon: 'none' });
     } else {
       // 添加收藏
@@ -230,7 +233,7 @@ Page({
 
     // 更新列表状态
     const updateList = (list: EffectItem[]) =>
-      list.map((i) =>
+      list.map(i =>
         i.imageUrl === imageUrl ? { ...i, isFavorite: !isFavorite } : i
       );
 

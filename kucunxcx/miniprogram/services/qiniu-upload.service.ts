@@ -21,27 +21,27 @@ export type UploadKind = 'thumbnail' | 'main' | 'effect';
 
 // 后端返回的上传参数
 interface QiniuUploadParams {
-  uploadToken: string;           // 七牛上传凭证
-  uploadHost: string;            // 主上传域名
+  uploadToken: string; // 七牛上传凭证
+  uploadHost: string; // 主上传域名
   fallbackUploadHosts?: string[]; // 备用上传域名
-  key: string;                   // 文件在七牛的 key
-  url: string;                   // 完整的 CDN 访问 URL
-  domain: string;                // CDN 域名
+  key: string; // 文件在七牛的 key
+  url: string; // 完整的 CDN 访问 URL
+  domain: string; // CDN 域名
 }
 
 // 上传结果
 interface UploadResult {
-  key: string;                   // 文件 key
-  url: string;                   // 完整 URL
-  hash?: string;                 // 文件哈希值
+  key: string; // 文件 key
+  url: string; // 完整 URL
+  hash?: string; // 文件哈希值
 }
 
 // 上传选项
 interface UploadOptions {
-  type?: UploadType;             // 上传类型
-  kind?: UploadKind;             // 图片用途（仅 type=product 时有效）
+  type?: UploadType; // 上传类型
+  kind?: UploadKind; // 图片用途（仅 type=product 时有效）
   onProgress?: (progress: number) => void; // 上传进度回调
-  showLoading?: boolean;         // 是否显示 loading（默认 true）
+  showLoading?: boolean; // 是否显示 loading（默认 true）
 }
 
 /**
@@ -90,10 +90,9 @@ class QiniuUploadService {
     const { uploadToken, key, uploadHost, fallbackUploadHosts, url } = params;
 
     // 构建上传域名列表（主域名 + 备用域名）
-    const uploadHosts = [
-      uploadHost,
-      ...(fallbackUploadHosts || []),
-    ].filter(Boolean).slice(0, 3); // 最多尝试 3 个域名
+    const uploadHosts = [uploadHost, ...(fallbackUploadHosts || [])]
+      .filter(Boolean)
+      .slice(0, 3); // 最多尝试 3 个域名
 
     let lastError: Error | null = null;
 
@@ -144,7 +143,7 @@ class QiniuUploadService {
           token: uploadToken,
           key,
         },
-        success: (res) => {
+        success: res => {
           // 七牛云返回 200 表示成功
           if (res.statusCode === 200) {
             try {
@@ -168,14 +167,14 @@ class QiniuUploadService {
             reject(new Error(errorMsg));
           }
         },
-        fail: (error) => {
+        fail: error => {
           reject(new Error(error.errMsg || '上传失败'));
         },
       });
 
       // 上传进度监听
       if (onProgress) {
-        uploadTask.onProgressUpdate((res) => {
+        uploadTask.onProgressUpdate(res => {
           const progress = res.progress || 0;
           onProgress(progress);
         });
@@ -264,7 +263,7 @@ class QiniuUploadService {
           const result = await this.uploadImage(files[i], kind, {
             ...options,
             showLoading: true,
-            onProgress: (progress) => {
+            onProgress: progress => {
               // 显示当前文件的上传进度
               showGlobalLoading({
                 title: `上传中 ${i + 1}/${files.length} (${progress}%)`,
@@ -341,7 +340,7 @@ class QiniuUploadService {
           this.uploadImage(filePath, kind, {
             ...options,
             showLoading: false, // 批量上传时统一管理 loading
-            onProgress: (progress) => {
+            onProgress: progress => {
               const current = i + index + 1;
               showGlobalLoading({
                 title: `上传中 ${current}/${filePaths.length} (${progress}%)`,

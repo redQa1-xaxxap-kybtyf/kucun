@@ -11,10 +11,7 @@
   justify-content: center;
   padding: 40rpx;
   /* 基础渐变 */
-  background: linear-gradient(135deg,
-    #e8c5e5 0%,
-    #f5f0e8 50%,
-    #c9e5de 100%);
+  background: linear-gradient(135deg, #e8c5e5 0%, #f5f0e8 50%, #c9e5de 100%);
   background-size: 200% 200%;
   background-attachment: fixed;
   animation: auroraBase 20s ease-in-out infinite;
@@ -22,7 +19,8 @@
 
 /* 极光动画 - 基础层 */
 @keyframes auroraBase {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 0%;
   }
   25% {
@@ -45,9 +43,21 @@
   right: -50%;
   bottom: -50%;
   background:
-    radial-gradient(ellipse at 20% 30%, rgba(232, 197, 229, 0.4) 0%, transparent 40%),
-    radial-gradient(ellipse at 80% 70%, rgba(201, 229, 222, 0.35) 0%, transparent 45%),
-    radial-gradient(ellipse at 50% 50%, rgba(245, 240, 232, 0.3) 0%, transparent 50%);
+    radial-gradient(
+      ellipse at 20% 30%,
+      rgba(232, 197, 229, 0.4) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 80% 70%,
+      rgba(201, 229, 222, 0.35) 0%,
+      transparent 45%
+    ),
+    radial-gradient(
+      ellipse at 50% 50%,
+      rgba(245, 240, 232, 0.3) 0%,
+      transparent 50%
+    );
   pointer-events: none;
   z-index: 0;
   animation: aurora1 15s ease-in-out infinite alternate;
@@ -77,9 +87,21 @@
   right: -50%;
   bottom: -50%;
   background:
-    radial-gradient(ellipse at 70% 20%, rgba(255, 255, 255, 0.25) 0%, transparent 35%),
-    radial-gradient(ellipse at 30% 80%, rgba(232, 197, 229, 0.25) 0%, transparent 40%),
-    radial-gradient(ellipse at 60% 60%, rgba(201, 229, 222, 0.2) 0%, transparent 45%);
+    radial-gradient(
+      ellipse at 70% 20%,
+      rgba(255, 255, 255, 0.25) 0%,
+      transparent 35%
+    ),
+    radial-gradient(
+      ellipse at 30% 80%,
+      rgba(232, 197, 229, 0.25) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse at 60% 60%,
+      rgba(201, 229, 222, 0.2) 0%,
+      transparent 45%
+    );
   pointer-events: none;
   z-index: 0;
   animation: aurora2 18s ease-in-out infinite alternate-reverse;

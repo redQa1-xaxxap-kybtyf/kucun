@@ -1,5 +1,5 @@
 <!-- 产品创建页 -->
-<view class="container">
+<view class="container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <view class="form-card">
     <!-- 缩略图（列表封面） -->
     <view class="form-item">

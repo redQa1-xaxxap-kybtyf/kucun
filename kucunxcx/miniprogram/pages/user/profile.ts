@@ -2,6 +2,20 @@
 // 用户中心页
 
 import authService from '../../services/auth.service';
+import { getEnableBackdropBlur } from '../../utils/ui';
+
+const INITIAL_DOCK_SPACER_PX = (() => {
+  try {
+    const info = wx.getWindowInfo();
+    const safeAreaBottom =
+      info.safeArea && typeof info.safeArea.bottom === 'number'
+        ? Math.max(0, info.screenHeight - info.safeArea.bottom)
+        : 0;
+    return Math.ceil((180 * info.windowWidth) / 750 + safeAreaBottom);
+  } catch (_error) {
+    return 120;
+  }
+})();
 
 interface UserInfo {
   username: string;
@@ -15,6 +29,8 @@ Page({
   data: {
     userInfo: null as UserInfo | null,
     isLoggedIn: false,
+    enableBackdropBlur: getEnableBackdropBlur(),
+    dockSpacerHeightPx: INITIAL_DOCK_SPACER_PX,
     canCreateProduct: false,
     statusBarHeight: 0,
     navBarHeight: 44,
@@ -24,6 +40,10 @@ Page({
   onLoad() {
     this.initCustomNav();
     this.loadUserInfo();
+  },
+
+  onReady() {
+    this.updateDockSpacerHeight();
   },
 
   onShow() {
@@ -50,10 +70,66 @@ Page({
       }
 
       const navHeight = statusBarHeight + navBarHeight;
-      this.setData({ statusBarHeight, navBarHeight, navHeight });
+
+      const safeAreaBottom =
+        windowInfo.safeArea && typeof windowInfo.safeArea.bottom === 'number'
+          ? Math.max(0, windowInfo.screenHeight - windowInfo.safeArea.bottom)
+          : 0;
+      const rpxToPx = (rpx: number) => (rpx * windowInfo.windowWidth) / 750;
+      const dockSpacerHeightPx = Math.ceil(rpxToPx(180) + safeAreaBottom);
+
+      this.setData({
+        statusBarHeight,
+        navBarHeight,
+        navHeight,
+        dockSpacerHeightPx,
+      });
     } catch (_error) {
       // ignore
     }
+  },
+
+  updateDockSpacerHeight() {
+    let windowInfo: WechatMiniprogram.WindowInfo;
+    try {
+      windowInfo = wx.getWindowInfo();
+    } catch (_error) {
+      try {
+        // 兜底：仅在极老基础库上使用 sync API
+        windowInfo =
+          wx.getSystemInfoSync() as unknown as WechatMiniprogram.WindowInfo;
+      } catch (_innerError) {
+        return;
+      }
+    }
+
+    const rpxToPx = (rpx: number) => (rpx * windowInfo.windowWidth) / 750;
+    const safeAreaBottom =
+      windowInfo.safeArea && typeof windowInfo.safeArea.bottom === 'number'
+        ? Math.max(0, windowInfo.screenHeight - windowInfo.safeArea.bottom)
+        : 0;
+    const bottomOffsetPx = rpxToPx(48);
+    const extraPx = rpxToPx(16);
+    const minSpacerPx = rpxToPx(180) + safeAreaBottom;
+
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.floating-dock').boundingClientRect();
+    query.exec(res => {
+      const rect = Array.isArray(res)
+        ? (res[0] as { height?: number } | undefined)
+        : undefined;
+      const dockHeightPx =
+        rect && typeof rect.height === 'number' ? rect.height : rpxToPx(120);
+
+      const spacerPx = Math.max(
+        Math.ceil(dockHeightPx + bottomOffsetPx + safeAreaBottom + extraPx),
+        Math.ceil(minSpacerPx)
+      );
+
+      if (spacerPx !== this.data.dockSpacerHeightPx) {
+        this.setData({ dockSpacerHeightPx: spacerPx });
+      }
+    });
   },
 
   // 加载用户信息
@@ -132,28 +208,6 @@ Page({
     });
   },
 
-  navigateToSettings() {
-    wx.showToast({
-      title: '设置功能开发中',
-      icon: 'none',
-    });
-  },
-
-  navigateToAbout() {
-    wx.showModal({
-      title: '关于我们',
-      content: '库存管理小程序 v1.0.0\n\n一个简洁高效的库存管理解决方案',
-      showCancel: false,
-    });
-  },
-
-  navigateToHelp() {
-    wx.showToast({
-      title: '帮助中心功能开发中',
-      icon: 'none',
-    });
-  },
-
   // 登录
   onLogin() {
     wx.reLaunch({
@@ -208,6 +262,12 @@ Page({
   },
 
   // 底部导航（与首页保持一致）
+  navigateToHome() {
+    wx.reLaunch({
+      url: '/pages/index/index',
+    });
+  },
+
   navigateToProducts() {
     wx.navigateTo({
       url: '/pages/products/list',

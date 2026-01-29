@@ -1,5 +1,5 @@
 <!-- 用户中心页 -->
-<view class="container">
+<view class="container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <!-- 自定义导航栏 -->
   <view class="custom-nav" style="padding-top: {{statusBarHeight}}px;">
     <view class="custom-nav-bar" style="height: {{navBarHeight}}px;">
@@ -79,42 +79,6 @@
     </view>
   </view>
 
-  <!-- 其他功能（列表） -->
-  <view class="section">
-    <view class="section-title">更多</view>
-    <view class="card list">
-      <view class="list-item" bindtap="navigateToSettings">
-        <view class="list-left">
-          <view class="list-icon list-icon-grey">
-            <van-icon name="setting-o" size="18px" />
-          </view>
-          <text class="list-text">设置</text>
-        </view>
-        <van-icon name="arrow" class="list-arrow" size="16px" />
-      </view>
-      <view class="divider"></view>
-      <view class="list-item" bindtap="navigateToAbout">
-        <view class="list-left">
-          <view class="list-icon list-icon-blue">
-            <van-icon name="info-o" size="18px" />
-          </view>
-          <text class="list-text">关于我们</text>
-        </view>
-        <van-icon name="arrow" class="list-arrow" size="16px" />
-      </view>
-      <view class="divider"></view>
-      <view class="list-item" bindtap="navigateToHelp">
-        <view class="list-left">
-          <view class="list-icon list-icon-green">
-            <van-icon name="question-o" size="18px" />
-          </view>
-          <text class="list-text">帮助中心</text>
-        </view>
-        <van-icon name="arrow" class="list-arrow" size="16px" />
-      </view>
-    </view>
-  </view>
-
   <!-- 退出登录按钮 -->
   <view class="logout-section" wx:if="{{ isLoggedIn }}">
     <button class="ios-btn ios-btn-danger" bindtap="onLogout">退出登录</button>
@@ -125,13 +89,13 @@
   </view>
 
   <!-- Safe Area Spacer -->
-  <view class="bottom-spacer"></view>
+  <view class="bottom-spacer" style="height: {{ dockSpacerHeightPx }}px;"></view>
 
   <!-- 底部导航 (Floating Dock) -->
   <view class="floating-dock">
-    <view class="dock-item" bindtap="navigateToProducts">
-      <van-icon name="apps-o" size="22px" />
-      <text>产品</text>
+    <view class="dock-item" bindtap="navigateToHome">
+      <van-icon name="wap-home-o" size="22px" />
+      <text>首页</text>
     </view>
     <view class="dock-item" bindtap="navigateToInventory">
       <van-icon name="search" size="22px" />

@@ -7,7 +7,8 @@
 const ENV = {
   // 开发环境
   development: {
-    // 真机联调时无法访问 localhost，开发环境默认指向线上 API
+    // 开发者工具/体验版默认指向线上 API（便于线上联调测试）
+    // 如需切换到本地/测试环境，请通过 storage 覆盖（见 API_BASE_URL_KEY）
     baseURL: 'https://kucun.0595t.com/api',
     timeout: 30000,
   },
@@ -20,40 +21,47 @@ const ENV = {
 };
 
 /**
- * 当前环境
- * 微信小程序可以通过 wx.getAccountInfoSync() 判断
+ * 可选：通过 storage 覆盖 API baseURL
+ * - 便于在开发者工具/真机联调时切换到测试环境或内网环境
  */
-function getCurrentEnv(): 'development' | 'production' {
-  // 优先用 deviceInfo 判断 devtools（使用 wx.getDeviceInfo 替代已弃用的 wx.getSystemInfoSync），避免 accountInfo 异常时误判到 localhost
+export const API_BASE_URL_KEY = 'api_base_url';
+
+function normalizeBaseURL(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function getApiConfig(): { baseURL: string; timeout: number } {
+  // 1) 优先使用手动覆盖的 baseURL
+  try {
+    const override = wx.getStorageSync(API_BASE_URL_KEY);
+    if (typeof override === 'string' && override.trim()) {
+      return {
+        baseURL: normalizeBaseURL(override.trim()),
+        timeout: ENV.production.timeout,
+      };
+    }
+  } catch (_error) {
+    // ignore
+  }
+
+  // 2) 开发者工具：走开发环境（默认 localhost）
   try {
     const deviceInfo = wx.getDeviceInfo?.();
     if (deviceInfo?.platform === 'devtools') {
-      return 'development';
+      return ENV.development;
     }
   } catch (_error) {
     // ignore
   }
 
-  // 在开发者工具/开发版中 envVersion === 'develop'
-  try {
-    if (typeof wx.getAccountInfoSync === 'function') {
-      const accountInfo = wx.getAccountInfoSync();
-      return accountInfo.miniProgram.envVersion === 'develop'
-        ? 'development'
-        : 'production';
-    }
-  } catch (_error) {
-    // ignore
-  }
-
-  // 兜底：生产环境（避免线上误打到 localhost 导致无法登录/无法请求）
-  return 'production';
+  // 3) 其他场景：默认生产环境（避免真机联调误打到 localhost）
+  return ENV.production;
 }
 
 /**
  * API 配置
  */
-export const apiConfig = ENV[getCurrentEnv()];
+export const apiConfig = getApiConfig();
 
 /**
  * API 端点
@@ -103,6 +111,24 @@ export const API_ENDPOINTS = {
   // 上传相关
   UPLOAD: {
     QINIU_TOKEN: '/upload/qiniu-token', // 获取七牛云上传 Token
+  },
+
+  // 罗马柱（快速拼柱）相关
+  COLUMN: {
+    // 素材相关
+    MATERIALS: '/column/materials',
+    MATERIAL_DETAIL: (id: string) => `/column/materials/${id}`,
+
+    // 方案生成
+    GENERATE_SCHEME: '/column/generate-scheme',
+    CHANGE_CUT_POSITION: '/column/change-cut-position',
+
+    // 收藏
+    FAVORITES: '/column/favorites',
+
+    // 方案管理
+    SCHEMES: '/column/schemes',
+    SCHEME_DETAIL: (id: string) => `/column/schemes/${id}`,
   },
 };
 

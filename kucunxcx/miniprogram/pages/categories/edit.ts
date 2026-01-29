@@ -2,17 +2,25 @@
 // 分类编辑页
 
 import authService from '../../services/auth.service';
-import { categoryService, UpdateCategoryParams } from '../../services/category.service';
+import {
+  categoryService,
+  UpdateCategoryParams,
+} from '../../services/category.service';
 import type { Category } from '../../types/category';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 // 父级分类选项类型
 interface ParentOption {
   id: string;
   name: string;
+  displayName: string;
+  path: string;
+  depth: 1 | 2;
 }
 
 Page({
   data: {
+    enableBackdropBlur: getEnableBackdropBlur(),
     id: '',
     name: '',
     code: '',
@@ -25,7 +33,7 @@ Page({
     childrenCount: 0,
     hasChildren: false,
     hasProducts: false,
-    // 父级分类选项列表（只显示一级分类，排除自己和自己的子分类）
+    // 父级分类选项列表（允许选择到二级分类，自动规避循环/超深层级）
     parentOptions: [] as ParentOption[],
     loading: true,
     submitting: false,
@@ -89,26 +97,195 @@ Page({
         categoryService.getCategories(),
       ]);
 
-      // 构建父级选项（排除自己和自己的子分类）
-      const childIds = (category.children || []).map(c => c.id);
-      const topLevel = allCategories.filter(
-        cat => !cat.parentId && cat.id !== this.data.id && !childIds.includes(cat.id)
-      );
-      const parentOptions: ParentOption[] = topLevel.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-      }));
+      const byId = new Map<string, Category>();
+      const depthCache = new Map<string, number>();
+      allCategories.forEach(cat => byId.set(cat.id, cat));
 
-      // 查找当前父级名称
+      const computeDepth = (
+        item: Category,
+        ancestry = new Set<string>()
+      ): number => {
+        const cached = depthCache.get(item.id);
+        if (cached !== undefined) return cached;
+
+        if (!item.parentId) {
+          depthCache.set(item.id, 1);
+          return 1;
+        }
+
+        if (ancestry.has(item.id)) {
+          depthCache.set(item.id, 1);
+          return 1;
+        }
+
+        ancestry.add(item.id);
+        const parent = byId.get(item.parentId);
+        if (!parent) {
+          depthCache.set(item.id, 2);
+          ancestry.delete(item.id);
+          return 2;
+        }
+
+        const depth = computeDepth(parent, ancestry) + 1;
+        depthCache.set(item.id, depth);
+        ancestry.delete(item.id);
+        return depth;
+      };
+
+      const buildPath = (item: Category) => {
+        const parts: string[] = [];
+        let current: Category | undefined = item;
+        const visited = new Set<string>();
+        let safety = 0;
+
+        while (current && safety < 10) {
+          parts.push(current.name);
+          if (!current.parentId) break;
+          if (visited.has(current.id)) break;
+          visited.add(current.id);
+          const parent = byId.get(current.parentId);
+          if (!parent) break;
+          current = parent;
+          safety += 1;
+        }
+
+        return parts.reverse().join(' / ');
+      };
+
+      // 构建子节点映射，用于“排除所有后代”与“计算子树高度”
+      const childrenByParentId = new Map<string, Category[]>();
+      allCategories.forEach(cat => {
+        if (!cat.parentId) return;
+        const bucket = childrenByParentId.get(cat.parentId);
+        if (bucket) {
+          bucket.push(cat);
+        } else {
+          childrenByParentId.set(cat.parentId, [cat]);
+        }
+      });
+
+      const descendantIds = new Set<string>();
+      const stack = [this.data.id];
+      while (stack.length > 0) {
+        const currentId = stack.pop();
+        if (!currentId) continue;
+        const children = childrenByParentId.get(currentId) ?? [];
+        children.forEach(child => {
+          if (descendantIds.has(child.id)) return;
+          descendantIds.add(child.id);
+          stack.push(child.id);
+        });
+      }
+
+      const computeSubtreeHeight = (
+        id: string,
+        visited = new Set<string>()
+      ) => {
+        if (visited.has(id)) return 1;
+        visited.add(id);
+
+        const children = childrenByParentId.get(id) ?? [];
+        if (children.length === 0) return 1;
+
+        let maxChildHeight = 0;
+        children.forEach(child => {
+          maxChildHeight = Math.max(
+            maxChildHeight,
+            computeSubtreeHeight(child.id, new Set(visited))
+          );
+        });
+        return 1 + maxChildHeight;
+      };
+
+      const MAX_DEPTH = 3;
+      const subtreeHeight = computeSubtreeHeight(this.data.id);
+      const maxAllowedParentDepth = Math.max(1, MAX_DEPTH - subtreeHeight);
+
+      const excludedIds = new Set<string>([this.data.id, ...descendantIds]);
+
+      const getRootCategory = (item: Category & { depth: number }) => {
+        let current: Category | undefined = item;
+        const visited = new Set<string>();
+
+        while (current?.parentId) {
+          if (visited.has(current.id)) break;
+          visited.add(current.id);
+          const parent = byId.get(current.parentId);
+          if (!parent) break;
+          current = parent;
+        }
+
+        return current ?? item;
+      };
+
+      // 构建父级选项：允许顶级/二级作为父级，并避免循环与“移动后超3级”
+      const parentOptions: ParentOption[] = allCategories
+        .map(item => ({
+          ...item,
+          depth: computeDepth(item),
+        }))
+        .filter(item => item.depth <= maxAllowedParentDepth)
+        .filter(item => !excludedIds.has(item.id))
+        .sort((a, b) => {
+          const rootA = getRootCategory(a);
+          const rootB = getRootCategory(b);
+
+          if (rootA.id !== rootB.id) {
+            const rootOrderA =
+              typeof rootA.sortOrder === 'number'
+                ? rootA.sortOrder
+                : Number.MAX_SAFE_INTEGER;
+            const rootOrderB =
+              typeof rootB.sortOrder === 'number'
+                ? rootB.sortOrder
+                : Number.MAX_SAFE_INTEGER;
+
+            if (rootOrderA !== rootOrderB) return rootOrderA - rootOrderB;
+            return rootA.name.localeCompare(rootB.name, 'zh-Hans-CN');
+          }
+
+          if (a.depth !== b.depth) return a.depth - b.depth;
+
+          const orderA =
+            typeof a.sortOrder === 'number'
+              ? a.sortOrder
+              : Number.MAX_SAFE_INTEGER;
+          const orderB =
+            typeof b.sortOrder === 'number'
+              ? b.sortOrder
+              : Number.MAX_SAFE_INTEGER;
+
+          if (orderA !== orderB) return orderA - orderB;
+          return a.name.localeCompare(b.name, 'zh-Hans-CN');
+        })
+        .map(item => {
+          const parent = item.parentId ? byId.get(item.parentId) : undefined;
+          const path = buildPath(item);
+          const displayName =
+            item.depth === 1
+              ? `📁 ${item.name}`
+              : `↳ ${item.name}${parent ? ` (${parent.name})` : ''}`;
+
+          return {
+            id: item.id,
+            name: item.name,
+            displayName,
+            path,
+            depth: item.depth === 1 ? 1 : 2,
+          };
+        });
+
+      // 查找当前父级名称（显示父级完整路径）
       let parentName = '';
       if (category.parentId) {
-        const parent = allCategories.find(c => c.id === category.parentId);
+        const parent = byId.get(category.parentId);
         if (parent) {
-          parentName = parent.name;
+          parentName = buildPath(parent);
         }
       }
 
-      const productCount = category.productCount || (category._count?.products ?? 0);
+      const productCount =
+        category.productCount || (category._count?.products ?? 0);
       const childrenCount = category.children?.length || 0;
 
       this.setData({
@@ -183,7 +360,7 @@ Page({
     const selected = options[index];
     this.setData({
       parentId: selected.id,
-      parentName: selected.name,
+      parentName: selected.path,
     });
   },
 
@@ -249,7 +426,10 @@ Page({
       // 如果状态有变化，单独更新状态
       const originalStatus = this.data.originalData?.status || 'active';
       if (this.data.status !== originalStatus) {
-        await categoryService.updateCategoryStatus(this.data.id, this.data.status);
+        await categoryService.updateCategoryStatus(
+          this.data.id,
+          this.data.status
+        );
       }
 
       wx.showToast({

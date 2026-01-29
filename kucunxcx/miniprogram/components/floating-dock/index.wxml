@@ -1,5 +1,5 @@
 <!-- 底部导航组件 (Floating Dock) -->
-<view class="floating-dock">
+<view class="floating-dock {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <view
     class="dock-item {{ active === 'home' ? 'dock-item-active' : '' }}"
     bindtap="navigateToHome"

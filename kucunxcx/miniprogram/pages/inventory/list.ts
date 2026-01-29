@@ -6,6 +6,7 @@ import inventoryService from '../../services/inventory.service';
 import productService from '../../services/product.service';
 import type { InventoryItem } from '../../types/inventory';
 import { formatDateTime } from '../../utils/format';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 interface InventoryListItem extends InventoryItem {
   statusType: 'success' | 'warning' | 'danger';
@@ -15,23 +16,27 @@ interface InventoryListItem extends InventoryItem {
 interface DropdownOption {
   text: string;
   value: string;
+  icon?: string;
 }
 
 Page({
   data: {
     searchValue: '',
+    enableBackdropBlur: getEnableBackdropBlur(),
 
     // 筛选
     filterProduct: '0',
     filterStatus: '0',
 
-    productOptions: [{ text: '全部产品', value: '0' }] as DropdownOption[],
+    productOptions: [
+      { text: '全部产品', value: '0', icon: '' },
+    ] as DropdownOption[],
 
     statusOptions: [
-      { text: '全部状态', value: '0' },
-      { text: '库存充足', value: '1' },
-      { text: '库存预警', value: '2' },
-      { text: '缺货', value: '3' },
+      { text: '全部状态', value: '0', icon: '' },
+      { text: '库存充足', value: '1', icon: '' },
+      { text: '库存预警', value: '2', icon: '' },
+      { text: '缺货', value: '3', icon: '' },
     ] as DropdownOption[],
 
     // 库存列表
@@ -62,9 +67,6 @@ Page({
     // 初始化库存权限标记（游客模式下也允许进入，只是看不到数字库存）
     const canView = authService.canViewNumericInventory();
     this.setData({ canViewNumericInventory: canView });
-
-    // 加载库存数据
-    this.loadInventory(true);
   },
 
   // 每次返回库存列表页时自动刷新一次，确保看到最新库存数据
@@ -83,10 +85,11 @@ Page({
       });
 
       const productOptions: DropdownOption[] = [
-        { text: '全部产品', value: '0' },
+        { text: '全部产品', value: '0', icon: '' },
         ...response.items.map(product => ({
           text: `${product.name} (${product.code})`,
           value: product.id,
+          icon: '',
         })),
       ];
 

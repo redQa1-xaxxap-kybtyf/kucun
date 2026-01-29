@@ -1,5 +1,5 @@
 <!-- 分类创建页 -->
-<view class="container">
+<view class="container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <view class="form-card">
     <!-- 分类名称 -->
     <view class="form-item">
@@ -27,7 +27,7 @@
         <picker
           mode="selector"
           range="{{ parentOptions }}"
-          range-key="name"
+          range-key="displayName"
           bindchange="onParentChange"
         >
           <view class="picker-container">
@@ -38,6 +38,10 @@
           </view>
         </picker>
         <view class="input-hint">不选择则为顶级分类</view>
+        <view wx:if="{{ parentName }}" class="clear-parent" bindtap="onClearParent">
+          <van-icon name="close" size="14px" color="#999" />
+          <text>清除</text>
+        </view>
       </view>
     </view>
 

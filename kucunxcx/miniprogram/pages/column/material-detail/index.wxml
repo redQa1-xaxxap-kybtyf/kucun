@@ -1,0 +1,93 @@
+<!-- 产品详情页面 -->
+<view class="container">
+  <!-- 加载中 -->
+  <view class="loading-state" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 详情内容 -->
+  <block wx:elif="{{material}}">
+    <!-- 图片轮播 -->
+    <view class="image-section">
+      <swiper
+        class="image-swiper"
+        indicator-dots="{{material.images.length > 1}}"
+        autoplay="{{false}}"
+        circular
+        bindchange="onSwiperChange"
+      >
+        <swiper-item
+          wx:for="{{material.images.length > 0 ? material.images : [material.image]}}"
+          wx:key="*this"
+        >
+          <image
+            class="swiper-image"
+            src="{{item}}"
+            mode="aspectFill"
+            data-index="{{index}}"
+            bindtap="onPreviewImage"
+          />
+        </swiper-item>
+      </swiper>
+      <view class="image-counter" wx:if="{{material.images.length > 1}}">
+        {{currentImageIndex + 1}}/{{material.images.length}}
+      </view>
+    </view>
+
+    <!-- 基本信息 -->
+    <view class="info-card">
+      <view class="info-header">
+        <view class="info-main">
+          <text class="material-code">{{material.code}}</text>
+          <text class="material-name">{{material.name}}</text>
+        </view>
+        <view class="favorite-btn {{isFavorite ? 'active' : ''}}" bindtap="toggleFavorite">
+          <text>{{isFavorite ? '❤️' : '🤍'}}</text>
+        </view>
+      </view>
+
+      <view class="info-grid">
+        <view class="info-item">
+          <text class="info-label">位置</text>
+          <text class="info-value">{{material.slotName}}</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">高度</text>
+          <text class="info-value">{{material.height}} mm</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">宽度</text>
+          <text class="info-value">{{material.faceWidth}} mm</text>
+        </view>
+        <view class="info-item">
+          <text class="info-label">材质</text>
+          <text class="info-value">{{material.material || '陶瓷'}}</text>
+        </view>
+      </view>
+
+      <view class="cuttable-info">
+        <view class="cuttable-badge {{material.cuttable ? 'yes' : 'no'}}">
+          {{material.cuttable ? '✓ 可切割' : '✕ 不可切割'}}
+        </view>
+        <text class="cuttable-hint" wx:if="{{material.cuttable}}">推荐切割位置</text>
+      </view>
+    </view>
+
+    <!-- 应用场景 -->
+    <view class="scene-card" wx:if="{{material.scenarios && material.scenarios.length > 0}}">
+      <view class="card-title">应用场景</view>
+      <view class="scene-list">
+        <view class="scene-item" wx:for="{{material.scenarios}}" wx:key="*this">
+          <text>• {{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 底部操作按钮 -->
+    <view class="bottom-actions">
+      <button class="action-btn primary" bindtap="onAddToScheme">
+        添加到拼柱方案
+      </button>
+    </view>
+  </block>
+</view>

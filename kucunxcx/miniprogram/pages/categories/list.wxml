@@ -41,7 +41,6 @@
             <van-icon name="apps-o" size="20px" color="#1989fa" class="category-icon" />
             <view class="category-content">
               <text class="category-name">{{ item.name }}</text>
-              <text class="category-code">编码: {{ item.code }}</text>
             </view>
           </view>
           <view class="category-meta">
@@ -49,6 +48,17 @@
               <text class="count-number">{{ item.productCount }}</text>
               <text class="count-unit">个产品</text>
             </view>
+            <!-- 新增下级分类（仅管理员/销售显示） -->
+            <van-icon
+              wx:if="{{ canManageCategories && item.level < 3 }}"
+              name="plus"
+              size="18px"
+              color="#1989fa"
+              class="action-icon"
+              catchtap="onAddChildCategory"
+              data-id="{{ item.id }}"
+              data-name="{{ item.name }}"
+            />
             <van-icon
               wx:if="{{ item.children && item.children.length > 0 }}"
               name="{{ item.expanded ? 'arrow-down' : 'arrow' }}"
@@ -74,29 +84,81 @@
             <text class="parent-hint-arrow">的子分类</text>
           </view>
 
-          <view
-            wx:for="{{ item.children }}"
-            wx:key="id"
-            wx:for-item="child"
-            class="sub-category-item"
-            bindtap="onCategoryTap"
-            data-id="{{ child.id }}"
-            data-name="{{ child.name }}"
-          >
-            <view class="sub-category-info">
-              <!-- 连接线 -->
-              <view class="tree-line">
-                <view class="tree-line-vertical"></view>
-                <view class="tree-line-horizontal"></view>
+          <block wx:for="{{ item.children }}" wx:key="id" wx:for-item="child">
+            <view
+              class="sub-category-item"
+              bindtap="onCategoryTap"
+              data-id="{{ child.id }}"
+              data-name="{{ child.name }}"
+            >
+              <view class="sub-category-info">
+                <!-- 连接线 -->
+                <view class="tree-line">
+                  <view class="tree-line-vertical"></view>
+                  <view class="tree-line-horizontal"></view>
+                </view>
+                <van-icon name="circle" size="8px" color="#d4a5d4" class="sub-icon" />
+                <text class="sub-category-name">{{ child.name }}</text>
               </view>
-              <van-icon name="circle" size="8px" color="#d4a5d4" class="sub-icon" />
-              <text class="sub-category-name">{{ child.name }}</text>
+              <view class="sub-actions">
+                <view class="sub-product-count">
+                  <text class="sub-count">{{ child.productCount }}</text>
+                  <text class="sub-count-unit">个</text>
+                </view>
+                <!-- 新增下级分类（2级 -> 3级） -->
+                <van-icon
+                  wx:if="{{ canManageCategories && child.level < 3 }}"
+                  name="plus"
+                  size="18px"
+                  color="#1989fa"
+                  class="action-icon"
+                  catchtap="onAddChildCategory"
+                  data-id="{{ child.id }}"
+                  data-name="{{ child.name }}"
+                />
+                <!-- 展开/收起第3级 -->
+                <van-icon
+                  wx:if="{{ child.children && child.children.length > 0 }}"
+                  name="{{ child.expanded ? 'arrow-down' : 'arrow' }}"
+                  size="16px"
+                  color="#969799"
+                  class="action-icon"
+                  catchtap="toggleExpand"
+                  data-id="{{ child.id }}"
+                />
+              </view>
             </view>
-            <view class="sub-product-count">
-              <text class="sub-count">{{ child.productCount }}</text>
-              <text class="sub-count-unit">个</text>
+
+            <!-- 三级分类 -->
+            <view
+              wx:if="{{ child.expanded && child.children && child.children.length > 0 }}"
+              class="third-categories"
+            >
+              <view
+                wx:for="{{ child.children }}"
+                wx:key="id"
+                wx:for-item="grandchild"
+                class="third-category-item"
+                bindtap="onCategoryTap"
+                data-id="{{ grandchild.id }}"
+                data-name="{{ grandchild.name }}"
+              >
+                <view class="third-category-info">
+                  <!-- 连接线（三级） -->
+                  <view class="tree-line tree-line-third">
+                    <view class="tree-line-vertical"></view>
+                    <view class="tree-line-horizontal"></view>
+                  </view>
+                  <van-icon name="circle" size="6px" color="#a8d8d0" class="third-icon" />
+                  <text class="third-category-name">{{ grandchild.name }}</text>
+                </view>
+                <view class="third-product-count">
+                  <text class="third-count">{{ grandchild.productCount }}</text>
+                  <text class="third-count-unit">个</text>
+                </view>
+              </view>
             </view>
-          </view>
+          </block>
         </view>
       </view>
 
@@ -108,4 +170,9 @@
       />
     </view>
   </scroll-view>
+
+  <!-- 新建顶级分类入口（仅管理员/销售显示） -->
+  <view wx:if="{{ canManageCategories }}" class="fab" bindtap="onAddCategory">
+    <van-icon name="plus" size="24px" color="#ffffff" />
+  </view>
 </view>

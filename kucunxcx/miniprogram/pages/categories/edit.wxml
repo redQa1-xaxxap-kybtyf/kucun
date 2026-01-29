@@ -1,5 +1,5 @@
 <!-- 分类编辑页 -->
-<view class="container">
+<view class="container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <!-- 加载状态 -->
   <view wx:if="{{ loading }}" class="loading-container">
     <van-icon name="loading" size="48px" color="#667eea" class="loading-spin" />
@@ -27,21 +27,6 @@
       </view>
     </view>
 
-    <!-- 分类编码（只读） -->
-    <view class="form-item">
-      <view class="input-wrapper has-value">
-        <text class="label-float">分类编码</text>
-        <view class="input-container">
-          <input
-            class="input-enhanced input-readonly"
-            value="{{ code }}"
-            disabled
-          />
-        </view>
-        <view class="input-hint">编码由系统自动生成，不可修改</view>
-      </view>
-    </view>
-
     <!-- 父级分类选择 -->
     <view class="form-item">
       <view class="input-wrapper {{ parentName ? 'has-value' : '' }}">
@@ -49,7 +34,7 @@
         <picker
           mode="selector"
           range="{{ parentOptions }}"
-          range-key="name"
+          range-key="displayName"
           bindchange="onParentChange"
         >
           <view class="picker-container">

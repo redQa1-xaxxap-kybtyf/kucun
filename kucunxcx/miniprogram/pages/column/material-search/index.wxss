@@ -1,0 +1,239 @@
+/* 产品查找页面 (三栏布局改造) */
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f7f8fa;
+  overflow: hidden;
+}
+/* --- 顶部颜色筛选栏 --- */
+.color-filter-bar {
+  flex-shrink: 0;
+  width: 100%;
+  background: #fff;
+  white-space: nowrap;
+  padding: 12rpx 0; /* 增加一点上下呼吸空间 */
+}
+
+.color-filter-inner {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 24rpx;
+  gap: 20rpx;
+}
+
+.color-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12rpx 24rpx;
+  font-size: 26rpx;
+  color: #333;
+  background: #f3f4f6; /* 浅灰背景 */
+  border-radius: 12rpx; /* 稍微方一点的圆角 */
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  border: 1rpx solid transparent; /* 预留边框位置防止抖动 */
+}
+
+.color-dot {
+  width: 24rpx;
+  height: 24rpx;
+  border-radius: 50%;
+  margin-right: 12rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.05); /* 淡淡的边框 */
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.05);
+}
+
+.color-btn.active {
+  color: #3b82f6;
+  background: #eff6ff; /* 浅蓝背景 */
+  border-color: #3b82f6; /* 蓝色边框 */
+  font-weight: 500;
+  box-shadow: none; /* 去掉之前的重阴影 */
+}
+
+/* --- 主体内容区 --- */
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #fff;
+}
+
+/* --- 左侧分类导航 --- */
+.category-nav {
+  width: 180rpx;
+  background: #fff; /* 改为白色背景，与右侧一致 */
+  border-right: 1rpx solid #f0f0f0;
+  height: 100%;
+}
+
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100rpx;
+  font-size: 28rpx;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.nav-item.active {
+  background: #f7f8fa; /* 选中态改为灰色背景，与 content 呼应 */
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.nav-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6rpx;
+  height: 32rpx;
+  background: #3b82f6;
+  border-radius: 0 4rpx 4rpx 0;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.nav-item.active .nav-indicator {
+  opacity: 1;
+}
+
+/* --- 右侧产品网格 --- */
+.product-grid-scroll {
+  flex: 1;
+  height: 100%;
+  background: #fff;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16rpx;
+  padding: 16rpx; /* 减小 Padding，让内容更靠上 */
+  box-sizing: border-box; /* 确保 padding 包含在宽度内 */
+}
+
+.product-card {
+  position: relative;
+  background: #fff;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  border: 1rpx solid #f0f0f0;
+  /* 确保卡片不会撑开 grid */
+  min-width: 0;
+}
+
+.product-image {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #f0f0f0;
+  display: block;
+}
+
+.product-info {
+  padding: 12rpx;
+  text-align: center;
+}
+
+.product-code {
+  display: block;
+  font-size: 24rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 4rpx;
+}
+
+.product-tag {
+  display: inline-block;
+  font-size: 20rpx;
+  color: #999;
+  background: #f5f5f5;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+}
+
+/* 选中标记 */
+.selected-mark {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 32rpx;
+  height: 32rpx;
+  background: #3b82f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+/* --- 空状态与加载更多 --- */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 200rpx;
+  color: #ddd;
+}
+
+.empty-text {
+  margin-top: 16rpx;
+  font-size: 28rpx;
+  color: #999;
+}
+
+.load-more,
+.no-more {
+  padding: 24rpx 0;
+  text-align: center;
+  font-size: 24rpx;
+  color: #ccc;
+}
+
+/* --- 搜索弹窗 --- */
+.search-panel {
+  width: 100%;
+  padding: 32rpx 24rpx;
+  background: #fff;
+  box-sizing: border-box;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.08); /* 更柔和的阴影 */
+  border-bottom-left-radius: 24rpx; /* 底部圆角 */
+  border-bottom-right-radius: 24rpx;
+}
+
+.search-input-box {
+  display: flex;
+  align-items: center;
+  background: #f5f6fa;
+  padding: 20rpx 32rpx; /* 更大的点击区域 */
+  border-radius: 48rpx; /* 更圆润 */
+  gap: 16rpx;
+  transition: all 0.3s ease;
+  border: 2rpx solid transparent;
+}
+
+.search-input-box:active {
+  background: #edf2f7;
+}
+
+/* 简单的聚焦态模拟（只要点击了就像聚焦） */
+.search-input-box:focus-within {
+  background: #fff;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 4rpx rgba(59, 130, 246, 0.1);
+}
+
+.search-input {
+  flex: 1;
+  font-size: 30rpx; /* 稍微加大字号 */
+  color: #333;
+  height: 48rpx;
+}

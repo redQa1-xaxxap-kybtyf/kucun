@@ -1,0 +1,113 @@
+<!-- Step 1: 输入目标高度 -->
+<view class="container">
+  <!-- 步骤指示器 -->
+  <view class="step-indicator">
+    <view class="step active">
+      <text class="step-num">1</text>
+      <text class="step-label">输入高度</text>
+    </view>
+    <view class="step-line"></view>
+    <view class="step">
+      <text class="step-num">2</text>
+      <text class="step-label">选择造型</text>
+    </view>
+    <view class="step-line"></view>
+    <view class="step">
+      <text class="step-num">3</text>
+      <text class="step-label">生成清单</text>
+    </view>
+  </view>
+
+  <!-- 高度输入区域 (Premium Card) -->
+  <view class="input-section">
+    <!-- 顶部渐变装饰条 -->
+    <view class="input-card-wave"></view>
+    
+    <view class="section-header-row">
+      <view class="section-title">
+        目标高度
+        <text class="title-tip">（含盖帽和底座）</text>
+      </view>
+      <view class="height-range-badge">
+        <text>有效范围 {{minHeight}}-{{maxHeight}}</text>
+      </view>
+    </view>
+
+    <view class="height-input-box">
+      <!-- 刻度尺背景 -->
+      <view class="ruler-bg"></view>
+      
+      <view class="input-row">
+        <input
+          class="height-input {{errorMessage ? 'error' : ''}}"
+          type="number"
+          value="{{heightInput}}"
+          placeholder="0"
+          placeholder-class="input-placeholder"
+          bindinput="onHeightInput"
+          bindblur="onHeightBlur"
+        />
+        <text class="unit-text">mm</text>
+      </view>
+    </view>
+
+    <view class="error-toast" wx:if="{{errorMessage}}">
+      <van-icon name="warning-o" size="14px" />
+      <text>{{errorMessage}}</text>
+    </view>
+  </view>
+
+  <!-- 快速选择区域 -->
+  <view class="preset-section">
+    <view class="section-title">快速选择</view>
+    <view class="preset-grid">
+      <view
+        class="preset-card {{selectedPresetIndex === index ? 'active' : ''}}"
+        wx:for="{{heightPresets}}"
+        wx:key="*this"
+        data-index="{{index}}"
+        data-height="{{item}}"
+        bindtap="onPresetTap"
+      >
+        <view class="preset-content">
+          <text class="preset-value">{{item}}</text>
+          <text class="preset-unit">mm</text>
+        </view>
+        <!-- 选中对勾 -->
+        <view class="preset-check" wx:if="{{selectedPresetIndex === index}}">
+          <van-icon name="success" size="10px" color="#fff" />
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 说明区域 (Clean Alert) -->
+  <view class="info-alert">
+    <view class="info-alert-icon">
+      <van-icon name="info" size="18px" color="#6366F1" />
+    </view>
+    <view class="info-alert-content">
+      <text>系统将根据高度自动计算用砖数量，超出部分将自动进行切割兜底。</text>
+    </view>
+  </view>
+
+  <!-- 底部操作按钮 -->
+  <view class="bottom-actions">
+    <button class="btn-back" bindtap="onBack">返回</button>
+    <button class="btn-next {{targetHeight >= minHeight && targetHeight <= maxHeight ? '' : 'disabled'}}" bindtap="onNextStep">
+      下一步
+    </button>
+  </view>
+</view>
+
+<!-- 确认弹窗 -->
+<view class="modal-mask" wx:if="{{showConfirmModal}}" bindtap="onCancelConfirm">
+  <view class="modal-content" catchtap="">
+    <view class="modal-title">确认提示</view>
+    <view class="modal-body">{{confirmMessage}}</view>
+    <view class="modal-actions">
+      <button class="modal-btn cancel" bindtap="onCancelConfirm">取消</button>
+      <button class="modal-btn confirm" bindtap="onConfirmContinue">继续</button>
+    </view>
+  </view>
+</view>

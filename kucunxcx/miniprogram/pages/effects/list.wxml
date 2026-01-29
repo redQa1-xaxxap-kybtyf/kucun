@@ -1,5 +1,5 @@
 <!-- 效果图列表页 -->
-<view class="container">
+<view class="container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <!-- 搜索栏 -->
   <view class="search-section">
     <van-search

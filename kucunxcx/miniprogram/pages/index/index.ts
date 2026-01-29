@@ -1,29 +1,43 @@
-import authService from '../../services/auth.service'
-import categoryService from '../../services/category.service'
-import productService from '../../services/product.service'
-import type { Category as ApiCategory } from '../../types/category'
-import type { Product as ApiProduct } from '../../types/product'
+import authService from '../../services/auth.service';
+import categoryService from '../../services/category.service';
+import productService from '../../services/product.service';
+import type { Category as ApiCategory } from '../../types/category';
+import type { Product as ApiProduct } from '../../types/product';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 // index.ts
 // 库存管理小程序 - 首页
 
+const INITIAL_DOCK_SPACER_PX = (() => {
+  try {
+    const info = wx.getWindowInfo();
+    const safeAreaBottom =
+      info.safeArea && typeof info.safeArea.bottom === 'number'
+        ? Math.max(0, info.screenHeight - info.safeArea.bottom)
+        : 0;
+    return Math.ceil((180 * info.windowWidth) / 750 + safeAreaBottom);
+  } catch (_error) {
+    return 120;
+  }
+})();
+
 interface Stats {
-  totalProducts: number
-  inStockProducts: number
-  lowStockProducts: number
+  totalProducts: number;
+  inStockProducts: number;
+  lowStockProducts: number;
 }
 
 // 首页内部使用的分类类型
 // - 一张卡片表示一个 1 级分类
 // - children 列表中存放对应的 2 级分类（只保留 id/name，便于跳转）
 interface HomeCategory {
-  id: string
-  name: string
-  children: { id: string; name: string }[]
+  id: string;
+  name: string;
+  children: { id: string; name: string }[];
 }
 
 // 首页热门产品类型，直接复用后端 Product 定义
-type HomeProduct = ApiProduct
+type HomeProduct = ApiProduct;
 
 Page({
   data: {
@@ -31,6 +45,8 @@ Page({
     searchValue: '',
 
     // UI 状态
+    enableBackdropBlur: getEnableBackdropBlur(),
+    dockSpacerHeightPx: INITIAL_DOCK_SPACER_PX,
     headerOpacity: 0,
     scrollTop: 0,
     statusBarHeight: 20, // 默认值，onLoad会更新
@@ -62,33 +78,89 @@ Page({
 
   onLoad() {
     // 计算头部布局
-    this.calcLayout()
+    this.calcLayout();
     // 初始化权限标记（仅 admin / sales 为 true）
-    const canManage = authService.canViewNumericInventory()
+    const canManage = authService.canViewNumericInventory();
     this.setData({
       canViewNumericInventory: canManage,
       canCreateProduct: canManage,
-    })
+    });
+  },
+
+  onReady() {
+    this.updateDockSpacerHeight();
   },
 
   // 每次页面显示时都刷新首页数据，确保 Web 端更新后小程序能及时看到
   onShow() {
-    this.loadInitialData()
+    this.loadInitialData();
   },
 
   // 适配导航栏高度与胶囊按钮
   calcLayout() {
     // 推荐使用 wx.getWindowInfo 获取窗口信息，避免使用已废弃的 getSystemInfoSync
-    const sysInfo = wx.getWindowInfo()
-    const menuButtonInfo = wx.getMenuButtonBoundingClientRect()
+    const sysInfo = wx.getWindowInfo();
+    const menuButtonInfo = wx.getMenuButtonBoundingClientRect();
     const navBarHeight =
-      (menuButtonInfo.top - sysInfo.statusBarHeight) * 2 + menuButtonInfo.height
+      (menuButtonInfo.top - sysInfo.statusBarHeight) * 2 +
+      menuButtonInfo.height;
+
+    const safeAreaBottom =
+      sysInfo.safeArea && typeof sysInfo.safeArea.bottom === 'number'
+        ? Math.max(0, sysInfo.screenHeight - sysInfo.safeArea.bottom)
+        : 0;
+    const rpxToPx = (rpx: number) => (rpx * sysInfo.windowWidth) / 750;
+    const dockSpacerHeightPx = Math.ceil(rpxToPx(180) + safeAreaBottom);
 
     this.setData({
       statusBarHeight: sysInfo.statusBarHeight,
       navBarHeight,
       menuButtonWidth: sysInfo.windowWidth - menuButtonInfo.left,
-    })
+      dockSpacerHeightPx,
+    });
+  },
+
+  updateDockSpacerHeight() {
+    let windowInfo: WechatMiniprogram.WindowInfo;
+    try {
+      windowInfo = wx.getWindowInfo();
+    } catch (_error) {
+      try {
+        // 兜底：仅在极老基础库上使用 sync API
+        windowInfo =
+          wx.getSystemInfoSync() as unknown as WechatMiniprogram.WindowInfo;
+      } catch (_innerError) {
+        return;
+      }
+    }
+
+    const rpxToPx = (rpx: number) => (rpx * windowInfo.windowWidth) / 750;
+    const safeAreaBottom =
+      windowInfo.safeArea && typeof windowInfo.safeArea.bottom === 'number'
+        ? Math.max(0, windowInfo.screenHeight - windowInfo.safeArea.bottom)
+        : 0;
+    const bottomOffsetPx = rpxToPx(48);
+    const extraPx = rpxToPx(16);
+    const minSpacerPx = rpxToPx(180) + safeAreaBottom;
+
+    const query = wx.createSelectorQuery().in(this);
+    query.select('.floating-dock').boundingClientRect();
+    query.exec(res => {
+      const rect = Array.isArray(res)
+        ? (res[0] as { height?: number } | undefined)
+        : undefined;
+      const dockHeightPx =
+        rect && typeof rect.height === 'number' ? rect.height : rpxToPx(120);
+
+      const spacerPx = Math.max(
+        Math.ceil(dockHeightPx + bottomOffsetPx + safeAreaBottom + extraPx),
+        Math.ceil(minSpacerPx)
+      );
+
+      if (spacerPx !== this.data.dockSpacerHeightPx) {
+        this.setData({ dockSpacerHeightPx: spacerPx });
+      }
+    });
   },
 
   // 页面滚动监听 (核心交互: 极光渐变)
@@ -101,91 +173,88 @@ Page({
 
     this.setData({
       scrollTop,
-      headerOpacity
+      headerOpacity,
     });
   },
 
   // 下拉刷新
   onPullDownRefresh() {
-    this.loadInitialData()
+    this.loadInitialData();
     setTimeout(() => {
-      wx.stopPullDownRefresh()
-    }, 1000)
+      wx.stopPullDownRefresh();
+    }, 1000);
   },
 
   // 加载初始数据
   async loadInitialData() {
-    this.setData({ loading: true })
+    this.setData({ loading: true });
 
     try {
-      await Promise.all([
-        this.loadCategories(),
-        this.loadHotProducts(),
-      ])
+      await Promise.all([this.loadCategories(), this.loadHotProducts()]);
     } catch (error) {
-      console.error('加载数据失败:', error)
+      console.error('加载数据失败:', error);
       wx.showToast({
         title: '加载失败',
         icon: 'none',
-      })
+      });
     } finally {
-      this.setData({ loading: false })
+      this.setData({ loading: false });
     }
   },
 
   // 加载分类数据
   async loadCategories() {
     // 从后端获取原始分类（包含 parentId）
-    const raw = (await categoryService.getCategories()) as ApiCategory[]
+    const raw = (await categoryService.getCategories()) as ApiCategory[];
 
     // 建立 id -> 分类 的映射，便于计算分组与排序
-    const map = new Map<string, ApiCategory>()
-    raw.forEach(cat => map.set(cat.id, cat))
+    const map = new Map<string, ApiCategory>();
+    raw.forEach(cat => map.set(cat.id, cat));
 
     // 以“1级分类”为单位构建卡片：
     // - parentId 为空的作为 1 级卡片
     // - parentId 不为空的作为对应 1 级卡片下的 2 级标签
-    const groups = new Map<string, HomeCategory>()
+    const groups = new Map<string, HomeCategory>();
 
     raw.forEach(cat => {
-      const parentId = cat.parentId
+      const parentId = cat.parentId;
 
       if (!parentId) {
         // 创建或更新 1 级分组
-        let group = groups.get(cat.id)
+        let group = groups.get(cat.id);
         if (!group) {
-          group = { id: cat.id, name: cat.name, children: [] }
-          groups.set(cat.id, group)
+          group = { id: cat.id, name: cat.name, children: [] };
+          groups.set(cat.id, group);
         } else {
-          group.id = cat.id
-          group.name = cat.name
+          group.id = cat.id;
+          group.name = cat.name;
         }
       } else {
-        const parent = map.get(parentId)
-        if (!parent) return
+        const parent = map.get(parentId);
+        if (!parent) return;
 
-        let group = groups.get(parent.id)
+        let group = groups.get(parent.id);
         if (!group) {
-          group = { id: parent.id, name: parent.name, children: [] }
-          groups.set(parent.id, group)
+          group = { id: parent.id, name: parent.name, children: [] };
+          groups.set(parent.id, group);
         }
-        group.children.push({ id: cat.id, name: cat.name })
+        group.children.push({ id: cat.id, name: cat.name });
       }
-    })
+    });
 
     // 按 1 级分类的 sortOrder 排序，保证卡片顺序稳定
     const categories: HomeCategory[] = Array.from(groups.values()).sort(
       (a, b) => {
-        const pa = map.get(a.id)
-        const pb = map.get(b.id)
-        return (pa?.sortOrder ?? 0) - (pb?.sortOrder ?? 0)
-      },
-    )
+        const pa = map.get(a.id);
+        const pb = map.get(b.id);
+        return (pa?.sortOrder ?? 0) - (pb?.sortOrder ?? 0);
+      }
+    );
 
     this.setData({
       categories,
       selectedCategoryId: 'all',
-    })
+    });
   },
 
   // 加载热门产品
@@ -197,46 +266,46 @@ Page({
       status: 'active',
       includeInventory: true,
       includeStatistics: false,
-    })
+    });
 
     const items = (res.items || []).filter(item => {
       const available =
         item.inventory && typeof item.inventory.availableQuantity === 'number'
           ? item.inventory.availableQuantity
-          : 0
-      return available > 0
-    })
+          : 0;
+      return available > 0;
+    });
 
     // 优先按照库存数量排序，其次按照创建时间倒序
     items.sort((a, b) => {
       const aQty =
         a.inventory && typeof a.inventory.availableQuantity === 'number'
           ? a.inventory.availableQuantity
-          : 0
+          : 0;
       const bQty =
         b.inventory && typeof b.inventory.availableQuantity === 'number'
           ? b.inventory.availableQuantity
-          : 0
+          : 0;
 
       if (bQty !== aQty) {
-        return bQty - aQty
+        return bQty - aQty;
       }
 
-      const aCreated = new Date(a.createdAt).getTime()
-      const bCreated = new Date(b.createdAt).getTime()
-      return bCreated - aCreated
-    })
+      const aCreated = new Date(a.createdAt).getTime();
+      const bCreated = new Date(b.createdAt).getTime();
+      return bCreated - aCreated;
+    });
 
     // 只保留前 8 个热门产品用于首页展示
     this.setData({
       hotProducts: items.slice(0, 8) as HomeProduct[],
-    })
+    });
   },
 
   // 搜索输入
   onSearchInput(e: any) {
     this.setData({
-      searchValue: e.detail.value
+      searchValue: e.detail.value,
     });
   },
 
@@ -272,49 +341,62 @@ Page({
   },
 
   // 导航方法
+  // 底部导航：回到首页（当前页为首页时不做跳转）
+  navigateToHome() {
+    // 首页本身，点击不做跳转（避免 reLaunch 造成闪烁/重复请求）
+    return;
+  },
+
   navigateToProducts() {
     wx.navigateTo({
       url: '/pages/products/list',
-    })
+    });
   },
 
   navigateToInventory() {
     wx.navigateTo({
       url: '/pages/inventory/list',
-    })
+    });
   },
 
   navigateToCreateProduct() {
-    const canManage = authService.canViewNumericInventory()
+    const canManage = authService.canViewNumericInventory();
 
     // 访客 / 普通用户：仅展示极光渐变效果，不做任何提示
     if (!canManage) {
-      return
+      return;
     }
 
     // 管理员 / 销售：正常使用创建功能
     wx.navigateTo({
       url: '/pages/products/create',
-    })
+    });
   },
 
   navigateToCategories() {
     wx.navigateTo({
       url: '/pages/categories/list',
-    })
+    });
   },
 
   navigateToUser() {
     wx.navigateTo({
       url: '/pages/user/profile',
-    })
+    });
   },
 
   navigateToProductDetail(e: any) {
-    const { id } = e.currentTarget.dataset
+    const { id } = e.currentTarget.dataset;
     wx.navigateTo({
       url: `/pages/products/detail?id=${id}`,
-    })
+    });
+  },
+
+  // 导航到罗马柱配砖功能
+  navigateToColumn() {
+    wx.navigateTo({
+      url: '/pages/column/index/index',
+    });
   },
 
   // 分享给好友
@@ -323,7 +405,7 @@ Page({
       title: '豪星陶瓷',
       path: '/pages/index/index',
       imageUrl: '',
-    }
+    };
   },
 
   // 分享到朋友圈
@@ -332,6 +414,6 @@ Page({
       title: '豪星陶瓷',
       query: '',
       imageUrl: '',
-    }
+    };
   },
-})
+});

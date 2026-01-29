@@ -2,22 +2,31 @@
 // 分类创建页
 
 import authService from '../../services/auth.service';
-import { categoryService, CreateCategoryParams } from '../../services/category.service';
+import {
+  categoryService,
+  CreateCategoryParams,
+} from '../../services/category.service';
+import type { Category } from '../../types/category';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 // 父级分类选项类型
 interface ParentOption {
   id: string;
   name: string;
+  displayName: string;
+  path: string;
+  depth: 1 | 2;
 }
 
 Page({
   data: {
+    enableBackdropBlur: getEnableBackdropBlur(),
     name: '',
     description: '',
     parentId: '',
     parentName: '',
     sortOrder: '',
-    // 父级分类选项列表（只显示一级分类）
+    // 父级分类选项列表（允许选择到二级分类：新建分类最多到三级）
     parentOptions: [] as ParentOption[],
     submitting: false,
     // 输入框焦点状态
@@ -28,7 +37,7 @@ Page({
     },
   },
 
-  async onLoad() {
+  async onLoad(options: Record<string, string>) {
     // 未登录时跳转到登录页
     if (!authService.isLoggedIn()) {
       wx.reLaunch({
@@ -50,21 +59,162 @@ Page({
     }
 
     // 加载父级分类选项
-    await this.loadParentCategories();
+    const presetParentId =
+      options && typeof options.parentId === 'string' ? options.parentId : '';
+    await this.loadParentCategories(presetParentId);
   },
 
-  // 加载父级分类选项（只加载一级分类作为父级选项）
-  async loadParentCategories() {
+  // 加载父级分类选项（允许选择到二级分类作为父级：新建分类最多到三级）
+  async loadParentCategories(presetParentId?: string) {
     try {
       const categories = await categoryService.getCategories();
-      // 过滤出一级分类（没有 parentId 的分类）
-      const topLevel = categories.filter(cat => !cat.parentId);
-      // 转换为选项格式
-      const parentOptions: ParentOption[] = topLevel.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-      }));
-      this.setData({ parentOptions });
+
+      const byId = new Map<string, Category>();
+      const depthCache = new Map<string, number>();
+      categories.forEach(cat => byId.set(cat.id, cat));
+
+      const computeDepth = (
+        category: Category,
+        ancestry = new Set<string>()
+      ): number => {
+        const cached = depthCache.get(category.id);
+        if (cached !== undefined) return cached;
+
+        if (!category.parentId) {
+          depthCache.set(category.id, 1);
+          return 1;
+        }
+
+        if (ancestry.has(category.id)) {
+          depthCache.set(category.id, 1);
+          return 1;
+        }
+
+        ancestry.add(category.id);
+        const parent = byId.get(category.parentId);
+        if (!parent) {
+          depthCache.set(category.id, 2);
+          ancestry.delete(category.id);
+          return 2;
+        }
+
+        const depth = computeDepth(parent, ancestry) + 1;
+        depthCache.set(category.id, depth);
+        ancestry.delete(category.id);
+        return depth;
+      };
+
+      const buildPath = (category: Category) => {
+        const parts: string[] = [];
+        let current: Category | undefined = category;
+        const visited = new Set<string>();
+        let safety = 0;
+
+        while (current && safety < 10) {
+          parts.push(current.name);
+          if (!current.parentId) break;
+          if (visited.has(current.id)) break;
+          visited.add(current.id);
+          const parent = byId.get(current.parentId);
+          if (!parent) break;
+          current = parent;
+          safety += 1;
+        }
+
+        return parts.reverse().join(' / ');
+      };
+
+      const MAX_DEPTH = 3;
+      const withDepth = categories
+        .map(category => ({
+          ...category,
+          depth: computeDepth(category),
+        }))
+        // 只允许选择深度 < 3 的分类作为父级（顶级 / 二级）
+        .filter(category => category.depth < MAX_DEPTH);
+
+      const getRootCategory = (category: Category & { depth: number }) => {
+        let current: Category | undefined = category;
+        const visited = new Set<string>();
+
+        while (current?.parentId) {
+          if (visited.has(current.id)) break;
+          visited.add(current.id);
+          const parent = byId.get(current.parentId);
+          if (!parent) break;
+          current = parent;
+        }
+
+        return current ?? category;
+      };
+
+      const parentOptions: ParentOption[] = withDepth
+        .sort((a, b) => {
+          const rootA = getRootCategory(a);
+          const rootB = getRootCategory(b);
+
+          if (rootA.id !== rootB.id) {
+            const rootOrderA =
+              typeof rootA.sortOrder === 'number'
+                ? rootA.sortOrder
+                : Number.MAX_SAFE_INTEGER;
+            const rootOrderB =
+              typeof rootB.sortOrder === 'number'
+                ? rootB.sortOrder
+                : Number.MAX_SAFE_INTEGER;
+
+            if (rootOrderA !== rootOrderB) return rootOrderA - rootOrderB;
+            return rootA.name.localeCompare(rootB.name, 'zh-Hans-CN');
+          }
+
+          if (a.depth !== b.depth) return a.depth - b.depth;
+
+          const orderA =
+            typeof a.sortOrder === 'number'
+              ? a.sortOrder
+              : Number.MAX_SAFE_INTEGER;
+          const orderB =
+            typeof b.sortOrder === 'number'
+              ? b.sortOrder
+              : Number.MAX_SAFE_INTEGER;
+
+          if (orderA !== orderB) return orderA - orderB;
+          return a.name.localeCompare(b.name, 'zh-Hans-CN');
+        })
+        .map(category => {
+          const parent = category.parentId
+            ? byId.get(category.parentId)
+            : undefined;
+          const path = buildPath(category);
+          const displayName =
+            category.depth === 1
+              ? `📁 ${category.name}`
+              : `↳ ${category.name}${parent ? ` (${parent.name})` : ''}`;
+
+          return {
+            id: category.id,
+            name: category.name,
+            displayName,
+            path,
+            depth: category.depth === 1 ? 1 : 2,
+          };
+        });
+
+      const presetId =
+        typeof presetParentId === 'string' ? presetParentId.trim() : '';
+      const presetOption = presetId
+        ? parentOptions.find(option => option.id === presetId)
+        : undefined;
+
+      this.setData({
+        parentOptions,
+        ...(presetOption
+          ? {
+              parentId: presetOption.id,
+              parentName: presetOption.path,
+            }
+          : {}),
+      });
     } catch (error) {
       console.error('加载父级分类失败:', error);
       wx.showToast({
@@ -118,7 +268,15 @@ Page({
     const selected = options[index];
     this.setData({
       parentId: selected.id,
-      parentName: selected.name,
+      parentName: selected.path,
+    });
+  },
+
+  // 清除父级分类
+  onClearParent() {
+    this.setData({
+      parentId: '',
+      parentName: '',
     });
   },
 

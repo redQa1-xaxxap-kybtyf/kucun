@@ -2,6 +2,7 @@
 
 import { API_ENDPOINTS } from '../config/api';
 import { del, get, post } from '../utils/request';
+import { appendMiniTokenForLocalUploads } from '../utils/media';
 
 import authService from './auth.service';
 
@@ -26,7 +27,13 @@ class UserService {
    * 获取当前用户收藏的产品列表
    */
   async getFavorites(): Promise<FavoriteProduct[]> {
-    return get<FavoriteProduct[]>(API_ENDPOINTS.PROFILE.FAVORITES);
+    const list = await get<FavoriteProduct[]>(API_ENDPOINTS.PROFILE.FAVORITES);
+    return (list || []).map(item => ({
+      ...item,
+      thumbnailUrl: item.thumbnailUrl
+        ? appendMiniTokenForLocalUploads(item.thumbnailUrl)
+        : item.thumbnailUrl,
+    }));
   }
 
   /**
@@ -50,7 +57,13 @@ class UserService {
    * 获取浏览历史列表
    */
   async getHistory(): Promise<HistoryProduct[]> {
-    return get<HistoryProduct[]>(API_ENDPOINTS.PROFILE.HISTORY);
+    const list = await get<HistoryProduct[]>(API_ENDPOINTS.PROFILE.HISTORY);
+    return (list || []).map(item => ({
+      ...item,
+      thumbnailUrl: item.thumbnailUrl
+        ? appendMiniTokenForLocalUploads(item.thumbnailUrl)
+        : item.thumbnailUrl,
+    }));
   }
 
   /**

@@ -34,6 +34,9 @@ class CategoryService {
       API_ENDPOINTS.CATEGORIES.LIST,
       {
         status: 'active', // 只获取启用的分类
+        limit: 100, // 小程序侧需要完整树结构（后端最大100）
+        sortBy: 'sortOrder',
+        sortOrder: 'asc',
       },
       {
         // 分类浏览允许游客模式，不自动跳转登录
@@ -61,7 +64,10 @@ class CategoryService {
   /**
    * 更新分类
    */
-  async updateCategory(id: string, params: UpdateCategoryParams): Promise<Category> {
+  async updateCategory(
+    id: string,
+    params: UpdateCategoryParams
+  ): Promise<Category> {
     return put<Category>(API_ENDPOINTS.CATEGORIES.DETAIL(id), params);
   }
 
@@ -72,7 +78,9 @@ class CategoryService {
     id: string,
     status: 'active' | 'inactive'
   ): Promise<Category> {
-    return patch<Category>(`${API_ENDPOINTS.CATEGORIES.DETAIL(id)}/status`, { status });
+    return patch<Category>(`${API_ENDPOINTS.CATEGORIES.DETAIL(id)}/status`, {
+      status,
+    });
   }
 
   /**

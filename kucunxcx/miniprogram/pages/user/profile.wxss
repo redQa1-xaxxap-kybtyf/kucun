@@ -147,14 +147,22 @@
 }
 
 .shortcut-green {
-  background: linear-gradient(135deg, rgba(132, 250, 176, 0.55), rgba(143, 211, 244, 0.45));
+  background: linear-gradient(
+    135deg,
+    rgba(132, 250, 176, 0.55),
+    rgba(143, 211, 244, 0.45)
+  );
 }
 .shortcut-green .shortcut-icon {
   background: rgba(16, 185, 129, 0.9);
 }
 
 .shortcut-orange {
-  background: linear-gradient(135deg, rgba(246, 211, 101, 0.55), rgba(253, 160, 133, 0.45));
+  background: linear-gradient(
+    135deg,
+    rgba(246, 211, 101, 0.55),
+    rgba(253, 160, 133, 0.45)
+  );
 }
 .shortcut-orange .shortcut-icon {
   background: rgba(245, 158, 11, 0.9);
@@ -403,10 +411,26 @@
 
 .dock-circle-disabled {
   background:
-    radial-gradient(circle at 20% 25%, rgba(59, 130, 246, 0.55) 0, rgba(59, 130, 246, 0) 55%),
-    radial-gradient(circle at 75% 30%, rgba(110, 231, 183, 0.45) 0, rgba(110, 231, 183, 0) 60%),
-    radial-gradient(circle at 30% 75%, rgba(249, 115, 115, 0.4) 0, rgba(249, 115, 115, 0) 60%),
-    radial-gradient(circle at 80% 70%, rgba(249, 168, 212, 0.4) 0, rgba(249, 168, 212, 0) 60%),
+    radial-gradient(
+      circle at 20% 25%,
+      rgba(59, 130, 246, 0.55) 0,
+      rgba(59, 130, 246, 0) 55%
+    ),
+    radial-gradient(
+      circle at 75% 30%,
+      rgba(110, 231, 183, 0.45) 0,
+      rgba(110, 231, 183, 0) 60%
+    ),
+    radial-gradient(
+      circle at 30% 75%,
+      rgba(249, 115, 115, 0.4) 0,
+      rgba(249, 115, 115, 0) 60%
+    ),
+    radial-gradient(
+      circle at 80% 70%,
+      rgba(249, 168, 212, 0.4) 0,
+      rgba(249, 168, 212, 0) 60%
+    ),
     linear-gradient(
       135deg,
       #3b82f6 0%,

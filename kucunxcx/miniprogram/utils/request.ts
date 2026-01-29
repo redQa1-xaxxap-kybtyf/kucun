@@ -15,12 +15,16 @@ let loadingMask = true;
 /**
  * 显示全局 loading（支持计数，避免与其他 showLoading/hideLoading 冲突）
  */
-export function showGlobalLoading(options?: { title?: string; mask?: boolean }) {
+export function showGlobalLoading(options?: {
+  title?: string;
+  mask?: boolean;
+}) {
   const title =
     options && typeof options.title === 'string' && options.title.trim()
       ? options.title.trim()
       : '加载中...';
-  const mask = options && typeof options.mask === 'boolean' ? options.mask : true;
+  const mask =
+    options && typeof options.mask === 'boolean' ? options.mask : true;
 
   loadingCount++;
   loadingTitle = title;

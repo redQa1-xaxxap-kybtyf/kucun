@@ -1,0 +1,194 @@
+/* 用砖清单组件样式 */
+
+.brick-list-component {
+  background: #ffffff;
+  border-radius: 24rpx;
+  overflow: hidden;
+}
+
+/* 高度状态 */
+.height-summary {
+  padding: 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8rpx 0;
+}
+
+.summary-label {
+  font-size: 26rpx;
+  opacity: 0.9;
+}
+
+.summary-value {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.summary-row.status {
+  margin-top: 8rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.summary-row.status.perfect .summary-value {
+  color: #a7f3d0;
+}
+
+.summary-row.status.cut .summary-value {
+  color: #fde68a;
+}
+
+.summary-row.status.insufficient .summary-value {
+  color: #fca5a5;
+}
+
+/* 切割说明 */
+.cut-info {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background: #fffbeb;
+  border-bottom: 1rpx solid #fde68a;
+}
+
+.cut-badge {
+  background: #f59e0b;
+  color: #ffffff;
+  font-size: 22rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+  margin-right: 16rpx;
+}
+
+.cut-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cut-text {
+  font-size: 26rpx;
+  color: #92400e;
+}
+
+.cut-edit {
+  font-size: 26rpx;
+  color: #667eea;
+  text-decoration: underline;
+}
+
+/* 清单内容 */
+.list-content {
+  padding: 24rpx;
+}
+
+.list-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 20rpx;
+}
+
+/* 面型分组 */
+.face-type-group {
+  margin-bottom: 20rpx;
+}
+
+.face-type-group:last-child {
+  margin-bottom: 0;
+}
+
+.group-header {
+  background: #f8f9fa;
+  padding: 12rpx 16rpx;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.group-name {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #666;
+}
+
+.group-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+/* 砖块项 */
+.brick-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx;
+  background: #fafafa;
+  border-radius: 12rpx;
+  transition: background 0.2s;
+}
+
+.brick-item:active {
+  background: #f0f0f0;
+}
+
+.brick-item.cut {
+  background: #fffbeb;
+}
+
+.item-slot {
+  margin-right: 16rpx;
+}
+
+.slot-badge {
+  font-size: 22rpx;
+  color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  padding: 6rpx 14rpx;
+  border-radius: 16rpx;
+}
+
+.slot-badge.cut {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.item-code {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #1a1a1a;
+  display: block;
+}
+
+.item-note {
+  font-size: 24rpx;
+  color: #999;
+  display: block;
+  margin-top: 4rpx;
+}
+
+.item-quantity {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #667eea;
+}
+
+/* 空状态 */
+.empty-state {
+  text-align: center;
+  padding: 48rpx;
+  font-size: 28rpx;
+  color: #999;
+}

@@ -32,7 +32,8 @@ function getCurrentEnv() {
   // 优先用 systemInfo 判断 devtools，避免 accountInfo 异常时误判到 localhost
   try {
     // 避免使用已弃用的 wx.getSystemInfoSync
-    var deviceInfo = typeof wx.getDeviceInfo === 'function' ? wx.getDeviceInfo() : null;
+    var deviceInfo =
+      typeof wx.getDeviceInfo === 'function' ? wx.getDeviceInfo() : null;
     if (deviceInfo && deviceInfo.platform === 'devtools') {
       return 'development';
     }

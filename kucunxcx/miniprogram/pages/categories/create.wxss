@@ -17,8 +17,16 @@
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+    radial-gradient(
+      circle at 20% 80%,
+      rgba(255, 255, 255, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 20%,
+      rgba(255, 255, 255, 0.06) 0%,
+      transparent 50%
+    );
   pointer-events: none;
   z-index: 0;
 }
@@ -45,11 +53,21 @@
   animation: fadeInUp 0.6s ease-out backwards;
 }
 
-.form-item:nth-child(1) { animation-delay: 0.1s; }
-.form-item:nth-child(2) { animation-delay: 0.15s; }
-.form-item:nth-child(3) { animation-delay: 0.2s; }
-.form-item:nth-child(4) { animation-delay: 0.25s; }
-.form-item:nth-child(5) { animation-delay: 0.3s; }
+.form-item:nth-child(1) {
+  animation-delay: 0.1s;
+}
+.form-item:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.form-item:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.form-item:nth-child(4) {
+  animation-delay: 0.25s;
+}
+.form-item:nth-child(5) {
+  animation-delay: 0.3s;
+}
 
 @keyframes fadeInUp {
   from {
@@ -91,9 +109,11 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 252, 0.9) 100%);
+    rgba(250, 250, 252, 0.9) 100%
+  );
   border-radius: 20rpx;
   border: 2rpx solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -174,9 +194,11 @@
 
 .textarea-container {
   position: relative;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 252, 0.9) 100%);
+    rgba(250, 250, 252, 0.9) 100%
+  );
   border-radius: 20rpx;
   border: 2rpx solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -236,9 +258,11 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: linear-gradient(135deg,
+  background: linear-gradient(
+    135deg,
     rgba(255, 255, 255, 0.95) 0%,
-    rgba(250, 250, 252, 0.9) 100%);
+    rgba(250, 250, 252, 0.9) 100%
+  );
   border-radius: 20rpx;
   border: 2rpx solid rgba(0, 0, 0, 0.06);
   overflow: hidden;
@@ -280,6 +304,17 @@
 
 .picker-container:active .picker-arrow {
   transform: rotate(90deg) scale(1.2);
+}
+
+/* 清除按钮 */
+.clear-parent {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 12rpx;
+  margin-left: 24rpx;
+  font-size: 24rpx;
+  color: #999;
 }
 
 /* 底部提交栏 */
@@ -325,10 +360,12 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg,
+  background: linear-gradient(
+    90deg,
     transparent 0%,
     rgba(255, 255, 255, 0.3) 50%,
-    transparent 100%);
+    transparent 100%
+  );
   transition: left 0.6s ease;
 }
 

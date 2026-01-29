@@ -1,5 +1,5 @@
 <!-- 登录页面 -->
-<view class="login-container">
+<view class="login-container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   <!-- Logo和标题 -->
   <view class="header">
     <text class="title">库存管理系统</text>

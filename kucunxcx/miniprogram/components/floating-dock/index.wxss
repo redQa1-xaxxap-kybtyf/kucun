@@ -16,6 +16,11 @@
   z-index: 999;
 }
 
+.floating-dock.no-blur {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
 .dock-item {
   display: flex;
   flex-direction: column;
@@ -61,18 +66,30 @@
 .dock-circle-disabled {
   position: relative;
   background:
-    radial-gradient(circle at 25% 30%, rgba(34, 197, 94, 0.35) 0%, transparent 50%),
-    radial-gradient(circle at 75% 70%, rgba(16, 185, 129, 0.3) 0%, transparent 55%),
-    radial-gradient(circle at 50% 50%, rgba(21, 128, 61, 0.25) 0%, transparent 60%),
+    radial-gradient(
+      circle at 25% 30%,
+      rgba(34, 197, 94, 0.35) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 75% 70%,
+      rgba(16, 185, 129, 0.3) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(21, 128, 61, 0.25) 0%,
+      transparent 60%
+    ),
     linear-gradient(
       135deg,
-      #0F3D1A 0%,
+      #0f3d1a 0%,
       #15803d 20%,
       #166534 35%,
-      #0F3D1A 50%,
+      #0f3d1a 50%,
       #14532d 65%,
       #166534 80%,
-      #0F3D1A 100%
+      #0f3d1a 100%
     );
   background-size: 200% 200%;
   animation: darkGreenFlow 5s ease-in-out infinite;
@@ -94,9 +111,9 @@
     from 0deg,
     transparent 0deg,
     transparent 270deg,
-    #50C878 270deg,
-    #2E8B57 300deg,
-    #3CB371 330deg,
+    #50c878 270deg,
+    #2e8b57 300deg,
+    #3cb371 330deg,
     transparent 360deg
   );
   animation: emeraldRing 6s linear infinite;
@@ -106,7 +123,8 @@
 }
 
 @keyframes darkGreenFlow {
-  0%, 100% {
+  0%,
+  100% {
     background-position: 0% 50%;
   }
   25% {

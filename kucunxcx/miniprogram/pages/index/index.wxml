@@ -60,7 +60,7 @@ module.exports = {
 };
 </wxs>
 
-<view class="page-container">
+<view class="page-container {{ enableBackdropBlur ? '' : 'no-blur' }}">
   
   <!-- 顶部导航栏 (Sticky Header) -->
   <view class="sticky-header" style="height: {{ navBarHeight + statusBarHeight }}px; padding-top: {{statusBarHeight}}px;">
@@ -141,11 +141,34 @@ module.exports = {
         </view>
       </view>
 
-      <!-- 2. 分类导航卡片：区分 1 级 / 2 级 -->
+      <!-- 快捷功能入口 -->
+      <view class="quick-entry-section">
+        <view class="quick-entry-card" bindtap="navigateToColumn">
+          <!-- 左侧装饰图标容器 -->
+          <view class="quick-entry-icon-box">
+             <van-icon name="column" size="24px" color="#fff" />
+          </view>
+          
+          <view class="quick-entry-info">
+            <view class="quick-entry-header">
+              <text class="quick-entry-title">找罗马柱瓷砖和设计</text>
+              <view class="quick-entry-tag">NEW</view>
+            </view>
+            <text class="quick-entry-desc">罗马柱全系列产品 · 智能配砖清单</text>
+          </view>
+          
+          <view class="quick-entry-action">
+            <text class="action-text">进入</text>
+            <van-icon name="arrow" size="12px" color="rgba(255,255,255,0.8)" />
+          </view>
+        </view>
+      </view>
+
+      <!-- 2. 分类导航卡片 -->
       <view class="section-categories">
         <view class="section-header">
           <text class="section-h1">分类导航</text>
-          <text class="section-hint">点击分类查看产品</text>
+          <!-- <text class="section-hint">点击查看</text> -->
         </view>
 
         <view
@@ -153,7 +176,7 @@ module.exports = {
           wx:for="{{ categories }}"
           wx:key="id"
         >
-          <!-- 一级分类：整卡使用强视觉（深色图标）；二级分类：在卡片内部用浅色胶囊展示 -->
+          <!-- 一级分类：标题栏 -->
           <view class="home-category-card-header">
             <text
               class="home-category-name"
@@ -163,7 +186,7 @@ module.exports = {
             >{{ item.name }}</text>
 
             <view class="home-category-right">
-              <!-- "全部"按钮：在箭头旁边 -->
+              <!-- "全部"按钮 -->
               <view
                 class="home-all-btn"
                 bindtap="onCategoryTap"
@@ -172,12 +195,12 @@ module.exports = {
                 wx:if="{{ item.children && item.children.length }}"
               >
                 <text>全部</text>
+                <van-icon name="arrow" size="12px" color="#9CA3AF" />
               </view>
-              <van-icon name="arrow" size="14px" color="#C7C7CC" />
             </view>
           </view>
 
-          <!-- 2 级分类：放在卡片内部，用浅灰胶囊表示 -->
+          <!-- 2 级分类：Tag 展示 -->
           <view
             class="home-subcategory-row"
             wx:if="{{ item.children && item.children.length }}"
@@ -232,16 +255,16 @@ module.exports = {
         </view>
       </view>
       
-      <!-- Safe Area Spacer -->
-      <view style="height: 180rpx;"></view>
+      <!-- Safe Area Spacer（避免底部 Dock 遮挡列表末尾内容） -->
+      <view style="height: {{ dockSpacerHeightPx }}px;"></view>
     </view>
   </scroll-view>
 
   <!-- 底部导航 (Floating Dock) -->
   <view class="floating-dock">
-    <view class="dock-item" bindtap="navigateToProducts">
-      <van-icon name="apps-o" size="22px" />
-      <text>产品</text>
+    <view class="dock-item dock-item-active" bindtap="navigateToHome">
+      <van-icon name="wap-home-o" size="22px" />
+      <text>首页</text>
     </view>
     <view class="dock-item" bindtap="navigateToInventory">
       <van-icon name="search" size="22px" />

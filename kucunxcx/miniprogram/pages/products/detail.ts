@@ -7,12 +7,14 @@ import userService from '../../services/user.service';
 import { categoryService } from '../../services/category.service';
 import type { ProductDetail } from '../../types/product';
 import { formatDateTime } from '../../utils/format';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 Page({
   data: {
     productId: '',
     product: null as ProductDetail | null,
     loading: false,
+    enableBackdropBlur: getEnableBackdropBlur(),
     // 是否允许查看数字库存（仅 admin / sales）
     canViewNumericInventory: false,
     // 是否允许编辑产品（仅 admin / sales）
@@ -59,7 +61,9 @@ Page({
 
     try {
       // 调用产品详情API
-      const product = await productService.getProductDetail(this.data.productId);
+      const product = await productService.getProductDetail(
+        this.data.productId
+      );
 
       // 统一格式化“最后更新”时间，避免直接展示 ISO 字符串
       const normalized: ProductDetail = {
@@ -80,7 +84,10 @@ Page({
       let displayImages: string[] = [];
       if (thumbnailUrl) {
         // 有缩略图：缩略图放第一位，然后是主图（排除与缩略图相同的图片）
-        displayImages = [thumbnailUrl, ...mainImages.filter(img => img !== thumbnailUrl)];
+        displayImages = [
+          thumbnailUrl,
+          ...mainImages.filter(img => img !== thumbnailUrl),
+        ];
       } else {
         // 没有缩略图：直接使用主图
         displayImages = mainImages;
@@ -153,7 +160,10 @@ Page({
         return;
       }
 
-      const map = new Map<string, { id: string; name: string; parentId?: string }>();
+      const map = new Map<
+        string,
+        { id: string; name: string; parentId?: string }
+      >();
       categories.forEach(cat => {
         map.set(cat.id, {
           id: cat.id,
@@ -166,7 +176,12 @@ Page({
       // 向上追溯直到 parentId 为空，得到 1 级分类
       const guard = 10; // 最多追溯 10 层，防止异常环路
       let steps = 0;
-      while (current && current.parentId && map.has(current.parentId) && steps < guard) {
+      while (
+        current &&
+        current.parentId &&
+        map.has(current.parentId) &&
+        steps < guard
+      ) {
         current = map.get(current.parentId);
         steps++;
       }
@@ -182,12 +197,18 @@ Page({
 
   // 预览图片
   previewImage(e: any) {
-    const { url } = e.currentTarget.dataset;
-    const displayImages = this.data.displayImages;
-    if (displayImages && displayImages.length > 0) {
+    const { url, group } = e.currentTarget.dataset || {};
+
+    const product = this.data.product;
+    const mainImages = this.data.displayImages || [];
+    const effectImages = product?.effectImages || [];
+
+    const urls = group === 'effect' ? effectImages : mainImages;
+
+    if (urls && urls.length > 0) {
       wx.previewImage({
         current: url,
-        urls: displayImages,
+        urls,
       });
     }
   },
@@ -234,6 +255,12 @@ Page({
     // 复用创建页面，约定通过id参数进入编辑模式
     wx.navigateTo({
       url: `/pages/products/create?id=${this.data.productId}`,
+      events: {
+        // 编辑页保存成功后触发，刷新详情避免“返回看到旧数据”
+        productUpdated: () => {
+          void this.loadProductDetail();
+        },
+      },
     });
   },
 

@@ -1,5 +1,6 @@
 // 底部导航组件
 import authService from '../../services/auth.service';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 Component({
   properties: {
@@ -12,6 +13,7 @@ Component({
 
   data: {
     canCreateProduct: false,
+    enableBackdropBlur: getEnableBackdropBlur(),
   },
 
   lifetimes: {

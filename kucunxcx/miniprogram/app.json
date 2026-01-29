@@ -6,13 +6,21 @@
     "pages/products/detail",
     "pages/products/create",
     "pages/categories/list",
+    "pages/categories/create",
+    "pages/categories/edit",
     "pages/inventory/list",
     "pages/inventory/detail",
     "pages/user/profile",
     "pages/user/user-info",
     "pages/user/favorites",
     "pages/user/history",
-    "pages/logs/logs"
+    "pages/logs/logs",
+    "pages/column/index/index",
+    "pages/column/height/index",
+    "pages/column/build/index",
+    "pages/column/result/index",
+    "pages/column/material-search/index",
+    "pages/column/material-detail/index"
   ],
   "window": {
     "navigationBarTextStyle": "black",

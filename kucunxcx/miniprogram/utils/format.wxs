@@ -5,43 +5,43 @@
  * 单位中英文映射表
  */
 var UNIT_MAP = {
-  'piece': '件',
-  'pieces': '件',
-  'box': '箱',
-  'boxes': '箱',
-  'pcs': '个',
-  'pc': '个',
-  'kg': '千克',
-  'g': '克',
-  'ton': '吨',
-  'm': '米',
-  'cm': '厘米',
-  'mm': '毫米',
-  'sqm': '平方米',
-  'cbm': '立方米',
-  'set': '套',
-  'sets': '套',
-  'pair': '对',
-  'pairs': '对',
-  'dozen': '打',
-  'pack': '包',
-  'packs': '包',
-  'bag': '袋',
-  'bags': '袋',
-  'bottle': '瓶',
-  'bottles': '瓶',
-  'can': '罐',
-  'cans': '罐',
-  'roll': '卷',
-  'rolls': '卷',
-  'sheet': '张',
-  'sheets': '张'
+  piece: '件',
+  pieces: '件',
+  box: '箱',
+  boxes: '箱',
+  pcs: '个',
+  pc: '个',
+  kg: '千克',
+  g: '克',
+  ton: '吨',
+  m: '米',
+  cm: '厘米',
+  mm: '毫米',
+  sqm: '平方米',
+  cbm: '立方米',
+  set: '套',
+  sets: '套',
+  pair: '对',
+  pairs: '对',
+  dozen: '打',
+  pack: '包',
+  packs: '包',
+  bag: '袋',
+  bags: '袋',
+  bottle: '瓶',
+  bottles: '瓶',
+  can: '罐',
+  cans: '罐',
+  roll: '卷',
+  rolls: '卷',
+  sheet: '张',
+  sheets: '张',
 };
 
 /**
  * 格式化单位 - 将英文单位转换为中文
  */
-var formatUnit = function(unit) {
+var formatUnit = function (unit) {
   if (!unit) return '';
   var lowerUnit = unit.toLowerCase();
   return UNIT_MAP[lowerUnit] || unit;
@@ -52,7 +52,7 @@ var formatUnit = function(unit) {
  * - 默认：数量 + 中文单位（如 100件）
  * - 如提供每件片数：按「X件Y片」格式展示
  */
-var formatQuantity = function(quantity, unit, piecesPerUnit) {
+var formatQuantity = function (quantity, unit, piecesPerUnit) {
   if (typeof quantity !== 'number') {
     // WXS 环境不保证 Number/|| 的支持，这里做最保守处理
     quantity = 0;
@@ -87,7 +87,7 @@ var formatQuantity = function(quantity, unit, piecesPerUnit) {
  * 示例：库存=91片, 每件10片 -> "9件1片（91片）"
  * - 当未提供 piecesPerUnit 时，退化为 formatQuantity 行为
  */
-var formatQuantityWithPieces = function(quantity, unit, piecesPerUnit) {
+var formatQuantityWithPieces = function (quantity, unit, piecesPerUnit) {
   var display = formatQuantity(quantity, unit, piecesPerUnit);
 
   if (typeof quantity !== 'number') {
@@ -105,7 +105,7 @@ var formatQuantityWithPieces = function(quantity, unit, piecesPerUnit) {
 /**
  * 格式化金额 - 使用人民币符号（简化版，WXS不支持正则）
  */
-var formatAmount = function(amount) {
+var formatAmount = function (amount) {
   if (typeof amount !== 'number') return '￥0.00';
 
   // 转换为两位小数
@@ -133,7 +133,7 @@ var formatAmount = function(amount) {
 /**
  * 格式化库存状态
  */
-var formatStockStatus = function(quantity) {
+var formatStockStatus = function (quantity) {
   if (quantity > 20) {
     return '充足';
   } else if (quantity > 0) {
@@ -146,7 +146,7 @@ var formatStockStatus = function(quantity) {
 /**
  * 获取库存状态类型
  */
-var getStockStatusType = function(quantity) {
+var getStockStatusType = function (quantity) {
   if (quantity > 20) {
     return 'success';
   } else if (quantity > 0) {
@@ -162,5 +162,5 @@ module.exports = {
   formatQuantityWithPieces: formatQuantityWithPieces,
   formatAmount: formatAmount,
   formatStockStatus: formatStockStatus,
-  getStockStatusType: getStockStatusType
+  getStockStatusType: getStockStatusType,
 };

@@ -19,7 +19,7 @@ const FAVORITES_KEY = 'effect_favorites';
 function getFixedIncrement(productId: string): number {
   let hash = 0;
   for (let i = 0; i < productId.length; i++) {
-    hash = ((hash << 5) - hash) + productId.charCodeAt(i);
+    hash = (hash << 5) - hash + productId.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash % 10) + 1;
@@ -81,7 +81,7 @@ Page({
       const favorites: string[] = wx.getStorageSync(FAVORITES_KEY) || [];
 
       // 构建效果图列表
-      const effectList: EffectItem[] = product.effectImages.map((imgUrl) => ({
+      const effectList: EffectItem[] = product.effectImages.map(imgUrl => ({
         imageUrl: imgUrl,
         productId: product.id,
         productCode: product.code,
@@ -94,7 +94,9 @@ Page({
       // 找到目标图片的索引
       let targetIndex = 0;
       if (targetImageUrl) {
-        const idx = effectList.findIndex((item) => item.imageUrl === targetImageUrl);
+        const idx = effectList.findIndex(
+          item => item.imageUrl === targetImageUrl
+        );
         if (idx >= 0) targetIndex = idx;
       }
 
@@ -131,7 +133,7 @@ Page({
   // 预览大图
   previewImage(e: any) {
     const { url } = e.currentTarget.dataset;
-    const urls = this.data.effectList.map((item) => item.imageUrl);
+    const urls = this.data.effectList.map(item => item.imageUrl);
 
     wx.previewImage({
       current: url,
@@ -150,7 +152,7 @@ Page({
 
     let newFavorites: string[];
     if (isFavorite) {
-      newFavorites = favorites.filter((url) => url !== imageUrl);
+      newFavorites = favorites.filter(url => url !== imageUrl);
       wx.showToast({ title: '已取消收藏', icon: 'none' });
     } else {
       newFavorites = [...favorites, imageUrl];
@@ -161,7 +163,7 @@ Page({
 
     // 更新当前项和列表
     const updatedItem = { ...item, isFavorite: !isFavorite };
-    const updatedList = this.data.effectList.map((i) =>
+    const updatedList = this.data.effectList.map(i =>
       i.imageUrl === imageUrl ? { ...i, isFavorite: !isFavorite } : i
     );
 

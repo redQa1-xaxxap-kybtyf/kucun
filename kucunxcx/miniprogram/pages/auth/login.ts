@@ -2,6 +2,7 @@
 // 登录页面
 
 import authService from '../../services/auth.service';
+import { getEnableBackdropBlur } from '../../utils/ui';
 
 Page({
   data: {
@@ -9,6 +10,7 @@ Page({
     password: '',
     loading: false,
     showPassword: false,
+    enableBackdropBlur: getEnableBackdropBlur(),
     // 是否需要展示隐私授权弹窗
     needPrivacyAuth: false,
     // 当前设备上是否已经同意过隐私指引（本地缓存标记）
@@ -125,9 +127,7 @@ Page({
       console.error('登录失败:', error);
       // 兜底提示：避免“控制台有错但用户看不到”的情况
       const message =
-        error instanceof Error
-          ? error.message || '登录失败'
-          : '登录失败';
+        error instanceof Error ? error.message || '登录失败' : '登录失败';
       wx.showToast({
         title: message,
         icon: 'none',
