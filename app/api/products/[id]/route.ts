@@ -7,10 +7,19 @@ import {
   updateProduct,
 } from '@/lib/api/handlers/products';
 import { resolveParams } from '@/lib/api/middleware';
+import {
+  computeStockStatusFromInventoryLike,
+  stripSensitiveKeysDeep,
+} from '@/lib/api/mini-program-sanitize';
 import { successResponse } from '@/lib/api/response';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { getCachedProductInventorySummary } from '@/lib/cache/inventory-cache';
 import { productUpdateSchema } from '@/lib/validations/product';
+
+function isMiniProgramAdmin(request: NextRequest): boolean {
+  // x-user-role 由 auth middleware 在已认证请求上注入
+  return request.headers.get('x-user-role') === 'admin';
+}
 
 /**
  * 实际处理单个产品信息查询（不做认证）
@@ -31,7 +40,16 @@ async function handleGetProductDetail(
     request.nextUrl.searchParams.get('includeInventory') === 'true';
 
   if (!includeInventory) {
-    return successResponse(product);
+    const payload = product;
+
+    if (
+      request.headers.get('x-client-from') === 'mini-program' &&
+      !isMiniProgramAdmin(request)
+    ) {
+      return successResponse(stripSensitiveKeysDeep(payload));
+    }
+
+    return successResponse(payload);
   }
 
   const inventorySummary = (await getCachedProductInventorySummary(id)) ?? {
@@ -40,10 +58,22 @@ async function handleGetProductDetail(
     availableQuantity: 0,
   };
 
-  return successResponse({
+  const payload = {
     ...product,
-    inventory: inventorySummary,
-  });
+    inventory: {
+      ...inventorySummary,
+      stockStatus: computeStockStatusFromInventoryLike(inventorySummary),
+    },
+  };
+
+  if (
+    request.headers.get('x-client-from') === 'mini-program' &&
+    !isMiniProgramAdmin(request)
+  ) {
+    return successResponse(stripSensitiveKeysDeep(payload));
+  }
+
+  return successResponse(payload);
 }
 
 /**

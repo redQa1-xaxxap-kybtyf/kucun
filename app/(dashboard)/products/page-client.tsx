@@ -20,9 +20,7 @@ interface ProductsPageClientProps {
  *
  * ✅ 修复：使用 ERPProductList 避免双重滚动问题
  */
-export function ProductsPageClient({
-  initialParams,
-}: ProductsPageClientProps) {
+export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">

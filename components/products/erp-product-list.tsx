@@ -2,20 +2,25 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { CategorySelector } from '@/components/categories/category-selector';
 import { ContentLoading } from '@/components/common/loading';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { ProductDeleteDialog } from '@/components/products/product-delete-dialogs';
 import { ProductTable } from '@/components/products/product-table';
-import { Pagination } from '@/components/ui/pagination';
+import { Pagination, type PaginationInfo } from '@/components/ui/pagination';
 import { useProductDelete } from '@/hooks/use-product-delete';
 import { useProductListState } from '@/hooks/use-product-list-state';
-import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
+import {
+  categoryQueryKeys,
+  getCategories,
+  type Category,
+} from '@/lib/api/categories';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
 import type {
-    Product,
-    ProductQueryParams,
-    ProductStatus,
+  Product,
+  ProductQueryParams,
+  ProductStatus,
 } from '@/lib/types/product';
 
 const CATEGORY_OPTIONS_QUERY = {
@@ -28,6 +33,153 @@ const CATEGORY_OPTIONS_QUERY = {
 interface ERPProductListProps {
   onProductSelect?: (product: Product) => void;
   initialParams?: ProductQueryParams;
+}
+
+type ProductListState = ReturnType<typeof useProductListState>;
+type ConfirmDeleteProduct = ReturnType<
+  typeof useProductDelete
+>['confirmDeleteProduct'];
+
+interface ERPProductListFiltersProps {
+  categories: Category[];
+  initialParams?: ProductQueryParams;
+  handleSearch: ProductListState['handleSearch'];
+  handleFilter: ProductListState['handleFilter'];
+}
+
+function ERPProductListFilters({
+  categories,
+  initialParams,
+  handleSearch,
+  handleFilter,
+}: ERPProductListFiltersProps) {
+  return (
+    <SearchFilterCard
+      searchValue={initialParams?.search || ''}
+      onSearchChange={handleSearch}
+      searchPlaceholder="搜索产品编码、名称或规格..."
+      filters={[
+        {
+          key: 'status',
+          label: '状态',
+          options: PRODUCT_STATUS_OPTIONS.map(option => ({
+            label: option.label,
+            value: option.value,
+          })),
+          width: 'w-32',
+        },
+      ]}
+      filterValues={{
+        categoryId: initialParams?.categoryId || 'all',
+        status: initialParams?.status || 'all',
+      }}
+      onFilterChange={(key, value) => {
+        if (key === 'status') {
+          handleFilter({
+            categoryId: initialParams?.categoryId,
+            status: value as ProductStatus | undefined,
+          });
+        }
+      }}
+      onClearFilters={() =>
+        handleFilter({
+          status: undefined,
+          categoryId: undefined,
+        })
+      }
+      variant="pro"
+      compact={true}
+      customFilters={
+        <CategorySelector
+          categories={categories}
+          value={initialParams?.categoryId || undefined}
+          onValueChange={nextCategoryId => {
+            handleFilter({
+              categoryId: nextCategoryId,
+              status: initialParams?.status,
+            });
+          }}
+          className="h-14 w-36 rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white"
+        />
+      }
+    />
+  );
+}
+
+interface ERPProductListTableCardProps {
+  products: Product[];
+  pagination?: PaginationInfo;
+  onProductSelect?: (product: Product) => void;
+  onDeleteProduct: ProductListState['handleDeleteProduct'];
+  onPageChange: ProductListState['handlePageChange'];
+}
+
+function ERPProductListTableCard({
+  products,
+  pagination,
+  onProductSelect,
+  onDeleteProduct,
+  onPageChange,
+}: ERPProductListTableCardProps) {
+  return (
+    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+      <ProductTable
+        products={products}
+        onProductSelect={onProductSelect}
+        onDeleteProduct={onDeleteProduct}
+      />
+
+      {pagination && (
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            showRange
+            showTotal
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface ERPProductListDeleteDialogProps {
+  deleteDialog: ProductListState['deleteDialog'];
+  setDeleteDialog: ProductListState['setDeleteDialog'];
+  isDeleting: boolean;
+  confirmDeleteProduct: ConfirmDeleteProduct;
+}
+
+function ERPProductListDeleteDialog({
+  deleteDialog,
+  setDeleteDialog,
+  isDeleting,
+  confirmDeleteProduct,
+}: ERPProductListDeleteDialogProps) {
+  return (
+    <ProductDeleteDialog
+      open={deleteDialog.open}
+      productName={deleteDialog.productName}
+      isDeleting={isDeleting}
+      onOpenChange={open =>
+        setDeleteDialog(prev => ({
+          ...prev,
+          open,
+          ...(open
+            ? {}
+            : {
+                productId: null,
+                productName: '',
+              }),
+        }))
+      }
+      onConfirm={() => {
+        if (deleteDialog.productId) {
+          confirmDeleteProduct(deleteDialog.productId);
+        }
+      }}
+    />
+  );
 }
 
 /**
@@ -61,7 +213,7 @@ export function ERPProductList({
     queryFn: () => getCategories(CATEGORY_OPTIONS_QUERY),
   });
 
-  const categories = categoriesResponse?.data || [];
+  const categories = categoriesResponse?.data ?? [];
 
   // ✅ 直接使用 initialParams，避免状态不同步（参考销售订单模块）
   // 获取产品列表数据
@@ -72,21 +224,6 @@ export function ERPProductList({
     refetchOnWindowFocus: false, // 避免不必要的重新获取
     refetchOnMount: 'always', // ✅ 修复：每次挂载都重新获取，确保数据最新
   });
-
-  // 处理筛选器清空
-  const handleClearFilters = () => {
-    handleFilter({
-      status: undefined,
-      categoryId: undefined,
-    });
-  };
-
-  // 处理删除确认
-  const handleConfirmDelete = () => {
-    if (deleteDialog.productId) {
-      confirmDeleteProduct(deleteDialog.productId);
-    }
-  };
 
   if (isLoading) {
     return <ContentLoading text="加载产品列表中..." />;
@@ -105,92 +242,26 @@ export function ERPProductList({
 
   return (
     <div className="space-y-4">
-      {/* 搜索和筛选 */}
-      <SearchFilterCard
-        searchValue={initialParams?.search || ''}
-        onSearchChange={handleSearch}
-        searchPlaceholder="搜索产品编码、名称或规格..."
-        filters={[
-          {
-            key: 'categoryId',
-            label: '产品分类',
-            options: categories.map(cat => ({
-              label: cat.name,
-              value: cat.id,
-            })),
-            width: 'w-36',
-          },
-          {
-            key: 'status',
-            label: '状态',
-            options: PRODUCT_STATUS_OPTIONS.map(option => ({
-              label: option.label,
-              value: option.value,
-            })),
-            width: 'w-32',
-          },
-        ]}
-        filterValues={{
-          categoryId: initialParams?.categoryId || 'all',
-          status: initialParams?.status || 'all',
-        }}
-        onFilterChange={(key, value) => {
-          if (key === 'status') {
-            handleFilter({
-              categoryId: initialParams?.categoryId,
-              status: value as ProductStatus | undefined,
-            });
-          } else if (key === 'categoryId') {
-            handleFilter({
-              categoryId: value,
-              status: initialParams?.status,
-            });
-          }
-        }}
-        onClearFilters={handleClearFilters}
-        variant="pro"
-        compact={true}
+      <ERPProductListFilters
+        categories={categories}
+        initialParams={initialParams}
+        handleSearch={handleSearch}
+        handleFilter={handleFilter}
       />
 
-      {/* 产品列表 */}
-      <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
-        <ProductTable
-          products={products}
-          onProductSelect={onProductSelect}
-          onDeleteProduct={handleDeleteProduct}
-        />
+      <ERPProductListTableCard
+        products={products}
+        pagination={pagination}
+        onProductSelect={onProductSelect}
+        onDeleteProduct={handleDeleteProduct}
+        onPageChange={handlePageChange}
+      />
 
-        {/* 分页组件 */}
-        {pagination && (
-          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-            <Pagination
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              showRange
-              showTotal
-            />
-          </div>
-        )}
-      </div>
-
-      {/* 删除确认对话框 */}
-      <ProductDeleteDialog
-        open={deleteDialog.open}
-        productName={deleteDialog.productName}
+      <ERPProductListDeleteDialog
+        deleteDialog={deleteDialog}
+        setDeleteDialog={setDeleteDialog}
         isDeleting={isDeleting}
-        onOpenChange={open =>
-          setDeleteDialog(prev => ({
-            ...prev,
-            open,
-            ...(open
-              ? {}
-              : {
-                  productId: null,
-                  productName: '',
-                }),
-          }))
-        }
-        onConfirm={handleConfirmDelete}
+        confirmDeleteProduct={confirmDeleteProduct}
       />
     </div>
   );

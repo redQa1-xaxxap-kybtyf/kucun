@@ -140,21 +140,17 @@ export const getProductsForServer = cache(
     // 性能监控：记录慢查询
     const queryDuration = Date.now() - queryStartTime;
     if (queryDuration > 1000) {
-      logger.warn(
-        'api:products-server',
-        '产品列表查询性能慢',
-        {
-          operation: 'getProductsServer',
-          duration: queryDuration,
-          cacheKey,
-          includeInventory,
-          includeStatistics: finalIncludeStatistics,
-          includeBatchSpecs,
-          search,
-          page,
-          limit,
-        }
-      );
+      logger.warn('api:products-server', '产品列表查询性能慢', {
+        operation: 'getProductsServer',
+        duration: queryDuration,
+        cacheKey,
+        includeInventory,
+        includeStatistics: finalIncludeStatistics,
+        includeBatchSpecs,
+        search,
+        page,
+        limit,
+      });
     }
 
     // 返回类型转换，确保类型安全

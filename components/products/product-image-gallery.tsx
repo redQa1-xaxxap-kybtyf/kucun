@@ -18,9 +18,21 @@ interface ProductImageGalleryProps {
 
 // 图片类型配置
 const IMAGE_TYPE_CONFIG = {
-  thumbnail: { label: '缩略图', color: 'bg-blue-500', borderColor: 'border-blue-500' },
-  main: { label: '主图', color: 'bg-green-500', borderColor: 'border-green-500' },
-  effect: { label: '效果图', color: 'bg-purple-500', borderColor: 'border-purple-500' },
+  thumbnail: {
+    label: '缩略图',
+    color: 'bg-blue-500',
+    borderColor: 'border-blue-500',
+  },
+  main: {
+    label: '主图',
+    color: 'bg-green-500',
+    borderColor: 'border-green-500',
+  },
+  effect: {
+    label: '效果图',
+    color: 'bg-purple-500',
+    borderColor: 'border-purple-500',
+  },
 } as const;
 
 type ImageType = keyof typeof IMAGE_TYPE_CONFIG;
@@ -79,7 +91,10 @@ export function ProductImageGallery({
     return result;
   }, [thumbnailUrl, images]);
 
-  const totalCount = groupedImages.thumbnail.length + groupedImages.main.length + groupedImages.effect.length;
+  const totalCount =
+    groupedImages.thumbnail.length +
+    groupedImages.main.length +
+    groupedImages.effect.length;
 
   // 无图片
   if (totalCount === 0) {
@@ -95,7 +110,9 @@ export function ProductImageGallery({
           <div className="flex h-24 items-center justify-center rounded-lg border-2 border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
             <div className="text-center">
               <ImageIcon className="mx-auto h-6 w-6 text-[hsl(var(--color-text-tertiary))] opacity-50" />
-              <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">暂无图片</p>
+              <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
+                暂无图片
+              </p>
             </div>
           </div>
         </div>
@@ -115,7 +132,9 @@ export function ProductImageGallery({
           <span className={cn('h-2 w-2 rounded-full', config.color)} />
           <span className="text-xs font-medium text-[hsl(var(--color-text-secondary))]">
             {config.label}
-            <span className="ml-1 text-[hsl(var(--color-text-tertiary))]">({images.length})</span>
+            <span className="ml-1 text-[hsl(var(--color-text-tertiary))]">
+              ({images.length})
+            </span>
           </span>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -167,18 +186,32 @@ export function ProductImageGallery({
                 onClick={() => onScale(scale - 0.5)}
                 title="缩小"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="11" cy="11" r="8" />
                   <path d="M21 21l-4.35-4.35M8 11h6" />
                 </svg>
               </button>
-              <span className="min-w-[2.5rem] text-center text-xs text-white">{Math.round(scale * 100)}%</span>
+              <span className="min-w-[2.5rem] text-center text-xs text-white">
+                {Math.round(scale * 100)}%
+              </span>
               <button
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
                 onClick={() => onScale(scale + 0.5)}
                 title="放大"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <circle cx="11" cy="11" r="8" />
                   <path d="M21 21l-4.35-4.35M11 8v6M8 11h6" />
                 </svg>
@@ -188,7 +221,13 @@ export function ProductImageGallery({
                 onClick={() => onRotate(rotate + 90)}
                 title="旋转"
               >
-                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
                   <path d="M1 4v6h6" />
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
                 </svg>

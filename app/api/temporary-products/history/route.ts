@@ -35,7 +35,9 @@ export async function GET(request: NextRequest) {
       skip = parsed.skip;
     } catch (error) {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : '分页参数格式不正确' },
+        {
+          error: error instanceof Error ? error.message : '分页参数格式不正确',
+        },
         { status: 400 }
       );
     }

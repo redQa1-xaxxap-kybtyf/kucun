@@ -44,4 +44,3 @@ export const PATCH = withAuth(
   },
   { permissions: ['products:edit'] }
 );
-

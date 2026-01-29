@@ -53,7 +53,7 @@ export function ProductTable({
     <Table>
       <TableHeader className="card-shadow-light">
         <TableRow>
-          <TableHead className="w-16">缩略图</TableHead>
+          <TableHead className="w-16 whitespace-nowrap">缩略图</TableHead>
           <TableHead>产品编码</TableHead>
           <TableHead>产品名称</TableHead>
           <TableHead>分类</TableHead>

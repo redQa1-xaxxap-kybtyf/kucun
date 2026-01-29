@@ -29,95 +29,95 @@ interface BatchSkuCheckResult {
 // SKU可用性检查服务
 export const GET = withAuth(
   async (request: NextRequest) => {
-  try {
-    const { searchParams } = new URL(request.url);
-    const queryParams = {
-      sku: searchParams.get('sku') || '',
-      excludeId: searchParams.get('excludeId') || undefined,
-    };
+    try {
+      const { searchParams } = new URL(request.url);
+      const queryParams = {
+        sku: searchParams.get('sku') || '',
+        excludeId: searchParams.get('excludeId') || undefined,
+      };
 
-    // 验证查询参数
-    const validationResult =
-      productVariantCheckSkuSchema.safeParse(queryParams);
-    if (!validationResult.success) {
+      // 验证查询参数
+      const validationResult =
+        productVariantCheckSkuSchema.safeParse(queryParams);
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '查询参数格式不正确',
+            details: validationResult.error.issues,
+          },
+          { status: 400 }
+        );
+      }
+
+      const { sku, excludeId } = validationResult.data;
+
+      // 构建查询条件
+      const where: Prisma.ProductVariantWhereInput = { sku };
+      if (excludeId) {
+        where.id = { not: excludeId };
+      }
+
+      // 检查SKU是否已存在
+      const existingVariant = await prisma.productVariant.findFirst({
+        where,
+        select: {
+          id: true,
+          sku: true,
+          colorCode: true,
+          status: true,
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      const available = !existingVariant;
+
+      // 如果SKU不可用，提供相关信息
+      let conflictInfo = null;
+      if (!available && existingVariant) {
+        conflictInfo = {
+          variantId: existingVariant.id,
+          sku: existingVariant.sku,
+          colorCode: existingVariant.colorCode,
+          status: existingVariant.status,
+          product: existingVariant.product,
+        };
+      }
+
+      // 生成建议的替代SKU
+      let suggestions: string[] = [];
+      if (!available) {
+        suggestions = await generateSkuSuggestions(sku);
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          sku,
+          available,
+          conflict: conflictInfo,
+          suggestions: suggestions.slice(0, 5), // 最多返回5个建议
+        },
+      });
+    } catch (error) {
+      logger.error('product-variants', '检查SKU可用性失败', error, {
+        sku: request.nextUrl.searchParams.get('sku') || undefined,
+      });
+
       return NextResponse.json(
         {
           success: false,
-          error: '查询参数格式不正确',
-          details: validationResult.error.issues,
+          error: error instanceof Error ? error.message : '检查SKU可用性失败',
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
-
-    const { sku, excludeId } = validationResult.data;
-
-    // 构建查询条件
-    const where: Prisma.ProductVariantWhereInput = { sku };
-    if (excludeId) {
-      where.id = { not: excludeId };
-    }
-
-    // 检查SKU是否已存在
-    const existingVariant = await prisma.productVariant.findFirst({
-      where,
-      select: {
-        id: true,
-        sku: true,
-        colorCode: true,
-        status: true,
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    const available = !existingVariant;
-
-    // 如果SKU不可用，提供相关信息
-    let conflictInfo = null;
-    if (!available && existingVariant) {
-      conflictInfo = {
-        variantId: existingVariant.id,
-        sku: existingVariant.sku,
-        colorCode: existingVariant.colorCode,
-        status: existingVariant.status,
-        product: existingVariant.product,
-      };
-    }
-
-    // 生成建议的替代SKU
-    let suggestions: string[] = [];
-    if (!available) {
-      suggestions = await generateSkuSuggestions(sku);
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        sku,
-        available,
-        conflict: conflictInfo,
-        suggestions: suggestions.slice(0, 5), // 最多返回5个建议
-      },
-    });
-  } catch (error) {
-    logger.error('product-variants', '检查SKU可用性失败', error, {
-      sku: request.nextUrl.searchParams.get('sku') || undefined,
-    });
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '检查SKU可用性失败',
-      },
-      { status: 500 }
-    );
-  }
   },
   { permissions: ['products:view'] }
 );
@@ -125,111 +125,113 @@ export const GET = withAuth(
 // 批量SKU可用性检查
 export const POST = withAuth(
   async (request: NextRequest) => {
-  try {
-    const body = await request.json();
+    try {
+      const body = await request.json();
 
-    // 批量检查输入验证
-    const validationResult = productVariantBatchCheckSkuSchema.safeParse(body);
-    if (!validationResult.success) {
+      // 批量检查输入验证
+      const validationResult =
+        productVariantBatchCheckSkuSchema.safeParse(body);
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '输入数据格式不正确',
+            details: validationResult.error.issues,
+          },
+          { status: 400 }
+        );
+      }
+
+      const { skus } = validationResult.data;
+
+      // 提取所有SKU进行批量查询
+      const allSkus = skus.map(item => item.sku);
+      const existingVariants = await prisma.productVariant.findMany({
+        where: {
+          sku: { in: allSkus },
+        },
+        select: {
+          id: true,
+          sku: true,
+          colorCode: true,
+          status: true,
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+            },
+          },
+        },
+        take: allSkus.length,
+      });
+
+      // 创建SKU到变体的映射
+      const skuToVariantMap = new Map(
+        existingVariants.map(variant => [variant.sku, variant])
+      );
+
+      // 检查每个SKU的可用性
+      const results: BatchSkuCheckResult[] = await Promise.all(
+        skus.map(async (item: { sku: string; excludeId?: string }) => {
+          const { sku, excludeId } = item;
+          const existingVariant = skuToVariantMap.get(sku);
+
+          // 如果存在变体且不是被排除的变体，则不可用
+          const available =
+            !existingVariant ||
+            (excludeId !== undefined && existingVariant.id === excludeId);
+
+          let conflictInfo = null;
+          if (!available && existingVariant) {
+            conflictInfo = {
+              variantId: existingVariant.id,
+              sku: existingVariant.sku,
+              colorCode: existingVariant.colorCode,
+              status: existingVariant.status,
+              product: existingVariant.product,
+            };
+          }
+
+          // 为不可用的SKU生成建议
+          let suggestions: string[] = [];
+          if (!available) {
+            suggestions = await generateSkuSuggestions(sku);
+          }
+
+          return {
+            sku,
+            available,
+            conflict: conflictInfo,
+            suggestions: suggestions.slice(0, 3), // 批量检查时每个SKU最多返回3个建议
+          } satisfies BatchSkuCheckResult;
+        })
+      );
+
+      // 统计信息
+      const summary = {
+        total: results.length,
+        available: results.filter(r => r.available).length,
+        conflicts: results.filter(r => !r.available).length,
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: results,
+        summary,
+      });
+    } catch (error) {
+      logger.error('product-variants', '批量检查SKU可用性失败', error);
+
       return NextResponse.json(
         {
           success: false,
-          error: '输入数据格式不正确',
-          details: validationResult.error.issues,
+          error:
+            error instanceof Error ? error.message : '批量检查SKU可用性失败',
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
-
-    const { skus } = validationResult.data;
-
-    // 提取所有SKU进行批量查询
-    const allSkus = skus.map(item => item.sku);
-    const existingVariants = await prisma.productVariant.findMany({
-      where: {
-        sku: { in: allSkus },
-      },
-      select: {
-        id: true,
-        sku: true,
-        colorCode: true,
-        status: true,
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-          },
-        },
-      },
-      take: allSkus.length,
-    });
-
-    // 创建SKU到变体的映射
-    const skuToVariantMap = new Map(
-      existingVariants.map(variant => [variant.sku, variant])
-    );
-
-    // 检查每个SKU的可用性
-    const results: BatchSkuCheckResult[] = await Promise.all(
-      skus.map(async (item: { sku: string; excludeId?: string }) => {
-        const { sku, excludeId } = item;
-        const existingVariant = skuToVariantMap.get(sku);
-
-        // 如果存在变体且不是被排除的变体，则不可用
-        const available =
-          !existingVariant ||
-          (excludeId !== undefined && existingVariant.id === excludeId);
-
-        let conflictInfo = null;
-        if (!available && existingVariant) {
-          conflictInfo = {
-            variantId: existingVariant.id,
-            sku: existingVariant.sku,
-            colorCode: existingVariant.colorCode,
-            status: existingVariant.status,
-            product: existingVariant.product,
-          };
-        }
-
-        // 为不可用的SKU生成建议
-        let suggestions: string[] = [];
-        if (!available) {
-          suggestions = await generateSkuSuggestions(sku);
-        }
-
-        return {
-          sku,
-          available,
-          conflict: conflictInfo,
-          suggestions: suggestions.slice(0, 3), // 批量检查时每个SKU最多返回3个建议
-        } satisfies BatchSkuCheckResult;
-      })
-    );
-
-    // 统计信息
-    const summary = {
-      total: results.length,
-      available: results.filter(r => r.available).length,
-      conflicts: results.filter(r => !r.available).length,
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: results,
-      summary,
-    });
-  } catch (error) {
-    logger.error('product-variants', '批量检查SKU可用性失败', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '批量检查SKU可用性失败',
-      },
-      { status: 500 }
-    );
-  }
   },
   { permissions: ['products:view'] }
 );

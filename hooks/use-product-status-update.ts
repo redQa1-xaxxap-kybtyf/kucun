@@ -24,7 +24,7 @@ export function useProductStatusUpdate(
     Error,
     { id: string; status: ProductStatus }
   >({
-    mutationFn: async (variables) => {
+    mutationFn: async variables => {
       const formData = new FormData();
       formData.set('productId', variables.id);
       formData.set('status', variables.status);

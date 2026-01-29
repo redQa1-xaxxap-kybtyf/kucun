@@ -214,7 +214,10 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
   });
 
   const pairs = inventoryByProductAndBatch
-    .filter((row): row is typeof row & { batchNumber: string } => row.batchNumber !== null)
+    .filter(
+      (row): row is typeof row & { batchNumber: string } =>
+        row.batchNumber !== null
+    )
     .map(row => ({ productId: row.productId, batchNumber: row.batchNumber }));
 
   if (pairs.length === 0) {

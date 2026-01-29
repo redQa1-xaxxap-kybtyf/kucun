@@ -46,7 +46,13 @@ function dedupeImages(raw: unknown): {
   reason?: string;
 } {
   if (!Array.isArray(raw)) {
-    return { ok: false, changed: false, images: [], removed: 0, reason: 'not-array' };
+    return {
+      ok: false,
+      changed: false,
+      images: [],
+      removed: 0,
+      reason: 'not-array',
+    };
   }
 
   const seen = new Set<string>();
@@ -134,7 +140,10 @@ async function main() {
   const apply = args.includes('--apply');
   const productId = parseFlagValue(args, '--productId');
   const batchSize = toPositiveInt(parseFlagValue(args, '--batchSize'), 200);
-  const limit = toPositiveInt(parseFlagValue(args, '--limit'), Number.MAX_SAFE_INTEGER);
+  const limit = toPositiveInt(
+    parseFlagValue(args, '--limit'),
+    Number.MAX_SAFE_INTEGER
+  );
 
   const prisma = new PrismaClient();
 
@@ -192,9 +201,7 @@ async function main() {
       }
 
       wouldUpdate = 1;
-      console.log(
-        `🔎 将更新 1 条产品（code=${p.code}），移除 ${r.removed} 项`
-      );
+      console.log(`🔎 将更新 1 条产品（code=${p.code}），移除 ${r.removed} 项`);
 
       if (!apply) return;
 
@@ -258,7 +265,9 @@ async function main() {
         try {
           await prisma.product.update({
             where: { id: p.id },
-            data: { images: r.images.length > 0 ? JSON.stringify(r.images) : null },
+            data: {
+              images: r.images.length > 0 ? JSON.stringify(r.images) : null,
+            },
           });
           updated++;
         } catch (e) {

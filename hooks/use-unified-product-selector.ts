@@ -121,7 +121,8 @@ export function useProductSelectorData({
     useQuery({
       queryKey: fallbackQueryKey,
       queryFn: () => getProduct(selectedId as string),
-      enabled: shouldFetchFromApi && Boolean(selectedId) && selectedIdMissingFromList,
+      enabled:
+        shouldFetchFromApi && Boolean(selectedId) && selectedIdMissingFromList,
       staleTime: apiConfig?.enableCache
         ? (apiConfig?.staleTime ?? 5 * 60 * 1000)
         : 0,
@@ -139,7 +140,12 @@ export function useProductSelectorData({
         : apiProducts;
     }
     return propsProducts ?? [];
-  }, [apiResponse?.data, fallbackSelectedProduct, propsProducts, shouldFetchFromApi]);
+  }, [
+    apiResponse?.data,
+    fallbackSelectedProduct,
+    propsProducts,
+    shouldFetchFromApi,
+  ]);
 
   const uniqueProducts = useMemo(
     () => buildUniqueProducts(baseProducts, propsProducts, mode, value),

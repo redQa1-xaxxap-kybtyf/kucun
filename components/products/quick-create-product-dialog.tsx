@@ -10,28 +10,28 @@ import { z } from 'zod';
 import { createProduct } from '@/app/actions/products';
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
@@ -124,7 +124,11 @@ export function QuickCreateProductDialog({
     },
     onSuccess: async result => {
       if (result.success && result.data) {
-        toast({ title: '创建成功', description: '产品已创建并自动选中', variant: 'success' });
+        toast({
+          title: '创建成功',
+          description: '产品已创建并自动选中',
+          variant: 'success',
+        });
 
         // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
         await queryClient.refetchQueries({
@@ -154,11 +158,19 @@ export function QuickCreateProductDialog({
         // 关闭对话框
         onOpenChange(false);
       } else {
-        toast({ title: '创建失败', description: result.error || '创建产品失败', variant: 'destructive' });
+        toast({
+          title: '创建失败',
+          description: result.error || '创建产品失败',
+          variant: 'destructive',
+        });
       }
     },
     onError: () => {
-      toast({ title: '创建失败', description: '创建产品失败，请重试', variant: 'destructive' });
+      toast({
+        title: '创建失败',
+        description: '创建产品失败，请重试',
+        variant: 'destructive',
+      });
     },
   });
 

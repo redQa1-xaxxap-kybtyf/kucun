@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { ApiError, handlePrismaError } from '@/lib/api/errors';
+import {
+  computeStockStatusFromInventoryLike,
+  stripSensitiveKeysDeep,
+} from '@/lib/api/mini-program-sanitize';
 import { parseOffsetPagination } from '@/lib/api/pagination';
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
@@ -55,6 +59,33 @@ function parseProductQueryParams(
   };
 }
 
+function isMiniProgramAdmin(request: NextRequest): boolean {
+  // x-user-role 由 auth middleware 在已认证请求上注入
+  return request.headers.get('x-user-role') === 'admin';
+}
+
+function attachStockStatusToProductListPayload(payload: unknown): unknown {
+  if (!payload || typeof payload !== 'object') return payload;
+  const typed = payload as Record<string, any>;
+  const products = Array.isArray(typed.data) ? typed.data : [];
+
+  return {
+    ...typed,
+    data: products.map((product: any) => {
+      const inventory =
+        product && typeof product === 'object' ? product.inventory : undefined;
+      const stockStatus = computeStockStatusFromInventoryLike(inventory ?? {});
+      return {
+        ...product,
+        inventory: {
+          ...(inventory && typeof inventory === 'object' ? inventory : {}),
+          stockStatus,
+        },
+      };
+    }),
+  };
+}
+
 /**
  * 实际处理产品列表查询的函数（不做认证）
  */
@@ -76,6 +107,16 @@ async function handleGetProducts(request: NextRequest) {
   try {
     // 调用服务器端函数（复用缓存和逻辑）
     const data = await getProductsForServer(params);
+
+    // 小程序游客：脱敏库存数值，仅保留 stockStatus 等非敏感字段
+    if (
+      request.headers.get('x-client-from') === 'mini-program' &&
+      !isMiniProgramAdmin(request)
+    ) {
+      const enriched = attachStockStatusToProductListPayload(data);
+      const sanitized = stripSensitiveKeysDeep(enriched);
+      return successResponse(sanitized);
+    }
 
     // 返回成功响应
     return successResponse(data);

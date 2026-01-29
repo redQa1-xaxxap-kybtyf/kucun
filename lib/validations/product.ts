@@ -9,8 +9,8 @@
 import { z } from 'zod';
 
 import {
-    PRODUCT_STATUS_VALUES,
-    PRODUCT_UNIT_VALUES,
+  PRODUCT_STATUS_VALUES,
+  PRODUCT_UNIT_VALUES,
 } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 
