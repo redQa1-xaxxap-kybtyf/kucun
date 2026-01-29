@@ -4,13 +4,28 @@
 
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, useTransition } from 'react';
 
-import { PrintDesignerEditor } from '@/components/print-designer';
 import { useToast } from '@/components/ui/use-toast';
 import { getTemplate, saveTemplate } from '@/lib/print-designer/actions';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
+
+const PrintDesignerEditor = dynamic(
+  () =>
+    import('@/components/print-designer/editor/PrintDesignerEditor').then(
+      mod => mod.PrintDesignerEditor
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-muted-foreground">编辑器加载中...</p>
+      </div>
+    ),
+  }
+);
 
 function PrintDesignerContent() {
   const router = useRouter();
@@ -26,11 +41,11 @@ function PrintDesignerContent() {
   useEffect(() => {
     if (templateId) {
       setIsLoading(true);
-      getTemplate(templateId)
-        .then(result => {
-          if (result.success && result.data) {
-            setTemplate(result.data);
-          } else {
+        getTemplate(templateId)
+          .then(result => {
+            if (result.success && result.data) {
+              setTemplate(result.data);
+            } else {
             toast({
               title: '加载失败',
               description: result.error ?? '加载模板失败',
@@ -38,10 +53,10 @@ function PrintDesignerContent() {
             });
             router.push('/settings/print-templates');
           }
-        })
-        .finally(() => setIsLoading(false));
+          })
+          .finally(() => setIsLoading(false));
     }
-  }, [templateId, router]);
+  }, [templateId, router, toast]);
 
   const handleSave = (templateData: PrintTemplate) => {
     startTransition(async () => {
