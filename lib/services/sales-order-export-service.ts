@@ -95,7 +95,7 @@ export class SalesOrderExportService {
   static exportOrderToExcel(
     order: SalesOrderDetail,
     options: SalesOrderExcelExportOptions
-  ): void {
+  ): Promise<void> {
     const { orderId: _orderId, orderNumber, ...excelOptions } = options;
 
     // 生成文件名：销售订单-订单号-日期
@@ -121,7 +121,7 @@ export class SalesOrderExportService {
       20, // 备注
     ];
 
-    ExportService.exportToExcel<SalesOrderExcelData>(excelData, {
+    return ExportService.exportToExcel<SalesOrderExcelData>(excelData, {
       ...excelOptions,
       filename,
       sheetName: '订单明细',

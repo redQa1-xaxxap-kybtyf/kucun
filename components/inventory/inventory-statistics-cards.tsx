@@ -169,7 +169,7 @@ export function InventoryStatisticsCards({
     [session?.user]
   );
 
-  const handleExportExcel = React.useCallback(() => {
+  const handleExportExcel = React.useCallback(async () => {
     if (!statistics) {
       toast({
         variant: 'destructive',
@@ -200,7 +200,7 @@ export function InventoryStatisticsCards({
       row['低库存产品数'] = statistics.lowStockCount;
       row['库存健康度（%）'] = statistics.stockHealthPercentage;
 
-      ExportService.exportToExcel([row], {
+      await ExportService.exportToExcel([row], {
         filename: '库存统计概览',
         sheetName: '库存统计',
         includeHeaders: true,

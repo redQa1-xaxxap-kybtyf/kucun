@@ -8,7 +8,6 @@
 
 import { saveAs } from 'file-saver';
 import { useCallback, useState } from 'react';
-import * as XLSX from 'xlsx';
 
 import { clientLogger as logger } from '@/lib/logger/client';
 
@@ -75,6 +74,7 @@ export interface ExcelExportOptions<
  */
 export class ExportService {
   private static html2canvasPromise: Promise<Html2CanvasFunction> | null = null;
+  private static xlsxPromise: Promise<typeof import('xlsx')> | null = null;
 
   /**
    * 动态加载html2canvas库
@@ -110,6 +110,24 @@ export class ExportService {
     }
 
     return this.html2canvasPromise;
+  }
+
+  /**
+   * 动态加载 xlsx 库（避免首屏打包进大体积依赖）
+   */
+  private static async loadXLSX(): Promise<typeof import('xlsx')> {
+    if (typeof window === 'undefined') {
+      throw new Error('Excel 导出只能在浏览器环境使用');
+    }
+
+    if (!this.xlsxPromise) {
+      this.xlsxPromise = import('xlsx').catch(error => {
+        this.xlsxPromise = null;
+        throw error;
+      });
+    }
+
+    return this.xlsxPromise;
   }
 
   /**
@@ -219,10 +237,10 @@ export class ExportService {
    * @param data 要导出的数据数组
    * @param options 导出配置
    */
-  static exportToExcel<T extends Record<string, unknown>>(
+  static async exportToExcel<T extends Record<string, unknown>>(
     data: T[],
     options: ExcelExportOptions<T> = {}
-  ): void {
+  ): Promise<void> {
     const {
       filename = 'export',
       sheetName = 'Sheet1',
@@ -233,6 +251,7 @@ export class ExportService {
     } = options;
 
     try {
+      const XLSX = await this.loadXLSX();
       const transformedData: Array<Record<string, unknown>> = dataTransformer
         ? dataTransformer(data)
         : data.map(item => ({ ...item }) as Record<string, unknown>);
@@ -307,7 +326,7 @@ export interface UseExportResult {
   exportToExcel: <T extends Record<string, unknown>>(
     data: T[],
     options?: ExcelExportOptions<T>
-  ) => void;
+  ) => Promise<void>;
   /** 是否正在导出图片 */
   isExportingImage: boolean;
   /** 图片导出错误 */
@@ -337,12 +356,12 @@ export function useExport(): UseExportResult {
   );
 
   const exportToExcel = useCallback(
-    <T extends Record<string, unknown>>(
+    async <T extends Record<string, unknown>>(
       data: T[],
       options: ExcelExportOptions<T> = {}
     ) => {
       try {
-        ExportService.exportToExcel<T>(data, options);
+        await ExportService.exportToExcel<T>(data, options);
       } catch (error) {
         const err = error instanceof Error ? error : new Error('导出Excel失败');
         setImageError(err);
