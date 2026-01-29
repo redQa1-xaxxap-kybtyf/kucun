@@ -1,16 +1,45 @@
 'use client';
 
 import { Plus, Warehouse } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { PurchaseOrderList } from '@/components/purchase-orders/purchase-order-list';
-import { PurchaseOrderSearchToolbar } from '@/components/purchase-orders/purchase-order-search-toolbar';
 import { Button } from '@/components/ui/button';
 import type { PurchaseOrderStatus } from '@/lib/types/purchase-order';
+
+const PurchaseOrderSearchToolbar = dynamic(
+  () =>
+    import('@/components/purchase-orders/purchase-order-search-toolbar').then(
+      mod => mod.PurchaseOrderSearchToolbar
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        筛选加载中...
+      </div>
+    ),
+  }
+);
+
+const PurchaseOrderList = dynamic(
+  () =>
+    import('@/components/purchase-orders/purchase-order-list').then(
+      mod => mod.PurchaseOrderList
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+        列表加载中...
+      </div>
+    ),
+  }
+);
 
 interface PurchaseOrderQueryParams {
   page?: number;
