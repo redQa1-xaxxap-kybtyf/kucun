@@ -5,9 +5,6 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
-import { DashboardTodoBar } from '@/components/dashboard/dashboard-todo-bar';
-import { ProductRanking } from '@/components/dashboard/product-ranking';
-import { StatCardsGrid } from '@/components/dashboard/stat-cards-enhanced';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -33,6 +30,50 @@ const DashboardTrendChart = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-[480px] w-full animate-pulse rounded-3xl bg-white/40" />
+    ),
+  }
+);
+
+const StatCardsGrid = dynamic(
+  () => import('./stat-cards-enhanced').then(mod => mod.StatCardsGrid),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <div
+            key={`stat-skeleton-${idx}`}
+            className="h-[160px] animate-pulse rounded-3xl bg-white/40"
+          />
+        ))}
+      </div>
+    ),
+  }
+);
+
+const DashboardTodoBar = dynamic(
+  () => import('./dashboard-todo-bar').then(mod => mod.DashboardTodoBar),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="grid gap-6 md:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <div
+            key={`todo-skeleton-${idx}`}
+            className="h-[92px] animate-pulse rounded-[32px] bg-white/40"
+          />
+        ))}
+      </div>
+    ),
+  }
+);
+
+const ProductRanking = dynamic(
+  () => import('./product-ranking').then(mod => mod.ProductRanking),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[500px] w-full animate-pulse rounded-3xl bg-white/40" />
     ),
   }
 );
