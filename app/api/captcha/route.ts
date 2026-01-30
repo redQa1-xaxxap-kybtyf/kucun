@@ -28,11 +28,17 @@ async function handleCaptchaGeneration(
     // 使用服务创建验证码会话
     const { sessionId, captchaImage } = await createCaptchaSession(clientIp);
 
+    // 将 SVG 转为 data URL，避免前端使用 dangerouslySetInnerHTML 注入 SVG
+    // data:image/svg+xml 使用 URI 编码，兼容 edge/node 环境（不依赖 Buffer）
+    const captchaDataUrl = `data:image/svg+xml;utf8,${encodeURIComponent(
+      captchaImage
+    )}`;
+
     // 返回JSON格式响应，包含SVG内容和会话ID
     return NextResponse.json(
       {
         success: true,
-        captchaImage,
+        captchaImage: captchaDataUrl,
         sessionId,
       },
       {

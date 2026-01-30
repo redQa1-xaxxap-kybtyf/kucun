@@ -1,7 +1,6 @@
 'use client';
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
-import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
@@ -428,36 +427,19 @@ export default function SignInPage() {
                         </FormControl>
                         <div className="flex items-center">
                           {captchaImage ? (
-                            <div
+                            <button
+                              type="button"
                               className="cursor-pointer rounded border transition-opacity hover:opacity-80"
                               onClick={loadCaptcha}
                               title="点击刷新验证码"
-                              dangerouslySetInnerHTML={{
-                                __html: DOMPurify.sanitize(captchaImage, {
-                                  ALLOWED_TAGS: [
-                                    'svg',
-                                    'path',
-                                    'rect',
-                                    'text',
-                                    'g',
-                                    'line',
-                                    'circle',
-                                  ],
-                                  ALLOWED_ATTR: [
-                                    'width',
-                                    'height',
-                                    'viewBox',
-                                    'd',
-                                    'fill',
-                                    'x',
-                                    'y',
-                                    'transform',
-                                    'stroke',
-                                    'stroke-width',
-                                  ],
-                                }),
-                              }}
-                            />
+                            >
+                              <img
+                                src={captchaImage}
+                                alt="验证码"
+                                className="h-10 w-[120px]"
+                                draggable={false}
+                              />
+                            </button>
                           ) : (
                             <div className="h-10 w-[120px] rounded border bg-gray-200">
                               <div className="flex h-full items-center justify-center text-xs text-gray-400">
