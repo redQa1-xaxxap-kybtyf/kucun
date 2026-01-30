@@ -15,13 +15,13 @@ import {
   TrendingUp,
   Wallet,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import { useCustomerStatementDetail } from '@/lib/api/customer-statements';
@@ -31,6 +31,17 @@ import {
 } from '@/lib/types/customer-statement';
 import { cn, formatCurrency } from '@/lib/utils';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
+
+const DateRangePicker = dynamic(
+  () =>
+    import('@/components/ui/date-range-picker').then(mod => mod.DateRangePicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-10 w-full animate-pulse rounded-md bg-slate-100" />
+    ),
+  }
+);
 
 const DEFAULT_RANGE_DAYS = 30;
 
