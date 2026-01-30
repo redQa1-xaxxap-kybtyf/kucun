@@ -11,13 +11,6 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -296,37 +289,35 @@ const FiltersSection: React.FC<FiltersSectionProps> = ({
       {filters.map(filter => {
         const includeAllOption = filter.includeAllOption ?? true;
         const selectedValue =
-          filterValues[filter.key] ?? (includeAllOption ? 'all' : undefined);
+          filterValues[filter.key] ?? (includeAllOption ? 'all' : '');
 
         return (
-          <Select
+          <select
             key={filter.key}
+            aria-label={filter.label}
             value={selectedValue}
-            onValueChange={createHandler(filter.key)}
+            onChange={e => createHandler(filter.key)(e.target.value)}
+            className={cn(
+              inputSize,
+              filter.width || 'w-32',
+              compact && 'text-xs',
+              // Pro 样式覆盖
+              inputSize.includes('h-14') &&
+                'rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white',
+              'border-input bg-background ring-offset-background focus:ring-ring rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50'
+            )}
           >
-            <SelectTrigger
-              className={cn(
-                inputSize,
-                filter.width || 'w-32',
-                compact && 'text-xs',
-                // Pro 样式覆盖
-                inputSize.includes('h-14') &&
-                  'rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white'
-              )}
-            >
-              <SelectValue placeholder={filter.placeholder || filter.label} />
-            </SelectTrigger>
-            <SelectContent>
-              {includeAllOption && (
-                <SelectItem value="all">全部{filter.label}</SelectItem>
-              )}
-              {filter.options.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {includeAllOption ? (
+              <option value="all">全部{filter.label}</option>
+            ) : (
+              <option value="">{filter.placeholder || filter.label}</option>
+            )}
+            {filter.options.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         );
       })}
     </>
@@ -378,7 +369,7 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     const handleFilterChange = React.useCallback(
       (key: string) => (value: string) => {
         if (onFilterChange) {
-          const newValue = value === 'all' ? undefined : value;
+          const newValue = value === 'all' || value === '' ? undefined : value;
           onFilterChange(key, newValue);
         }
       },
