@@ -18,19 +18,12 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  useCustomerStatementStatistics,
-  useCustomerStatements,
-} from '@/lib/api/customer-statements';
+	import { Button } from '@/components/ui/button';
+	import { Input } from '@/components/ui/input';
+	import {
+	  useCustomerStatementStatistics,
+	  useCustomerStatements,
+	} from '@/lib/api/customer-statements';
 import type {
   CustomerStatementListItem,
   CustomerStatementQuery,
@@ -265,38 +258,25 @@ export function CustomerStatementsPageClient({
             <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-300 transition-colors group-hover:text-blue-500" />
           </div>
 
-          {/* 余额维度筛选 */}
-          <Select
-            value={queryParams.balanceType || 'all'}
-            onValueChange={value =>
-              handleBalanceTypeChange(value as 'receivable' | 'payable' | 'all')
-            }
-          >
-            <SelectTrigger className="h-14 w-full rounded-2xl border-white bg-white/60 font-bold shadow-sm backdrop-blur-md transition-all hover:bg-white sm:w-[240px]">
-              <div className="flex items-center gap-2">
-                <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-                <SelectValue placeholder="余额维度筛选" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-none shadow-2xl">
-              <SelectItem value="all" className="rounded-xl py-3 font-bold">
-                全部往来账户
-              </SelectItem>
-              <SelectItem
-                value="receivable"
-                className="rounded-xl py-3 font-bold text-emerald-600"
-              >
-                仅看应收账款
-              </SelectItem>
-              <SelectItem
-                value="payable"
-                className="rounded-xl py-3 font-bold text-rose-600"
-              >
-                仅看应付账款
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+	          {/* 余额维度筛选 */}
+	          <div className="relative w-full sm:w-[240px]">
+	            <SlidersHorizontal className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+	            <select
+	              value={queryParams.balanceType || 'all'}
+	              onChange={e =>
+	                handleBalanceTypeChange(
+	                  e.target.value as 'receivable' | 'payable' | 'all'
+	                )
+	              }
+	              className="h-14 w-full rounded-2xl border border-white bg-white/60 pr-10 pl-12 font-bold shadow-sm backdrop-blur-md transition-all hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden"
+	              aria-label="余额维度筛选"
+	            >
+	              <option value="all">全部往来账户</option>
+	              <option value="receivable">仅看应收账款</option>
+	              <option value="payable">仅看应付账款</option>
+	            </select>
+	          </div>
+	        </div>
 
         {/* 统计卡片 */}
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
