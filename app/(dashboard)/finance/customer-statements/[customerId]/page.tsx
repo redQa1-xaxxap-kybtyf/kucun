@@ -1,6 +1,5 @@
 'use client';
 
-import { format, subDays } from 'date-fns';
 import {
   AlertCircle,
   ArrowLeft,
@@ -61,11 +60,12 @@ export default function CustomerStatementDetailPage() {
   const customerId = params.customerId as string | undefined;
 
   const today = new Date();
-  const defaultEndDate = format(today, 'yyyy-MM-dd');
-  const defaultStartDate = format(
-    subDays(today, DEFAULT_RANGE_DAYS),
-    'yyyy-MM-dd'
-  );
+  const defaultEndDate = formatDate(today);
+  const defaultStartDate = (() => {
+    const start = new Date(today);
+    start.setDate(start.getDate() - DEFAULT_RANGE_DAYS);
+    return formatDate(start);
+  })();
 
   const queryStart = searchParams.get('startDate') ?? defaultStartDate;
   const queryEnd = searchParams.get('endDate') ?? defaultEndDate;
