@@ -8,19 +8,15 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  AlertCircle,
   Briefcase,
   Building2,
   Clock,
-  Edit,
   Loader2,
   MapPin,
-  MoreHorizontal,
-  Trash2,
   TrendingUp,
   Truck,
 } from 'lucide-react';
-import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   useCallback,
@@ -32,25 +28,8 @@ import {
 } from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
-import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { SupplierPageHeader } from '@/components/suppliers/supplier-page-header';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import { useToast } from '@/components/ui/use-toast';
 import {
@@ -74,6 +53,32 @@ interface SuppliersPageClientProps {
     sortOrder?: 'asc' | 'desc';
   };
 }
+
+const SearchFilterCard = dynamic(
+  () =>
+    import('@/components/common/search-filter-card').then(
+      mod => mod.SearchFilterCard
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[76px] w-full animate-pulse rounded-[2.5rem] border border-white bg-white/40 backdrop-blur-md" />
+    ),
+  }
+);
+
+const SupplierRowActions = dynamic(
+  () => import('./SupplierRowActions').then(mod => mod.SupplierRowActions),
+  {
+    ssr: false,
+    loading: () => <div className="h-10 w-10" />,
+  }
+);
+
+const SupplierDeleteDialog = dynamic(
+  () => import('./SupplierDeleteDialog').then(mod => mod.SupplierDeleteDialog),
+  { ssr: false }
+);
 
 export function SuppliersPageClient({
   initialParams,
@@ -413,55 +418,10 @@ export function SuppliersPageClient({
 
                     {/* Action Menu */}
                     <div className="hidden lg:block">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-slate-100"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-5 w-5 text-slate-400" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent
-                          align="end"
-                          className="rounded-2xl border-none p-2 shadow-2xl"
-                        >
-                          <DropdownMenuItem
-                            className="rounded-xl py-2.5 font-bold"
-                            asChild
-                          >
-                            <Link
-                              href={`/suppliers/${supplier.id}`}
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <TrendingUp className="mr-2 h-4 w-4" />{' '}
-                              察看合作详情
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="rounded-xl py-2.5 font-bold"
-                            asChild
-                          >
-                            <Link
-                              href={`/suppliers/${supplier.id}/edit`}
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <Edit className="mr-2 h-4 w-4" /> 修订档案
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="rounded-xl py-2.5 font-bold text-rose-600 focus:bg-rose-500 focus:text-white"
-                            onClick={e => {
-                              e.stopPropagation();
-                              handleDelete(supplier);
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> 归档并中止
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <SupplierRowActions
+                        supplierId={supplier.id}
+                        onDelete={() => handleDelete(supplier)}
+                      />
                     </div>
                   </div>
 
@@ -507,37 +467,19 @@ export function SuppliersPageClient({
         )}
       </div>
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-[2.5rem] border-none p-8 shadow-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-3 text-2xl font-black tracking-tighter text-slate-900">
-              <AlertCircle className="h-6 w-6 text-rose-500" />
-              中止供应协议
-            </AlertDialogTitle>
-            <AlertDialogDescription className="py-4 leading-relaxed font-bold text-slate-500">
-              您正在归档供应商 &quot;{supplierToDelete?.name}&quot;。
-              <br />
-              此操作将中止双方建立的供应关系标识，过往所有交易数据将变为只读归档状态。该操作具备审计追溯性，无法即时物理撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-3 pt-4">
-            <AlertDialogCancel className="h-12 rounded-2xl border-none bg-slate-100 font-black text-slate-600 hover:bg-slate-200">
-              取消并返回
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (supplierToDelete) {
-                  deleteMutation.mutate(supplierToDelete.id);
-                }
-              }}
-              disabled={deleteMutation.isPending}
-              className="h-12 rounded-2xl border-none bg-rose-600 font-black text-white shadow-xl shadow-rose-200 hover:bg-rose-700"
-            >
-              {deleteMutation.isPending ? '归档中...' : '确认归档删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteDialogOpen && (
+        <SupplierDeleteDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          supplierName={supplierToDelete?.name ?? ''}
+          isDeleting={deleteMutation.isPending}
+          onConfirm={() => {
+            if (supplierToDelete) {
+              deleteMutation.mutate(supplierToDelete.id);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }
