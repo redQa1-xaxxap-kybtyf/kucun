@@ -30,7 +30,6 @@ import {
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
-import { AddProductDialog, DeleteCountDialog } from './count-dialogs';
 import { useCountItems } from './use-count-items';
 
 const CountItemsTable = dynamic(
@@ -46,6 +45,16 @@ const CountItemsTable = dynamic(
       </div>
     ),
   }
+);
+
+const AddProductDialog = dynamic(
+  () => import('./count-dialogs').then(mod => mod.AddProductDialog),
+  { ssr: false }
+);
+
+const DeleteCountDialog = dynamic(
+  () => import('./count-dialogs').then(mod => mod.DeleteCountDialog),
+  { ssr: false }
 );
 
 interface CountDetailPageClientProps {
@@ -272,12 +281,14 @@ function CountDetailLayout({
         onItemsChanged={onItemsChanged}
       />
 
-      <DeleteCountDialog
-        open={deleteDialogOpen}
-        onOpenChange={onDeleteDialogChange}
-        onConfirm={onConfirmDelete}
-        isDeleting={isDeleting}
-      />
+      {deleteDialogOpen && (
+        <DeleteCountDialog
+          open={deleteDialogOpen}
+          onOpenChange={onDeleteDialogChange}
+          onConfirm={onConfirmDelete}
+          isDeleting={isDeleting}
+        />
+      )}
     </div>
   );
 }
@@ -492,14 +503,16 @@ function CountItemsCard({
         </CardContent>
       </Card>
 
-      <AddProductDialog
-        open={addDialogOpen}
-        onOpenChange={setAddDialogOpen}
-        selectedProductId={selectedProductId}
-        onProductChange={setSelectedProductId}
-        onConfirm={handleAddProductClick}
-        isAdding={isAddingProduct}
-      />
+      {addDialogOpen && (
+        <AddProductDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+          selectedProductId={selectedProductId}
+          onProductChange={setSelectedProductId}
+          onConfirm={handleAddProductClick}
+          isAdding={isAddingProduct}
+        />
+      )}
     </>
   );
 }
