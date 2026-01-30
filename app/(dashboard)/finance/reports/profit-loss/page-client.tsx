@@ -20,7 +20,6 @@ import * as React from 'react';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
@@ -36,6 +35,17 @@ const ProfitLossTrendChart = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-[360px] w-full animate-pulse rounded-2xl bg-slate-50" />
+    ),
+  }
+);
+
+const DateRangePicker = dynamic(
+  () =>
+    import('@/components/ui/date-range-picker').then(mod => mod.DateRangePicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-10 w-full animate-pulse rounded-md bg-slate-100" />
     ),
   }
 );

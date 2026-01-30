@@ -8,6 +8,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -15,7 +16,6 @@ import { ContentLoading } from '@/components/common/loading';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { queryKeys } from '@/lib/queryKeys';
 import type { AccountStatementDetail } from '@/lib/types/statement';
 import { formatCurrency } from '@/lib/utils/format';
@@ -24,6 +24,17 @@ import { StatementBasicInfo } from './components/statement-basic-info';
 import { StatementHeader } from './components/statement-header';
 import { StatementStatistics } from './components/statement-statistics';
 import { StatementTransactions } from './components/statement-transactions';
+
+const DateRangePicker = dynamic(
+  () =>
+    import('@/components/ui/date-range-picker').then(mod => mod.DateRangePicker),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-10 w-full animate-pulse rounded-md bg-slate-100" />
+    ),
+  }
+);
 
 const DEFAULT_RANGE_DAYS = 90; // 默认显示最近 90 天
 
