@@ -5,13 +5,6 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useProductRanking } from '@/lib/api/dashboard';
 import { useErpDashboardData } from '@/lib/hooks/useDashboardData';
 import type {
@@ -271,25 +264,17 @@ function DashboardHeader({
         </div>
 
         <div className="flex items-center gap-2 rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
-          <Select value={selectedPeriod} onValueChange={onPeriodChange}>
-            <SelectTrigger className="h-10 w-[120px] border-none bg-transparent font-bold text-slate-900 focus:ring-0">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl border-slate-100 shadow-xl">
-              <SelectItem value="1d" className="font-bold">
-                今天
-              </SelectItem>
-              <SelectItem value="7d" className="font-bold">
-                最近7天
-              </SelectItem>
-              <SelectItem value="30d" className="font-bold">
-                最近30天
-              </SelectItem>
-              <SelectItem value="90d" className="font-bold">
-                最近90天
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <select
+            value={selectedPeriod}
+            onChange={e => onPeriodChange(e.target.value)}
+            className="ring-offset-background focus:ring-slate-900 h-10 w-[120px] rounded-xl border-none bg-transparent px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+            aria-label="时间范围"
+          >
+            <option value="1d">今天</option>
+            <option value="7d">最近7天</option>
+            <option value="30d">最近30天</option>
+            <option value="90d">最近90天</option>
+          </select>
 
           <div className="h-6 w-px bg-slate-100" />
 
