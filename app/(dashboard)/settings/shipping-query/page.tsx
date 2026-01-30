@@ -26,19 +26,12 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
+	import { Input } from '@/components/ui/input';
+	import { Label } from '@/components/ui/label';
+	import {
+	  Table,
+	  TableBody,
+	  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -217,32 +210,32 @@ export default function ShippingQueryPage() {
               <span>选择站点并输入追踪单号（支持中文自动转换）</span>
             </div>
             <div className="grid gap-8 lg:grid-cols-12">
-              <div className="space-y-2 lg:col-span-5">
-                <Label
-                  htmlFor="site"
-                  className="text-xs font-black tracking-widest text-slate-500 uppercase"
-                >
-                  选择查询站点 *
-                </Label>
-                <Select value={siteId} onValueChange={setSiteId}>
-                  <SelectTrigger
-                    id="site"
-                    className="h-12 border-slate-200 bg-slate-50/50 focus:ring-purple-500"
-                  >
-                    <SelectValue placeholder="选择目标物流站点" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sitesData?.data.map(site => (
-                      <SelectItem key={site.id} value={site.id}>
-                        {site.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[11px] font-bold text-slate-400">
-                  ※ 系统将自动调用该站点的实时接口
-                </p>
-              </div>
+	              <div className="space-y-2 lg:col-span-5">
+	                <Label
+	                  htmlFor="site"
+	                  className="text-xs font-black tracking-widest text-slate-500 uppercase"
+	                >
+	                  选择查询站点 *
+	                </Label>
+	                <select
+	                  id="site"
+	                  value={siteId}
+	                  onChange={e => setSiteId(e.target.value)}
+	                  className="ring-offset-background focus:ring-purple-500 h-12 w-full rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	                >
+	                  <option value="" disabled>
+	                    选择目标物流站点
+	                  </option>
+	                  {sitesData?.data.map(site => (
+	                    <option key={site.id} value={site.id}>
+	                      {site.name}
+	                    </option>
+	                  ))}
+	                </select>
+	                <p className="text-[11px] font-bold text-slate-400">
+	                  ※ 系统将自动调用该站点的实时接口
+	                </p>
+	              </div>
 
               <div className="space-y-2 lg:col-span-7">
                 <Label
