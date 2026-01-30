@@ -1,14 +1,27 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
-import { PayableDetailClient } from '@/components/finance/payable-detail-client';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { payablesApi } from '@/lib/api/payables';
 import { queryKeys } from '@/lib/queryKeys';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+
+const PayableDetailClient = dynamic(
+  () =>
+    import('@/components/finance/payable-detail-client').then(
+      mod => mod.PayableDetailClient
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[680px] w-full animate-pulse rounded-xl bg-slate-100" />
+    ),
+  }
+);
 
 /**
  * 应付款详情页面
