@@ -15,26 +15,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
-import { updateSupplier } from '@/lib/api/suppliers';
+	import {
+	  Form,
+	  FormControl,
+	  FormDescription,
+	  FormField,
+	  FormItem,
+	  FormLabel,
+	  FormMessage,
+	} from '@/components/ui/form';
+	import { Input } from '@/components/ui/input';
+	import { Textarea } from '@/components/ui/textarea';
+	import { useToast } from '@/components/ui/use-toast';
+	import { updateSupplier } from '@/lib/api/suppliers';
 import {
   UpdateSupplierSchema,
   supplierUpdateDefaults,
@@ -178,32 +171,28 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>状态</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={isLoading}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="选择状态" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="active">活跃</SelectItem>
-                        <SelectItem value="inactive">停用</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>供应商的当前状态</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+	              <FormField
+	                control={form.control}
+	                name="status"
+	                render={({ field }) => (
+	                  <FormItem>
+	                    <FormLabel>状态</FormLabel>
+	                    <FormControl>
+	                      <select
+	                        value={field.value}
+	                        onChange={e => field.onChange(e.target.value)}
+	                        disabled={isLoading}
+	                        className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	                      >
+	                        <option value="active">活跃</option>
+	                        <option value="inactive">停用</option>
+	                      </select>
+	                    </FormControl>
+	                    <FormDescription>供应商的当前状态</FormDescription>
+	                    <FormMessage />
+	                  </FormItem>
+	                )}
+	              />
             </form>
           </Form>
         </CardContent>
@@ -248,4 +237,3 @@ export function EditSupplierForm({ id, supplier }: EditSupplierFormProps) {
     </>
   );
 }
-
