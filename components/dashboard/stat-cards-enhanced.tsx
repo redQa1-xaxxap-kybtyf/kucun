@@ -304,11 +304,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           <div
             key={index}
             className="animate-in fade-in-50 slide-in-from-bottom-4"
-            style={
-              {
-                'animation-delay': `${index * 100}ms`,
-              } as React.CSSProperties
-            }
+            style={{ animationDelay: `${index * 100}ms` }}
           >
             <StatCard {...card} />
           </div>
