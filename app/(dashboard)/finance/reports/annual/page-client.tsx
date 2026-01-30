@@ -26,7 +26,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { ExportService } from '@/lib/services/export-service';
 import type { AnnualReport } from '@/lib/types/report';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
@@ -163,6 +162,7 @@ export function AnnualReportClient() {
 
       const filename = `年度报表-${year}`;
 
+      const { ExportService } = await import('@/lib/services/export-service');
       await ExportService.exportToImage(exportRef.current, {
         filename,
         format: 'png',
