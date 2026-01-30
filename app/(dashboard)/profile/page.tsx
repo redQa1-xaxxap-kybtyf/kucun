@@ -12,7 +12,6 @@
 
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { KeyRound, Loader2, Shield } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -93,7 +92,6 @@ function getInitials(name: string) {
 }
 
 export default function ProfilePage() {
-  const { data: session } = useSession();
   const { toast } = useToast();
 
   const [profile, setProfile] = React.useState<ProfileInfo | null>(null);
@@ -107,8 +105,8 @@ export default function ProfilePage() {
     resolver: standardSchemaResolver(profileFormSchema),
     mode: 'onBlur',
     defaultValues: {
-      name: session?.user?.name || '',
-      email: session?.user?.email || '',
+      name: '',
+      email: '',
     },
   });
 
@@ -317,18 +315,7 @@ export default function ProfilePage() {
     }
   );
 
-  const displayUser =
-    profile ??
-    (session?.user && {
-      id: session.user.id,
-      email: session.user.email,
-      username: session.user.username,
-      name: session.user.name,
-      role: session.user.role,
-      status: session.user.status,
-      createdAt: '',
-      updatedAt: '',
-    });
+  const displayUser = profile;
 
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
