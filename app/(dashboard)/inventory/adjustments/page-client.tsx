@@ -7,31 +7,32 @@ import { useState } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
-import { AdjustmentRecordsFilters } from './components/AdjustmentRecordsFilters';
 import { AdjustmentRecordsTable } from './components/AdjustmentRecordsTable';
 import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
 
-const InventoryOperationForm = dynamic(
+const AdjustmentRecordsFilters = dynamic(
   () =>
-    import('@/components/inventory/inventory-operation-form').then(
-      mod => mod.InventoryOperationForm
+    import('./components/AdjustmentRecordsFilters').then(
+      mod => mod.AdjustmentRecordsFilters
     ),
   {
     ssr: false,
     loading: () => (
-      <div className="text-muted-foreground flex items-center justify-center py-10 text-sm">
-        加载中...
+      <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-white p-4 text-sm text-slate-500">
+        筛选加载中...
       </div>
     ),
   }
+);
+
+const AdjustmentCreateDialog = dynamic(
+  () =>
+    import('./components/AdjustmentCreateDialog').then(
+      mod => mod.AdjustmentCreateDialog
+    ),
+  { ssr: false, loading: () => null }
 );
 
 const AdjustmentDetailDialog = dynamic(
@@ -183,20 +184,14 @@ export function AdjustmentRecordsPageClient({
         />
 
         {/* 调整对话框 */}
-        <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>库存调整</DialogTitle>
-            </DialogHeader>
-            {showAdjustDialog && (
-              <InventoryOperationForm
-                mode="adjust"
-                onSuccess={handleAdjustSuccess}
-                onCancel={handleCloseAdjust}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {showAdjustDialog && (
+          <AdjustmentCreateDialog
+            open={showAdjustDialog}
+            onOpenChange={setShowAdjustDialog}
+            onSuccess={handleAdjustSuccess}
+            onCancel={handleCloseAdjust}
+          />
+        )}
 
         {/* 详情对话框 */}
         {showDetailDialog && selectedAdjustment && (
