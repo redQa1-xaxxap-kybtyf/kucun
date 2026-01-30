@@ -8,20 +8,13 @@ import { useQuery } from '@tanstack/react-query';
 import { Calendar, Package, TrendingUp, User } from 'lucide-react';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
+	import { Button } from '@/components/ui/button';
+	import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+	import { Input } from '@/components/ui/input';
+	import {
+	  Table,
+	  TableBody,
+	  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -137,42 +130,52 @@ export function TemporaryProductsClient() {
           <CardTitle className="text-sm font-medium">筛选和搜索</CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <div className="grid gap-3 md:grid-cols-4">
-            {/* 供应商筛选 */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">供应商</label>
-              <Select value={supplierFilter} onValueChange={setSupplierFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择供应商" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部供应商</SelectItem>
-                  {suppliers.map((supplier: Supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                      {supplier.supplierCode && ` (${supplier.supplierCode})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 排序方式 */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium">排序方式</label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="usageCount">使用次数</SelectItem>
-                  <SelectItem value="lastUsedAt">最后使用时间</SelectItem>
-                  <SelectItem value="name">产品名称</SelectItem>
-                  <SelectItem value="code">产品编码</SelectItem>
-                  <SelectItem value="createdAt">创建时间</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+	          <div className="grid gap-3 md:grid-cols-4">
+	            {/* 供应商筛选 */}
+	            <div className="space-y-2">
+	              <label
+	                className="text-sm font-medium"
+	                htmlFor="temporary-products-supplier"
+	              >
+	                供应商
+	              </label>
+	              <select
+	                id="temporary-products-supplier"
+	                value={supplierFilter}
+	                onChange={e => setSupplierFilter(e.target.value)}
+	                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	              >
+	                <option value="all">全部供应商</option>
+	                {suppliers.map((supplier: Supplier) => (
+	                  <option key={supplier.id} value={supplier.id}>
+	                    {supplier.name}
+	                    {supplier.supplierCode && ` (${supplier.supplierCode})`}
+	                  </option>
+	                ))}
+	              </select>
+	            </div>
+	
+	            {/* 排序方式 */}
+	            <div className="space-y-2">
+	              <label
+	                className="text-sm font-medium"
+	                htmlFor="temporary-products-sort"
+	              >
+	                排序方式
+	              </label>
+	              <select
+	                id="temporary-products-sort"
+	                value={sortBy}
+	                onChange={e => setSortBy(e.target.value)}
+	                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	              >
+	                <option value="usageCount">使用次数</option>
+	                <option value="lastUsedAt">最后使用时间</option>
+	                <option value="name">产品名称</option>
+	                <option value="code">产品编码</option>
+	                <option value="createdAt">创建时间</option>
+	              </select>
+	            </div>
 
             {/* 搜索框 */}
             <div className="space-y-2 md:col-span-2">
