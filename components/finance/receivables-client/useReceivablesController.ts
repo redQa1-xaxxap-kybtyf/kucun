@@ -7,7 +7,7 @@ import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { FINANCE_RECEIVABLES_STALE_TIME_MS } from '@/lib/constants/cache';
 import { queryKeys } from '@/lib/queryKeys';
-import { receivablesParamsSchema } from '@/lib/schemas/receivables-params';
+import { receivablesParamsConfig } from '@/lib/schemas/receivables-params-config';
 import type {
   PaymentStatus,
   ReceivableItem,
@@ -66,7 +66,7 @@ export function useReceivablesController({
 }): ReceivablesControllerResult {
   // ✅ 使用统一的URL参数管理Hook
   const { params: queryParams, updateParams } = useUrlSearchParams(
-    receivablesParamsSchema,
+    receivablesParamsConfig,
     {
       basePath: '/finance/receivables',
       debounceMs: 0,
