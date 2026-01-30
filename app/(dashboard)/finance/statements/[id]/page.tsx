@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { format, subDays } from 'date-fns';
 import {
   ArrowLeft,
   FileText,
@@ -28,6 +27,20 @@ import { StatementTransactions } from './components/statement-transactions';
 
 const DEFAULT_RANGE_DAYS = 90; // 默认显示最近 90 天
 
+function pad2(value: number) {
+  return value.toString().padStart(2, '0');
+}
+
+function toISODateStringLocal(date: Date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function subDaysLocal(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() - days);
+  return next;
+}
+
 /**
  * 往来账单详情页面
  * 显示客户或供应商的详细账务往来信息
@@ -40,10 +53,9 @@ export default function StatementDetailPage() {
 
   // 日期范围默认值
   const today = new Date();
-  const defaultEndDate = format(today, 'yyyy-MM-dd');
-  const defaultStartDate = format(
-    subDays(today, DEFAULT_RANGE_DAYS),
-    'yyyy-MM-dd'
+  const defaultEndDate = toISODateStringLocal(today);
+  const defaultStartDate = toISODateStringLocal(
+    subDaysLocal(today, DEFAULT_RANGE_DAYS)
   );
 
   // 从 URL 参数获取日期范围
