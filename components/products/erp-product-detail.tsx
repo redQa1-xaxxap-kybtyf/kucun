@@ -2,20 +2,10 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { ProductImageGallery } from '@/components/products/product-image-gallery';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +18,53 @@ import { formatDateTime } from '@/lib/utils/datetime';
 interface ERPProductDetailProps {
   product: Product;
 }
+
+function ProductImageGallerySkeleton() {
+  return (
+    <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
+      <div className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-2">
+        <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-bg-tertiary))]" />
+      </div>
+      <div className="p-4">
+        <div className="flex flex-wrap gap-2">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-20 w-20 animate-pulse rounded-lg bg-[hsl(var(--color-bg-tertiary))]"
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const ProductImageGallery = dynamic(
+  () =>
+    import('@/components/products/product-image-gallery').then(
+      mod => mod.ProductImageGallery
+    ),
+  { ssr: false, loading: () => <ProductImageGallerySkeleton /> }
+);
+
+const ProductDeleteDialog = dynamic(
+  () =>
+    import('@/components/products/product-delete-dialogs').then(
+      mod => mod.ProductDeleteDialog
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="w-full max-w-sm rounded-lg bg-[hsl(var(--color-bg-card))] p-6 shadow-lg">
+          <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+            正在加载...
+          </div>
+        </div>
+      </div>
+    ),
+  }
+);
 
 /**
  * 格式化规格字段显示
@@ -281,33 +318,15 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           productName={product.name}
         />
 
-        {/* 删除确认对话框 */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>确认删除产品</AlertDialogTitle>
-              <AlertDialogDescription>
-                确定要删除产品编码 &quot;{product.code}&quot; 吗？
-                <br />
-                <span className="font-medium text-[hsl(var(--color-error))]">
-                  此操作不可撤销，删除后将无法恢复产品数据。
-                </span>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteMutation.isPending}>
-                取消
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmDelete}
-                disabled={deleteMutation.isPending}
-                className="bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-error-hover))]"
-              >
-                {deleteMutation.isPending ? '删除中...' : '确认删除'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {deleteDialogOpen && (
+          <ProductDeleteDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            productName={`${product.code} - ${product.name}`}
+            isDeleting={deleteMutation.isPending}
+            onConfirm={confirmDelete}
+          />
+        )}
       </div>
     </div>
   );
