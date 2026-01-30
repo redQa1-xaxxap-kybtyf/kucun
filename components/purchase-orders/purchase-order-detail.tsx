@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -30,10 +31,26 @@ import {
   SupplierInfoCard,
 } from './purchase-order-detail-sections';
 import type { PurchaseOrderDetailData } from './purchase-order-detail.types';
-import {
-  PurchaseOrderShippingDialog,
-  type PurchaseOrderShippingFormValues,
-} from './purchase-order-shipping-dialog';
+import type { PurchaseOrderShippingFormValues } from './purchase-order-shipping-dialog';
+
+const PurchaseOrderShippingDialog = dynamic(
+  () =>
+    import('./purchase-order-shipping-dialog').then(
+      mod => mod.PurchaseOrderShippingDialog
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="w-full max-w-sm rounded-lg bg-[hsl(var(--color-bg-card))] p-6 shadow-lg">
+          <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+            正在加载...
+          </div>
+        </div>
+      </div>
+    ),
+  }
+);
 
 interface PurchaseOrderDetailProps {
   orderId: string;
@@ -207,21 +224,23 @@ export function PurchaseOrderDetail({
         onStatusChange={handleStatusAction}
         onRequestCancel={openCancelDialog}
       />
-      <PurchaseOrderShippingDialog
-        open={shippingDialogState.open}
-        mode={shippingDialogState.mode}
-        orderNumber={order.orderNumber}
-        defaultValues={shippingDialogState.defaultValues}
-        isSubmitting={isSubmitting}
-        onOpenChange={open =>
-          setShippingDialogState(prev => ({
-            ...prev,
-            open,
-            ...(open ? {} : { targetStatus: null }),
-          }))
-        }
-        onSubmit={handleShippingDialogSubmit}
-      />
+      {shippingDialogState.open && (
+        <PurchaseOrderShippingDialog
+          open={shippingDialogState.open}
+          mode={shippingDialogState.mode}
+          orderNumber={order.orderNumber}
+          defaultValues={shippingDialogState.defaultValues}
+          isSubmitting={isSubmitting}
+          onOpenChange={open =>
+            setShippingDialogState(prev => ({
+              ...prev,
+              open,
+              ...(open ? {} : { targetStatus: null }),
+            }))
+          }
+          onSubmit={handleShippingDialogSubmit}
+        />
+      )}
       <DeleteOrderDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
