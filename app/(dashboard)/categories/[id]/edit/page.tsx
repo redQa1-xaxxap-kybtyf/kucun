@@ -5,14 +5,12 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FolderTree } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import React, { use } from 'react';
-import { useForm } from 'react-hook-form';
-import type { z } from 'zod';
+import { useForm, type Resolver } from 'react-hook-form';
 
 import type { ParentCategory } from '@/components/categories/category-edit-form-card';
 import { ContentLoading } from '@/components/common/loading';
@@ -25,11 +23,9 @@ import {
   getCategory,
   updateCategory,
 } from '@/lib/api/categories';
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
-import { UpdateCategorySchema } from '@/lib/validations/category';
-
-type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
+import type { UpdateCategoryData } from '@/lib/validations/category';
 
 const CategoryEditFormCard = dynamic(
   () =>
@@ -269,8 +265,38 @@ function useCategoryData(categoryId: string, parentSearch: string) {
 }
 
 function useCategoryForm(categoryData?: CategoryDetail) {
+  const [resolver, setResolver] = React.useState<
+    Resolver<UpdateCategoryData> | undefined
+  >(undefined);
+
+  React.useEffect(() => {
+    let isActive = true;
+
+    void (async () => {
+      try {
+        const [{ standardSchemaResolver }, { UpdateCategorySchema }] =
+          await Promise.all([
+            import('@hookform/resolvers/standard-schema'),
+            import('@/lib/validations/category'),
+          ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setResolver(() => standardSchemaResolver(UpdateCategorySchema));
+      } catch {
+        // Ignore: if resolver fails to load, fallback to server-side validation.
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
   const form = useForm<UpdateCategoryData>({
-    resolver: standardSchemaResolver(UpdateCategorySchema),
+    resolver,
     defaultValues: {
       id: '',
       name: '',

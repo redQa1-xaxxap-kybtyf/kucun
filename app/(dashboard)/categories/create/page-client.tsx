@@ -49,7 +49,7 @@ import {
   type Category,
 } from '@/lib/api/categories';
 import { can } from '@/lib/auth/permissions';
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
 import { CreateCategorySchema } from '@/lib/validations/category';
 

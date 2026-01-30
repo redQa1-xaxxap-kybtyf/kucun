@@ -51,7 +51,7 @@ import {
   getReturnOrders,
   useUpdateReturnOrderStatus,
 } from '@/lib/api/return-orders';
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   type ReturnOrder,

@@ -10,7 +10,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { getReturnOrders } from '@/lib/api/return-orders';
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
   ReturnOrder,

@@ -15,7 +15,7 @@ import {
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
 import { inventoryParamsSchema } from '@/lib/schemas/inventory-params';
 import type { CategoryOption } from '@/lib/types/category';
