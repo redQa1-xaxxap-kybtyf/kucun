@@ -40,13 +40,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
@@ -189,28 +182,26 @@ function PaymentOutFormFields({
           render={({ field }) => (
             <FormItem>
               <FormLabel>应付款记录（可选）</FormLabel>
-              <Select
-                value={field.value}
-                onValueChange={value => {
-                  field.onChange(value);
-                  handlePayableSelect(value);
-                }}
-                disabled={payablesLoading}
-              >
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择应付款记录" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
+              <FormControl>
+                <select
+                  value={field.value ?? ''}
+                  onChange={e => {
+                    const value = e.target.value;
+                    field.onChange(value);
+                    handlePayableSelect(value);
+                  }}
+                  disabled={payablesLoading}
+                  className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="">不关联（独立付款）</option>
                   {availablePayables.map(payable => (
-                    <SelectItem key={payable.id} value={payable.id}>
+                    <option key={payable.id} value={payable.id}>
                       {payable.payableNumber} - {payable.supplier.name} - 待付{' '}
                       {formatCurrency(payable.remainingAmount)}
-                    </SelectItem>
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
+                </select>
+              </FormControl>
               <FormDescription>
                 选择关联的应付款记录，或留空创建独立付款记录
               </FormDescription>
@@ -228,21 +219,20 @@ function PaymentOutFormFields({
           render={({ field }) => (
             <FormItem>
               <FormLabel>付款方式</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="cash">现金</SelectItem>
-                  <SelectItem value="bank_transfer">银行转账</SelectItem>
-                  <SelectItem value="alipay">支付宝</SelectItem>
-                  <SelectItem value="wechat">微信支付</SelectItem>
-                  <SelectItem value="check">支票</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <select
+                  value={field.value}
+                  onChange={e => field.onChange(e.target.value)}
+                  className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="cash">现金</option>
+                  <option value="bank_transfer">银行转账</option>
+                  <option value="alipay">支付宝</option>
+                  <option value="wechat">微信支付</option>
+                  <option value="check">支票</option>
+                  <option value="other">其他</option>
+                </select>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}

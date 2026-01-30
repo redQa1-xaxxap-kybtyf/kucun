@@ -43,21 +43,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+	import {
+	  Popover,
+	  PopoverContent,
+	  PopoverTrigger,
+	} from '@/components/ui/popover';
+	import { Separator } from '@/components/ui/separator';
+	import { Textarea } from '@/components/ui/textarea';
+	import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
@@ -355,40 +348,36 @@ export default function CreatePaymentPage() {
                                 此收款记录关联到指定订单，无法修改
                               </p>
                             </div>
-                          ) : (
-                            // 如果没有指定订单，允许选择
-                            <Select
-                              value={field.value}
-                              onValueChange={value => {
-                                field.onChange(value);
-                                handleOrderSelect(value);
-                              }}
-                              disabled={ordersLoading}
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="选择销售订单" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {availableOrders.map(order => (
-                                  <SelectItem key={order.id} value={order.id}>
-                                    <div className="flex w-full items-center justify-between">
-                                      <span>{order.orderNumber}</span>
-                                      <span className="ml-2 text-sm text-[hsl(var(--color-text-tertiary))]">
-                                        {order.customer.name} - 待收：
-                                        {formatCurrency(order.remainingAmount)}
-                                      </span>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          {!orderId && (
-                            <FormDescription>
-                              选择需要收款的销售订单
-                            </FormDescription>
+	                          ) : (
+	                            // 如果没有指定订单，允许选择
+	                            <FormControl>
+	                              <select
+	                                value={field.value}
+	                                onChange={e => {
+	                                  const value = e.target.value;
+	                                  field.onChange(value);
+	                                  handleOrderSelect(value);
+	                                }}
+	                                disabled={ordersLoading}
+	                                className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	                              >
+	                                <option value="" disabled>
+	                                  选择销售订单
+	                                </option>
+	                                {availableOrders.map(order => (
+	                                  <option key={order.id} value={order.id}>
+	                                    {order.orderNumber} - {order.customer.name}{' '}
+	                                    - 待收：
+	                                    {formatCurrency(order.remainingAmount)}
+	                                  </option>
+	                                ))}
+	                              </select>
+	                            </FormControl>
+	                          )}
+	                          {!orderId && (
+	                            <FormDescription>
+	                              选择需要收款的销售订单
+	                            </FormDescription>
                           )}
                           <FormMessage />
                         </FormItem>
@@ -398,34 +387,28 @@ export default function CreatePaymentPage() {
                     {/* 收款方式 */}
                     <FormField
                       control={form.control}
-                      name="paymentMethod"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>收款方式 *</FormLabel>
-                          <Select
-                            value={field.value}
-                            onValueChange={field.onChange}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择收款方式" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="cash">现金</SelectItem>
-                              <SelectItem value="bank_transfer">
-                                银行转账
-                              </SelectItem>
-                              <SelectItem value="alipay">支付宝</SelectItem>
-                              <SelectItem value="wechat">微信支付</SelectItem>
-                              <SelectItem value="check">支票</SelectItem>
-                              <SelectItem value="other">其他</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+	                      name="paymentMethod"
+	                      render={({ field }) => (
+	                        <FormItem>
+	                          <FormLabel>收款方式 *</FormLabel>
+	                          <FormControl>
+	                            <select
+	                              value={field.value}
+	                              onChange={e => field.onChange(e.target.value)}
+	                              className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	                            >
+	                              <option value="cash">现金</option>
+	                              <option value="bank_transfer">银行转账</option>
+	                              <option value="alipay">支付宝</option>
+	                              <option value="wechat">微信支付</option>
+	                              <option value="check">支票</option>
+	                              <option value="other">其他</option>
+	                            </select>
+	                          </FormControl>
+	                          <FormMessage />
+	                        </FormItem>
+	                      )}
+	                    />
 
                     {/* 收款金额 */}
                     <FormField
