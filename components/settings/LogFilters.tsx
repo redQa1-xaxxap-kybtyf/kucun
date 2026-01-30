@@ -11,19 +11,11 @@ import { Button } from '@/components/ui/button';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type {
   SystemLogFilters,
   SystemLogLevel,
   SystemLogType,
 } from '@/lib/types/settings';
-import { cn } from '@/lib/utils';
 
 interface LogFiltersProps {
   /** 当前筛选条件 */
@@ -143,28 +135,19 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
             日志类型
           </Label>
-          <Select
+          <select
             value={filters.type || 'all'}
-            onValueChange={value => handleFilterChange('type', value)}
+            onChange={e => handleFilterChange('type', e.target.value)}
+            className="h-11 w-full rounded-2xl border border-slate-100 bg-slate-50/50 px-3 font-bold text-slate-900 transition-all focus:bg-white focus:ring-2 focus:ring-slate-900/5 focus:outline-hidden"
+            aria-label="日志类型"
           >
-            <SelectTrigger className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-slate-900 focus:ring-slate-900/5">
-              <SelectValue placeholder="选择日志类型" />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-              <SelectItem value="all" className="font-bold">
-                全部类型
-              </SelectItem>
-              {LOG_TYPE_OPTIONS.map(option => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                  className="font-bold"
-                >
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="all">全部类型</option>
+            {LOG_TYPE_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* 日志级别 */}
@@ -172,36 +155,19 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           <Label className="ml-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
             风险级别
           </Label>
-          <Select
+          <select
             value={filters.level || 'all'}
-            onValueChange={value => handleFilterChange('level', value)}
+            onChange={e => handleFilterChange('level', e.target.value)}
+            className="h-11 w-full rounded-2xl border border-slate-100 bg-slate-50/50 px-3 font-bold text-slate-900 transition-all focus:bg-white focus:ring-2 focus:ring-slate-900/5 focus:outline-hidden"
+            aria-label="风险级别"
           >
-            <SelectTrigger className="h-11 rounded-2xl border-slate-100 bg-slate-50/50 font-bold text-slate-900 focus:ring-slate-900/5">
-              <SelectValue placeholder="选择日志级别" />
-            </SelectTrigger>
-            <SelectContent className="rounded-2xl border-slate-100 shadow-2xl">
-              <SelectItem value="all" className="font-bold">
-                全部级别
-              </SelectItem>
-              {LOG_LEVEL_OPTIONS.map(option => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                  className="font-bold text-slate-900"
-                >
-                  <span className={cn('flex items-center gap-2')}>
-                    <div
-                      className={cn(
-                        'h-1.5 w-1.5 rounded-full',
-                        option.color.replace('text-', 'bg-')
-                      )}
-                    />
-                    {option.label}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="all">全部级别</option>
+            {LOG_LEVEL_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* 操作动作 */}
