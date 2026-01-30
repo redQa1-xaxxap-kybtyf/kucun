@@ -7,8 +7,10 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
+import { getServerSession } from 'next-auth';
 
 import { ERPDashboard } from '@/components/dashboard/erp-dashboard';
+import { authOptions } from '@/lib/auth';
 import { dashboardQueryKeys } from '@/lib/api/dashboard';
 import { getDashboardData } from '@/lib/api/handlers/dashboard';
 import { prisma } from '@/lib/db';
@@ -107,6 +109,8 @@ export default async function DashboardPage({
       }),
     ]);
 
+  const session = await getServerSession(authOptions);
+
   const toCustomerSummary = (
     customer: { id: string; name: string | null } | null | undefined
   ) =>
@@ -154,6 +158,7 @@ export default async function DashboardPage({
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ERPDashboard
+        userName={session?.user?.name ?? null}
         initialData={dashboardData}
         initialTimeRange={timeRange}
         initialOrders={{

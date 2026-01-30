@@ -3,7 +3,6 @@
 import { Package, RefreshCw, ShoppingCart, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -88,6 +87,7 @@ const ProductRanking = dynamic(
  * 3. 仅在用户主动刷新/切换筛选时才触发客户端请求
  */
 interface ERPDashboardProps {
+  userName?: string | null;
   initialData?: DashboardData | null;
   initialTimeRange?: string;
   initialOrders?: {
@@ -98,11 +98,11 @@ interface ERPDashboardProps {
 }
 
 export function ERPDashboard({
+  userName,
   initialData,
   initialTimeRange = '7d',
   initialOrders,
 }: ERPDashboardProps) {
-  const { data: session } = useSession();
   const router = useRouter();
 
   const {
@@ -155,7 +155,7 @@ export function ERPDashboard({
     <div className="flex h-full flex-col overflow-y-auto bg-slate-50/50 p-4 lg:p-10 xl:p-14">
       <div className="mx-auto w-full max-w-[1680px] space-y-12">
         <DashboardHeader
-          userName={session?.user?.name}
+          userName={userName}
           selectedPeriod={selectedPeriod}
           onPeriodChange={setSelectedPeriod}
           isRefreshing={isRefreshing}
