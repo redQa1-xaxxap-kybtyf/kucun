@@ -17,7 +17,7 @@ import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
-import { inventoryParamsSchema } from '@/lib/schemas/inventory-params';
+import { inventoryParamsConfig } from '@/lib/schemas/inventory-params-config';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
   InventoryListResponse,
@@ -92,7 +92,7 @@ export function InventoryPageClient({
 }
 
 function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
-  const { params, updateParams } = useUrlSearchParams(inventoryParamsSchema, {
+  const { params, updateParams } = useUrlSearchParams(inventoryParamsConfig, {
     basePath: '/inventory',
     debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
     shallow: true,

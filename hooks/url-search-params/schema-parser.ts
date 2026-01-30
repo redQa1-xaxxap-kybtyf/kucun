@@ -5,25 +5,35 @@
  * 支持类型验证、默认值处理、值转换
  */
 
-import { z } from 'zod';
-
 import type { ParamConfig, ParamSchema, ValidationResult } from './types';
 
 /**
  * 检查是否为Zod Schema
  */
-function isZodSchema(schema: any): schema is z.ZodObject<any> {
-  return schema && typeof schema.parse === 'function';
+function isZodSchema(schema: any): schema is {
+  safeParse: (input: unknown) => { success: true; data: unknown } | { success: false; error: any };
+  parse: (input: unknown) => unknown;
+  shape?: Record<string, unknown>;
+} {
+  return (
+    !!schema &&
+    typeof schema === 'object' &&
+    typeof schema.safeParse === 'function' &&
+    typeof schema.parse === 'function' &&
+    'shape' in schema
+  );
 }
 
 /**
  * 从Zod Schema提取参数配置
  */
 function extractFromZodSchema<T extends Record<string, any>>(
-  schema: z.ZodObject<any>
+  schema: {
+    shape?: Record<string, unknown>;
+  }
 ): Record<keyof T, ParamConfig> {
   const configs: Record<string, ParamConfig> = {};
-  const shape = schema.shape;
+  const shape = schema.shape ?? {};
 
   for (const key in shape) {
     const field = shape[key];
@@ -36,83 +46,86 @@ function extractFromZodSchema<T extends Record<string, any>>(
 /**
  * 解析Zod字段类型
  */
-function parseZodField(field: z.ZodTypeAny): ParamConfig {
-  let innerType = field;
+function parseZodField(field: any): ParamConfig {
+  let innerType = field as any;
   let isOptional = false;
+  let defaultValue: unknown = undefined;
 
   // 处理optional/nullable/default包装
   while (
-    innerType instanceof z.ZodOptional ||
-    innerType instanceof z.ZodNullable ||
-    innerType instanceof z.ZodDefault
+    innerType &&
+    typeof innerType === 'object' &&
+    innerType._def &&
+    typeof innerType._def === 'object' &&
+    typeof innerType._def.type === 'string' &&
+    (innerType._def.type === 'optional' ||
+      innerType._def.type === 'nullable' ||
+      innerType._def.type === 'default')
   ) {
-    if (innerType instanceof z.ZodDefault) {
-      // Zod的defaultValue可能是值或函数
-      const defaultValueOrFn = innerType._def.defaultValue;
-      const defaultValue =
+    const def = innerType._def as any;
+
+    if (def.type === 'default') {
+      const defaultValueOrFn = def.defaultValue;
+      defaultValue =
         typeof defaultValueOrFn === 'function'
           ? defaultValueOrFn()
           : defaultValueOrFn;
-      const unwrapped = (innerType._def as any).innerType as z.ZodTypeAny;
-      return {
-        ...parseZodField(unwrapped),
-        default: defaultValue,
-      };
     }
+
+    if (def.type === 'optional' || def.type === 'nullable') {
+      isOptional = true;
+    }
+
     isOptional = true;
-    innerType = (innerType._def as any).innerType as z.ZodTypeAny;
+    innerType = def.innerType;
   }
 
+  const def = innerType?._def;
+
   // 字符串类型
-  if (innerType instanceof z.ZodString) {
+  if (def?.type === 'string') {
     return {
       type: 'string',
-      default: isOptional ? undefined : '',
+      default: defaultValue ?? (isOptional ? undefined : ''),
     };
   }
 
   // 数字类型
-  if (innerType instanceof z.ZodNumber) {
-    const checks = (innerType as any)._def.checks || [];
-    const minCheck = checks.find((c: any) => c.kind === 'min');
-    const maxCheck = checks.find((c: any) => c.kind === 'max');
-
+  if (def?.type === 'number') {
     return {
       type: 'number',
-      default: isOptional ? undefined : 1,
-      min: minCheck?.value,
-      max: maxCheck?.value,
+      default: defaultValue ?? (isOptional ? undefined : 1),
     };
   }
 
   // 布尔类型
-  if (innerType instanceof z.ZodBoolean) {
+  if (def?.type === 'boolean') {
     return {
       type: 'boolean',
-      default: isOptional ? undefined : false,
+      default: defaultValue ?? (isOptional ? undefined : false),
     };
   }
 
   // 枚举类型
-  if (innerType instanceof z.ZodEnum) {
-    const enumDef = innerType._def as any;
-    const rawValues = enumDef.values ?? enumDef.entries;
-    const values = Array.isArray(rawValues)
-      ? rawValues
-      : Object.values(rawValues ?? {});
+  if (def?.type === 'enum') {
+    const entries = (def as any).entries;
+    const values = Array.isArray(innerType?.options)
+      ? innerType.options
+      : Object.values(entries ?? {});
     return {
       type: 'enum',
       values,
       default:
-        isOptional || !values || values.length === 0 ? undefined : values[0],
+        defaultValue ??
+        (isOptional || !values || values.length === 0 ? undefined : values[0]),
     };
   }
 
   // 数组类型
-  if (innerType instanceof z.ZodArray) {
+  if (def?.type === 'array') {
     return {
       type: 'array',
-      default: isOptional ? undefined : [],
+      default: defaultValue ?? (isOptional ? undefined : []),
       separator: ',',
     };
   }
@@ -120,7 +133,7 @@ function parseZodField(field: z.ZodTypeAny): ParamConfig {
   // 默认为字符串
   return {
     type: 'string',
-    default: isOptional ? undefined : '',
+    default: defaultValue ?? (isOptional ? undefined : ''),
   };
 }
 
@@ -224,19 +237,22 @@ export function validateParams<T extends Record<string, any>>(
   // 如果是Zod schema,使用Zod验证
   if (isZodSchema(schema)) {
     try {
-      const validated = schema.parse(params) as T;
-      return {
-        success: true,
-        data: validated,
-      };
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const firstError = error.issues[0];
+      const result = schema.safeParse(params);
+      if (result.success) {
         return {
-          success: false,
-          error: `${firstError.path.join('.')}: ${firstError.message}`,
+          success: true,
+          data: result.data as T,
         };
       }
+
+      const firstError = result.error?.issues?.[0];
+      return {
+        success: false,
+        error: firstError
+          ? `${firstError.path?.join('.')}: ${firstError.message}`
+          : '参数验证失败',
+      };
+    } catch (error) {
       return {
         success: false,
         error: String(error),
