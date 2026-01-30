@@ -12,13 +12,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { queryKeys } from '@/lib/queryKeys';
 import { COUNT_STATUS_OPTIONS } from '@/lib/types/inventory-count';
 
@@ -176,22 +169,19 @@ export function CountStatisticsPageClient({
               {/* 盘点状态 */}
               <div className="space-y-2">
                 <Label htmlFor="status">盘点状态</Label>
-                <Select
+                <select
+                  id="status"
                   value={localFilters.status}
-                  onValueChange={value => handleFilterChange('status', value)}
+                  onChange={e => handleFilterChange('status', e.target.value)}
+                  className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <SelectTrigger id="status">
-                    <SelectValue placeholder="全部状态" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={SELECT_ALL_VALUE}>全部状态</SelectItem>
-                    {COUNT_STATUS_OPTIONS.map(option => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <option value={SELECT_ALL_VALUE}>全部状态</option>
+                  {COUNT_STATUS_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
