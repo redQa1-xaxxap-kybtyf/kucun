@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { format } from 'date-fns';
 import { ArrowLeft, Calendar, Edit, FileText, Trash2 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -25,6 +24,7 @@ import {
 } from '@/lib/types/expense';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatCurrency } from '@/lib/utils/format';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface ExpenseDetailClientProps {
   expense: ExpenseRecord;
@@ -243,7 +243,7 @@ export function ExpenseDetailClient({
               </div>
               <div className="flex items-center gap-2 text-base font-medium text-[hsl(var(--color-text-primary))]">
                 <Calendar className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
-                {format(new Date(expense.expenseDate), 'yyyy-MM-dd')}
+                {formatDate(expense.expenseDate)}
               </div>
             </div>
 
