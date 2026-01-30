@@ -18,16 +18,7 @@
 
 'use client';
 
-import {
-  endOfMonth,
-  endOfWeek,
-  format,
-  startOfMonth,
-  startOfWeek,
-  subDays,
-  subMonths,
-} from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import type { Locale } from 'date-fns/locale';
 import { Calendar as CalendarIcon, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import * as React from 'react';
@@ -51,6 +42,61 @@ const Calendar = dynamic(
     ),
   }
 );
+
+function pad2(value: number) {
+  return value.toString().padStart(2, '0');
+}
+
+function toISODateStringLocal(date: Date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+function parseISODateStringLocal(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  const dayOfMonth = Number(match[3]);
+  const date = new Date(year, monthIndex, dayOfMonth);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatChineseDateLocal(date: Date) {
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+}
+
+function startOfDayLocal(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDaysLocal(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function startOfWeekLocal(date: Date, weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6) {
+  const current = startOfDayLocal(date);
+  const day = current.getDay();
+  const diff = (day - weekStartsOn + 7) % 7;
+  return addDaysLocal(current, -diff);
+}
+
+function endOfWeekLocal(date: Date, weekStartsOn: 0 | 1 | 2 | 3 | 4 | 5 | 6) {
+  return addDaysLocal(startOfWeekLocal(date, weekStartsOn), 6);
+}
+
+function startOfMonthLocal(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function endOfMonthLocal(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0);
+}
 
 /**
  * 日期范围值接口
@@ -115,59 +161,57 @@ const DEFAULT_PRESETS: DateRangePreset[] = [
     getValue: () => {
       const today = new Date();
       return {
-        startDate: format(today, 'yyyy-MM-dd'),
-        endDate: format(today, 'yyyy-MM-dd'),
+        startDate: toISODateStringLocal(today),
+        endDate: toISODateStringLocal(today),
       };
     },
   },
   {
     label: '昨天',
     getValue: () => {
-      const yesterday = subDays(new Date(), 1);
+      const yesterday = addDaysLocal(new Date(), -1);
       return {
-        startDate: format(yesterday, 'yyyy-MM-dd'),
-        endDate: format(yesterday, 'yyyy-MM-dd'),
+        startDate: toISODateStringLocal(yesterday),
+        endDate: toISODateStringLocal(yesterday),
       };
     },
   },
   {
     label: '最近7天',
     getValue: () => ({
-      startDate: format(subDays(new Date(), 6), 'yyyy-MM-dd'),
-      endDate: format(new Date(), 'yyyy-MM-dd'),
+      startDate: toISODateStringLocal(addDaysLocal(new Date(), -6)),
+      endDate: toISODateStringLocal(new Date()),
     }),
   },
   {
     label: '最近30天',
     getValue: () => ({
-      startDate: format(subDays(new Date(), 29), 'yyyy-MM-dd'),
-      endDate: format(new Date(), 'yyyy-MM-dd'),
+      startDate: toISODateStringLocal(addDaysLocal(new Date(), -29)),
+      endDate: toISODateStringLocal(new Date()),
     }),
   },
   {
     label: '本周',
     getValue: () => ({
-      startDate: format(
-        startOfWeek(new Date(), { weekStartsOn: 1 }),
-        'yyyy-MM-dd'
-      ),
-      endDate: format(endOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+      startDate: toISODateStringLocal(startOfWeekLocal(new Date(), 1)),
+      endDate: toISODateStringLocal(endOfWeekLocal(new Date(), 1)),
     }),
   },
   {
     label: '本月',
     getValue: () => ({
-      startDate: format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-      endDate: format(endOfMonth(new Date()), 'yyyy-MM-dd'),
+      startDate: toISODateStringLocal(startOfMonthLocal(new Date())),
+      endDate: toISODateStringLocal(endOfMonthLocal(new Date())),
     }),
   },
   {
     label: '上月',
     getValue: () => {
-      const lastMonth = subMonths(new Date(), 1);
+      const today = new Date();
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       return {
-        startDate: format(startOfMonth(lastMonth), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(lastMonth), 'yyyy-MM-dd'),
+        startDate: toISODateStringLocal(startOfMonthLocal(lastMonth)),
+        endDate: toISODateStringLocal(endOfMonthLocal(lastMonth)),
       };
     },
   },
@@ -191,6 +235,30 @@ export const DateRangePicker = React.memo(
     showClearButton = true,
   }: DateRangePickerProps) => {
     const [isOpen, setIsOpen] = React.useState(false);
+    const [calendarLocale, setCalendarLocale] = React.useState<Locale>();
+
+    React.useEffect(() => {
+      if (!isOpen || calendarLocale) {
+        return;
+      }
+
+      let cancelled = false;
+
+      (async () => {
+        try {
+          const { zhCN } = await import('date-fns/locale/zh-CN');
+          if (!cancelled) {
+            setCalendarLocale(zhCN);
+          }
+        } catch (error) {
+          logger.warn('ui:date-range-picker', '加载 zh-CN locale 失败', error);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [isOpen, calendarLocale]);
 
     // 将字符串日期转换为 Date 对象
     const dateRange = React.useMemo<DateRange | undefined>(() => {
@@ -199,8 +267,12 @@ export const DateRangePicker = React.memo(
       }
 
       return {
-        from: value.startDate ? new Date(value.startDate) : undefined,
-        to: value.endDate ? new Date(value.endDate) : undefined,
+        from: value.startDate
+          ? parseISODateStringLocal(value.startDate) ?? undefined
+          : undefined,
+        to: value.endDate
+          ? parseISODateStringLocal(value.endDate) ?? undefined
+          : undefined,
       };
     }, [value?.startDate, value?.endDate]);
 
@@ -211,12 +283,14 @@ export const DateRangePicker = React.memo(
       }
 
       try {
-        const start = new Date(value.startDate);
-        const end = new Date(value.endDate);
+        const start = parseISODateStringLocal(value.startDate);
+        const end = parseISODateStringLocal(value.endDate);
+        if (!start || !end) {
+          return '';
+        }
 
-        // 格式化为中文日期
-        const startStr = format(start, 'yyyy年M月d日', { locale: zhCN });
-        const endStr = format(end, 'yyyy年M月d日', { locale: zhCN });
+        const startStr = formatChineseDateLocal(start);
+        const endStr = formatChineseDateLocal(end);
 
         return `${startStr} - ${endStr}`;
       } catch (error) {
@@ -242,8 +316,8 @@ export const DateRangePicker = React.memo(
     const handleConfirm = React.useCallback(() => {
       if (date?.from && date?.to) {
         onChange({
-          startDate: format(date.from, 'yyyy-MM-dd'),
-          endDate: format(date.to, 'yyyy-MM-dd'),
+          startDate: toISODateStringLocal(date.from),
+          endDate: toISODateStringLocal(date.to),
         });
         setIsOpen(false);
       }
@@ -328,12 +402,13 @@ export const DateRangePicker = React.memo(
                   selected={date}
                   onSelect={handleCalendarSelect}
                   numberOfMonths={1}
+                  weekStartsOn={1}
                   disabled={date => {
                     if (minDate && date < minDate) return true;
                     if (maxDate && date > maxDate) return true;
                     return false;
                   }}
-                  locale={zhCN}
+                  locale={calendarLocale}
                 />
 
                 {/* 底部操作按钮 */}

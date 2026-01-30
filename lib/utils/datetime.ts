@@ -3,8 +3,7 @@
  * 解决项目中时间格式不一致的问题
  */
 
-import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
+import { format, isValid, parseISO } from 'date-fns';
 
 /**
  * 时间格式常量
@@ -232,7 +231,7 @@ export function formatPaymentDateTime(
   if (!input) {
     if (fallbackDate) {
       try {
-        return format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN });
+        return format(fallbackDate, DATE_FORMATS.DATETIME);
       } catch {
         return '';
       }
@@ -245,7 +244,7 @@ export function formatPaymentDateTime(
     trimmed = input.trim();
     if (!trimmed) {
       return fallbackDate
-        ? format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN })
+        ? format(fallbackDate, DATE_FORMATS.DATETIME)
         : '';
     }
   }
@@ -257,7 +256,7 @@ export function formatPaymentDateTime(
   if (!date) {
     if (fallbackDate) {
       try {
-        return format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN });
+        return format(fallbackDate, DATE_FORMATS.DATETIME);
       } catch {
         return '';
       }
@@ -266,16 +265,14 @@ export function formatPaymentDateTime(
   }
 
   try {
-    const formatted = format(date, DATE_FORMATS.DATETIME, { locale: zhCN });
+    const formatted = format(date, DATE_FORMATS.DATETIME);
 
     if (
       (isDateOnly || isExplicitMidnight || formatted.endsWith('00:00')) &&
       fallbackDate
     ) {
-      const datePart = format(date, DATE_FORMATS.DATE, { locale: zhCN });
-      const timePart = format(fallbackDate, DATE_FORMATS.TIME, {
-        locale: zhCN,
-      });
+      const datePart = format(date, DATE_FORMATS.DATE);
+      const timePart = format(fallbackDate, DATE_FORMATS.TIME);
       if (timePart !== '00:00') {
         return `${datePart} ${timePart}`;
       }
@@ -285,7 +282,7 @@ export function formatPaymentDateTime(
   } catch {
     if (fallbackDate) {
       try {
-        return format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN });
+        return format(fallbackDate, DATE_FORMATS.DATETIME);
       } catch {
         return '';
       }
@@ -316,7 +313,7 @@ export function formatDate(
   }
 
   try {
-    return format(date, formatStr, { locale: zhCN });
+    return format(date, formatStr);
   } catch {
     return '';
   }
@@ -335,7 +332,7 @@ export function formatDateTime(
   }
 
   try {
-    return format(date, formatStr, { locale: zhCN });
+    return format(date, formatStr);
   } catch {
     return '';
   }
@@ -360,19 +357,7 @@ export function formatDateTimeCN(input: DateInput): string {
  * 统一替换项目中重复的formatTimeAgo函数
  */
 export function formatTimeAgo(input: DateInput): string {
-  const date = parseDate(input);
-  if (!date) {
-    return '';
-  }
-
-  try {
-    return formatDistanceToNow(date, {
-      addSuffix: true,
-      locale: zhCN,
-    });
-  } catch {
-    return '';
-  }
+  return getRelativeTimeText(input);
 }
 
 /**
