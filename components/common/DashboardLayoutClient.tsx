@@ -1,6 +1,7 @@
 'use client';
 
 import type { Session } from 'next-auth';
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -14,12 +15,16 @@ import { cn } from '@/lib/utils';
 import { Breadcrumb } from './Breadcrumb';
 import { BreadcrumbProvider } from './BreadcrumbContext';
 import { Header } from './Header';
-import { MobileNav } from './MobileNav';
 import {
   bottomNavigationItems,
   navigationItems,
 } from './sidebar-navigation-config';
 import { SidebarClient } from './SidebarClient';
+
+const MobileNav = dynamic(
+  () => import('./MobileNav').then(mod => mod.MobileNav),
+  { ssr: false }
+);
 
 interface DashboardLayoutClientProps {
   /** 子组件 */
