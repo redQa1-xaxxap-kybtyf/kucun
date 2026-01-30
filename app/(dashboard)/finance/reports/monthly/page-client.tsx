@@ -16,13 +16,6 @@ import * as React from 'react';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
@@ -254,37 +247,31 @@ export function MonthlyReportClient() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-4">
-              <Select
+              <select
                 value={year.toString()}
-                onValueChange={value => setYear(parseInt(value, 10))}
+                onChange={e => setYear(parseInt(e.target.value, 10))}
+                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-32 rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                aria-label="年份"
               >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map(y => (
-                    <SelectItem key={y} value={y.toString()}>
-                      {y}年
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {yearOptions.map(y => (
+                  <option key={y} value={y.toString()}>
+                    {y}年
+                  </option>
+                ))}
+              </select>
 
-              <Select
+              <select
                 value={month.toString()}
-                onValueChange={value => setMonth(parseInt(value, 10))}
+                onChange={e => setMonth(parseInt(e.target.value, 10))}
+                className="border-input bg-background ring-offset-background focus:ring-ring h-10 w-32 rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+                aria-label="月份"
               >
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {monthOptions.map(m => (
-                    <SelectItem key={m} value={m.toString()}>
-                      {m}月
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {monthOptions.map(m => (
+                  <option key={m} value={m.toString()}>
+                    {m}月
+                  </option>
+                ))}
+              </select>
 
               <Button
                 variant="outline"
