@@ -8,7 +8,7 @@ import {
   type UseQueryOptions,
 } from '@tanstack/react-query';
 
-import { dashboardConfig } from '@/lib/env';
+import { dashboardConfig } from '@/lib/config/dashboard';
 import type {
   BusinessOverview,
   CustomerSalesRanking,
