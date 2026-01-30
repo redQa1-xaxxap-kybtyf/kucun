@@ -3,7 +3,131 @@
  * 解决项目中时间格式不一致的问题
  */
 
-import { format, isValid, parseISO } from 'date-fns';
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const DATETIME_WITH_SPACE_REGEX =
+  /^(\d{4})-(\d{1,2})-(\d{1,2})[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?(?:\.(\d{1,3}))?$/;
+
+function isValidDateValue(date: Date) {
+  return Number.isFinite(date.getTime());
+}
+
+function pad2(value: number) {
+  return value.toString().padStart(2, '0');
+}
+
+function pad3(value: number) {
+  return value.toString().padStart(3, '0');
+}
+
+function normalizeMilliseconds(msRaw: string | undefined) {
+  if (!msRaw) {
+    return 0;
+  }
+  const parsed = Number(msRaw);
+  if (!Number.isFinite(parsed)) {
+    return 0;
+  }
+
+  if (msRaw.length === 1) return parsed * 100;
+  if (msRaw.length === 2) return parsed * 10;
+  return parsed;
+}
+
+function parseDateOnlyLocal(value: string) {
+  if (!DATE_ONLY_REGEX.test(value)) {
+    return null;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  if ([year, month, day].some(part => Number.isNaN(part))) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function parseDateTimeLocal(value: string) {
+  const match = DATETIME_WITH_SPACE_REGEX.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const hour = Number(match[4]);
+  const minute = Number(match[5]);
+  const second = match[6] ? Number(match[6]) : 0;
+  const millisecond = normalizeMilliseconds(match[7]);
+
+  if (
+    [year, month, day, hour, minute, second].some(part => Number.isNaN(part))
+  ) {
+    return null;
+  }
+
+  if (
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31 ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59 ||
+    millisecond < 0 ||
+    millisecond > 999
+  ) {
+    return null;
+  }
+
+  const date = new Date(year, month - 1, day, hour, minute, second, millisecond);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day ||
+    date.getHours() !== hour ||
+    date.getMinutes() !== minute ||
+    date.getSeconds() !== second
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
+function formatWithPattern(date: Date, pattern: string) {
+  const tokens: Record<string, string> = {
+    yyyy: String(date.getFullYear()),
+    MM: pad2(date.getMonth() + 1),
+    dd: pad2(date.getDate()),
+    HH: pad2(date.getHours()),
+    mm: pad2(date.getMinutes()),
+    ss: pad2(date.getSeconds()),
+    SSS: pad3(date.getMilliseconds()),
+    M: String(date.getMonth() + 1),
+    d: String(date.getDate()),
+    H: String(date.getHours()),
+    m: String(date.getMinutes()),
+    s: String(date.getSeconds()),
+  };
+
+  return pattern.replace(
+    /yyyy|MM|dd|HH|mm|ss|SSS|M|d|H|m|s/g,
+    token => tokens[token] ?? token
+  );
+}
 
 /**
  * 时间格式常量
@@ -43,24 +167,32 @@ export function parseDate(input: DateInput): Date | null {
 
   try {
     if (input instanceof Date) {
-      return isValid(input) ? input : null;
+      return isValidDateValue(input) ? input : null;
     }
 
     if (typeof input === 'string') {
-      // 尝试解析ISO字符串
-      const parsed = parseISO(input);
-      if (isValid(parsed)) {
-        return parsed;
+      const trimmed = input.trim();
+      if (!trimmed) {
+        return null;
       }
 
-      // 尝试直接创建Date对象
-      const date = new Date(input);
-      return isValid(date) ? date : null;
+      const dateOnly = parseDateOnlyLocal(trimmed);
+      if (dateOnly) {
+        return dateOnly;
+      }
+
+      const dateTimeLocal = parseDateTimeLocal(trimmed);
+      if (dateTimeLocal) {
+        return dateTimeLocal;
+      }
+
+      const date = new Date(trimmed);
+      return isValidDateValue(date) ? date : null;
     }
 
     if (typeof input === 'number') {
       const date = new Date(input);
-      return isValid(date) ? date : null;
+      return isValidDateValue(date) ? date : null;
     }
 
     return null;
@@ -185,8 +317,6 @@ export function parseShippingDate(
   }
 }
 
-const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
 /**
  * 将仅包含日期（yyyy-MM-dd）的字符串解析为本地时区的 Date 对象
  * 解决 new Date('yyyy-MM-dd') 默认按 UTC 解析导致的 8 小时时差问题
@@ -203,12 +333,9 @@ export function parseLocalDateString(
     return null;
   }
 
-  if (DATE_ONLY_REGEX.test(trimmed)) {
-    const [year, month, day] = trimmed.split('-').map(Number);
-    if ([year, month, day].some(value => Number.isNaN(value))) {
-      return null;
-    }
-    return new Date(year, month - 1, day);
+  const dateOnly = parseDateOnlyLocal(trimmed);
+  if (dateOnly) {
+    return dateOnly;
   }
 
   return parseDate(trimmed);
@@ -231,7 +358,7 @@ export function formatPaymentDateTime(
   if (!input) {
     if (fallbackDate) {
       try {
-        return format(fallbackDate, DATE_FORMATS.DATETIME);
+        return formatWithPattern(fallbackDate, DATE_FORMATS.DATETIME);
       } catch {
         return '';
       }
@@ -244,7 +371,7 @@ export function formatPaymentDateTime(
     trimmed = input.trim();
     if (!trimmed) {
       return fallbackDate
-        ? format(fallbackDate, DATE_FORMATS.DATETIME)
+        ? formatWithPattern(fallbackDate, DATE_FORMATS.DATETIME)
         : '';
     }
   }
@@ -256,7 +383,7 @@ export function formatPaymentDateTime(
   if (!date) {
     if (fallbackDate) {
       try {
-        return format(fallbackDate, DATE_FORMATS.DATETIME);
+        return formatWithPattern(fallbackDate, DATE_FORMATS.DATETIME);
       } catch {
         return '';
       }
@@ -265,14 +392,17 @@ export function formatPaymentDateTime(
   }
 
   try {
-    const formatted = format(date, DATE_FORMATS.DATETIME);
+    const formatted = formatWithPattern(date, DATE_FORMATS.DATETIME);
 
     if (
-      (isDateOnly || isExplicitMidnight || formatted.endsWith('00:00')) &&
+      (isDateOnly ||
+        isExplicitMidnight ||
+        formatted.endsWith('00:00') ||
+        formatted.endsWith('00:00:00')) &&
       fallbackDate
     ) {
-      const datePart = format(date, DATE_FORMATS.DATE);
-      const timePart = format(fallbackDate, DATE_FORMATS.TIME);
+      const datePart = formatWithPattern(date, DATE_FORMATS.DATE);
+      const timePart = formatWithPattern(fallbackDate, DATE_FORMATS.TIME);
       if (timePart !== '00:00') {
         return `${datePart} ${timePart}`;
       }
@@ -282,7 +412,7 @@ export function formatPaymentDateTime(
   } catch {
     if (fallbackDate) {
       try {
-        return format(fallbackDate, DATE_FORMATS.DATETIME);
+        return formatWithPattern(fallbackDate, DATE_FORMATS.DATETIME);
       } catch {
         return '';
       }
@@ -313,7 +443,7 @@ export function formatDate(
   }
 
   try {
-    return format(date, formatStr);
+    return formatWithPattern(date, formatStr);
   } catch {
     return '';
   }
@@ -332,7 +462,7 @@ export function formatDateTime(
   }
 
   try {
-    return format(date, formatStr);
+    return formatWithPattern(date, formatStr);
   } catch {
     return '';
   }
