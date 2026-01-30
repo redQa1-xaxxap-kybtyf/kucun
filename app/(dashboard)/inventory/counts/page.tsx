@@ -45,6 +45,8 @@ export default async function CountsPage({
     redirect('/dashboard');
   }
 
+  const hasManagePermission = can(session.user, 'inventory:manage');
+
   // 解析查询参数
   const params = await searchParams;
   const page = parseInt(params.page || '1', 10);
@@ -63,5 +65,10 @@ export default async function CountsPage({
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
   };
 
-  return <CountsPageClient initialParams={initialParams} />;
+  return (
+    <CountsPageClient
+      initialParams={initialParams}
+      hasManagePermission={hasManagePermission}
+    />
+  );
 }

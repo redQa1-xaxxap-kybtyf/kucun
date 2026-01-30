@@ -4,12 +4,10 @@ import { ClipboardCheck, Plus } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
-import { can } from '@/lib/auth/permissions';
 import type {
   CountStatus,
   CountType,
@@ -19,6 +17,7 @@ import type {
 import { CountRecordsFilters } from './components/CountRecordsFilters';
 
 interface CountsPageClientProps {
+  hasManagePermission: boolean;
   initialParams: {
     page: number;
     pageSize: number;
@@ -46,15 +45,11 @@ const CountList = dynamic(
   }
 );
 
-export function CountsPageClient({ initialParams }: CountsPageClientProps) {
+export function CountsPageClient({
+  initialParams,
+  hasManagePermission,
+}: CountsPageClientProps) {
   const router = useRouter();
-  const { data: session } = useSession();
-
-  // 权限检查
-  const hasManagePermission = React.useMemo(
-    () => can(session?.user ?? null, 'inventory:manage'),
-    [session?.user]
-  );
 
   // 查询参数状态
   const [filters, setFilters] = React.useState<InventoryCountQueryParams>({
