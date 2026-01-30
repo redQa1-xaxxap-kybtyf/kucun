@@ -13,13 +13,6 @@ import {
 } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Pagination } from '@/components/ui/pagination';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 
 import { StatementCardItem } from './statements-card-item';
@@ -105,78 +98,40 @@ function FilterControls({
         </div>
 
         {/* Type Filter */}
-        <Select
-          value={filters.type || 'all'}
-          onValueChange={value =>
-            onFilter?.('type', value === 'all' ? undefined : value)
-          }
-        >
-          <SelectTrigger className="h-14 w-full rounded-2xl border-none bg-white font-black shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md sm:w-[200px] lg:w-[180px]">
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder="全局类型" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-none shadow-2xl">
-            <SelectItem
-              value="all"
-              className="rounded-xl text-xs font-black tracking-widest uppercase"
-            >
-              全部伙伴类型
-            </SelectItem>
-            <SelectItem
-              value="customer"
-              className="rounded-xl text-xs font-black tracking-widest text-blue-600 uppercase"
-            >
-              战略合作客户
-            </SelectItem>
-            <SelectItem
-              value="supplier"
-              className="rounded-xl text-xs font-black tracking-widest text-purple-600 uppercase"
-            >
-              核心供应厂家
-            </SelectItem>
-            <SelectItem
-              value="partner"
-              className="rounded-xl text-xs font-black tracking-widest text-amber-600 uppercase"
-            >
-              其他往来单位
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="relative w-full sm:w-[200px] lg:w-[180px]">
+          <SlidersHorizontal className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <select
+            value={filters.type || 'all'}
+            onChange={e =>
+              onFilter?.(
+                'type',
+                e.target.value === 'all' ? undefined : e.target.value
+              )
+            }
+            className="h-14 w-full rounded-2xl border-none bg-white pr-10 pl-11 text-sm font-black shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md focus:ring-2 focus:ring-blue-500/10 focus:outline-hidden"
+            aria-label="伙伴类型"
+          >
+            <option value="all">全部伙伴类型</option>
+            <option value="customer">战略合作客户</option>
+            <option value="supplier">核心供应厂家</option>
+            <option value="partner">其他往来单位</option>
+          </select>
+        </div>
 
         {/* Sort By Filter */}
-        <Select
-          value={filters.sortBy || 'totalAmount'}
-          onValueChange={value => onFilter?.('sortBy', value)}
-        >
-          <SelectTrigger className="h-14 w-full rounded-2xl border-none bg-white font-black shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md sm:w-[200px] lg:w-[180px]">
-            <div className="flex items-center gap-2">
-              <ArrowUpDown className="h-4 w-4 text-slate-400" />
-              <SelectValue placeholder="排序准则" />
-            </div>
-          </SelectTrigger>
-          <SelectContent className="rounded-2xl border-none shadow-2xl">
-            <SelectItem
-              value="totalAmount"
-              className="rounded-xl text-xs font-black tracking-widest uppercase"
-            >
-              按累计流水金额
-            </SelectItem>
-            <SelectItem
-              value="pendingAmount"
-              className="rounded-xl text-xs font-black tracking-widest text-rose-600 uppercase"
-            >
-              按当前欠款余额
-            </SelectItem>
-            <SelectItem
-              value="totalOrders"
-              className="rounded-xl text-xs font-black tracking-widest uppercase"
-            >
-              按对账单项总数
-            </SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="relative w-full sm:w-[200px] lg:w-[180px]">
+          <ArrowUpDown className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <select
+            value={filters.sortBy || 'totalAmount'}
+            onChange={e => onFilter?.('sortBy', e.target.value)}
+            className="h-14 w-full rounded-2xl border-none bg-white pr-10 pl-11 text-sm font-black shadow-[0_8px_30px_rgba(0,0,0,0.04)] transition-all hover:shadow-md focus:ring-2 focus:ring-blue-500/10 focus:outline-hidden"
+            aria-label="排序准则"
+          >
+            <option value="totalAmount">按累计流水金额</option>
+            <option value="pendingAmount">按当前欠款余额</option>
+            <option value="totalOrders">按对账单项总数</option>
+          </select>
+        </div>
 
         {/* Date Range Picker Area */}
         <div className="flex-none lg:w-[320px]">
