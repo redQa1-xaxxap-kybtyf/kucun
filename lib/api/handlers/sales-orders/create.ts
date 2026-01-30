@@ -128,260 +128,349 @@ const mapCreatedOrder = (
   };
 };
 
+function isSalesOrderOrderNumberUniqueConstraintError(error: unknown) {
+  if (error instanceof PrismaClient.PrismaClientKnownRequestError) {
+    if (error.code !== 'P2002') {
+      return false;
+    }
+
+    const message = typeof error.message === 'string' ? error.message : '';
+    if (
+      message.includes('sales_orders_order_number_key') ||
+      message.includes('orderNumber') ||
+      message.includes('order_number')
+    ) {
+      return true;
+    }
+
+    const meta = (error.meta ?? {}) as Record<string, unknown>;
+    const target = meta.target;
+    if (Array.isArray(target) && target.includes('orderNumber')) {
+      return true;
+    }
+    if (typeof target === 'string' && target.includes('orderNumber')) {
+      return true;
+    }
+
+    const constraint = meta.constraint;
+    if (
+      typeof constraint === 'string' &&
+      (constraint.includes('sales_orders_order_number_key') ||
+        constraint.includes('orderNumber') ||
+        constraint.includes('order_number'))
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  const message = error instanceof Error ? error.message : '';
+  return (
+    message.includes('sales_orders_order_number_key') ||
+    /unique constraint failed.*orderNumber/i.test(message) ||
+    /UNIQUE constraint failed.*sales_orders.*orderNumber/i.test(message) ||
+    /duplicate key.*orderNumber/i.test(message)
+  );
+}
+
 export async function createSalesOrder(data: CreateInput, userId: string) {
   const validatedData = salesOrderCreateSchema.parse(data);
   const transferMode = normalizeTransferMode(validatedData);
-  const orderNumber = await generateSalesOrderNumber();
   const financials = calculateFinancials(validatedData, transferMode);
 
-  const order = await prisma.$transaction(async tx => {
-    await ensureCustomerExists(tx, validatedData.customerId);
-    await ensureSupplierExists(tx, validatedData.supplierId);
-    await ensureProductsExist(tx, validatedData.items);
+  const maxCreateRetries = 10;
+  let attempt = 0;
+  let order: CreatedOrderResult | undefined;
 
-    // 处理临时产品：为调货销售的手动输入产品创建/查找临时产品记录
-    const temporaryProductIds = new Map<number, string>(); // itemIndex -> temporaryProductId
+  while (!order) {
+    const orderNumber = await generateSalesOrderNumber();
 
-    if (validatedData.orderType === 'TRANSFER' && validatedData.supplierId) {
-      for (let i = 0; i < validatedData.items.length; i++) {
-        const item = validatedData.items[i];
-        const tempProductData = buildTemporaryProductDataFromOrderItem(
-          item,
-          validatedData.supplierId,
-          userId
-        );
+    try {
+      order = await prisma.$transaction(async tx => {
+        await ensureCustomerExists(tx, validatedData.customerId);
+        await ensureSupplierExists(tx, validatedData.supplierId);
+        await ensureProductsExist(tx, validatedData.items);
 
-        if (tempProductData) {
-          const tempProduct = await findOrCreateTemporaryProduct(
-            tx,
-            tempProductData
-          );
-          temporaryProductIds.set(i, tempProduct.id);
-        }
-      }
-    }
+        // 处理临时产品：为调货销售的手动输入产品创建/查找临时产品记录
+        const temporaryProductIds = new Map<number, string>(); // itemIndex -> temporaryProductId
 
-    const salesOrder = await tx.salesOrder.create({
-      data: {
-        orderNumber,
-        customerId: validatedData.customerId,
-        userId,
-        supplierId: validatedData.supplierId,
-        status: validatedData.status || 'draft',
-        orderType: validatedData.orderType,
-        transferMode,
-        costAmount: financials.costAmount,
-        profitAmount: financials.profitAmount,
-        itemsAmount: financials.itemsAmount,
-        additionalFees: financials.additionalFees,
-        expenseAmount: financials.expenseAmount,
-        roundingAdjustment: financials.roundingAdjustment,
-        totalAmount: financials.totalAmount,
-        remarks: validatedData.remarks,
-        items: {
-          create: buildOrderItemsInput(
-            validatedData,
-            transferMode,
-            temporaryProductIds
-          ),
-        },
-        feeItems: {
-          create: buildFeeItemsInput(validatedData),
-        },
-      },
-      select: createSelect,
-    });
-
-    if (shouldReserveInventory(validatedData, transferMode)) {
-      const reservationInput = {
-        ...validatedData,
-        items: salesOrder.items.map(item => ({
-          id: item.id,
-          productId: item.productId ?? undefined,
-          variantId: item.variantId ?? undefined,
-          batchNumber: item.batchNumber ?? undefined,
-          colorCode: item.colorCode ?? undefined,
-          productionDate: item.productionDate ?? undefined,
-          quantity: Number(item.quantity ?? 0),
-          localQuantity: Number(item.localQuantity ?? 0),
-          isManualProduct: Boolean(item.isManualProduct),
-        })),
-      };
-
-      const reservations = await reserveInventory(
-        tx,
-        reservationInput as any,
-        transferMode
-      );
-
-      const itemsById = new Map(salesOrder.items.map(item => [item.id, item]));
-      for (const reservation of reservations) {
-        if (!reservation.salesOrderItemId) {
-          continue;
-        }
-
-        const orderItem = itemsById.get(reservation.salesOrderItemId);
-        if (!orderItem) {
-          continue;
-        }
-
-        const updateData: {
-          variantId?: string | null;
-          batchNumber?: string | null;
-        } = {};
-
-        if (!orderItem.variantId && reservation.variantId) {
-          updateData.variantId = reservation.variantId;
-        }
-
-        const existingBatchNumber = (orderItem.batchNumber ?? '').trim();
-        const reservedBatchNumber = (reservation.batchNumber ?? '').trim();
         if (
-          existingBatchNumber.length === 0 &&
-          reservedBatchNumber.length > 0
+          validatedData.orderType === 'TRANSFER' &&
+          validatedData.supplierId
         ) {
-          updateData.batchNumber = reservedBatchNumber;
+          for (let i = 0; i < validatedData.items.length; i++) {
+            const item = validatedData.items[i];
+            const tempProductData = buildTemporaryProductDataFromOrderItem(
+              item,
+              validatedData.supplierId,
+              userId
+            );
+
+            if (tempProductData) {
+              const tempProduct = await findOrCreateTemporaryProduct(
+                tx,
+                tempProductData
+              );
+              temporaryProductIds.set(i, tempProduct.id);
+            }
+          }
         }
 
-        if (Object.keys(updateData).length > 0) {
-          await tx.salesOrderItem.update({
-            where: { id: orderItem.id },
-            data: updateData,
-          });
-
-          if (updateData.variantId) {
-            orderItem.variantId = updateData.variantId;
-          }
-          if (updateData.batchNumber) {
-            orderItem.batchNumber = updateData.batchNumber;
-          }
-        }
-      }
-    }
-
-    // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
-    if (
-      env.EXPENSE_AUTO_CREATE &&
-      validatedData.feeItems &&
-      validatedData.feeItems.length > 0
-    ) {
-      try {
-        await ensureCompanyExpenses({
-          tx,
-          sourceType: 'sales_order',
-          sourceId: salesOrder.id,
-          sourceNumber: salesOrder.orderNumber,
-          userId,
-          supplierId: validatedData.supplierId ?? null,
-          feeItems: validatedData.feeItems,
+        const salesOrder = await tx.salesOrder.create({
+          data: {
+            orderNumber,
+            customerId: validatedData.customerId,
+            userId,
+            supplierId: validatedData.supplierId,
+            status: validatedData.status || 'draft',
+            orderType: validatedData.orderType,
+            transferMode,
+            costAmount: financials.costAmount,
+            profitAmount: financials.profitAmount,
+            itemsAmount: financials.itemsAmount,
+            additionalFees: financials.additionalFees,
+            expenseAmount: financials.expenseAmount,
+            roundingAdjustment: financials.roundingAdjustment,
+            totalAmount: financials.totalAmount,
+            remarks: validatedData.remarks,
+            items: {
+              create: buildOrderItemsInput(
+                validatedData,
+                transferMode,
+                temporaryProductIds
+              ),
+            },
+            feeItems: {
+              create: buildFeeItemsInput(validatedData),
+            },
+          },
+          select: createSelect,
         });
-      } catch (e) {
-        logger.error(
-          'sales-orders',
-          '自动创建费用记录失败，将回滚订单事务',
-          e,
+
+        if (shouldReserveInventory(validatedData, transferMode)) {
+          const reservationInput = {
+            ...validatedData,
+            items: salesOrder.items.map(item => ({
+              id: item.id,
+              productId: item.productId ?? undefined,
+              variantId: item.variantId ?? undefined,
+              batchNumber: item.batchNumber ?? undefined,
+              colorCode: item.colorCode ?? undefined,
+              productionDate: item.productionDate ?? undefined,
+              quantity: Number(item.quantity ?? 0),
+              localQuantity: Number(item.localQuantity ?? 0),
+              isManualProduct: Boolean(item.isManualProduct),
+            })),
+          };
+
+          const reservations = await reserveInventory(
+            tx,
+            reservationInput as any,
+            transferMode
+          );
+
+          const itemsById = new Map(
+            salesOrder.items.map(item => [item.id, item])
+          );
+          for (const reservation of reservations) {
+            if (!reservation.salesOrderItemId) {
+              continue;
+            }
+
+            const orderItem = itemsById.get(reservation.salesOrderItemId);
+            if (!orderItem) {
+              continue;
+            }
+
+            const updateData: {
+              variantId?: string | null;
+              batchNumber?: string | null;
+            } = {};
+
+            if (!orderItem.variantId && reservation.variantId) {
+              updateData.variantId = reservation.variantId;
+            }
+
+            const existingBatchNumber = (orderItem.batchNumber ?? '').trim();
+            const reservedBatchNumber = (reservation.batchNumber ?? '').trim();
+            if (
+              existingBatchNumber.length === 0 &&
+              reservedBatchNumber.length > 0
+            ) {
+              updateData.batchNumber = reservedBatchNumber;
+            }
+
+            if (Object.keys(updateData).length > 0) {
+              await tx.salesOrderItem.update({
+                where: { id: orderItem.id },
+                data: updateData,
+              });
+
+              if (updateData.variantId) {
+                orderItem.variantId = updateData.variantId;
+              }
+              if (updateData.batchNumber) {
+                orderItem.batchNumber = updateData.batchNumber;
+              }
+            }
+          }
+        }
+
+        // 阶段2：自动创建公司承担费用的 ExpenseRecord（幂等，必须成功）
+        if (
+          env.EXPENSE_AUTO_CREATE &&
+          validatedData.feeItems &&
+          validatedData.feeItems.length > 0
+        ) {
+          try {
+            await ensureCompanyExpenses({
+              tx,
+              sourceType: 'sales_order',
+              sourceId: salesOrder.id,
+              sourceNumber: salesOrder.orderNumber,
+              userId,
+              supplierId: validatedData.supplierId ?? null,
+              feeItems: validatedData.feeItems,
+            });
+          } catch (e) {
+            logger.error(
+              'sales-orders',
+              '自动创建费用记录失败，将回滚订单事务',
+              e,
+              {
+                orderId: salesOrder.id,
+                orderNumber: salesOrder.orderNumber,
+              }
+            );
+            // 费用台账是利润报表的唯一真源，这里必须失败即回滚，避免订单创建成功但费用缺失
+            throw e;
+          }
+        }
+
+        await recordCustomerPriceHistory(tx, validatedData, salesOrder.id);
+        await maybeCreatePayable(
+          tx,
+          validatedData,
+          financials.costAmount,
+          userId,
           {
-            orderId: salesOrder.id,
+            id: salesOrder.id,
             orderNumber: salesOrder.orderNumber,
           }
         );
-        // 费用台账是利润报表的唯一真源，这里必须失败即回滚，避免订单创建成功但费用缺失
-        throw e;
-      }
-    }
 
-    await recordCustomerPriceHistory(tx, validatedData, salesOrder.id);
-    await maybeCreatePayable(tx, validatedData, financials.costAmount, userId, {
-      id: salesOrder.id,
-      orderNumber: salesOrder.orderNumber,
-    });
+        // 客户直发订单自动创建采购订单
+        if (
+          validatedData.orderType === 'TRANSFER' &&
+          transferMode === 'SUPPLIER_ONLY' &&
+          validatedData.status === 'confirmed' &&
+          validatedData.supplierId &&
+          financials.costAmount > 0
+        ) {
+          try {
+            await createPurchaseOrderForTransfer(
+              tx,
+              {
+                ...validatedData,
+                // ✅ 后端统一真源：采购总额应使用本次计算出的成本汇总，而非依赖前端传入
+                costAmount: financials.costAmount,
+              },
+              salesOrder,
+              userId
+            );
+          } catch (error) {
+            logger.error('sales-orders', '创建采购订单失败', error, {
+              salesOrderId: salesOrder.id,
+              salesOrderNumber: salesOrder.orderNumber,
+            });
+            // 调货直发订单必须成功创建采购订单，否则会造成事务不一致（订单已确认但缺采购单）
+            throw new Error('创建采购订单失败，已回滚订单创建，请重试');
+          }
+        }
 
-    // 客户直发订单自动创建采购订单
-    if (
-      validatedData.orderType === 'TRANSFER' &&
-      transferMode === 'SUPPLIER_ONLY' &&
-      validatedData.status === 'confirmed' &&
-      validatedData.supplierId &&
-      financials.costAmount > 0
-    ) {
-      try {
-        await createPurchaseOrderForTransfer(
-          tx,
-          {
-            ...validatedData,
-            // ✅ 后端统一真源：采购总额应使用本次计算出的成本汇总，而非依赖前端传入
-            costAmount: financials.costAmount,
-          },
-          salesOrder,
-          userId
+        const roundedTotalAmount = Number(
+          Number(financials.totalAmount ?? 0).toFixed(2)
         );
-      } catch (error) {
-        logger.error('sales-orders', '创建采购订单失败', error, {
-          salesOrderId: salesOrder.id,
-          salesOrderNumber: salesOrder.orderNumber,
-        });
-        // 调货直发订单必须成功创建采购订单，否则会造成事务不一致（订单已确认但缺采购单）
-        throw new Error('创建采购订单失败，已回滚订单创建，请重试');
+        const roundedRoundingAmount = Number(
+          Number(financials.roundingAdjustment ?? 0).toFixed(2)
+        );
+        const actualOrderDue = Number(
+          (roundedTotalAmount + roundedRoundingAmount).toFixed(2)
+        );
+
+        if (salesOrder.status === 'confirmed' && actualOrderDue > 0) {
+          const paymentNumber = await generatePaymentNumber(tx);
+          const paymentAmount = roundedTotalAmount;
+          await tx.paymentRecord.create({
+            data: {
+              paymentNumber,
+              salesOrderId: salesOrder.id,
+              customerId: salesOrder.customerId,
+              userId,
+              paymentType: 'order_payment',
+              paymentMethod: 'cash',
+              paymentAmount,
+              actualPaymentAmount: 0,
+              roundingAmount: roundedRoundingAmount,
+              appliedAmount: 0,
+              paymentDate: new Date(),
+              status: 'pending',
+              remarks: `系统自动生成：销售订单 ${salesOrder.orderNumber} 确认应收`,
+            },
+          });
+        }
+
+        if (validatedData.usePrepayment) {
+          const prepaymentResult = await applyPrepaymentToOrder(
+            tx,
+            validatedData.customerId,
+            salesOrder.id,
+            actualOrderDue,
+            validatedData.prepaymentAmount ?? undefined
+          );
+
+          if (prepaymentResult.totalApplied > 0) {
+            await tx.salesOrder.update({
+              where: { id: salesOrder.id },
+              data: {
+                paidAmount: prepaymentResult.totalApplied,
+              },
+            });
+
+            salesOrder.paidAmount = new PrismaClient.Decimal(
+              prepaymentResult.totalApplied
+            );
+          }
+        }
+
+        return salesOrder;
+      }, getLongTransactionOptions());
+    } catch (error) {
+      attempt += 1;
+
+      if (
+        attempt >= maxCreateRetries ||
+        !isSalesOrderOrderNumberUniqueConstraintError(error)
+      ) {
+        throw error;
       }
-    }
 
-    const roundedTotalAmount = Number(
-      Number(financials.totalAmount ?? 0).toFixed(2)
-    );
-    const roundedRoundingAmount = Number(
-      Number(financials.roundingAdjustment ?? 0).toFixed(2)
-    );
-    const actualOrderDue = Number(
-      (roundedTotalAmount + roundedRoundingAmount).toFixed(2)
-    );
-
-    if (salesOrder.status === 'confirmed' && actualOrderDue > 0) {
-      const paymentNumber = await generatePaymentNumber(tx);
-      const paymentAmount = roundedTotalAmount;
-      await tx.paymentRecord.create({
-        data: {
-          paymentNumber,
-          salesOrderId: salesOrder.id,
-          customerId: salesOrder.customerId,
-          userId,
-          paymentType: 'order_payment',
-          paymentMethod: 'cash',
-          paymentAmount,
-          actualPaymentAmount: 0,
-          roundingAmount: roundedRoundingAmount,
-          appliedAmount: 0,
-          paymentDate: new Date(),
-          status: 'pending',
-          remarks: `系统自动生成：销售订单 ${salesOrder.orderNumber} 确认应收`,
-        },
+      const delayMs = Math.min(300, 50 * attempt);
+      logger.warn('sales-orders', '销售订单号冲突，准备重试创建订单', undefined, {
+        attempt,
+        delayMs,
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+              }
+            : error,
       });
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
-
-    if (validatedData.usePrepayment) {
-      const prepaymentResult = await applyPrepaymentToOrder(
-        tx,
-        validatedData.customerId,
-        salesOrder.id,
-        actualOrderDue,
-        validatedData.prepaymentAmount ?? undefined
-      );
-
-      if (prepaymentResult.totalApplied > 0) {
-        await tx.salesOrder.update({
-          where: { id: salesOrder.id },
-          data: {
-            paidAmount: prepaymentResult.totalApplied,
-          },
-        });
-
-        salesOrder.paidAmount = new PrismaClient.Decimal(
-          prepaymentResult.totalApplied
-        );
-      }
-    }
-
-    return salesOrder;
-  }, getLongTransactionOptions());
+  }
 
   try {
     await executeInvalidation(ORDER_STATUS_CHANGE_INVALIDATION, {
