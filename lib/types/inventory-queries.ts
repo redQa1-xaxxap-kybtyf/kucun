@@ -3,7 +3,7 @@
  * 包含API查询参数、响应格式和分页信息
  */
 
-import { paginationConfig } from '../env';
+import { paginationConfig } from '@/lib/config/pagination';
 
 import type { Inventory } from './inventory-core';
 import type {

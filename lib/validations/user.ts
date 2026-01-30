@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 
 /**
  * 用户角色枚举

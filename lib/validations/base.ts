@@ -5,7 +5,7 @@
 
 import { z } from 'zod';
 
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/config/pagination';
 
 // 基础验证规则
 export const baseValidations = {
