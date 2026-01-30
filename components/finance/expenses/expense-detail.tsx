@@ -3,30 +3,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, Edit, FileText, Trash2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { RelativeTime } from '@/components/common/relative-time';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   EXPENSE_RELATED_TYPE_LABELS,
@@ -39,19 +28,34 @@ import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseDetailClientProps {
   expense: ExpenseRecord;
+  hasManagePermission?: boolean;
 }
 
-export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
+const ExpenseDeleteDialog = dynamic(
+  () =>
+    import('./expense-delete-dialog').then(mod => mod.ExpenseDeleteDialog),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+        <div className="w-full max-w-sm rounded-lg bg-[hsl(var(--color-bg-card))] p-6 shadow-lg">
+          <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+            正在加载...
+          </div>
+        </div>
+      </div>
+    ),
+  }
+);
+
+export function ExpenseDetailClient({
+  expense,
+  hasManagePermission = false,
+}: ExpenseDetailClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: session } = useSession();
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-
-  const hasManagePermission = React.useMemo(
-    () => can(session?.user ?? null, 'finance:manage'),
-    [session?.user]
-  );
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -336,32 +340,15 @@ export function ExpenseDetailClient({ expense }: ExpenseDetailClientProps) {
         </Card>
       )}
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除费用记录 <strong>{expense.expenseNumber}</strong> 吗？
-              <br />
-              <span className="text-destructive font-medium">
-                此操作不可撤销，删除后将无法恢复费用记录数据。
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
-              取消
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? '删除中...' : '确认删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {deleteDialogOpen && (
+        <ExpenseDeleteDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          expenseNumber={expense.expenseNumber}
+          isDeleting={deleteMutation.isPending}
+          onConfirm={handleDelete}
+        />
+      )}
     </div>
   );
 }
