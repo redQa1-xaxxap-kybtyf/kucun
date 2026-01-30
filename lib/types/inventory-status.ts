@@ -3,6 +3,8 @@
  * 统一管理所有库存状态、预警级别和显示标签
  */
 
+import { inventoryThresholds } from '@/lib/config/inventory-thresholds';
+
 // 库存状态枚举
 export type InventoryStatus =
   | 'in_stock' // 有库存
@@ -66,13 +68,10 @@ export const ALERT_LEVEL_COLORS: Record<AlertLevel, string> = {
   critical: 'text-[hsl(var(--color-error))]',
 };
 
-// 库存预警阈值配置 - 使用环境配置
-import { inventoryConfig } from '@/lib/env';
-
 export const INVENTORY_THRESHOLDS = {
-  DEFAULT_MIN_QUANTITY: inventoryConfig.defaultMinQuantity,
-  CRITICAL_MIN_QUANTITY: inventoryConfig.criticalMinQuantity,
-  OVERSTOCK_MULTIPLIER: inventoryConfig.overstockMultiplier,
+  DEFAULT_MIN_QUANTITY: inventoryThresholds.defaultMinQuantity,
+  CRITICAL_MIN_QUANTITY: inventoryThresholds.criticalMinQuantity,
+  OVERSTOCK_MULTIPLIER: inventoryThresholds.overstockMultiplier,
 } as const;
 
 /**
