@@ -23,13 +23,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
   deleteTemplate,
@@ -155,21 +148,21 @@ export function TemplateList() {
     <div className="space-y-4">
       {/* 工具栏 */}
       <div className="flex items-center justify-between">
-        <Select value={filterType} onValueChange={setFilterType}>
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="筛选类型" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部类型</SelectItem>
-            <SelectItem value="sales-order">销售订单</SelectItem>
-            <SelectItem value="purchase-order">采购订单</SelectItem>
-            <SelectItem value="factory-shipment">厂家发货</SelectItem>
-            <SelectItem value="inbound-record">仓库进货（入库记录）</SelectItem>
-            <SelectItem value="return-order">退货订单</SelectItem>
-            <SelectItem value="delivery-note">发货单</SelectItem>
-            <SelectItem value="custom">自定义</SelectItem>
-          </SelectContent>
-        </Select>
+        <select
+          value={filterType}
+          onChange={e => setFilterType(e.target.value)}
+          className="border-input bg-background ring-offset-background focus:ring-ring flex h-10 w-40 rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+          aria-label="筛选类型"
+        >
+          <option value="all">全部类型</option>
+          <option value="sales-order">销售订单</option>
+          <option value="purchase-order">采购订单</option>
+          <option value="factory-shipment">厂家发货</option>
+          <option value="inbound-record">仓库进货（入库记录）</option>
+          <option value="return-order">退货订单</option>
+          <option value="delivery-note">发货单</option>
+          <option value="custom">自定义</option>
+        </select>
 
         <Button onClick={handleCreate}>
           <Plus className="mr-1.5 h-4 w-4" />
