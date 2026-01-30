@@ -1,8 +1,23 @@
 'use client';
 
-import * as React from 'react';
+import dynamic from 'next/dynamic';
+import { use } from 'react';
 
-import { RefundProcessForm } from '@/components/finance/refund-process-form';
+const RefundProcessForm = dynamic(
+  () =>
+    import('@/components/finance/refund-process-form').then(
+      mod => mod.RefundProcessForm
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="space-y-4 p-6">
+        <div className="bg-muted h-24 animate-pulse rounded-lg" />
+        <div className="bg-muted h-[520px] animate-pulse rounded-lg" />
+      </div>
+    ),
+  }
+);
 
 interface RefundProcessPageProps {
   params: Promise<{ id: string }>;
@@ -13,11 +28,6 @@ interface RefundProcessPageProps {
  * 复用统一的退款处理表单
  */
 export default function RefundProcessPage({ params }: RefundProcessPageProps) {
-  const [refundId, setRefundId] = React.useState<string>('');
-
-  React.useEffect(() => {
-    params.then(({ id }) => setRefundId(id));
-  }, [params]);
-
-  return <RefundProcessForm refundId={refundId} variant="page" />;
+  const { id } = use(params);
+  return <RefundProcessForm refundId={id} variant="page" />;
 }
