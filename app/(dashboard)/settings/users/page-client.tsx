@@ -21,17 +21,10 @@ import React from 'react';
 
 import { SettingsLayout } from '@/components/settings/SettingsLayout';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
-import { queryKeys } from '@/lib/queryKeys';
+	import { Card, CardContent } from '@/components/ui/card';
+	import { Input } from '@/components/ui/input';
+	import { useToast } from '@/components/ui/use-toast';
+	import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreateUserRequest,
   SettingsApiResponse,
@@ -425,40 +418,40 @@ export default function UsersSettingsPageClient({
         <Card className="overflow-hidden border-slate-200/60 shadow-sm">
           <CardContent className="space-y-6 p-8">
             {/* 操作栏 */}
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-1 flex-wrap items-center gap-3">
-                <div className="relative min-w-[300px] flex-1">
-                  <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
+	            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+	              <div className="flex flex-1 flex-wrap items-center gap-3">
+	                <div className="relative min-w-[300px] flex-1">
+	                  <Search className="absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     placeholder="搜索用户名、邮箱或姓名..."
                     value={searchTerm}
-                    onChange={e => handleSearch(e.target.value)}
-                    className="h-12 border-slate-200 bg-slate-50/50 pl-11 font-medium focus-visible:ring-blue-500"
-                  />
-                </div>
-                <Select value={roleFilter} onValueChange={handleRoleFilter}>
-                  <SelectTrigger className="h-12 w-[140px] border-slate-200 font-medium">
-                    <SelectValue placeholder="角色" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部角色</SelectItem>
-                    <SelectItem value="admin">系统管理员</SelectItem>
-                    <SelectItem value="sales">普通员工</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={handleStatusFilter}>
-                  <SelectTrigger className="h-12 w-[140px] border-slate-200 font-medium">
-                    <SelectValue placeholder="状态" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全部状态</SelectItem>
-                    <SelectItem value="active">正常启用</SelectItem>
-                    <SelectItem value="inactive">锁定禁用</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                size="lg"
+	                    onChange={e => handleSearch(e.target.value)}
+	                    className="h-12 border-slate-200 bg-slate-50/50 pl-11 font-medium focus-visible:ring-blue-500"
+	                  />
+	                </div>
+	                <select
+	                  value={roleFilter}
+	                  onChange={e => handleRoleFilter(e.target.value)}
+	                  className="ring-offset-background focus:ring-blue-500 h-12 w-[140px] rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-medium focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	                  aria-label="角色"
+	                >
+	                  <option value="all">全部角色</option>
+	                  <option value="admin">系统管理员</option>
+	                  <option value="sales">普通员工</option>
+	                </select>
+	                <select
+	                  value={statusFilter}
+	                  onChange={e => handleStatusFilter(e.target.value)}
+	                  className="ring-offset-background focus:ring-blue-500 h-12 w-[140px] rounded-md border border-slate-200 bg-slate-50/50 px-3 py-2 text-sm font-medium focus:ring-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+	                  aria-label="状态"
+	                >
+	                  <option value="all">全部状态</option>
+	                  <option value="active">正常启用</option>
+	                  <option value="inactive">锁定禁用</option>
+	                </select>
+	              </div>
+	              <Button
+	                size="lg"
                 onClick={handleCreateUser}
                 disabled={isLoading || isAnyMutationLoading}
                 className="h-12 bg-slate-900 px-8 font-bold shadow-md hover:bg-slate-800"
