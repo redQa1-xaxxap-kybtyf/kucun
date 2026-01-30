@@ -16,10 +16,21 @@ import { getErrorMessage } from '@/lib/utils/error-handler';
 
 import { AmountSummaryCards } from './components/AmountSummaryCards';
 import { BasicInfoCard } from './components/BasicInfoCard';
-import { HeaderCard } from './components/HeaderCard';
 import { OrderReconciliationSummaryCard } from './components/OrderReconciliationSummaryCard';
 import { TransferModeInfoCard } from './components/TransferModeInfoCard';
 import type { SalesOrderDetail } from './components/types';
+
+const HeaderCard = dynamic(
+  () => import('./components/HeaderCard').then(mod => mod.HeaderCard),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-sm text-slate-500">
+        订单头部加载中...
+      </div>
+    ),
+  }
+);
 
 const RelatedReturnOrdersCard = dynamic(
   () =>
