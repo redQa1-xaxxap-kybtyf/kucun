@@ -22,13 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
@@ -236,21 +229,20 @@ export function ProfitLossClient() {
                 />
                 <div>
                   <Label htmlFor="groupBy">趋势分组</Label>
-                  <Select
+                  <select
+                    id="groupBy"
                     value={groupBy}
-                    onValueChange={value =>
-                      setGroupBy(value as 'day' | 'week' | 'month')
+                    onChange={e =>
+                      setGroupBy(e.target.value as 'day' | 'week' | 'month')
                     }
+                    className={cn(
+                      'border-input bg-background ring-offset-background focus:ring-ring mt-2 flex h-10 w-full rounded-md border px-3 py-2 text-sm focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:cursor-not-allowed disabled:opacity-50'
+                    )}
                   >
-                    <SelectTrigger id="groupBy">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="day">按天</SelectItem>
-                      <SelectItem value="week">按周</SelectItem>
-                      <SelectItem value="month">按月</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <option value="day">按天</option>
+                    <option value="week">按周</option>
+                    <option value="month">按月</option>
+                  </select>
                 </div>
               </div>
 
