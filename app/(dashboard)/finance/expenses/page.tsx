@@ -53,6 +53,8 @@ export default async function ExpensesPage({
     redirect('/dashboard');
   }
 
+  const hasManagePermission = can(session.user, 'finance:manage');
+
   // 解析查询参数
   const params = await searchParams;
   const page = parseInt(params.page || '1', 10);
@@ -113,7 +115,10 @@ export default async function ExpensesPage({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ExpensesPageClient initialParams={initialParams} />
+      <ExpensesPageClient
+        initialParams={initialParams}
+        hasManagePermission={hasManagePermission}
+      />
     </HydrationBoundary>
   );
 }

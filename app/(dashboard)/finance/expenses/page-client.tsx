@@ -4,13 +4,11 @@ import { Plus, Receipt } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { can } from '@/lib/auth/permissions';
 import type {
   ExpenseQueryParams,
   ExpenseStatisticsParams,
@@ -48,6 +46,7 @@ const ExpenseStatistics = dynamic(
 );
 
 interface ExpensesPageClientProps {
+  hasManagePermission: boolean;
   initialParams: {
     page: number;
     pageSize: number;
@@ -62,15 +61,11 @@ interface ExpensesPageClientProps {
   };
 }
 
-export function ExpensesPageClient({ initialParams }: ExpensesPageClientProps) {
+export function ExpensesPageClient({
+  initialParams,
+  hasManagePermission,
+}: ExpensesPageClientProps) {
   const router = useRouter();
-  const { data: session } = useSession();
-
-  // 权限检查
-  const hasManagePermission = React.useMemo(
-    () => can(session?.user ?? null, 'finance:manage'),
-    [session?.user]
-  );
 
   // 查询参数状态
   const [filters, setFilters] = React.useState<ExpenseQueryParams>({
