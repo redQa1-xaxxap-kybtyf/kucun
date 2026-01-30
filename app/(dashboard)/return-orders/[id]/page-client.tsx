@@ -1,43 +1,18 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Ban,
-  CheckCircle,
-  Download,
-  Edit,
-  MoreHorizontal,
-  Printer,
-  XCircle,
-} from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { CheckCircle, XCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
-import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   RETURN_ORDER_MODE_LABELS,
@@ -47,10 +22,25 @@ import {
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
-import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+
+const ReturnOrderHeaderActions = dynamic(
+  () =>
+    import('./ReturnOrderHeaderActions').then(mod => mod.ReturnOrderHeaderActions),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <div className="bg-muted h-8 w-20 animate-pulse rounded-md" />
+        <div className="bg-muted h-8 w-20 animate-pulse rounded-md" />
+        <div className="bg-muted h-8 w-20 animate-pulse rounded-md" />
+        <div className="bg-muted h-8 w-8 animate-pulse rounded-md" />
+      </div>
+    ),
+  }
+);
 
 const PrintTemplatePreviewDialog = dynamic(
   () =>
@@ -213,9 +203,6 @@ export function ReturnOrderDetailPageClient({
   id,
 }: ReturnOrderDetailPageClientProps) {
   const router = useRouter();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const {
@@ -230,51 +217,6 @@ export function ReturnOrderDetailPageClient({
 
   // 设置动态面包屑标题：显示退货单号
   useBreadcrumbTitle(order ? `退货单 ${order.returnNumber}` : null);
-
-  // 取消退货订单
-  const cancelMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(
-        `/api/return-orders/${id}/status`,
-        getCsrfTokenHeader({
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            status: 'cancelled',
-            idempotencyKey: crypto.randomUUID(),
-            remarks: '用户取消退货订单',
-          }),
-        })
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || '取消退货订单失败');
-      }
-
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: '取消成功',
-        description: '退货订单已取消',
-        variant: 'success',
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.returnOrders.detail(id),
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
-      setShowCancelDialog(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        title: '取消失败',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
 
   if (isLoading) {
     return <ContentLoading />;
@@ -344,68 +286,12 @@ export function ReturnOrderDetailPageClient({
                   退货单号：{order.returnNumber}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-3"
-                  onClick={() => setIsPrintDialogOpen(true)}
-                >
-                  <Printer className="mr-2 h-4 w-4" />
-                  打印
-                </Button>
-                <Button variant="outline" size="sm" className="h-8 px-3">
-                  <Download className="mr-2 h-4 w-4" />
-                  导出
-                </Button>
-                {['draft', 'submitted'].includes(order.status) && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 px-3"
-                    onClick={() =>
-                      router.push(`/return-orders/${order.id}/edit`)
-                    }
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    编辑
-                  </Button>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 px-2">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {order.status === 'pending' && (
-                      <>
-                        <DropdownMenuItem>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          批准退货
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          <XCircle className="mr-2 h-4 w-4" />
-                          拒绝退货
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                    {['draft', 'submitted', 'approved', 'processing'].includes(
-                      order.status
-                    ) && (
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => setShowCancelDialog(true)}
-                      >
-                        <Ban className="mr-2 h-4 w-4" />
-                        取消退货
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem>复制订单</DropdownMenuItem>
-                    <DropdownMenuItem>发送邮件</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <ReturnOrderHeaderActions
+                id={id}
+                returnNumber={order.returnNumber}
+                status={order.status}
+                onPrint={() => setIsPrintDialogOpen(true)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -836,39 +722,6 @@ export function ReturnOrderDetailPageClient({
           title="退货订单打印"
         />
       )}
-
-      {/* 取消确认对话框 */}
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认取消退货订单</AlertDialogTitle>
-            <AlertDialogDescription>
-              您确定要取消退货订单 <strong>{order.returnNumber}</strong> 吗？
-              <br />
-              <br />
-              取消后：
-              <ul className="mt-2 list-inside list-disc space-y-1">
-                <li>该退货订单将被标记为已取消状态</li>
-                <li>已取消的订单不会影响往来账单余额</li>
-                <li>订单记录仍会保留在系统中用于审计追踪</li>
-                <li>此操作不可撤销</li>
-              </ul>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={cancelMutation.isPending}>
-              我再想想
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => cancelMutation.mutate()}
-              disabled={cancelMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {cancelMutation.isPending ? '取消中...' : '确认取消'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
