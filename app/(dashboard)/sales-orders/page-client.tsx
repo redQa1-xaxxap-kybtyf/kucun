@@ -6,7 +6,7 @@ import * as React from 'react';
 
 import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
-import { salesOrderParamsSchema } from '@/lib/schemas/sales-order-params';
+import { salesOrderParamsConfig } from '@/lib/schemas/sales-order-params-config';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
 import { logger } from '@/lib/utils/console-logger';
 
@@ -178,7 +178,7 @@ function useSalesOrderSearch(
 function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
   const router = useRouter();
   const { params, updateParams, setParam } = useUrlSearchParams(
-    salesOrderParamsSchema,
+    salesOrderParamsConfig,
     {
       basePath: '/sales-orders',
       debounceMs: 0, // ✅ 禁用这里的防抖,使用自定义防抖
