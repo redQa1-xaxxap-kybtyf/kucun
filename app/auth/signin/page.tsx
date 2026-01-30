@@ -3,7 +3,7 @@
 import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSession, signIn } from 'next-auth/react';
+import type { Session } from 'next-auth';
 import React, {
   useCallback,
   useEffect,
@@ -152,7 +152,7 @@ export default function SignInPage() {
 
   // 处理登录成功逻辑
   const handleLoginSuccess = useCallback(
-    async (session: Awaited<ReturnType<typeof getSession>>) => {
+    async (session: Session | null) => {
       if (!session) {
         return;
       }
@@ -258,6 +258,7 @@ export default function SignInPage() {
     setIsSuccess(false);
 
     try {
+      const { getSession, signIn } = await import('next-auth/react');
       const result = await signIn('credentials', {
         username: data.username,
         password: data.password,
