@@ -1,14 +1,29 @@
 'use client';
 
 import { Download, FileText, Loader2, Users } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { Suspense } from 'react';
 
-import { StatementsClient } from '@/components/finance/statements-client';
+import type { StatementsClientProps } from '@/components/finance/statements-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 import { useStatementsFilters } from './hooks/useStatementsFilters';
+
+const StatementsClient = dynamic<StatementsClientProps>(
+  () =>
+    import('@/components/finance/statements-client').then(
+      mod => mod.StatementsClient
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-12 w-12 animate-spin text-slate-200" />
+      </div>
+    ),
+  }
+);
 
 interface AccountStatement {
   id: string;
@@ -125,24 +140,16 @@ export function StatementsPageClient({
         </Card>
 
         {/* 客户端交互组件 */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-24">
-              <Loader2 className="h-12 w-12 animate-spin text-slate-200" />
-            </div>
-          }
-        >
-          <StatementsClient
-            initialData={initialData}
-            initialParams={initialParams}
-            filters={filters}
-            onSearch={handlers.handleSearch}
-            onFilter={handlers.handleFilter}
-            onDateRangeChange={handlers.handleDateRangeChange}
-            onPageChange={handlers.handlePageChange}
-            isSearching={filters.isSearching}
-          />
-        </Suspense>
+        <StatementsClient
+          initialData={initialData}
+          initialParams={initialParams}
+          filters={filters}
+          onSearch={handlers.handleSearch}
+          onFilter={handlers.handleFilter}
+          onDateRangeChange={handlers.handleDateRangeChange}
+          onPageChange={handlers.handlePageChange}
+          isSearching={filters.isSearching}
+        />
       </div>
     </div>
   );
