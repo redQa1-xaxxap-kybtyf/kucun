@@ -7,7 +7,6 @@
 
 import dynamic from 'next/dynamic';
 
-import { CategoryDeleteDialogs } from '@/components/categories/category-delete-dialogs';
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
 import { CategorySearchFilters } from '@/components/categories/category-search-filters';
 import { ContentLoading } from '@/components/common/loading';
@@ -26,6 +25,14 @@ const CategoryList = dynamic(
       </div>
     ),
   }
+);
+
+const CategoryDeleteDialogs = dynamic(
+  () =>
+    import('@/components/categories/category-delete-dialogs').then(
+      mod => mod.CategoryDeleteDialogs
+    ),
+  { ssr: false, loading: () => null }
 );
 
 interface DeleteDialogState {
@@ -131,12 +138,14 @@ export function CategoryPageContent({
           />
         )}
 
-        <CategoryDeleteDialogs
-          deleteDialog={deleteDialog}
-          isDeleting={deleteMutation.isPending}
-          onDeleteDialogChange={setDeleteDialog}
-          onConfirmDelete={confirmDelete}
-        />
+        {deleteDialog.open ? (
+          <CategoryDeleteDialogs
+            deleteDialog={deleteDialog}
+            isDeleting={deleteMutation.isPending}
+            onDeleteDialogChange={setDeleteDialog}
+            onConfirmDelete={confirmDelete}
+          />
+        ) : null}
       </div>
     </div>
   );
