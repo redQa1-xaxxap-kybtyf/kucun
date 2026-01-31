@@ -2,12 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Edit, ShoppingCart, User } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 
 import { useBreadcrumbTitle } from '@/components/common/BreadcrumbContext';
 import { ContentLoading } from '@/components/common/loading';
-import { CustomerActivityTabs } from '@/components/customers/customer-detail/customer-activity-tabs';
 import { CustomerContactCard } from '@/components/customers/customer-detail/customer-contact-card';
 import { CustomerStatsGrid } from '@/components/customers/customer-detail/customer-stats-grid';
 import type {
@@ -21,6 +21,19 @@ import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+
+const CustomerActivityTabs = dynamic(
+  () =>
+    import('@/components/customers/customer-detail/customer-activity-tabs').then(
+      mod => mod.CustomerActivityTabs
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="text-muted-foreground p-8 text-sm">活动加载中...</div>
+    ),
+  }
+);
 
 async function fetchCustomerDetail(id: string): Promise<CustomerDetail> {
   const response = await fetch(`/api/customers/${id}`, {
