@@ -43,5 +43,13 @@ export default async function CountDetailPage({
     notFound();
   }
 
-  return <CountDetailPageClient countId={id} initialData={count} />;
+  const hasManagePermission = can(session.user, 'inventory:manage');
+
+  return (
+    <CountDetailPageClient
+      countId={id}
+      initialData={count}
+      hasManagePermission={hasManagePermission}
+    />
+  );
 }

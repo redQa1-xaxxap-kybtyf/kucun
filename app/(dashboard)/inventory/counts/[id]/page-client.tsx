@@ -12,14 +12,12 @@ import {
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
-import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   COUNT_STATUS_LABELS,
@@ -60,20 +58,17 @@ const DeleteCountDialog = dynamic(
 interface CountDetailPageClientProps {
   countId: string;
   initialData: InventoryCountDetail;
+  hasManagePermission: boolean;
 }
 
 export function CountDetailPageClient({
   countId,
   initialData,
+  hasManagePermission,
 }: CountDetailPageClientProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data: session } = useSession();
-  const hasManagePermission = React.useMemo(
-    () => can(session?.user ?? null, 'inventory:manage'),
-    [session?.user]
-  );
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
 
   const count = useCountDetail(countId, initialData);
