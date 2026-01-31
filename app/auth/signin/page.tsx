@@ -1,6 +1,5 @@
 'use client';
 
-import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Session } from 'next-auth';
@@ -35,7 +34,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/utils/console-logger';
-import { userValidations, type UserLoginInput } from '@/lib/validations/base';
+import type { UserLoginInput } from '@/lib/validations/base';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -61,7 +60,6 @@ export default function SignInPage() {
 
   // 表单配置
   const form = useForm<UserLoginInput & { rememberMe?: boolean }>({
-    resolver: standardSchemaResolver(userValidations.login),
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
     defaultValues: {
@@ -359,6 +357,15 @@ export default function SignInPage() {
                 <FormField
                   control={form.control}
                   name="username"
+                  rules={{
+                    required: '请输入用户名',
+                    minLength: { value: 3, message: '用户名至少3个字符' },
+                    maxLength: { value: 20, message: '用户名不能超过20个字符' },
+                    pattern: {
+                      value: /^[a-zA-Z0-9_-]+$/,
+                      message: '用户名只能包含字母、数字、下划线和短横线',
+                    },
+                  }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
@@ -384,6 +391,11 @@ export default function SignInPage() {
                 <FormField
                   control={form.control}
                   name="password"
+                  rules={{
+                    required: '请输入密码',
+                    minLength: { value: 8, message: '密码至少8个字符' },
+                    maxLength: { value: 100, message: '密码不能超过100个字符' },
+                  }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
@@ -408,6 +420,15 @@ export default function SignInPage() {
                 <FormField
                   control={form.control}
                   name="captcha"
+                  rules={{
+                    required: '请输入验证码',
+                    minLength: { value: 4, message: '验证码格式不正确' },
+                    maxLength: { value: 10, message: '验证码格式不正确' },
+                    pattern: {
+                      value: /^[a-zA-Z0-9]+$/,
+                      message: '验证码只能包含字母和数字',
+                    },
+                  }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
@@ -462,7 +483,11 @@ export default function SignInPage() {
                       type="checkbox"
                       className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                       checked={rememberMe}
-                      onChange={e => setRememberMe(e.target.checked)}
+                      onChange={e => {
+                        const checked = e.target.checked;
+                        setRememberMe(checked);
+                        form.setValue('rememberMe', checked);
+                      }}
                       disabled={isLoading}
                     />
                     <span>记住我（延长登录有效期）</span>
