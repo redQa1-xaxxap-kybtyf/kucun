@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 import { ArrowLeft, CheckCircle, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +20,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { can } from '@/lib/auth/permissions';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   COUNT_ITEM_STATUS_LABELS,
@@ -38,6 +36,7 @@ import { ProductDataUtils } from '@/lib/utils/product-data';
 interface ExecuteCountPageClientProps {
   countId: string;
   initialData: InventoryCountDetail;
+  hasFinancePermission: boolean;
 }
 
 interface ItemQuantity {
@@ -48,16 +47,11 @@ interface ItemQuantity {
 export function ExecuteCountPageClient({
   countId,
   initialData,
+  hasFinancePermission,
 }: ExecuteCountPageClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: session } = useSession();
-
-  const hasFinancePermission = React.useMemo(
-    () => can(session?.user ?? null, 'finance:view'),
-    [session?.user]
-  );
 
   // 实际数量状态
   const [quantities, setQuantities] = React.useState<

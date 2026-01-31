@@ -52,5 +52,13 @@ export default async function ExecuteCountPage({
     redirect(`/inventory/counts/${id}`);
   }
 
-  return <ExecuteCountPageClient countId={id} initialData={count} />;
+  const hasFinancePermission = can(session.user, 'finance:view');
+
+  return (
+    <ExecuteCountPageClient
+      countId={id}
+      initialData={count}
+      hasFinancePermission={hasFinancePermission}
+    />
+  );
 }
