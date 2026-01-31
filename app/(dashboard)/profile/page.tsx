@@ -10,11 +10,9 @@
 
 'use client';
 
-import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { KeyRound, Loader2, Shield } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +29,6 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { cn } from '@/lib/utils';
 import { csrfFetch } from '@/lib/utils/csrf';
-import { changePasswordSchema } from '@/lib/validations/user';
 
 // 个人资料接口响应类型（与 /api/profile 保持一致）
 interface ProfileInfo {
@@ -45,20 +42,18 @@ interface ProfileInfo {
   updatedAt: string;
 }
 
-// 个人资料表单 schema（允许修改姓名和邮箱）
-const profileFormSchema = z.object({
-  name: z
-    .string({ message: '姓名必须是字符串' })
-    .min(1, { message: '请输入姓名' })
-    .max(100, { message: '姓名不能超过100个字符' }),
-  email: z
-    .string({ message: '邮箱必须是字符串' })
-    .email({ message: '请输入有效的邮箱地址' })
-    .max(100, { message: '邮箱不能超过100个字符' }),
-});
+type ProfileFormValues = {
+  name: string;
+  email: string;
+};
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
-type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+type ChangePasswordFormValues = {
+  currentPassword: string;
+  newPassword: string;
+  confirmNewPassword: string;
+};
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // 登录日志 DTO（与 /api/profile/login-logs 保持一致）
 interface LoginLogDto {
@@ -102,7 +97,6 @@ export default function ProfilePage() {
   const [isLoadingLogs, setIsLoadingLogs] = React.useState(true);
 
   const profileForm = useForm<ProfileFormValues>({
-    resolver: standardSchemaResolver(profileFormSchema),
     mode: 'onBlur',
     defaultValues: {
       name: '',
@@ -111,7 +105,6 @@ export default function ProfilePage() {
   });
 
   const passwordForm = useForm<ChangePasswordFormValues>({
-    resolver: standardSchemaResolver(changePasswordSchema),
     mode: 'onBlur',
     defaultValues: {
       currentPassword: '',
@@ -384,6 +377,10 @@ export default function ProfilePage() {
                         <FormField
                           control={profileForm.control}
                           name="name"
+                          rules={{
+                            required: '请输入姓名',
+                            maxLength: { value: 100, message: '姓名不能超过100个字符' },
+                          }}
                           render={({ field }) => (
                             <FormItem className="space-y-1">
                               <FormControl>
@@ -415,6 +412,14 @@ export default function ProfilePage() {
                         <FormField
                           control={profileForm.control}
                           name="email"
+                          rules={{
+                            required: '请输入邮箱地址',
+                            maxLength: { value: 100, message: '邮箱不能超过100个字符' },
+                            pattern: {
+                              value: EMAIL_PATTERN,
+                              message: '请输入有效的邮箱地址',
+                            },
+                          }}
                           render={({ field }) => (
                             <FormItem className="space-y-1">
                               <FormControl>
@@ -527,6 +532,7 @@ export default function ProfilePage() {
                     <FormField
                       control={passwordForm.control}
                       name="currentPassword"
+                      rules={{ required: '请输入当前密码' }}
                       render={({ field }) => (
                         <FormItem className="space-y-2">
                           <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
@@ -548,6 +554,37 @@ export default function ProfilePage() {
                     <FormField
                       control={passwordForm.control}
                       name="newPassword"
+                      rules={{
+                        required: '请输入新密码',
+                        validate: value => {
+                          if (typeof value !== 'string') {
+                            return '新密码必须是字符串';
+                          }
+                          if (value.length < 8) {
+                            return '新密码至少8个字符';
+                          }
+                          if (value.length > 100) {
+                            return '新密码不能超过100个字符';
+                          }
+                          if (!/[A-Z]/.test(value)) {
+                            return '新密码必须包含至少一个大写字母';
+                          }
+                          if (!/[a-z]/.test(value)) {
+                            return '新密码必须包含至少一个小写字母';
+                          }
+                          if (!/[0-9]/.test(value)) {
+                            return '新密码必须包含至少一个数字';
+                          }
+                          if (!/[^A-Za-z0-9]/.test(value)) {
+                            return '新密码必须包含至少一个特殊字符';
+                          }
+                          const current = passwordForm.getValues('currentPassword');
+                          if (current && value === current) {
+                            return '新密码不能与当前密码相同';
+                          }
+                          return true;
+                        },
+                      }}
                       render={({ field }) => (
                         <FormItem className="space-y-2">
                           <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
@@ -569,6 +606,12 @@ export default function ProfilePage() {
                     <FormField
                       control={passwordForm.control}
                       name="confirmNewPassword"
+                      rules={{
+                        required: '请确认新密码',
+                        validate: value =>
+                          value === passwordForm.getValues('newPassword') ||
+                          '两次输入的新密码不一致',
+                      }}
                       render={({ field }) => (
                         <FormItem className="space-y-2">
                           <FormLabel className="text-[11px] font-black tracking-wider text-slate-400 uppercase">
