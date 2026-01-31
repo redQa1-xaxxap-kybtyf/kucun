@@ -4,7 +4,7 @@
 
 'use client';
 
-import { Copy, Edit, MoreHorizontal, Plus, Star, Trash2 } from 'lucide-react';
+import { Copy, Edit, Plus, Star, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 
@@ -16,13 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/use-toast';
 import {
   deleteTemplate,
@@ -201,62 +194,53 @@ export function TemplateList() {
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     )}
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      asChild
-                      onClick={e => e.stopPropagation()}
+                  <div
+                    className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleEdit(template.id)}
+                      aria-label="编辑模板"
+                      title="编辑"
                     >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => handleDuplicate(template.id)}
+                      aria-label="复制模板"
+                      title="复制"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    {!template.isDefault ? (
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100"
+                        className="h-8 w-8"
+                        onClick={() => handleSetDefault(template.id, template.type)}
+                        aria-label="设为默认模板"
+                        title="设为默认"
                       >
-                        <MoreHorizontal className="h-4 w-4" />
+                        <Star className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleEdit(template.id);
-                        }}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        编辑
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDuplicate(template.id);
-                        }}
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        复制
-                      </DropdownMenuItem>
-                      {!template.isDefault && (
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleSetDefault(template.id, template.type);
-                          }}
-                        >
-                          <Star className="mr-2 h-4 w-4" />
-                          设为默认
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDelete(template.id);
-                        }}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        删除
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    ) : null}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive h-8 w-8"
+                      onClick={() => handleDelete(template.id)}
+                      aria-label="删除模板"
+                      title="删除"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 <CardDescription>
                   {typeLabels[template.type] ?? template.type}
