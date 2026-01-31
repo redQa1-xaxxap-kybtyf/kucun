@@ -1,12 +1,8 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import * as React from 'react';
 
-import {
-  DataManagementExecuteDialog,
-  DataManagementPreviewDialog,
-  DataManagementSwitchModeDialog,
-} from './components/DataManagementDialogs';
 import { DataManagementModeCard } from './components/DataManagementModeCard';
 import { DataManagementSwitchModeCard } from './components/DataManagementSwitchModeCard';
 import { DataManagementTaskProgressCard } from './components/DataManagementTaskProgressCard';
@@ -17,6 +13,30 @@ import {
   useSystemModeSwitch,
 } from './hooks/useDataManagementPage';
 import type { DataManagementAction, SystemMode } from './types';
+
+const DataManagementPreviewDialog = dynamic(
+  () =>
+    import('./components/DataManagementDialogs').then(
+      mod => mod.DataManagementPreviewDialog
+    ),
+  { ssr: false, loading: () => null }
+);
+
+const DataManagementExecuteDialog = dynamic(
+  () =>
+    import('./components/DataManagementDialogs').then(
+      mod => mod.DataManagementExecuteDialog
+    ),
+  { ssr: false, loading: () => null }
+);
+
+const DataManagementSwitchModeDialog = dynamic(
+  () =>
+    import('./components/DataManagementDialogs').then(
+      mod => mod.DataManagementSwitchModeDialog
+    ),
+  { ssr: false, loading: () => null }
+);
 
 export function DataManagementPageClient({
   systemMode,
@@ -94,34 +114,40 @@ export function DataManagementPageClient({
         />
       )}
 
-      <DataManagementPreviewDialog
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        preview={previewMutation.data}
-        isPending={previewMutation.isPending}
-      />
+      {previewOpen ? (
+        <DataManagementPreviewDialog
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          preview={previewMutation.data}
+          isPending={previewMutation.isPending}
+        />
+      ) : null}
 
-      <DataManagementExecuteDialog
-        open={executeOpen}
-        onOpenChange={setExecuteOpen}
-        systemMode={systemMode}
-        confirmWord={confirmWord}
-        confirmText={confirmText}
-        onConfirmTextChange={setConfirmText}
-        isExecuting={executeMutation.isPending}
-        onExecute={() => executeMutation.mutate()}
-      />
+      {executeOpen ? (
+        <DataManagementExecuteDialog
+          open={executeOpen}
+          onOpenChange={setExecuteOpen}
+          systemMode={systemMode}
+          confirmWord={confirmWord}
+          confirmText={confirmText}
+          onConfirmTextChange={setConfirmText}
+          isExecuting={executeMutation.isPending}
+          onExecute={() => executeMutation.mutate()}
+        />
+      ) : null}
 
-      <DataManagementSwitchModeDialog
-        open={switchOpen}
-        onOpenChange={setSwitchOpen}
-        switchTargetMode={switchTargetMode}
-        switchConfirmWord={switchConfirmWord}
-        switchConfirmText={switchConfirmText}
-        onSwitchConfirmTextChange={setSwitchConfirmText}
-        isSwitching={switchModeMutation.isPending}
-        onSwitch={() => switchModeMutation.mutate()}
-      />
+      {switchOpen ? (
+        <DataManagementSwitchModeDialog
+          open={switchOpen}
+          onOpenChange={setSwitchOpen}
+          switchTargetMode={switchTargetMode}
+          switchConfirmWord={switchConfirmWord}
+          switchConfirmText={switchConfirmText}
+          onSwitchConfirmTextChange={setSwitchConfirmText}
+          isSwitching={switchModeMutation.isPending}
+          onSwitch={() => switchModeMutation.mutate()}
+        />
+      ) : null}
     </div>
   );
 }
