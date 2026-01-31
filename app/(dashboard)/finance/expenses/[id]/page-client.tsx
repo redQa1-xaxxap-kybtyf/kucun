@@ -2,15 +2,28 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Receipt } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
 import { PageHeader } from '@/components/common/page-header';
-import { ExpenseDetailClient } from '@/components/finance/expenses/expense-detail';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/queryKeys';
 import { EXPENSE_TYPE_LABELS, type ExpenseRecord } from '@/lib/types/expense';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+
+const ExpenseDetailClient = dynamic(
+  () =>
+    import('@/components/finance/expenses/expense-detail').then(
+      mod => mod.ExpenseDetailClient
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[680px] w-full animate-pulse rounded-xl bg-slate-100" />
+    ),
+  }
+);
 
 interface ExpenseDetailPageClientProps {
   id: string;
@@ -97,4 +110,3 @@ export default function ExpenseDetailPageClient({
     </div>
   );
 }
-
