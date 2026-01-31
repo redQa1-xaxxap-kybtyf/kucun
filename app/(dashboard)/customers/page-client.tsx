@@ -8,7 +8,6 @@ import * as React from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
-import { CustomerDeleteDialog } from '@/components/customers/customer-delete-dialog';
 import { Button } from '@/components/ui/button';
 import { useCustomersQuery } from '@/hooks/use-customers-query';
 import {
@@ -22,7 +21,10 @@ interface CustomersPageClientProps {
 }
 
 const ERPCustomerList = dynamic(
-  () => import('@/components/customers/erp-customer-list').then(mod => mod.ERPCustomerList),
+  () =>
+    import('@/components/customers/erp-customer-list').then(
+      mod => mod.ERPCustomerList
+    ),
   {
     ssr: false,
     loading: () => (
@@ -30,6 +32,17 @@ const ERPCustomerList = dynamic(
         列表加载中...
       </div>
     ),
+  }
+);
+
+const CustomerDeleteDialog = dynamic(
+  () =>
+    import('@/components/customers/customer-delete-dialog').then(
+      mod => mod.CustomerDeleteDialog
+    ),
+  {
+    ssr: false,
+    loading: () => null,
   }
 );
 
