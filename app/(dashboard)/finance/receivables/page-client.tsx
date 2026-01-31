@@ -2,8 +2,6 @@
 
 import {
   Download,
-  FileSpreadsheet,
-  FileText,
   Plus,
   TrendingUp,
 } from 'lucide-react';
@@ -13,14 +11,6 @@ import { useCallback } from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useFinanceExport } from '@/hooks/use-finance-export';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
 
@@ -70,37 +60,28 @@ export function ReceivablesPageClient({
           iconBgColor="hsl(var(--color-primary))"
           actions={
             <>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    disabled={isExporting}
-                    className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {isExporting ? '导出中...' : '导出'}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuLabel>选择导出格式</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() => handleExport('excel')}
-                    disabled={isExporting}
-                  >
-                    <FileSpreadsheet className="mr-2 h-4 w-4" />
-                    Excel 格式 (.xlsx)
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleExport('csv')}
-                    disabled={isExporting}
-                  >
-                    <FileText className="mr-2 h-4 w-4" />
-                    CSV 格式 (.csv)
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled={isExporting}
+                  onClick={() => handleExport('excel')}
+                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {isExporting ? '导出中...' : '导出 Excel'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled={isExporting}
+                  onClick={() => handleExport('csv')}
+                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  {isExporting ? '导出中...' : '导出 CSV'}
+                </Button>
+              </div>
               <Button
                 size="lg"
                 asChild
