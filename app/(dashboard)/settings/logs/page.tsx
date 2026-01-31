@@ -2,12 +2,62 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useState } from "react";
 
-import { LogFilters } from "@/components/settings/LogFilters";
-import { SystemLogsTable } from "@/components/settings/SystemLogsTable";
 import { Button } from "@/components/ui/button";
-import type { SettingsApiResponse, SystemLogFilters, SystemLogListResponse } from "@/lib/types/settings";
+import type {
+  SettingsApiResponse,
+  SystemLog,
+  SystemLogFilters,
+  SystemLogListResponse,
+} from "@/lib/types/settings";
+
+type LogFiltersProps = {
+  filters: SystemLogFilters;
+  onFiltersChange: (filters: SystemLogFilters) => void;
+};
+
+type SystemLogsTableProps = {
+  logs: SystemLog[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  isLoading?: boolean;
+  onPageChange: (page: number) => void;
+  onViewDetail?: (log: SystemLog) => void;
+};
+
+const LogFilters = dynamic<LogFiltersProps>(
+  () => import("@/components/settings/LogFilters").then((mod) => mod.LogFilters),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[260px] w-full animate-pulse rounded-[32px] bg-white/40" />
+    ),
+  }
+);
+
+const SystemLogsTable = dynamic<SystemLogsTableProps>(
+  () =>
+    import("@/components/settings/SystemLogsTable").then(
+      (mod) => mod.SystemLogsTable
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col gap-6">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-24 w-full animate-pulse rounded-3xl bg-white/40"
+          />
+        ))}
+      </div>
+    ),
+  }
+);
 
 export default function LogsPage() {
   const [page, setPage] = useState(1);
