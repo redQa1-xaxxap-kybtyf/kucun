@@ -53,7 +53,7 @@ export function useUrlSearchParams<T extends z.ZodRawShape>(
 /**
  * 通用URL参数管理Hook - 配置对象重载
  */
-export function useUrlSearchParams<T extends Record<string, unknown>>(
+export function useUrlSearchParams<T extends object>(
   schema: Record<keyof T, ParamConfig>,
   options?: UseUrlSearchParamsOptions<T>
 ): UseUrlSearchParamsResult<T>;
@@ -79,7 +79,7 @@ export function useUrlSearchParams<T extends Record<string, unknown>>(
  * ```
  */
 // eslint-disable-next-line max-lines-per-function -- Core Hook implementation requires comprehensive logic
-export function useUrlSearchParams<T extends Record<string, unknown>>(
+export function useUrlSearchParams<T extends object>(
   schema: z.ZodObject<z.ZodRawShape> | Record<keyof T, ParamConfig>,
   options: UseUrlSearchParamsOptions<T> = {}
 ): UseUrlSearchParamsResult<T> {

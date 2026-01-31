@@ -124,7 +124,7 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
     [isPending, isFetching]
   );
   const { handleFilter, handleClearFilters, handlePageChange } =
-    useInventoryFilters(updateParams, params.page);
+    useInventoryFilters(updateParams, params.page ?? 1);
 
   // ✅ 优化：简化防抖逻辑，固定300ms延迟
   // 移除复杂的自适应算法，提升性能和可维护性

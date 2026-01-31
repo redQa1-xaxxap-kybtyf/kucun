@@ -35,7 +35,7 @@ export interface ParamConfig<T = unknown> {
  * 1. Zod Schema (推荐)
  * 2. 简化配置对象
  */
-export type ParamSchema<T extends Record<string, unknown>> =
+export type ParamSchema<T extends object> =
   | z.ZodObject<z.ZodRawShape>
   | Record<keyof T, ParamConfig>;
 
@@ -43,7 +43,7 @@ export type ParamSchema<T extends Record<string, unknown>> =
  * Hook选项
  */
 export interface UseUrlSearchParamsOptions<
-  T extends Record<string, unknown> = Record<string, unknown>,
+  T extends object = Record<string, unknown>,
 > {
   /** 基础路径(用于构建完整URL) */
   basePath?: string;
@@ -58,7 +58,7 @@ export interface UseUrlSearchParamsOptions<
 /**
  * Hook返回值
  */
-export interface UseUrlSearchParamsResult<T extends Record<string, unknown>> {
+export interface UseUrlSearchParamsResult<T extends object> {
   /** 当前参数值(类型安全) */
   params: T;
 

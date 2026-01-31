@@ -27,7 +27,7 @@ function isZodSchema(schema: any): schema is {
 /**
  * 从Zod Schema提取参数配置
  */
-function extractFromZodSchema<T extends Record<string, any>>(
+function extractFromZodSchema<T extends object>(
   schema: {
     shape?: Record<string, unknown>;
   }
@@ -140,7 +140,7 @@ function parseZodField(field: any): ParamConfig {
 /**
  * 从简化配置对象提取参数配置
  */
-function extractFromConfigObject<T extends Record<string, any>>(
+function extractFromConfigObject<T extends object>(
   schema: Record<keyof T, ParamConfig>
 ): Record<keyof T, ParamConfig> {
   return schema;
@@ -149,7 +149,7 @@ function extractFromConfigObject<T extends Record<string, any>>(
 /**
  * 解析Schema为统一的参数配置
  */
-export function parseSchema<T extends Record<string, any>>(
+export function parseSchema<T extends object>(
   schema: ParamSchema<T>
 ): Record<keyof T, ParamConfig> {
   if (isZodSchema(schema)) {
@@ -161,24 +161,25 @@ export function parseSchema<T extends Record<string, any>>(
 /**
  * 从URLSearchParams解析参数值
  */
-export function parseFromUrl<T extends Record<string, any>>(
+export function parseFromUrl<T extends object>(
   searchParams: URLSearchParams,
   configs: Record<keyof T, ParamConfig>
 ): T {
   const result: any = {};
 
   for (const key in configs) {
-    const config = configs[key];
-    const rawValue = searchParams.get(key as string);
+    const typedKey = key as keyof T;
+    const config = configs[typedKey];
+    const rawValue = searchParams.get(key);
 
     if (rawValue === null) {
       // 参数不存在,使用默认值
-      result[key] = config.default;
+      result[typedKey] = config.default;
       continue;
     }
 
     // 根据类型转换值
-    result[key] = parseValue(rawValue, config);
+    result[typedKey] = parseValue(rawValue, config);
   }
 
   return result as T;
@@ -230,7 +231,7 @@ function parseValue(value: string, config: ParamConfig): any {
 /**
  * 验证参数值
  */
-export function validateParams<T extends Record<string, any>>(
+export function validateParams<T extends object>(
   params: T,
   schema: ParamSchema<T>
 ): ValidationResult<T> {
@@ -263,11 +264,13 @@ export function validateParams<T extends Record<string, any>>(
   // 简化配置的基本验证
   const configs = extractFromConfigObject<T>(schema);
 
-  for (const key in params) {
-    const config = configs[key];
-    const value = params[key];
+  for (const key in configs) {
+    const typedKey = key as keyof T;
+    const config = configs[typedKey];
+    const value = (params as any)[typedKey] as unknown;
 
     if (!config) continue;
+    if (value === undefined) continue;
 
     // 类型检查
     if (config.type === 'number' && typeof value !== 'number') {
@@ -287,7 +290,6 @@ export function validateParams<T extends Record<string, any>>(
     // 枚举值检查
     if (
       config.type === 'enum' &&
-      value !== undefined &&
       !config.values?.includes(value)
     ) {
       return {
@@ -322,13 +324,14 @@ export function validateParams<T extends Record<string, any>>(
 /**
  * 获取默认参数值
  */
-export function getDefaultParams<T extends Record<string, any>>(
+export function getDefaultParams<T extends object>(
   configs: Record<keyof T, ParamConfig>
 ): T {
   const result: any = {};
 
   for (const key in configs) {
-    result[key] = configs[key].default;
+    const typedKey = key as keyof T;
+    result[typedKey] = configs[typedKey].default;
   }
 
   return result as T;

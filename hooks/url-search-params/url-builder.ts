@@ -15,7 +15,7 @@ import type { ParamConfig, SerializeOptions } from './types';
  * @param options - 序列化选项
  * @returns URLSearchParams对象
  */
-export function serializeToUrlParams<T extends Record<string, unknown>>(
+export function serializeToUrlParams<T extends object>(
   params: T,
   configs: Record<keyof T, ParamConfig>,
   options: SerializeOptions = {}
@@ -123,7 +123,7 @@ function serializeValue(value: unknown, config: ParamConfig): string | null {
  * @param options - 序列化选项
  * @returns 查询字符串 (不包含"?")
  */
-export function buildQueryString<T extends Record<string, unknown>>(
+export function buildQueryString<T extends object>(
   params: T,
   configs: Record<keyof T, ParamConfig>,
   options?: SerializeOptions
@@ -141,7 +141,7 @@ export function buildQueryString<T extends Record<string, unknown>>(
  * @param options - 序列化选项
  * @returns 完整URL
  */
-export function buildFullUrl<T extends Record<string, unknown>>(
+export function buildFullUrl<T extends object>(
   basePath: string,
   params: T,
   configs: Record<keyof T, ParamConfig>,
@@ -165,7 +165,7 @@ export function buildFullUrl<T extends Record<string, unknown>>(
  * @param updates - 更新的参数
  * @returns 合并后的参数
  */
-export function mergeParams<T extends Record<string, unknown>>(
+export function mergeParams<T extends object>(
   current: T,
   updates: Partial<T>
 ): T {
@@ -193,7 +193,7 @@ export function mergeParams<T extends Record<string, unknown>>(
  * @param b - 参数对象B
  * @returns 是否相等
  */
-export function areParamsEqual<T extends Record<string, unknown>>(
+export function areParamsEqual<T extends object>(
   a: T,
   b: T
 ): boolean {
