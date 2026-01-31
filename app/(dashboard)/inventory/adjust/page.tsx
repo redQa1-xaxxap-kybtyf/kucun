@@ -6,20 +6,14 @@ import { useRouter } from 'next/navigation';
 
 import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 
 import { InventoryAdjustTable } from './components/InventoryAdjustTable';
 import { useInventoryAdjustPage } from './hooks/useInventoryAdjustPage';
 
-const InventoryOperationForm = dynamic(
+const InventoryAdjustDialog = dynamic(
   () =>
-    import('@/components/inventory/inventory-operation-form').then(
-      mod => mod.InventoryOperationForm
+    import('./components/InventoryAdjustDialog').then(
+      mod => mod.InventoryAdjustDialog
     ),
   { ssr: false, loading: () => null }
 );
@@ -77,20 +71,12 @@ export default function InventoryAdjustPage() {
         />
 
         {/* 调整对话框 */}
-        <Dialog open={showAdjustDialog} onOpenChange={closeAdjustDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>库存调整</DialogTitle>
-            </DialogHeader>
-            {showAdjustDialog && (
-              <InventoryOperationForm
-                mode="adjust"
-                onSuccess={handleAdjustSuccess}
-                onCancel={closeAdjustDialog}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
+        {showAdjustDialog ? (
+          <InventoryAdjustDialog
+            onClose={closeAdjustDialog}
+            onSuccess={handleAdjustSuccess}
+          />
+        ) : null}
 
         {/* 当前库存列表 */}
         <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
