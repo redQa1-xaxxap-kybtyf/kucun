@@ -1,8 +1,9 @@
 import { getServerSession } from 'next-auth';
 
-import ExpenseDetailPageClient from './page-client';
 import { authOptions } from '@/lib/auth';
 import { can } from '@/lib/auth/permissions';
+
+import ExpenseDetailPageClient from './page-client';
 
 /**
  * 费用记录详情页面

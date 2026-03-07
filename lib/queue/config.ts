@@ -7,38 +7,80 @@ import type { QueueOptions, WorkerOptions } from 'bullmq';
 import Redis from 'ioredis';
 
 import { env } from '@/lib/env';
+import { getRedisAuthOptions } from '@/lib/redis/redis-options';
+
+let redisConnection: Redis | null = null;
+
+function createRedisConnection(): Redis {
+  return new Redis(env.REDIS_URL, {
+    ...getRedisAuthOptions(env.REDIS_URL, env.REDIS_PASSWORD),
+    maxRetriesPerRequest: null, // BullMQ 要求设置为 null
+    enableReadyCheck: false,
+    retryStrategy: (times: number) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+  });
+}
 
 /**
- * Redis 连接配置
- * 复用现有的 Redis 连接配置
+ * Redis 连接配置（懒加载）
+ * 避免模块导入时立即建立连接，减少构建阶段副作用
  */
-export const redisConnection = new Redis(env.REDIS_URL, {
-  password: env.REDIS_PASSWORD,
-  maxRetriesPerRequest: null, // BullMQ 要求设置为 null
-  enableReadyCheck: false,
-  retryStrategy: (times: number) => {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  },
-});
+export function getRedisConnection(): Redis {
+  if (!redisConnection) {
+    redisConnection = createRedisConnection();
+  }
+  return redisConnection;
+}
+
+export function closeRedisConnection(): void {
+  if (!redisConnection) {
+    return;
+  }
+  redisConnection.disconnect();
+  redisConnection = null;
+}
 
 /**
  * 队列默认配置
  */
+export function getDefaultQueueConfig(): QueueOptions {
+  return {
+    connection: getRedisConnection(),
+    defaultJobOptions: {
+      attempts: 3, // 失败重试3次
+      backoff: {
+        type: 'exponential',
+        delay: 2000, // 初始延迟 2 秒
+      },
+      removeOnComplete: {
+        age: 24 * 3600, // 保留完成的任务 24 小时
+        count: 1000, // 最多保留 1000 个完成的任务
+      },
+      removeOnFail: {
+        age: 7 * 24 * 3600, // 保留失败的任务 7 天
+      },
+    },
+  };
+}
+
 export const defaultQueueConfig: QueueOptions = {
-  connection: redisConnection,
+  get connection() {
+    return getRedisConnection();
+  },
   defaultJobOptions: {
-    attempts: 3, // 失败重试3次
+    attempts: 3,
     backoff: {
       type: 'exponential',
-      delay: 2000, // 初始延迟 2 秒
+      delay: 2000,
     },
     removeOnComplete: {
-      age: 24 * 3600, // 保留完成的任务 24 小时
-      count: 1000, // 最多保留 1000 个完成的任务
+      age: 24 * 3600,
+      count: 1000,
     },
     removeOnFail: {
-      age: 7 * 24 * 3600, // 保留失败的任务 7 天
+      age: 7 * 24 * 3600,
     },
   },
 };
@@ -46,12 +88,26 @@ export const defaultQueueConfig: QueueOptions = {
 /**
  * Worker 默认配置
  */
+export function getDefaultWorkerConfig(): WorkerOptions {
+  return {
+    connection: getRedisConnection(),
+    concurrency: 10, // 并发处理 10 个任务
+    limiter: {
+      max: 50, // 每个时间窗口最多处理 50 个任务
+      duration: 1000, // 时间窗口 1 秒
+    },
+    autorun: true,
+  };
+}
+
 export const defaultWorkerConfig: WorkerOptions = {
-  connection: redisConnection,
-  concurrency: 10, // 并发处理 10 个任务
+  get connection() {
+    return getRedisConnection();
+  },
+  concurrency: 10,
   limiter: {
-    max: 50, // 每个时间窗口最多处理 50 个任务
-    duration: 1000, // 时间窗口 1 秒
+    max: 50,
+    duration: 1000,
   },
   autorun: true,
 };

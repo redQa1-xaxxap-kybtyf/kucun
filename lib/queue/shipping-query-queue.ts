@@ -6,7 +6,7 @@
 
 import { Queue } from 'bullmq';
 
-import { defaultQueueConfig, QUEUE_NAMES } from './config';
+import { getDefaultQueueConfig, QUEUE_NAMES } from './config';
 
 export const SHIPPING_QUERY_TARGETS = {
   FACTORY_SHIPMENT: 'factory_shipment',
@@ -46,7 +46,7 @@ class ShippingQueryQueue {
     if (!ShippingQueryQueue.instance) {
       ShippingQueryQueue.instance = new Queue<ShippingQueryJobData>(
         QUEUE_NAMES.SHIPPING_QUERY,
-        defaultQueueConfig
+        getDefaultQueueConfig()
       );
 
       // 监听队列事件（用于监控和调试）
@@ -136,6 +136,18 @@ class ShippingQueryQueue {
 }
 
 // 导出队列实例和方法
-export const shippingQueryQueue = ShippingQueryQueue.getInstance();
+export const getShippingQueryQueue = () => ShippingQueryQueue.getInstance();
+export const shippingQueryQueue: Queue<ShippingQueryJobData> = new Proxy(
+  {} as Queue<ShippingQueryJobData>,
+  {
+    get(_target, prop, receiver) {
+      const queue = ShippingQueryQueue.getInstance() as unknown as object;
+      const value = Reflect.get(queue, prop, receiver);
+      return typeof value === 'function'
+        ? (value as (...args: unknown[]) => unknown).bind(queue)
+        : value;
+    },
+  }
+);
 export const addShippingQueryJob = ShippingQueryQueue.addShippingQueryJob;
 export const getShippingQueryQueueStats = ShippingQueryQueue.getQueueStats;

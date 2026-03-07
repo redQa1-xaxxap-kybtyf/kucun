@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
 
-import StorageSettingsPageClient from './page-client';
 import { authOptions } from '@/lib/auth';
+
+import StorageSettingsPageClient from './page-client';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -15,4 +16,3 @@ export default async function StorageSettingsPage() {
     <StorageSettingsPageClient isAdmin={session?.user?.role === 'admin'} />
   );
 }
-

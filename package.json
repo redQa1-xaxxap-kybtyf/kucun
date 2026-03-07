@@ -63,7 +63,7 @@
     "pm2:logs": "pm2 logs",
     "pm2:monit": "pm2 monit",
     "pm2:status": "pm2 status",
-    "deploy:prod": "npm ci --omit=dev && npm run build && npx prisma migrate deploy && npm run pm2:reload"
+    "deploy:prod": "npm ci && npm run type-check && npm run lint && npm run build && npm prune --omit=dev && npx prisma migrate deploy && npm run pm2:reload"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

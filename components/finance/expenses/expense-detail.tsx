@@ -23,8 +23,8 @@ import {
   type ExpenseRecord,
 } from '@/lib/types/expense';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
-import { formatCurrency } from '@/lib/utils/format';
 import { formatDate } from '@/lib/utils/datetime';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface ExpenseDetailClientProps {
   expense: ExpenseRecord;

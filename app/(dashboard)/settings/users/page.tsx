@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
 
-import UsersSettingsPageClient from './page-client';
 import { authOptions } from '@/lib/auth';
+
+import UsersSettingsPageClient from './page-client';
 
 /**
  * 用户管理设置页面（Server）
@@ -23,4 +24,3 @@ export default async function UsersSettingsPage() {
     />
   );
 }
-

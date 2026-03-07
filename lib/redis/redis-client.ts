@@ -2,6 +2,7 @@ import Redis from 'ioredis';
 
 import { env, redisConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { getRedisAuthOptions } from '@/lib/redis/redis-options';
 
 function serializeError(error: unknown) {
   if (error instanceof Error) {
@@ -124,7 +125,7 @@ if (typeof maybeUnrefTimer.unref === 'function') {
 function createClient(url: string): Redis {
   const client = new Redis(url, {
     // 基本配置
-    password: redisConfig.password,
+    ...getRedisAuthOptions(url, redisConfig.password),
     db: redisConfig.db,
     maxRetriesPerRequest: 3,
     enableAutoPipelining: true,

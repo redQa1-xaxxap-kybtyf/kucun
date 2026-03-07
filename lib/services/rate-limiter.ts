@@ -15,6 +15,7 @@ import Redis from 'ioredis';
 
 import { env } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { getRedisAuthOptions } from '@/lib/redis/redis-options';
 
 /**
  * Rate Limiter 配置
@@ -55,7 +56,7 @@ export class RateLimiterService {
     this.redis =
       redis ||
       new Redis(env.REDIS_URL, {
-        password: env.REDIS_PASSWORD,
+        ...getRedisAuthOptions(env.REDIS_URL, env.REDIS_PASSWORD),
         maxRetriesPerRequest: 3,
         retryStrategy: (times: number) => {
           const delay = Math.min(times * 50, 2000);

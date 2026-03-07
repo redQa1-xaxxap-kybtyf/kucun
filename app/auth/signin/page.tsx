@@ -1,6 +1,7 @@
 'use client';
 
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Session } from 'next-auth';
 import React, {
@@ -455,10 +456,13 @@ export default function SignInPage() {
                               onClick={loadCaptcha}
                               title="点击刷新验证码"
                             >
-                              <img
+                              <Image
                                 src={captchaImage}
                                 alt="验证码"
+                                width={120}
+                                height={40}
                                 className="h-10 w-[120px]"
+                                unoptimized
                                 draggable={false}
                               />
                             </button>

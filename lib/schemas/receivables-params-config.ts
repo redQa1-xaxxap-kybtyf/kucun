@@ -5,8 +5,8 @@
  */
 
 import type { ParamConfig } from '@/hooks/url-search-params';
-import type { PaymentStatus } from '@/lib/services/receivables-service';
 import type { ReceivablesParams } from '@/lib/schemas/receivables-params';
+import type { PaymentStatus } from '@/lib/services/receivables-service';
 
 const paymentStatusValues = [
   'unpaid',
@@ -51,4 +51,3 @@ export const receivablesParamsConfig: Record<
   startDate: { type: 'string', default: undefined },
   endDate: { type: 'string', default: undefined },
 };
-

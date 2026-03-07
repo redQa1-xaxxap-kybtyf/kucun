@@ -1,7 +1,7 @@
 'use client';
 
-import type { Session } from 'next-auth';
 import dynamic from 'next/dynamic';
+import type { Session } from 'next-auth';
 import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';

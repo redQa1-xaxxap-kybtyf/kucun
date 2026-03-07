@@ -5,7 +5,7 @@
 
 import { Queue } from 'bullmq';
 
-import { defaultQueueConfig, QUEUE_NAMES } from './config';
+import { getDefaultQueueConfig, QUEUE_NAMES } from './config';
 
 /**
  * 入库后处理任务数据类型
@@ -34,7 +34,7 @@ class InboundPostProcessingQueue {
       InboundPostProcessingQueue.instance =
         new Queue<InboundPostProcessingJobData>(
           QUEUE_NAMES.INBOUND_POST_PROCESSING,
-          defaultQueueConfig
+          getDefaultQueueConfig()
         );
 
       // 监听队列事件 (用于监控和调试)
@@ -103,7 +103,7 @@ class InboundPostProcessingQueue {
   }
 }
 
-export const inboundQueue = InboundPostProcessingQueue.getInstance();
+export const getInboundQueue = () => InboundPostProcessingQueue.getInstance();
 export const addInboundPostProcessingJob =
   InboundPostProcessingQueue.addPostProcessingJob;
 export const getInboundQueueStats = InboundPostProcessingQueue.getQueueStats;

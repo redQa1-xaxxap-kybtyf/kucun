@@ -10,9 +10,9 @@ import {
 import { getServerSession } from 'next-auth';
 
 import { ERPDashboard } from '@/components/dashboard/erp-dashboard';
-import { authOptions } from '@/lib/auth';
 import { dashboardQueryKeys } from '@/lib/api/dashboard';
 import { getDashboardData } from '@/lib/api/handlers/dashboard';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type {
   DashboardFactoryShipmentSummary,

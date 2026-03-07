@@ -1,5 +1,8 @@
 import type { NextConfig } from 'next';
 
+const strictBuildChecks =
+  process.env.NODE_ENV === 'production' || process.env.CI === 'true';
+
 const nextConfig: NextConfig = {
   // Jest / Next.js 依赖中存在 ESM-only 包（如 MSW 相关依赖），需要在 Next 编译链中转译
   transpilePackages: [
@@ -28,14 +31,14 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // TypeScript 配置 - 开发时检查，构建时跳过以加快速度
+  // TypeScript 配置 - 生产/CI 构建启用强校验
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: !strictBuildChecks,
   },
 
-  // ESLint 配置 - 开发时检查，构建时跳过以加快速度
+  // ESLint 配置 - 生产/CI 构建启用强校验
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: !strictBuildChecks,
   },
 
   // 启用严格模式
@@ -126,6 +129,9 @@ const nextConfig: NextConfig = {
   // 服务器端专用包配置（Puppeteer 相关包只在服务器端使用）
   // Next.js 15+ 已将此配置从 experimental 移至顶层
   serverExternalPackages: [
+    'bullmq',
+    'ioredis',
+    'qiniu',
     'puppeteer',
     'puppeteer-core',
     'puppeteer-extra',
