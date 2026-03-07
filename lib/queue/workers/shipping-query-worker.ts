@@ -16,6 +16,7 @@ import {
 } from '@/lib/queue/shipping-query-queue';
 import { PuppeteerService } from '@/lib/services/puppeteer-service';
 import type { ExtractSelectors } from '@/lib/types/shipping';
+import { parseShippingDate } from '@/lib/utils/datetime';
 import { safeJSONParse } from '@/lib/utils/safe-json';
 import {
   normalizeSelector,
@@ -201,12 +202,19 @@ async function processShippingQueryJob(
             orderId,
           });
 
+          const parsedEstimatedArrival = result.estimatedArrival
+            ? parseShippingDate(result.estimatedArrival)
+            : null;
+          const parsedLastUpdateTime = result.lastUpdateTime
+            ? parseShippingDate(result.lastUpdateTime)
+            : null;
+
           const successPayload = {
             lastShippingQueryAt: new Date(),
             shippingQueryStatus: 'success',
             shippingQueryError: null,
-            ...(result.estimatedArrival && {
-              estimatedArrival: new Date(result.estimatedArrival),
+            ...(parsedEstimatedArrival && {
+              estimatedArrival: parsedEstimatedArrival,
             }),
           };
 
@@ -233,15 +241,11 @@ async function processShippingQueryJob(
               inputKeyword: keyword,
               status: result.status || null,
               destination: result.destination || null,
-              estimatedArrival: result.estimatedArrival
-                ? new Date(result.estimatedArrival)
-                : null,
-              lastUpdateTime: result.lastUpdateTime
-                ? new Date(result.lastUpdateTime)
-                : null,
+              estimatedArrival: parsedEstimatedArrival,
+              lastUpdateTime: parsedLastUpdateTime,
               queryStatus: 'success',
               errorMessage: null,
-              factoryShipmentOrderId: orderId,
+              factoryShipmentOrderId: isFactoryShipment ? orderId : null,
             },
           });
 

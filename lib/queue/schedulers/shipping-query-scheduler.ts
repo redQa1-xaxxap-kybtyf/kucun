@@ -5,12 +5,9 @@
  * KISS: 简洁的调度逻辑，清晰的筛选条件
  */
 
-import { Queue } from 'bullmq';
-
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
-import { defaultQueueConfig } from '../config';
 import {
   addShippingQueryJob,
   SHIPPING_QUERY_TARGETS,
@@ -44,7 +41,7 @@ const DEFAULT_CONFIG: SchedulerConfig = {
  */
 class ShippingQueryScheduler {
   private static instance: ShippingQueryScheduler | null = null;
-  private queue: Queue | null = null;
+  private intervalTimer: NodeJS.Timeout | null = null;
   private config: SchedulerConfig;
   private isRunning = false;
 
@@ -81,25 +78,23 @@ class ShippingQueryScheduler {
     }
 
     try {
-      // 创建调度器队列
-      this.queue = new Queue('shipping-query-scheduler', defaultQueueConfig);
+      // 立即执行一次
+      await this.scheduleAutoQuery();
 
-      // 添加重复任务
-      await this.queue.add(
-        'schedule-shipping-queries',
-        {},
-        {
-          repeat: {
-            // 每 N 小时执行一次
-            pattern: `0 */${this.config.intervalHours} * * *`,
-          },
-          // 使用固定的 jobId 确保只有一个调度任务
-          jobId: 'shipping-query-scheduler',
-          // 如果任务已存在则移除旧任务
-          removeOnComplete: true,
-          removeOnFail: false,
-        }
-      );
+      // 启动进程内周期调度（确保真实周期执行）
+      const intervalMs = this.config.intervalHours * 60 * 60 * 1000;
+      this.intervalTimer = setInterval(() => {
+        this.scheduleAutoQuery().catch(error => {
+          logger.error('shipping-scheduler', '周期调度执行失败', error);
+        });
+      }, intervalMs);
+
+      const timerWithUnref = this.intervalTimer as NodeJS.Timeout & {
+        unref?: () => void;
+      };
+      if (typeof timerWithUnref.unref === 'function') {
+        timerWithUnref.unref();
+      }
 
       this.isRunning = true;
 
@@ -107,10 +102,11 @@ class ShippingQueryScheduler {
         intervalHours: this.config.intervalHours,
         minQueryIntervalHours: this.config.minQueryIntervalHours,
       });
-
-      // 立即执行一次（可选）
-      await this.scheduleAutoQuery();
     } catch (error) {
+      if (this.intervalTimer) {
+        clearInterval(this.intervalTimer);
+        this.intervalTimer = null;
+      }
       logger.error(
         'shipping-scheduler',
         '启动运输查询调度器失败',
@@ -132,15 +128,9 @@ class ShippingQueryScheduler {
     }
 
     try {
-      if (this.queue) {
-        // 移除所有重复任务
-        await this.queue.removeRepeatable('schedule-shipping-queries', {
-          pattern: `0 */${this.config.intervalHours} * * *`,
-        });
-
-        // 关闭队列
-        await this.queue.close();
-        this.queue = null;
+      if (this.intervalTimer) {
+        clearInterval(this.intervalTimer);
+        this.intervalTimer = null;
       }
 
       this.isRunning = false;
@@ -189,10 +179,12 @@ class ShippingQueryScheduler {
         where: {
           status: 'shipped',
           arrivalDate: null,
-          shippingCompany: { not: null },
           AND: [
             {
-              shippingCompany: { not: '' },
+              OR: [
+                { shippingCompany: { not: '' } },
+                { containerNumber: { not: '' } },
+              ],
             },
             {
               OR: [
@@ -217,10 +209,12 @@ class ShippingQueryScheduler {
         where: {
           status: { in: ['shipped', 'in_transit'] },
           arrivalDate: null,
-          shippingCompany: { not: null },
           AND: [
             {
-              shippingCompany: { not: '' },
+              OR: [
+                { shippingCompany: { not: '' } },
+                { containerNumber: { not: '' } },
+              ],
             },
             {
               OR: [

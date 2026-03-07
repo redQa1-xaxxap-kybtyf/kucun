@@ -17,7 +17,7 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import {
   SHIPPING_QUERY_TARGETS,
-  shippingQueryQueue,
+  getShippingQueryQueue,
   type ShippingQueryJobData,
   type ShippingQueryTargetType,
 } from '@/lib/queue/shipping-query-queue';
@@ -65,7 +65,7 @@ function resolveJobTarget(jobData: LegacyJobData): {
     jobData.targetType ??
     (jobData.factoryShipmentOrderId
       ? SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT
-      : SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT);
+      : SHIPPING_QUERY_TARGETS.PURCHASE_ORDER);
 
   return { orderId: resolvedOrderId, orderType: resolvedType };
 }
@@ -166,6 +166,7 @@ export const GET = withErrorHandling(
         orderId,
         orderType,
       });
+      const shippingQueryQueue = getShippingQueryQueue();
 
       // 如果提供了 jobId，直接查询任务状态
       if (jobId) {
@@ -210,7 +211,11 @@ export const GET = withErrorHandling(
         };
 
         // 如果任务已完成，添加查询结果
-        if (state === 'completed' && order) {
+        if (
+          state === 'completed' &&
+          order &&
+          resolvedOrderType === SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT
+        ) {
           // 查询最近的查询记录
           const latestQuery = await prisma.shippingQuery.findFirst({
             where: {
@@ -263,21 +268,21 @@ export const GET = withErrorHandling(
 
         // 尝试查找最近的任务（通过 jobId 模式匹配）
         // 注意：BullMQ 不支持按数据字段查询，所以我们需要遍历最近的任务
-        const jobs = await shippingQueryQueue.getJobs([
-          'waiting',
-          'active',
-          'completed',
-          'failed',
-          'delayed',
-        ]);
+        const jobs = await shippingQueryQueue.getJobs(
+          ['waiting', 'active', 'completed', 'failed', 'delayed'],
+          0,
+          499,
+          false
+        );
 
         // 查找匹配该订单的最近任务
-        const matchingJob = jobs.find(job => {
-          const { orderId: jobOrderId } = resolveJobTarget(
-            job.data as LegacyJobData
-          );
-          return jobOrderId === orderId;
-        });
+        const matchingJob = jobs
+          .filter(job => {
+            const { orderId: jobOrderId, orderType: jobOrderType } =
+              resolveJobTarget(job.data as LegacyJobData);
+            return jobOrderId === orderId && jobOrderType === detectedType;
+          })
+          .sort((a, b) => b.timestamp - a.timestamp)[0];
 
         if (matchingJob) {
           const state = await matchingJob.getState();
@@ -301,7 +306,10 @@ export const GET = withErrorHandling(
           };
 
           // 如果任务已完成，添加查询结果
-          if (state === 'completed') {
+          if (
+            state === 'completed' &&
+            jobInfo.orderType === SHIPPING_QUERY_TARGETS.FACTORY_SHIPMENT
+          ) {
             const latestQuery = await prisma.shippingQuery.findFirst({
               where: {
                 factoryShipmentOrderId: order.id,
