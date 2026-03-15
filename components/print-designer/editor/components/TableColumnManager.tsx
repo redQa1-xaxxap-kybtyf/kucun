@@ -4,7 +4,7 @@
 
 'use client';
 
-import { ChevronDown, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, Copy, GripVertical, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { FieldDefinition } from '@/lib/print-designer/field-registry';
-import type { TableColumn } from '@/lib/print-designer/schemas';
+import {
+  createTableColumn,
+  ensureTableColumnIds,
+  getTableColumnReactKey,
+  type TableColumn,
+} from '@/lib/print-designer/schemas';
 
 import { FieldPicker } from './FieldPicker';
 
@@ -45,6 +50,21 @@ function isTableColumnFormat(value: unknown): value is TableColumn['format'] {
   );
 }
 
+function createNextDuplicateLabel(
+  columns: TableColumn[],
+  label: string
+): string {
+  let counter = 2;
+  let nextLabel = `${label}（${counter}）`;
+
+  while (columns.some(column => column.label === nextLabel)) {
+    counter += 1;
+    nextLabel = `${label}（${counter}）`;
+  }
+
+  return nextLabel;
+}
+
 export function TableColumnManager({
   templateType,
   columns,
@@ -52,6 +72,14 @@ export function TableColumnManager({
 }: TableColumnManagerProps) {
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [message, setMessage] = useState<string>('');
+  const [highlightedColumnKey, setHighlightedColumnKey] = useState<
+    string | null
+  >(null);
+
+  const updateColumns = (nextColumns: TableColumn[]) => {
+    onChange(ensureTableColumnIds(nextColumns));
+  };
 
   const handlePickField = (index: number, field: FieldDefinition) => {
     const current = columns[index];
@@ -70,44 +98,91 @@ export function TableColumnManager({
       updates.format = field.suggestedFormat;
     }
 
+    const otherMatchedColumn = columns.find(
+      (column, currentIndex) =>
+        currentIndex !== index && column.key === field.path
+    );
+    if (otherMatchedColumn) {
+      setMessage(
+        `字段“${field.label}”已在其他列使用。当前列仍可继续保存，若只是想复用展示，建议直接复制已有列。`
+      );
+    } else {
+      setMessage('');
+    }
+
     handleUpdateColumn(index, updates);
   };
 
   const handleAddColumn = () => {
-    const newColumn: TableColumn = {
+    const newColumn = createTableColumn({
       key: `col_${Date.now()}`,
       label: '新列',
-      width: 15,
-      widthUnit: '%',
-      align: 'left',
-      format: 'text',
-    };
-    onChange([...columns, newColumn]);
+    });
+    setMessage('已添加空列，可手动输入字段或从字段库选择。');
+    setHighlightedColumnKey(newColumn.id ?? null);
+    updateColumns([...columns, newColumn]);
   };
 
   const handleAddColumnFromField = (field: FieldDefinition) => {
-    const newColumn: TableColumn = {
+    const existingIndex = columns.findIndex(
+      column => column.key === field.path
+    );
+
+    if (existingIndex >= 0) {
+      const existingColumn = columns[existingIndex];
+      setHighlightedColumnKey(
+        getTableColumnReactKey(existingColumn, existingIndex)
+      );
+      setMessage(
+        `字段“${field.label}”已存在，已为你定位到对应列。若需同字段显示两次，请使用该列右侧的“复制列”。`
+      );
+      return;
+    }
+
+    const newColumn = createTableColumn({
       key: field.path,
       label: field.label,
-      width: 15,
-      widthUnit: '%',
       align: field.type === 'number' ? 'right' : 'left',
       format: isTableColumnFormat(field.suggestedFormat)
         ? field.suggestedFormat
         : 'text',
-    };
-    onChange([...columns, newColumn]);
+    });
+
+    setMessage(`已添加字段“${field.label}”。`);
+    setHighlightedColumnKey(newColumn.id ?? null);
+    updateColumns([...columns, newColumn]);
   };
 
   const handleRemoveColumn = (index: number) => {
     if (columns.length <= 1) return; // 至少保留一列
-    onChange(columns.filter((_, i) => i !== index));
+    setMessage('');
+    setHighlightedColumnKey(null);
+    updateColumns(columns.filter((_, i) => i !== index));
   };
 
   const handleUpdateColumn = (index: number, updates: Partial<TableColumn>) => {
-    onChange(
+    updateColumns(
       columns.map((col, i) => (i === index ? { ...col, ...updates } : col))
     );
+  };
+
+  const handleDuplicateColumn = (index: number) => {
+    const current = columns[index];
+    if (!current) return;
+
+    const duplicate = createTableColumn({
+      ...current,
+      id: undefined,
+      label: createNextDuplicateLabel(columns, current.label),
+    });
+
+    const nextColumns = [...columns];
+    nextColumns.splice(index + 1, 0, duplicate);
+    setMessage(
+      `已复制列“${current.label}”。现在可以保留同一字段的两个展示版本。`
+    );
+    setHighlightedColumnKey(duplicate.id ?? null);
+    updateColumns(nextColumns);
   };
 
   const handleDragStart =
@@ -144,11 +219,18 @@ export function TableColumnManager({
       if (fromIndex === index) return;
       if (fromIndex < 0 || fromIndex >= columns.length) return;
 
-      onChange(moveItem(columns, fromIndex, index));
+      updateColumns(moveItem(columns, fromIndex, index));
     };
 
   return (
     <div className="space-y-3">
+      <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+        <p className="text-xs font-medium text-stone-800">列设置建议</p>
+        <p className="mt-1 text-[11px] leading-5 text-stone-600">
+          从字段添加会自动跳过已存在字段，避免误添加重复列。若要同一字段显示两次，请先添加一次，再使用“复制列”。
+        </p>
+      </div>
+
       <div className="flex items-center justify-between">
         <Label className="text-muted-foreground text-xs">列定义</Label>
         <div className="flex items-center gap-1">
@@ -170,173 +252,200 @@ export function TableColumnManager({
         </div>
       </div>
 
-      <div className="space-y-2">
-        {columns.map((col, index) => (
-          <div
-            key={col.key}
-            className="relative flex items-center gap-1 rounded-md border bg-slate-50 p-2"
-            onDragOver={handleDragOver(index)}
-            onDrop={handleDrop(index)}
-          >
-            <div
-              draggable={columns.length > 1}
-              onDragStart={handleDragStart(index)}
-              onDragEnd={handleDragEnd}
-              className="flex h-7 w-5 items-center justify-center"
-              title="拖拽排序"
-            >
-              <GripVertical className="h-4 w-4 cursor-move text-slate-400" />
-            </div>
+      {message ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-5 text-amber-800">
+          {message}
+        </div>
+      ) : null}
 
-            <div className="flex-1 space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px]">
-                    标题
-                  </Label>
-                  <Input
-                    value={col.label}
-                    onChange={e =>
-                      handleUpdateColumn(index, { label: e.target.value })
-                    }
-                    placeholder="例如: 名称"
-                    className="h-8 text-xs"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px]">
-                    绑定字段
-                  </Label>
-                  <div className="relative">
+      <div className="space-y-2">
+        {columns.map((col, index) => {
+          const columnRenderKey = getTableColumnReactKey(col, index);
+          const isHighlighted = highlightedColumnKey === columnRenderKey;
+
+          return (
+            <div
+              key={columnRenderKey}
+              className={`relative flex items-center gap-1 rounded-md border bg-slate-50 p-2 ${
+                isHighlighted ? 'ring-2 ring-amber-400 ring-offset-1' : ''
+              }`}
+              onDragOver={handleDragOver(index)}
+              onDrop={handleDrop(index)}
+            >
+              <div
+                draggable={columns.length > 1}
+                onDragStart={handleDragStart(index)}
+                onDragEnd={handleDragEnd}
+                className="flex h-7 w-5 items-center justify-center"
+                title="拖拽排序"
+              >
+                <GripVertical className="h-4 w-4 cursor-move text-slate-400" />
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-[10px]">
+                      标题
+                    </Label>
                     <Input
-                      value={col.key}
+                      value={col.label}
                       onChange={e =>
-                        handleUpdateColumn(index, { key: e.target.value })
+                        handleUpdateColumn(index, { label: e.target.value })
                       }
-                      placeholder="选择字段或手动输入"
-                      className="h-8 pr-8 font-mono text-xs"
+                      placeholder="例如: 名称"
+                      className="h-8 text-xs"
                     />
-                    <div className="absolute top-0 right-0">
-                      <FieldPicker
-                        templateType={templateType}
-                        scope="table"
-                        currentField={col.key}
-                        onSelect={field => handlePickField(index, field)}
-                      >
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          title="选择字段"
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-[10px]">
+                      绑定字段
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        value={col.key}
+                        onChange={e =>
+                          handleUpdateColumn(index, { key: e.target.value })
+                        }
+                        placeholder="选择字段或手动输入"
+                        className="h-8 pr-8 font-mono text-xs"
+                      />
+                      <div className="absolute top-0 right-0">
+                        <FieldPicker
+                          templateType={templateType}
+                          scope="table"
+                          currentField={col.key}
+                          onSelect={field => handlePickField(index, field)}
                         >
-                          <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
-                        </Button>
-                      </FieldPicker>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            title="选择字段"
+                          >
+                            <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
+                          </Button>
+                        </FieldPicker>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-4 gap-1">
-                <div className="col-span-2 flex items-end gap-1">
-                  <div className="flex-1 space-y-1">
-                    <Label className="text-muted-foreground text-[10px]">
-                      宽度
-                    </Label>
-                    <Input
-                      type="number"
-                      value={col.width}
-                      onChange={e =>
+                <div className="grid grid-cols-4 gap-1">
+                  <div className="col-span-2 flex items-end gap-1">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-muted-foreground text-[10px]">
+                        宽度
+                      </Label>
+                      <Input
+                        type="number"
+                        value={col.width}
+                        onChange={e =>
+                          handleUpdateColumn(index, {
+                            width: parseInt(e.target.value) || 10,
+                          })
+                        }
+                        className="h-7 px-1 text-xs"
+                      />
+                    </div>
+                    <Select
+                      value={col.widthUnit}
+                      onValueChange={v =>
                         handleUpdateColumn(index, {
-                          width: parseInt(e.target.value) || 10,
+                          widthUnit: v as '%' | 'mm',
                         })
                       }
-                      className="h-7 px-1 text-xs"
-                    />
+                    >
+                      <SelectTrigger className="h-7 w-12 px-1 text-[10px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="%">%</SelectItem>
+                        <SelectItem value="mm">mm</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Select
-                    value={col.widthUnit}
-                    onValueChange={v =>
-                      handleUpdateColumn(index, {
-                        widthUnit: v as '%' | 'mm',
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-7 w-12 px-1 text-[10px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="%">%</SelectItem>
-                      <SelectItem value="mm">mm</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
 
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px]">
-                    对齐
-                  </Label>
-                  <Select
-                    value={col.align}
-                    onValueChange={v =>
-                      handleUpdateColumn(index, {
-                        align: v as 'left' | 'center' | 'right',
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-7 w-full px-1 text-[10px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="left">左</SelectItem>
-                      <SelectItem value="center">中</SelectItem>
-                      <SelectItem value="right">右</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-[10px]">
+                      对齐
+                    </Label>
+                    <Select
+                      value={col.align}
+                      onValueChange={v =>
+                        handleUpdateColumn(index, {
+                          align: v as 'left' | 'center' | 'right',
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-7 w-full px-1 text-[10px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">左</SelectItem>
+                        <SelectItem value="center">中</SelectItem>
+                        <SelectItem value="right">右</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-1">
-                  <Label className="text-muted-foreground text-[10px]">
-                    格式
-                  </Label>
-                  <Select
-                    value={col.format}
-                    onValueChange={v =>
-                      handleUpdateColumn(index, {
-                        format: v as TableColumn['format'],
-                      })
-                    }
-                  >
-                    <SelectTrigger className="h-7 w-full px-1 text-[10px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="text">文本</SelectItem>
-                      <SelectItem value="number">数字</SelectItem>
-                      <SelectItem value="currency">货币</SelectItem>
-                      <SelectItem value="date_cn">日期</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-1">
+                    <Label className="text-muted-foreground text-[10px]">
+                      格式
+                    </Label>
+                    <Select
+                      value={col.format}
+                      onValueChange={v =>
+                        handleUpdateColumn(index, {
+                          format: v as TableColumn['format'],
+                        })
+                      }
+                    >
+                      <SelectTrigger className="h-7 w-full px-1 text-[10px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">文本</SelectItem>
+                        <SelectItem value="number">数字</SelectItem>
+                        <SelectItem value="currency">货币</SelectItem>
+                        <SelectItem value="date_cn">日期</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
+
+              <div className="flex flex-col gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => handleDuplicateColumn(index)}
+                  aria-label={`复制列-${col.label}`}
+                  title="复制列"
+                >
+                  <Copy className="h-3 w-3 text-slate-400" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => handleRemoveColumn(index)}
+                  disabled={columns.length <= 1}
+                  aria-label={`删除列-${col.label}`}
+                  title="删除列"
+                >
+                  <Trash2 className="h-3 w-3 text-slate-400" />
+                </Button>
+              </div>
+
+              {draggingIndex !== null && dragOverIndex === index && (
+                <div className="ring-primary/40 pointer-events-none absolute inset-0 rounded-md ring-2" />
+              )}
             </div>
-
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={() => handleRemoveColumn(index)}
-              disabled={columns.length <= 1}
-            >
-              <Trash2 className="h-3 w-3 text-slate-400" />
-            </Button>
-
-            {draggingIndex !== null && dragOverIndex === index && (
-              <div className="ring-primary/40 pointer-events-none absolute inset-0 rounded-md ring-2" />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

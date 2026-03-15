@@ -29,6 +29,9 @@ export type WidthUnit = z.infer<typeof WidthUnitSchema>;
 
 /** 表格列定义 */
 export const TableColumnSchema = z.object({
+  /** 内部列标识，用于稳定渲染和拖拽排序 */
+  id: z.string().min(1).optional(),
+
   /** 数据字段名 (对应 item 中的 key) */
   key: z.string().min(1),
 
@@ -49,6 +52,57 @@ export const TableColumnSchema = z.object({
 });
 
 export type TableColumn = z.infer<typeof TableColumnSchema>;
+
+export function createTableColumnId(): string {
+  if (
+    typeof globalThis.crypto !== 'undefined' &&
+    typeof globalThis.crypto.randomUUID === 'function'
+  ) {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return `col_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+interface CreateTableColumnInput {
+  id?: string;
+  key: string;
+  label: string;
+  width?: number;
+  widthUnit?: WidthUnit;
+  align?: z.infer<typeof TextAlignSchema>;
+  format?: ColumnFormat;
+}
+
+export function createTableColumn(input: CreateTableColumnInput): TableColumn {
+  return {
+    id: input.id ?? createTableColumnId(),
+    key: input.key,
+    label: input.label,
+    width: input.width ?? 15,
+    widthUnit: input.widthUnit ?? '%',
+    align: input.align ?? 'left',
+    format: input.format ?? 'text',
+  };
+}
+
+export function ensureTableColumnIds(columns: TableColumn[]): TableColumn[] {
+  return columns.map(column =>
+    column.id
+      ? column
+      : {
+          ...column,
+          id: createTableColumnId(),
+        }
+  );
+}
+
+export function getTableColumnReactKey(
+  column: Pick<TableColumn, 'id' | 'key'>,
+  index: number
+): string {
+  return column.id ?? `${column.key}__${index}`;
+}
 
 // ============================================================================
 // 表格样式
@@ -134,38 +188,32 @@ export function createDefaultTableElement(
     visible: true,
     dataSource: 'items',
     columns: [
-      {
+      createTableColumn({
         key: 'name',
         label: '名称',
         width: 30,
-        widthUnit: '%',
-        align: 'left',
-        format: 'text',
-      },
-      {
+      }),
+      createTableColumn({
         key: 'quantity',
         label: '数量',
         width: 15,
-        widthUnit: '%',
         align: 'right',
         format: 'number',
-      },
-      {
+      }),
+      createTableColumn({
         key: 'unitPrice',
         label: '单价',
         width: 20,
-        widthUnit: '%',
         align: 'right',
         format: 'currency',
-      },
-      {
+      }),
+      createTableColumn({
         key: 'subtotal',
         label: '金额',
         width: 20,
-        widthUnit: '%',
         align: 'right',
         format: 'currency',
-      },
+      }),
     ],
     style: {
       headerBgColor: '#f5f5f5',

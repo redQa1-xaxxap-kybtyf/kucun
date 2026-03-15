@@ -6,7 +6,11 @@
 
 'use client';
 
-import type { TableColumn, TableElement } from '@/lib/print-designer/schemas';
+import {
+  getTableColumnReactKey,
+  type TableColumn,
+  type TableElement,
+} from '@/lib/print-designer/schemas';
 
 import { formatValue, getNestedValue, mmToPx, ptToPx } from '../utils';
 
@@ -84,9 +88,9 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
             fontWeight: 'bold',
           }}
         >
-          {columns.map(col => (
+          {columns.map((col, index) => (
             <th
-              key={col.key}
+              key={getTableColumnReactKey(col, index)}
               style={{
                 ...tableCellStyle(col.align),
                 width: getColumnWidth(col),
@@ -109,8 +113,11 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
               height: mmToPx(style.rowHeight) * scale,
             }}
           >
-            {columns.map(col => (
-              <td key={col.key} style={tableCellStyle(col.align)}>
+            {columns.map((col, index) => (
+              <td
+                key={getTableColumnReactKey(col, index)}
+                style={tableCellStyle(col.align)}
+              >
                 {renderCellContent(item, col)}
               </td>
             ))}
@@ -124,7 +131,10 @@ export function TableRenderer({ element, data, scale }: TableRendererProps) {
             }}
           >
             {columns.map((col, idx) => (
-              <td key={col.key} style={tableCellStyle(col.align)}>
+              <td
+                key={getTableColumnReactKey(col, idx)}
+                style={tableCellStyle(col.align)}
+              >
                 {idx === 0
                   ? '合计'
                   : summaryColumns.includes(col.key)
