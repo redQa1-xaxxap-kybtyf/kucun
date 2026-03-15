@@ -40,6 +40,9 @@ const typeLabels: Record<string, string> = {
   'inbound-record': '仓库进货（入库记录）',
   'return-order': '退货订单',
   'delivery-note': '发货单',
+  'finance-monthly-report': '月度报表',
+  'finance-annual-report': '年度报表',
+  'finance-profit-loss-report': '盈亏分析',
   custom: '自定义',
 };
 
@@ -154,6 +157,9 @@ export function TemplateList() {
           <option value="inbound-record">仓库进货（入库记录）</option>
           <option value="return-order">退货订单</option>
           <option value="delivery-note">发货单</option>
+          <option value="finance-monthly-report">月度报表</option>
+          <option value="finance-annual-report">年度报表</option>
+          <option value="finance-profit-loss-report">盈亏分析</option>
           <option value="custom">自定义</option>
         </select>
 
@@ -223,7 +229,9 @@ export function TemplateList() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleSetDefault(template.id, template.type)}
+                        onClick={() =>
+                          handleSetDefault(template.id, template.type)
+                        }
                         aria-label="设为默认模板"
                         title="设为默认"
                       >

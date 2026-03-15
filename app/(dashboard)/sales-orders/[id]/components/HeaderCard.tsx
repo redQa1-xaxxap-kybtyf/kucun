@@ -32,9 +32,9 @@ import type { SalesOrderDetail } from './types';
 
 const PrintTemplatePreviewDialog = dynamic(
   () =>
-    import('@/components/print-designer/renderer/PrintTemplatePreviewDialog').then(
-      mod => mod.PrintTemplatePreviewDialog
-    ),
+    import(
+      '@/components/print-designer/renderer/PrintTemplatePreviewDialog'
+    ).then(mod => mod.PrintTemplatePreviewDialog),
   { ssr: false, loading: () => null }
 );
 
@@ -264,20 +264,13 @@ export function HeaderCard({
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const handleExportImage = useCallback(async () => {
-    const printTemplate = document.getElementById('sales-order-print-template');
-
-    if (!printTemplate) {
-      onShowToast('导出失败', '打印模板未加载', 'destructive');
-      return;
-    }
-
-    await exportToImage(printTemplate, {
+    await exportToImage({
       orderId: order.id,
       orderNumber: order.orderNumber || '',
       backgroundColor: '#ffffff',
       scale: 2,
     });
-  }, [order, exportToImage, onShowToast]);
+  }, [order, exportToImage]);
 
   const handleExportExcel = useCallback(
     () => exportToExcel(order),

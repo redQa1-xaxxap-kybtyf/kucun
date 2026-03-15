@@ -9,6 +9,7 @@ import {
   type ExcelExportOptions,
   type ImageExportOptions,
 } from './export-service';
+import { PrintTemplateExportService } from './print-template-export-service';
 
 /**
  * 销售订单图片导出配置
@@ -68,11 +69,9 @@ export interface SalesOrderExcelData extends Record<string, string | number> {
 export class SalesOrderExportService {
   /**
    * 导出销售订单为图片
-   * @param element 要导出的DOM元素
    * @param options 导出配置
    */
   static async exportOrderToImage(
-    element: HTMLElement,
     options: SalesOrderImageExportOptions
   ): Promise<void> {
     const { orderId: _orderId, orderNumber, ...imageOptions } = options;
@@ -81,7 +80,9 @@ export class SalesOrderExportService {
     const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const filename = `销售订单-${orderNumber}-${date}`;
 
-    await ExportService.exportToImage(element, {
+    await PrintTemplateExportService.exportDocumentToImage({
+      templateType: 'sales-order',
+      documentId: options.orderId,
       ...imageOptions,
       filename,
     });

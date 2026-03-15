@@ -41,7 +41,9 @@ const ProfitLossTrendChart = dynamic(
 
 const DateRangePicker = dynamic(
   () =>
-    import('@/components/ui/date-range-picker').then(mod => mod.DateRangePicker),
+    import('@/components/ui/date-range-picker').then(
+      mod => mod.DateRangePicker
+    ),
   {
     ssr: false,
     loading: () => (
@@ -70,27 +72,6 @@ export function ProfitLossClient() {
     return (num / den) * 100;
   };
 
-  // 导出图片
-  const handleExportImage = React.useCallback(async () => {
-    if (!exportRef.current || isExporting) return;
-    setIsExporting(true);
-    try {
-      const { ExportService } = await import('@/lib/services/export-service');
-      await ExportService.exportToImage(exportRef.current, {
-        filename: `盈亏分析报告-${startDate}-${endDate}`,
-      });
-      toast({ title: '导出成功', description: '分析报告已生成' });
-    } catch (error) {
-      toast({
-        title: '导出失败',
-        description: error instanceof Error ? error.message : '未知错误',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExporting(false);
-    }
-  }, [startDate, endDate, isExporting, toast]);
-
   // 获取盈亏分析数据
   const { data: analysis, isLoading } = useQuery({
     queryKey: queryKeys.finance.profitLoss({ startDate, endDate }),
@@ -114,6 +95,63 @@ export function ProfitLossClient() {
       return result.data as ProfitLossAnalysis;
     },
   });
+
+  // 导出图片：优先使用默认 DIY 模板，未配置时回退到旧分析导出区域
+  const handleExportImage = React.useCallback(async () => {
+    if (!analysis || isExporting) return;
+    setIsExporting(true);
+    try {
+      const filename = `盈亏分析报告-${startDate}-${endDate}`;
+      const { PrintTemplateExportService, isPrintTemplateExportError } =
+        await import('@/lib/services/print-template-export-service');
+
+      try {
+        await PrintTemplateExportService.exportDataToImage({
+          templateType: 'finance-profit-loss-report',
+          data: {
+            ...analysis,
+            reportMeta: {
+              title: '盈亏分析',
+              exportDate: new Date().toISOString().split('T')[0],
+              startDate,
+              endDate,
+              groupBy,
+            },
+          },
+          filename,
+          format: 'png',
+          scale: 2,
+          backgroundColor: '#ffffff',
+        });
+      } catch (error) {
+        if (
+          !isPrintTemplateExportError(error) ||
+          error.code !== 'template_not_configured'
+        ) {
+          throw error;
+        }
+
+        if (!exportRef.current) {
+          throw new Error('找不到分析报告导出区域，请刷新页面后重试');
+        }
+
+        const { ExportService } = await import('@/lib/services/export-service');
+        await ExportService.exportToImage(exportRef.current, {
+          filename,
+        });
+      }
+
+      toast({ title: '导出成功', description: '分析报告已生成' });
+    } catch (error) {
+      toast({
+        title: '导出失败',
+        description: error instanceof Error ? error.message : '未知错误',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [analysis, endDate, groupBy, isExporting, startDate, toast]);
 
   // 快捷日期选择
   const handleQuickSelect = (type: string) => {

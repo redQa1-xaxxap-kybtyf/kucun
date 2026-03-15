@@ -8,6 +8,7 @@ export {
   getSalesOrderForPrint,
   getPurchaseOrderForPrint,
   getFactoryShipmentForPrint,
+  getDeliveryNoteForPrint,
   getInboundRecordForPrint,
   getReturnOrderForPrint,
   getPrintDataForTemplate,

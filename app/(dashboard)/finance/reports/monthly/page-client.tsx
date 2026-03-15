@@ -121,7 +121,7 @@ export function MonthlyReportClient() {
     }
   }, [month, queryClient, toast, year]);
 
-  // 导出报表为图片（只导出报表预览区域，而不是整个页面）
+  // 导出报表为图片：优先使用默认 DIY 模板，未配置时回退到旧报表导出区域
   const handleExportImage = React.useCallback(async () => {
     if (!report) {
       toast({
@@ -132,27 +132,50 @@ export function MonthlyReportClient() {
       return;
     }
 
-    if (!exportRef.current) {
-      toast({
-        variant: 'destructive',
-        title: '导出失败',
-        description: '找不到报表预览区域，请刷新页面后重试',
-      });
-      return;
-    }
-
     try {
       setIsExporting(true);
 
       const filename = `月度报表-${year}-${String(month).padStart(2, '0')}`;
+      const { PrintTemplateExportService, isPrintTemplateExportError } =
+        await import('@/lib/services/print-template-export-service');
 
-      const { ExportService } = await import('@/lib/services/export-service');
-      await ExportService.exportToImage(exportRef.current, {
-        filename,
-        format: 'png',
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
+      try {
+        await PrintTemplateExportService.exportDataToImage({
+          templateType: 'finance-monthly-report',
+          data: {
+            ...report,
+            reportMeta: {
+              title: '月度报表',
+              exportDate: new Date().toISOString().split('T')[0],
+              year,
+              month,
+            },
+          },
+          filename,
+          format: 'png',
+          scale: 2,
+          backgroundColor: '#ffffff',
+        });
+      } catch (error) {
+        if (
+          !isPrintTemplateExportError(error) ||
+          error.code !== 'template_not_configured'
+        ) {
+          throw error;
+        }
+
+        if (!exportRef.current) {
+          throw new Error('找不到报表预览区域，请刷新页面后重试');
+        }
+
+        const { ExportService } = await import('@/lib/services/export-service');
+        await ExportService.exportToImage(exportRef.current, {
+          filename,
+          format: 'png',
+          scale: 2,
+          backgroundColor: '#ffffff',
+        });
+      }
 
       toast({
         title: '导出成功',

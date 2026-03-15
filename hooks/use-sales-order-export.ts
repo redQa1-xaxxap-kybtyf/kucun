@@ -6,21 +6,18 @@ import { useCallback, useState } from 'react';
 
 import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/components/types';
 import { useToast } from '@/components/ui/use-toast';
+import { useFinanceExport } from '@/hooks/use-finance-export';
 import {
   SalesOrderExportService,
   type SalesOrderImageExportOptions,
 } from '@/lib/services/sales-order-export-service';
-import { useFinanceExport } from '@/hooks/use-finance-export';
 
 /**
  * 销售订单导出Hook结果
  */
 export interface UseSalesOrderExportResult {
   /** 导出为图片 */
-  exportToImage: (
-    element: HTMLElement,
-    options?: SalesOrderImageExportOptions
-  ) => Promise<void>;
+  exportToImage: (options: SalesOrderImageExportOptions) => Promise<void>;
   /** 导出为Excel */
   exportToExcel: (order: SalesOrderDetail) => Promise<void>;
   /** 导出为完整Excel（包含摘要和明细） */
@@ -52,8 +49,8 @@ function useImageExport(toast: ToastFn) {
   }, []);
 
   const exportToImage = useCallback(
-    async (element: HTMLElement, options?: SalesOrderImageExportOptions) => {
-      if (!options?.orderId || !options?.orderNumber) {
+    async (options: SalesOrderImageExportOptions) => {
+      if (!options.orderId || !options.orderNumber) {
         const error = new Error('缺少必要的订单信息');
         setImageError(error);
         toast({
@@ -68,7 +65,7 @@ function useImageExport(toast: ToastFn) {
       setImageError(null);
 
       try {
-        await SalesOrderExportService.exportOrderToImage(element, options);
+        await SalesOrderExportService.exportOrderToImage(options);
         toast({
           title: '导出成功',
           description: '销售订单图片已生成并下载',

@@ -303,6 +303,95 @@ export async function getFactoryShipmentForPrint(orderId: string) {
 }
 
 /**
+ * 获取出库发货单数据用于打印预览
+ *
+ * 注意：出库详情路由使用 recordNumber，这里也以 recordNumber 查询。
+ */
+export async function getDeliveryNoteForPrint(recordNumber: string) {
+  const user = await getAuthUser();
+  if (!user) return null;
+
+  const record = await prisma.outboundRecord.findUnique({
+    where: { recordNumber },
+    include: {
+      product: true,
+      variant: true,
+      customer: true,
+      operator: { select: { name: true } },
+      salesOrder: {
+        select: {
+          orderNumber: true,
+          customer: {
+            select: {
+              name: true,
+              phone: true,
+              address: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!record) return null;
+
+  const variantLabel = [record.variant?.colorCode, record.variant?.colorName]
+    .filter(Boolean)
+    .join(' · ');
+  const baseName = record.product?.name ?? '';
+  const name = variantLabel ? `${baseName} - ${variantLabel}` : baseName;
+  const code = record.product?.code ?? '';
+  const spec = record.product?.specification ?? '';
+  const unit = resolveUnitLabel(record.product?.unit ?? 'sheet') || '片';
+  const customer = record.customer ?? record.salesOrder?.customer;
+
+  const itemRow = {
+    name,
+    code,
+    spec,
+    unit,
+    quantity: Number(record.quantity),
+    unitPrice: Number(record.unitCost ?? 0),
+    subtotal: Number(record.totalCost ?? 0),
+    batchNumber: record.batchNumber ?? '',
+    remark: record.notes ?? '',
+
+    productName: name,
+    productCode: code,
+    specification: spec,
+  };
+
+  return {
+    order: {
+      orderNumber: record.recordNumber,
+      createdAt: formatDate(record.createdAt),
+      status: record.reason ?? '',
+      sourceOrderNumber: record.salesOrder?.orderNumber ?? '',
+      remark: record.notes ?? '',
+    },
+    customer: {
+      name: customer?.name ?? '',
+      phone: customer?.phone ?? '',
+      address: customer?.address ?? '',
+      contact: '',
+    },
+    items: [itemRow],
+    totalAmount: Number(record.totalCost ?? 0),
+    totalQuantity: Number(record.quantity),
+    operator: {
+      name: record.operator?.name ?? '',
+    },
+    printDate: todayYmd(),
+    company: {
+      name: '天津豪星陶瓷有限公司', // TODO: 从系统配置获取
+      phone: '',
+      address: '',
+      fax: '',
+    },
+  };
+}
+
+/**
  * 获取入库记录数据用于打印预览
  *
  * 注意：入库详情路由使用 recordNumber，这里也以 recordNumber 查询。
@@ -478,7 +567,7 @@ export async function getReturnOrderForPrint(orderId: string) {
  * 统一入口：根据模板类型 + 单据 id 获取打印数据
  *
  * - sales-order / purchase-order / factory-shipment / return-order: documentId = 数据库 id
- * - inbound-record: documentId = recordNumber
+ * - inbound-record / delivery-note: documentId = recordNumber
  */
 export async function getPrintDataForTemplate(
   templateType: TemplateType,
@@ -491,6 +580,8 @@ export async function getPrintDataForTemplate(
       return getPurchaseOrderForPrint(documentId);
     case 'factory-shipment':
       return getFactoryShipmentForPrint(documentId);
+    case 'delivery-note':
+      return getDeliveryNoteForPrint(documentId);
     case 'inbound-record':
       return getInboundRecordForPrint(documentId);
     case 'return-order':
@@ -604,6 +695,35 @@ export async function getRecentDocumentsForTemplate(
       }));
     }
 
+    case 'delivery-note': {
+      const records = await prisma.outboundRecord.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          recordNumber: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+          salesOrder: {
+            select: {
+              customer: { select: { name: true } },
+            },
+          },
+          product: { select: { name: true } },
+        },
+      });
+
+      return records.map(record => ({
+        id: record.recordNumber,
+        label: record.recordNumber,
+        secondary:
+          record.customer?.name ??
+          record.salesOrder?.customer?.name ??
+          record.product?.name ??
+          '未关联客户/产品',
+        description: `出库于 ${formatDate(record.createdAt)}`,
+      }));
+    }
+
     case 'inbound-record': {
       const records = await prisma.inboundRecord.findMany({
         take: limit,
@@ -620,9 +740,7 @@ export async function getRecentDocumentsForTemplate(
         id: record.recordNumber,
         label: record.recordNumber,
         secondary:
-          record.product?.name ??
-          record.supplier?.name ??
-          '未关联商品/供应商',
+          record.product?.name ?? record.supplier?.name ?? '未关联商品/供应商',
         description: `入库于 ${formatDate(record.createdAt)}`,
       }));
     }
@@ -647,7 +765,6 @@ export async function getRecentDocumentsForTemplate(
       }));
     }
 
-    case 'delivery-note':
     case 'custom':
     default:
       return [];

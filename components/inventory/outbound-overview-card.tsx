@@ -5,14 +5,17 @@ import {
   Boxes,
   HandCoins,
   PackageMinus,
+  Printer,
   Warehouse,
   type LucideIcon,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import type { ReactNode } from 'react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
 import {
@@ -32,6 +35,14 @@ const OUTBOUND_REASON_LABELS: Record<string, string> = {
   adjust_outbound: '调整出库',
   other: '其他出库',
 };
+
+const PrintTemplatePreviewDialog = dynamic(
+  () =>
+    import(
+      '@/components/print-designer/renderer/PrintTemplatePreviewDialog'
+    ).then(mod => mod.PrintTemplatePreviewDialog),
+  { ssr: false, loading: () => null }
+);
 
 function resolveReasonLabel(record: OutboundRecordDetail) {
   if (record.reason && OUTBOUND_REASON_LABELS[record.reason]) {
@@ -81,6 +92,7 @@ export function OutboundOverviewCard({
   updatedAt,
 }: OutboundOverviewCardProps) {
   const { data: session } = useSession();
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = React.useState(false);
 
   // 检查用户是否有财务查看权限
   const hasFinancePermission = React.useMemo(
@@ -155,37 +167,57 @@ export function OutboundOverviewCard({
         : 'xl:grid-cols-2';
 
   return (
-    <Card className="border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-medium)]">
-      <CardHeader className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="flex items-center gap-2 text-xl font-semibold text-[hsl(var(--color-text-primary))]">
-            <PackageMinus className="h-5 w-5 text-[hsl(var(--color-primary))]" />
-            出库单 {record.recordNumber}
-          </CardTitle>
-          <p className="text-xs text-[hsl(var(--color-text-secondary))]">
-            创建时间：{createdAt}
-            {updatedAt ? ` ｜ 最近更新：${updatedAt}` : ''}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Badge variant={typeVariant} className="w-fit">
-            {typeLabel}
-          </Badge>
-          <Badge
-            variant="outline"
-            className="w-fit text-[hsl(var(--color-text-secondary))]"
-          >
-            {reasonLabel}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent
-        className={`grid gap-4 pt-6 md:grid-cols-2 ${gridColsClass}`}
-      >
-        {summaryItems.map(item => (
-          <SummaryStat key={item.label} {...item} />
-        ))}
-      </CardContent>
-    </Card>
+    <>
+      <Card className="border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-medium)]">
+        <CardHeader className="flex flex-col gap-3 border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-xl font-semibold text-[hsl(var(--color-text-primary))]">
+              <PackageMinus className="h-5 w-5 text-[hsl(var(--color-primary))]" />
+              出库单 {record.recordNumber}
+            </CardTitle>
+            <p className="text-xs text-[hsl(var(--color-text-secondary))]">
+              创建时间：{createdAt}
+              {updatedAt ? ` ｜ 最近更新：${updatedAt}` : ''}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant={typeVariant} className="w-fit">
+              {typeLabel}
+            </Badge>
+            <Badge
+              variant="outline"
+              className="w-fit text-[hsl(var(--color-text-secondary))]"
+            >
+              {reasonLabel}
+            </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => setIsPrintDialogOpen(true)}
+            >
+              <Printer className="h-4 w-4" />
+              打印
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent
+          className={`grid gap-4 pt-6 md:grid-cols-2 ${gridColsClass}`}
+        >
+          {summaryItems.map(item => (
+            <SummaryStat key={item.label} {...item} />
+          ))}
+        </CardContent>
+      </Card>
+      {isPrintDialogOpen && (
+        <PrintTemplatePreviewDialog
+          open={isPrintDialogOpen}
+          onOpenChange={setIsPrintDialogOpen}
+          templateType="delivery-note"
+          documentId={record.recordNumber}
+          title="出库单打印"
+        />
+      )}
+    </>
   );
 }

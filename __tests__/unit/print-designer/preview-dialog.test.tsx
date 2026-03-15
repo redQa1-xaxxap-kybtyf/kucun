@@ -60,6 +60,27 @@ describe('PreviewDialog', () => {
     });
   });
 
+  it('supports real preview for delivery-note templates', async () => {
+    const template = createEmptyTemplate(
+      'tpl-delivery',
+      '发货单模板',
+      'delivery-note'
+    );
+
+    render(
+      <PreviewDialog open onOpenChange={jest.fn()} template={template} />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '真实发货单' }));
+
+    await waitFor(() => {
+      expect(getRecentDocumentsForTemplate).toHaveBeenCalledWith(
+        'delivery-note',
+        20
+      );
+    });
+  });
+
   it('renders a hidden 100% print container separate from visible preview', async () => {
     const template = createEmptyTemplate('tpl-print', '销售模板', 'sales-order');
 

@@ -39,6 +39,9 @@ const typeLabels: Record<TemplateType, string> = {
   'delivery-note': '发货单',
   'inbound-record': '仓库进货（入库记录）',
   'return-order': '退货订单',
+  'finance-monthly-report': '月度报表',
+  'finance-annual-report': '年度报表',
+  'finance-profit-loss-report': '盈亏分析',
   custom: '自定义',
 };
 

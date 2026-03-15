@@ -24,8 +24,7 @@ import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 
 const AnnualReportCharts = dynamic(
-  () =>
-    import('./annual-report-charts').then(mod => mod.AnnualReportCharts),
+  () => import('./annual-report-charts').then(mod => mod.AnnualReportCharts),
   {
     ssr: false,
     loading: () => (
@@ -130,7 +129,7 @@ export function AnnualReportClient() {
     }
   }, [queryClient, toast, year]);
 
-  // 导出报表图片（仅导出报表主体区域）
+  // 导出报表图片：优先使用默认 DIY 模板，未配置时回退到旧报表导出区域
   const handleExportImage = React.useCallback(async () => {
     if (!report) {
       toast({
@@ -141,27 +140,49 @@ export function AnnualReportClient() {
       return;
     }
 
-    if (!exportRef.current) {
-      toast({
-        variant: 'destructive',
-        title: '导出失败',
-        description: '找不到报表区域，请刷新页面后重试',
-      });
-      return;
-    }
-
     try {
       setIsExporting(true);
 
       const filename = `年度报表-${year}`;
+      const { PrintTemplateExportService, isPrintTemplateExportError } =
+        await import('@/lib/services/print-template-export-service');
 
-      const { ExportService } = await import('@/lib/services/export-service');
-      await ExportService.exportToImage(exportRef.current, {
-        filename,
-        format: 'png',
-        scale: 2,
-        backgroundColor: '#ffffff',
-      });
+      try {
+        await PrintTemplateExportService.exportDataToImage({
+          templateType: 'finance-annual-report',
+          data: {
+            ...report,
+            reportMeta: {
+              title: '年度报表',
+              exportDate: new Date().toISOString().split('T')[0],
+              year,
+            },
+          },
+          filename,
+          format: 'png',
+          scale: 2,
+          backgroundColor: '#ffffff',
+        });
+      } catch (error) {
+        if (
+          !isPrintTemplateExportError(error) ||
+          error.code !== 'template_not_configured'
+        ) {
+          throw error;
+        }
+
+        if (!exportRef.current) {
+          throw new Error('找不到报表区域，请刷新页面后重试');
+        }
+
+        const { ExportService } = await import('@/lib/services/export-service');
+        await ExportService.exportToImage(exportRef.current, {
+          filename,
+          format: 'png',
+          scale: 2,
+          backgroundColor: '#ffffff',
+        });
+      }
 
       toast({
         title: '导出成功',

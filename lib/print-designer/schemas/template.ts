@@ -73,6 +73,9 @@ export const TemplateTypeSchema = z.enum([
   'delivery-note',
   'inbound-record',
   'return-order',
+  'finance-monthly-report',
+  'finance-annual-report',
+  'finance-profit-loss-report',
   'custom',
 ]);
 

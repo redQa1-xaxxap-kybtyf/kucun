@@ -9,7 +9,6 @@ import {
   CreditCard,
   Edit,
   FileText,
-  Printer,
   Receipt,
   User,
   XCircle,
@@ -278,10 +277,6 @@ export function PaymentOutDetailClient({
             </h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Printer className="h-3.5 w-3.5" />
-              打印
-            </Button>
             {payment.status !== 'cancelled' && (
               <Button
                 variant="outline"

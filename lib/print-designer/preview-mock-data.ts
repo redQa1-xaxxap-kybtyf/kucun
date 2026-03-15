@@ -254,6 +254,351 @@ const returnOrderMock = {
   },
 };
 
+const monthlyReportMock = {
+  period: {
+    type: 'monthly',
+    startDate: '2026-03-01',
+    endDate: '2026-03-31',
+    label: '2026年3月',
+  },
+  revenue: {
+    salesRevenue: 386000,
+    orderCount: 38,
+    averageOrderValue: 10157.89,
+    completedOrders: 29,
+    pendingOrders: 9,
+  },
+  expenses: {
+    totalExpenses: 28600,
+    byType: {
+      shipping: 9800,
+      storage: 3200,
+      labor: 5400,
+      travel: 1900,
+      living: 2100,
+      loading_unloading: 3700,
+      other: 2500,
+    },
+    expenseCount: 24,
+  },
+  costs: {
+    salesCost: 251400,
+    inventoryCostChange: 8600,
+    totalCost: 260000,
+  },
+  receivables: {
+    totalReceivable: 412000,
+    totalPayable: 186000,
+    receivedAmount: 338000,
+    paidAmount: 121000,
+    receivableBalance: 74000,
+    payableBalance: 65000,
+  },
+  profit: {
+    grossProfit: 126000,
+    operatingProfit: 97400,
+    netProfit: 91200,
+    profitMargin: 23.63,
+    grossProfitMargin: 32.64,
+  },
+  factoryShipmentProfit: {
+    totalOrders: 12,
+    totalAmount: 168000,
+    totalRevenue: 182000,
+    customerProfit: 45800,
+    selfCostAmount: 104000,
+    totalExpenses: 8600,
+    averageProfitMargin: 25.16,
+  },
+  inventoryTurnover: {
+    turnoverRate: 3.2,
+    turnoverDays: 28,
+    averageInventoryValue: 218000,
+    salesCost: 251400,
+    beginningInventory: 226000,
+    endingInventory: 210000,
+  },
+  comparison: {
+    revenue: {
+      current: 386000,
+      previous: 352000,
+      change: 34000,
+      changeRate: 9.66,
+      trend: 'up',
+    },
+    profit: {
+      current: 91200,
+      previous: 80600,
+      change: 10600,
+      changeRate: 13.15,
+      trend: 'up',
+    },
+    expenses: {
+      current: 28600,
+      previous: 27400,
+      change: 1200,
+      changeRate: 4.38,
+      trend: 'up',
+    },
+  },
+  alerts: [
+    {
+      type: 'info',
+      title: '回款稳定',
+      message: '本月回款率继续保持在健康区间。',
+    },
+  ],
+  reportMeta: {
+    title: '月度报表',
+    exportDate: '2026-03-15',
+    year: 2026,
+    month: 3,
+  },
+};
+
+const annualReportMock = {
+  year: 2026,
+  period: {
+    type: 'annual',
+    startDate: '2026-01-01',
+    endDate: '2026-12-31',
+    label: '2026年度',
+  },
+  summary: {
+    totalRevenue: 4862000,
+    totalExpenses: 356000,
+    totalCost: 3318000,
+    totalProfit: 1188000,
+    profitMargin: 24.43,
+    orderCount: 428,
+    averageMonthlyRevenue: 405166.67,
+  },
+  monthlyTrend: [
+    {
+      month: '2026-01',
+      monthLabel: '1月',
+      revenue: 362000,
+      expenses: 28400,
+      cost: 249000,
+      profit: 84600,
+      orderCount: 31,
+    },
+    {
+      month: '2026-02',
+      monthLabel: '2月',
+      revenue: 338000,
+      expenses: 26100,
+      cost: 231500,
+      profit: 80400,
+      orderCount: 27,
+    },
+    {
+      month: '2026-03',
+      monthLabel: '3月',
+      revenue: 386000,
+      expenses: 28600,
+      cost: 260000,
+      profit: 97400,
+      orderCount: 38,
+    },
+  ],
+  quarterlyData: [
+    {
+      quarter: 'Q1',
+      quarterLabel: '第一季度',
+      revenue: 1086000,
+      expenses: 83100,
+      cost: 740500,
+      profit: 262400,
+      profitMargin: 24.16,
+    },
+    {
+      quarter: 'Q2',
+      quarterLabel: '第二季度',
+      revenue: 1214000,
+      expenses: 90200,
+      cost: 835600,
+      profit: 288200,
+      profitMargin: 23.74,
+    },
+  ],
+  expenseDistribution: [
+    {
+      type: 'shipping',
+      typeName: '运费',
+      amount: 126000,
+      percentage: 35.39,
+      count: 112,
+    },
+    {
+      type: 'labor',
+      typeName: '人工费',
+      amount: 78800,
+      percentage: 22.13,
+      count: 58,
+    },
+  ],
+  factoryShipmentProfit: {
+    totalOrders: 126,
+    totalAmount: 1826000,
+    totalRevenue: 1962000,
+    customerProfit: 468000,
+    selfCostAmount: 1178000,
+    totalExpenses: 96000,
+    averageProfitMargin: 23.85,
+    monthlyData: [
+      { month: 1, orders: 9, profit: 38200, profitMargin: 22.1 },
+      { month: 2, orders: 8, profit: 35100, profitMargin: 21.7 },
+      { month: 3, orders: 12, profit: 45800, profitMargin: 25.16 },
+    ],
+  },
+  inventoryTurnover: {
+    turnoverRate: 11.8,
+    turnoverDays: 30.5,
+    averageInventoryValue: 236000,
+    salesCost: 3318000,
+    beginningInventory: 248000,
+    endingInventory: 224000,
+  },
+  yearOverYear: {
+    revenue: {
+      current: 4862000,
+      previous: 4315000,
+      change: 547000,
+      changeRate: 12.68,
+      trend: 'up',
+    },
+    profit: {
+      current: 1188000,
+      previous: 986000,
+      change: 202000,
+      changeRate: 20.49,
+      trend: 'up',
+    },
+    expenses: {
+      current: 356000,
+      previous: 328400,
+      change: 27600,
+      changeRate: 8.4,
+      trend: 'up',
+    },
+  },
+  alerts: [
+    {
+      type: 'info',
+      title: '利润率提升',
+      message: '全年利润率较去年提升超过 2 个百分点。',
+    },
+  ],
+  reportMeta: {
+    title: '年度报表',
+    exportDate: '2026-03-15',
+    year: 2026,
+  },
+};
+
+const profitLossReportMock = {
+  period: {
+    type: 'custom',
+    startDate: '2026-03-01',
+    endDate: '2026-03-15',
+    label: '2026-03-01 至 2026-03-15',
+  },
+  status: 'profit',
+  revenue: {
+    salesRevenue: 182000,
+    factoryShipmentRevenue: 96000,
+    otherRevenue: 6000,
+    totalRevenue: 284000,
+    orderCount: 21,
+  },
+  costs: {
+    salesCost: 171000,
+    inventoryCost: 22400,
+    totalCost: 193400,
+    costRate: 68.1,
+  },
+  expenses: {
+    shipping: 7600,
+    storage: 1800,
+    labor: 3200,
+    travel: 1200,
+    living: 900,
+    loading_unloading: 1600,
+    other: 1400,
+    totalExpenses: 17700,
+    expenseRate: 6.23,
+  },
+  profit: {
+    grossProfit: 90600,
+    grossProfitMargin: 31.9,
+    operatingProfit: 72900,
+    operatingProfitMargin: 25.67,
+    netProfit: 69400,
+    netProfitMargin: 24.44,
+  },
+  factoryShipmentProfit: {
+    customerProfit: 35800,
+    selfCostAmount: 62400,
+    totalExpenses: 5800,
+    profitMargin: 22.8,
+    percentageOfTotal: 51.58,
+  },
+  trend: [
+    {
+      date: '2026-03-01',
+      dateLabel: '3/1',
+      revenue: 18000,
+      cost: 12400,
+      expense: 1100,
+      profit: 4500,
+    },
+    {
+      date: '2026-03-08',
+      dateLabel: '3/8',
+      revenue: 22400,
+      cost: 14900,
+      expense: 1300,
+      profit: 6200,
+    },
+  ],
+  adjustments: {
+    returnAmountTotal: 3200,
+    returnCostReversalTotal: 900,
+    compensationRefundTotal: 1800,
+  },
+  comparison: {
+    revenue: {
+      current: 284000,
+      previous: 261000,
+      change: 23000,
+      changeRate: 8.81,
+      trend: 'up',
+    },
+    profit: {
+      current: 69400,
+      previous: 62100,
+      change: 7300,
+      changeRate: 11.76,
+      trend: 'up',
+    },
+  },
+  alerts: [
+    {
+      type: 'warning',
+      title: '费用率抬升',
+      message: '本期费用率较上期提升，请关注运费与装卸费。',
+    },
+  ],
+  reportMeta: {
+    title: '盈亏分析',
+    exportDate: '2026-03-15',
+    startDate: '2026-03-01',
+    endDate: '2026-03-15',
+    groupBy: 'day',
+  },
+};
+
 const mockDataByTemplateType: Record<TemplateType, Record<string, unknown>> = {
   'sales-order': salesOrderMock,
   'purchase-order': purchaseOrderMock,
@@ -261,9 +606,14 @@ const mockDataByTemplateType: Record<TemplateType, Record<string, unknown>> = {
   'delivery-note': salesOrderMock,
   'inbound-record': inboundRecordMock,
   'return-order': returnOrderMock,
+  'finance-monthly-report': monthlyReportMock,
+  'finance-annual-report': annualReportMock,
+  'finance-profit-loss-report': profitLossReportMock,
   custom: salesOrderMock,
 };
 
-export function getMockPrintData(templateType: TemplateType): Record<string, unknown> {
+export function getMockPrintData(
+  templateType: TemplateType
+): Record<string, unknown> {
   return mockDataByTemplateType[templateType] ?? salesOrderMock;
 }

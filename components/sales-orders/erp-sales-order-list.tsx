@@ -866,58 +866,13 @@ export function ERPSalesOrderList({
                             <DropdownMenuItem
                               onClick={async e => {
                                 e.stopPropagation();
-                                // 列表页导出图片：直接请求详情接口并渲染隐藏模板
                                 try {
-                                  const response = await fetch(
-                                    `/api/sales-orders/${order.id}`,
-                                    { credentials: 'include' }
-                                  );
-                                  const result = await response.json();
-                                  if (!response.ok || !result.success) {
-                                    throw new Error(
-                                      result.error || '获取订单详情失败'
-                                    );
-                                  }
-
-                                  // 动态创建隐藏容器，使用与详情页相同的打印模板
-                                  const container =
-                                    document.createElement('div');
-                                  container.style.position = 'absolute';
-                                  container.style.left = '-9999px';
-                                  container.style.top = '0';
-                                  container.id = `sales-order-print-list-${order.id}`;
-                                  document.body.appendChild(container);
-
-                                  // 懒加载打印模板组件
-                                  const { SalesOrderPrintTemplate } =
-                                    await import(
-                                      '@/app/(dashboard)/sales-orders/[id]/components/SalesOrderPrintTemplate'
-                                    );
-                                  const { createRoot } = await import(
-                                    'react-dom/client'
-                                  );
-
-                                  const root = createRoot(container);
-                                  root.render(
-                                    <SalesOrderPrintTemplate
-                                      order={result.data}
-                                    />
-                                  );
-
-                                  // 等待一帧让浏览器完成渲染
-                                  await new Promise(resolve =>
-                                    requestAnimationFrame(() => resolve(null))
-                                  );
-
-                                  await exportToImage(container, {
+                                  await exportToImage({
                                     orderId: order.id,
                                     orderNumber: order.orderNumber || '',
                                     backgroundColor: '#ffffff',
                                     scale: 2,
                                   });
-
-                                  root.unmount();
-                                  document.body.removeChild(container);
                                 } catch (err) {
                                   toast({
                                     title: '导出失败',

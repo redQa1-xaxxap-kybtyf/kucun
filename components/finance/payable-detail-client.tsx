@@ -8,7 +8,6 @@ import {
   Clock,
   CreditCard,
   FileText,
-  Printer,
   Receipt,
   User,
 } from 'lucide-react';
@@ -76,10 +75,6 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             <h1 className="text-lg font-semibold text-gray-900">应付款详情</h1>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Printer className="h-3.5 w-3.5" />
-              打印
-            </Button>
             {payable.remainingAmount > 0 && (
               <Button
                 size="sm"
