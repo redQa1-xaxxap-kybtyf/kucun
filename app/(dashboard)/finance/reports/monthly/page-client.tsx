@@ -31,7 +31,6 @@ export function MonthlyReportClient() {
   const [isExporting, setIsExporting] = React.useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const exportRef = React.useRef<HTMLDivElement | null>(null);
 
   // 获取月度报表数据（默认查看模式，使用缓存）
   const { data: report, isLoading } = useQuery({
@@ -121,7 +120,7 @@ export function MonthlyReportClient() {
     }
   }, [month, queryClient, toast, year]);
 
-  // 导出报表为图片：优先使用默认 DIY 模板，未配置时回退到旧报表导出区域
+  // 导出报表为图片：统一使用默认 DIY 模板
   const handleExportImage = React.useCallback(async () => {
     if (!report) {
       toast({
@@ -136,46 +135,25 @@ export function MonthlyReportClient() {
       setIsExporting(true);
 
       const filename = `月度报表-${year}-${String(month).padStart(2, '0')}`;
-      const { PrintTemplateExportService, isPrintTemplateExportError } =
+      const { PrintTemplateExportService } =
         await import('@/lib/services/print-template-export-service');
 
-      try {
-        await PrintTemplateExportService.exportDataToImage({
-          templateType: 'finance-monthly-report',
-          data: {
-            ...report,
-            reportMeta: {
-              title: '月度报表',
-              exportDate: new Date().toISOString().split('T')[0],
-              year,
-              month,
-            },
+      await PrintTemplateExportService.exportDataToImage({
+        templateType: 'finance-monthly-report',
+        data: {
+          ...report,
+          reportMeta: {
+            title: '月度报表',
+            exportDate: new Date().toISOString().split('T')[0],
+            year,
+            month,
           },
-          filename,
-          format: 'png',
-          scale: 2,
-          backgroundColor: '#ffffff',
-        });
-      } catch (error) {
-        if (
-          !isPrintTemplateExportError(error) ||
-          error.code !== 'template_not_configured'
-        ) {
-          throw error;
-        }
-
-        if (!exportRef.current) {
-          throw new Error('找不到报表预览区域，请刷新页面后重试');
-        }
-
-        const { ExportService } = await import('@/lib/services/export-service');
-        await ExportService.exportToImage(exportRef.current, {
-          filename,
-          format: 'png',
-          scale: 2,
-          backgroundColor: '#ffffff',
-        });
-      }
+        },
+        filename,
+        format: 'png',
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
 
       toast({
         title: '导出成功',
@@ -571,285 +549,6 @@ export function MonthlyReportClient() {
           </div>
         )}
 
-        {/* 报表导出区域 (v3 PRO: 专用于图片导出，格式化为专业纸质报表感) */}
-        <div className="pointer-events-none h-0 w-0 overflow-hidden opacity-0">
-          <Card
-            ref={exportRef}
-            className="w-[1000px] border-none bg-white p-10 text-slate-900 shadow-none"
-          >
-            {/* 页眉 - 仿纸质报表标记 */}
-            <div className="mb-8 flex items-end justify-between border-b-2 border-slate-900 pb-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded bg-slate-900 font-black text-white italic">
-                    反
-                  </div>
-                  <h1 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">
-                    反重力{' '}
-                    <span className="font-light text-slate-500">系统</span>
-                  </h1>
-                </div>
-                <div className="text-[10px] font-bold tracking-widest text-slate-500">
-                  财务报表中心
-                </div>
-              </div>
-              <div className="space-y-0.5 text-right">
-                <h2 className="text-xl font-black tracking-tight">
-                  {year}年{month}月度财务分析报表
-                </h2>
-                <div className="text-[10px] font-bold text-slate-400 uppercase">
-                  报告编号：财报-{year}
-                  {month.toString().padStart(2, '0')}-001
-                </div>
-              </div>
-            </div>
-
-            {/* 元数据行 */}
-            <div className="mb-6 grid grid-cols-4 gap-4 rounded-lg border border-slate-100 bg-slate-50 p-4">
-              {[
-                { label: '报表类型', value: '月度经营分析' },
-                {
-                  label: '统计周期',
-                  value: `${report.period.startDate} / ${report.period.endDate}`,
-                },
-                { label: '币种', value: '人民币（元）' },
-                { label: '保密级别', value: '内部机密' },
-              ].map(item => (
-                <div key={item.label}>
-                  <div className="text-[9px] font-black text-slate-400 uppercase">
-                    {item.label}
-                  </div>
-                  <div className="text-xs font-bold text-slate-700">
-                    {item.value}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* A. 核心经营业绩汇总 */}
-            <div className="mb-8">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="h-1 w-8 bg-slate-900" />
-                <h3 className="text-[11px] font-black tracking-widest text-slate-900 uppercase">
-                  第一部分：经营业绩汇总
-                </h3>
-              </div>
-              <div className="grid grid-cols-4 gap-px border border-slate-200 bg-slate-200">
-                {[
-                  {
-                    label: '销售总收入',
-                    value: report.revenue.salesRevenue,
-                    sub: `订单量: ${report.revenue.orderCount}`,
-                  },
-                  {
-                    label: '营业总成本',
-                    value: report.costs.totalCost,
-                    sub: `销售毛利: ${formatCurrency(report.profit.grossProfit)}`,
-                  },
-                  {
-                    label: '经营总费用',
-                    value: report.expenses.totalExpenses,
-                    sub: `费用占比: ${report.revenue.salesRevenue > 0 ? ((report.expenses.totalExpenses / report.revenue.salesRevenue) * 100).toFixed(1) : '0.0'}%`,
-                  },
-                  {
-                    label: '本月净利润',
-                    value: report.profit.netProfit,
-                    sub: `净利率: ${report.profit.profitMargin.toFixed(2)}%`,
-                    highlight: true,
-                  },
-                ].map(item => (
-                  <div
-                    key={item.label}
-                    className={cn(
-                      'bg-white p-5',
-                      item.highlight && 'bg-slate-50'
-                    )}
-                  >
-                    <div className="mb-1 text-[10px] font-bold text-slate-500">
-                      {item.label}
-                    </div>
-                    <div className="font-mono text-xl font-black text-slate-900">
-                      {formatCurrency(item.value)}
-                    </div>
-                    <div className="mt-1 text-[9px] font-medium text-slate-400">
-                      {item.sub}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* B. 细分指标矩阵 */}
-            <div className="mb-8 grid grid-cols-2 gap-8">
-              {/* 支出构成明细表 */}
-              <div>
-                <div className="mb-3 flex items-center gap-2">
-                  <div className="h-1 w-4 bg-slate-400" />
-                  <h3 className="text-[10px] font-black tracking-widest text-slate-700 uppercase">
-                    第二部分：费用分布
-                  </h3>
-                </div>
-                <table className="w-full text-left text-[11px]">
-                  <thead className="border-b-2 border-slate-900">
-                    <tr>
-                      <th className="py-2 font-black">费用类别</th>
-                      <th className="py-2 text-right font-black">金额（元）</th>
-                      <th className="py-2 text-right font-black">占比 (%)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 italic">
-                    {[
-                      { l: '运费', v: report.expenses.byType.shipping },
-                      { l: '仓储费', v: report.expenses.byType.storage },
-                      { l: '人工费', v: report.expenses.byType.labor },
-                      {
-                        l: '其他费用',
-                        v:
-                          report.expenses.byType.travel +
-                          report.expenses.byType.living,
-                      },
-                    ].map(row => (
-                      <tr key={row.l}>
-                        <td className="py-2 font-bold text-slate-600">
-                          {row.l}
-                        </td>
-                        <td className="py-2 text-right font-mono font-bold">
-                          {formatCurrency(row.v)}
-                        </td>
-                        <td className="py-2 text-right font-bold">
-                          {(
-                            (row.v / report.expenses.totalExpenses) *
-                            100
-                          ).toFixed(1)}
-                          %
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t-2 border-slate-900">
-                    <tr className="font-black">
-                      <td className="py-2">合计</td>
-                      <td className="py-2 text-right font-mono">
-                        {formatCurrency(report.expenses.totalExpenses)}
-                      </td>
-                      <td className="py-2 text-right">100.0%</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-
-              {/* 资金回收与效率看板 */}
-              <div className="space-y-6">
-                <div>
-                  <div className="mb-3 flex items-center gap-2">
-                    <div className="h-1 w-4 bg-slate-400" />
-                    <h3 className="text-[10px] font-black tracking-widest text-slate-700 uppercase">
-                      第三部分：现金流与周转
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="rounded border border-slate-200 p-3">
-                      <div className="text-[9px] font-black text-slate-400 uppercase">
-                        应收账款回收率
-                      </div>
-                      <div className="font-mono text-lg font-black">
-                        {report.receivables.totalReceivable > 0
-                          ? (
-                              (report.receivables.receivedAmount /
-                                report.receivables.totalReceivable) *
-                              100
-                            ).toFixed(1)
-                          : '0.0'}
-                        %
-                      </div>
-                      <div className="mt-1 text-[9px] text-slate-400">
-                        余额:{' '}
-                        {formatCurrency(report.receivables.receivableBalance)}
-                      </div>
-                    </div>
-                    <div className="rounded border border-slate-200 p-3">
-                      <div className="text-[9px] font-black text-slate-400 uppercase">
-                        库存周转周期 (天)
-                      </div>
-                      <div className="font-mono text-lg font-black">
-                        {report.inventoryTurnover?.turnoverDays.toFixed(0) ||
-                          '0'}{' '}
-                        天
-                      </div>
-                      <div className="mt-1 text-[9px] text-slate-400">
-                        周转率:{' '}
-                        {report.inventoryTurnover?.turnoverRate.toFixed(2)}x
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded bg-slate-900 p-4 text-white">
-                  <div className="mb-2 flex items-start justify-between">
-                    <div className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">
-                      直发业务绩效汇报
-                    </div>
-                    <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[9px]">
-                      厂家直发
-                    </span>
-                  </div>
-                  <div className="flex items-baseline justify-between">
-                    <div className="font-mono text-2xl font-black">
-                      {formatCurrency(
-                        report.factoryShipmentProfit?.customerProfit || 0
-                      )}
-                    </div>
-                    <div className="text-xs font-bold text-slate-300">
-                      Margin:{' '}
-                      {report.factoryShipmentProfit?.averageProfitMargin.toFixed(
-                        2
-                      )}
-                      %
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* C. 审计预警摘要 */}
-            {report.alerts && report.alerts.length > 0 && (
-              <div className="rounded-lg border-2 border-slate-900 bg-slate-50 p-5">
-                <div className="mb-3 flex items-center gap-2">
-                  <Receipt className="h-4 w-4" />
-                  <h3 className="text-xs font-black tracking-widest uppercase">
-                    管理审计与预警
-                  </h3>
-                </div>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  {report.alerts.map((alert, idx) => (
-                    <div key={idx} className="flex gap-3">
-                      <span className="font-black text-slate-400">
-                        {String(idx + 1).padStart(2, '0')}.
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold text-slate-800">
-                          {alert.title}
-                        </div>
-                        <div className="mt-0.5 text-[10px] leading-relaxed text-slate-500 italic">
-                          {alert.message}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 页脚 - 报表鉴真 */}
-            <div className="mt-12 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">
-              <div className="flex gap-4">
-                <span>生成模块：智能财务模块</span>
-                <span>生成时间：{new Date().toLocaleString('zh-CN')}</span>
-              </div>
-              <div>© 2026 反重力系统 - 保留所有权利</div>
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );

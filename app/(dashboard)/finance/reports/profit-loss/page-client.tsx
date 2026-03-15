@@ -63,7 +63,6 @@ export function ProfitLossClient() {
   const [groupBy, setGroupBy] = React.useState<'day' | 'week' | 'month'>('day');
 
   const { toast } = useToast();
-  const exportRef = React.useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = React.useState(false);
 
   // 安全百分比计算
@@ -96,50 +95,32 @@ export function ProfitLossClient() {
     },
   });
 
-  // 导出图片：优先使用默认 DIY 模板，未配置时回退到旧分析导出区域
+  // 导出图片：统一使用默认 DIY 模板
   const handleExportImage = React.useCallback(async () => {
     if (!analysis || isExporting) return;
     setIsExporting(true);
     try {
       const filename = `盈亏分析报告-${startDate}-${endDate}`;
-      const { PrintTemplateExportService, isPrintTemplateExportError } =
+      const { PrintTemplateExportService } =
         await import('@/lib/services/print-template-export-service');
 
-      try {
-        await PrintTemplateExportService.exportDataToImage({
-          templateType: 'finance-profit-loss-report',
-          data: {
-            ...analysis,
-            reportMeta: {
-              title: '盈亏分析',
-              exportDate: new Date().toISOString().split('T')[0],
-              startDate,
-              endDate,
-              groupBy,
-            },
+      await PrintTemplateExportService.exportDataToImage({
+        templateType: 'finance-profit-loss-report',
+        data: {
+          ...analysis,
+          reportMeta: {
+            title: '盈亏分析',
+            exportDate: new Date().toISOString().split('T')[0],
+            startDate,
+            endDate,
+            groupBy,
           },
-          filename,
-          format: 'png',
-          scale: 2,
-          backgroundColor: '#ffffff',
-        });
-      } catch (error) {
-        if (
-          !isPrintTemplateExportError(error) ||
-          error.code !== 'template_not_configured'
-        ) {
-          throw error;
-        }
-
-        if (!exportRef.current) {
-          throw new Error('找不到分析报告导出区域，请刷新页面后重试');
-        }
-
-        const { ExportService } = await import('@/lib/services/export-service');
-        await ExportService.exportToImage(exportRef.current, {
-          filename,
-        });
-      }
+        },
+        filename,
+        format: 'png',
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
 
       toast({ title: '导出成功', description: '分析报告已生成' });
     } catch (error) {
@@ -720,220 +701,6 @@ export function ProfitLossClient() {
           </Card>
         )}
 
-        {/* ====================================================================== */}
-        {/* 报表导出区域 (v3 PRO): 仅在导出时渲染，屏幕不可见 */}
-        {/* ====================================================================== */}
-        <div className="pointer-events-none h-0 w-0 overflow-hidden opacity-0">
-          <Card
-            ref={exportRef}
-            className="relative w-[1000px] overflow-hidden border-none bg-white p-16 shadow-none"
-          >
-            {/* 装饰水印 */}
-            <div className="absolute top-[-10%] right-[-10%] rotate-12 opacity-[0.03]">
-              <TrendingUp size={600} strokeWidth={1} />
-            </div>
-
-            {/* 顶栏 - 商务报告头 */}
-            <div className="relative z-10 flex items-start justify-between border-b-4 border-slate-900 pb-8">
-              <div>
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="bg-slate-900 p-2 text-xl font-black tracking-tighter text-white italic">
-                    反重力
-                  </div>
-                  <div className="mx-2 h-8 w-px bg-slate-300" />
-                  <div className="text-xs font-black tracking-[0.3em] text-slate-500 uppercase">
-                    财务智能分析系统
-                  </div>
-                </div>
-                <h1 className="mb-2 text-5xl leading-none font-black tracking-tighter text-slate-900">
-                  盈亏多维分析报表
-                </h1>
-                <p className="text-xs font-bold tracking-widest text-slate-400 uppercase italic">
-                  统计周期: {startDate} » {endDate} · 状态: 正式核算
-                </p>
-              </div>
-              <div className="text-right">
-                <div className="mb-2 text-xs leading-none font-black tracking-[0.4em] text-slate-400 uppercase">
-                  报表编号
-                </div>
-                <div className="font-mono text-2xl leading-none font-black text-slate-900">
-                  PL-ANL-{new Date().getFullYear()}-
-                  {Math.floor(Math.random() * 9000 + 1000)}
-                </div>
-              </div>
-            </div>
-
-            {/* 核心指标表格 - 极致简约现代感 */}
-            <div className="relative z-10 mt-12 grid grid-cols-4 gap-0 border-y border-slate-900">
-              {[
-                {
-                  label: '销售总收入',
-                  value: analysis.revenue.totalRevenue,
-                  sub: `成交单量: ${analysis.revenue.orderCount}`,
-                },
-                {
-                  label: '营业总成本',
-                  value: analysis.costs.totalCost,
-                  sub: `成本率: ${analysis.costs.costRate.toFixed(1)}%`,
-                },
-                {
-                  label: '经营总费用',
-                  value: analysis.expenses.totalExpenses,
-                  sub: `费用率: ${analysis.expenses.expenseRate.toFixed(1)}%`,
-                },
-                {
-                  label: '核心净利润',
-                  value: analysis.profit.netProfit,
-                  sub: `净利率: ${analysis.profit.netProfitMargin.toFixed(2)}%`,
-                  highlight: true,
-                },
-              ].map(item => (
-                <div
-                  key={item.label}
-                  className={cn(
-                    'border-r border-slate-200 p-8 last:border-r-0',
-                    item.highlight &&
-                      'border-r-slate-900 bg-slate-900 text-white'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'mb-4 text-xs font-black tracking-[0.2em] uppercase',
-                      item.highlight ? 'text-slate-400' : 'text-slate-500'
-                    )}
-                  >
-                    {item.label}
-                  </div>
-                  <div className="mb-2 font-mono text-3xl font-black tracking-tighter">
-                    {formatCurrency(item.value)}
-                  </div>
-                  <div
-                    className={cn(
-                      'text-xs font-bold uppercase',
-                      item.highlight ? 'text-blue-400' : 'text-slate-600'
-                    )}
-                  >
-                    {item.sub}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 深度分部透视 - 年度与直发对比 */}
-            <div className="relative z-10 mt-12 grid grid-cols-2 gap-12">
-              <div>
-                <div className="mb-6 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
-                  <h3 className="text-xs font-black tracking-widest text-slate-900 uppercase">
-                    支出结构透视分析
-                  </h3>
-                </div>
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b-2 border-slate-900 uppercase">
-                      <th className="py-3 font-black tracking-widest text-slate-400">
-                        明细科目
-                      </th>
-                      <th className="py-3 text-right font-black tracking-widest text-slate-400">
-                        实际发生额
-                      </th>
-                      <th className="py-3 text-right font-black tracking-widest text-slate-400">
-                        比例 %
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {[
-                      { name: '运费', val: analysis.expenses.shipping },
-                      { name: '仓储费', val: analysis.expenses.storage },
-                      { name: '人工费', val: analysis.expenses.labor },
-                      { name: '差旅费', val: analysis.expenses.travel },
-                    ].map(row => (
-                      <tr key={row.name}>
-                        <td className="py-4 font-bold text-slate-900">
-                          {row.name}
-                        </td>
-                        <td className="py-4 text-right font-mono font-bold">
-                          {formatCurrency(row.val)}
-                        </td>
-                        <td className="py-4 text-right font-bold text-slate-400">
-                          {safePercent(
-                            row.val,
-                            analysis.expenses.totalExpenses
-                          ).toFixed(1)}
-                          %
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="space-y-12">
-                <div>
-                  <div className="mb-6 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
-                    <h3 className="text-xs font-black tracking-widest text-slate-900 uppercase">
-                      核心盈利构成分析
-                    </h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6 rounded-2xl border border-slate-100 bg-slate-50 p-8">
-                    <div>
-                      <div className="mb-2 text-xs font-black text-slate-500 uppercase">
-                        直发业务利润
-                      </div>
-                      <div className="font-mono text-2xl font-black text-blue-600">
-                        {formatCurrency(
-                          analysis.factoryShipmentProfit.customerProfit
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="mb-2 text-xs font-black text-slate-500 uppercase">
-                        利润贡献占比
-                      </div>
-                      <div className="text-2xl font-black text-blue-400">
-                        {analysis.factoryShipmentProfit.percentageOfTotal.toFixed(
-                          1
-                        )}
-                        %
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8">
-                  <div className="mb-4 text-xs leading-none font-black text-slate-500 uppercase">
-                    内部审计摘要
-                  </div>
-                  <p className="text-xs leading-relaxed font-bold text-slate-700">
-                    “当前周期的盈亏分析显示，收入增长与运营规模化之间保持了极高的协同性。各项费用率均处于战略管控区间内，直发
-                    fulfillment 模式持续为整体净性能提供可持续的正面支撑。”
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* 页脚签章 */}
-            <div className="relative z-10 mt-20 flex items-end justify-between border-t border-slate-200 pt-8">
-              <div>
-                <div className="mb-1 font-mono text-xs font-black tracking-widest text-slate-900 uppercase">
-                  已验证的数字资产
-                </div>
-                <div className="text-xs leading-none font-bold tracking-widest text-slate-500 uppercase">
-                  数字签名: AG-SEC-{new Date().getFullYear()}-PL-
-                  {new Date().getTime().toString(16).toUpperCase()}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="mb-1 text-xs font-black tracking-widest text-slate-900 uppercase">
-                  © 2026 反重力财务服务中心
-                </div>
-                <div className="text-xs font-bold text-slate-500 uppercase">
-                  内部评审版本 0.1 / 盈亏分析汇总报告
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );

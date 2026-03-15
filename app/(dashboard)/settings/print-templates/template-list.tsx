@@ -8,6 +8,7 @@ import { Copy, Edit, Plus, Star, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -29,6 +30,7 @@ interface TemplateItem {
   name: string;
   type: string;
   isDefault: boolean;
+  isSystem: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -199,6 +201,11 @@ export function TemplateList() {
                     {template.isDefault && (
                       <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                     )}
+                    {template.isSystem && (
+                      <Badge variant="outline" className="text-[10px]">
+                        系统内置
+                      </Badge>
+                    )}
                   </div>
                   <div
                     className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
@@ -238,16 +245,18 @@ export function TemplateList() {
                         <Star className="h-4 w-4" />
                       </Button>
                     ) : null}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive h-8 w-8"
-                      onClick={() => handleDelete(template.id)}
-                      aria-label="删除模板"
-                      title="删除"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {!template.isSystem ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive h-8 w-8"
+                        onClick={() => handleDelete(template.id)}
+                        aria-label="删除模板"
+                        title="删除"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
                 <CardDescription>
@@ -259,6 +268,11 @@ export function TemplateList() {
                   更新于{' '}
                   {new Date(template.updatedAt).toLocaleDateString('zh-CN')}
                 </p>
+                {template.isSystem ? (
+                  <p className="text-muted-foreground mt-1 text-[11px]">
+                    系统基础模板可直接编辑、复制或设为默认，但不能删除。
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           ))}

@@ -158,6 +158,48 @@ const factoryShipmentMock = {
   printDate: '2026-03-15',
 };
 
+const deliveryNoteMock = {
+  order: {
+    orderNumber: 'CK-2026-0108',
+    createdAt: '2026-03-14',
+    status: '销售出库',
+    sourceOrderNumber: 'SO-2026-0001',
+    remark: '司机下午 3 点前送达工地',
+  },
+  customer: {
+    name: '北京建材有限公司',
+    phone: '010-12345678',
+    address: '北京市朝阳区建国路88号',
+    contact: '张经理',
+  },
+  company: {
+    name: '天津豪星陶瓷有限公司',
+    phone: '022-88888888',
+    address: '天津市西青区陶瓷产业园',
+    fax: '022-88888889',
+  },
+  items: [
+    {
+      name: '800x800 抛光砖 - 米黄色',
+      code: 'PG-800-001',
+      spec: '800x800mm',
+      productName: '800x800 抛光砖 - 米黄色',
+      productCode: 'PG-800-001',
+      specification: '800x800mm',
+      unit: '片',
+      quantity: 120,
+      unitPrice: 45,
+      subtotal: 5400,
+      batchNumber: 'CK260314',
+      remark: '先送 1 车',
+    },
+  ],
+  totalAmount: 5400,
+  totalQuantity: 120,
+  operator: { name: '李明' },
+  printDate: '2026-03-15',
+};
+
 const inboundRecordMock = {
   order: {
     orderNumber: 'RK-2026-0188',
@@ -603,7 +645,7 @@ const mockDataByTemplateType: Record<TemplateType, Record<string, unknown>> = {
   'sales-order': salesOrderMock,
   'purchase-order': purchaseOrderMock,
   'factory-shipment': factoryShipmentMock,
-  'delivery-note': salesOrderMock,
+  'delivery-note': deliveryNoteMock,
   'inbound-record': inboundRecordMock,
   'return-order': returnOrderMock,
   'finance-monthly-report': monthlyReportMock,

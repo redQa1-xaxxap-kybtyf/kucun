@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { getArrayFieldsForTemplateType } from '@/lib/print-designer/field-registry';
 import {
   getPaperDimensions,
   type TableElement,
@@ -289,6 +290,27 @@ export function PropertiesPanel() {
   }
 
   // 选中元素时显示元素属性
+  const tableDataSourceOptions =
+    selectedElement.type === 'table'
+      ? (() => {
+          const fields = getArrayFieldsForTemplateType(templateType);
+          const currentDataSource = selectedElement.dataSource;
+          if (fields.some(field => field.path === currentDataSource)) {
+            return fields;
+          }
+
+          return [
+            ...fields,
+            {
+              path: currentDataSource,
+              label: `当前数据源 (${currentDataSource})`,
+              group: '表格数据源',
+              type: 'array' as const,
+            },
+          ];
+        })()
+      : [];
+
   return (
     <aside className="flex w-72 flex-col border-l bg-white">
       <div className="border-b p-3">
@@ -430,6 +452,36 @@ export function PropertiesPanel() {
         {/* 表格列管理 (仅表格) */}
         {selectedElement.type === 'table' && (
           <>
+            <div className="mb-4 space-y-2">
+              <Label className="text-muted-foreground text-xs font-semibold">
+                表格数据源
+              </Label>
+              <Select
+                value={(selectedElement as TableElement).dataSource}
+                onValueChange={dataSource =>
+                  updateElement(selectedElement.id, { dataSource })
+                }
+              >
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="选择数组字段" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tableDataSourceOptions.map(field => (
+                    <SelectItem key={field.path} value={field.path}>
+                      {field.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-muted-foreground text-[11px] leading-5">
+                决定当前表格读取哪组数组数据。业务单据通常选择
+                <span className="font-mono"> items </span>
+                ，报表模板可以切换到趋势、季度或提醒数据。
+              </p>
+            </div>
+
+            <Separator className="my-4" />
+
             <TableColumnManager
               templateType={templateType}
               columns={(selectedElement as TableElement).columns}

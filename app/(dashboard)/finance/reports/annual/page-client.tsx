@@ -44,7 +44,6 @@ export function AnnualReportClient() {
   const [isExporting, setIsExporting] = React.useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const exportRef = React.useRef<HTMLDivElement | null>(null);
 
   // 获取年度报表数据（默认查看模式，使用缓存）
   const { data: report, isLoading } = useQuery({
@@ -129,7 +128,7 @@ export function AnnualReportClient() {
     }
   }, [queryClient, toast, year]);
 
-  // 导出报表图片：优先使用默认 DIY 模板，未配置时回退到旧报表导出区域
+  // 导出报表图片：统一使用默认 DIY 模板
   const handleExportImage = React.useCallback(async () => {
     if (!report) {
       toast({
@@ -144,45 +143,24 @@ export function AnnualReportClient() {
       setIsExporting(true);
 
       const filename = `年度报表-${year}`;
-      const { PrintTemplateExportService, isPrintTemplateExportError } =
+      const { PrintTemplateExportService } =
         await import('@/lib/services/print-template-export-service');
 
-      try {
-        await PrintTemplateExportService.exportDataToImage({
-          templateType: 'finance-annual-report',
-          data: {
-            ...report,
-            reportMeta: {
-              title: '年度报表',
-              exportDate: new Date().toISOString().split('T')[0],
-              year,
-            },
+      await PrintTemplateExportService.exportDataToImage({
+        templateType: 'finance-annual-report',
+        data: {
+          ...report,
+          reportMeta: {
+            title: '年度报表',
+            exportDate: new Date().toISOString().split('T')[0],
+            year,
           },
-          filename,
-          format: 'png',
-          scale: 2,
-          backgroundColor: '#ffffff',
-        });
-      } catch (error) {
-        if (
-          !isPrintTemplateExportError(error) ||
-          error.code !== 'template_not_configured'
-        ) {
-          throw error;
-        }
-
-        if (!exportRef.current) {
-          throw new Error('找不到报表区域，请刷新页面后重试');
-        }
-
-        const { ExportService } = await import('@/lib/services/export-service');
-        await ExportService.exportToImage(exportRef.current, {
-          filename,
-          format: 'png',
-          scale: 2,
-          backgroundColor: '#ffffff',
-        });
-      }
+        },
+        filename,
+        format: 'png',
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
 
       toast({
         title: '导出成功',
@@ -388,203 +366,6 @@ export function AnnualReportClient() {
 
         <AnnualReportCharts report={report} />
 
-        {/* 年度报表导出区域 (v3 PRO: 专用于图片导出，格式化为专业年度经营报告) */}
-        <div className="pointer-events-none h-0 w-0 overflow-hidden opacity-0">
-          <Card
-            ref={exportRef}
-            className="w-[1000px] border-none bg-white p-12 text-slate-900 shadow-none"
-          >
-            {/* 页眉 - 年度报告风格 */}
-            <div className="mb-10 border-b-4 border-slate-900 pb-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded bg-slate-900 text-xl font-black text-white italic">
-                      反
-                    </div>
-                    <h1 className="text-3xl font-black tracking-tighter text-slate-900 uppercase">
-                      反重力{' '}
-                      <span className="font-light text-slate-500">系统</span>
-                    </h1>
-                  </div>
-                  <div className="text-xs font-bold tracking-[0.3em] text-slate-500">
-                    集团财务报告中心
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="mb-1 text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                    状态：内部机密 / 终稿
-                  </div>
-                  <div className="text-4xl font-black tracking-tighter text-slate-900 italic">
-                    {year}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-8 flex items-baseline justify-between">
-                <h2 className="text-2xl font-black tracking-tight uppercase">
-                  年度经营业绩分析
-                </h2>
-                <div className="text-xs leading-none font-bold tracking-widest text-slate-500 uppercase">
-                  年度财务汇总报表
-                </div>
-              </div>
-            </div>
-
-            {/* A. 年度核心经营数据汇总 */}
-            <div className="mb-10">
-              <div className="grid grid-cols-4 gap-px border border-slate-200 bg-slate-200">
-                {[
-                  {
-                    label: '年度销售总收入',
-                    value: report.summary.totalRevenue,
-                    sub: `成交单量: ${report.summary.orderCount}`,
-                  },
-                  {
-                    label: '年度经营总利润',
-                    value: report.summary.totalProfit,
-                    sub: `利润率: ${report.summary.profitMargin.toFixed(2)}%`,
-                    highlight: true,
-                  },
-                  {
-                    label: '营业总成本',
-                    value: report.summary.totalCost,
-                    sub: `成本率: ${report.summary.totalRevenue > 0 ? ((report.summary.totalCost / report.summary.totalRevenue) * 100).toFixed(1) : '0.0'}%`,
-                  },
-                  {
-                    label: '年度库存周转率',
-                    value: report.inventoryTurnover?.turnoverRate || 0,
-                    sub: `周转天数: ${report.inventoryTurnover?.turnoverDays.toFixed(0)} 天`,
-                    isCurrency: false,
-                  },
-                ].map(item => (
-                  <div
-                    key={item.label}
-                    className={cn(
-                      'bg-white p-6',
-                      item.highlight && 'bg-slate-50'
-                    )}
-                  >
-                    <div className="mb-2 text-[10px] font-bold tracking-wider text-slate-500 uppercase">
-                      {item.label}
-                    </div>
-                    <div className="mb-2 border-b-2 border-slate-100 pb-2 font-mono text-2xl font-black text-slate-900">
-                      {item.isCurrency !== false
-                        ? formatCurrency(item.value)
-                        : item.value.toFixed(2)}
-                    </div>
-                    <div className="text-[9px] font-bold text-slate-400 italic">
-                      {item.sub}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* B. 细分分析看板 */}
-            <div className="mb-10 grid grid-cols-2 gap-12">
-              <div>
-                <div className="mb-4 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
-                  <h3 className="text-xs font-black tracking-widest text-slate-900 uppercase italic">
-                    子报表：费用支出结构
-                  </h3>
-                </div>
-                <table className="w-full text-left text-[11px]">
-                  <thead className="bg-slate-900 text-white">
-                    <tr>
-                      <th className="px-3 py-2.5 font-black">费用类别</th>
-                      <th className="px-3 py-2.5 text-right font-black">
-                        金额 (元)
-                      </th>
-                      <th className="px-3 py-2.5 text-right font-black">
-                        占比
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 border-x border-b border-slate-100 italic">
-                    {report.expenseDistribution.map(row => (
-                      <tr key={row.type}>
-                        <td className="px-3 py-3 font-bold text-slate-600">
-                          {row.typeName}
-                        </td>
-                        <td className="px-3 py-3 text-right font-mono font-bold text-slate-900">
-                          {formatCurrency(row.amount)}
-                        </td>
-                        <td className="px-3 py-3 text-right font-bold text-slate-400">
-                          {row.percentage.toFixed(1)}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="space-y-8">
-                <div>
-                  <div className="mb-4 flex items-center gap-2 border-l-4 border-slate-900 pl-3">
-                    <h3 className="text-xs font-black tracking-widest text-slate-900 uppercase italic">
-                      子报表：厂家直发业务
-                    </h3>
-                  </div>
-                  <div className="rounded-xl border-2 border-dashed border-slate-200 bg-blue-50/20 p-5">
-                    <div className="mb-4 flex items-end justify-between">
-                      <div>
-                        <div className="mb-1 text-[10px] font-black text-blue-500 uppercase">
-                          年度直发净利润
-                        </div>
-                        <div className="font-mono text-3xl font-black text-slate-900">
-                          {formatCurrency(
-                            report.factoryShipmentProfit?.customerProfit
-                          )}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-[10px] font-black text-slate-400 uppercase">
-                          利润率
-                        </div>
-                        <div className="text-base font-black text-slate-600">
-                          {report.factoryShipmentProfit?.averageProfitMargin.toFixed(
-                            2
-                          )}
-                          %
-                        </div>
-                      </div>
-                    </div>
-                    <div className="border-t border-slate-100 pt-3 text-[9px] leading-relaxed font-bold text-slate-400 uppercase">
-                      厂家直发业务在年度整体增长中占据重要战略地位，保持高效运营。
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-5">
-                  <div className="mb-3 text-[10px] font-black text-slate-400 uppercase">
-                    审计摘要说明
-                  </div>
-                  <div className="text-[11px] leading-relaxed font-bold text-slate-700 italic">
-                    &quot;本年度报表确认了稳定的增长轨迹。资产周转率保持在最优范围内，多元化的费用管理成功降低了经营风险。&quot;
-                  </div>
-                </div>
-              </div>
-            </div>
-            {/* 页脚 - 报表鉴真 */}
-            <div className="mt-16 flex items-end justify-between border-t border-slate-200 pt-6">
-              <div className="space-y-1">
-                <div className="font-mono text-[10px] font-black tracking-widest text-slate-900 uppercase">
-                  已验证财务数据资产
-                </div>
-                <div className="text-[9px] leading-none font-bold tracking-widest text-slate-400 uppercase">
-                  数字签名：反重力-安全-{year}-财报-
-                  {new Date().getTime().toString()}
-                </div>
-              </div>
-              <div className="space-y-1 text-right">
-                <div className="text-[10px] font-black tracking-widest text-slate-900 uppercase">
-                  © 2026 反重力系统
-                </div>
-                <div className="text-[9px] font-bold text-slate-400 uppercase italic">
-                  第 01 页 / 年度经营分析
-                </div>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
     </div>
   );
