@@ -4,8 +4,8 @@
 
 'use client';
 
-import { Minus, Plus } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { Maximize2, Minus, Plus } from 'lucide-react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -25,22 +25,34 @@ import { mmToPx } from '../../renderer/utils';
 import { useAlignmentGuides, type AlignmentGuide } from '../hooks';
 import { useDesignerStore, useElements, usePageSettings } from '../stores';
 
+import { ElementContextMenu } from './ElementContextMenu';
 import { TableElementPreview } from './TableElementPreview';
+
+function clampValue(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function clampElementPosition(
+  position: { x: number; y: number },
+  size: { width: number; height: number },
+  bounds: { width: number; height: number }
+) {
+  return {
+    x: clampValue(position.x, 0, Math.max(0, bounds.width - size.width)),
+    y: clampValue(position.y, 0, Math.max(0, bounds.height - size.height)),
+  };
+}
 
 // ============================================================================
 // 对齐辅助线覆盖层
 // ============================================================================
 
 interface AlignmentGuidesOverlayProps {
-  pageWidth: number;
-  pageHeight: number;
   zoom: number;
   guides?: AlignmentGuide[];
 }
 
 function AlignmentGuidesOverlay({
-  pageWidth: _pageWidth,
-  pageHeight: _pageHeight,
   zoom,
   guides = [],
 }: AlignmentGuidesOverlayProps) {
@@ -53,7 +65,7 @@ function AlignmentGuidesOverlay({
           return (
             <div
               key={`v-${index}`}
-              className="absolute top-0 h-full w-px bg-pink-500"
+              className="absolute top-0 h-full w-px bg-rose-500"
               style={{
                 left: mmToPx(guide.position) * zoom,
               }}
@@ -63,7 +75,7 @@ function AlignmentGuidesOverlay({
         return (
           <div
             key={`h-${index}`}
-            className="absolute left-0 h-px w-full bg-pink-500"
+            className="absolute left-0 h-px w-full bg-rose-500"
             style={{
               top: mmToPx(guide.position) * zoom,
             }}
@@ -75,7 +87,8 @@ function AlignmentGuidesOverlay({
 }
 
 export function DesignerCanvas() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [draggingElementId, setDraggingElementId] = useState<string | null>(
     null
   );
@@ -92,10 +105,6 @@ export function DesignerCanvas() {
   const updateElement = useDesignerStore(s => s.updateElement);
   const setDragging = useDesignerStore(s => s.setDragging);
 
-  // 计算对齐辅助线
-  const draggingElement = draggingElementId
-    ? (elements.find(el => el.id === draggingElementId) ?? null)
-    : null;
   const pageDimensions =
     pageSettings?.size === 'Custom'
       ? { width: pageSettings.width, height: pageSettings.height }
@@ -103,12 +112,41 @@ export function DesignerCanvas() {
           pageSettings?.size ?? 'A4',
           pageSettings?.orientation ?? 'portrait'
         );
+
+  const [paddingTop, paddingRight, paddingBottom, paddingLeft] =
+    pageSettings?.padding ?? [10, 10, 10, 10];
+
+  const contentBounds = useMemo(
+    () => ({
+      width: Math.max(10, pageDimensions.width - paddingLeft - paddingRight),
+      height: Math.max(10, pageDimensions.height - paddingTop - paddingBottom),
+    }),
+    [pageDimensions.height, pageDimensions.width, paddingBottom, paddingLeft, paddingRight, paddingTop]
+  );
+
+  // 计算对齐辅助线
+  const draggingElement = draggingElementId
+    ? (elements.find(el => el.id === draggingElementId) ?? null)
+    : null;
   const alignmentGuides = useAlignmentGuides(
     draggingElement,
     elements,
-    pageDimensions.width,
-    pageDimensions.height
+    contentBounds.width,
+    contentBounds.height
   );
+
+  const handleFitZoom = useCallback(() => {
+    if (!viewportRef.current) return;
+
+    const viewport = viewportRef.current.getBoundingClientRect();
+    const availableWidth = Math.max(200, viewport.width - 96);
+    const availableHeight = Math.max(200, viewport.height - 96);
+    const fitZoom = Math.min(
+      availableWidth / mmToPx(pageDimensions.width),
+      availableHeight / mmToPx(pageDimensions.height)
+    );
+    setZoom(fitZoom);
+  }, [pageDimensions.height, pageDimensions.width, setZoom]);
 
   // 处理拖放
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -122,10 +160,10 @@ export function DesignerCanvas() {
       setDragging(false);
 
       const elementType = e.dataTransfer.getData('elementType');
-      if (!elementType || !containerRef.current || !pageSettings) return;
+      if (!elementType || !contentRef.current || !pageSettings) return;
 
-      // 计算放置位置 (相对于画布)
-      const rect = containerRef.current.getBoundingClientRect();
+      // 计算放置位置 (相对于可打印区)
+      const rect = contentRef.current.getBoundingClientRect();
       const x = (e.clientX - rect.left) / zoom;
       const y = (e.clientY - rect.top) / zoom;
 
@@ -165,9 +203,15 @@ export function DesignerCanvas() {
           return;
       }
 
+      newElement.position = clampElementPosition(
+        newElement.position,
+        newElement.size,
+        contentBounds
+      );
+
       addElement(newElement);
     },
-    [zoom, pageSettings, setDragging, addElement]
+    [zoom, pageSettings, setDragging, addElement, contentBounds]
   );
 
   // 点击画布取消选中
@@ -190,53 +234,107 @@ export function DesignerCanvas() {
 
   const pageWidth = mmToPx(pageDimensions.width) * zoom;
   const pageHeight = mmToPx(pageDimensions.height) * zoom;
+  const contentWidth = mmToPx(contentBounds.width) * zoom;
+  const contentHeight = mmToPx(contentBounds.height) * zoom;
+  const contentLeft = mmToPx(paddingLeft) * zoom;
+  const contentTop = mmToPx(paddingTop) * zoom;
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-hidden bg-slate-100">
+    <div className="relative flex flex-1 flex-col overflow-hidden bg-[#ece4d8]">
+      <div className="border-b bg-white/80 px-4 py-2 text-xs text-slate-600">
+        灰色为纸张，虚线框内为可打印区域。元素会自动限制在可打印区域内，避免实际打印被裁切。
+      </div>
+
       {/* 画布区域 */}
       <div
+        ref={viewportRef}
         className="flex flex-1 items-center justify-center overflow-auto p-8"
         onClick={handleCanvasClick}
       >
         <div
-          ref={containerRef}
           className={cn(
-            'relative bg-white shadow-lg',
-            isDragging && 'ring-primary ring-2 ring-offset-2'
+            'relative rounded-sm bg-white shadow-[0_24px_60px_rgba(73,55,28,0.18)] transition-all',
+            isDragging && 'ring-2 ring-amber-500 ring-offset-4 ring-offset-[#ece4d8]'
           )}
           style={{
             width: pageWidth,
             height: pageHeight,
           }}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
         >
-          {/* 对齐辅助线 */}
-          <AlignmentGuidesOverlay
-            pageWidth={pageDimensions.width}
-            pageHeight={pageDimensions.height}
-            zoom={zoom}
-            guides={alignmentGuides}
-          />
+          <div
+            ref={contentRef}
+            className="absolute overflow-hidden rounded-[2px] border border-dashed border-amber-400/90 bg-[linear-gradient(180deg,rgba(245,158,11,0.07),rgba(245,158,11,0.02))]"
+            style={{
+              left: contentLeft,
+              top: contentTop,
+              width: contentWidth,
+              height: contentHeight,
+            }}
+            onClick={e => {
+              if (e.target === e.currentTarget) {
+                selectElement(null);
+              }
+            }}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            <div className="pointer-events-none absolute top-2 left-2 rounded-full bg-white/90 px-2 py-1 text-[10px] text-amber-700 shadow-sm">
+              可打印区域
+            </div>
 
-          {/* 渲染元素 */}
-          {elements.map(element => (
-            <CanvasElement
-              key={element.id}
-              element={element}
-              zoom={zoom}
-              isSelected={element.id === selectedElementId}
-              onSelect={() => selectElement(element.id)}
-              onUpdate={updates => updateElement(element.id, updates)}
-              onDragStart={() => setDraggingElementId(element.id)}
-              onDragEnd={() => setDraggingElementId(null)}
-            />
-          ))}
+            {elements.length === 0 ? (
+              <div className="pointer-events-none flex h-full items-center justify-center px-6">
+                <div className="max-w-sm rounded-2xl border border-stone-200 bg-white/92 px-5 py-4 text-center shadow-sm">
+                  <p className="text-sm font-medium text-slate-900">
+                    从左侧拖入组件或字段开始设计
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">
+                    常见做法是先放标题、公司信息，再放客户字段和明细表格。
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {/* 对齐辅助线 */}
+            <AlignmentGuidesOverlay zoom={zoom} guides={alignmentGuides} />
+
+            {/* 渲染元素 */}
+            {elements.map(element => (
+              <CanvasElement
+                key={element.id}
+                element={element}
+                zoom={zoom}
+                isSelected={element.id === selectedElementId}
+                bounds={contentBounds}
+                onSelect={() => selectElement(element.id)}
+                onUpdate={updates => updateElement(element.id, updates)}
+                onDragStart={() => setDraggingElementId(element.id)}
+                onDragEnd={() => setDraggingElementId(null)}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
       {/* 缩放控制 */}
-      <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-full bg-white px-2 py-1 shadow">
+      <div className="absolute right-4 bottom-4 flex items-center gap-1 rounded-full border border-stone-200 bg-white px-2 py-1 shadow-lg">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 rounded-full px-3 text-xs"
+          onClick={handleFitZoom}
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+          适应
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 rounded-full px-3 text-xs"
+          onClick={() => setZoom(1)}
+        >
+          100%
+        </Button>
         <Button
           variant="ghost"
           size="icon"
@@ -245,7 +343,7 @@ export function DesignerCanvas() {
         >
           <Minus className="h-4 w-4" />
         </Button>
-        <span className="w-12 text-center text-sm">
+        <span className="w-12 text-center text-sm font-medium">
           {Math.round(zoom * 100)}%
         </span>
         <Button
@@ -269,6 +367,7 @@ interface CanvasElementProps {
   element: DesignElement;
   zoom: number;
   isSelected: boolean;
+  bounds: { width: number; height: number };
   onSelect: () => void;
   onUpdate: (updates: Partial<DesignElement>) => void;
   onDragStart?: () => void;
@@ -279,6 +378,7 @@ function CanvasElement({
   element,
   zoom,
   isSelected,
+  bounds,
   onSelect,
   onUpdate,
   onDragStart,
@@ -327,15 +427,13 @@ function CanvasElement({
       const deltaX = (moveEvent.clientX - dragRef.current.startX) / zoom;
       const deltaY = (moveEvent.clientY - dragRef.current.startY) / zoom;
 
-      // 转换为 mm
-      const newX = dragRef.current.elemX + deltaX / (96 / 25.4);
-      const newY = dragRef.current.elemY + deltaY / (96 / 25.4);
+      const nextPosition = {
+        x: dragRef.current.elemX + deltaX / (96 / 25.4),
+        y: dragRef.current.elemY + deltaY / (96 / 25.4),
+      };
 
       onUpdate({
-        position: {
-          x: Math.max(0, newX),
-          y: Math.max(0, newY),
-        },
+        position: clampElementPosition(nextPosition, element.size, bounds),
       });
     };
 
@@ -409,25 +507,26 @@ function CanvasElement({
           break;
       }
 
-      // 左/上方向：限制不越出页面 (x/y >= 0) 并同步扩展尺寸
       const rightEdge = state.startX + state.startW;
       const bottomEdge = state.startY + state.startH;
+
       if ((state.handle === 'sw' || state.handle === 'nw') && nextX < 0) {
         nextX = 0;
         nextW = rightEdge - nextX;
       }
+
       if ((state.handle === 'ne' || state.handle === 'nw') && nextY < 0) {
         nextY = 0;
         nextH = bottomEdge - nextY;
       }
 
-      // 最小尺寸限制 (并在需要时回推 x/y)
       if (nextW < minSizeMm) {
         if (state.handle === 'sw' || state.handle === 'nw') {
           nextX = state.startX + (state.startW - minSizeMm);
         }
         nextW = minSizeMm;
       }
+
       if (nextH < minSizeMm) {
         if (state.handle === 'ne' || state.handle === 'nw') {
           nextY = state.startY + (state.startH - minSizeMm);
@@ -435,10 +534,26 @@ function CanvasElement({
         nextH = minSizeMm;
       }
 
+      if (nextX + nextW > bounds.width) {
+        if (state.handle === 'sw' || state.handle === 'nw') {
+          nextX = Math.max(0, bounds.width - nextW);
+        } else {
+          nextW = Math.max(minSizeMm, bounds.width - nextX);
+        }
+      }
+
+      if (nextY + nextH > bounds.height) {
+        if (state.handle === 'ne' || state.handle === 'nw') {
+          nextY = Math.max(0, bounds.height - nextH);
+        } else {
+          nextH = Math.max(minSizeMm, bounds.height - nextY);
+        }
+      }
+
       onUpdate({
         position: {
-          x: Math.max(0, nextX),
-          y: Math.max(0, nextY),
+          x: clampValue(nextX, 0, Math.max(0, bounds.width - nextW)),
+          y: clampValue(nextY, 0, Math.max(0, bounds.height - nextH)),
         },
         size: {
           width: nextW,
@@ -457,7 +572,6 @@ function CanvasElement({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  // 渲染元素内容 (简化版，用于编辑器预览)
   const renderContent = () => {
     switch (element.type) {
       case 'text':
@@ -499,43 +613,53 @@ function CanvasElement({
   };
 
   return (
-    <div
-      className={cn(
-        'absolute cursor-move select-none',
-        isSelected && 'ring-primary ring-2'
-      )}
-      style={{
-        left: x,
-        top: y,
-        width,
-        height,
-        zIndex: element.zIndex,
-      }}
-      onMouseDown={handleMouseDown}
-    >
-      {renderContent()}
+    <ElementContextMenu elementId={element.id}>
+      <div
+        className={cn(
+          'absolute cursor-move select-none rounded-[2px]',
+          isSelected && 'ring-2 ring-amber-500 ring-offset-1 ring-offset-white',
+          element.locked && 'cursor-not-allowed',
+          !element.visible && 'opacity-40'
+        )}
+        style={{
+          left: x,
+          top: y,
+          width,
+          height,
+          zIndex: element.zIndex,
+        }}
+        onMouseDown={handleMouseDown}
+        onContextMenu={() => onSelect()}
+      >
+        {renderContent()}
 
-      {/* 选中时显示控制点 */}
-      {isSelected && !element.locked && (
-        <>
-          <div
-            className="bg-primary absolute -top-1 -left-1 h-2 w-2 cursor-nwse-resize rounded-full"
-            onMouseDown={e => handleResizeMouseDown('nw', e)}
-          />
-          <div
-            className="bg-primary absolute -top-1 -right-1 h-2 w-2 cursor-nesw-resize rounded-full"
-            onMouseDown={e => handleResizeMouseDown('ne', e)}
-          />
-          <div
-            className="bg-primary absolute -bottom-1 -left-1 h-2 w-2 cursor-nesw-resize rounded-full"
-            onMouseDown={e => handleResizeMouseDown('sw', e)}
-          />
-          <div
-            className="bg-primary absolute -right-1 -bottom-1 h-2 w-2 cursor-nwse-resize rounded-full"
-            onMouseDown={e => handleResizeMouseDown('se', e)}
-          />
-        </>
-      )}
-    </div>
+        {!element.visible ? (
+          <div className="pointer-events-none absolute top-1 right-1 rounded-full bg-slate-900/75 px-2 py-0.5 text-[10px] text-white">
+            已隐藏
+          </div>
+        ) : null}
+
+        {isSelected && !element.locked && (
+          <>
+            <div
+              className="absolute -top-1 -left-1 h-2.5 w-2.5 cursor-nwse-resize rounded-full bg-amber-500"
+              onMouseDown={e => handleResizeMouseDown('nw', e)}
+            />
+            <div
+              className="absolute -top-1 -right-1 h-2.5 w-2.5 cursor-nesw-resize rounded-full bg-amber-500"
+              onMouseDown={e => handleResizeMouseDown('ne', e)}
+            />
+            <div
+              className="absolute -bottom-1 -left-1 h-2.5 w-2.5 cursor-nesw-resize rounded-full bg-amber-500"
+              onMouseDown={e => handleResizeMouseDown('sw', e)}
+            />
+            <div
+              className="absolute -right-1 -bottom-1 h-2.5 w-2.5 cursor-nwse-resize rounded-full bg-amber-500"
+              onMouseDown={e => handleResizeMouseDown('se', e)}
+            />
+          </>
+        )}
+      </div>
+    </ElementContextMenu>
   );
 }

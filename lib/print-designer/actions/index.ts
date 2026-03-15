@@ -3,6 +3,7 @@
  */
 
 export {
+  getRecentDocumentsForTemplate,
   getRecentSalesOrders,
   getSalesOrderForPrint,
   getPurchaseOrderForPrint,
@@ -11,6 +12,7 @@ export {
   getReturnOrderForPrint,
   getPrintDataForTemplate,
 } from './preview-data';
+export type { RecentPrintDocumentOption } from './preview-data';
 
 export {
   deleteTemplate,

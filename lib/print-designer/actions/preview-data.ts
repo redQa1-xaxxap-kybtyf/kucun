@@ -25,6 +25,13 @@ function todayYmd(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+export interface RecentPrintDocumentOption {
+  id: string;
+  label: string;
+  secondary: string;
+  description: string;
+}
+
 /**
  * 获取销售订单数据用于打印预览
  */
@@ -527,4 +534,122 @@ export async function getRecentSalesOrders(limit = 10) {
       ? (customerMap.get(o.customerId) ?? '未知客户')
       : '未知客户',
   }));
+}
+
+export async function getRecentDocumentsForTemplate(
+  templateType: TemplateType,
+  limit = 10
+): Promise<RecentPrintDocumentOption[]> {
+  const user = await getAuthUser();
+  if (!user) return [];
+
+  switch (templateType) {
+    case 'sales-order': {
+      const orders = await prisma.salesOrder.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+        },
+      });
+
+      return orders.map(order => ({
+        id: order.id,
+        label: order.orderNumber,
+        secondary: order.customer?.name ?? '未关联客户',
+        description: `创建于 ${formatDate(order.createdAt)}`,
+      }));
+    }
+
+    case 'purchase-order': {
+      const orders = await prisma.purchaseOrder.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          createdAt: true,
+          supplier: { select: { name: true } },
+        },
+      });
+
+      return orders.map(order => ({
+        id: order.id,
+        label: order.orderNumber,
+        secondary: order.supplier?.name ?? '未关联供应商',
+        description: `创建于 ${formatDate(order.createdAt)}`,
+      }));
+    }
+
+    case 'factory-shipment': {
+      const orders = await prisma.factoryShipmentOrder.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+        },
+      });
+
+      return orders.map(order => ({
+        id: order.id,
+        label: order.orderNumber,
+        secondary: order.customer?.name ?? '未关联客户',
+        description: `创建于 ${formatDate(order.createdAt)}`,
+      }));
+    }
+
+    case 'inbound-record': {
+      const records = await prisma.inboundRecord.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          recordNumber: true,
+          createdAt: true,
+          product: { select: { name: true } },
+          supplier: { select: { name: true } },
+        },
+      });
+
+      return records.map(record => ({
+        id: record.recordNumber,
+        label: record.recordNumber,
+        secondary:
+          record.product?.name ??
+          record.supplier?.name ??
+          '未关联商品/供应商',
+        description: `入库于 ${formatDate(record.createdAt)}`,
+      }));
+    }
+
+    case 'return-order': {
+      const orders = await prisma.returnOrder.findMany({
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          returnNumber: true,
+          createdAt: true,
+          customer: { select: { name: true } },
+        },
+      });
+
+      return orders.map(order => ({
+        id: order.id,
+        label: order.returnNumber,
+        secondary: order.customer?.name ?? '未关联客户',
+        description: `创建于 ${formatDate(order.createdAt)}`,
+      }));
+    }
+
+    case 'delivery-note':
+    case 'custom':
+    default:
+      return [];
+  }
 }

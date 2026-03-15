@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import {
   getPaperDimensions,
   type TableElement,
@@ -408,6 +409,7 @@ export function PropertiesPanel() {
         {selectedElement.type === 'placeholder' && (
           <>
             <DataBindingSection
+              templateType={templateType}
               field={selectedElement.field}
               format={selectedElement.format}
               fallback={selectedElement.fallback}
@@ -454,15 +456,56 @@ export function PropertiesPanel() {
         {/* 字体样式 (文本、占位符) */}
         {(selectedElement.type === 'text' ||
           selectedElement.type === 'placeholder') && (
-          <TypographySection
-            style={selectedElement.style}
-            onChange={styleUpdates =>
-              updateElement(selectedElement.id, {
-                style: { ...selectedElement.style, ...styleUpdates },
-              })
-            }
-          />
-        )}
+            <TypographySection
+              style={selectedElement.style}
+              onChange={styleUpdates =>
+                updateElement(selectedElement.id, {
+                  style: { ...selectedElement.style, ...styleUpdates },
+                })
+              }
+            />
+          )}
+
+        <Separator className="my-4" />
+
+        <div className="space-y-3">
+          <Label className="text-muted-foreground text-xs font-semibold">
+            元素状态
+          </Label>
+          <div className="rounded-lg border bg-slate-50 p-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-900">锁定位置</p>
+                <p className="text-xs text-slate-500">
+                  锁定后不可拖动和缩放，适合表头或固定章信息。
+                </p>
+              </div>
+              <Switch
+                checked={selectedElement.locked}
+                onCheckedChange={checked =>
+                  updateElement(selectedElement.id, { locked: checked })
+                }
+              />
+            </div>
+
+            <Separator className="my-3" />
+
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-900">显示元素</p>
+                <p className="text-xs text-slate-500">
+                  临时隐藏但不删除，方便对比不同版式方案。
+                </p>
+              </div>
+              <Switch
+                checked={selectedElement.visible}
+                onCheckedChange={checked =>
+                  updateElement(selectedElement.id, { visible: checked })
+                }
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </aside>
   );

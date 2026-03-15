@@ -1,18 +1,20 @@
 /**
  * 打印设计器 - 预览对话框
  *
- * 支持模拟数据和真实订单数据预览
+ * 支持模拟数据和真实业务单据预览，打印始终使用 100% 尺寸。
  */
 
 'use client';
 
 import { Eye, Loader2, Printer, RefreshCw } from 'lucide-react';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -24,10 +26,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  getRecentSalesOrders,
-  getSalesOrderForPrint,
+  getPrintDataForTemplate,
+  getRecentDocumentsForTemplate,
+  type RecentPrintDocumentOption,
 } from '@/lib/print-designer/actions';
+import { getMockPrintData } from '@/lib/print-designer/preview-mock-data';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
+import { getTemplateTypeMeta, getTemplateTypeLabel } from '@/lib/print-designer/template-meta';
 
 import { PrintCanvas } from '../../renderer';
 
@@ -37,6 +42,8 @@ interface PreviewDialogProps {
   template: PrintTemplate;
 }
 
+type PreviewSource = 'mock' | 'real';
+
 function getCssPageSize(settings: PrintTemplate['pageSettings']): string {
   if (settings.size === 'Custom') {
     return `${settings.width}mm ${settings.height}mm`;
@@ -44,129 +51,92 @@ function getCssPageSize(settings: PrintTemplate['pageSettings']): string {
   return `${settings.size} ${settings.orientation}`;
 }
 
-// 模拟数据
-const mockSalesOrderData = {
-  order: {
-    orderNumber: 'SO-2026-0001',
-    createdAt: '2026-01-13',
-    status: '待发货',
-    remark: '请注意轻拿轻放',
-    deliveryDate: '2026-01-15',
-  },
-  customer: {
-    name: '北京建材有限公司',
-    phone: '010-12345678',
-    address: '北京市朝阳区建国路88号',
-    contact: '张经理',
-  },
-  company: {
-    name: '天津豪星陶瓷有限公司',
-    phone: '022-88888888',
-    address: '天津市西青区陶瓷产业园',
-    fax: '022-88888889',
-  },
-  items: [
-    {
-      name: '800x800 抛光砖 - 米黄色',
-      code: 'PG-800-001',
-      spec: '800x800mm',
-      productName: '800x800 抛光砖 - 米黄色',
-      productCode: 'PG-800-001',
-      specification: '800x800mm',
-      unit: '片',
-      quantity: 100,
-      unitPrice: 45,
-      subtotal: 4500,
-      weight: 25,
-      boxes: 5,
-      remark: '',
-    },
-    {
-      name: '600x600 仿古砖 - 灰色',
-      code: 'FG-600-002',
-      spec: '600x600mm',
-      productName: '600x600 仿古砖 - 灰色',
-      productCode: 'FG-600-002',
-      specification: '600x600mm',
-      unit: '片',
-      quantity: 200,
-      unitPrice: 35,
-      subtotal: 7000,
-      weight: 30,
-      boxes: 8,
-      remark: '需要切角',
-    },
-    {
-      name: '300x300 马赛克 - 蓝色',
-      code: 'MS-300-003',
-      spec: '300x300mm',
-      productName: '300x300 马赛克 - 蓝色',
-      productCode: 'MS-300-003',
-      specification: '300x300mm',
-      unit: '片',
-      quantity: 50,
-      unitPrice: 25,
-      subtotal: 1250,
-      weight: 5,
-      boxes: 2,
-      remark: '',
-    },
-  ],
-  totalAmount: 12750,
-  totalQuantity: 350,
-  totalWeight: 60,
-  totalBoxes: 15,
-  operator: { name: '李明' },
-  printDate: new Date().toISOString().split('T')[0],
-};
-
-interface OrderOption {
-  id: string;
-  orderNumber: string;
-  createdAt: string;
-  customerName: string;
-}
-
 export function PreviewDialog({
   open,
   onOpenChange,
   template,
 }: PreviewDialogProps) {
+  const templateMeta = getTemplateTypeMeta(template.type);
+  const supportsRealPreview = templateMeta?.supportsRealPreview ?? false;
+
   const [scale, setScale] = useState(1);
-  const [dataSource, setDataSource] = useState<'mock' | 'real'>('mock');
-  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
-  const [recentOrders, setRecentOrders] = useState<OrderOption[]>([]);
-  const [previewData, setPreviewData] =
-    useState<Record<string, unknown>>(mockSalesOrderData);
+  const [dataSource, setDataSource] = useState<PreviewSource>('mock');
+  const [selectedDocumentId, setSelectedDocumentId] = useState('');
+  const [recentDocuments, setRecentDocuments] = useState<
+    RecentPrintDocumentOption[]
+  >([]);
+  const [previewData, setPreviewData] = useState<Record<string, unknown>>(
+    getMockPrintData(template.type)
+  );
+  const [loadingText, setLoadingText] = useState('');
+  const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
   const printRef = useRef<HTMLDivElement>(null);
 
-  // 加载最近订单列表
-  useEffect(() => {
-    if (open && dataSource === 'real' && recentOrders.length === 0) {
-      startTransition(async () => {
-        const orders = await getRecentSalesOrders(20);
-        setRecentOrders(orders);
-        if (orders.length > 0 && !selectedOrderId) {
-          setSelectedOrderId(orders[0].id);
-        }
-      });
-    }
-  }, [open, dataSource, recentOrders.length, selectedOrderId]);
+  const selectedDocument = useMemo(
+    () => recentDocuments.find(item => item.id === selectedDocumentId) ?? null,
+    [recentDocuments, selectedDocumentId]
+  );
 
-  // 加载选中订单数据
   useEffect(() => {
-    if (dataSource === 'real' && selectedOrderId) {
-      startTransition(async () => {
-        const data = await getSalesOrderForPrint(selectedOrderId);
-        if (data) {
-          setPreviewData(data);
-        }
-      });
-    } else if (dataSource === 'mock') {
-      setPreviewData(mockSalesOrderData);
+    if (!open) return;
+
+    setScale(1);
+    setError('');
+    setLoadingText('');
+    setRecentDocuments([]);
+    setSelectedDocumentId('');
+    setDataSource('mock');
+    setPreviewData(getMockPrintData(template.type));
+  }, [open, template.type]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (dataSource !== 'real' || !supportsRealPreview) {
+      setPreviewData(getMockPrintData(template.type));
+      setError('');
+      setLoadingText('');
+      return;
     }
-  }, [dataSource, selectedOrderId]);
+
+    setLoadingText(`正在加载${templateMeta?.recentDocumentLabel ?? '最近单据'}...`);
+    setError('');
+
+    startTransition(async () => {
+      const documents = await getRecentDocumentsForTemplate(template.type, 20);
+      setRecentDocuments(documents);
+      setLoadingText('');
+
+      if (documents.length === 0) {
+        setError(`暂无可用于预览的${templateMeta?.realDataLabel ?? '真实单据'}`);
+        return;
+      }
+
+      setSelectedDocumentId(currentId => currentId || documents[0].id);
+    });
+  }, [dataSource, open, supportsRealPreview, template.type, templateMeta?.realDataLabel, templateMeta?.recentDocumentLabel]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (dataSource !== 'real' || !selectedDocumentId || !supportsRealPreview) {
+      return;
+    }
+
+    setLoadingText(`正在加载${templateMeta?.realDataLabel ?? '真实单据'}...`);
+    setError('');
+
+    startTransition(async () => {
+      const data = await getPrintDataForTemplate(template.type, selectedDocumentId);
+      if (!data) {
+        setError('未找到可用于预览的数据，请更换单据再试。');
+        setLoadingText('');
+        return;
+      }
+
+      setPreviewData(data);
+      setLoadingText('');
+    });
+  }, [dataSource, open, selectedDocumentId, supportsRealPreview, template.type, templateMeta?.realDataLabel]);
 
   const handlePrint = () => {
     if (!printRef.current) return;
@@ -205,111 +175,195 @@ export function PreviewDialog({
   };
 
   const handleRefresh = () => {
-    if (dataSource === 'real' && selectedOrderId) {
-      startTransition(async () => {
-        const data = await getSalesOrderForPrint(selectedOrderId);
-        if (data) {
-          setPreviewData(data);
-        }
-      });
+    if (dataSource === 'mock') {
+      setPreviewData(getMockPrintData(template.type));
+      return;
     }
+
+    if (!selectedDocumentId || !supportsRealPreview) return;
+
+    setLoadingText(`正在刷新${templateMeta?.realDataLabel ?? '真实单据'}...`);
+
+    startTransition(async () => {
+      const data = await getPrintDataForTemplate(template.type, selectedDocumentId);
+      if (!data) {
+        setError('刷新失败，请确认单据仍存在。');
+        setLoadingText('');
+        return;
+      }
+
+      setPreviewData(data);
+      setError('');
+      setLoadingText('');
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden">
-        <DialogHeader className="flex flex-row items-center justify-between border-b pb-3">
-          <DialogTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            预览: {template.name}
-          </DialogTitle>
-          <div className="flex items-center gap-2">
-            {/* 数据源选择 */}
-            <Select
-              value={dataSource}
-              onValueChange={v => setDataSource(v as 'mock' | 'real')}
-            >
-              <SelectTrigger className="h-8 w-28">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="mock">模拟数据</SelectItem>
-                <SelectItem value="real">真实订单</SelectItem>
-              </SelectContent>
-            </Select>
+      <DialogContent className="max-h-[92vh] max-w-5xl overflow-hidden border-stone-200 p-0">
+        <DialogHeader className="border-b bg-gradient-to-r from-stone-50 via-white to-stone-50 px-6 py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="min-w-0">
+              <DialogTitle className="flex items-center gap-2 text-base text-slate-900">
+                <Eye className="h-5 w-5 text-stone-700" />
+                预览：{template.name}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                检查模板版式、字段数据和打印尺寸，打印时始终按 100% 实际尺寸输出。
+              </DialogDescription>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <Badge variant="secondary">{getTemplateTypeLabel(template.type)}</Badge>
+                <span>{templateMeta?.description ?? '校对版式、字段和分页效果'}</span>
+              </div>
+            </div>
 
-            {/* 订单选择 (真实数据时) */}
-            {dataSource === 'real' && (
-              <Select
-                value={selectedOrderId}
-                onValueChange={setSelectedOrderId}
-              >
-                <SelectTrigger className="h-8 w-40">
-                  <SelectValue placeholder="选择订单" />
-                </SelectTrigger>
-                <SelectContent>
-                  {recentOrders.map(o => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.orderNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="rounded-full border border-stone-200 bg-stone-100 p-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={dataSource === 'mock' ? 'default' : 'ghost'}
+                  className="rounded-full"
+                  onClick={() => setDataSource('mock')}
+                >
+                  模拟数据
+                </Button>
+                {supportsRealPreview ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={dataSource === 'real' ? 'default' : 'ghost'}
+                    className="rounded-full"
+                    onClick={() => setDataSource('real')}
+                  >
+                    {templateMeta?.realDataLabel ?? '真实单据'}
+                  </Button>
+                ) : null}
+              </div>
 
-            {/* 刷新按钮 */}
-            {dataSource === 'real' && (
+              {supportsRealPreview && dataSource === 'real' ? (
+                <Select
+                  value={selectedDocumentId}
+                  onValueChange={setSelectedDocumentId}
+                  disabled={isPending || recentDocuments.length === 0}
+                >
+                  <SelectTrigger className="h-9 w-52 bg-white">
+                    <SelectValue
+                      placeholder={`选择${templateMeta?.realDataLabel ?? '单据'}`}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {recentDocuments.map(document => (
+                      <SelectItem key={document.id} value={document.id}>
+                        {document.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+
               <Button
-                variant="ghost"
+                type="button"
+                variant="outline"
                 size="icon"
-                className="h-8 w-8"
+                className="h-9 w-9"
                 onClick={handleRefresh}
                 disabled={isPending}
+                title="刷新预览数据"
               >
                 <RefreshCw
                   className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`}
                 />
               </Button>
-            )}
 
-            {/* 缩放 */}
-            <Select
-              value={String(scale)}
-              onValueChange={v => setScale(parseFloat(v))}
-            >
-              <SelectTrigger className="h-8 w-24">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0.5">50%</SelectItem>
-                <SelectItem value="0.75">75%</SelectItem>
-                <SelectItem value="1">100%</SelectItem>
-                <SelectItem value="1.25">125%</SelectItem>
-                <SelectItem value="1.5">150%</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select
+                value={String(scale)}
+                onValueChange={value => setScale(parseFloat(value))}
+              >
+                <SelectTrigger className="h-9 w-24 bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0.5">50%</SelectItem>
+                  <SelectItem value="0.75">75%</SelectItem>
+                  <SelectItem value="1">100%</SelectItem>
+                  <SelectItem value="1.25">125%</SelectItem>
+                  <SelectItem value="1.5">150%</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* 打印按钮 */}
-            <Button onClick={handlePrint} disabled={isPending}>
-              {isPending ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Printer className="mr-1.5 h-4 w-4" />
-              )}
-              打印
-            </Button>
+              <Button onClick={handlePrint} disabled={Boolean(loadingText) || Boolean(error)}>
+                {isPending ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Printer className="mr-1.5 h-4 w-4" />
+                )}
+                打印
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto bg-slate-100 p-8">
-          <div className="flex justify-center" ref={printRef}>
-            <PrintCanvas
-              template={template}
-              data={previewData}
-              scale={scale}
-              showShadow
-            />
-          </div>
+        <div className="border-b bg-stone-50 px-6 py-3 text-xs text-slate-600">
+          {supportsRealPreview && dataSource === 'real' ? (
+            selectedDocument ? (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="font-medium text-slate-900">
+                  当前单据：{selectedDocument.label}
+                </span>
+                <span>{selectedDocument.secondary}</span>
+                <span>{selectedDocument.description}</span>
+              </div>
+            ) : (
+              <span>{loadingText || `请选择${templateMeta?.realDataLabel ?? '真实单据'}`}</span>
+            )
+          ) : (
+            <span>
+              使用模拟数据预览版式。打印时仍按 100% 实际尺寸输出，不受当前缩放影响。
+            </span>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-auto bg-[#efe7dc] p-8">
+          {error ? (
+            <div className="flex h-72 items-center justify-center">
+              <div className="rounded-2xl border border-amber-200 bg-white px-6 py-5 text-center shadow-sm">
+                <p className="text-sm font-medium text-slate-900">{error}</p>
+                {!supportsRealPreview ? (
+                  <p className="mt-2 text-xs text-slate-500">
+                    当前模板类型更适合先用模拟数据定版。
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : loadingText ? (
+            <div className="flex h-72 items-center justify-center">
+              <div className="rounded-2xl border border-stone-200 bg-white px-6 py-5 text-center shadow-sm">
+                <Loader2 className="mx-auto h-5 w-5 animate-spin text-stone-600" />
+                <p className="mt-3 text-sm text-slate-600">{loadingText}</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-center">
+                <PrintCanvas
+                  template={template}
+                  data={previewData}
+                  scale={scale}
+                  showShadow
+                />
+              </div>
+
+              <div
+                ref={printRef}
+                aria-hidden
+                data-testid="hidden-print-content"
+                className="pointer-events-none fixed top-0 left-[-100000px] opacity-0"
+              >
+                <PrintCanvas template={template} data={previewData} scale={1} />
+              </div>
+            </>
+          )}
         </div>
       </DialogContent>
     </Dialog>

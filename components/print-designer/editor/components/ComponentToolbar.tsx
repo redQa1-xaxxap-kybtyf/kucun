@@ -4,8 +4,23 @@
 
 'use client';
 
-import { FileText, Hash, Image, QrCode, Table, Type } from 'lucide-react';
+import {
+  CalendarDays,
+  FileText,
+  Hash,
+  Image,
+  QrCode,
+  Table,
+  Type,
+} from 'lucide-react';
+import { useMemo } from 'react';
 
+import {
+  getFieldsForTemplateType,
+  groupFields,
+  type FieldDefinition,
+} from '@/lib/print-designer/field-registry';
+import { getTemplateTypeMeta } from '@/lib/print-designer/template-meta';
 import { cn } from '@/lib/utils';
 
 import { useDesignerStore } from '../stores';
@@ -36,35 +51,6 @@ const componentItems = [
     icon: QrCode,
     category: 'basic',
   },
-];
-
-// 可绑定的数据字段
-const fieldItems = [
-  // 订单信息
-  { field: 'order.orderNumber', label: '订单编号', icon: Hash, group: '订单' },
-  {
-    field: 'order.createdAt',
-    label: '订单日期',
-    icon: FileText,
-    group: '订单',
-  },
-  // 客户信息
-  { field: 'customer.name', label: '客户名称', icon: FileText, group: '客户' },
-  { field: 'customer.phone', label: '客户电话', icon: FileText, group: '客户' },
-  {
-    field: 'customer.address',
-    label: '客户地址',
-    icon: FileText,
-    group: '客户',
-  },
-  // 汇总信息
-  { field: 'totalAmount', label: '总金额', icon: Hash, group: '汇总' },
-  { field: 'totalAmountCap', label: '大写金额', icon: FileText, group: '汇总' },
-  { field: 'totalQuantity', label: '总数量', icon: Hash, group: '汇总' },
-  { field: 'totalBoxes', label: '总件数', icon: Hash, group: '汇总' },
-  // 制单信息
-  { field: 'operator.name', label: '制单人', icon: FileText, group: '制单' },
-  { field: 'printDate', label: '打印日期', icon: FileText, group: '制单' },
 ];
 
 interface DraggableItemProps {
@@ -111,18 +97,28 @@ function DraggableItem({
 }
 
 interface FieldItemProps {
-  field: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  field: FieldDefinition;
 }
 
-function FieldItem({ field, label, icon: Icon }: FieldItemProps) {
+function getFieldIcon(field: FieldDefinition) {
+  switch (field.type) {
+    case 'date':
+      return CalendarDays;
+    case 'number':
+      return Hash;
+    default:
+      return FileText;
+  }
+}
+
+function FieldItem({ field }: FieldItemProps) {
   const setDragging = useDesignerStore(s => s.setDragging);
+  const Icon = getFieldIcon(field);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('elementType', 'placeholder');
-    e.dataTransfer.setData('fieldPath', field);
-    e.dataTransfer.setData('fieldLabel', label);
+    e.dataTransfer.setData('fieldPath', field.path);
+    e.dataTransfer.setData('fieldLabel', field.label);
     e.dataTransfer.effectAllowed = 'copy';
     setDragging(true);
   };
@@ -137,24 +133,47 @@ function FieldItem({ field, label, icon: Icon }: FieldItemProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       className={cn(
-        'flex cursor-grab items-center gap-2 rounded-full border bg-blue-50 px-3 py-1',
-        'text-xs text-blue-700 transition-colors hover:bg-blue-100',
+        'flex cursor-grab items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2',
+        'text-xs text-amber-900 transition-colors hover:border-amber-300 hover:bg-amber-100',
         'active:cursor-grabbing'
       )}
+      title={field.path}
     >
       <Icon className="h-3 w-3" />
-      <span>{label}</span>
+      <span className="truncate">{field.label}</span>
     </div>
   );
 }
 
 export function ComponentToolbar() {
+  const templateType = useDesignerStore(s => s.template?.type ?? 'sales-order');
+  const templateMeta = getTemplateTypeMeta(templateType);
+
+  const groupedFields = useMemo(
+    () => groupFields(getFieldsForTemplateType(templateType)),
+    [templateType]
+  );
+
   return (
-    <aside className="flex w-60 flex-col border-r bg-slate-50">
+    <aside className="flex w-64 flex-col border-r bg-stone-50">
+      <div className="border-b bg-gradient-to-b from-stone-100 to-stone-50 p-3">
+        <div className="mb-2">
+          <h3 className="text-sm font-semibold text-stone-900">组件与字段</h3>
+          <p className="mt-1 text-xs leading-5 text-stone-600">
+            当前模板：{templateMeta?.label ?? '打印模板'}
+            <br />
+            直接拖到中间画布即可新增。
+          </p>
+        </div>
+        <div className="rounded-xl border border-amber-200 bg-white/80 px-3 py-2 text-[11px] leading-5 text-stone-600">
+          先拖基础组件，再拖字段替换静态文字，更符合中国企业常见的单据制作习惯。
+        </div>
+      </div>
+
       {/* 基础组件 */}
       <div className="border-b p-3">
-        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
-          基础组件
+        <h3 className="mb-2 text-xs font-medium tracking-[0.12em] text-stone-500 uppercase">
+          常用组件
         </h3>
         <div className="grid grid-cols-2 gap-2">
           {componentItems.map(item => (
@@ -170,17 +189,28 @@ export function ComponentToolbar() {
 
       {/* 数据字段 */}
       <div className="flex-1 overflow-auto p-3">
-        <h3 className="text-muted-foreground mb-2 text-xs font-medium">
-          数据字段
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {fieldItems.map(item => (
-            <FieldItem
-              key={item.field}
-              field={item.field}
-              label={item.label}
-              icon={item.icon}
-            />
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-xs font-medium tracking-[0.12em] text-stone-500 uppercase">
+            字段库
+          </h3>
+          <span className="rounded-full bg-stone-200 px-2 py-0.5 text-[10px] text-stone-700">
+            {Object.values(groupedFields).flat().length} 个字段
+          </span>
+        </div>
+
+        <div className="space-y-4">
+          {Object.entries(groupedFields).map(([group, fields]) => (
+            <section key={group}>
+              <div className="mb-2 flex items-center justify-between">
+                <h4 className="text-xs font-medium text-stone-700">{group}</h4>
+                <span className="text-[10px] text-stone-400">{fields.length}</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {fields.map(field => (
+                  <FieldItem key={field.path} field={field} />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </div>

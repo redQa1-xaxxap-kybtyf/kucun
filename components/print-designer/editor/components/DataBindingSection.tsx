@@ -16,27 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  getFieldsForTemplateType,
+  groupFields,
+} from '@/lib/print-designer/field-registry';
 import type { PlaceholderFormat } from '@/lib/print-designer/schemas';
 
-// 可绑定字段注册表
-const fieldRegistry = [
-  { path: 'order.orderNumber', label: '订单编号', group: '订单' },
-  { path: 'order.createdAt', label: '订单日期', group: '订单' },
-  { path: 'order.status', label: '订单状态', group: '订单' },
-  { path: 'order.remark', label: '订单备注', group: '订单' },
-  { path: 'customer.name', label: '客户名称', group: '客户' },
-  { path: 'customer.phone', label: '客户电话', group: '客户' },
-  { path: 'customer.address', label: '客户地址', group: '客户' },
-  { path: 'customer.contact', label: '联系人', group: '客户' },
-  { path: 'totalAmount', label: '总金额', group: '汇总' },
-  { path: 'totalQuantity', label: '总数量', group: '汇总' },
-  { path: 'totalWeight', label: '总重量', group: '汇总' },
-  { path: 'company.name', label: '公司名称', group: '公司' },
-  { path: 'company.phone', label: '公司电话', group: '公司' },
-  { path: 'company.address', label: '公司地址', group: '公司' },
-];
-
 interface DataBindingSectionProps {
+  templateType: string;
   field: string;
   format: PlaceholderFormat;
   fallback: string;
@@ -46,6 +33,7 @@ interface DataBindingSectionProps {
 }
 
 export function DataBindingSection({
+  templateType,
   field,
   format,
   fallback,
@@ -55,39 +43,42 @@ export function DataBindingSection({
 }: DataBindingSectionProps) {
   const [search, setSearch] = useState('');
 
+  const availableFields = useMemo(
+    () => getFieldsForTemplateType(templateType),
+    [templateType]
+  );
+
   const filteredFields = useMemo(() => {
-    if (!search) return fieldRegistry;
+    if (!search) return availableFields;
     const lower = search.toLowerCase();
-    return fieldRegistry.filter(
+    return availableFields.filter(
       f =>
         f.label.toLowerCase().includes(lower) ||
         f.path.toLowerCase().includes(lower)
     );
-  }, [search]);
+  }, [availableFields, search]);
 
   // 按组分类
-  const groupedFields = useMemo(() => {
-    const groups: Record<string, typeof filteredFields> = {};
-    filteredFields.forEach(f => {
-      if (!groups[f.group]) groups[f.group] = [];
-      groups[f.group].push(f);
-    });
-    return groups;
-  }, [filteredFields]);
+  const groupedFields = useMemo(() => groupFields(filteredFields), [filteredFields]);
 
-  const currentField = fieldRegistry.find(f => f.path === field);
+  const currentField = availableFields.find(f => f.path === field);
 
   return (
     <div className="space-y-3">
-      <Label className="text-muted-foreground text-xs">数据绑定</Label>
+      <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3">
+        <Label className="text-xs font-semibold text-sky-900">数据绑定</Label>
+        <p className="mt-1 text-[11px] leading-5 text-sky-800/80">
+          先选字段，再决定格式和空值文案，适合中文单据里常见的日期、金额、数量展示。
+        </p>
+      </div>
 
       {/* 当前绑定字段 */}
-      <div className="rounded-md border bg-blue-50 p-2">
-        <div className="text-xs text-blue-600">绑定字段</div>
-        <div className="font-mono text-sm text-blue-800">
+      <div className="rounded-xl border border-sky-200 bg-white p-3 shadow-sm">
+        <div className="text-xs text-sky-600">当前字段</div>
+        <div className="mt-1 text-sm font-semibold text-slate-900">
           {currentField?.label ?? field}
         </div>
-        <div className="text-xs text-blue-500">{field}</div>
+        <div className="mt-1 font-mono text-xs text-slate-500">{field}</div>
       </div>
 
       {/* 字段选择器 */}
@@ -102,26 +93,33 @@ export function DataBindingSection({
           />
         </div>
 
-        <div className="max-h-40 overflow-auto rounded-md border bg-white">
+        <div className="max-h-48 overflow-auto rounded-xl border bg-white">
           {Object.entries(groupedFields).map(([group, fields]) => (
             <div key={group}>
-              <div className="sticky top-0 bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
+              <div className="sticky top-0 bg-stone-100 px-3 py-1.5 text-xs font-medium text-stone-500">
                 {group}
               </div>
               {fields.map(f => (
                 <button
                   key={f.path}
                   type="button"
-                  className={`w-full px-3 py-1.5 text-left text-sm hover:bg-blue-50 ${
-                    f.path === field ? 'bg-blue-100 text-blue-700' : ''
+                  className={`w-full px-3 py-2 text-left hover:bg-sky-50 ${
+                    f.path === field ? 'bg-sky-100 text-sky-700' : ''
                   }`}
                   onClick={() => onFieldChange(f.path, f.label)}
                 >
-                  {f.label}
+                  <div className="text-sm font-medium">{f.label}</div>
+                  <div className="font-mono text-[11px] text-slate-500">{f.path}</div>
                 </button>
               ))}
             </div>
           ))}
+
+          {Object.keys(groupedFields).length === 0 && (
+            <div className="p-4 text-center text-sm text-slate-500">
+              没找到匹配字段，换个中文关键词试试。
+            </div>
+          )}
         </div>
       </div>
 
@@ -148,7 +146,7 @@ export function DataBindingSection({
         <Input
           value={fallback}
           onChange={e => onFallbackChange(e.target.value)}
-          placeholder="-"
+          placeholder="例如：暂无、--、待补充"
           className="h-8"
         />
       </div>
