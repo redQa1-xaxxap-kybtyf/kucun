@@ -14,6 +14,7 @@ import type {
   ProfitLossAnalysis,
   ProfitLossTrend,
   RevenueDetail,
+  SampleMetrics,
 } from '@/lib/types/report';
 import {
   calculateTotalExpenses,
@@ -35,6 +36,7 @@ import {
   generateProfitAlerts,
   type ReportVisibility,
 } from './report-helpers';
+import { getSampleMetrics } from './report-sample-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
 
@@ -209,9 +211,11 @@ async function getExpenseDetail(
     buildExpenseWhere(startDate, endDate),
     visibility
   );
+  const expenseRecordModel =
+    prisma.expenseRecord as typeof prisma.expenseRecord &
+      Partial<Pick<typeof prisma.expenseRecord, 'aggregate'>>;
 
-  // 按类型分组查询费用
-  const expensesByType = await prisma.expenseRecord.groupBy({
+  const expensesByType = await expenseRecordModel.groupBy({
     by: ['expenseType'],
     where,
     _sum: {
@@ -221,7 +225,20 @@ async function getExpenseDetail(
 
   // 使用工具函数提取费用类型金额
   const byType = extractExpensesByType(expensesByType);
-  const totalExpenses = calculateTotalExpenses(byType);
+  let totalExpenses = calculateTotalExpenses(byType);
+
+  if (typeof expenseRecordModel.aggregate === 'function') {
+    const expenseAggregate = await expenseRecordModel.aggregate({
+      where,
+      _sum: {
+        expenseAmount: true,
+      },
+    });
+
+    // 总费用以聚合结果为准，兼容历史异常类型数据，避免明细映射遗漏后影响利润
+    totalExpenses = toNumber(expenseAggregate._sum.expenseAmount);
+  }
+
   const expenseRate = calculateExpenseRate(totalExpenses, totalRevenue);
 
   return {
@@ -502,11 +519,12 @@ export async function getProfitLossAnalysis(
   const visibility: ReportVisibility = { systemMode: await getSystemMode() };
 
   // 并行获取所有数据
-  const [returnAdjustments, compensationRefundTotal, revenueRaw, trend] =
+  const [returnAdjustments, compensationRefundTotal, revenueRaw, sample, trend] =
     await Promise.all([
       getReturnAdjustments(start, end, visibility),
       getCompensationRefundTotal(start, end, visibility),
       getRevenueDetail(start, end, visibility),
+      getSampleMetrics(start, end, visibility),
       getProfitLossTrend(start, end, groupBy, visibility),
     ]);
 
@@ -618,6 +636,7 @@ export async function getProfitLossAnalysis(
     period,
     status,
     revenue,
+    sample: sample as SampleMetrics,
     costs,
     expenses,
     profit,

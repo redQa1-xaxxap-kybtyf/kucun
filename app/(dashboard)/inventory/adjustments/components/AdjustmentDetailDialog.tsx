@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -66,6 +67,9 @@ export function AdjustmentDetailDialog({
                     : '草稿'}
             </Badge>
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            查看本次库存调整的产品、数量变化、原因以及操作和审批信息。
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">

@@ -42,6 +42,7 @@ async function readRowsFromUpload(
 
   return XLSX.utils.sheet_to_json<ProductImportRowInput>(worksheet, {
     defval: '',
+    raw: false,
   });
 }
 

@@ -24,6 +24,7 @@ import {
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
 import {
   SALES_ORDER_STATUS_LABELS,
+  SAMPLE_SETTLEMENT_TYPE_LABELS,
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
@@ -86,6 +87,19 @@ const getOrderTypeBadge = (orderType: string) =>
     <Badge variant="outline">正常销售</Badge>
   );
 
+const getSampleBadge = (
+  isSampleOrder: boolean | undefined,
+  sampleSettlementType: 'FREE' | 'CHARGEABLE' | undefined
+) =>
+  isSampleOrder ? (
+    <Badge
+      variant="outline"
+      className="border-amber-200 bg-amber-50 text-amber-700"
+    >
+      {SAMPLE_SETTLEMENT_TYPE_LABELS[sampleSettlementType ?? 'FREE']}
+    </Badge>
+  ) : null;
+
 const getTransferModeBadge = (mode: string | undefined) => {
   if (!mode) {
     return null;
@@ -129,6 +143,7 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
               order.status as keyof typeof SALES_ORDER_STATUS_LABELS
             ] || order.status}
           </Badge>
+          {getSampleBadge(order.isSampleOrder, order.sampleSettlementType)}
           {getOrderTypeBadge(order.orderType)}
           {order.orderType === 'TRANSFER' &&
             getTransferModeBadge(order.transferMode)}

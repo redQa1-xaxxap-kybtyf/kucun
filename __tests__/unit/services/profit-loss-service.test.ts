@@ -15,6 +15,7 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     salesOrder: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
     },
     inboundRecord: {
       aggregate: jest.fn(),
@@ -37,12 +38,12 @@ jest.mock('@/lib/db', () => ({
 
 const { prisma } = jest.requireMock('@/lib/db') as {
   prisma: {
-    salesOrder: { aggregate: jest.Mock };
+    salesOrder: { aggregate: jest.Mock; findMany: jest.Mock };
     inboundRecord: { aggregate: jest.Mock };
     outboundRecord: { aggregate: jest.Mock };
     expenseRecord: { groupBy: jest.Mock };
     refundRecord: { aggregate: jest.Mock };
-    factoryShipmentOrder: { findMany: jest.Mock };
+    factoryShipmentOrder: { aggregate: jest.Mock; findMany: jest.Mock };
   };
 };
 
@@ -55,6 +56,7 @@ describe('profit-loss-service', () => {
       _sum: { totalAmount: 0, itemsAmount: 0, costAmount: 0 },
       _count: { id: 0 },
     });
+    prisma.salesOrder.findMany.mockResolvedValue([]);
     
     prisma.inboundRecord.aggregate.mockResolvedValue({
       _sum: { totalCost: 0 },
@@ -101,6 +103,7 @@ describe('profit-loss-service', () => {
 
       // Assert: 验证结果
       expect(result.costs.totalCost).toBe(0); // 成本应该为 0
+      expect(result.sample.sampleRevenue).toBe(0);
       expect(result.profit.netProfit).toBe(0); // 净利润应该为 0（没有收入和费用）
       
       // 验证 inboundRecord.aggregate 被调用时排除了 opening_balance
@@ -132,6 +135,16 @@ describe('profit-loss-service', () => {
         },
         _count: { id: 1 },
       });
+      prisma.salesOrder.findMany.mockResolvedValue([
+        {
+          id: 'sample-order-1',
+          customerId: 'customer-1',
+          totalAmount: 80,
+          costAmount: 45,
+          customer: { name: '样品客户A' },
+          items: [{ quantity: 8 }],
+        },
+      ]);
 
       // Act: 调用服务函数
       const result = await getProfitLossAnalysis(
@@ -143,6 +156,8 @@ describe('profit-loss-service', () => {
 
       // Assert: 验证结果
       expect(result.revenue.totalRevenue).toBe(3000); // 收入 3,000 元
+      expect(result.sample.sampleRevenue).toBe(80);
+      expect(result.sample.sampleQuantity).toBe(8);
       expect(result.costs.salesCost).toBe(2575); // 销售成本 2,575 元
       expect(result.costs.totalCost).toBe(2575); // 总成本 2,575 元
       expect(result.profit.grossProfit).toBe(425); // 毛利润 = 3000 - 2575 = 425

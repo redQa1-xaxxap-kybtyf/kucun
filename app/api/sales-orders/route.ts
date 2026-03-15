@@ -11,6 +11,7 @@ import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
+import { DEFAULT_SAMPLE_SETTLEMENT_TYPE } from '@/lib/utils/sample-order';
 
 /**
  * 获取销售订单列表
@@ -30,6 +31,7 @@ const getSalesOrdersHandler = withErrorHandling(
         startDate: searchParams.get('startDate'),
         endDate: searchParams.get('endDate'),
         orderType: searchParams.get('orderType'),
+        isSampleOrder: searchParams.get('isSampleOrder'),
         hasReturns: searchParams.get('hasReturns'),
         includeTest: searchParams.get('includeTest'),
         includeVoided: searchParams.get('includeVoided'),
@@ -78,6 +80,9 @@ const createSalesOrderHandler = withErrorHandling(
         status: validatedData.status,
         orderType: validatedData.orderType,
         transferMode: validatedData.transferMode,
+        isSampleOrder: validatedData.isSampleOrder ?? false,
+        sampleSettlementType:
+          validatedData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
         supplierId: validatedData.supplierId || undefined,
         costAmount: validatedData.costAmount ?? undefined,
         roundingAdjustment: validatedData.roundingAdjustment ?? undefined,

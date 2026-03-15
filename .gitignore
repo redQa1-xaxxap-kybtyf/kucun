@@ -69,6 +69,7 @@ lib/nul
 /backups
 *.sql
 *.sql.gz
+!prisma/migrations/**/migration.sql
 
 # PM2
 .pm2

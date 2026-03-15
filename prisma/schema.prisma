@@ -240,14 +240,14 @@ model ProductVariant {
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   // 关系定义
-  product              Product               @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  salesOrderItems      SalesOrderItem[]
-  inboundRecords       InboundRecord[]
-  inventoryAdjustments InventoryAdjustment[]
-  inventoryCountItems  InventoryCountItem[]
-  inventory            Inventory[]
-  outboundRecords      OutboundRecord[]
-  InventoryCostQueue   InventoryCostQueue[]
+  product                Product                 @relation(fields: [productId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  salesOrderItems        SalesOrderItem[]
+  inboundRecords         InboundRecord[]
+  inventoryAdjustments   InventoryAdjustment[]
+  inventoryCountItems    InventoryCountItem[]
+  inventory              Inventory[]
+  outboundRecords        OutboundRecord[]
+  InventoryCostQueue     InventoryCostQueue[]
   fifoConsumptionLedgers FifoConsumptionLedger[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
@@ -258,32 +258,34 @@ model ProductVariant {
 }
 
 model SalesOrder {
-  id                 String    @id @default(uuid()) @db.Char(36)
-  orderNumber        String    @unique @map("order_number") @db.VarChar(100)
-  customerId         String    @map("customer_id") @db.Char(36)
-  userId             String    @map("user_id") @db.Char(36)
-  status             String    @default("draft") @db.VarChar(32)
-  orderType          String    @default("NORMAL") @map("order_type") @db.VarChar(32)
-  transferMode       String    @default("SUPPLIER_ONLY") @map("transfer_mode") @db.VarChar(32)
-  supplierId         String?   @map("supplier_id") @db.Char(36)
-  costAmount         Decimal?  @default(0) @map("cost_amount") @db.Decimal(18, 2)
-  profitAmount       Decimal?  @default(0) @map("profit_amount") @db.Decimal(18, 2)
-  itemsAmount        Decimal   @default(0) @map("items_amount") @db.Decimal(18, 2)
-  additionalFees     Decimal   @default(0) @map("additional_fees") @db.Decimal(18, 2)
-  totalAmount        Decimal   @default(0) @map("total_amount") @db.Decimal(18, 2)
-  paidAmount         Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
-  roundingAdjustment Decimal   @default(0) @map("rounding_adjustment") @db.Decimal(18, 2)
-  usePrepayment      Boolean   @default(false) @map("use_prepayment")
-  prepaymentAmount   Decimal?  @default(0) @map("prepayment_amount") @db.Decimal(18, 2)
-  remarks            String?
-  dataTag            String    @default("prod") @map("data_tag") @db.VarChar(16)
-  voidedAt           DateTime? @map("voided_at")
-  voidedBy           String?   @map("voided_by") @db.Char(36)
-  voidReason         String?   @map("void_reason") @db.VarChar(64)
-  shippedAt          DateTime? @map("shipped_at")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  expenseAmount      Decimal?  @default(0) @map("expense_amount") @db.Decimal(18, 2)
+  id                   String    @id @default(uuid()) @db.Char(36)
+  orderNumber          String    @unique @map("order_number") @db.VarChar(100)
+  customerId           String    @map("customer_id") @db.Char(36)
+  userId               String    @map("user_id") @db.Char(36)
+  status               String    @default("draft") @db.VarChar(32)
+  orderType            String    @default("NORMAL") @map("order_type") @db.VarChar(32)
+  transferMode         String    @default("SUPPLIER_ONLY") @map("transfer_mode") @db.VarChar(32)
+  isSampleOrder        Boolean   @default(false) @map("is_sample_order")
+  sampleSettlementType String    @default("FREE") @map("sample_settlement_type") @db.VarChar(32)
+  supplierId           String?   @map("supplier_id") @db.Char(36)
+  costAmount           Decimal?  @default(0) @map("cost_amount") @db.Decimal(18, 2)
+  profitAmount         Decimal?  @default(0) @map("profit_amount") @db.Decimal(18, 2)
+  itemsAmount          Decimal   @default(0) @map("items_amount") @db.Decimal(18, 2)
+  additionalFees       Decimal   @default(0) @map("additional_fees") @db.Decimal(18, 2)
+  totalAmount          Decimal   @default(0) @map("total_amount") @db.Decimal(18, 2)
+  paidAmount           Decimal   @default(0) @map("paid_amount") @db.Decimal(18, 2)
+  roundingAdjustment   Decimal   @default(0) @map("rounding_adjustment") @db.Decimal(18, 2)
+  usePrepayment        Boolean   @default(false) @map("use_prepayment")
+  prepaymentAmount     Decimal?  @default(0) @map("prepayment_amount") @db.Decimal(18, 2)
+  remarks              String?
+  dataTag              String    @default("prod") @map("data_tag") @db.VarChar(16)
+  voidedAt             DateTime? @map("voided_at")
+  voidedBy             String?   @map("voided_by") @db.Char(36)
+  voidReason           String?   @map("void_reason") @db.VarChar(64)
+  shippedAt            DateTime? @map("shipped_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+  expenseAmount        Decimal?  @default(0) @map("expense_amount") @db.Decimal(18, 2)
 
   customer         Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   user             User                @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -301,6 +303,8 @@ model SalesOrder {
   @@index([userId], map: "idx_sales_orders_user")
   @@index([status], map: "idx_sales_orders_status")
   @@index([orderType], map: "idx_sales_orders_order_type")
+  @@index([isSampleOrder], map: "idx_sales_orders_is_sample_order")
+  @@index([sampleSettlementType], map: "idx_sales_orders_sample_settlement_type")
   @@index([supplierId], map: "idx_sales_orders_supplier")
   @@index([usePrepayment], map: "idx_sales_orders_prepayment")
   @@index([customerId, status])
@@ -645,29 +649,29 @@ model InventoryAdjustment {
 }
 
 model PaymentRecord {
-  id                     String   @id @default(uuid()) @db.Char(36)
-  paymentNumber          String   @unique @map("payment_number")
-  salesOrderId           String?  @map("sales_order_id") @db.Char(36)
-  factoryShipmentOrderId String?  @map("factory_shipment_order_id") @db.Char(36)
-  customerId             String   @map("customer_id") @db.Char(36)
-  userId                 String   @map("user_id") @db.Char(36)
-  paymentType            String   @default("order_payment") @map("payment_type") @db.VarChar(64)
-  paymentMethod          String   @default("cash") @db.VarChar(64)
-  paymentAmount          Decimal  @map("payment_amount") @db.Decimal(18, 2)
-  actualPaymentAmount    Decimal  @default(0) @map("actual_payment_amount") @db.Decimal(18, 2)
-  roundingAmount         Decimal  @default(0) @map("rounding_amount") @db.Decimal(18, 2)
-  appliedAmount          Decimal  @default(0) @map("applied_amount") @db.Decimal(18, 2)
-  paymentDate            DateTime @map("payment_date")
-  status                 String   @default("pending") @db.VarChar(32)
+  id                     String    @id @default(uuid()) @db.Char(36)
+  paymentNumber          String    @unique @map("payment_number")
+  salesOrderId           String?   @map("sales_order_id") @db.Char(36)
+  factoryShipmentOrderId String?   @map("factory_shipment_order_id") @db.Char(36)
+  customerId             String    @map("customer_id") @db.Char(36)
+  userId                 String    @map("user_id") @db.Char(36)
+  paymentType            String    @default("order_payment") @map("payment_type") @db.VarChar(64)
+  paymentMethod          String    @default("cash") @db.VarChar(64)
+  paymentAmount          Decimal   @map("payment_amount") @db.Decimal(18, 2)
+  actualPaymentAmount    Decimal   @default(0) @map("actual_payment_amount") @db.Decimal(18, 2)
+  roundingAmount         Decimal   @default(0) @map("rounding_amount") @db.Decimal(18, 2)
+  appliedAmount          Decimal   @default(0) @map("applied_amount") @db.Decimal(18, 2)
+  paymentDate            DateTime  @map("payment_date")
+  status                 String    @default("pending") @db.VarChar(32)
   remarks                String?
-  receiptNumber          String?  @map("receipt_number")
-  bankInfo               String?  @map("bank_info")
-  dataTag                String   @default("prod") @map("data_tag") @db.VarChar(16)
+  receiptNumber          String?   @map("receipt_number")
+  bankInfo               String?   @map("bank_info")
+  dataTag                String    @default("prod") @map("data_tag") @db.VarChar(16)
   voidedAt               DateTime? @map("voided_at")
-  voidedBy               String?  @map("voided_by") @db.Char(36)
-  voidReason             String?  @map("void_reason") @db.VarChar(64)
-  createdAt              DateTime @default(now()) @map("created_at")
-  updatedAt              DateTime @updatedAt @map("updated_at")
+  voidedBy               String?   @map("voided_by") @db.Char(36)
+  voidReason             String?   @map("void_reason") @db.VarChar(64)
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
 
   salesOrder           SalesOrder?           @relation(fields: [salesOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   factoryShipmentOrder FactoryShipmentOrder? @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -1106,24 +1110,24 @@ model PayableRecord {
 }
 
 model PaymentOutRecord {
-  id              String   @id @default(uuid()) @db.Char(36)
-  paymentNumber   String   @unique @map("payment_number") @db.VarChar(100)
-  payableRecordId String?  @map("payable_record_id") @db.Char(36)
-  supplierId      String   @map("supplier_id") @db.Char(36)
-  userId          String   @map("user_id") @db.Char(36)
-  paymentMethod   String   @default("bank_transfer") @db.VarChar(64)
-  paymentAmount   Decimal  @map("payment_amount") @db.Decimal(18, 2)
-  paymentDate     DateTime @map("payment_date")
-  status          String   @default("pending") @db.VarChar(32)
+  id              String    @id @default(uuid()) @db.Char(36)
+  paymentNumber   String    @unique @map("payment_number") @db.VarChar(100)
+  payableRecordId String?   @map("payable_record_id") @db.Char(36)
+  supplierId      String    @map("supplier_id") @db.Char(36)
+  userId          String    @map("user_id") @db.Char(36)
+  paymentMethod   String    @default("bank_transfer") @db.VarChar(64)
+  paymentAmount   Decimal   @map("payment_amount") @db.Decimal(18, 2)
+  paymentDate     DateTime  @map("payment_date")
+  status          String    @default("pending") @db.VarChar(32)
   remarks         String?
-  voucherNumber   String?  @map("voucher_number")
-  bankInfo        String?  @map("bank_info")
-  dataTag         String   @default("prod") @map("data_tag") @db.VarChar(16)
+  voucherNumber   String?   @map("voucher_number")
+  bankInfo        String?   @map("bank_info")
+  dataTag         String    @default("prod") @map("data_tag") @db.VarChar(16)
   voidedAt        DateTime? @map("voided_at")
-  voidedBy        String?  @map("voided_by") @db.Char(36)
-  voidReason      String?  @map("void_reason") @db.VarChar(64)
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  voidedBy        String?   @map("voided_by") @db.Char(36)
+  voidReason      String?   @map("void_reason") @db.VarChar(64)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   // 关系定义
   payableRecord PayableRecord? @relation(fields: [payableRecordId], references: [id], onDelete: SetNull, onUpdate: Cascade)
@@ -1540,9 +1544,9 @@ model ProductViewHistory {
 
 // 打印模板表 - 存储可视化设计器创建的打印模板
 model PrintTemplate {
-  id          String   @id @default(uuid()) @db.Char(36)
-  name        String   @db.VarChar(100)
-  description String?  @db.VarChar(500)
+  id          String  @id @default(uuid()) @db.Char(36)
+  name        String  @db.VarChar(100)
+  description String? @db.VarChar(500)
 
   /// 模板类型: sales-order, purchase-order, factory-shipment, delivery-note, custom
   type String @map("template_type") @db.VarChar(50)
@@ -1580,17 +1584,17 @@ model PrintTemplate {
 }
 
 model AuditRun {
-  runId       String   @id @map("run_id") @db.Char(36)
-  auditKey    String   @map("audit_key") @db.VarChar(64)
-  rangeStart  DateTime? @map("range_start")
-  rangeEnd    DateTime? @map("range_end")
-  status      String   @db.VarChar(32)
-  shardJson   Json?    @map("shard_json")
-  startedAt   DateTime? @map("started_at")
-  finishedAt  DateTime? @map("finished_at")
-  scannedCount Int?    @map("scanned_count")
-  issueCount  Int?     @map("issue_count")
-  configJson  Json?    @map("config_json")
+  runId        String    @id @map("run_id") @db.Char(36)
+  auditKey     String    @map("audit_key") @db.VarChar(64)
+  rangeStart   DateTime? @map("range_start")
+  rangeEnd     DateTime? @map("range_end")
+  status       String    @db.VarChar(32)
+  shardJson    Json?     @map("shard_json")
+  startedAt    DateTime? @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  scannedCount Int?      @map("scanned_count")
+  issueCount   Int?      @map("issue_count")
+  configJson   Json?     @map("config_json")
 
   findings AuditFinding[]
   metrics  AuditMetric[]
@@ -1625,10 +1629,10 @@ model AuditFinding {
 }
 
 model AuditMetric {
-  runId          String   @map("run_id") @db.Char(36)
-  metricKey      String   @map("metric_key") @db.VarChar(64)
-  metricValueJson Json    @map("metric_value_json")
-  createdAt      DateTime @default(now()) @map("created_at")
+  runId           String   @map("run_id") @db.Char(36)
+  metricKey       String   @map("metric_key") @db.VarChar(64)
+  metricValueJson Json     @map("metric_value_json")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   run AuditRun @relation(fields: [runId], references: [runId], onDelete: Cascade, onUpdate: Cascade)
 

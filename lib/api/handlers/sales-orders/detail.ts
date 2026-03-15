@@ -1,6 +1,7 @@
 import type { Prisma, SalesOrder } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
   mapOrderBaseFields,
@@ -283,12 +284,19 @@ export async function getSalesOrderDetailWithPayments(id: string) {
 
   type SalesOrderAmounts = Pick<
     SalesOrder,
-    'totalAmount' | 'roundingAdjustment'
+    | 'totalAmount'
+    | 'roundingAdjustment'
+    | 'isSampleOrder'
+    | 'sampleSettlementType'
   >;
   const amounts = order as unknown as SalesOrderAmounts;
-  const actualTotalAmount =
-    Number(amounts.totalAmount) + Number(amounts.roundingAdjustment ?? 0);
-  const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
+  const receivableTotal = getSalesOrderReceivableTotal({
+    isSampleOrder: amounts.isSampleOrder,
+    sampleSettlementType: amounts.sampleSettlementType,
+    totalAmount: amounts.totalAmount,
+    roundingAdjustment: amounts.roundingAdjustment,
+  });
+  const remainingAmount = Math.max(0, receivableTotal - paidAmount);
 
   const mapped = mapDetail(
     order as unknown as SalesOrderDetailResult,

@@ -9,6 +9,7 @@ import {
   ensureCompanyExpenses,
   type CompanyFeeItemLike,
 } from '@/lib/services/expense-service';
+import { DEFAULT_SAMPLE_SETTLEMENT_TYPE } from '@/lib/utils/sample-order';
 
 import {
   buildFeeItemsInput,
@@ -135,6 +136,12 @@ export async function updateSalesOrderDraft(
         status: updateData.status || 'draft',
         orderType,
         transferMode,
+        isSampleOrder:
+          updateData.isSampleOrder === undefined
+            ? undefined
+            : Boolean(updateData.isSampleOrder),
+        sampleSettlementType:
+          updateData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
         supplierId:
           orderType === 'TRANSFER'
             ? updateData.supplierId === undefined
@@ -251,6 +258,8 @@ function selectUpdatedOrder() {
     status: true,
     orderType: true,
     transferMode: true,
+    isSampleOrder: true,
+    sampleSettlementType: true,
     supplierId: true,
     itemsAmount: true,
     additionalFees: true,

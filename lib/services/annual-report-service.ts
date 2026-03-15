@@ -35,8 +35,17 @@ import {
   getYearDateRange,
   type ReportVisibility,
 } from './report-helpers';
+import { getAnnualSampleMetrics } from './report-sample-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
+
+type FactoryShipmentPeriodStats = {
+  totalOrders: number;
+  totalRevenue: number;
+  customerProfit: number;
+  selfCostAmount: number;
+  totalExpenses: number;
+};
 
 // ==================== 数据查询函数 ====================
 
@@ -153,6 +162,73 @@ function mergeAnnualSummaryWithFactoryShipment(
   };
 }
 
+async function getFactoryShipmentPeriodStats(
+  startDate: Date,
+  endDate: Date,
+  visibility: ReportVisibility
+): Promise<FactoryShipmentPeriodStats> {
+  let totalOrders = 0;
+  let totalRevenue = 0;
+  let customerProfit = 0;
+  let selfCostAmount = 0;
+  let totalExpenses = 0;
+
+  let orderCursor: string | undefined;
+  while (true) {
+    const where = applyReportVisibility(
+      {
+        shipmentDate: {
+          gte: startDate,
+          lte: endDate,
+        },
+        status: {
+          in: ['arrived', 'completed'],
+        },
+      } as any,
+      visibility
+    );
+
+    const batch = await prisma.factoryShipmentOrder.findMany({
+      where,
+      select: {
+        id: true,
+        receivableAmount: true,
+        customerProfit: true,
+        selfCostAmount: true,
+        expenseAmount: true,
+      },
+      orderBy: {
+        id: 'asc',
+      },
+      take: REPORT_QUERY_BATCH_SIZE,
+      ...(orderCursor ? { cursor: { id: orderCursor }, skip: 1 } : {}),
+    });
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    totalOrders += batch.length;
+
+    for (const order of batch) {
+      totalRevenue += toNumber(order.receivableAmount);
+      customerProfit += toNumber(order.customerProfit);
+      selfCostAmount += toNumber(order.selfCostAmount);
+      totalExpenses += toNumber(order.expenseAmount);
+    }
+
+    orderCursor = batch[batch.length - 1].id;
+  }
+
+  return {
+    totalOrders,
+    totalRevenue,
+    customerProfit,
+    selfCostAmount,
+    totalExpenses,
+  };
+}
+
 /**
  * 获取月度趋势数据
  */
@@ -206,7 +282,7 @@ async function getMonthData(
     visibility
   );
 
-  const [salesStats, expenseStats] = await Promise.all([
+  const [salesStats, expenseStats, factoryShipmentStats] = await Promise.all([
     prisma.salesOrder.aggregate({
       where: salesWhere,
       _sum: {
@@ -223,15 +299,20 @@ async function getMonthData(
         expenseAmount: true,
       },
     }),
+    getFactoryShipmentPeriodStats(startDate, endDate, visibility),
   ]);
 
-  const revenue = toNumber(salesStats._sum.totalAmount);
-  const cost = toNumber(salesStats._sum.costAmount);
+  const warehouseRevenue = toNumber(salesStats._sum.totalAmount);
+  const warehouseCost = toNumber(salesStats._sum.costAmount);
   const expenses = toNumber(expenseStats._sum.expenseAmount);
-  const orderCount = salesStats._count.id || 0;
+  const revenue = warehouseRevenue + factoryShipmentStats.totalRevenue;
+  const cost = warehouseCost + factoryShipmentStats.selfCostAmount;
+  const orderCount =
+    (salesStats._count.id || 0) + factoryShipmentStats.totalOrders;
 
-  const grossProfit = revenue - cost;
-  const profit = grossProfit - expenses;
+  // 与年度汇总保持一致：费用维度只按已审核 ExpenseRecord 口径统计，
+  // 厂家直发收入/成本单独并入趋势与季度图表，避免顶部汇总和图表口径不一致。
+  const profit = revenue - cost - expenses;
 
   return {
     revenue,
@@ -448,16 +529,19 @@ export async function getAnnualReport(
   includeYearOverYear = true
 ): Promise<AnnualReport> {
   const visibility: ReportVisibility = { systemMode: await getSystemMode() };
+  const { startDate, endDate } = getYearDateRange(year);
 
   // 并行获取所有数据
   const [
     summary,
+    sample,
     monthlyTrend,
     quarterlyData,
     expenseDistribution,
     factoryShipmentProfit,
   ] = await Promise.all([
     getAnnualSummary(year, visibility),
+    getAnnualSampleMetrics(startDate, endDate, visibility),
     getMonthlyTrend(year, visibility),
     getQuarterlyData(year, visibility),
     getExpenseDistribution(year, visibility),
@@ -497,6 +581,7 @@ export async function getAnnualReport(
     year,
     period,
     summary: combinedSummary,
+    sample,
     monthlyTrend,
     quarterlyData,
     expenseDistribution,

@@ -58,6 +58,7 @@ import {
   useUpdateSalesOrderStatus,
 } from '@/lib/api/sales-orders';
 import {
+  SAMPLE_SETTLEMENT_TYPE_LABELS,
   SALES_ORDER_STATUS_LABELS,
   TRANSFER_MODE_LABELS,
   type SalesOrder,
@@ -132,6 +133,7 @@ export function ERPSalesOrderList({
           initialParams?.startDate ||
           initialParams?.endDate ||
           initialParams?.orderType ||
+          initialParams?.isSampleOrder ||
           initialParams?.hasReturns ||
           initialParams?.includeTest ||
           initialParams?.includeVoided ||
@@ -145,6 +147,7 @@ export function ERPSalesOrderList({
       initialParams?.startDate,
       initialParams?.endDate,
       initialParams?.orderType,
+      initialParams?.isSampleOrder,
       initialParams?.hasReturns,
       initialParams?.includeTest,
       initialParams?.includeVoided,
@@ -167,6 +170,7 @@ export function ERPSalesOrderList({
     externalOnFilter?.('startDate', undefined);
     externalOnFilter?.('endDate', undefined);
     externalOnFilter?.('orderType', undefined);
+    externalOnFilter?.('isSampleOrder', undefined);
     externalOnFilter?.('hasReturns', undefined);
     externalOnFilter?.('includeTest', undefined);
     externalOnFilter?.('includeVoided', undefined);
@@ -196,6 +200,11 @@ export function ERPSalesOrderList({
     externalOnFilter?.('hasReturns', String(nextValue));
   }, [externalOnFilter, initialParams?.hasReturns]);
 
+  const handleToggleSampleOrders = React.useCallback(() => {
+    const isSampleActive = initialParams?.isSampleOrder === true;
+    externalOnFilter?.('isSampleOrder', isSampleActive ? undefined : 'true');
+  }, [externalOnFilter, initialParams?.isSampleOrder]);
+
   const handleToggleIncludeTest = React.useCallback(() => {
     const currentValue = initialParams?.includeTest === true;
     const nextValue = !currentValue;
@@ -224,6 +233,7 @@ export function ERPSalesOrderList({
       startDate: initialParams?.startDate,
       endDate: initialParams?.endDate,
       orderType: initialParams?.orderType,
+      isSampleOrder: initialParams?.isSampleOrder,
       hasReturns: initialParams?.hasReturns,
       includeTest: initialParams?.includeTest,
       includeVoided: initialParams?.includeVoided,
@@ -239,6 +249,7 @@ export function ERPSalesOrderList({
       initialParams?.startDate,
       initialParams?.endDate,
       initialParams?.orderType,
+      initialParams?.isSampleOrder,
       initialParams?.hasReturns,
       initialParams?.includeTest,
       initialParams?.includeVoided,
@@ -648,6 +659,13 @@ export function ERPSalesOrderList({
             onClick: handleToggleTransferOrders,
           },
           {
+            key: 'sampleOrders',
+            label: '样品单',
+            icon: <Package className="mr-1 h-3 w-3" />,
+            active: !!initialParams?.isSampleOrder,
+            onClick: handleToggleSampleOrders,
+          },
+          {
             key: 'hasReturns',
             label: '有退货',
             icon: <Package className="mr-1 h-3 w-3" />,
@@ -743,6 +761,18 @@ export function ERPSalesOrderList({
                           <span className="font-mono font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
                             <CopyableText text={order.orderNumber} />
                           </span>
+                          {order.isSampleOrder && (
+                            <Badge
+                              variant="outline"
+                              className="w-fit border-amber-200 bg-amber-50 text-[10px] font-bold text-amber-700"
+                            >
+                              {
+                                SAMPLE_SETTLEMENT_TYPE_LABELS[
+                                  order.sampleSettlementType ?? 'FREE'
+                                ]
+                              }
+                            </Badge>
+                          )}
                           {order.orderType === 'TRANSFER' && (
                             <div className="flex flex-wrap gap-1">
                               <Badge variant="info">调货销售</Badge>
@@ -989,6 +1019,18 @@ export function ERPSalesOrderList({
                         地址：{order.customer?.address || '暂无客户地址'}
                       </div>
                       <div className="mt-1 flex flex-wrap gap-1">
+                        {order.isSampleOrder && (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-200 bg-amber-50 text-xs font-bold text-amber-700"
+                          >
+                            {
+                              SAMPLE_SETTLEMENT_TYPE_LABELS[
+                                order.sampleSettlementType ?? 'FREE'
+                              ]
+                            }
+                          </Badge>
+                        )}
                         {order.orderType === 'TRANSFER' && (
                           <Badge variant="info" className="text-xs font-bold">
                             调货销售

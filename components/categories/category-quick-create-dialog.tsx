@@ -22,6 +22,8 @@ import { showError, showSuccess } from '@/lib/utils/toast-helper';
 export interface CategoryQuickCreateParent {
   id: string;
   name: string;
+  code?: string;
+  fullPath?: string;
   /** 0-based: 0=L1, 1=L2, 2=L3 */
   level: number;
 }
@@ -89,6 +91,17 @@ export function CategoryQuickCreateDialog({
     return '子分类';
   }, [parent]);
 
+  const parentDescription = React.useMemo(() => {
+    if (!parent) {
+      return '创建顶级分类（一级分类）';
+    }
+
+    const fullPath = parent.fullPath ?? parent.name;
+    return parent.code
+      ? `父级分类：${fullPath} · 编码 ${parent.code}`
+      : `父级分类：${fullPath}`;
+  }, [parent]);
+
   const handleSubmit = React.useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -121,9 +134,7 @@ export function CategoryQuickCreateDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>新增{levelLabel}</DialogTitle>
-          <DialogDescription>
-            {parent ? `父级分类：${parent.name}` : '创建顶级分类（一级分类）'}
-          </DialogDescription>
+          <DialogDescription>{parentDescription}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   SALES_ORDER_STATUS_LABELS,
+  SAMPLE_SETTLEMENT_TYPE_LABELS,
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
@@ -89,6 +90,18 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
               业务类型标签
             </div>
             <div className="flex flex-col gap-1.5">
+              {order.isSampleOrder && (
+                <Badge
+                  variant="outline"
+                  className="w-fit border-amber-200 bg-amber-50 font-bold text-amber-700"
+                >
+                  {
+                    SAMPLE_SETTLEMENT_TYPE_LABELS[
+                      order.sampleSettlementType ?? 'FREE'
+                    ]
+                  }
+                </Badge>
+              )}
               {order.orderType === 'TRANSFER' ? (
                 <Badge
                   variant="outline"

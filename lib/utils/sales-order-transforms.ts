@@ -16,6 +16,10 @@ import {
   getDefaultFeePaidBy,
   type SalesOrderFeeItem,
 } from '@/lib/types/sales-order-fee';
+import {
+  DEFAULT_SAMPLE_SETTLEMENT_TYPE,
+  type SampleSettlementType,
+} from '@/lib/utils/sample-order';
 
 /**
  * 表单数据类型 - 包含UI层特有的字段
@@ -25,6 +29,8 @@ export interface SalesOrderFormData {
   status?: SalesOrderStatus;
   orderType?: 'NORMAL' | 'TRANSFER';
   transferMode?: TransferFulfillmentMode;
+  isSampleOrder?: boolean;
+  sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
   costAmount?: number;
   remarks?: string;
@@ -238,6 +244,9 @@ export function transformFormDataToCreateInput(
     status: formData.status || 'draft',
     orderType: effectiveOrderType,
     transferMode,
+    isSampleOrder: formData.isSampleOrder ?? false,
+    sampleSettlementType:
+      formData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
     supplierId: formData.supplierId?.trim() || undefined,
     costAmount: formData.costAmount || undefined,
     remarks: formData.remarks?.trim() || undefined,
@@ -383,6 +392,9 @@ export function transformFormDataToUpdateInput(
     status: formData.status,
     orderType: effectiveOrderType,
     transferMode,
+    isSampleOrder: formData.isSampleOrder ?? false,
+    sampleSettlementType:
+      formData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
     supplierId: formData.supplierId?.trim() || undefined,
     costAmount: formData.costAmount ?? undefined,
     remarks: formData.remarks?.trim() || undefined,

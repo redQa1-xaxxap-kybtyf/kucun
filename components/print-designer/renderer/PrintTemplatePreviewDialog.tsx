@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -177,9 +178,15 @@ export function PrintTemplatePreviewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-4xl overflow-hidden">
         <DialogHeader className="flex flex-row items-center justify-between border-b pb-3">
-          <DialogTitle className="flex items-center gap-2">
-            {dialogTitle}
-          </DialogTitle>
+          <div>
+            <DialogTitle className="flex items-center gap-2">
+              {dialogTitle}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              系统会套用当前业务类型的默认打印模板渲染预览，实际打印始终按 100%
+              尺寸输出。
+            </DialogDescription>
+          </div>
 
           <div className="flex items-center gap-2">
             {/* 缩放仅影响预览，实际打印固定 100% */}

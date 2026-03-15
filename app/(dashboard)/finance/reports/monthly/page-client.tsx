@@ -22,6 +22,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import type { MonthlyReport } from '@/lib/types/report';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
+import { buildMonthlyExpenseBreakdown } from '@/lib/utils/monthly-report-ui';
 
 export function MonthlyReportClient() {
   const currentDate = new Date();
@@ -66,6 +67,10 @@ export function MonthlyReportClient() {
 
   // 生成月份选项
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+  const expenseBreakdownItems = React.useMemo(
+    () => (report ? buildMonthlyExpenseBreakdown(report.expenses) : []),
+    [report]
+  );
 
   // 手动生成报表（强制刷新，绕过缓存）
   const handleGenerateReport = React.useCallback(async () => {
@@ -135,8 +140,9 @@ export function MonthlyReportClient() {
       setIsExporting(true);
 
       const filename = `月度报表-${year}-${String(month).padStart(2, '0')}`;
-      const { PrintTemplateExportService } =
-        await import('@/lib/services/print-template-export-service');
+      const { PrintTemplateExportService } = await import(
+        '@/lib/services/print-template-export-service'
+      );
 
       await PrintTemplateExportService.exportDataToImage({
         templateType: 'finance-monthly-report',
@@ -296,7 +302,7 @@ export function MonthlyReportClient() {
             variant="primary"
             size="lg"
             comparison={report.comparison?.revenue}
-            subtitle={`完成订单: ${report.revenue.completedOrders} 笔`}
+            subtitle={`样品费: ${formatCurrency(report.sample.sampleRevenue)}`}
           />
           <StatCard
             title="本月净利润"
@@ -351,44 +357,47 @@ export function MonthlyReportClient() {
               icon={<ChineseYuan className="h-4 w-4" />}
               variant="default"
             />
+            <StatCard
+              title="样品费"
+              value={report.sample.sampleRevenue}
+              icon={<ChineseYuan className="h-4 w-4" />}
+              variant="warning"
+              subtitle={`${report.sample.orderCount} 单`}
+            />
+            <StatCard
+              title="样品数量"
+              value={report.sample.sampleQuantity}
+              icon={<Package className="h-4 w-4" />}
+              variant="info"
+              isCurrency={false}
+              subtitle={`${report.sample.customerCount} 位客户`}
+            />
+            <StatCard
+              title="样品成本"
+              value={report.sample.sampleCost}
+              icon={<ChineseYuan className="h-4 w-4" />}
+              variant="neutral"
+            />
             <div className="my-2 h-px bg-slate-200 sm:col-span-2 lg:col-span-4 xl:col-span-5" />
-            {[
-              {
-                label: '运费',
-                value: report.expenses.byType.shipping,
-                icon: <Package className="h-3 w-3" />,
-              },
-              {
-                label: '仓储费',
-                value: report.expenses.byType.storage,
-                icon: <ChineseYuan className="h-3 w-3" />,
-              },
-              {
-                label: '人工费',
-                value: report.expenses.byType.labor,
-                icon: <ChineseYuan className="h-3 w-3" />,
-              },
-              {
-                label: '装卸费',
-                value: report.expenses.byType.loading_unloading,
-                icon: <ChineseYuan className="h-3 w-3" />,
-              },
-              {
-                label: '其他费用',
-                value:
-                  report.expenses.byType.travel + report.expenses.byType.living,
-                icon: <ChineseYuan className="h-3 w-3" />,
-              },
-            ].map(item => (
+            {expenseBreakdownItems.map(item => (
               <StatCard
-                key={item.label}
+                key={item.key}
                 title={item.label}
                 value={item.value}
-                icon={item.icon}
+                icon={
+                  item.key === 'shipping' ? (
+                    <Package className="h-3 w-3" />
+                  ) : (
+                    <ChineseYuan className="h-3 w-3" />
+                  )
+                }
                 variant="neutral"
                 subtitle={`${report.expenses.totalExpenses > 0 ? ((item.value / report.expenses.totalExpenses) * 100).toFixed(1) : '0.0'}% 总支出`}
               />
             ))}
+          </div>
+          <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-xs leading-5 text-slate-500">
+            说明：月度报表仅统计已审核费用。关联采购订单的费用会计入口径计入库存/成本，不重复计入当期期间费用。
           </div>
         </div>
 
@@ -548,7 +557,6 @@ export function MonthlyReportClient() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

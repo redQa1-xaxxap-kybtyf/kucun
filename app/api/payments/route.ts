@@ -13,6 +13,7 @@ import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+import { shouldCreateReceivableForOrder } from '@/lib/utils/sample-order';
 import {
   createPaymentRecordSchema,
   paymentRecordQuerySchema,
@@ -293,6 +294,8 @@ export const POST = withAuth(
             totalAmount: true,
             roundingAdjustment: true,
             status: true,
+            isSampleOrder: true,
+            sampleSettlementType: true,
             payments: {
               // ✅ 应收校验只计入已确认/已冲抵的收款，避免把“待确认/系统应收占位”误算为已收
               where: { status: { in: ['confirmed', 'applied'] } },
@@ -308,6 +311,16 @@ export const POST = withAuth(
           return NextResponse.json(
             { success: false, error: '销售订单不存在' },
             { status: 404 }
+          );
+        }
+
+        if (!shouldCreateReceivableForOrder(salesOrder)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: '免费样品单不会生成客户应收，不能登记订单收款',
+            },
+            { status: 400 }
           );
         }
 

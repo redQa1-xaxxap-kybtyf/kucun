@@ -9,7 +9,13 @@ import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -181,7 +187,8 @@ export function ExpenseForm({
     onSuccess: () => {
       toast({
         title: '创建成功',
-        description: '费用记录已成功创建',
+        description:
+          '费用记录已保存为草稿；审核生效后才会计入月报、年报和盈亏分析。',
       });
       invalidateExpenseQueries();
       onSuccess?.();
@@ -220,7 +227,9 @@ export function ExpenseForm({
     onSuccess: () => {
       toast({
         title: '更新成功',
-        description: '费用记录已更新',
+        description: isApproved
+          ? '费用记录已更新，相关报表会自动刷新。'
+          : '费用记录已更新；未审核费用仍不会计入正式报表。',
       });
       invalidateExpenseQueries();
       onSuccess?.();
@@ -253,6 +262,9 @@ export function ExpenseForm({
     <Card>
       <CardHeader>
         <CardTitle>{isEditMode ? '编辑费用记录' : '新增费用记录'}</CardTitle>
+        <CardDescription>
+          正式财务报表仅统计已审核费用。草稿费用需要在列表点击“审核生效”后才会进入月报、年报和盈亏分析；采购订单费用按成本口径处理，不重复计入期间费用。
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>

@@ -6,6 +6,10 @@
 import { z } from 'zod';
 
 import { paginationConfig } from '@/lib/env';
+import {
+  DEFAULT_SAMPLE_SETTLEMENT_TYPE,
+  SAMPLE_SETTLEMENT_TYPE_VALUES,
+} from '@/lib/utils/sample-order';
 
 import {
   nullableNumber,
@@ -40,6 +44,9 @@ const baseSalesOrderSchema = z
     orderType: salesOrderTypeSchema, // 移除.default('NORMAL')
 
     transferMode: transferFulfillmentModeSchema.optional(), // 移除.default('SUPPLIER_ONLY')
+
+    isSampleOrder: z.boolean().optional(),
+    sampleSettlementType: z.enum(SAMPLE_SETTLEMENT_TYPE_VALUES).optional(),
 
     supplierId: z
       .string()
@@ -133,6 +140,20 @@ const baseSalesOrderSchema = z
         data.supplierId,
         ctx
       );
+    }
+
+    const sampleSettlementType =
+      data.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE;
+    if (
+      data.isSampleOrder &&
+      sampleSettlementType === 'FREE' &&
+      data.usePrepayment
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['usePrepayment'],
+        message: '免费样品单不能使用预收款冲抵',
+      });
     }
   });
 
@@ -331,6 +352,19 @@ export const salesOrderQuerySchema = z.object({
     .nullable()
     .optional()
     .transform(val => val ?? undefined),
+  isSampleOrder: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => {
+      if (val === 'true') {
+        return true;
+      }
+      if (val === 'false') {
+        return false;
+      }
+      return undefined;
+    }),
   hasReturns: z
     .string()
     .nullable()
@@ -404,6 +438,8 @@ export const salesOrderFormDefaults = {
   customerId: '',
   orderType: 'NORMAL' as const,
   status: 'draft' as const,
+  isSampleOrder: false,
+  sampleSettlementType: DEFAULT_SAMPLE_SETTLEMENT_TYPE,
   items: [],
   remarks: '',
   totalAmount: 0,

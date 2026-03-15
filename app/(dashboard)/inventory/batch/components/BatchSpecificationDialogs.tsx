@@ -15,6 +15,7 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -143,6 +144,9 @@ export function BatchSpecificationDialogs({
             <DialogTitle>
               {formMode === 'create' ? '新建批次规格' : '编辑批次规格'}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              维护批次规格参数，保存后会同步到对应库存和产品规格信息。
+            </DialogDescription>
           </DialogHeader>
           <BatchSpecificationForm
             mode={formMode}
@@ -200,4 +204,3 @@ export function BatchSpecificationDialogs({
     </>
   );
 }
-

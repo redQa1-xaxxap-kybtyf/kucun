@@ -18,6 +18,7 @@ import {
 } from '@/lib/services/sales-order-service';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { toNumber } from '@/lib/utils/number';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
 async function resolveId(
@@ -189,7 +190,12 @@ export const putSalesOrderRoute: ApiHandler = async (
       (data as { roundingAdjustment?: unknown }).roundingAdjustment,
       0
     );
-    const due = Number((totalAmount + roundingAdjustment).toFixed(2));
+    const due = getSalesOrderReceivableTotal({
+      isSampleOrder: data.isSampleOrder,
+      sampleSettlementType: data.sampleSettlementType,
+      totalAmount,
+      roundingAdjustment,
+    });
 
     if (due > 0) {
       recordPartnerTransaction({

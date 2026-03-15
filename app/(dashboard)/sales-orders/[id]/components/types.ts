@@ -20,6 +20,8 @@ export interface SalesOrderDetail {
   status: string;
   orderType: string;
   transferMode: string;
+  isSampleOrder?: boolean;
+  sampleSettlementType?: 'FREE' | 'CHARGEABLE';
   itemsAmount: number;
   additionalFees: number;
   roundingAdjustment: number;

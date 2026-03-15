@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -81,6 +82,9 @@ export function AddProductDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>添加盘点产品</DialogTitle>
+          <DialogDescription className="sr-only">
+            选择一个产品加入当前盘点计划，系统会按现有库存批次自动生成盘点明细。
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <div>

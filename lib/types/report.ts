@@ -51,6 +51,23 @@ export interface ReportAlert {
   threshold?: number;
 }
 
+export interface SampleMetrics {
+  orderCount: number; // 样品单数量
+  customerCount: number; // 领取样品客户数
+  sampleQuantity: number; // 样品数量
+  sampleRevenue: number; // 样品费
+  sampleCost: number; // 样品成本
+}
+
+export interface SampleCustomerMetrics extends SampleMetrics {
+  customerId: string;
+  customerName: string;
+}
+
+export interface AnnualSampleMetrics extends SampleMetrics {
+  topCustomers: SampleCustomerMetrics[];
+}
+
 // ==================== 月度报表类型 ====================
 
 /**
@@ -144,6 +161,7 @@ export interface InventoryTurnover {
 export interface MonthlyReport {
   period: ReportPeriod; // 报表周期
   revenue: MonthlyRevenue; // 收入数据
+  sample: SampleMetrics; // 样品数据
   expenses: MonthlyExpenses; // 支出数据
   costs: MonthlyCosts; // 成本数据
   receivables: MonthlyReceivables; // 应收应付数据
@@ -236,6 +254,7 @@ export interface AnnualReport {
   year: number; // 年份
   period: ReportPeriod; // 报表周期
   summary: AnnualSummary; // 年度汇总
+  sample: AnnualSampleMetrics; // 年度样品统计
   monthlyTrend: MonthlyTrendData[]; // 月度趋势 (12个月)
   quarterlyData: QuarterlyData[]; // 季度数据 (4个季度)
   expenseDistribution: ExpenseDistribution[]; // 费用分布
@@ -334,6 +353,7 @@ export interface ProfitLossAnalysis {
   period: ReportPeriod; // 分析周期
   status: ProfitLossStatus; // 盈亏状态
   revenue: RevenueDetail; // 收入明细
+  sample: SampleMetrics; // 样品明细
   costs: CostDetail; // 成本明细
   expenses: ExpenseDetail; // 费用明细
   profit: ProfitCalculation; // 利润计算

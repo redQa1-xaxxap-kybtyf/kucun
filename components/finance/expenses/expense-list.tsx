@@ -39,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { invalidateFinanceCaches } from '@/lib/cache/invalidation-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   EXPENSE_RELATED_TYPE_LABELS,
@@ -151,6 +152,7 @@ export function ExpenseList({
         queryKey: queryKeys.finance.expenses(),
         exact: false,
       });
+      invalidateFinanceCaches(queryClient);
     },
     onSettled: () => {
       setApproveTarget(null);
@@ -182,6 +184,7 @@ export function ExpenseList({
         queryKey: queryKeys.finance.expenses(),
         exact: false,
       });
+      invalidateFinanceCaches(queryClient);
     },
   });
 
@@ -241,14 +244,19 @@ export function ExpenseList({
       <Card className="overflow-hidden border-none shadow-[0_10px_40px_rgba(0,0,0,0.04)]">
         <CardHeader className="border-b border-slate-50 bg-slate-50/30">
           <div className="flex items-center justify-between">
-            <CardTitle className="border-l-4 border-slate-900 pl-3 text-lg font-black tracking-tight text-slate-900 uppercase">
-              费用开支明细台账
-              {pagination && (
-                <span className="ml-3 text-xs font-bold tracking-widest text-slate-400 uppercase">
-                  共计 {pagination.total} 项流水记录
-                </span>
-              )}
-            </CardTitle>
+            <div className="space-y-2">
+              <CardTitle className="border-l-4 border-slate-900 pl-3 text-lg font-black tracking-tight text-slate-900 uppercase">
+                费用开支明细台账
+                {pagination && (
+                  <span className="ml-3 text-xs font-bold tracking-widest text-slate-400 uppercase">
+                    共计 {pagination.total} 项流水记录
+                  </span>
+                )}
+              </CardTitle>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold leading-5 text-amber-800">
+                报表口径说明：只有“已审核”费用才会计入月报、年报和盈亏分析；草稿费用需要点击“审核生效”后才正式入账。
+              </div>
+            </div>
             <div className="flex gap-2">
               <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">

@@ -10,7 +10,6 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { invalidateReportCache } from '@/lib/cache/finance-cache';
-import { logger } from '@/lib/logger';
 import {
   createExpenseRecord,
   getExpenseRecords,
@@ -115,13 +114,7 @@ export const POST = withAuth(
     // 创建费用记录
     const expense = await createExpenseRecord(data, user.id);
 
-    // 失效报表缓存（异步执行，不阻塞响应）
-    invalidateReportCache().catch(error => {
-      logger.error('cache', '费用记录缓存失效失败', error, {
-        expenseId: expense.id,
-        operation: 'invalidate_report_cache',
-      });
-    });
+    await invalidateReportCache();
 
     return successResponse(expense);
   },

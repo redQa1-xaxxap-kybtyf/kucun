@@ -99,10 +99,7 @@ export const PUT = withAuth(
     // 更新费用记录
     const expense = await updateExpenseRecord(id, data);
 
-    // 失效报表缓存（异步执行，不阻塞响应）
-    invalidateReportCache().catch(error => {
-      console.error('Failed to invalidate report cache:', error);
-    });
+    await invalidateReportCache();
 
     return successResponse(expense);
   },
@@ -140,10 +137,7 @@ export const DELETE = withAuth(
     // 删除费用记录
     await deleteExpenseRecord(id);
 
-    // 失效报表缓存（异步执行，不阻塞响应）
-    invalidateReportCache().catch(error => {
-      console.error('Failed to invalidate report cache:', error);
-    });
+    await invalidateReportCache();
 
     return successResponse({ message: '删除成功' });
   },

@@ -27,14 +27,21 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from '@/components/ui/select';
 import type { UpdateCategoryData } from '@/lib/validations/category';
 
 export type ParentCategory = {
   id: string;
   name: string;
+  code?: string;
+  fullPath?: string;
+  depth?: number;
   parent?: { name: string } | null;
+};
+
+export type CategoryCurrentInfo = {
+  code?: string;
+  fullPath?: string;
 };
 
 interface CategoryEditFormCardProps {
@@ -42,6 +49,7 @@ interface CategoryEditFormCardProps {
   onSubmit: (data: UpdateCategoryData) => void;
   onCancel: () => void;
   parentCategories: ParentCategory[];
+  currentCategoryInfo?: CategoryCurrentInfo;
   isParentOptionsLoading: boolean;
   isSubmitting: boolean;
   parentSearchTerm: string;
@@ -53,6 +61,7 @@ export function CategoryEditFormCard({
   onSubmit,
   onCancel,
   parentCategories,
+  currentCategoryInfo,
   isParentOptionsLoading,
   isSubmitting,
   parentSearchTerm,
@@ -68,6 +77,7 @@ export function CategoryEditFormCard({
           onSubmit={onSubmit}
           onCancel={onCancel}
           parentCategories={parentCategories}
+          currentCategoryInfo={currentCategoryInfo}
           isParentOptionsLoading={isParentOptionsLoading}
           isSubmitting={isSubmitting}
           parentSearchTerm={parentSearchTerm}
@@ -102,7 +112,7 @@ function CategoryFormGuidance() {
           <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
             <li>支持最多3级分类（例如：抛光砖 → 系列A → 款式1）</li>
             <li>不同父分类下可以创建相同名称的子分类</li>
-            <li>每个分类会自动生成唯一的编码</li>
+            <li>编码会自动生成，并可在列表或编辑页直接查看</li>
           </ul>
         </div>
       </div>
@@ -117,6 +127,7 @@ interface CategoryEditFormBodyProps {
   onSubmit: (data: UpdateCategoryData) => void;
   onCancel: () => void;
   parentCategories: ParentCategory[];
+  currentCategoryInfo?: CategoryCurrentInfo;
   isParentOptionsLoading: boolean;
   isSubmitting: boolean;
   parentSearchTerm: string;
@@ -128,6 +139,7 @@ function CategoryEditFormBody({
   onSubmit,
   onCancel,
   parentCategories,
+  currentCategoryInfo,
   isParentOptionsLoading,
   isSubmitting,
   parentSearchTerm,
@@ -136,6 +148,7 @@ function CategoryEditFormBody({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <CategoryCurrentInfoPanel currentCategoryInfo={currentCategoryInfo} />
         <CategoryFormFieldGrid
           control={form.control}
           parentCategories={parentCategories}
@@ -146,6 +159,37 @@ function CategoryEditFormBody({
         <CategoryFormActions onCancel={onCancel} isSubmitting={isSubmitting} />
       </form>
     </Form>
+  );
+}
+
+function CategoryCurrentInfoPanel({
+  currentCategoryInfo,
+}: {
+  currentCategoryInfo?: CategoryCurrentInfo;
+}) {
+  if (!currentCategoryInfo?.code && !currentCategoryInfo?.fullPath) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+      <div className="space-y-1">
+        <div className="text-xs font-medium tracking-wide text-slate-500">
+          当前分类路径
+        </div>
+        <div className="text-sm font-medium text-slate-900">
+          {currentCategoryInfo.fullPath ?? '-'}
+        </div>
+      </div>
+      <div className="space-y-1">
+        <div className="text-xs font-medium tracking-wide text-slate-500">
+          当前分类编码
+        </div>
+        <div className="text-sm font-medium text-slate-900">
+          {currentCategoryInfo.code ?? '-'}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -219,85 +263,112 @@ function CategoryParentField({
     <FormField
       control={control}
       name="parentId"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>父级分类</FormLabel>
-          <div className="space-y-3">
-            <Input
-              type="search"
-              value={parentSearchTerm}
-              onChange={event => onParentSearchChange(event.target.value)}
-              placeholder="输入关键字搜索父级分类"
-              autoComplete="off"
-              aria-label="搜索父级分类"
-            />
-            <Select
-              onValueChange={field.onChange}
-              value={field.value || 'none'}
-              disabled={disableSelect}
-            >
-              <FormControl>
-                <SelectTrigger className="relative">
-                  <SelectValue placeholder="请选择父级分类" />
-                  {isLoading && (
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                      <div className="border-muted-foreground h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent" />
+      render={({ field }) => {
+        const selectedParent = parentCategories.find(
+          category => category.id === field.value
+        );
+
+        return (
+          <FormItem>
+            <FormLabel>父级分类</FormLabel>
+            <div className="space-y-3">
+              <Input
+                type="search"
+                value={parentSearchTerm}
+                onChange={event => onParentSearchChange(event.target.value)}
+                placeholder="输入分类名称或编码搜索父级分类"
+                autoComplete="off"
+                aria-label="搜索父级分类"
+              />
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || 'none'}
+                disabled={disableSelect}
+              >
+                <FormControl>
+                  <SelectTrigger className="relative">
+                    <span
+                      className={`block truncate pr-6 text-left ${
+                        field.value && field.value !== 'none'
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {field.value && field.value !== 'none'
+                        ? (selectedParent?.fullPath ?? '请选择父级分类')
+                        : '请选择父级分类'}
                     </span>
-                  )}
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                <SelectItem value="none">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[hsl(var(--color-primary))]">🏠</span>
-                    <span>无（顶级分类）</span>
-                  </div>
-                </SelectItem>
-                {parentCategories.length === 0 ? (
-                  <SelectItem value="__empty" disabled>
-                    <span className="text-muted-foreground">无匹配的分类</span>
+                    {isLoading && (
+                      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                        <div className="border-muted-foreground h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent" />
+                      </span>
+                    )}
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[hsl(var(--color-primary))]">
+                        🏠
+                      </span>
+                      <span>无（顶级分类）</span>
+                    </div>
                   </SelectItem>
-                ) : (
-                  parentCategories
-                    .slice()
-                    .sort((a, b) => {
-                      const levelA = a.parent ? 1 : 0;
-                      const levelB = b.parent ? 1 : 0;
-                      if (levelA !== levelB) {
-                        return levelA - levelB;
-                      }
-                      return a.name.localeCompare(b.name, 'zh-Hans-CN');
-                    })
-                    .map(category => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <div className="flex items-center gap-2">
-                          {category.parent ? (
-                            <span className="ml-4 text-gray-400">↳</span>
-                          ) : (
-                            <span className="text-green-600">📁</span>
-                          )}
-                          <span>{category.name}</span>
-                          {category.parent && (
-                            <span className="text-xs text-gray-400">
-                              ({category.parent.name})
-                            </span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))
-                )}
-              </SelectContent>
-            </Select>
-          </div>
-          <FormDescription>
-            选择父级分类以创建层级结构（最多支持3级）
-            <span className="mt-1 block text-xs text-[hsl(var(--color-info))]">
-              💡 提示：不同父分类下可以有相同名称的子分类
-            </span>
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
-      )}
+                  {parentCategories.length === 0 ? (
+                    <SelectItem value="__empty" disabled>
+                      <span className="text-muted-foreground">
+                        无匹配的分类
+                      </span>
+                    </SelectItem>
+                  ) : (
+                    parentCategories
+                      .slice()
+                      .sort((a, b) =>
+                        (a.fullPath ?? a.name).localeCompare(
+                          b.fullPath ?? b.name,
+                          'zh-Hans-CN'
+                        )
+                      )
+                      .map(category => (
+                        <SelectItem key={category.id} value={category.id}>
+                          <div className="min-w-0 py-1">
+                            <div className="flex items-center gap-2">
+                              <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
+                                {(category.depth ?? 1) === 1
+                                  ? '一级'
+                                  : (category.depth ?? 1) === 2
+                                    ? '二级'
+                                    : '三级'}
+                              </span>
+                              <span className="truncate font-medium">
+                                {category.name}
+                              </span>
+                              {category.code && (
+                                <span className="truncate text-xs text-gray-400">
+                                  {category.code}
+                                </span>
+                              )}
+                            </div>
+                            <div className="truncate text-xs text-gray-500">
+                              {category.fullPath ?? category.name}
+                            </div>
+                          </div>
+                        </SelectItem>
+                      ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <FormDescription>
+              选择父级分类以创建层级结构（最多支持3级），系统会显示完整路径，避免同名分类选错
+              <span className="mt-1 block text-xs text-[hsl(var(--color-info))]">
+                提示：可输入分类名称或编码搜索，编码自动生成并可在列表或当前页面查看
+              </span>
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
     />
   );
 }

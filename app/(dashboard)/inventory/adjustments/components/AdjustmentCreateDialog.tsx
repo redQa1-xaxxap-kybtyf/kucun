@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -42,6 +43,9 @@ export function AdjustmentCreateDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>库存调整</DialogTitle>
+          <DialogDescription className="sr-only">
+            新建库存调整单，填写调整数量和原因后提交，系统会更新库存并生成调整记录。
+          </DialogDescription>
         </DialogHeader>
         {open && (
           <InventoryOperationForm
@@ -54,4 +58,3 @@ export function AdjustmentCreateDialog({
     </Dialog>
   );
 }
-

@@ -2,6 +2,10 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
+import {
+  getSalesOrderReceivableTotal,
+  shouldCreateReceivableForOrder,
+} from '@/lib/utils/sample-order';
 
 import type { SalesOrderDetail } from './types';
 
@@ -26,6 +30,8 @@ export function AmountSummaryCards({
 }: Props) {
   const customerFees = Number(order.additionalFees ?? 0);
   const companyFees = Number(order.expenseAmount ?? 0);
+  const receivableEnabled = shouldCreateReceivableForOrder(order);
+  const receivableTotal = getSalesOrderReceivableTotal(order);
 
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
@@ -95,10 +101,14 @@ export function AmountSummaryCards({
             待收金额
           </div>
           <div className="mt-2 font-mono text-2xl font-black tracking-tighter text-rose-600">
-            {formatCurrency(order.remainingAmount)}
+            {formatCurrency(receivableEnabled ? order.remainingAmount : 0)}
           </div>
           <div className="mt-1 text-[10px] font-medium text-slate-400">
-            {order.remainingAmount > 0 ? '待核销' : '结清'}
+            {!receivableEnabled
+              ? '免费样品不挂应收'
+              : receivableTotal > 0 && order.remainingAmount > 0
+                ? '待核销'
+                : '结清'}
           </div>
         </CardContent>
       </Card>

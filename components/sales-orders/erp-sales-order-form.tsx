@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/form';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useCustomerPriceHistory,
@@ -44,6 +45,7 @@ import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import {
+  SAMPLE_SETTLEMENT_TYPE_LABELS,
   TRANSFER_MODE_LABELS,
   type SalesOrder,
   type SalesOrderItem,
@@ -58,6 +60,7 @@ import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
+import { DEFAULT_SAMPLE_SETTLEMENT_TYPE } from '@/lib/utils/sample-order';
 import {
   transformFormDataToCreateInput,
   transformFormDataToUpdateInput,
@@ -177,6 +180,9 @@ export function ERPSalesOrderForm({
       status: payload.status,
       orderType: payload.orderType,
       transferMode: payload.transferMode,
+      isSampleOrder: payload.isSampleOrder ?? false,
+      sampleSettlementType:
+        payload.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
       supplierId: payload.supplierId,
       remarks: payload.remarks ?? '',
       items: payload.items ?? [],
@@ -207,6 +213,8 @@ export function ERPSalesOrderForm({
       status: 'draft',
       orderType: 'NORMAL',
       transferMode: 'SUPPLIER_ONLY',
+      isSampleOrder: false,
+      sampleSettlementType: DEFAULT_SAMPLE_SETTLEMENT_TYPE,
       supplierId: '',
       remarks: '',
       feeItems: [],
@@ -312,6 +320,8 @@ export function ERPSalesOrderForm({
   // 监听客户ID变化
   const selectedCustomerId = form.watch('customerId');
   const orderType = form.watch('orderType');
+  const isSampleOrder = form.watch('isSampleOrder');
+  const sampleSettlementType = form.watch('sampleSettlementType');
   const transferMode = form.watch('transferMode') as
     | TransferFulfillmentMode
     | undefined;
@@ -319,6 +329,8 @@ export function ERPSalesOrderForm({
   const feeItems = (form.watch('feeItems') ??
     EMPTY_FEE_ITEMS) as SalesOrderFeeItem[];
   const roundingAdjustment = Number(form.watch('roundingAdjustment') ?? 0);
+  const sampleReceivableEnabled =
+    !isSampleOrder || sampleSettlementType === 'CHARGEABLE';
 
   // 客户数据查询已移至 CustomerSelector 组件内部
 
@@ -482,6 +494,26 @@ export function ERPSalesOrderForm({
       });
     }
   }, [form, mode, supplierId]);
+
+  React.useEffect(() => {
+    if (sampleReceivableEnabled) {
+      return;
+    }
+
+    if (form.getValues('usePrepayment')) {
+      form.setValue('usePrepayment', false, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    }
+
+    if (form.getValues('prepaymentAmount') !== undefined) {
+      form.setValue('prepaymentAmount', undefined, {
+        shouldDirty: true,
+        shouldValidate: false,
+      });
+    }
+  }, [form, sampleReceivableEnabled]);
 
   const { customerPaidFees, companyPaidFees } = React.useMemo(
     () =>
@@ -839,6 +871,9 @@ export function ERPSalesOrderForm({
       customerId: initialData.customerId,
       status: initialData.status,
       orderType: initialData.orderType,
+      isSampleOrder: initialData.isSampleOrder ?? false,
+      sampleSettlementType:
+        initialData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
       transferMode:
         (initialData.transferMode as TransferFulfillmentMode | undefined) ??
         'SUPPLIER_ONLY',
@@ -1317,6 +1352,101 @@ export function ERPSalesOrderForm({
                 />
               </div>
 
+              <FormField
+                control={form.control}
+                name="isSampleOrder"
+                render={({ field }) => (
+                  <FormItem className="mb-4 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <FormLabel className="text-sm font-semibold text-amber-900">
+                          作为样品单管理
+                        </FormLabel>
+                        <p className="text-xs leading-5 text-amber-800/80">
+                          开启后，这张单据会纳入样品统计，可按客户、月份和年度汇总样品数量与样品费。
+                        </p>
+                      </div>
+                      <FormControl>
+                        <div className="flex items-center gap-3 rounded-full bg-white px-3 py-2 shadow-sm">
+                          <span className="text-xs font-semibold text-slate-500">
+                            {field.value ? '已启用' : '普通订单'}
+                          </span>
+                          <Switch
+                            checked={Boolean(field.value)}
+                            onCheckedChange={field.onChange}
+                          />
+                        </div>
+                      </FormControl>
+                    </div>
+                    <FormMessage className="mt-2 text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              {isSampleOrder && (
+                <FormField
+                  control={form.control}
+                  name="sampleSettlementType"
+                  render={({ field }) => (
+                    <FormItem className="mb-4 rounded-2xl border border-amber-200/80 bg-gradient-to-r from-amber-50 via-white to-orange-50 p-4">
+                      <div className="mb-3">
+                        <FormLabel className="text-sm font-semibold text-slate-800">
+                          样品结算方式
+                        </FormLabel>
+                        <p className="mt-1 text-xs leading-5 text-slate-600">
+                          免费样品默认不生成客户应收；收费样品在订单确认后会进入客户应收。
+                        </p>
+                      </div>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE}
+                          onValueChange={field.onChange}
+                          className="grid gap-3 md:grid-cols-2"
+                        >
+                          <div className="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-sm">
+                            <RadioGroupItem
+                              value="FREE"
+                              id="sample-free"
+                              className="mt-1"
+                            />
+                            <Label
+                              htmlFor="sample-free"
+                              className="cursor-pointer space-y-1"
+                            >
+                              <span className="block text-sm font-semibold text-emerald-900">
+                                {SAMPLE_SETTLEMENT_TYPE_LABELS.FREE}
+                              </span>
+                              <span className="block text-xs leading-5 text-emerald-800/80">
+                                默认方案，不自动生成客户应收，也不能用预收款冲抵。
+                              </span>
+                            </Label>
+                          </div>
+                          <div className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50/80 p-4 shadow-sm">
+                            <RadioGroupItem
+                              value="CHARGEABLE"
+                              id="sample-chargeable"
+                              className="mt-1"
+                            />
+                            <Label
+                              htmlFor="sample-chargeable"
+                              className="cursor-pointer space-y-1"
+                            >
+                              <span className="block text-sm font-semibold text-sky-900">
+                                {SAMPLE_SETTLEMENT_TYPE_LABELS.CHARGEABLE}
+                              </span>
+                              <span className="block text-xs leading-5 text-sky-800/80">
+                                确认后会进入客户应收，适合有样品费或押金的场景。
+                              </span>
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage className="mt-2 text-xs" />
+                    </FormItem>
+                  )}
+                />
+              )}
+
               {/* 第三行：客户地址 */}
               {selectedCustomerId && (
                 <div className="mb-4">
@@ -1512,12 +1642,24 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-medium">预收款冲抵</h3>
             </div>
             <div className="p-3">
-              <PrepaymentSection
-                form={form}
-                customerId={form.watch('customerId')}
-                orderTotal={orderTotalWithFees}
-                disabled={createMutation.isPending || updateMutation.isPending}
-              />
+              {sampleReceivableEnabled ? (
+                <PrepaymentSection
+                  form={form}
+                  customerId={form.watch('customerId')}
+                  orderTotal={orderTotalWithFees}
+                  disabled={
+                    createMutation.isPending || updateMutation.isPending
+                  }
+                />
+              ) : (
+                <Alert className="border-emerald-200 bg-emerald-50/80">
+                  <AlertCircle className="h-4 w-4 text-emerald-600" />
+                  <AlertDescription className="text-sm text-emerald-800">
+                    免费样品单不进入客户应收，因此这里不支持预收款冲抵。
+                    如果这张样品单需要收费，请把上方样品结算方式切换为“收费样品”。
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
 

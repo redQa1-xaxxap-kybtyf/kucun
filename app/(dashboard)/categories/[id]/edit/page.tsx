@@ -12,7 +12,10 @@ import { useRouter } from 'next/navigation';
 import React, { use } from 'react';
 import { useForm, type Resolver } from 'react-hook-form';
 
-import type { ParentCategory } from '@/components/categories/category-edit-form-card';
+import type {
+  CategoryCurrentInfo,
+  ParentCategory,
+} from '@/components/categories/category-edit-form-card';
 import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,10 +24,12 @@ import {
   categoryQueryKeys,
   getCategories,
   getCategory,
+  type Category,
   updateCategory,
 } from '@/lib/api/categories';
 import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
+import { buildCategoryPathMap } from '@/lib/utils/category-utils';
 import type { UpdateCategoryData } from '@/lib/validations/category';
 
 const CategoryEditFormCard = dynamic(
@@ -49,11 +54,13 @@ interface CategoryEditPageProps {
 type CategoryDetail = {
   id: string;
   name: string;
+  code: string;
   parentId: string | null;
   sortOrder: number;
   parent?: {
     id: string;
     name: string;
+    code?: string;
   } | null;
 };
 
@@ -89,6 +96,7 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
     isCategoryLoading,
     categoryError,
     parentCategories,
+    currentCategoryInfo,
     areParentOptionsLoading,
   } = useCategoryData(categoryId, deferredParentSearchTerm);
 
@@ -140,6 +148,7 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
           parentCategories={parentCategories}
+          currentCategoryInfo={currentCategoryInfo}
           isParentOptionsLoading={
             areParentOptionsLoading ||
             parentSearchTerm !== deferredParentSearchTerm
@@ -162,15 +171,12 @@ function useCategoryData(categoryId: string, parentSearch: string) {
   const categoriesQuery = useQuery({
     queryKey: queryKeys.categories.list({
       status: 'active',
-      exclude: categoryId,
-      search: parentSearch || undefined,
       limit: paginationConfig.maxPageSize,
     }),
     queryFn: () =>
       getCategories({
         status: 'active',
         limit: paginationConfig.maxPageSize,
-        search: parentSearch || undefined,
       }),
     enabled: !!categoryId,
   });
@@ -178,16 +184,13 @@ function useCategoryData(categoryId: string, parentSearch: string) {
   const categoryData = categoryQuery.data?.data as CategoryDetail | undefined;
 
   const parentCategories = React.useMemo(() => {
-    type ParentWithParentId = ParentCategory & { parentId?: string | null };
-
-    const categories = (categoriesQuery.data?.data ||
-      []) as ParentWithParentId[];
+    const categories = (categoriesQuery.data?.data || []) as Category[];
 
     if (!categories.length) {
       return [] as ParentCategory[];
     }
 
-    const byId = new Map<string, ParentWithParentId>();
+    const byId = new Map<string, Category>();
     const depthCache = new Map<string, number>();
 
     categories.forEach(cat => {
@@ -195,7 +198,7 @@ function useCategoryData(categoryId: string, parentSearch: string) {
     });
 
     const computeDepth = (
-      category: ParentWithParentId,
+      category: Category,
       ancestry = new Set<string>()
     ): number => {
       const cached = depthCache.get(category.id);
@@ -231,11 +234,30 @@ function useCategoryData(categoryId: string, parentSearch: string) {
     };
 
     const MAX_DEPTH = 3;
+    const pathById = buildCategoryPathMap(categories);
+    const normalizedSearch = parentSearch.trim().toLowerCase();
 
     // 过滤掉自身以及深度已达 3 级的分类（避免选择为父级后变成第4级）
     let filtered: ParentCategory[] = categories
       .filter(cat => cat.id !== categoryId)
-      .filter(cat => computeDepth(cat) < MAX_DEPTH);
+      .map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        code: cat.code,
+        fullPath: pathById.get(cat.id) ?? cat.name,
+        depth: computeDepth(cat),
+        parent: cat.parent ? { name: cat.parent.name } : null,
+      }))
+      .filter(cat => (cat.depth ?? 1) < MAX_DEPTH)
+      .filter(cat => {
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        const searchText =
+          `${cat.name} ${cat.code ?? ''} ${cat.fullPath ?? cat.name}`.toLowerCase();
+        return searchText.includes(normalizedSearch);
+      });
 
     // 确保当前父级始终在列表中（即便它是因筛选被过滤的旧数据）
     if (
@@ -246,6 +268,10 @@ function useCategoryData(categoryId: string, parentSearch: string) {
         {
           id: categoryData.parent.id,
           name: categoryData.parent.name,
+          code: categoryData.parent.code,
+          fullPath:
+            pathById.get(categoryData.parent.id) ?? categoryData.parent.name,
+          depth: 1,
           parent: null,
         },
         ...filtered,
@@ -253,13 +279,45 @@ function useCategoryData(categoryId: string, parentSearch: string) {
     }
 
     return filtered;
-  }, [categoriesQuery.data, categoryId, categoryData?.parent]);
+  }, [categoriesQuery.data, categoryId, categoryData?.parent, parentSearch]);
+
+  const currentCategoryInfo = React.useMemo<
+    CategoryCurrentInfo | undefined
+  >(() => {
+    if (!categoryData) {
+      return undefined;
+    }
+
+    const categories = (categoriesQuery.data?.data || []) as Category[];
+    const pathById = buildCategoryPathMap([
+      ...categories
+        .filter(category => category.id !== categoryData.id)
+        .map(category => ({
+          id: category.id,
+          name: category.name,
+          code: category.code,
+          parentId: category.parentId,
+        })),
+      {
+        id: categoryData.id,
+        name: categoryData.name,
+        code: categoryData.code,
+        parentId: categoryData.parentId,
+      },
+    ]);
+
+    return {
+      code: categoryData.code,
+      fullPath: pathById.get(categoryData.id) ?? categoryData.name,
+    };
+  }, [categoriesQuery.data, categoryData]);
 
   return {
     categoryData,
     isCategoryLoading: categoryQuery.isLoading,
     categoryError: categoryQuery.error,
     parentCategories,
+    currentCategoryInfo,
     areParentOptionsLoading: categoriesQuery.isFetching,
   };
 }

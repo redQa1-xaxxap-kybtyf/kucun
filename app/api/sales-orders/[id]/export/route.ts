@@ -19,6 +19,10 @@ import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/compo
 import { getSalesOrderDetailWithPayments } from '@/lib/api/handlers/sales-orders/detail';
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
+import {
+  SAMPLE_SETTLEMENT_TYPE_LABELS,
+  getSalesOrderReceivableTotal,
+} from '@/lib/utils/sample-order';
 
 type ExportMode = 'details' | 'complete';
 
@@ -106,6 +110,12 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
     0
   );
   const totalAmount = order.totalAmount || 0;
+  const receivableTotal = getSalesOrderReceivableTotal({
+    isSampleOrder: order.isSampleOrder,
+    sampleSettlementType: order.sampleSettlementType,
+    totalAmount: order.totalAmount,
+    roundingAdjustment: order.roundingAdjustment,
+  });
   const paidAgainstOrder = (order.paymentRecords || [])
     .filter(record => record.status === 'confirmed')
     .reduce((sum, record) => sum + Number(record.paymentAmount || 0), 0);
@@ -116,10 +126,15 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
       0
     );
   const paidAmount = paidAgainstOrder + prepaymentApplied;
-  const unpaidAmount = totalAmount - paidAmount;
+  const unpaidAmount = Math.max(0, receivableTotal - paidAmount);
 
   return {
     订单号: order.orderNumber || '',
+    业务标签: order.isSampleOrder
+      ? SAMPLE_SETTLEMENT_TYPE_LABELS[order.sampleSettlementType ?? 'FREE']
+      : order.orderType === 'TRANSFER'
+        ? '调货销售'
+        : '正常销售',
     客户名称: customer?.name || '',
     联系电话: customer?.phone || '',
     收货地址: customer?.address || '',

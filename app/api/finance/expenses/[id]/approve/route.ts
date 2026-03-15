@@ -39,10 +39,7 @@ export const POST = withAuth(
 
     const expense = await approveExpenseRecord(id, context.user.id);
 
-    // 审核通过后失效报表缓存（异步执行）
-    invalidateReportCache().catch(error => {
-      console.error('Failed to invalidate report cache after approve:', error);
-    });
+    await invalidateReportCache();
 
     return successResponse(expense);
   },

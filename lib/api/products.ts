@@ -23,7 +23,6 @@ export interface ProductImportPreviewRow {
   code: string;
   name: string;
   specification: string;
-  categoryCode: string;
   categoryName: string;
   thickness?: number;
   status: 'active' | 'inactive';

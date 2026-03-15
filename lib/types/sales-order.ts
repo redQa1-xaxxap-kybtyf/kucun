@@ -20,6 +20,9 @@ export type SalesOrderType = 'NORMAL' | 'TRANSFER';
 // 调货履约模式
 export type TransferFulfillmentMode = 'SUPPLIER_ONLY' | 'MIXED';
 
+// 样品结算方式
+export type SampleSettlementType = 'FREE' | 'CHARGEABLE';
+
 // 销售订单明细类型
 export interface SalesOrderItem {
   id: string;
@@ -67,6 +70,8 @@ export interface SalesOrder {
   status: SalesOrderStatus;
   orderType: SalesOrderType;
   transferMode: TransferFulfillmentMode;
+  isSampleOrder?: boolean;
+  sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
   costAmount?: number;
   expenseAmount?: number;
@@ -127,6 +132,7 @@ export interface SalesOrderQueryParams {
   startDate?: string;
   endDate?: string;
   orderType?: SalesOrderType;
+  isSampleOrder?: boolean;
   hasReturns?: boolean;
   includeTest?: boolean;
   includeVoided?: boolean;
@@ -159,6 +165,8 @@ export interface SalesOrderCreateInput {
   status?: SalesOrderStatus;
   orderType?: SalesOrderType;
   transferMode?: TransferFulfillmentMode;
+  isSampleOrder?: boolean;
+  sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
   costAmount?: number;
   roundingAdjustment?: number;
@@ -176,6 +184,8 @@ export interface SalesOrderUpdateInput {
   status?: SalesOrderStatus;
   orderType?: SalesOrderType;
   transferMode?: TransferFulfillmentMode;
+  isSampleOrder?: boolean;
+  sampleSettlementType?: SampleSettlementType;
   supplierId?: string;
   costAmount?: number;
   roundingAdjustment?: number;
@@ -335,6 +345,16 @@ export const SALES_ORDER_FIELD_LABELS = {
 export const TRANSFER_MODE_LABELS: Record<TransferFulfillmentMode, string> = {
   SUPPLIER_ONLY: '全部外部调货',
   MIXED: '本地 + 调货混合',
+};
+
+export const SAMPLE_ORDER_LABEL = '样品单';
+
+export const SAMPLE_SETTLEMENT_TYPE_LABELS: Record<
+  SampleSettlementType,
+  string
+> = {
+  FREE: '免费样品',
+  CHARGEABLE: '收费样品',
 };
 
 // 瓷砖行业特有的色号选项（示例）

@@ -54,8 +54,8 @@ export const salesOrderParamsConfig: Record<
   endDate: { type: 'string', default: undefined },
 
   orderType: { type: 'enum', values: orderTypeValues, default: undefined },
+  isSampleOrder: { type: 'boolean', default: undefined },
   hasReturns: { type: 'boolean', default: undefined },
   includeTest: { type: 'boolean', default: undefined },
   includeVoided: { type: 'boolean', default: undefined },
 };
-

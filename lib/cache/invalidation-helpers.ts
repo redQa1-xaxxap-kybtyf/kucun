@@ -118,6 +118,12 @@ export function invalidateFinanceCaches(queryClient: QueryClient): void {
     queryKey: queryKeys.finance.paymentsOut(),
   });
 
+  // 刷新财务报表缓存（月报 / 年报 / 盈亏分析）
+  queryClient.invalidateQueries({
+    queryKey: queryKeys.finance.reports(),
+    exact: false,
+  });
+
   // 刷新仪表盘缓存
   queryClient.invalidateQueries({
     queryKey: queryKeys.dashboard.all,

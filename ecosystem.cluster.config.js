@@ -3,12 +3,11 @@
  * 仅在需要单机多实例横向扩展时使用
  *
  * 注意事项：
- * - 集群模式会导致某些 Next.js 功能失效（如热更新、WebSocket、Server Actions 可能有状态竞争）
+ * - 集群模式会导致某些 Next.js 功能失效（如热更新、Server Actions 可能有状态竞争）
  * - 建议优先使用 ecosystem.config.js 的单实例配置 + 负载均衡器
  * - 如果必须使用集群模式，请确保：
  *   1. 使用 Redis 等外部存储管理会话状态
- *   2. WebSocket 使用独立服务或 sticky sessions
- *   3. 文件上传等功能使用外部存储（如 S3）
+ *   2. 文件上传等功能使用外部存储（如 S3）
  */
 
 module.exports = {
@@ -46,33 +45,6 @@ module.exports = {
       // 优雅关闭
       kill_timeout: 5000,
       listen_timeout: 5000,
-    },
-    {
-      // WebSocket 服务 - 必须单实例
-      name: 'kucun-ws-cluster',
-      script: 'lib/ws/ws-server.ts',
-      interpreter: 'node',
-      interpreter_args: '--loader ts-node/esm',
-      instances: 1, // WebSocket 必须使用单实例
-      exec_mode: 'fork',
-      env: {
-        NODE_ENV: 'production',
-        WS_PORT: 3002,
-      },
-      // 日志配置
-      error_file: './logs/ws-cluster-err.log',
-      out_file: './logs/ws-cluster-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      // 性能配置
-      max_memory_restart: '500M',
-      // 自动重启配置
-      autorestart: true,
-      watch: false,
-      max_restarts: 10,
-      min_uptime: '10s',
-      restart_delay: 4000,
-      // 环境变量文件
-      env_file: '.env.production',
     },
   ],
 

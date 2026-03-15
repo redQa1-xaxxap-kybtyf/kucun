@@ -181,3 +181,52 @@ export function getCategoryPath(
 
   return path;
 }
+
+/**
+ * 批量构建分类完整路径映射
+ */
+export function buildCategoryPathMap(
+  categories: CategoryBase[],
+  separator: string = ' / '
+): Map<string, string> {
+  const categoryById = new Map<string, CategoryBase>();
+  const pathById = new Map<string, string>();
+
+  categories.forEach(category => {
+    categoryById.set(category.id, category);
+  });
+
+  const buildPath = (categoryId: string): string => {
+    const cached = pathById.get(categoryId);
+    if (cached) {
+      return cached;
+    }
+
+    const parts: string[] = [];
+    const visited = new Set<string>();
+    let currentId: string | null | undefined = categoryId;
+    let safetyCounter = 0;
+
+    while (currentId && safetyCounter < 10 && !visited.has(currentId)) {
+      const current = categoryById.get(currentId);
+      if (!current) {
+        break;
+      }
+
+      visited.add(currentId);
+      parts.unshift(current.name);
+      currentId = current.parentId;
+      safetyCounter += 1;
+    }
+
+    const path = parts.join(separator);
+    pathById.set(categoryId, path);
+    return path;
+  };
+
+  categories.forEach(category => {
+    buildPath(category.id);
+  });
+
+  return pathById;
+}

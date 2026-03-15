@@ -48,10 +48,6 @@ if command -v pm2 >/dev/null 2>&1; then
     pm2 start ecosystem.config.js --env production
   fi
 
-  # WebSocket 服务同理
-  if pm2 describe kucun-ws >/dev/null 2>&1; then
-    pm2 restart kucun-ws
-  fi
 else
   echo "⚠️ 未检测到 pm2 命令，请先在服务器上安装 pm2："
   echo "   npm install -g pm2"
@@ -60,4 +56,3 @@ else
 fi
 
 echo "✅ 安装/升级完成。"
-

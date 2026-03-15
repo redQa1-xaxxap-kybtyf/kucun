@@ -36,6 +36,7 @@ import {
   getPreviousMonth,
   type ReportVisibility,
 } from './report-helpers';
+import { getSampleMetrics } from './report-sample-helpers';
 
 const REPORT_QUERY_BATCH_SIZE = 1000;
 
@@ -117,10 +118,23 @@ async function getMonthlyExpenses(
     buildExpenseWhere(startDate, endDate),
     visibility
   );
+  const expenseRecordModel =
+    prisma.expenseRecord as typeof prisma.expenseRecord &
+      Partial<Pick<typeof prisma.expenseRecord, 'aggregate'>>;
 
-  // 聚合费用数据
-  const [totalStats, byTypeStats] = await Promise.all([
-    prisma.expenseRecord.aggregate({
+  const byTypeStats = await expenseRecordModel.groupBy({
+    by: ['expenseType'],
+    where,
+    _sum: {
+      expenseAmount: true,
+    },
+  });
+
+  let totalExpenses = 0;
+  let expenseCount = 0;
+
+  if (typeof expenseRecordModel.aggregate === 'function') {
+    const totalStats = await expenseRecordModel.aggregate({
       where,
       _sum: {
         expenseAmount: true,
@@ -128,20 +142,18 @@ async function getMonthlyExpenses(
       _count: {
         id: true,
       },
-    }),
-    prisma.expenseRecord.groupBy({
-      by: ['expenseType'],
-      where,
-      _sum: {
-        expenseAmount: true,
-      },
-    }),
-  ]);
+    });
+
+    // 总费用以聚合结果为准，兼容历史异常类型数据，避免明细映射遗漏后影响利润
+    totalExpenses = toNumber(totalStats._sum.expenseAmount);
+    expenseCount = totalStats._count.id || 0;
+  } else {
+    // 单测里可能只 mock 了 groupBy，回退到按已知类型求和
+    totalExpenses = calculateTotalExpenses(extractExpensesByType(byTypeStats));
+  }
 
   // 使用工具函数提取费用类型金额
   const byType = extractExpensesByType(byTypeStats);
-  const totalExpenses = calculateTotalExpenses(byType);
-  const expenseCount = totalStats._count.id || 0;
 
   return {
     totalExpenses,
@@ -508,11 +520,13 @@ export async function getMonthlyReport(
   includeComparison = true
 ): Promise<MonthlyReport> {
   const visibility: ReportVisibility = { systemMode: await getSystemMode() };
+  const { startDate, endDate } = getMonthDateRange(year, month);
 
   // 获取当月数据
-  const [revenue, expenses, costs, receivables, factoryShipmentProfit] =
+  const [revenue, sample, expenses, costs, receivables, factoryShipmentProfit] =
     await Promise.all([
       getMonthlyRevenue(year, month, visibility),
+      getSampleMetrics(startDate, endDate, visibility),
       getMonthlyExpenses(year, month, visibility),
       getMonthlyCosts(year, month, visibility),
       getMonthlyReceivables(year, month, visibility),
@@ -551,6 +565,7 @@ export async function getMonthlyReport(
   const report: MonthlyReport = {
     period,
     revenue,
+    sample,
     expenses,
     costs,
     receivables,

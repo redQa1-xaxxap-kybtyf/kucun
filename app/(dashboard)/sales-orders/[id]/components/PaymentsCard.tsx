@@ -4,8 +4,16 @@ import { Receipt, Wallet } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  SAMPLE_SETTLEMENT_TYPE_LABELS,
+  SAMPLE_ORDER_LABEL,
+} from '@/lib/types/sales-order';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
+import {
+  getSalesOrderReceivableTotal,
+  shouldCreateReceivableForOrder,
+} from '@/lib/utils/sample-order';
 
 import type { PaymentRecord, SalesOrderDetail } from './types';
 
@@ -76,8 +84,8 @@ function PaymentItem({ payment }: { payment: PaymentRecord }) {
 }
 
 function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
-  const receivableTotal =
-    Number(order.totalAmount) + Number(order.roundingAdjustment ?? 0);
+  const receivableEnabled = shouldCreateReceivableForOrder(order);
+  const receivableTotal = getSalesOrderReceivableTotal(order);
   const progress =
     receivableTotal > 0
       ? (Number(order.paidAmount) / receivableTotal) * 100
@@ -97,6 +105,16 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
             <p className="font-mono text-xl font-black tracking-tighter text-slate-900 sm:text-2xl">
               {formatCurrency(receivableTotal)}
             </p>
+            {!receivableEnabled && order.isSampleOrder && (
+              <p className="text-[11px] font-medium text-amber-700">
+                {
+                  SAMPLE_SETTLEMENT_TYPE_LABELS[
+                    order.sampleSettlementType ?? 'FREE'
+                  ]
+                }
+                默认不生成客户应收
+              </p>
+            )}
           </div>
           <div className="space-y-1 text-right">
             <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase">
@@ -152,6 +170,7 @@ function PaymentsSummary({ order }: { order: SalesOrderDetail }) {
 
 export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
   const hasPayments = order.paymentRecords.length > 0;
+  const receivableEnabled = shouldCreateReceivableForOrder(order);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
@@ -163,7 +182,9 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
               收款往来明细
             </CardTitle>
             <p className="text-[11px] font-medium text-slate-500">
-              跟进订单生命周期内的所有现金及转账核销记录。
+              {receivableEnabled
+                ? '跟进订单生命周期内的所有现金及转账核销记录。'
+                : `${SAMPLE_ORDER_LABEL}当前按免费结算，不会进入客户应收。`}
             </p>
           </div>
           <Badge
@@ -181,7 +202,9 @@ export function PaymentsCard({ order }: { order: SalesOrderDetail }) {
         {!hasPayments ? (
           <div className="text-muted-foreground flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200 bg-slate-50 py-12 text-center text-sm">
             <Wallet className="mb-2 h-10 w-10 text-blue-500" />
-            暂无收款记录，可前往财务模块补录。
+            {receivableEnabled
+              ? '暂无收款记录，可前往财务模块补录。'
+              : '免费样品单默认不生成收款记录。'}
           </div>
         ) : (
           <div className="space-y-4">

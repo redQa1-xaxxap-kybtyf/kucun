@@ -1,6 +1,6 @@
 /**
  * PM2 生产环境配置文件
- * 用于管理 Next.js 应用和 WebSocket 服务
+ * 用于管理 Next.js 主应用
  *
  * 重要说明：
  * - Next.js 官方推荐使用单实例运行以支持所有功能
@@ -43,35 +43,6 @@ module.exports = {
       listen_timeout: 5000, // 启动超时时间
       // 进程信号处理
       shutdown_with_message: true,
-    },
-    {
-      // WebSocket 服务
-      name: 'kucun-ws',
-      script: 'lib/ws/ws-server.ts',
-      interpreter: 'node',
-      interpreter_args: '--loader ts-node/esm',
-      instances: 1, // WebSocket 服务使用单实例
-      exec_mode: 'fork',
-      env: {
-        NODE_ENV: 'production',
-        // WebSocket端口从环境变量读取，默认3002
-        WS_PORT: process.env.WS_PORT || 3002,
-        // 允许的Origin从环境变量读取
-        WS_ALLOWED_ORIGINS: process.env.WS_ALLOWED_ORIGINS || '',
-      },
-      // 日志配置
-      error_file: './logs/ws-err.log',
-      out_file: './logs/ws-out.log',
-      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
-      // 性能配置
-      max_memory_restart: '500M',
-      // 自动重启配置
-      autorestart: true,
-      watch: false,
-      max_restarts: 10,
-      min_uptime: '10s',
-      // 环境变量文件
-      env_file: '.env.production',
     },
   ],
 

@@ -1,76 +1,81 @@
 import { z } from 'zod';
 
-const productImportNumberSchema = z
-  .union([
-    z.number({
-      invalid_type_error: '必须为数字',
-    } as any),
+function normalizeExcelTextInput(value: unknown) {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (
+    typeof value === 'number' ||
+    typeof value === 'boolean' ||
+    value instanceof Date
+  ) {
+    return String(value);
+  }
+
+  return value;
+}
+
+function requiredExcelText(label: string, maxLength: number) {
+  return z.preprocess(
+    normalizeExcelTextInput,
     z
-      .string({
-        invalid_type_error: '必须为数字',
-      } as any)
+      .string()
       .trim()
-      .regex(/^-?\d+(\.\d+)?$/, '必须为数字')
-      .transform(value => Number(value)),
-  ])
-  .optional()
-  .or(z.literal(''))
-  .transform(value => {
-    if (value === '' || value === undefined) {
+      .min(1, `${label}不能为空`)
+      .max(maxLength, `${label}不能超过${maxLength}个字符`)
+  );
+}
+
+function optionalExcelText(label: string, maxLength: number) {
+  return z.preprocess(
+    normalizeExcelTextInput,
+    z.string().trim().max(maxLength, `${label}不能超过${maxLength}个字符`)
+  );
+}
+
+const productImportNumberSchema = z.preprocess(
+  value => {
+    if (value === '' || value === null || value === undefined) {
       return undefined;
     }
 
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed ? trimmed : undefined;
+    }
+
     return value;
-  });
+  },
+  z
+    .union([
+      z.number(),
+      z
+        .string()
+        .regex(/^-?\d+(\.\d+)?$/, '必须为数字')
+        .transform(value => Number(value)),
+    ])
+    .optional()
+);
 
 export const productImportRowSchema = z.object({
-  产品编码: z
-    .string({
-      required_error: '产品编码不能为空',
-      invalid_type_error: '产品编码必须为文本',
-    } as any)
-    .trim()
-    .min(1, '产品编码不能为空')
-    .max(50, '产品编码不能超过50个字符'),
-  产品名称: z
-    .string({
-      required_error: '产品名称不能为空',
-      invalid_type_error: '产品名称必须为文本',
-    } as any)
-    .trim()
-    .min(1, '产品名称不能为空')
-    .max(100, '产品名称不能超过100个字符'),
-  规格: z
-    .string({
-      required_error: '规格不能为空',
-      invalid_type_error: '规格必须为文本',
-    } as any)
-    .trim()
-    .min(1, '规格不能为空')
-    .max(200, '规格不能超过200个字符'),
-  分类编码: z
-    .string({
-      invalid_type_error: '分类编码必须为文本',
-    } as any)
-    .trim()
-    .optional()
-    .or(z.literal('')),
+  产品编码: requiredExcelText('产品编码', 50),
+  产品名称: requiredExcelText('产品名称', 100),
+  规格: requiredExcelText('规格', 200),
+  产品分类: optionalExcelText('产品分类', 300),
+  一级分类: optionalExcelText('一级分类', 150),
+  二级分类: optionalExcelText('二级分类', 150),
+  三级分类: optionalExcelText('三级分类', 150),
+  分类路径: optionalExcelText('分类路径', 300),
+  分类名称: optionalExcelText('分类名称', 150),
+  分类编码: optionalExcelText('分类编码', 100),
   '厚度(mm)': productImportNumberSchema,
-  状态: z
-    .string({
-      invalid_type_error: '状态必须为文本',
-    } as any)
-    .trim()
-    .optional()
-    .or(z.literal('')),
-  描述: z
-    .string({
-      invalid_type_error: '描述必须为文本',
-    } as any)
-    .trim()
-    .max(1000, '描述不能超过1000个字符')
-    .optional()
-    .or(z.literal('')),
+  状态: optionalExcelText('状态', 20),
+  描述: optionalExcelText('描述', 1000),
 });
 
 export const productImportSchema = z.object({

@@ -364,6 +364,95 @@ export function AnnualReportClient() {
           </div>
         </div>
 
+        <section className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-6">
+            <div className="mb-4 flex items-center gap-2">
+              <div className="h-4 w-1 rounded-full bg-amber-500" />
+              <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                年度样品分析
+              </h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <StatCard
+                title="样品费"
+                value={report.sample.sampleRevenue}
+                icon={<ChineseYuan className="h-4 w-4" />}
+                variant="warning"
+              />
+              <StatCard
+                title="样品成本"
+                value={report.sample.sampleCost}
+                icon={<Receipt className="h-4 w-4" />}
+                variant="neutral"
+              />
+              <StatCard
+                title="样品数量"
+                value={report.sample.sampleQuantity}
+                icon={<Receipt className="h-4 w-4" />}
+                variant="info"
+                isCurrency={false}
+              />
+              <StatCard
+                title="领取客户数"
+                value={report.sample.customerCount}
+                icon={<Calendar className="h-4 w-4" />}
+                variant="default"
+                isCurrency={false}
+                subtitle={`${report.sample.orderCount} 张样品单`}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-sm font-black tracking-widest text-slate-900 uppercase">
+                样品客户排行
+              </h2>
+              <span className="text-xs font-semibold text-slate-400">
+                按样品数量排序
+              </span>
+            </div>
+            {report.sample.topCustomers.length > 0 ? (
+              <div className="space-y-3">
+                {report.sample.topCustomers.map((customer, index) => (
+                  <div
+                    key={customer.customerId}
+                    className="grid grid-cols-[40px_1fr_auto_auto] items-center gap-3 rounded-xl border border-slate-100 px-3 py-3"
+                  >
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-black text-slate-600">
+                      {index + 1}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold text-slate-900">
+                        {customer.customerName}
+                      </div>
+                      <div className="text-xs text-slate-500">
+                        {customer.orderCount} 张样品单
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-slate-400">样品数量</div>
+                      <div className="text-sm font-black text-slate-900">
+                        {customer.sampleQuantity}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs text-slate-400">样品费</div>
+                      <div className="text-sm font-black text-amber-700">
+                        {formatCurrency(customer.sampleRevenue)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-slate-200 px-4 py-8 text-center text-sm text-slate-400">
+                本年度暂无样品单数据
+              </div>
+            )}
+          </div>
+        </section>
+
         <AnnualReportCharts report={report} />
 
       </div>

@@ -5,6 +5,7 @@ import type {
   SalesOrderType,
   TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
+import { normalizeSampleSettlementType } from '@/lib/utils/sample-order';
 
 export const salesOrderItemSelect = {
   id: true,
@@ -129,6 +130,8 @@ export function mapOrderBaseFields<
     status: Prisma.SalesOrderUpdateInput['status'];
     orderType: Prisma.SalesOrderCreateInput['orderType'];
     transferMode: unknown;
+    isSampleOrder?: boolean | null;
+    sampleSettlementType?: string | null;
     customer?: {
       id: string;
       name: string;
@@ -160,6 +163,11 @@ export function mapOrderBaseFields<
     status: order.status as SalesOrderStatus,
     orderType: order.orderType as SalesOrderType,
     transferMode: order.transferMode as TransferFulfillmentMode,
+    isSampleOrder: Boolean(order.isSampleOrder),
+    sampleSettlementType: normalizeSampleSettlementType(
+      order.isSampleOrder,
+      order.sampleSettlementType
+    ),
     customer: order.customer
       ? {
           ...order.customer,

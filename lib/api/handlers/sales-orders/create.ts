@@ -13,6 +13,11 @@ import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service'
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+import {
+  DEFAULT_SAMPLE_SETTLEMENT_TYPE,
+  getSalesOrderReceivableTotal,
+  shouldCreateReceivableForOrder,
+} from '@/lib/utils/sample-order';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 import {
@@ -52,6 +57,8 @@ const createSelect = {
   status: true,
   orderType: true,
   transferMode: true,
+  isSampleOrder: true,
+  sampleSettlementType: true,
   itemsAmount: true,
   additionalFees: true,
   expenseAmount: true,
@@ -178,6 +185,8 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
   const validatedData = salesOrderCreateSchema.parse(data);
   const transferMode = normalizeTransferMode(validatedData);
   const financials = calculateFinancials(validatedData, transferMode);
+  const sampleSettlementType =
+    validatedData.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE;
 
   const maxCreateRetries = 10;
   let attempt = 0;
@@ -226,6 +235,8 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
             status: validatedData.status || 'draft',
             orderType: validatedData.orderType,
             transferMode,
+            isSampleOrder: validatedData.isSampleOrder ?? false,
+            sampleSettlementType,
             costAmount: financials.costAmount,
             profitAmount: financials.profitAmount,
             itemsAmount: financials.itemsAmount,
@@ -395,11 +406,22 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
         const roundedRoundingAmount = Number(
           Number(financials.roundingAdjustment ?? 0).toFixed(2)
         );
-        const actualOrderDue = Number(
-          (roundedTotalAmount + roundedRoundingAmount).toFixed(2)
-        );
+        const receivableEnabled = shouldCreateReceivableForOrder({
+          isSampleOrder: salesOrder.isSampleOrder,
+          sampleSettlementType: salesOrder.sampleSettlementType,
+        });
+        const actualOrderDue = getSalesOrderReceivableTotal({
+          isSampleOrder: salesOrder.isSampleOrder,
+          sampleSettlementType: salesOrder.sampleSettlementType,
+          totalAmount: roundedTotalAmount,
+          roundingAdjustment: roundedRoundingAmount,
+        });
 
-        if (salesOrder.status === 'confirmed' && actualOrderDue > 0) {
+        if (
+          salesOrder.status === 'confirmed' &&
+          receivableEnabled &&
+          actualOrderDue > 0
+        ) {
           const paymentNumber = await generatePaymentNumber(tx);
           const paymentAmount = roundedTotalAmount;
           await tx.paymentRecord.create({
@@ -421,7 +443,11 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
           });
         }
 
-        if (validatedData.usePrepayment) {
+        if (
+          validatedData.usePrepayment &&
+          receivableEnabled &&
+          actualOrderDue > 0
+        ) {
           const prepaymentResult = await applyPrepaymentToOrder(
             tx,
             validatedData.customerId,
@@ -457,17 +483,22 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       }
 
       const delayMs = Math.min(300, 50 * attempt);
-      logger.warn('sales-orders', '销售订单号冲突，准备重试创建订单', undefined, {
-        attempt,
-        delayMs,
-        error:
-          error instanceof Error
-            ? {
-                name: error.name,
-                message: error.message,
-              }
-            : error,
-      });
+      logger.warn(
+        'sales-orders',
+        '销售订单号冲突，准备重试创建订单',
+        undefined,
+        {
+          attempt,
+          delayMs,
+          error:
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                }
+              : error,
+        }
+      );
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
@@ -490,7 +521,13 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
     (order as { roundingAdjustment?: unknown }).roundingAdjustment,
     0
   );
-  const actualOrderDue = Number((totalAmount + roundingAdjustment).toFixed(2));
+  const actualOrderDue = getSalesOrderReceivableTotal({
+    isSampleOrder: order.isSampleOrder,
+    sampleSettlementType:
+      order.sampleSettlementType ?? DEFAULT_SAMPLE_SETTLEMENT_TYPE,
+    totalAmount,
+    roundingAdjustment,
+  });
 
   if (ledgerEligibleStatuses.has(order.status) && actualOrderDue > 0) {
     try {

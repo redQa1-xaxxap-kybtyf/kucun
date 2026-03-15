@@ -459,10 +459,17 @@ export function ProfitLossClient() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <StatCard
-                title="日常销售收入"
+                title="销售收入（含样品）"
                 value={analysis.revenue.salesRevenue}
                 icon={<ChineseYuan className="h-4 w-4" />}
                 variant="info"
+              />
+              <StatCard
+                title="样品费收入"
+                value={analysis.sample.sampleRevenue}
+                icon={<ChineseYuan className="h-4 w-4" />}
+                variant="warning"
+                subtitle={`${analysis.sample.orderCount} 张样品单`}
               />
               <StatCard
                 title="厂家直发收入"
@@ -481,7 +488,7 @@ export function ProfitLossClient() {
                 value={analysis.revenue.totalRevenue}
                 icon={<TrendingUp className="h-4 w-4" />}
                 variant="info"
-                subtitle={`结算效率: 100%`}
+                subtitle={`样品数量: ${analysis.sample.sampleQuantity}`}
               />
             </div>
           </section>

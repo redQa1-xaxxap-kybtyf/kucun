@@ -4,6 +4,7 @@ import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
   mapOrderBaseFields,
@@ -55,6 +56,7 @@ const buildWhere = (
     startDate,
     endDate,
     orderType,
+    isSampleOrder,
     hasReturns,
     includeTest,
     includeVoided,
@@ -103,6 +105,10 @@ const buildWhere = (
 
   if (orderType) {
     where.orderType = orderType;
+  }
+
+  if (isSampleOrder !== undefined) {
+    where.isSampleOrder = isSampleOrder;
   }
 
   if (hasReturns) {
@@ -155,6 +161,12 @@ const mapListOrder = (
     (sum, payment) => sum + Number(payment.paymentAmount),
     0
   );
+  const receivableTotal = getSalesOrderReceivableTotal({
+    isSampleOrder: orderBase.isSampleOrder,
+    sampleSettlementType: orderBase.sampleSettlementType,
+    totalAmount: order.totalAmount,
+    roundingAdjustment: order.roundingAdjustment,
+  });
 
   return {
     ...orderBase,
@@ -166,7 +178,7 @@ const mapListOrder = (
     ),
     itemCount: _count.items,
     paidAmount,
-    remainingAmount: Number(order.totalAmount) - paidAmount,
+    remainingAmount: Math.max(0, receivableTotal - paidAmount),
     hasReturnOrder: returnOrders.length > 0,
   };
 };

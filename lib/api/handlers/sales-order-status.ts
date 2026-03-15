@@ -21,6 +21,7 @@ import {
 import { findAvailableInventory } from '@/lib/utils/inventory-variant-mapper';
 import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 /**
  * 出库单号配置
@@ -304,9 +305,12 @@ async function executeOrderConfirmation(
     // ✅ 确认即生成“应收待收”记录（若不存在），保持与“创建即确认”口径一致
     const totalAmount = Number(existingOrder.totalAmount ?? 0);
     const roundingAdjustment = toNumber(existingOrder.roundingAdjustment);
-    const actualOrderDue = Number(
-      (totalAmount + roundingAdjustment).toFixed(2)
-    );
+    const actualOrderDue = getSalesOrderReceivableTotal({
+      isSampleOrder: existingOrder.isSampleOrder,
+      sampleSettlementType: existingOrder.sampleSettlementType,
+      totalAmount,
+      roundingAdjustment,
+    });
 
     if (actualOrderDue > 0) {
       const paymentExists = await tx.paymentRecord.findFirst({

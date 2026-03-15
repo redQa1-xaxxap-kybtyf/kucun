@@ -365,7 +365,7 @@ export function ProductImportDialog({
           <Alert>
             <FileSpreadsheet className="h-4 w-4" />
             <AlertDescription>
-              模板字段：产品编码、产品名称、规格、分类编码、厚度(mm)、状态、描述。
+              模板字段：产品编码、产品名称、规格、产品分类、厚度(mm)、状态、描述。产品分类只填一列：一级分类填“瓷砖”，二级分类填“瓷砖/抛光砖”，三级分类填“瓷砖/抛光砖/柔抛”，直接从模板里的“分类参考”复制即可。
             </AlertDescription>
           </Alert>
 

@@ -119,6 +119,11 @@ function buildFilterUpdates(
         ...base,
         orderType: value as SalesOrderQueryParams['orderType'],
       };
+    case 'isSampleOrder':
+      return {
+        ...base,
+        isSampleOrder: value === 'true' ? true : undefined,
+      };
     case 'hasReturns':
       return { ...base, hasReturns: value === 'true' ? true : undefined };
     case 'includeTest':
@@ -218,6 +223,7 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
       startDate: undefined,
       endDate: undefined,
       orderType: undefined,
+      isSampleOrder: undefined,
       hasReturns: undefined,
       includeTest: undefined,
       includeVoided: undefined,

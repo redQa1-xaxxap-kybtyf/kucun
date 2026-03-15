@@ -5,6 +5,8 @@ const salesOrderMock = {
     orderNumber: 'SO-2026-0001',
     createdAt: '2026-03-15',
     status: '待发货',
+    isSampleOrder: false,
+    sampleSettlementType: 'FREE',
     remark: '客户要求优先发米黄色现货',
     deliveryDate: '2026-03-18',
   },
@@ -310,6 +312,13 @@ const monthlyReportMock = {
     completedOrders: 29,
     pendingOrders: 9,
   },
+  sample: {
+    orderCount: 6,
+    customerCount: 4,
+    sampleQuantity: 186,
+    sampleRevenue: 12680,
+    sampleCost: 8420,
+  },
   expenses: {
     totalExpenses: 28600,
     byType: {
@@ -414,6 +423,33 @@ const annualReportMock = {
     profitMargin: 24.43,
     orderCount: 428,
     averageMonthlyRevenue: 405166.67,
+  },
+  sample: {
+    orderCount: 42,
+    customerCount: 18,
+    sampleQuantity: 1680,
+    sampleRevenue: 96800,
+    sampleCost: 70240,
+    topCustomers: [
+      {
+        customerId: 'customer-001',
+        customerName: '北京建材有限公司',
+        orderCount: 8,
+        customerCount: 1,
+        sampleQuantity: 260,
+        sampleRevenue: 16800,
+        sampleCost: 12600,
+      },
+      {
+        customerId: 'customer-002',
+        customerName: '石家庄安居建材',
+        orderCount: 6,
+        customerCount: 1,
+        sampleQuantity: 210,
+        sampleRevenue: 12200,
+        sampleCost: 9100,
+      },
+    ],
   },
   monthlyTrend: [
     {
@@ -553,6 +589,13 @@ const profitLossReportMock = {
     otherRevenue: 6000,
     totalRevenue: 284000,
     orderCount: 21,
+  },
+  sample: {
+    orderCount: 9,
+    customerCount: 5,
+    sampleQuantity: 248,
+    sampleRevenue: 18360,
+    sampleCost: 12980,
   },
   costs: {
     salesCost: 171000,

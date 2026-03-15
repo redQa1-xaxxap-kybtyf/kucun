@@ -35,6 +35,18 @@ export const salesOrderFields: FieldDefinition[] = [
     suggestedFormat: 'date_cn',
   },
   { path: 'order.status', label: '订单状态', group: '订单', type: 'string' },
+  {
+    path: 'order.isSampleOrder',
+    label: '是否样品单',
+    group: '订单',
+    type: 'boolean',
+  },
+  {
+    path: 'order.sampleSettlementType',
+    label: '样品结算方式',
+    group: '订单',
+    type: 'string',
+  },
   { path: 'order.remark', label: '订单备注', group: '订单', type: 'string' },
   {
     path: 'order.deliveryDate',
@@ -610,6 +622,34 @@ export const monthlyReportFields: FieldDefinition[] = [
     suggestedFormat: 'currency',
   },
   {
+    path: 'sample.sampleRevenue',
+    label: '样品费',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sample.sampleQuantity',
+    label: '样品数量',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'sample.sampleCost',
+    label: '样品成本',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sample.customerCount',
+    label: '样品客户数',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
     path: 'revenue.orderCount',
     label: '订单数量',
     group: '收入',
@@ -807,6 +847,34 @@ export const annualReportFields: FieldDefinition[] = [
     type: 'number',
     suggestedFormat: 'currency',
   },
+  {
+    path: 'sample.sampleRevenue',
+    label: '样品费',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sample.sampleQuantity',
+    label: '样品数量',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'sample.sampleCost',
+    label: '样品成本',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sample.customerCount',
+    label: '样品客户数',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
 
   {
     path: 'inventoryTurnover.turnoverRate',
@@ -876,6 +944,27 @@ export const profitLossFields: FieldDefinition[] = [
     path: 'revenue.totalRevenue',
     label: '总收入',
     group: '收入',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sample.sampleRevenue',
+    label: '样品费',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sample.sampleQuantity',
+    label: '样品数量',
+    group: '样品',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'sample.sampleCost',
+    label: '样品成本',
+    group: '样品',
     type: 'number',
     suggestedFormat: 'currency',
   },
@@ -969,6 +1058,43 @@ const reportAlertFields: FieldDefinition[] = [
   { path: 'type', label: '提醒级别', group: '提醒', type: 'string' },
   { path: 'title', label: '提醒标题', group: '提醒', type: 'string' },
   { path: 'message', label: '提醒内容', group: '提醒', type: 'string' },
+];
+
+const sampleCustomerFields: FieldDefinition[] = [
+  {
+    path: 'customerName',
+    label: '客户名称',
+    group: '样品客户',
+    type: 'string',
+  },
+  {
+    path: 'orderCount',
+    label: '样品单数',
+    group: '样品客户',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'sampleQuantity',
+    label: '样品数量',
+    group: '样品客户',
+    type: 'number',
+    suggestedFormat: 'number',
+  },
+  {
+    path: 'sampleRevenue',
+    label: '样品费',
+    group: '样品客户',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
+  {
+    path: 'sampleCost',
+    label: '样品成本',
+    group: '样品客户',
+    type: 'number',
+    suggestedFormat: 'currency',
+  },
 ];
 
 const annualTrendFields: FieldDefinition[] = [
@@ -1085,6 +1211,12 @@ const arrayFieldRegistry: Record<string, FieldDefinition[]> = {
       group: '表格数据源',
       type: 'array',
     },
+    {
+      path: 'sample.topCustomers',
+      label: '样品客户排行',
+      group: '表格数据源',
+      type: 'array',
+    },
     { path: 'alerts', label: '风险提醒', group: '表格数据源', type: 'array' },
   ],
   'finance-profit-loss-report': [
@@ -1140,8 +1272,15 @@ export const tableFieldRegistry: Record<string, FieldDefinition[]> = {
     ...legacyCommonItemFields,
   ],
   'finance-monthly-report': reportAlertFields,
-  'finance-annual-report': [...annualTrendFields, ...reportAlertFields],
-  'finance-profit-loss-report': [...profitLossTrendFields, ...reportAlertFields],
+  'finance-annual-report': [
+    ...annualTrendFields,
+    ...sampleCustomerFields,
+    ...reportAlertFields,
+  ],
+  'finance-profit-loss-report': [
+    ...profitLossTrendFields,
+    ...reportAlertFields,
+  ],
 };
 
 /**
@@ -1162,7 +1301,11 @@ export function getTableFieldsForTemplateType(type: string): FieldDefinition[] {
  * 获取表格数据源字段
  */
 export function getArrayFieldsForTemplateType(type: string): FieldDefinition[] {
-  return arrayFieldRegistry[type] ?? [{ path: 'items', label: '明细', group: '表格数据源', type: 'array' }];
+  return (
+    arrayFieldRegistry[type] ?? [
+      { path: 'items', label: '明细', group: '表格数据源', type: 'array' },
+    ]
+  );
 }
 
 /**

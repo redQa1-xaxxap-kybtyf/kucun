@@ -3,6 +3,7 @@
  */
 
 import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/components/types';
+import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
   ExportService,
@@ -214,6 +215,12 @@ export class SalesOrderExportService {
       0
     );
     const totalAmount = order.totalAmount || 0;
+    const receivableTotal = getSalesOrderReceivableTotal({
+      isSampleOrder: order.isSampleOrder,
+      sampleSettlementType: order.sampleSettlementType,
+      totalAmount: order.totalAmount,
+      roundingAdjustment: order.roundingAdjustment,
+    });
     const paidAgainstOrder = (order.paymentRecords || [])
       .filter(record => record.status === 'confirmed')
       .reduce((sum, record) => sum + Number(record.paymentAmount || 0), 0);
@@ -224,7 +231,7 @@ export class SalesOrderExportService {
         0
       );
     const paidAmount = paidAgainstOrder + prepaymentApplied;
-    const unpaidAmount = totalAmount - paidAmount;
+    const unpaidAmount = Math.max(0, receivableTotal - paidAmount);
 
     return {
       订单号: order.orderNumber || '',

@@ -45,6 +45,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { Category } from '@/lib/api/categories';
+import { buildCategoryPathMap } from '@/lib/utils/category-utils';
 import { formatDateTime } from '@/lib/utils/datetime';
 
 interface CategoryListProps {
@@ -59,6 +60,7 @@ interface CategoryListProps {
  */
 interface CategoryWithLevel extends Category {
   level: number;
+  fullPath: string;
 }
 
 type LevelStyle = { color: string; bg: string; badge: string };
@@ -89,7 +91,10 @@ const LEVEL_STYLES: LevelStyle[] = [
  * - 避免之前那种按 level 单独排序导致所有二级分类挤在一起、
  *   视觉上好像都挂在第一个顶级分类下的错觉
  */
-function buildCategoriesWithLevel(categories: Category[]): CategoryWithLevel[] {
+function buildCategoriesWithLevel(
+  categories: Category[],
+  pathById: Map<string, string>
+): CategoryWithLevel[] {
   if (!categories.length) return [];
 
   // 1) 按 parentId 分组，构建父 -> 子的映射
@@ -139,6 +144,7 @@ function buildCategoriesWithLevel(categories: Category[]): CategoryWithLevel[] {
         result.push({
           ...child,
           level,
+          fullPath: pathById.get(child.id) ?? child.name,
         });
 
         // 最多显示到 L3，超过的层级依然按 L3 样式展示
@@ -163,6 +169,7 @@ function buildCategoriesWithLevel(categories: Category[]): CategoryWithLevel[] {
       result.push({
         ...orphan,
         level: 0,
+        fullPath: pathById.get(orphan.id) ?? orphan.name,
       });
 
       walk(orphan.id, 1);
@@ -184,12 +191,12 @@ export function CategoryList({
     parent: CategoryQuickCreateParent | null;
   }>({ open: false, parent: null });
 
-  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(
-    () =>
-      // 按父子层级顺序展开，避免所有二级分类挤在一起
-      buildCategoriesWithLevel(categories),
-    [categories]
-  );
+  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(() => {
+    const pathById = buildCategoryPathMap(categories);
+
+    // 按父子层级顺序展开，避免所有二级分类挤在一起
+    return buildCategoriesWithLevel(categories, pathById);
+  }, [categories]);
 
   const handleEdit = useMemo(
     () => (categoryId: string) => router.push(`/categories/${categoryId}/edit`),
@@ -205,7 +212,13 @@ export function CategoryList({
     () => (category: CategoryWithLevel) =>
       setCreateDialog({
         open: true,
-        parent: { id: category.id, name: category.name, level: category.level },
+        parent: {
+          id: category.id,
+          name: category.name,
+          code: category.code,
+          fullPath: category.fullPath,
+          level: category.level,
+        },
       }),
     []
   );
@@ -265,7 +278,7 @@ export function CategoryList({
       <Table>
         <TableHeader>
           <TableRow className="bg-gray-50/50">
-            <TableHead className="w-[280px]">分类名称</TableHead>
+            <TableHead className="w-[360px]">分类信息</TableHead>
             <TableHead className="w-[80px]">排序</TableHead>
             <TableHead className="w-[100px]">产品数量</TableHead>
             <TableHead className="w-[120px]">状态</TableHead>
@@ -384,34 +397,48 @@ function CategoryNameCell({
   return (
     <TableCell className="font-medium">
       <div
-        className="flex items-center gap-2 pl-[var(--indent)]"
+        className="space-y-1.5 pl-[var(--indent)]"
         style={{ '--indent': `${indentPx}px` } as React.CSSProperties}
       >
-        {category.level > 0 && (
-          <div className="flex items-center">
-            <div className="h-px w-3 bg-gray-300" />
-            <div className="h-3 w-px bg-gray-300" />
-          </div>
-        )}
-        {category.level > 0 && (
-          <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-semibold text-gray-400">
-            {style.badge}
-          </span>
-        )}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className={`font-medium ${style.color} cursor-help`}>
-                {category.name}
-              </span>
-            </TooltipTrigger>
-            {category.description && (
-              <TooltipContent>
-                <p className="max-w-xs">{category.description}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
+        <div className="flex items-center gap-2">
+          {category.level > 0 && (
+            <div className="flex items-center">
+              <div className="h-px w-3 bg-gray-300" />
+              <div className="h-3 w-px bg-gray-300" />
+            </div>
+          )}
+          {category.level > 0 && (
+            <span className="rounded bg-gray-100 px-1 py-0.5 text-[10px] font-semibold text-gray-400">
+              {style.badge}
+            </span>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={`cursor-help font-medium ${style.color}`}>
+                  {category.name}
+                </span>
+              </TooltipTrigger>
+              {category.description && (
+                <TooltipContent>
+                  <p className="max-w-xs">{category.description}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        <div
+          className={`space-y-0.5 text-xs ${category.level > 0 ? 'pl-7' : ''}`}
+        >
+          <div className="text-gray-500">路径：{category.fullPath}</div>
+          <div className="text-gray-400">编码：{category.code}</div>
+          {category.description && (
+            <div className="line-clamp-1 text-gray-400">
+              说明：{category.description}
+            </div>
+          )}
+        </div>
       </div>
     </TableCell>
   );
