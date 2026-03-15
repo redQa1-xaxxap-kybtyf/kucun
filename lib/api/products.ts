@@ -18,6 +18,50 @@ export type ProductListQueryParams = ProductQueryParams & {
   includeBatchSpecs?: boolean;
 };
 
+export interface ProductImportPreviewRow {
+  row: number;
+  code: string;
+  name: string;
+  specification: string;
+  categoryCode: string;
+  categoryName: string;
+  thickness?: number;
+  status: 'active' | 'inactive';
+}
+
+export interface ProductImportError {
+  row: number;
+  productCode?: string;
+  field?: string;
+  message: string;
+}
+
+export interface ProductImportDuplicate {
+  row: number;
+  productCode?: string;
+  source: 'file' | 'system';
+  message: string;
+}
+
+export interface ProductImportResult {
+  valid: boolean;
+  totalCount: number;
+  validCount: number;
+  duplicateCount: number;
+  errorCount: number;
+  previewRows: ProductImportPreviewRow[];
+  duplicates: ProductImportDuplicate[];
+  errors: ProductImportError[];
+  importedCount?: number;
+  importedProducts?: Array<{
+    id: string;
+    code: string;
+    name: string;
+    specification?: string;
+    status: 'active' | 'inactive';
+  }>;
+}
+
 const API_BASE = '/api/products';
 
 /**
@@ -141,6 +185,72 @@ export async function createProduct(
   }
 
   return data.data;
+}
+
+function parseFilenameFromContentDisposition(headerValue: string | null) {
+  if (!headerValue) {
+    return '产品基础信息导入模板.xlsx';
+  }
+
+  const utf8Match = headerValue.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const asciiMatch = headerValue.match(/filename="?([^"]+)"?/i);
+  return asciiMatch?.[1] || '产品基础信息导入模板.xlsx';
+}
+
+export async function downloadProductImportTemplate(): Promise<{
+  blob: Blob;
+  filename: string;
+}> {
+  const response = await fetch(`${API_BASE}/import/template`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error('下载导入模板失败');
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: parseFilenameFromContentDisposition(
+      response.headers.get('content-disposition')
+    ),
+  };
+}
+
+async function sendProductImportRequest(
+  file: File,
+  mode: 'dry-run' | 'import'
+): Promise<ProductImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('mode', mode);
+
+  const response = await csrfFetch(`${API_BASE}/import`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  const body = (await response.json()) as ApiResponse<ProductImportResult>;
+
+  if (!response.ok || !body.success || !body.data) {
+    throw new Error(body.error || '产品导入失败');
+  }
+
+  return body.data;
+}
+
+export function previewProductImport(file: File) {
+  return sendProductImportRequest(file, 'dry-run');
+}
+
+export function importProducts(file: File) {
+  return sendProductImportRequest(file, 'import');
 }
 
 /**

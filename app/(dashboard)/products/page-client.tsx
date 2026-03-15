@@ -1,11 +1,12 @@
 'use client';
 
-import { Package, Plus } from 'lucide-react';
+import { Package, Plus, Upload } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
+import { ProductImportDialog } from '@/components/products/product-import-dialog';
 import { Button } from '@/components/ui/button';
 import type { ProductQueryParams } from '@/lib/types/product';
 
@@ -36,32 +37,51 @@ interface ProductsPageClientProps {
  * ✅ 修复：使用 ERPProductList 避免双重滚动问题
  */
 export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
-  return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        {/* 页面标题 */}
-        <PageHeader
-          title="产品管理"
-          description="管理产品信息、规格和库存状态"
-          icon={<Package className="h-6 w-6 text-white" />}
-          iconBgColor="hsl(var(--color-primary))"
-          actions={
-            <Button
-              size="lg"
-              asChild
-              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-            >
-              <Link href="/products/create">
-                <Plus className="mr-2 h-4 w-4" />
-                新建产品
-              </Link>
-            </Button>
-          }
-        />
+  const [isImportDialogOpen, setIsImportDialogOpen] = React.useState(false);
 
-        {/* 产品列表 */}
-        <ERPProductList initialParams={initialParams} />
+  return (
+    <>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          {/* 页面标题 */}
+          <PageHeader
+            title="产品管理"
+            description="管理产品信息、规格和库存状态"
+            icon={<Package className="h-6 w-6 text-white" />}
+            iconBgColor="hsl(var(--color-primary))"
+            actions={
+              <>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-11 transition-transform hover:-translate-y-0.5"
+                  onClick={() => setIsImportDialogOpen(true)}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  批量导入
+                </Button>
+                <Button
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                >
+                  <Link href="/products/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    新建产品
+                  </Link>
+                </Button>
+              </>
+            }
+          />
+
+          {/* 产品列表 */}
+          <ERPProductList initialParams={initialParams} />
+        </div>
       </div>
-    </div>
+      <ProductImportDialog
+        open={isImportDialogOpen}
+        onOpenChange={setIsImportDialogOpen}
+      />
+    </>
   );
 }

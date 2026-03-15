@@ -1,7 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
-import { ApiError, handlePrismaError } from '@/lib/api/errors';
+import {
+  createProductRecord,
+  formatCreatedProduct,
+} from '@/lib/api/handlers/product-create';
 import {
   computeStockStatusFromInventoryLike,
   stripSensitiveKeysDeep,
@@ -11,10 +14,8 @@ import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { publishDataUpdate, revalidateProducts } from '@/lib/cache';
-import { prisma } from '@/lib/db';
 import { productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
-import { toProductResponse } from '@/lib/utils/product-transforms';
 import { productCreateSchema } from '@/lib/validations/product';
 
 /**
@@ -173,77 +174,8 @@ export const POST = withAuth(
       );
     }
 
-    const {
-      code,
-      name,
-      specification,
-      description,
-      thickness,
-      categoryId,
-      thumbnailUrl,
-      images,
-    } = validationResult.data;
-
-    // 处理分类ID：如果是"uncategorized"则设置为null
-    const processedCategoryId =
-      categoryId === 'uncategorized' ? null : (categoryId ?? null);
-
-    // ✅ 使用事务和数据库唯一约束防止并发创建重复编码
-    const product = await prisma.$transaction(async tx => {
-      // 检查分类是否存在（如果提供了分类ID）
-      if (processedCategoryId) {
-        const category = await tx.category.findUnique({
-          where: { id: processedCategoryId },
-          select: { id: true, status: true },
-        });
-
-        if (!category) {
-          throw ApiError.badRequest('指定的产品分类不存在');
-        }
-
-        if (category.status.toLowerCase() !== 'active') {
-          throw ApiError.badRequest('指定的产品分类已被禁用');
-        }
-      }
-
-      // 创建产品 - 依赖数据库唯一约束防止重复
-      try {
-        return await tx.product.create({
-          data: {
-            code,
-            name, // 产品名称现在是必填字段
-            specification,
-            description,
-            unit: 'sheet', // 默认单位为"片"（符合业务规则）
-            thickness,
-            categoryId: processedCategoryId ?? null,
-            thumbnailUrl,
-            images: images ? JSON.stringify(images) : null,
-            status: 'active',
-          },
-          include: {
-            category: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-              },
-            },
-          },
-        });
-      } catch (error: unknown) {
-        // 使用统一的 Prisma 错误处理
-        throw handlePrismaError(error);
-      }
-    });
-
-    // 使用统一的转换工具处理产品数据
-    // 显式类型断言以访问 category 字段
-    const productWithCategory = product as typeof product & {
-      category: { id: string; name: string; code: string } | null;
-    };
-
-    const formattedProduct = toProductResponse(productWithCategory);
+    const product = await createProductRecord(validationResult.data);
+    const formattedProduct = formatCreatedProduct(product);
 
     // ✅ Next.js 15最佳实践：使用revalidatePath确保服务端缓存失效
     // 这是创建数据后确保列表页面能立即看到新数据的关键
