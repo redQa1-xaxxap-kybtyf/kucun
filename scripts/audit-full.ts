@@ -1612,7 +1612,7 @@ async function main() {
     issueCounts.set(key, (issueCounts.get(key) ?? 0) + 1);
   }
 
-  console.log('\n' + '='.repeat(70));
+  console.log(`\n${'='.repeat(70)}`);
   console.log(`✅ 审计完成：异常 ${anomalies.length} 条`);
   const top = Array.from(issueCounts.entries())
     .sort((a, b) => b[1] - a[1])

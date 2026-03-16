@@ -38,6 +38,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
+import { createPurchaseOrderDraftItem } from '@/lib/utils/order-form-defaults';
 import {
   createPurchaseOrderSchema,
   updatePurchaseOrderSchema,
@@ -63,23 +64,6 @@ const generateIdempotencyKey = (): string => {
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
-
-const createEmptyItem = (presetSupplierId?: string) => ({
-  productId: undefined as string | undefined,
-  supplierId: presetSupplierId ?? '',
-  productCode: '',
-  quantity: 1,
-  unitPrice: 0,
-  totalPrice: 0,
-  displayName: '',
-  specification: '',
-  batchNumber: '',
-  unit: 'piece',
-  weight: undefined as number | undefined,
-  piecesPerUnit: undefined as number | undefined,
-  remarks: '',
-  isManualProduct: false,
-});
 
 interface PurchaseOrderFormProps {
   mode?: 'create' | 'edit';
@@ -162,7 +146,7 @@ export function PurchaseOrderForm({
           orderDate: new Date().toISOString(), // 默认为当前日期
           status: PURCHASE_ORDER_STATUS.DRAFT,
           remarks: '',
-          items: [createEmptyItem()],
+          items: [createPurchaseOrderDraftItem()],
           feeItems: [],
         },
   });
@@ -418,12 +402,13 @@ export function PurchaseOrderForm({
             <PurchaseOrderItemsTable
               form={form as any} // ✅ 类型断言,避免泛型类型不匹配
               fields={fields}
-              onAddItem={() => {
-                // ✅ 修复: 从items数组的第一项获取supplierId
-                const items = form.getValues('items');
-                const supplierId =
-                  items && items.length > 0 ? items[0].supplierId : undefined;
-                append(createEmptyItem(supplierId));
+              onAddItem={preferredSupplierId => {
+                append(
+                  createPurchaseOrderDraftItem({
+                    items: form.getValues('items'),
+                    preferredSupplierId,
+                  })
+                );
               }}
               onRemoveItem={remove}
             />

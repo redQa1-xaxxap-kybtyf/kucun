@@ -455,40 +455,71 @@ export function useAutoRemarks(
   remarks?: string
 ) {
   React.useEffect(() => {
-    if (quantity > 0 && piecesPerUnit > 0) {
-      try {
-        const result = calculatePieceDisplay(
-          Math.floor(quantity),
-          piecesPerUnit
-        );
-        let remarksText = '';
-        if (result.fullUnits === 0) {
-          remarksText = `${result.remainingPieces}片`;
-        } else if (result.remainingPieces === 0) {
-          remarksText = `${result.fullUnits}件`;
-        } else {
-          remarksText = `${result.fullUnits}件${result.remainingPieces}片`;
-        }
+    const nextRemarks = getNextAutoRemarksValue(
+      quantity,
+      piecesPerUnit,
+      remarks
+    );
+    const currentRemarks = remarks?.trim() ?? '';
 
-        if (remarksText !== remarks) {
-          form.setValue(`items.${index}.remarks` as const, remarksText, {
-            shouldDirty: false,
-            shouldValidate: false,
-          });
-        }
-      } catch (_error) {
-        if (remarks) {
-          form.setValue(`items.${index}.remarks` as const, '', {
-            shouldDirty: false,
-            shouldValidate: false,
-          });
-        }
-      }
-    } else if (remarks) {
-      form.setValue(`items.${index}.remarks` as const, '', {
+    if (nextRemarks === null || nextRemarks === currentRemarks) {
+      return;
+    }
+
+    try {
+      form.setValue(`items.${index}.remarks` as const, nextRemarks, {
         shouldDirty: false,
         shouldValidate: false,
       });
+    } catch (_error) {
+      // ignore
     }
   }, [form, index, quantity, piecesPerUnit, remarks]);
+}
+
+export function buildAutoRemarksText(
+  quantity: number,
+  piecesPerUnit: number
+): string {
+  if (quantity <= 0 || piecesPerUnit <= 1) {
+    return '';
+  }
+
+  const result = calculatePieceDisplay(Math.floor(quantity), piecesPerUnit);
+
+  if (result.fullUnits === 0) {
+    return `${result.remainingPieces}片`;
+  }
+
+  if (result.remainingPieces === 0) {
+    return `${result.fullUnits}件`;
+  }
+
+  return `${result.fullUnits}件${result.remainingPieces}片`;
+}
+
+export function isAutoRemarksText(value?: string): boolean {
+  const normalized = value?.trim() ?? '';
+  if (!normalized) {
+    return false;
+  }
+
+  return /^(\d+片|\d+件|\d+件\d+片)$/.test(normalized);
+}
+
+export function getNextAutoRemarksValue(
+  quantity: number,
+  piecesPerUnit: number,
+  currentRemarks?: string
+): string | null {
+  const normalizedCurrentRemarks = currentRemarks?.trim() ?? '';
+  const allowAutoUpdate =
+    normalizedCurrentRemarks.length === 0 ||
+    isAutoRemarksText(normalizedCurrentRemarks);
+
+  if (!allowAutoUpdate) {
+    return null;
+  }
+
+  return buildAutoRemarksText(quantity, piecesPerUnit);
 }

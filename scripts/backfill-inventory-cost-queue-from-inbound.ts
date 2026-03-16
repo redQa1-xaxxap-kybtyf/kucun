@@ -157,7 +157,7 @@ async function main() {
     }
   }
 
-  console.log('\n' + '='.repeat(70));
+  console.log(`\n${'='.repeat(70)}`);
   console.log(`✅ 扫描 InboundRecord：${scanned}`);
   console.log(`   - 缺失队列条目（可回填）：${missing}`);
   if (options.apply) {

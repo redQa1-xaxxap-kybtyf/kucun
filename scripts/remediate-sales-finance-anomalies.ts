@@ -399,7 +399,7 @@ async function main() {
     }
   }
 
-  console.log('\n' + '='.repeat(70));
+  console.log(`\n${'='.repeat(70)}`);
   console.log(`✅ 扫描完成：共扫描 ${scanned} 单`);
   console.log(`   - 订单头拟回填：${proposedOrderUpdates.length} 单`);
   console.log(`   - 明细拟回填：${proposedItemUpdates.length} 条`);

@@ -32,7 +32,7 @@ function addResult(result: FixResult) {
 
 // 1. 修复收款状态问题
 async function fixPaymentStatus() {
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${'='.repeat(80)}`);
   console.log('🔧 1. 修复收款状态问题');
   console.log('='.repeat(80));
 
@@ -89,7 +89,7 @@ async function fixPaymentStatus() {
 
 // 2. 修复订单金额与明细不一致
 async function fixOrderAmounts() {
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${'='.repeat(80)}`);
   console.log('🔧 2. 修复订单金额与明细不一致');
   console.log('='.repeat(80));
 
@@ -168,7 +168,7 @@ async function fixOrderAmounts() {
 
 // 3. 删除孤儿数据
 async function deleteOrphanedRecords() {
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${'='.repeat(80)}`);
   console.log('🔧 3. 删除孤儿数据');
   console.log('='.repeat(80));
 
@@ -254,9 +254,9 @@ async function main() {
     await deleteOrphanedRecords();
 
     // 生成报告
-    console.log('\n' + '='.repeat(80));
+    console.log(`\n${'='.repeat(80)}`);
     console.log('📊 修复报告汇总');
-    console.log('='.repeat(80) + '\n');
+    console.log(`${'='.repeat(80)}\n`);
 
     const totalFixed = results.reduce((sum, r) => sum + r.fixed, 0);
     const totalFailed = results.reduce((sum, r) => sum + r.failed, 0);
@@ -272,7 +272,7 @@ async function main() {
       });
     }
 
-    console.log('\n' + '='.repeat(80));
+    console.log(`\n${'='.repeat(80)}`);
     console.log('✅ 修复完成!');
     console.log('='.repeat(80));
     console.log('\n建议操作:');
@@ -284,7 +284,7 @@ async function main() {
 
     console.log('='.repeat(80));
     console.log('完成时间:', new Date().toLocaleString('zh-CN'));
-    console.log('='.repeat(80) + '\n');
+    console.log(`${'='.repeat(80)}\n`);
   } catch (error) {
     console.error('❌ 修复过程中发生错误:', error);
     process.exit(1);

@@ -49,7 +49,7 @@ class ColumnService {
     return {
       items: paginatedItems,
       pagination: {
-        page: page,
+        page,
         limit: pageSize,
         total: mockItems.length,
         totalPages: Math.ceil(mockItems.length / pageSize),

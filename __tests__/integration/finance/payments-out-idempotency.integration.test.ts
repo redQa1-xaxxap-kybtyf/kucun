@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
 
-import { POST as createPaymentOut } from '@/app/api/finance/payments-out/route';
 import {
   DELETE as voidPaymentOut,
   PUT as updatePaymentOut,
 } from '@/app/api/finance/payments-out/[id]/route';
+import { POST as createPaymentOut } from '@/app/api/finance/payments-out/route';
 import { prisma } from '@/lib/db';
 
 jest.setTimeout(60000);

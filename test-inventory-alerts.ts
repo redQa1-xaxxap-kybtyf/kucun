@@ -206,7 +206,7 @@ async function runTests() {
   console.log(`  最慢耗时: ${maxDuration.toFixed(2)}ms`);
 
   // 总结报告
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('测试总结');
   console.log('='.repeat(60));
 
@@ -256,7 +256,7 @@ async function runTests() {
     console.log('  ✅ 性能优秀，无需额外优化');
   }
 
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
 }
 
 /**
@@ -302,7 +302,7 @@ async function runExtendedTests() {
     return;
   }
 
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('扩展测试（使用实际ID）');
   console.log('='.repeat(60));
 

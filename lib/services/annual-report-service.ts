@@ -21,6 +21,7 @@ import {
 } from '@/lib/utils/expense-type-helpers';
 import { toNumber } from '@/lib/utils/number';
 
+import { getReportAdjustments } from './report-adjustment-service';
 import {
   applyReportVisibility,
   buildExpenseWhere,
@@ -72,7 +73,7 @@ async function getAnnualSummary(
   );
 
   // 聚合年度数据(仅销售订单收入/成本 + 全部费用)
-  const [salesStats, expenseStats] = await Promise.all([
+  const [salesStats, expenseStats, adjustments] = await Promise.all([
     prisma.salesOrder.aggregate({
       where: salesWhere,
       _sum: {
@@ -89,20 +90,29 @@ async function getAnnualSummary(
         expenseAmount: true,
       },
     }),
+    getReportAdjustments(startDate, endDate, visibility),
   ]);
 
-  const totalRevenue = toNumber(salesStats._sum.totalAmount);
-  const totalCost = toNumber(salesStats._sum.costAmount);
-  const totalExpenses = toNumber(expenseStats._sum.expenseAmount);
+  const totalRevenue = normalizeAnnualMetric(
+    toNumber(salesStats._sum.totalAmount) - adjustments.returnAmountTotal
+  );
+  const totalCost = normalizeAnnualMetric(
+    toNumber(salesStats._sum.costAmount) - adjustments.returnCostReversalTotal
+  );
+  const totalExpenses = normalizeAnnualMetric(
+    toNumber(expenseStats._sum.expenseAmount)
+  );
   const orderCount = salesStats._count.id || 0;
 
   // 计算利润
-  const grossProfit = totalRevenue - totalCost;
-  const totalProfit = grossProfit - totalExpenses;
+  const grossProfit = normalizeAnnualMetric(totalRevenue - totalCost);
+  const totalProfit = normalizeAnnualMetric(
+    grossProfit - totalExpenses - adjustments.compensationRefundTotal
+  );
   const profitMargin = calculateProfitMargin(totalProfit, totalRevenue);
 
   // 月均收入
-  const averageMonthlyRevenue = totalRevenue / 12;
+  const averageMonthlyRevenue = normalizeAnnualMetric(totalRevenue / 12);
 
   return {
     totalRevenue,
@@ -160,6 +170,10 @@ function mergeAnnualSummaryWithFactoryShipment(
     orderCount: summary.orderCount + factory.totalOrders,
     averageMonthlyRevenue,
   };
+}
+
+function normalizeAnnualMetric(value: number): number {
+  return roundToTwoDecimals(value);
 }
 
 async function getFactoryShipmentPeriodStats(
@@ -282,7 +296,8 @@ async function getMonthData(
     visibility
   );
 
-  const [salesStats, expenseStats, factoryShipmentStats] = await Promise.all([
+  const [salesStats, expenseStats, factoryShipmentStats, adjustments] =
+    await Promise.all([
     prisma.salesOrder.aggregate({
       where: salesWhere,
       _sum: {
@@ -300,19 +315,30 @@ async function getMonthData(
       },
     }),
     getFactoryShipmentPeriodStats(startDate, endDate, visibility),
+    getReportAdjustments(startDate, endDate, visibility),
   ]);
 
-  const warehouseRevenue = toNumber(salesStats._sum.totalAmount);
-  const warehouseCost = toNumber(salesStats._sum.costAmount);
+  const warehouseRevenue = normalizeAnnualMetric(
+    toNumber(salesStats._sum.totalAmount) - adjustments.returnAmountTotal
+  );
+  const warehouseCost = normalizeAnnualMetric(
+    toNumber(salesStats._sum.costAmount) - adjustments.returnCostReversalTotal
+  );
   const expenses = toNumber(expenseStats._sum.expenseAmount);
-  const revenue = warehouseRevenue + factoryShipmentStats.totalRevenue;
-  const cost = warehouseCost + factoryShipmentStats.selfCostAmount;
+  const revenue = normalizeAnnualMetric(
+    warehouseRevenue + factoryShipmentStats.totalRevenue
+  );
+  const cost = normalizeAnnualMetric(
+    warehouseCost + factoryShipmentStats.selfCostAmount
+  );
   const orderCount =
     (salesStats._count.id || 0) + factoryShipmentStats.totalOrders;
 
   // 与年度汇总保持一致：费用维度只按已审核 ExpenseRecord 口径统计，
   // 厂家直发收入/成本单独并入趋势与季度图表，避免顶部汇总和图表口径不一致。
-  const profit = revenue - cost - expenses;
+  const profit = normalizeAnnualMetric(
+    revenue - cost - expenses - adjustments.compensationRefundTotal
+  );
 
   return {
     revenue,
@@ -340,6 +366,7 @@ async function getQuarterlyData(
     let quarterRevenue = 0;
     let quarterExpenses = 0;
     let quarterCost = 0;
+    let quarterProfit = 0;
 
     // 聚合季度内3个月的数据
     for (let month = startMonth; month <= endMonth; month++) {
@@ -347,9 +374,9 @@ async function getQuarterlyData(
       quarterRevenue += monthData.revenue;
       quarterExpenses += monthData.expenses;
       quarterCost += monthData.cost;
+      quarterProfit += monthData.profit;
     }
 
-    const quarterProfit = quarterRevenue - quarterCost - quarterExpenses;
     const profitMargin = calculateProfitMargin(quarterProfit, quarterRevenue);
 
     quarterlyData.push({

@@ -7,6 +7,7 @@ jest.mock('@/lib/db', () => ({
     salesOrder: {
       aggregate: jest.fn(),
       groupBy: jest.fn(),
+      findMany: jest.fn(),
     },
     expenseRecord: {
       aggregate: jest.fn(),
@@ -59,6 +60,7 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
       _count: { id: 0 },
     });
     prisma.salesOrder.groupBy.mockResolvedValue([]);
+    prisma.salesOrder.findMany.mockResolvedValue([]);
 
     prisma.expenseRecord.aggregate.mockResolvedValue({
       _sum: { expenseAmount: 0 },
@@ -137,7 +139,10 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
 
     for (const [args] of expenseCalls) {
       const where = args?.where as any;
-      expect(where?.relatedType).toEqual({ not: 'purchase_order' });
+      expect(where?.OR).toEqual([
+        { relatedType: null },
+        { relatedType: { not: 'purchase_order' } },
+      ]);
       expect(where?.voidedAt).toBeNull();
       expect(where?.dataTag).toBe('prod');
       expect(where?.expenseDate?.gte).toBeInstanceOf(Date);

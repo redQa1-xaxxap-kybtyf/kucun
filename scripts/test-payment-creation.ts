@@ -164,6 +164,6 @@ console.log('\n前置条件:');
 console.log('  1. 开发服务器正在运行 (npm run dev)');
 console.log('  2. 提供真实的订单ID和客户ID');
 console.log('  3. 订单存在且有待收金额');
-console.log('='.repeat(60) + '\n');
+console.log(`${'='.repeat(60)}\n`);
 
 testPaymentCreation();

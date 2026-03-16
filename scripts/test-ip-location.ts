@@ -72,7 +72,7 @@ async function runTests() {
     }
   }
 
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${'='.repeat(80)}`);
   console.log(`\n📊 测试结果:`);
   console.log(`   总计: ${testCases.length} 个测试用例`);
   console.log(`   成功: ${successCount} 个 ✅`);

@@ -12,8 +12,8 @@
  * ```
  */
 
-import { prisma } from '@/lib/db';
 import { getCustomerList } from '@/lib/api/customer-handlers';
+import { prisma } from '@/lib/db';
 import type { CustomerQueryParams } from '@/lib/types/customer';
 
 interface PerformanceResult {

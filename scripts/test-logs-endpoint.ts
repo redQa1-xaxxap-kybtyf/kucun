@@ -41,7 +41,7 @@ async function testLogsEndpoint() {
     console.error(error);
   }
 
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${'='.repeat(80)}`);
 }
 
 testLogsEndpoint();

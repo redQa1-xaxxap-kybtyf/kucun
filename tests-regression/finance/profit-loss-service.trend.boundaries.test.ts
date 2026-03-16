@@ -6,6 +6,7 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     salesOrder: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
     },
     factoryShipmentOrder: {
       aggregate: jest.fn(),
@@ -42,6 +43,7 @@ describe('profit-loss-service：趋势分组/日期边界（集成回归）', ()
       _sum: { totalAmount: 0, itemsAmount: 0, costAmount: 0 },
       _count: { id: 0 },
     });
+    prisma.salesOrder.findMany.mockResolvedValue([]);
 
     prisma.factoryShipmentOrder.aggregate.mockResolvedValue({
       _sum: { receivableAmount: 0 },

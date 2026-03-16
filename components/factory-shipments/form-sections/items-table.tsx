@@ -7,6 +7,7 @@ import type { UseFormReturn } from 'react-hook-form';
 
 import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
+import { SupplierSelector } from '@/components/suppliers/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
   FormControl,
@@ -53,7 +54,7 @@ interface ItemsTableProps {
   selectedCustomerId: string;
   customerPriceHistoryData?: PriceHistoryData;
   fields: any[];
-  onAddItem: () => void;
+  onAddItem: (preferredSupplierId?: string) => void;
   onRemoveItem: (index: number) => void;
   getBlurHandler?: BlurHandlerFactory<FactoryShipmentOrderFormData>;
 }
@@ -80,6 +81,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       []
     );
     const [totalExpenses, setTotalExpenses] = useState(0);
+    const [defaultSupplierId, setDefaultSupplierId] = useState('');
 
     // 计算单个明细的金额
     const calculateItemAmount = (index: number): number => {
@@ -225,6 +227,46 @@ export const ItemsTable = React.memo<ItemsTableProps>(
       });
     }, [form, pricingResults, toast]);
 
+    const handleApplyDefaultSupplier = useCallback(
+      (mode: 'blank' | 'all') => {
+        if (!defaultSupplierId) {
+          return;
+        }
+
+        const currentItems =
+          (form.getValues('items') as FactoryShipmentOrderFormData['items']) ||
+          [];
+        let updatedCount = 0;
+
+        currentItems.forEach((item, index) => {
+          const currentSupplierId = item?.supplierId?.trim() || '';
+          const shouldApply = mode === 'all' || currentSupplierId.length === 0;
+
+          if (!shouldApply || currentSupplierId === defaultSupplierId) {
+            return;
+          }
+
+          form.setValue(`items.${index}.supplierId`, defaultSupplierId, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          updatedCount += 1;
+        });
+
+        if (updatedCount > 0) {
+          toast({
+            title: '已批量带出供应商',
+            description:
+              mode === 'all'
+                ? `已更新 ${updatedCount} 条明细。`
+                : `已为 ${updatedCount} 条空白明细补上供应商。`,
+            duration: 2000,
+          });
+        }
+      },
+      [defaultSupplierId, form, toast]
+    );
+
     // 使用 useCallback 稳定回调函数
     const handleProductChange = useCallback(
       (index: number) => (product: Product | null) => {
@@ -289,33 +331,70 @@ export const ItemsTable = React.memo<ItemsTableProps>(
     return (
       <div className="space-y-6">
         {/* 表头 */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Package className="h-4 w-4" />
             产品明细
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              onClick={handleCalculatePricing}
-              size="sm"
-              variant="outline"
-              className="h-8"
-              disabled={isCalculating || fields.length === 0}
-            >
-              <Calculator className="mr-1 h-3 w-3" />
-              {isCalculating ? '计算中...' : '计算建议销售价'}
-            </Button>
-            <Button
-              type="button"
-              onClick={onAddItem}
-              size="sm"
-              variant="outline"
-              className="h-8"
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              添加产品
-            </Button>
+          <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+            <div className="flex flex-1 flex-col gap-2 lg:flex-row lg:items-end">
+              <div className="w-full max-w-sm space-y-1">
+                <div className="text-sm font-medium">常用供应商</div>
+                <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+                  适合同一厂家连续录单，新增行会自动带出，也可一键填充。
+                </div>
+                <SupplierSelector
+                  value={defaultSupplierId}
+                  onValueChange={setDefaultSupplierId}
+                  placeholder="选择常用供应商"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-9"
+                  onClick={() => handleApplyDefaultSupplier('blank')}
+                  disabled={!defaultSupplierId || fields.length === 0}
+                >
+                  应用到空白行
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-9"
+                  onClick={() => handleApplyDefaultSupplier('all')}
+                  disabled={!defaultSupplierId || fields.length === 0}
+                >
+                  应用到全部明细
+                </Button>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                onClick={handleCalculatePricing}
+                size="sm"
+                variant="outline"
+                className="h-9"
+                disabled={isCalculating || fields.length === 0}
+              >
+                <Calculator className="mr-1 h-3 w-3" />
+                {isCalculating ? '计算中...' : '计算建议销售价'}
+              </Button>
+              <Button
+                type="button"
+                onClick={() => onAddItem(defaultSupplierId)}
+                size="sm"
+                variant="outline"
+                className="h-9"
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                添加产品
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -774,7 +853,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                     <TableCell className="border-r px-3 py-3">
                       <FormField
                         control={form.control}
-                        name={`items.${index}.remark`}
+                        name={`items.${index}.remarks`}
                         render={({ field }) => (
                           <FormItem>
                             <FormControl>

@@ -3,8 +3,9 @@
  * 运行: npm run dev 后在另一个终端运行此脚本
  */
 
-import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

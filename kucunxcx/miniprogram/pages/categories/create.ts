@@ -2,9 +2,10 @@
 // 分类创建页
 
 import authService from '../../services/auth.service';
+import type {
+  CreateCategoryParams } from '../../services/category.service';
 import {
-  categoryService,
-  CreateCategoryParams,
+  categoryService
 } from '../../services/category.service';
 import type { Category } from '../../types/category';
 import { getEnableBackdropBlur } from '../../utils/ui';

@@ -137,7 +137,7 @@ async function testSystemLogsQuery() {
       console.log(`   ${index + 1}. ${log.action} - ${log.description}`);
     });
 
-    console.log('\n' + '='.repeat(80));
+    console.log(`\n${'='.repeat(80)}`);
     console.log('✅ 所有测试通过！系统日志 API 修复成功！');
     console.log('='.repeat(80));
   } catch (error) {

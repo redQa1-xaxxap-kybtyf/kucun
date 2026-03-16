@@ -3,8 +3,10 @@ import {
   SALES_ORDER_STATUS_TRANSITIONS,
 } from '@/lib/config/sales-order';
 import { prisma } from '@/lib/db';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
 import { toNumber } from '@/lib/utils/number';
+import { generatePayableNumber } from '@/lib/utils/payment-number-generator';
 
 /**
  * 销售订单服务层
@@ -313,19 +315,13 @@ export async function createTransferPayableRecord(
 
   // 如果不存在应付款记录,则创建
   if (!existingPayable) {
-    // 生成应付款单号（使用并发安全的生成服务）
-    const { generatePayableNumber } = await import(
-      '@/lib/utils/payment-number-generator'
-    );
-    const payableNumber = await generatePayableNumber();
-
-    // 计算应付款到期日期(默认30天后)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
-
     // 创建应付款记录
     await prisma.$transaction(async tx => {
-      await tx.payableRecord.create({
+      const payableNumber = await generatePayableNumber(tx);
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+
+      const createdPayable = await tx.payableRecord.create({
         data: {
           payableNumber,
           supplierId,
@@ -341,7 +337,37 @@ export async function createTransferPayableRecord(
           description: `调货销售订单 ${orderNumber} 确认后自动生成应付款`,
           remarks: `关联销售订单：${orderNumber}，成本金额：￥${costAmount.toFixed(2)}`,
         },
+        select: {
+          id: true,
+          createdAt: true,
+          dueDate: true,
+          supplierId: true,
+        },
       });
+
+      await recordPartnerTransaction(
+        {
+          partnerId: createdPayable.supplierId,
+          partnerRole: 'supplier',
+          entityType: 'supplier',
+          transactionType: 'purchase',
+          amount: costAmount,
+          referenceId: createdPayable.id,
+          referenceNumber: payableNumber,
+          description: `调货销售订单 ${orderNumber} 自动生成应付 ${payableNumber}`,
+          userId,
+          occurredAt: createdPayable.createdAt,
+          dueDate: createdPayable.dueDate ?? dueDate,
+          metadata: {
+            sourceType: 'sales_order',
+            sourceId: orderId,
+            sourceNumber: orderNumber,
+            payableRecordId: createdPayable.id,
+            triggeredBy: 'sales_order:confirm_payable_auto',
+          },
+        },
+        tx
+      );
     });
   }
 }

@@ -18,6 +18,7 @@ import {
   generateUniqueOrderNumber,
   type OrderNumberConfig,
 } from '@/lib/services/order-number-generator';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { findAvailableInventory } from '@/lib/utils/inventory-variant-mapper';
 import { toNumber } from '@/lib/utils/number';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
@@ -57,6 +58,9 @@ interface _SalesOrderItemWithInventoryFields {
 }
 
 const roundCurrency = (value: number) => Math.round(value * 100) / 100;
+
+const appendRemarks = (existing: string | null | undefined, addition: string) =>
+  existing && existing.trim().length > 0 ? `${existing}\n${addition}` : addition;
 
 const calculateCompanyExpenseFromFees = (
   feeItems:
@@ -660,8 +664,13 @@ async function executeOrderStatusUpdateWithInventory(
 
       const itemQuantity = outboundQuantity;
 
-      const unitCostHint =
-        item.unitCost !== undefined && item.unitCost !== null
+      const unitCostHint = isMixedTransferOrder
+        ? inventory.unitCost !== undefined && inventory.unitCost !== null
+          ? Number(inventory.unitCost)
+          : item.unitCost !== undefined && item.unitCost !== null
+            ? Number(item.unitCost)
+            : null
+        : item.unitCost !== undefined && item.unitCost !== null
           ? Number(item.unitCost)
           : inventory.unitCost !== undefined && inventory.unitCost !== null
             ? Number(inventory.unitCost)
@@ -862,7 +871,8 @@ async function executeOrderStatusUpdateWithInventory(
  */
 async function executeOrderCancellation(
   orderId: string,
-  remarks?: string
+  remarks?: string,
+  operatorId?: string
 ): Promise<OrderStatusUpdateResult> {
   return await withTransaction(async tx => {
     // 在事务内读取订单与明细，避免使用过期快照导致预留释放不完整
@@ -884,6 +894,101 @@ async function executeOrderCancellation(
 
     if (!existingOrder) {
       throw new Error('销售订单不存在');
+    }
+
+    const finalOperatorId = operatorId || existingOrder.userId;
+    const linkedPayables =
+      existingOrder.orderType === 'TRANSFER'
+        ? await tx.payableRecord.findMany({
+            where: {
+              sourceType: 'sales_order',
+              sourceId: orderId,
+            },
+            select: {
+              id: true,
+              payableNumber: true,
+              supplierId: true,
+              payableAmount: true,
+              paidAmount: true,
+              remainingAmount: true,
+              dueDate: true,
+              status: true,
+              remarks: true,
+              paymentOutRecords: {
+                select: {
+                  id: true,
+                  status: true,
+                },
+              },
+            },
+          })
+        : [];
+    const linkedPurchaseOrders =
+      existingOrder.orderType === 'TRANSFER'
+        ? await tx.purchaseOrder.findMany({
+            where: {
+              salesOrderId: orderId,
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              remarks: true,
+              items: {
+                select: {
+                  inboundStatus: true,
+                  inboundReceivedAt: true,
+                },
+              },
+              _count: {
+                select: {
+                  inboundRecords: true,
+                },
+              },
+            },
+          })
+        : [];
+
+    for (const payable of linkedPayables) {
+      const paidAmount = toNumber(payable.paidAmount, 0);
+      const activePaymentOuts = payable.paymentOutRecords.filter(
+        payment => payment.status !== 'cancelled'
+      );
+
+      if (paidAmount > 0.0001 || activePaymentOuts.length > 0) {
+        throw new Error(
+          `关联应付款 ${payable.payableNumber} 已存在付款记录，请先撤销付款后再取消销售订单`
+        );
+      }
+    }
+
+    const cancellablePurchaseStatuses = new Set([
+      'draft',
+      'ordered',
+      'confirmed',
+      'cancelled',
+    ]);
+
+    for (const purchaseOrder of linkedPurchaseOrders) {
+      const hasInboundExecution =
+        purchaseOrder._count.inboundRecords > 0 ||
+        purchaseOrder.items.some(
+          item =>
+            item.inboundStatus === 'received' ||
+            item.inboundReceivedAt !== null
+        );
+
+      if (hasInboundExecution) {
+        throw new Error(
+          `关联采购单 ${purchaseOrder.orderNumber} 已发生入库，不能直接取消销售订单`
+        );
+      }
+
+      if (!cancellablePurchaseStatuses.has(purchaseOrder.status)) {
+        throw new Error(
+          `关联采购单 ${purchaseOrder.orderNumber} 当前状态为 ${purchaseOrder.status}，请先处理采购单后再取消销售订单`
+        );
+      }
     }
 
     const statusUpdate = await tx.salesOrder.updateMany({
@@ -1102,6 +1207,136 @@ async function executeOrderCancellation(
       },
     });
 
+    const payableCancellationRemark =
+      remarks && remarks.trim().length > 0
+        ? `销售订单 ${existingOrder.orderNumber} 取消自动关闭应付，原因：${remarks.trim()}`
+        : `销售订单 ${existingOrder.orderNumber} 取消自动关闭应付`;
+    const purchaseCancellationRemark =
+      remarks && remarks.trim().length > 0
+        ? `销售订单 ${existingOrder.orderNumber} 取消自动关闭采购单，原因：${remarks.trim()}`
+        : `销售订单 ${existingOrder.orderNumber} 取消自动关闭采购单`;
+
+    for (const payable of linkedPayables) {
+      if (payable.status !== 'cancelled') {
+        await tx.payableRecord.update({
+          where: { id: payable.id },
+          data: {
+            status: 'cancelled',
+            remainingAmount: 0,
+            remarks: appendRemarks(payable.remarks, payableCancellationRemark),
+          },
+        });
+      }
+
+      const hasPurchaseLedger = await tx.statementTransaction.findFirst({
+        where: {
+          referenceId: payable.id,
+          transactionType: 'purchase',
+        },
+        select: { id: true },
+      });
+
+      if (!hasPurchaseLedger) {
+        logger.warn(
+          'sales-order-status',
+          '跳过调货应付回冲：未找到原始采购台账',
+          {
+            orderId,
+            payableId: payable.id,
+            payableNumber: payable.payableNumber,
+          }
+        );
+        continue;
+      }
+
+      await recordPartnerTransaction(
+        {
+          partnerId: payable.supplierId,
+          partnerRole: 'supplier',
+          entityType: 'supplier',
+          transactionType: 'purchase_reversal',
+          amount: toNumber(payable.payableAmount, 0),
+          referenceId: payable.id,
+          referenceNumber: payable.payableNumber,
+          description: `调货销售订单 ${existingOrder.orderNumber} 取消冲回应付 ${payable.payableNumber}`,
+          userId: finalOperatorId,
+          occurredAt: new Date(),
+          dueDate: payable.dueDate ?? undefined,
+          metadata: {
+            sourceType: 'sales_order',
+            sourceId: orderId,
+            sourceNumber: existingOrder.orderNumber,
+            payableRecordId: payable.id,
+            triggeredBy: 'sales_order:cancel',
+          },
+        },
+        tx
+      );
+    }
+
+    for (const purchaseOrder of linkedPurchaseOrders) {
+      if (purchaseOrder.status === 'cancelled') {
+        continue;
+      }
+
+      await tx.purchaseOrder.update({
+        where: { id: purchaseOrder.id },
+        data: {
+          status: 'cancelled',
+          remarks: appendRemarks(
+            purchaseOrder.remarks,
+            purchaseCancellationRemark
+          ),
+        },
+      });
+    }
+
+    const totalAmount = toNumber(existingOrder.totalAmount, 0);
+    const roundingAdjustment = toNumber(existingOrder.roundingAdjustment, 0);
+    const due = getSalesOrderReceivableTotal({
+      isSampleOrder: existingOrder.isSampleOrder,
+      sampleSettlementType: existingOrder.sampleSettlementType,
+      totalAmount,
+      roundingAdjustment,
+    });
+
+    if (due > 0) {
+      const hasSaleLedger = await tx.statementTransaction.findFirst({
+        where: {
+          referenceId: existingOrder.id,
+          transactionType: 'sale',
+        },
+        select: { id: true },
+      });
+
+      if (hasSaleLedger) {
+        await recordPartnerTransaction(
+          {
+            partnerId: existingOrder.customerId,
+            partnerRole: 'customer',
+            entityType: 'customer',
+            transactionType: 'order_cancellation',
+            amount: due,
+            referenceId: existingOrder.id,
+            referenceNumber: existingOrder.orderNumber,
+            description: `销售订单 ${existingOrder.orderNumber} 取消冲回应收`,
+            userId: finalOperatorId,
+            occurredAt: new Date(),
+            metadata: {
+              status: 'cancelled',
+              triggeredBy: 'order:cancel',
+            },
+          },
+          tx
+        );
+      } else {
+        logger.warn('sales-order-status', '跳过销售取消冲回应收：未找到原始销售台账', {
+          orderId,
+          orderNumber: existingOrder.orderNumber,
+        });
+      }
+    }
+
     return {
       order,
       inventoryUpdated: false,
@@ -1188,7 +1423,7 @@ export async function updateSalesOrderStatus(
       operatorId
     );
   } else if (shouldReleaseReservedInventory) {
-    return await executeOrderCancellation(orderId, remarks);
+    return await executeOrderCancellation(orderId, remarks, operatorId);
   } else {
     return await executeSimpleOrderStatusUpdate(
       orderId,

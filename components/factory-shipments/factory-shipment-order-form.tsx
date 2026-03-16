@@ -33,6 +33,7 @@ import {
   prepareFactoryShipmentForSubmit,
   transformFactoryShipmentFromAPI,
 } from '@/lib/utils/factory-shipment-transforms';
+import { createFactoryShipmentDraftItem } from '@/lib/utils/order-form-defaults';
 import {
   factoryShipmentOrderFormSchema,
   type FactoryShipmentOrderFormData,
@@ -47,24 +48,6 @@ const generateIdempotencyKey = (): string => {
   }
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 };
-
-const createEmptyItem = () => ({
-  productId: undefined as string | undefined,
-  supplierId: '',
-  productCode: '', // 产品编码（必填）
-  batchNumber: '',
-  quantity: 1,
-  unitPrice: 0,
-  unitCost: 0, // 进货价（必填）
-  ownership: 'customer' as const,
-  displayName: '', // 产品名称（必填，用户选择产品后自动填充）
-  specification: '', // 规格（可选，默认空字符串）
-  unit: '片' as '片' | '件',
-  piecesPerUnit: undefined as number | undefined,
-  weight: undefined as number | undefined, // 重量（可选）
-  ownershipRemarks: '', // 归属备注（可选，默认空字符串）
-  remarks: '', // 备注（可选，默认空字符串）
-});
 
 interface FactoryShipmentOrderFormProps {
   orderId?: string;
@@ -101,7 +84,7 @@ export function FactoryShipmentOrderForm({
       receivableAmount: 0,
       depositAmount: 0,
       remarks: '',
-      items: [createEmptyItem()],
+      items: [createFactoryShipmentDraftItem()],
       feeItems: [], // 在defaultValues中设置默认值,而非Schema中
     },
   });
@@ -193,7 +176,7 @@ export function FactoryShipmentOrderForm({
         ...normalized,
         items: normalized.items?.length
           ? normalized.items
-          : [createEmptyItem()],
+          : [createFactoryShipmentDraftItem()],
         idempotencyKey: generateIdempotencyKey(),
       } as any);
     }
@@ -336,7 +319,7 @@ export function FactoryShipmentOrderForm({
             receivableAmount: 0,
             depositAmount: 0,
             remarks: '',
-            items: [createEmptyItem()],
+            items: [createFactoryShipmentDraftItem()],
             feeItems: [],
           });
         },

@@ -22,8 +22,7 @@ jest.mock('@/lib/cache/inventory-cache', () => ({
 }));
 
 jest.mock('@/lib/auth/api-helpers', () => ({
-  withAuth: (handler: any, _options?: { permissions?: string[] }) => {
-    return async (request: any, context?: any) => {
+  withAuth: (handler: any, _options?: { permissions?: string[] }) => async (request: any, context?: any) => {
       const user = {
         id: 'test-user',
         role: 'admin',
@@ -35,18 +34,15 @@ jest.mock('@/lib/auth/api-helpers', () => ({
         ],
       };
       return handler(request, { ...(context ?? {}), user });
-    };
-  },
-  successResponse: (data: any, status: number = 200, message?: string) => {
-    return {
+    },
+  successResponse: (data: any, status: number = 200, message?: string) => ({
       status,
       json: async () => ({
         success: true,
         data,
         ...(message ? { message } : {}),
       }),
-    } as any;
-  },
+    } as any),
 }));
 
 describe('/api/products（集成回归）', () => {

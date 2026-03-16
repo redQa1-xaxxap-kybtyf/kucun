@@ -8,8 +8,9 @@ import type {
   ProductDetail,
   ProductQueryParams,
 } from '../types/product';
-import { get, post, put } from '../utils/request';
 import { appendMiniTokenForLocalUploads } from '../utils/media';
+import { get, post, put } from '../utils/request';
+
 import authService from './auth.service';
 import inventoryService from './inventory.service';
 
@@ -151,9 +152,9 @@ class ProductService {
     );
 
     // 将后端返回的图片结构(ProductImage[])拆分为主图 / 效果图，方便小程序分别展示
-    let images: string[] = [];
-    let mainImages: string[] = [];
-    let effectImages: string[] = [];
+    const images: string[] = [];
+    const mainImages: string[] = [];
+    const effectImages: string[] = [];
 
     if (Array.isArray(raw.images)) {
       raw.images.forEach((img: any) => {

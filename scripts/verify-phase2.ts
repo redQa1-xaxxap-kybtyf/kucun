@@ -3,7 +3,6 @@
  * 验证厂家发货费用分摊逻辑的正确性和性能
  */
 
-import type { FactoryShipmentOrderItem } from '../lib/types/factory-shipment';
 import {
   allocateExpenses,
   allocateExpensesByOwnership,
@@ -11,6 +10,7 @@ import {
   allocateExpensesByValue,
   allocateExpensesByWeight,
 } from '../lib/services/factory-shipment-expense-service';
+import type { FactoryShipmentOrderItem } from '../lib/types/factory-shipment';
 
 // ==================== 测试数据生成 ====================
 
@@ -290,7 +290,7 @@ async function verifyPhase2() {
   }
 
   // ==================== 总结 ====================
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('📊 Phase 2 验证总结');
   console.log('='.repeat(60));
 

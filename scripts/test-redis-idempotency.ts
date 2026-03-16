@@ -117,7 +117,7 @@ async function testWithIdempotencyWrapper() {
   console.log('   执行次数:', executionCount);
 
   if (executionCount !== 1) {
-    throw new Error('预期执行 1 次,实际执行 ' + executionCount + ' 次');
+    throw new Error(`预期执行 1 次,实际执行 ${executionCount} 次`);
   }
 
   // 第二次调用: 应该返回缓存结果,不执行操作
@@ -136,7 +136,7 @@ async function testWithIdempotencyWrapper() {
   console.log('   执行次数:', executionCount);
 
   if (executionCount !== 1) {
-    throw new Error('预期仍然是 1 次,实际执行 ' + executionCount + ' 次');
+    throw new Error(`预期仍然是 1 次,实际执行 ${executionCount} 次`);
   }
 
   if (duration2 > 50) {
@@ -193,7 +193,7 @@ async function testConcurrentRequests() {
   );
 
   if (executionCount !== 1) {
-    throw new Error('预期只执行 1 次,实际执行 ' + executionCount + ' 次');
+    throw new Error(`预期只执行 1 次,实际执行 ${executionCount} 次`);
   }
 
   console.log('\n✅ 并发请求处理测试通过! 正确实现幂等性');
@@ -278,7 +278,7 @@ async function main() {
     await testConcurrentRequests();
     await testPerformanceComparison();
 
-    console.log('\n' + '═'.repeat(60));
+    console.log(`\n${'═'.repeat(60)}`);
     console.log('✅ 所有测试通过!\n');
   } catch (error) {
     console.error('\n❌ 测试失败:', error);

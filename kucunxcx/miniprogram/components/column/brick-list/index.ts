@@ -56,7 +56,7 @@ Component({
   },
 
   observers: {
-    delta: function (delta: number) {
+    delta (delta: number) {
       let statusType: 'perfect' | 'cut' | 'insufficient' = 'perfect';
       let statusMessage = '';
       let needCut = false;

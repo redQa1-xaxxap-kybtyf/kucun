@@ -704,7 +704,7 @@ async function main() {
     }
   }
 
-  console.log('\n' + '='.repeat(70));
+  console.log(`\n${'='.repeat(70)}`);
   console.log(
     `✅ 扫描完成：共扫描 ${scanned} 单，发现异常订单 ${allIssues.length} 单`
   );

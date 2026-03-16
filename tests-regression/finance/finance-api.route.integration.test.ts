@@ -1,23 +1,19 @@
 jest.mock('@/lib/cache', () => ({
-  buildCacheKey: jest.fn((prefix: string, parts: Record<string, unknown>) => {
-    return `${prefix}:${JSON.stringify(parts)}`;
-  }),
+  buildCacheKey: jest.fn((prefix: string, parts: Record<string, unknown>) => `${prefix}:${JSON.stringify(parts)}`),
   getOrSetJSON: jest.fn(async (_key: string, fn: () => Promise<unknown>) =>
     fn()
   ),
 }));
 
 jest.mock('@/lib/auth/api-helpers', () => ({
-  withAuth: (handler: any, _options?: { permissions?: string[] }) => {
-    return async (request: any, context?: any) => {
+  withAuth: (handler: any, _options?: { permissions?: string[] }) => async (request: any, context?: any) => {
       const user = {
         id: 'test-user',
         role: 'admin',
         permissions: ['finance:view', 'finance:manage'],
       };
       return handler(request, { ...(context ?? {}), user });
-    };
-  },
+    },
 }));
 
 jest.mock('@/lib/utils/console-logger', () => ({

@@ -328,8 +328,7 @@ export function useMobileGestures(
    * 2. 移除所有事件监听器
    * 3. 重置所有ref状态
    */
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       // 清理定时器
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
@@ -343,8 +342,7 @@ export function useMobileGestures(
       touchStartRef.current = null;
       touchEndRef.current = null;
       initialDistanceRef.current = 0;
-    };
-  }, [cleanupEventListeners]);
+    }, [cleanupEventListeners]);
 
   return {
     bindGestures,

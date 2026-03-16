@@ -22,6 +22,7 @@ import {
 } from '@/lib/utils/expense-type-helpers';
 import { toNumber } from '@/lib/utils/number';
 
+import { getReportAdjustments } from './report-adjustment-service';
 import {
   applyReportVisibility,
   buildExpenseWhere,
@@ -445,7 +446,8 @@ async function getInventoryTurnover(
 function calculateMonthlyProfit(
   revenue: MonthlyRevenue,
   costs: MonthlyCosts,
-  expenses: MonthlyExpenses
+  expenses: MonthlyExpenses,
+  compensationRefundTotal = 0
 ): MonthlyProfit {
   const { salesRevenue } = revenue;
   const { totalExpenses } = expenses;
@@ -456,8 +458,8 @@ function calculateMonthlyProfit(
   // 营业利润 = 毛利润 - 运营费用
   const operatingProfit = grossProfit - totalExpenses;
 
-  // 净利润 = 营业利润（暂不扣除其他项）
-  const netProfit = operatingProfit;
+  // 净利润 = 营业利润 - 赔付退款
+  const netProfit = operatingProfit - compensationRefundTotal;
 
   // 利润率
   const profitMargin = calculateProfitMargin(netProfit, salesRevenue);
@@ -469,6 +471,39 @@ function calculateMonthlyProfit(
     netProfit,
     profitMargin,
     grossProfitMargin,
+  };
+}
+
+function applyMonthlyRevenueAdjustments(
+  revenue: MonthlyRevenue,
+  returnAmountTotal: number
+): MonthlyRevenue {
+  const salesRevenue = roundToTwoDecimals(
+    revenue.salesRevenue - returnAmountTotal
+  );
+
+  return {
+    ...revenue,
+    salesRevenue,
+    averageOrderValue:
+      revenue.orderCount > 0
+        ? roundToTwoDecimals(salesRevenue / revenue.orderCount)
+        : 0,
+  };
+}
+
+function applyMonthlyCostAdjustments(
+  costs: MonthlyCosts,
+  returnCostReversalTotal: number
+): MonthlyCosts {
+  const salesCost = roundToTwoDecimals(
+    costs.salesCost - returnCostReversalTotal
+  );
+
+  return {
+    ...costs,
+    salesCost,
+    totalCost: roundToTwoDecimals(costs.totalCost - returnCostReversalTotal),
   };
 }
 
@@ -523,18 +558,40 @@ export async function getMonthlyReport(
   const { startDate, endDate } = getMonthDateRange(year, month);
 
   // 获取当月数据
-  const [revenue, sample, expenses, costs, receivables, factoryShipmentProfit] =
-    await Promise.all([
-      getMonthlyRevenue(year, month, visibility),
-      getSampleMetrics(startDate, endDate, visibility),
-      getMonthlyExpenses(year, month, visibility),
-      getMonthlyCosts(year, month, visibility),
-      getMonthlyReceivables(year, month, visibility),
-      getMonthlyFactoryShipmentProfit(year, month, visibility),
-    ]);
+  const [
+    revenueRaw,
+    sample,
+    expenses,
+    costsRaw,
+    receivables,
+    factoryShipmentProfit,
+    adjustments,
+  ] = await Promise.all([
+    getMonthlyRevenue(year, month, visibility),
+    getSampleMetrics(startDate, endDate, visibility),
+    getMonthlyExpenses(year, month, visibility),
+    getMonthlyCosts(year, month, visibility),
+    getMonthlyReceivables(year, month, visibility),
+    getMonthlyFactoryShipmentProfit(year, month, visibility),
+    getReportAdjustments(startDate, endDate, visibility),
+  ]);
+
+  const revenue = applyMonthlyRevenueAdjustments(
+    revenueRaw,
+    adjustments.returnAmountTotal
+  );
+  const costs = applyMonthlyCostAdjustments(
+    costsRaw,
+    adjustments.returnCostReversalTotal
+  );
 
   // 先计算主营业务的基础利润(仅仓库销售), 再合并厂家直发利润
-  const baseProfit = calculateMonthlyProfit(revenue, costs, expenses);
+  const baseProfit = calculateMonthlyProfit(
+    revenue,
+    costs,
+    expenses,
+    adjustments.compensationRefundTotal
+  );
   const profit = mergeFactoryShipmentIntoMonthlyProfit(
     baseProfit,
     revenue,
@@ -578,18 +635,38 @@ export async function getMonthlyReport(
   // 如果需要环比数据
   if (includeComparison) {
     const { year: prevYear, month: prevMonth } = getPreviousMonth(year, month);
-    const [prevRevenue, prevExpenses, prevCosts, prevFactoryShipmentProfit] =
-      await Promise.all([
-        getMonthlyRevenue(prevYear, prevMonth, visibility),
-        getMonthlyExpenses(prevYear, prevMonth, visibility),
-        getMonthlyCosts(prevYear, prevMonth, visibility),
-        getMonthlyFactoryShipmentProfit(prevYear, prevMonth, visibility),
-      ]);
+    const { startDate: prevStartDate, endDate: prevEndDate } = getMonthDateRange(
+      prevYear,
+      prevMonth
+    );
+    const [
+      prevRevenueRaw,
+      prevExpenses,
+      prevCostsRaw,
+      prevFactoryShipmentProfit,
+      prevAdjustments,
+    ] = await Promise.all([
+      getMonthlyRevenue(prevYear, prevMonth, visibility),
+      getMonthlyExpenses(prevYear, prevMonth, visibility),
+      getMonthlyCosts(prevYear, prevMonth, visibility),
+      getMonthlyFactoryShipmentProfit(prevYear, prevMonth, visibility),
+      getReportAdjustments(prevStartDate, prevEndDate, visibility),
+    ]);
+
+    const prevRevenue = applyMonthlyRevenueAdjustments(
+      prevRevenueRaw,
+      prevAdjustments.returnAmountTotal
+    );
+    const prevCosts = applyMonthlyCostAdjustments(
+      prevCostsRaw,
+      prevAdjustments.returnCostReversalTotal
+    );
 
     const prevBaseProfit = calculateMonthlyProfit(
       prevRevenue,
       prevCosts,
-      prevExpenses
+      prevExpenses,
+      prevAdjustments.compensationRefundTotal
     );
     const prevProfit = mergeFactoryShipmentIntoMonthlyProfit(
       prevBaseProfit,

@@ -11,9 +11,8 @@
  * console.log(result.url); // 完整的 CDN URL
  */
 
-import { post } from '../utils/request';
-import { showGlobalLoading, hideGlobalLoading } from '../utils/request';
 import { API_ENDPOINTS } from '../config/api';
+import { post, showGlobalLoading, hideGlobalLoading } from '../utils/request';
 
 // 上传类型
 export type UploadType = 'product' | 'avatar' | 'document';

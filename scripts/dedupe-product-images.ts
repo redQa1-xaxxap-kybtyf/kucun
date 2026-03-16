@@ -281,7 +281,7 @@ async function main() {
     await prisma.$disconnect();
   }
 
-  console.log('\n' + '-'.repeat(80));
+  console.log(`\n${'-'.repeat(80)}`);
   console.log(`扫描产品: ${scanned}`);
   console.log(`JSON解析失败: ${parseFailed}`);
   console.log(`需要更新: ${wouldUpdate}`);

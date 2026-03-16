@@ -6,6 +6,7 @@ jest.mock('@/lib/db', () => ({
   prisma: {
     salesOrder: {
       aggregate: jest.fn(),
+      findMany: jest.fn(),
     },
     expenseRecord: {
       aggregate: jest.fn(),
@@ -42,6 +43,7 @@ describe('annual-report-service：厂家直发合并口径（集成回归）', (
       _sum: { totalAmount: 1000, costAmount: 600 },
       _count: { id: 10 },
     });
+    prisma.salesOrder.findMany.mockResolvedValue([]);
 
     // 费用汇总假设已包含厂家费用（例如：40）
     prisma.expenseRecord.aggregate.mockResolvedValue({

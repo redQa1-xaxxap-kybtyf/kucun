@@ -3,8 +3,9 @@
  * 将默认值从 1 更新为 10（根据实际业务需求调整）
  */
 
-import { PrismaClient } from '@prisma/client';
 import * as readline from 'readline';
+
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

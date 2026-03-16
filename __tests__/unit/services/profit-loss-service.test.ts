@@ -135,16 +135,22 @@ describe('profit-loss-service', () => {
         },
         _count: { id: 1 },
       });
-      prisma.salesOrder.findMany.mockResolvedValue([
-        {
-          id: 'sample-order-1',
-          customerId: 'customer-1',
-          totalAmount: 80,
-          costAmount: 45,
-          customer: { name: '样品客户A' },
-          items: [{ quantity: 8 }],
-        },
-      ]);
+      prisma.salesOrder.findMany.mockImplementation((args?: { cursor?: { id: string } }) => {
+        if (args?.cursor?.id) {
+          return Promise.resolve([]);
+        }
+
+        return Promise.resolve([
+          {
+            id: 'sample-order-1',
+            customerId: 'customer-1',
+            totalAmount: 80,
+            costAmount: 45,
+            customer: { name: '样品客户A' },
+            items: [{ quantity: 8 }],
+          },
+        ]);
+      });
 
       // Act: 调用服务函数
       const result = await getProfitLossAnalysis(

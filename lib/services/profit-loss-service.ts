@@ -20,8 +20,9 @@ import {
   calculateTotalExpenses,
   extractExpensesByType,
 } from '@/lib/utils/expense-type-helpers';
-import { toNumber, toNumberOrNull } from '@/lib/utils/number';
+import { toNumber } from '@/lib/utils/number';
 
+import { getReportAdjustments } from './report-adjustment-service';
 import {
   applyReportVisibility,
   buildExpenseWhere,
@@ -387,123 +388,6 @@ function generateDateRanges(
 
 // ==================== 主服务函数 ====================
 
-async function getReturnAdjustments(
-  startDate: Date,
-  endDate: Date,
-  visibility: ReportVisibility
-): Promise<{ returnAmountTotal: number; returnCostReversalTotal: number }> {
-  const returnOrderItemModel = (prisma as any)?.returnOrderItem;
-  if (
-    !returnOrderItemModel ||
-    typeof returnOrderItemModel.findMany !== 'function'
-  ) {
-    return { returnAmountTotal: 0, returnCostReversalTotal: 0 };
-  }
-
-  const returnOrderWhere = applyReportVisibility(
-    {
-      status: 'completed',
-      completedAt: {
-        gte: startDate,
-        lte: endDate,
-      },
-    } as any,
-    visibility
-  );
-
-  const items = await returnOrderItemModel.findMany({
-    where: {
-      returnOrder: returnOrderWhere,
-    },
-    select: {
-      subtotal: true,
-      returnQuantity: true,
-      damagedQuantity: true,
-      salesOrderItem: {
-        select: {
-          unitCost: true,
-          quantity: true,
-          costSubtotal: true,
-        },
-      },
-    },
-  });
-
-  let returnAmountTotal = 0;
-  let returnCostReversalTotal = 0;
-
-  for (const item of items) {
-    returnAmountTotal += toNumber(item.subtotal);
-
-    const returnQty = Number(item.returnQuantity ?? 0);
-    const damagedQty = Number(item.damagedQuantity ?? 0);
-    const reversibleQty = Math.max(0, returnQty - damagedQty);
-
-    const explicitUnitCost = toNumberOrNull(item.salesOrderItem?.unitCost);
-    const costSubtotal = toNumber(item.salesOrderItem?.costSubtotal);
-    const originalQty = Number(item.salesOrderItem?.quantity ?? 0);
-    const derivedUnitCost = originalQty > 0 ? costSubtotal / originalQty : 0;
-    const unitCost = explicitUnitCost ?? derivedUnitCost;
-
-    returnCostReversalTotal += reversibleQty * unitCost;
-  }
-
-  return {
-    returnAmountTotal: roundToTwoDecimals(returnAmountTotal),
-    returnCostReversalTotal: roundToTwoDecimals(returnCostReversalTotal),
-  };
-}
-
-async function getCompensationRefundTotal(
-  startDate: Date,
-  endDate: Date,
-  visibility: ReportVisibility
-): Promise<number> {
-  const refundModel = (prisma as any)?.refundRecord;
-  if (!refundModel || typeof refundModel.aggregate !== 'function') {
-    return 0;
-  }
-
-  const baseWhere = applyReportVisibility(
-    {
-      status: 'completed',
-      refundDate: {
-        gte: startDate,
-        lte: endDate,
-      },
-      returnOrderId: null,
-    } as any,
-    visibility
-  );
-
-  const [processedAgg, fallbackAgg] = await Promise.all([
-    refundModel.aggregate({
-      where: {
-        ...baseWhere,
-        processedAmount: { gt: 0 },
-      },
-      _sum: {
-        processedAmount: true,
-      },
-    }),
-    // ✅ 兼容历史数据：已完成退款但 processedAmount 仍为 0（用 refundAmount 兜底）
-    refundModel.aggregate({
-      where: {
-        ...baseWhere,
-        processedAmount: 0,
-      },
-      _sum: {
-        refundAmount: true,
-      },
-    }),
-  ]);
-
-  return roundToTwoDecimals(
-    toNumber(processedAgg._sum.processedAmount) +
-      toNumber(fallbackAgg._sum.refundAmount)
-  );
-}
-
 /**
  * 获取盈亏分析
  */
@@ -519,19 +403,12 @@ export async function getProfitLossAnalysis(
   const visibility: ReportVisibility = { systemMode: await getSystemMode() };
 
   // 并行获取所有数据
-  const [returnAdjustments, compensationRefundTotal, revenueRaw, sample, trend] =
-    await Promise.all([
-      getReturnAdjustments(start, end, visibility),
-      getCompensationRefundTotal(start, end, visibility),
-      getRevenueDetail(start, end, visibility),
-      getSampleMetrics(start, end, visibility),
-      getProfitLossTrend(start, end, groupBy, visibility),
-    ]);
-
-  const adjustments = {
-    ...returnAdjustments,
-    compensationRefundTotal,
-  };
+  const [adjustments, revenueRaw, sample, trend] = await Promise.all([
+    getReportAdjustments(start, end, visibility),
+    getRevenueDetail(start, end, visibility),
+    getSampleMetrics(start, end, visibility),
+    getProfitLossTrend(start, end, groupBy, visibility),
+  ]);
 
   // ✅ 退货按 completedAt 入账：冲减销售收入（不影响厂家直发收入）
   const revenue: RevenueDetail = {

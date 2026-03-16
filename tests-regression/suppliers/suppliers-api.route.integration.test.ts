@@ -1,6 +1,5 @@
 jest.mock('@/lib/auth/api-helpers', () => ({
-  withAuth: (handler: any, _options?: { permissions?: string[] }) => {
-    return async (request: any, context?: any) => {
+  withAuth: (handler: any, _options?: { permissions?: string[] }) => async (request: any, context?: any) => {
       const user = {
         id: 'test-user',
         role: 'admin',
@@ -12,8 +11,7 @@ jest.mock('@/lib/auth/api-helpers', () => ({
         ],
       };
       return handler(request, { ...(context ?? {}), user });
-    };
-  },
+    },
 }));
 
 jest.mock('@/lib/services/supplier-service', () => ({

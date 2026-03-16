@@ -3,8 +3,9 @@
  * 验证厂家发货模块的成本和利润字段是否正确添加
  */
 
-import { prisma } from '../lib/db';
 import { Prisma } from '@prisma/client';
+
+import { prisma } from '../lib/db';
 
 async function verifyPhase1() {
   console.log('🔍 开始验证 Phase 1 数据库Schema修改...\n');
@@ -205,7 +206,7 @@ async function verifyPhase1() {
     console.log('✅ TypeScript 类型定义验证成功');
 
     // 5. 总结
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('📊 Phase 1 验证总结');
     console.log('='.repeat(60));
     console.log('✅ 数据库Schema修改成功');

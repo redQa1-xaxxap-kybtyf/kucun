@@ -19,9 +19,9 @@
  */
 
 /* eslint-disable @typescript-eslint/no-var-requires */
+const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const PRISMA_SCHEMA_PATH = path.join(process.cwd(), 'prisma', 'schema.prisma');
 
@@ -169,8 +169,7 @@ function validateRelations(models) {
 }
 
 function printReport(models, issues) {
-  const foreignKeyCandidates = models.reduce((count, model) => {
-    return (
+  const foreignKeyCandidates = models.reduce((count, model) => (
       count +
       model.fields.filter(
         f =>
@@ -178,8 +177,7 @@ function printReport(models, issues) {
           f.name !== 'id' &&
           !SPECIAL_FOREIGN_KEYS.has(f.name)
       ).length
-    );
-  }, 0);
+    ), 0);
 
   if (issues.length === 0) {
     console.log('\n✅ Prisma Schema 关系定义检查通过');

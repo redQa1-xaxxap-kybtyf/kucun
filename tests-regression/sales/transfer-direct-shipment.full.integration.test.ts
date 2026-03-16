@@ -40,6 +40,7 @@ jest.mock('@/lib/services/simple-order-number-generator', () => ({
 
 jest.mock('@/lib/utils/payment-number-generator', () => ({
   generatePaymentNumber: jest.fn().mockResolvedValue('PAY-0001'),
+  generatePayableNumber: jest.fn().mockResolvedValue('YFK-0001'),
 }));
 
 jest.mock('@/lib/services/expense-service', () => ({
@@ -244,6 +245,7 @@ function createInMemoryDirectShipmentTx(seed?: {
       create: jest.fn(async (args: any) => {
         const data = args?.data ?? {};
         const id = String(data.id ?? genId('payable'));
+        const createdAt = new Date();
         const record = {
           id,
           payableNumber: data.payableNumber,
@@ -262,6 +264,7 @@ function createInMemoryDirectShipmentTx(seed?: {
           paymentTerms: data.paymentTerms ?? null,
           description: data.description ?? null,
           remarks: data.remarks ?? null,
+          createdAt,
         };
         store.payableRecords.push(clone(record));
         return clone(record);
@@ -441,16 +444,28 @@ describe('销售开单：调货直发（厂家直发）完整集成回归', () =
       })
     );
 
-    // 4) 往来账：确认即记一笔 sale（金额按应收，不扣预收）
-    expect(recordPartnerTransaction).toHaveBeenCalledTimes(1);
-    expect(recordPartnerTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        partnerId: customerId,
-        transactionType: 'sale',
-        amount: 50,
-        referenceId: result.id,
-        referenceNumber: 'SO-0001',
-      })
-    );
+    // 4) 往来账：确认即记客户 sale + 供应商 purchase 两笔流水
+    expect(recordPartnerTransaction).toHaveBeenCalledTimes(2);
+    const ledgerCalls = recordPartnerTransaction.mock.calls;
+    expect(
+      ledgerCalls.some(
+        ([payload]) =>
+          payload.partnerId === customerId &&
+          payload.transactionType === 'sale' &&
+          payload.amount === 50 &&
+          payload.referenceId === result.id &&
+          payload.referenceNumber === 'SO-0001'
+      )
+    ).toBe(true);
+    expect(
+      ledgerCalls.some(
+        ([payload, txArg]) =>
+          payload.partnerId === supplierId &&
+          payload.transactionType === 'purchase' &&
+          payload.amount === 20 &&
+          payload.referenceNumber === 'YFK-0001' &&
+          Boolean(txArg)
+      )
+    ).toBe(true);
   });
 });

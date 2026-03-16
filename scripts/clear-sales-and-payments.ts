@@ -153,7 +153,7 @@ async function main() {
     console.log(`   往来账单交易: ${afterStats.statementTransactions} 条`);
     console.log(`   往来账单: ${afterStats.accountStatements} 条`);
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('✅ 数据清理完成!\n');
 
     // 显示清理汇总

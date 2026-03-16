@@ -41,9 +41,9 @@ function addResult(result: CheckResult) {
 
 // 1. 孤儿数据检查
 async function checkOrphanedRecords() {
-  console.log('\n' + '='.repeat(80));
+  console.log(`\n${'='.repeat(80)}`);
   console.log('📋 1. 孤儿数据检查');
-  console.log('='.repeat(80) + '\n');
+  console.log(`${'='.repeat(80)}\n`);
 
   // 1.1 检查销售订单的客户关联
   const salesOrdersWithoutCustomer = await prisma.$queryRaw<
@@ -245,7 +245,7 @@ async function checkOrphanedRecords() {
 async function checkDuplicateRecords() {
   console.log('='.repeat(80));
   console.log('📋 2. 数据重复检查');
-  console.log('='.repeat(80) + '\n');
+  console.log(`${'='.repeat(80)}\n`);
 
   // 2.1 检查重复的订单号
   const duplicateOrderNumbers = await prisma.$queryRaw<
@@ -326,7 +326,7 @@ async function checkDuplicateRecords() {
 async function checkDataConsistency() {
   console.log('='.repeat(80));
   console.log('📋 3. 数据一致性检查');
-  console.log('='.repeat(80) + '\n');
+  console.log(`${'='.repeat(80)}\n`);
 
   // 3.1 检查负数金额
   const negativeAmountOrders = await prisma.$queryRaw<
@@ -505,7 +505,7 @@ async function checkDataConsistency() {
 async function checkRelationshipIntegrity() {
   console.log('='.repeat(80));
   console.log('📋 4. 关联关系完整性检查');
-  console.log('='.repeat(80) + '\n');
+  console.log(`${'='.repeat(80)}\n`);
 
   // 4.1 检查没有明细的订单
   const ordersWithoutItems = await prisma.$queryRaw<
@@ -611,7 +611,7 @@ async function main() {
     // 生成报告
     console.log('='.repeat(80));
     console.log('📊 检查报告汇总');
-    console.log('='.repeat(80) + '\n');
+    console.log(`${'='.repeat(80)}\n`);
 
     const errorCount = results.filter(r => r.severity === 'error').length;
     const warningCount = results.filter(r => r.severity === 'warning').length;
@@ -666,7 +666,7 @@ async function main() {
 
     console.log('='.repeat(80));
     console.log('完成时间:', new Date().toLocaleString('zh-CN'));
-    console.log('='.repeat(80) + '\n');
+    console.log(`${'='.repeat(80)}\n`);
   } catch (error) {
     console.error('❌ 检查过程中发生错误:', error);
     process.exit(1);

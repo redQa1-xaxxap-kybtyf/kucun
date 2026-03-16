@@ -48,6 +48,9 @@ describe('report helpers: visibility + expense where regression', () => {
     const where = buildExpenseWhere(start, end) as any;
 
     expect(where.expenseDate).toEqual({ gte: start, lte: end });
-    expect(where.relatedType).toEqual({ not: 'purchase_order' });
+    expect(where.OR).toEqual([
+      { relatedType: null },
+      { relatedType: { not: 'purchase_order' } },
+    ]);
   });
 });

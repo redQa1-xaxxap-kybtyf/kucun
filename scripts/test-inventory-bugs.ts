@@ -7,8 +7,8 @@
  * 3. 单字符搜索返回空列表
  */
 
-import { inventoryParamsSchema } from '../lib/schemas/inventory-params';
 import { INVENTORY_FILTER_CONFIG } from '../lib/configs/filter-configs';
+import { inventoryParamsSchema } from '../lib/schemas/inventory-params';
 
 console.log('🔍 开始验证库存总览页面 Bug 修复...\n');
 

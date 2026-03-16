@@ -180,7 +180,7 @@ try {
   process.exit(1);
 }
 
-console.log('\n' + '='.repeat(80));
+console.log(`\n${'='.repeat(80)}`);
 console.log('✅ 所有验证通过！库存选择器类型定义正确！');
 console.log('='.repeat(80));
 console.log('\n💡 提示：');

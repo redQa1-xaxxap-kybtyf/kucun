@@ -133,10 +133,6 @@ export const POST = withAuth(
         await revalidateProducts();
       }
 
-      const importedCount = isExecutionResult(result)
-        ? result.importedCount
-        : undefined;
-
       return NextResponse.json({
         success: true,
         data: result,

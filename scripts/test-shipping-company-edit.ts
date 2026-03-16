@@ -193,7 +193,7 @@ async function testShippingCompanyEdit() {
   }
 
   // 打印测试总结
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('\n📊 测试总结\n');
 
   const successCount = results.filter(r => r.status === 'success').length;

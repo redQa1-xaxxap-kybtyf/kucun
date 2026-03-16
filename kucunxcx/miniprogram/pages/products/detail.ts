@@ -2,9 +2,9 @@
 // 产品详情页
 
 import authService from '../../services/auth.service';
+import { categoryService } from '../../services/category.service';
 import productService from '../../services/product.service';
 import userService from '../../services/user.service';
-import { categoryService } from '../../services/category.service';
 import type { ProductDetail } from '../../types/product';
 import { formatDateTime } from '../../utils/format';
 import { getEnableBackdropBlur } from '../../utils/ui';

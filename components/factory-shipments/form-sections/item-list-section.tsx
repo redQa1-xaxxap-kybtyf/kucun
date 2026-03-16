@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BlurHandlerFactory } from '@/lib/hooks/useFormErrorHandling';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
+import { createFactoryShipmentDraftItem } from '@/lib/utils/order-form-defaults';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
 interface ItemListSectionProps {
@@ -33,22 +34,13 @@ export function ItemListSection({
   const { fields, append, remove } = fieldArray;
 
   // 添加产品
-  const handleAddItem = () => {
-    append({
-      productId: undefined,
-      supplierId: '',
-      productCode: '', // 新增：产品编码（必填）
-      batchNumber: '',
-      quantity: 1,
-      unitPrice: 0,
-      ownership: 'customer',
-      displayName: '', // 改为可选
-      specification: '',
-      unit: '片',
-      piecesPerUnit: undefined,
-      ownershipRemarks: '',
-      remarks: '',
-    });
+  const handleAddItem = (preferredSupplierId?: string) => {
+    append(
+      createFactoryShipmentDraftItem({
+        items: form.getValues('items'),
+        preferredSupplierId,
+      })
+    );
   };
 
   // 删除产品

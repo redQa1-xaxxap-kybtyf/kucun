@@ -44,7 +44,7 @@ async function main() {
         email: 'test@example.com',
         username: 'testuser',
         name: '测试用户',
-        passwordHash: passwordHash,
+        passwordHash,
         role: 'admin',
         status: 'active',
       },
@@ -135,7 +135,7 @@ async function main() {
   }
 
   // 步骤 5: 总结
-  console.log('\n' + '='.repeat(60));
+  console.log(`\n${'='.repeat(60)}`);
   console.log('📋 测试数据设置完成\n');
 
   console.log('✅ 创建的资源:');

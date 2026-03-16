@@ -20,16 +20,14 @@ jest.mock('next/server', () => {
 });
 
 jest.mock('@/lib/auth/api-helpers', () => ({
-  withAuth: (handler: any, _options?: { permissions?: string[] }) => {
-    return async (request: any, context?: any) => {
+  withAuth: (handler: any, _options?: { permissions?: string[] }) => async (request: any, context?: any) => {
       const user = {
         id: 'test-user',
         role: 'admin',
         permissions: ['finance:view', 'finance:manage'],
       };
       return handler(request, { ...(context ?? {}), user });
-    };
-  },
+    },
   requireAuth: jest.fn(() => ({
     id: 'test-user',
     role: 'admin',

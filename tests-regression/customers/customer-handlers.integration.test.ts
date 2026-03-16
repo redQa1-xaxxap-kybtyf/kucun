@@ -1,5 +1,3 @@
-import type { CustomerQueryParams } from '@/lib/types/customer';
-
 import {
   createCustomer,
   deleteCustomer,
@@ -7,6 +5,8 @@ import {
   getCustomerList,
   updateCustomer,
 } from '@/lib/api/customer-handlers';
+import type { CustomerQueryParams } from '@/lib/types/customer';
+
 
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),

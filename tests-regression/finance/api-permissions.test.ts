@@ -4,8 +4,7 @@ jest.mock('@/lib/cache', () => ({
 }));
 
 jest.mock('@/lib/auth/api-helpers', () => ({
-  withAuth: (handler: any, options?: { permissions?: string[] }) => {
-    return async (request: any, context?: any) => {
+  withAuth: (handler: any, options?: { permissions?: string[] }) => async (request: any, context?: any) => {
       const user = {
         id: 'test-user',
         role: 'user',
@@ -25,8 +24,7 @@ jest.mock('@/lib/auth/api-helpers', () => ({
         );
       }
       return handler(request, { ...(context ?? {}), user });
-    };
-  },
+    },
 }));
 
 describe('API permissions regression', () => {

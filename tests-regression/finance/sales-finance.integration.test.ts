@@ -39,6 +39,7 @@ jest.mock('@/lib/services/simple-order-number-generator', () => ({
 
 jest.mock('@/lib/utils/payment-number-generator', () => ({
   generatePaymentNumber: jest.fn().mockResolvedValue('PAY-0001'),
+  generatePayableNumber: jest.fn().mockResolvedValue('YFK-0001'),
 }));
 
 jest.mock('@/lib/services/expense-service', () => ({
@@ -77,9 +78,12 @@ const { generateSalesOrderNumber } = jest.requireMock(
   '@/lib/services/simple-order-number-generator'
 ) as { generateSalesOrderNumber: jest.Mock };
 
-const { generatePaymentNumber } = jest.requireMock(
+const { generatePaymentNumber, generatePayableNumber } = jest.requireMock(
   '@/lib/utils/payment-number-generator'
-) as { generatePaymentNumber: jest.Mock };
+) as {
+  generatePaymentNumber: jest.Mock;
+  generatePayableNumber: jest.Mock;
+};
 
 const { createPurchaseOrderForTransfer } = jest.requireMock(
   '@/lib/api/handlers/sales-orders/purchase-order'
@@ -521,6 +525,7 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
     jest.clearAllMocks();
     generateSalesOrderNumber.mockResolvedValue('SO-0001');
     generatePaymentNumber.mockResolvedValue('PAY-0001');
+    generatePayableNumber.mockResolvedValue('YFK-0001');
   });
 
   test('confirmed 普通销售 + 预收冲抵：应创建应收、分配预收并回写 paidAmount，同时写入 sales 往来流水', async () => {
@@ -916,17 +921,29 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
     // 4) 调货直发：应创建采购单
     expect(createPurchaseOrderForTransfer).toHaveBeenCalledTimes(1);
 
-    // 5) 往来账：销售入账
-    expect(recordPartnerTransaction).toHaveBeenCalledTimes(1);
-    expect(recordPartnerTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        partnerId: customerId,
-        transactionType: 'sale',
-        amount: 50,
-        referenceId: result.id,
-        referenceNumber: 'SO-0002',
-      })
-    );
+    // 5) 往来账：确认即记客户 sale + 供应商 purchase 两笔流水
+    expect(recordPartnerTransaction).toHaveBeenCalledTimes(2);
+    const transferLedgerCalls = recordPartnerTransaction.mock.calls;
+    expect(
+      transferLedgerCalls.some(
+        ([payload]) =>
+          payload.partnerId === customerId &&
+          payload.transactionType === 'sale' &&
+          payload.amount === 50 &&
+          payload.referenceId === result.id &&
+          payload.referenceNumber === 'SO-0002'
+      )
+    ).toBe(true);
+    expect(
+      transferLedgerCalls.some(
+        ([payload, txArg]) =>
+          payload.partnerId === supplierId &&
+          payload.transactionType === 'purchase' &&
+          payload.amount === 20 &&
+          payload.referenceNumber === 'YFK-0001' &&
+          Boolean(txArg)
+      )
+    ).toBe(true);
   });
 
   test('confirmed 调货直发 + 公司承担费用：应付金额应包含公司费用分摊，但应收不包含公司费用', async () => {
@@ -1016,17 +1033,29 @@ describe('财务 × 销售：关键链路（集成回归）', () => {
     // 4) 调货直发：应创建采购单
     expect(createPurchaseOrderForTransfer).toHaveBeenCalledTimes(1);
 
-    // 5) 往来账：销售入账
-    expect(recordPartnerTransaction).toHaveBeenCalledTimes(1);
-    expect(recordPartnerTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({
-        partnerId: customerId,
-        transactionType: 'sale',
-        amount: 50,
-        referenceId: result.id,
-        referenceNumber: 'SO-0007',
-      })
-    );
+    // 5) 往来账：确认即记客户 sale + 供应商 purchase 两笔流水
+    expect(recordPartnerTransaction).toHaveBeenCalledTimes(2);
+    const transferWithExpenseLedgerCalls = recordPartnerTransaction.mock.calls;
+    expect(
+      transferWithExpenseLedgerCalls.some(
+        ([payload]) =>
+          payload.partnerId === customerId &&
+          payload.transactionType === 'sale' &&
+          payload.amount === 50 &&
+          payload.referenceId === result.id &&
+          payload.referenceNumber === 'SO-0007'
+      )
+    ).toBe(true);
+    expect(
+      transferWithExpenseLedgerCalls.some(
+        ([payload, txArg]) =>
+          payload.partnerId === supplierId &&
+          payload.transactionType === 'purchase' &&
+          payload.amount === 30 &&
+          payload.referenceNumber === 'YFK-0001' &&
+          Boolean(txArg)
+      )
+    ).toBe(true);
   });
 
   test('draft 销售订单：不应生成应收/应付，也不应写入往来账', async () => {

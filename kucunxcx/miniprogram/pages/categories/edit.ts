@@ -2,9 +2,10 @@
 // 分类编辑页
 
 import authService from '../../services/auth.service';
+import type {
+  UpdateCategoryParams } from '../../services/category.service';
 import {
-  categoryService,
-  UpdateCategoryParams,
+  categoryService
 } from '../../services/category.service';
 import type { Category } from '../../types/category';
 import { getEnableBackdropBlur } from '../../utils/ui';

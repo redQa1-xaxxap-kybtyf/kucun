@@ -22,7 +22,7 @@ import { PurchaseOrderItemRow } from './purchase-order-item-row';
 interface PurchaseOrderItemsTableProps {
   form: UseFormReturn<CreatePurchaseOrderData>;
   fields: Array<{ id: string }>;
-  onAddItem: () => void;
+  onAddItem: (preferredSupplierId?: string) => void;
   onRemoveItem: (index: number) => void;
 }
 
@@ -107,7 +107,7 @@ export const PurchaseOrderItemsTable = React.memo(
 PurchaseOrderItemsTable.displayName = 'PurchaseOrderItemsTable';
 
 interface PurchaseOrderItemsTableViewProps {
-  onAddItem: () => void;
+  onAddItem: (preferredSupplierId?: string) => void;
   fields: Array<{ id: string }>;
   form: UseFormReturn<CreatePurchaseOrderData>;
   onRemoveItem: (index: number) => void;
@@ -125,8 +125,9 @@ function PurchaseOrderItemsTableView({
   onQuantityChange,
   onUnitPriceChange,
 }: PurchaseOrderItemsTableViewProps) {
+  const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [bulkSupplierId, setBulkSupplierId] = useState<string>('');
+  const [defaultSupplierId, setDefaultSupplierId] = useState<string>('');
 
   const focusNewRowProductCell = useCallback((rowIndex: number) => {
     if (!containerRef.current) return;
@@ -141,10 +142,10 @@ function PurchaseOrderItemsTableView({
 
   const handleAddAndFocus = useCallback(() => {
     const nextIndex = fields.length; // 新行的索引
-    onAddItem();
+    onAddItem(defaultSupplierId);
     // 聚焦到新行的产品选择器触发点
     focusNewRowProductCell(nextIndex);
-  }, [fields.length, onAddItem, focusNewRowProductCell]);
+  }, [defaultSupplierId, fields.length, onAddItem, focusNewRowProductCell]);
 
   const items = form.watch('items') || [];
   const totalQuantity = items.reduce(
@@ -156,16 +157,41 @@ function PurchaseOrderItemsTableView({
     0
   );
 
-  const handleApplyBulkSupplier = useCallback(() => {
-    if (!bulkSupplierId) return;
-    const currentItems = form.getValues('items') || [];
-    currentItems.forEach((_item, index) => {
-      form.setValue(`items.${index}.supplierId`, bulkSupplierId, {
-        shouldDirty: true,
-        shouldValidate: true,
+  const handleApplyDefaultSupplier = useCallback(
+    (mode: 'blank' | 'all') => {
+      if (!defaultSupplierId) return;
+
+      const currentItems = form.getValues('items') || [];
+      let updatedCount = 0;
+
+      currentItems.forEach((item, index) => {
+        const currentSupplierId = item.supplierId?.trim() || '';
+        const shouldApply = mode === 'all' || currentSupplierId.length === 0;
+
+        if (!shouldApply || currentSupplierId === defaultSupplierId) {
+          return;
+        }
+
+        form.setValue(`items.${index}.supplierId`, defaultSupplierId, {
+          shouldDirty: true,
+          shouldValidate: true,
+        });
+        updatedCount += 1;
       });
-    });
-  }, [bulkSupplierId, form]);
+
+      if (updatedCount > 0) {
+        toast({
+          title: '已应用常用供应商',
+          description:
+            mode === 'all'
+              ? `已更新 ${updatedCount} 条明细的供应商。`
+              : `已为 ${updatedCount} 条空白明细补上供应商。`,
+          duration: 2000,
+        });
+      }
+    },
+    [defaultSupplierId, form, toast]
+  );
 
   return (
     <div
@@ -193,13 +219,18 @@ function PurchaseOrderItemsTableView({
             选择产品(F3)
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground text-sm">批量设置供应商:</span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="min-w-[220px] space-y-1">
+            <div className="text-sm font-medium">常用供应商</div>
+            <div className="text-muted-foreground text-xs">
+              新增明细会自动带出，也可一键填充到已有明细。
+            </div>
+          </div>
           <div className="w-60">
             <SupplierSelector
-              value={bulkSupplierId}
-              onValueChange={setBulkSupplierId}
-              placeholder="选择供应商"
+              value={defaultSupplierId}
+              onValueChange={setDefaultSupplierId}
+              placeholder="选择常用供应商"
             />
           </div>
           <Button
@@ -207,8 +238,18 @@ function PurchaseOrderItemsTableView({
             size="sm"
             variant="outline"
             className="h-9"
-            onClick={handleApplyBulkSupplier}
-            disabled={!bulkSupplierId || items.length === 0}
+            onClick={() => handleApplyDefaultSupplier('blank')}
+            disabled={!defaultSupplierId || items.length === 0}
+          >
+            应用到空白行
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-9"
+            onClick={() => handleApplyDefaultSupplier('all')}
+            disabled={!defaultSupplierId || items.length === 0}
           >
             应用到全部明细
           </Button>

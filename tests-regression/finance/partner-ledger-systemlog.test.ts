@@ -1,5 +1,5 @@
-import type { TransactionType } from '@/lib/types/statement';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
+import type { TransactionType } from '@/lib/types/statement';
 
 jest.mock('@/lib/cache/pubsub', () => ({
   publishFinanceChange: jest.fn().mockResolvedValue(undefined),

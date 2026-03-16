@@ -1,8 +1,8 @@
 // 用户相关服务（收藏、浏览历史等）
 
 import { API_ENDPOINTS } from '../config/api';
-import { del, get, post } from '../utils/request';
 import { appendMiniTokenForLocalUploads } from '../utils/media';
+import { del, get, post } from '../utils/request';
 
 import authService from './auth.service';
 
