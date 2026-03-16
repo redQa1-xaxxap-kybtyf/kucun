@@ -358,6 +358,9 @@ export async function revalidateInventory(productId?: string): Promise<void> {
       CacheTags.Inventory.summary(productId),
       CacheTags.Inventory.list,
     ]);
+
+    // 产品级库存变更同样会影响全局库存统计卡片，否则仪表盘可能继续显示旧值
+    await revalidateCache(CacheTags.Dashboard.stats, { cascade: false });
   } else {
     await revalidateCache(CacheTags.Inventory.all);
   }

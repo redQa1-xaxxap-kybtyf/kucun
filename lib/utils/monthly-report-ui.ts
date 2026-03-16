@@ -26,8 +26,18 @@ export function buildMonthlyExpenseBreakdown(
     },
     {
       key: 'labor',
-      label: '人工费',
+      label: '工资',
       value: expenses.byType.labor,
+    },
+    {
+      key: 'operating',
+      label: '营业费',
+      value: expenses.byType.operating,
+    },
+    {
+      key: 'management',
+      label: '管理费',
+      value: expenses.byType.management,
     },
     {
       key: 'loading-unloading',

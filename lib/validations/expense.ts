@@ -7,7 +7,9 @@ import { z } from 'zod';
 export const expenseTypeSchema = z.enum([
   'shipping', // 运费
   'storage', // 仓储费
-  'labor', // 人工费
+  'labor', // 工资
+  'operating', // 营业费
+  'management', // 管理费
   'travel', // 差旅费
   'living', // 生活费
   'loading_unloading', // 装卸费
@@ -389,6 +391,8 @@ export const validateExpenseType = (type: string): type is ExpenseType =>
     'shipping',
     'storage',
     'labor',
+    'operating',
+    'management',
     'travel',
     'living',
     'loading_unloading',

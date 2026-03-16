@@ -894,19 +894,21 @@ function buildMonthlyReportTemplate() {
         y: 76,
         items: [
           { label: '运费', field: 'expenses.byType.shipping' },
-          { label: '人工费', field: 'expenses.byType.labor' },
-          { label: '装卸费', field: 'expenses.byType.loading_unloading' },
-          {
-            label: '库存周转天数',
-            field: 'inventoryTurnover.turnoverDays',
-            format: 'number',
-          },
+          { label: '工资', field: 'expenses.byType.labor' },
+          { label: '营业费', field: 'expenses.byType.operating' },
+          { label: '管理费', field: 'expenses.byType.management' },
         ],
       },
       {
         x: 14,
         y: 94,
         items: [
+          { label: '装卸费', field: 'expenses.byType.loading_unloading' },
+          {
+            label: '库存周转天数',
+            field: 'inventoryTurnover.turnoverDays',
+            format: 'number',
+          },
           {
             label: '收入环比(%)',
             field: 'comparison.revenue.changeRate',
@@ -935,7 +937,7 @@ function buildMonthlyReportTemplate() {
         title: '风险与经营提醒',
         dataSource: 'alerts',
         x: 14,
-        y: 130,
+        y: 148,
         width: 269,
         height: 42,
         minRows: 3,
@@ -1110,7 +1112,15 @@ function buildProfitLossTemplate() {
         y: 76,
         items: [
           { label: '运费', field: 'expenses.shipping' },
-          { label: '人工费', field: 'expenses.labor' },
+          { label: '工资', field: 'expenses.labor' },
+          { label: '营业费', field: 'expenses.operating' },
+          { label: '管理费', field: 'expenses.management' },
+        ],
+      },
+      {
+        x: 14,
+        y: 94,
+        items: [
           {
             label: '收入变化(%)',
             field: 'comparison.revenue.changeRate',
@@ -1129,7 +1139,7 @@ function buildProfitLossTemplate() {
         title: '趋势明细',
         dataSource: 'trend',
         x: 14,
-        y: 112,
+        y: 130,
         width: 269,
         height: 32,
         minRows: 3,
@@ -1145,7 +1155,7 @@ function buildProfitLossTemplate() {
         title: '经营提醒',
         dataSource: 'alerts',
         x: 14,
-        y: 154,
+        y: 172,
         width: 269,
         height: 22,
         minRows: 2,

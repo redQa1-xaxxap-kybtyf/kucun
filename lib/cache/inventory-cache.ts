@@ -10,6 +10,8 @@ import { redis } from '@/lib/redis/redis-client';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
+import { revalidateInventory } from './revalidate';
+
 /**
  * 库存缓存管理
  * 提供库存数据的缓存策略和失效管理
@@ -317,20 +319,10 @@ export async function invalidateInventoryCache(
   }
 ): Promise<void> {
   const { invalidateDashboard = false } = options || {};
-
-  if (productId) {
-    // 精准失效：只清除特定产品的库存汇总缓存
-    await invalidateNamespace(`inventory:summary:${productId}`);
-  } else {
-    // 全局失效：清除所有库存汇总缓存
-    await invalidateNamespace('inventory:summary:*');
-  }
-
-  // 库存列表已改为直接查询（使用极短TTL），不需要主动失效
-  // 列表缓存会在60秒内自动过期，避免缓存雪崩
+  await revalidateInventory(productId);
 
   // 可选：失效仪表盘缓存（仅在明确需要时）
-  // 通常由 revalidate.ts 的级联失效机制自动处理
+  // 默认已刷新 dashboard:stats；这里保留更宽范围的强制清理入口
   if (invalidateDashboard) {
     await invalidateNamespace('dashboard:stats:*');
   }

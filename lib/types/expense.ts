@@ -7,7 +7,9 @@ import type { User } from './user';
 export type ExpenseType =
   | 'shipping' // 运费
   | 'storage' // 仓储费
-  | 'labor' // 人工费
+  | 'labor' // 工资
+  | 'operating' // 营业费
+  | 'management' // 管理费
   | 'travel' // 差旅费
   | 'living' // 生活费
   | 'loading_unloading' // 装卸费
@@ -17,7 +19,9 @@ export type ExpenseType =
 export const EXPENSE_TYPE_LABELS: Record<ExpenseType, string> = {
   shipping: '运费',
   storage: '仓储费',
-  labor: '人工费',
+  labor: '工资',
+  operating: '营业费',
+  management: '管理费',
   travel: '差旅费',
   living: '生活费',
   loading_unloading: '装卸费',

@@ -110,6 +110,8 @@ export function ExpenseDetailClient({
       shipping: 'default',
       storage: 'secondary',
       labor: 'outline',
+      operating: 'default',
+      management: 'secondary',
       travel: 'default',
       living: 'secondary',
       loading_unloading: 'outline',

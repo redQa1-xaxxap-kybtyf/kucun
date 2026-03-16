@@ -1,225 +1,184 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import * as XLSX from 'xlsx';
+import { ZodError } from 'zod';
 
-import { generateBatchNumberOutsideTransaction } from '@/lib/api/batch-number-generator';
 import {
-  executeMinimalInboundTransaction,
-  validateProductExistsOutsideTransaction,
-} from '@/lib/api/minimal-inbound-transaction';
+  importInitialStockRows,
+  validateInitialStockImportRows,
+  type InitialStockImportExecutionResult,
+  type InitialStockImportValidationResult,
+} from '@/lib/api/handlers/initial-stock-import';
 import { withAuth } from '@/lib/auth/api-helpers';
-import { requirePermission } from '@/lib/auth/permissions';
-import { prisma } from '@/lib/db';
+import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { logger } from '@/lib/logger';
-import {
-  initialStockImportSchema,
-  type InitialStockRowInput,
-} from '@/lib/validations/initial-stock';
+import { type InitialStockRowInput } from '@/lib/validations/initial-stock';
 
-/**
- * POST /api/inventory/initial-stock/import
- * 期初库存 Excel 批量导入
- *
- * - 仅支持 reason = 'opening_balance'
- * - 会应用期初入库的重复/合理性校验
- */
-export const POST = withAuth(async (request: NextRequest, context) => {
-  try {
-    // 权限：期初库存录入
-    requirePermission(context.user, 'inventory:opening_balance');
+function readImportMode(formData: FormData) {
+  const mode = String(formData.get('mode') ?? 'dry-run')
+    .trim()
+    .toLowerCase();
 
-    const contentType = request.headers.get('content-type') || '';
-    if (!contentType.startsWith('multipart/form-data')) {
-      return NextResponse.json(
-        { error: '请求格式错误，必须使用 multipart/form-data 上传 Excel 文件' },
-        { status: 400 }
-      );
+  return mode === 'import' ? 'import' : 'dry-run';
+}
+
+function isBlobLike(value: unknown): value is Blob {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'arrayBuffer' in value &&
+    typeof value.arrayBuffer === 'function'
+  );
+}
+
+function isExecutionResult(
+  result: InitialStockImportValidationResult | InitialStockImportExecutionResult
+): result is InitialStockImportExecutionResult {
+  return (
+    typeof (result as InitialStockImportExecutionResult).importedCount ===
+    'number'
+  );
+}
+
+async function readRowsFromUpload(file: Blob): Promise<InitialStockRowInput[]> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = sheetName ? workbook.Sheets[sheetName] : undefined;
+
+  if (!worksheet) {
+    throw new Error('Excel 文件内容为空或格式不正确');
+  }
+
+  return XLSX.utils.sheet_to_json<InitialStockRowInput>(worksheet, {
+    defval: '',
+    raw: false,
+  });
+}
+
+function buildResponseMessage(
+  mode: 'dry-run' | 'import',
+  result: InitialStockImportValidationResult | InitialStockImportExecutionResult
+) {
+  if (mode === 'dry-run') {
+    if (!result.canImport) {
+      return result.errorCount > 0
+        ? '没有可导入的数据，请先修正错误后重试'
+        : '没有可导入的数据';
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file');
-
-    if (!file || !(file instanceof Blob)) {
-      return NextResponse.json(
-        { error: '请上传 Excel 文件（字段名：file）' },
-        { status: 400 }
-      );
+    if (result.duplicateCount > 0 || result.errorCount > 0) {
+      return `预校验完成，可导入 ${result.validCount} 条，跳过 ${result.duplicateCount} 条，错误 ${result.errorCount} 条`;
     }
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    return `预校验通过，共 ${result.validCount} 条数据可导入`;
+  }
 
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
-    const sheetName = workbook.SheetNames[0];
-    const worksheet = workbook.Sheets[sheetName];
+  if (!isExecutionResult(result)) {
+    return '导入完成';
+  }
 
-    if (!worksheet) {
-      return NextResponse.json(
-        { error: 'Excel 文件内容为空或格式不正确' },
-        { status: 400 }
-      );
-    }
+  if (result.importedCount === 0) {
+    return result.canImport
+      ? '没有成功导入的数据，请检查错误明细'
+      : '没有可导入的数据';
+  }
 
-    // 读取为 JSON，header: 1 则第一行作为表头
-    const rawRows = XLSX.utils.sheet_to_json<InitialStockRowInput>(worksheet, {
-      defval: '',
-    });
+  if (result.duplicateCount > 0 || result.errorCount > 0) {
+    return `成功导入 ${result.importedCount} 条，跳过 ${result.duplicateCount} 条，错误 ${result.errorCount} 条`;
+  }
 
-    if (!rawRows.length) {
-      return NextResponse.json(
-        { error: 'Excel 中没有可导入的数据行' },
-        { status: 400 }
-      );
-    }
+  return `成功导入 ${result.importedCount} 条期初库存`;
+}
 
-    // 先做字段级校验（数量、成本等）
-    const parsed = initialStockImportSchema.safeParse({ rows: rawRows });
-    if (!parsed.success) {
-      const issue = parsed.error.issues[0];
-      return NextResponse.json(
-        {
-          error: `数据格式错误: ${issue.message}`,
-        },
-        { status: 400 }
-      );
-    }
-
-    const rows = parsed.data.rows;
-
-    // 根据产品编码缓存 productId，减少数据库查询
-    const productCache = new Map<string, { id: string; code: string }>();
-
-    let successCount = 0;
-    const errors: Array<{ row: number; message: string }> = [];
-
-    for (let index = 0; index < rows.length; index++) {
-      const row = rows[index];
-      const rowNumber = index + 2; // Excel 行号（假定第1行为表头）
-
-      try {
-        const productCode = row.产品编码.trim();
-        const batchNumberRaw = row.批次号.trim();
-
-        if (!productCode || !batchNumberRaw) {
-          throw new Error('产品编码或批次号不能为空');
-        }
-
-        // 1) 根据产品编码查产品
-        let product = productCache.get(productCode);
-        if (!product) {
-          const found = await prisma.product.findUnique({
-            where: { code: productCode },
-            select: { id: true, code: true },
-          });
-          if (!found) {
-            throw new Error(`产品编码 ${productCode} 不存在`);
-          }
-          productCache.set(productCode, found);
-          product = found;
-        }
-
-        // 2) 衍生批次号（保持与单笔入库的批次生成规则一致）
-        const productInfo = await validateProductExistsOutsideTransaction(
-          product.id
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
+    try {
+      const contentType = request.headers.get('content-type') || '';
+      if (!contentType.startsWith('multipart/form-data')) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '请求格式错误，必须使用 multipart/form-data 上传 Excel 文件',
+          },
+          { status: 400 }
         );
-        const finalBatchNumber = await generateBatchNumberOutsideTransaction(
-          productInfo,
-          batchNumberRaw
-        );
-
-        // 3) 期初入库专用校验：不允许重复/与业务数据冲突
-        const [
-          existingOpeningBalance,
-          existingInventory,
-          existingBusinessInbound,
-        ] = await Promise.all([
-          prisma.inboundRecord.findFirst({
-            where: {
-              productId: product.id,
-              variantId: null,
-              batchNumber: finalBatchNumber,
-              reason: 'opening_balance',
-            },
-          }),
-          prisma.inventory.findFirst({
-            where: {
-              productId: product.id,
-              variantId: null,
-              batchNumber: finalBatchNumber,
-            },
-          }),
-          prisma.inboundRecord.findFirst({
-            where: {
-              productId: product.id,
-              variantId: null,
-              batchNumber: finalBatchNumber,
-              reason: {
-                not: 'opening_balance',
-              },
-            },
-          }),
-        ]);
-
-        if (existingOpeningBalance) {
-          throw new Error(
-            `产品 ${productCode} 批次 ${finalBatchNumber} 已有期初库存，如需调整请用“库存调整”`
-          );
-        }
-
-        if (existingBusinessInbound || existingInventory) {
-          throw new Error(
-            `产品 ${productCode} 批次 ${finalBatchNumber} 已存在业务入库/库存，不能再作为期初库存`
-          );
-        }
-
-        // 4) 执行最小入库事务（reason 固定为 opening_balance）
-        const quantity = Number(row.数量);
-        const unitCost = Number(row.单位成本);
-
-        await executeMinimalInboundTransaction({
-          productId: product.id,
-          variantId: undefined,
-          quantity,
-          unitCost,
-          reason: 'opening_balance',
-          remarks: row.备注 || row.成本来源 || '期初库存导入',
-          batchNumber: finalBatchNumber,
-          userId: context.user.id,
-        });
-
-        successCount += 1;
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : '未知错误，请检查数据';
-        errors.push({ row: rowNumber, message });
       }
-    }
 
-    if (errors.length > 0) {
-      logger.warn('initial-stock-import', '部分期初库存导入失败', {
-        successCount,
-        errorCount: errors.length,
+      const formData = await request.formData();
+      const file = formData.get('file');
+
+      if (!isBlobLike(file)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '请上传 Excel 文件（字段名：file）',
+          },
+          { status: 400 }
+        );
+      }
+
+      const rows = await readRowsFromUpload(file);
+      if (rows.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Excel 中没有可导入的数据行',
+          },
+          { status: 400 }
+        );
+      }
+
+      const mode = readImportMode(formData);
+      const result =
+        mode === 'import'
+          ? await importInitialStockRows(rows, user.id)
+          : await validateInitialStockImportRows(rows);
+
+      if (
+        mode === 'import' &&
+        isExecutionResult(result) &&
+        result.importedCount > 0
+      ) {
+        await Promise.all(
+          result.importedProductIds.map(productId =>
+            invalidateInventoryCache(productId)
+          )
+        );
+
+        const { revalidatePath } = await import('next/cache');
+        revalidatePath('/inventory', 'page');
+        revalidatePath('/inventory/inbound', 'page');
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: result,
+        message: buildResponseMessage(mode, result),
       });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const issue = error.issues[0];
+        return NextResponse.json(
+          {
+            success: false,
+            error: issue?.message || '导入数据格式不正确',
+          },
+          { status: 400 }
+        );
+      }
 
+      logger.error('initial-stock-import', '期初库存批量导入失败', error);
       return NextResponse.json(
         {
           success: false,
-          successCount,
-          errorCount: errors.length,
-          errors,
+          error:
+            error instanceof Error
+              ? error.message
+              : '期初库存导入失败，请检查文件内容后重试',
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      successCount,
-    });
-  } catch (error) {
-    logger.error('initial-stock-import', '期初库存导入失败', error);
-    return NextResponse.json(
-      { error: '期初库存导入失败，请检查文件格式和数据内容' },
-      { status: 500 }
-    );
-  }
-});
+  },
+  { permissions: ['inventory:opening_balance'] }
+);

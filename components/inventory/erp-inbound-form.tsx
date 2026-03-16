@@ -203,7 +203,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-900">期初入库操作</AlertTitle>
             <AlertDescription className="text-amber-800">
-              您正在创建期初入库记录，此操作将影响库存期初数据。请确保录入的数据准确无误。
+              您正在创建期初入库记录。提交成功后会直接写入库存，无需额外审核；如果库存页暂时没看到，请先清空筛选或搜索条件再核对。
             </AlertDescription>
           </Alert>
         )}

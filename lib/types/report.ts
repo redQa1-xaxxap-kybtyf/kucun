@@ -89,7 +89,9 @@ export interface MonthlyExpenses {
   byType: {
     shipping: number; // 运费
     storage: number; // 仓储费
-    labor: number; // 人工费
+    labor: number; // 工资
+    operating: number; // 营业费
+    management: number; // 管理费
     travel: number; // 差旅费
     living: number; // 生活费
     loading_unloading: number; // 装卸费
@@ -302,7 +304,9 @@ export interface CostDetail {
 export interface ExpenseDetail {
   shipping: number; // 运费
   storage: number; // 仓储费
-  labor: number; // 人工费
+  labor: number; // 工资
+  operating: number; // 营业费
+  management: number; // 管理费
   travel: number; // 差旅费
   living: number; // 生活费
   loading_unloading: number; // 装卸费

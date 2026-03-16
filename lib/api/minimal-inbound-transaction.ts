@@ -43,6 +43,7 @@ export interface MinimalInboundTransactionData {
   reason: string;
   remarks?: string;
   batchNumber: string; // 事务外预生成
+  location?: string;
   userId: string;
   purchaseOrderId?: string;
   purchaseOrderItemId?: string;
@@ -124,6 +125,7 @@ export async function executeMinimalInboundTransaction(
         quantity: data.quantity,
         unitCost: data.unitCost, // 记录入库单位成本
         totalCost, // 记录入库总成本
+        location: data.location || null,
         reason: data.reason,
         remarks: finalRemarks,
         userId: data.userId,
@@ -181,6 +183,7 @@ export async function executeMinimalInboundTransaction(
         data: {
           quantity: { increment: data.quantity }, // 原子递增
           unitCost: data.unitCost, // 更新为最新批次成本(缓存用)
+          location: data.location || existingInventory.location || null,
           updatedAt: new Date(),
         },
       });
@@ -194,6 +197,7 @@ export async function executeMinimalInboundTransaction(
           quantity: data.quantity,
           reservedQuantity: 0,
           unitCost: data.unitCost, // 设置初始成本
+          location: data.location || null,
         },
       });
     }

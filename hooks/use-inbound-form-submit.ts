@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useRef } from 'react';
 
 import type { useCreateInboundRecord } from '@/lib/api/inbound';
 import { useFormSubmit } from '@/lib/hooks/use-form-submit';
@@ -26,6 +27,9 @@ export function useInboundFormSubmit({
   skipConfirm: _skipConfirm = false,
 }: UseInboundFormSubmitProps) {
   const router = useRouter();
+  const lastSubmittedReasonRef = useRef<InboundFormData['reason']>();
+  const buildInventoryRedirectUrl = () =>
+    `/inventory?hasStock=true&refresh=${Date.now()}`;
 
   const generateIdempotencyKey = () =>
     typeof crypto !== 'undefined' && crypto.randomUUID
@@ -34,6 +38,8 @@ export function useInboundFormSubmit({
 
   return useFormSubmit<InboundFormData>({
     onSubmit: async data => {
+      lastSubmittedReasonRef.current = data.reason;
+
       const idempotencyKey = generateIdempotencyKey();
 
       if (!data.inputQuantity || data.inputQuantity <= 0) {
@@ -98,6 +104,11 @@ export function useInboundFormSubmit({
       if (onSuccess) {
         onSuccess();
       } else {
+        if (lastSubmittedReasonRef.current === 'opening_balance') {
+          router.push(buildInventoryRedirectUrl());
+          return;
+        }
+
         // 默认跳转到入库记录页面
         router.push('/inventory/inbound');
       }

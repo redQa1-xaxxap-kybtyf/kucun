@@ -42,7 +42,7 @@ export default async function CreateExpensePage() {
                   创建费用记录
                 </h1>
                 <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
-                  记录运费、仓储费、人工费等各类费用支出
+                  记录运费、仓储费、工资、营业费、管理费等各类费用支出
                 </p>
               </div>
             </div>

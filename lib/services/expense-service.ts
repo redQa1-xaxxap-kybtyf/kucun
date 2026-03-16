@@ -256,6 +256,10 @@ function mapFeeTypeToExpenseType(feeType: string): string {
       return 'storage';
     case 'labor':
       return 'labor';
+    case 'operating':
+      return 'operating';
+    case 'management':
+      return 'management';
     case 'travel':
       return 'travel';
     case 'living':

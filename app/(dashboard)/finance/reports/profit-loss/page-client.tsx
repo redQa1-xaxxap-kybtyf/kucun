@@ -550,7 +550,9 @@ export function ProfitLossClient() {
             {[
               { label: '运费', value: analysis.expenses.shipping },
               { label: '仓储费', value: analysis.expenses.storage },
-              { label: '人工费', value: analysis.expenses.labor },
+              { label: '工资', value: analysis.expenses.labor },
+              { label: '营业费', value: analysis.expenses.operating },
+              { label: '管理费', value: analysis.expenses.management },
               { label: '差旅费', value: analysis.expenses.travel },
               { label: '生活费', value: analysis.expenses.living },
               { label: '装卸费', value: analysis.expenses.loading_unloading },
