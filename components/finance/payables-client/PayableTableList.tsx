@@ -64,9 +64,9 @@ const TABLE_HEADERS: Array<{
   { key: 'sourceType', label: '来源类型' },
   { key: 'status', label: '状态' },
   { key: 'payableAmount', label: '应付金额', align: 'right' },
-  { key: 'paidAmount', label: '已付金额', align: 'right' },
+  { key: 'paidAmount', label: '已核销金额', align: 'right' },
   { key: 'remainingAmount', label: '待付金额', align: 'right' },
-  { key: 'paymentStatus', label: '付款状态' },
+  { key: 'paymentStatus', label: '结清进度' },
   { key: 'dueDate', label: '到期日' },
   { key: 'createdAt', label: '创建时间' },
   { key: 'actions', label: '操作', align: 'center' },
@@ -102,7 +102,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
         variant="outline"
         className="border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-xs font-medium text-[hsl(var(--color-success))]"
       >
-        已付清
+        已结清
       </Badge>
     );
   }
@@ -114,7 +114,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
         className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-700"
       >
         <Clock className="h-3 w-3" />
-        部分付款
+        部分结清
       </Badge>
     );
   }
@@ -124,7 +124,7 @@ const getPaymentStatusBadge = (payable: PayableRecordDetail) => {
       variant="outline"
       className="border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-xs font-medium text-[hsl(var(--color-error))]"
     >
-      未付款
+      未结清
     </Badge>
   );
 };
@@ -426,7 +426,7 @@ function PayableCard({ payable, onView, onPayNow, onDelete }: PayableRowProps) {
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-muted-foreground">已付金额</div>
+          <div className="text-muted-foreground">已核销金额</div>
           <div className="font-medium text-green-600">
             {formatCurrency(payable.paidAmount ?? 0)}
           </div>
@@ -652,7 +652,7 @@ export function PayableTableList({
   return (
     <>
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -687,7 +687,7 @@ export function PayableTableList({
       </div>
 
       {/* 移动端：卡片列表 */}
-      <div className="space-y-3 md:hidden">
+      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
         {items.map(payable => (
           <PayableCard
             key={payable.id}

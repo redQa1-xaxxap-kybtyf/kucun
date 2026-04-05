@@ -3,8 +3,10 @@
 import { Boxes, Eye, ImageIcon } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import Link from 'next/link';
 import { memo } from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { RelativeTime } from '@/components/common/relative-time';
 import { InventoryGroupedTable } from '@/components/inventory/InventoryGroupedTable';
 import { Button } from '@/components/ui/button';
@@ -34,6 +36,8 @@ interface InventoryTableProps {
   useVirtualization?: boolean;
   /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
   searchQuery?: string;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
   density: 'compact' | 'comfortable';
 }
 
@@ -42,6 +46,8 @@ function DesktopInventoryTable({
   onAdjust,
   useVirtualization,
   searchQuery,
+  hasActiveFilters,
+  onClearFilters,
   density,
 }: InventoryTableProps) {
   // 虚拟化模式（大数据量时使用，不支持合并单元格）
@@ -51,6 +57,8 @@ function DesktopInventoryTable({
         data={data}
         onAdjust={onAdjust}
         searchQuery={searchQuery}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={onClearFilters}
         density={density}
       />
     );
@@ -62,6 +70,8 @@ function DesktopInventoryTable({
       data={data}
       onAdjust={onAdjust}
       searchQuery={searchQuery}
+      hasActiveFilters={hasActiveFilters}
+      onClearFilters={onClearFilters}
       density={density}
     />
   );
@@ -70,13 +80,40 @@ function DesktopInventoryTable({
 function InventoryMobileList({
   data,
   onAdjust,
-}: Pick<InventoryTableProps, 'data' | 'onAdjust'>) {
+  searchQuery,
+  hasActiveFilters,
+  onClearFilters,
+}: Pick<
+  InventoryTableProps,
+  'data' | 'onAdjust' | 'searchQuery' | 'hasActiveFilters' | 'onClearFilters'
+>) {
+  const isFilteredEmpty = Boolean(searchQuery?.trim() || hasActiveFilters);
+
   if (data.length === 0) {
     return (
-      <div className="text-muted-foreground flex flex-col items-center justify-center py-8 text-sm">
-        <Boxes className="mb-2 h-6 w-6" />
-        <span>暂无库存数据</span>
-      </div>
+      <EmptyState
+        title={isFilteredEmpty ? '未找到匹配的库存记录' : '暂无库存数据'}
+        description={
+          isFilteredEmpty
+            ? '请调整关键词或筛选条件后再试。'
+            : '还没有任何库存记录，您可以先进行产品入库。'
+        }
+        icon={<Boxes className="text-muted-foreground h-6 w-6" />}
+        action={
+          isFilteredEmpty ? (
+            onClearFilters ? (
+              <Button variant="outline" size="sm" onClick={onClearFilters}>
+                清空条件
+              </Button>
+            ) : null
+          ) : (
+            <Button size="sm" asChild>
+              <Link href="/inventory/inbound/create">去入库</Link>
+            </Button>
+          )
+        }
+        compact
+      />
     );
   }
 
@@ -241,24 +278,34 @@ function InventoryTableImpl({
   onAdjust,
   useVirtualization = false,
   searchQuery,
+  hasActiveFilters,
+  onClearFilters,
   density,
 }: InventoryTableProps) {
   return (
     <>
       {/* 桌面端：表格视图 */}
-      <div className="hidden md:block">
+      <div className="hidden xl:block">
         <DesktopInventoryTable
           data={data}
           onAdjust={onAdjust}
           useVirtualization={useVirtualization}
           searchQuery={searchQuery}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={onClearFilters}
           density={density}
         />
       </div>
 
       {/* 移动端：卡片视图 */}
-      <div className="md:hidden">
-        <InventoryMobileList data={data} onAdjust={onAdjust} />
+      <div className="xl:hidden">
+        <InventoryMobileList
+          data={data}
+          onAdjust={onAdjust}
+          searchQuery={searchQuery}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={onClearFilters}
+        />
       </div>
     </>
   );
@@ -274,5 +321,6 @@ export const InventoryTable = memo(
     prev.useVirtualization === next.useVirtualization &&
     prev.useVirtualization === next.useVirtualization &&
     prev.searchQuery === next.searchQuery &&
+    prev.hasActiveFilters === next.hasActiveFilters &&
     prev.density === next.density
 );

@@ -92,13 +92,13 @@ export function ReceivablesTableList({
   }
 
   if (!receivables.length) {
-    return <EmptyState className="my-8" title="暂无应收账款数据" compact />;
+    return <EmptyState className="my-8" title="暂无客户待收款记录" compact />;
   }
 
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -128,7 +128,7 @@ export function ReceivablesTableList({
       </div>
 
       {/* 移动端：卡片视图 */}
-      <div className="space-y-3 md:hidden">
+      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
         {receivables.map(receivable => (
           <ReceivableCard
             key={receivable.id}

@@ -39,6 +39,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { PaymentStatus } from '@/lib/types/payment';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface PaymentRecord {
@@ -84,8 +85,11 @@ interface PaymentsTableListProps {
   };
   onPageChange?: (page: number) => void;
   onConfirm?: (paymentId: string) => void;
+  onCancel?: (payment: PaymentRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  cancellingId?: string | null;
+  isCancelling?: boolean;
 }
 
 /**
@@ -97,8 +101,11 @@ export function PaymentsTableList({
   pagination,
   onPageChange,
   onConfirm,
+  onCancel,
   confirmingId,
   isConfirming,
+  cancellingId,
+  isCancelling,
 }: PaymentsTableListProps) {
   if (!payments.length) {
     return (
@@ -113,7 +120,7 @@ export function PaymentsTableList({
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -136,8 +143,11 @@ export function PaymentsTableList({
                 key={payment.id}
                 payment={payment}
                 onConfirm={onConfirm}
+                onCancel={onCancel}
                 confirmingId={confirmingId}
                 isConfirming={isConfirming}
+                cancellingId={cancellingId}
+                isCancelling={isCancelling}
               />
             ))}
           </TableBody>
@@ -145,14 +155,17 @@ export function PaymentsTableList({
       </div>
 
       {/* 移动端：卡片列表 */}
-      <div className="space-y-3 md:hidden">
+      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
         {payments.map(payment => (
           <PaymentCard
             key={payment.id}
             payment={payment}
             onConfirm={onConfirm}
+            onCancel={onCancel}
             confirmingId={confirmingId}
             isConfirming={isConfirming}
+            cancellingId={cancellingId}
+            isCancelling={isCancelling}
           />
         ))}
       </div>
@@ -174,15 +187,21 @@ export function PaymentsTableList({
 interface PaymentTableRowProps {
   payment: PaymentRecord;
   onConfirm?: (paymentId: string) => void;
+  onCancel?: (payment: PaymentRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  cancellingId?: string | null;
+  isCancelling?: boolean;
 }
 
 function PaymentTableRow({
   payment,
   onConfirm,
+  onCancel,
   confirmingId,
   isConfirming,
+  cancellingId,
+  isCancelling,
 }: PaymentTableRowProps) {
   return (
     <TableRow className="hover:bg-muted/50">
@@ -261,8 +280,11 @@ function PaymentTableRow({
         <PaymentRowActions
           payment={payment}
           onConfirm={onConfirm}
+          onCancel={onCancel}
           confirmingId={confirmingId}
           isConfirming={isConfirming}
+          cancellingId={cancellingId}
+          isCancelling={isCancelling}
         />
       </TableCell>
     </TableRow>
@@ -272,27 +294,38 @@ function PaymentTableRow({
 function PaymentCard({
   payment,
   onConfirm,
+  onCancel,
   confirmingId,
   isConfirming,
+  cancellingId,
+  isCancelling,
 }: PaymentTableRowProps) {
+  const isThisCancelling = cancellingId === payment.id && isCancelling;
+  const primaryActionsClass = cn(
+    'grid gap-2',
+    payment.status === 'pending' && onConfirm ? 'grid-cols-2' : 'grid-cols-1'
+  );
+
   return (
     <div className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="space-y-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
             <span>收款单号</span>
             <span className="font-mono">
               <CopyableText text={payment.paymentNumber} />
             </span>
           </div>
-          <div className="text-sm font-medium">{payment.customer.name}</div>
+          <div className="text-sm font-medium leading-5 break-words">
+            {payment.customer.name}
+          </div>
           {payment.customer.phone && (
             <div className="text-muted-foreground text-xs">
               {payment.customer.phone}
             </div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-2 text-xs">
+        <div className="flex shrink-0 flex-col items-end gap-2 text-xs">
           <StatusBadge status={payment.status} />
           <PaymentMethodBadge method={payment.paymentMethod} />
         </div>
@@ -340,15 +373,15 @@ function PaymentCard({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
+      <div className="mt-3 grid grid-cols-[1fr_auto] items-start gap-2">
+        <div className={primaryActionsClass}>
           {payment.status === 'pending' && onConfirm && (
             <Button
               variant="default"
               size="sm"
               onClick={() => onConfirm(payment.id)}
               disabled={confirmingId === payment.id || isConfirming}
-              className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
+              className="h-9 w-full bg-green-600 px-3 text-xs text-white hover:bg-green-700"
             >
               {confirmingId === payment.id ? '确认中...' : '确认收款'}
             </Button>
@@ -357,7 +390,7 @@ function PaymentCard({
             variant="outline"
             size="sm"
             asChild
-            className="h-8 px-3 text-xs"
+            className="h-9 w-full justify-center px-3 text-xs"
           >
             <Link href={`/finance/payments/${payment.id}`}>
               <Eye className="mr-1 h-3.5 w-3.5" />
@@ -368,7 +401,11 @@ function PaymentCard({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0 rounded-lg"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -379,6 +416,16 @@ function PaymentCard({
                 查看详情
               </Link>
             </DropdownMenuItem>
+            {payment.status === 'pending' && onCancel && (
+              <DropdownMenuItem
+                onClick={() => onCancel(payment)}
+                disabled={isThisCancelling}
+                className="text-destructive focus:text-destructive"
+              >
+                <XCircle className="mr-2 h-4 w-4" />
+                {isThisCancelling ? '取消中...' : '取消收款'}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem asChild>
               <Link href={`/sales-orders/${payment.salesOrder.id}`}>
                 <Receipt className="mr-2 h-4 w-4" />
@@ -401,8 +448,8 @@ function StatusBadge({ status }: { status: PaymentStatus }) {
     { label: string; variant: BadgeProps['variant']; icon: React.ElementType }
   > = {
     pending: { label: '待确认', variant: 'secondary', icon: Clock },
-    confirmed: { label: '已确认', variant: 'default', icon: CheckCircle },
-    applied: { label: '已冲抵', variant: 'outline', icon: Receipt },
+    confirmed: { label: '已到账', variant: 'default', icon: CheckCircle },
+    applied: { label: '已入账', variant: 'outline', icon: Receipt },
     cancelled: { label: '已取消', variant: 'destructive', icon: XCircle },
   };
 
@@ -505,16 +552,24 @@ function RoundingAmountDisplay({ amount }: { amount: number }) {
 interface PaymentRowActionsProps {
   payment: PaymentRecord;
   onConfirm?: (paymentId: string) => void;
+  onCancel?: (payment: PaymentRecord) => void;
   confirmingId?: string | null;
   isConfirming?: boolean;
+  cancellingId?: string | null;
+  isCancelling?: boolean;
 }
 
 function PaymentRowActions({
   payment,
   onConfirm,
+  onCancel,
   confirmingId,
   isConfirming,
+  cancellingId,
+  isCancelling,
 }: PaymentRowActionsProps) {
+  const isThisCancelling = cancellingId === payment.id && isCancelling;
+
   return (
     <div className="flex items-center justify-center gap-1">
       {payment.status === 'pending' && onConfirm && (
@@ -557,6 +612,16 @@ function PaymentRowActions({
               查看详情
             </Link>
           </DropdownMenuItem>
+          {payment.status === 'pending' && onCancel && (
+            <DropdownMenuItem
+              onClick={() => onCancel(payment)}
+              disabled={isThisCancelling}
+              className="text-destructive focus:text-destructive"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              {isThisCancelling ? '取消中...' : '取消收款'}
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
             <Link href={`/sales-orders/${payment.salesOrder.id}`}>
               <Receipt className="mr-2 h-4 w-4" />

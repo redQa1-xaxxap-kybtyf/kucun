@@ -2,11 +2,13 @@
 
 import { Package, User } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 
 import { CopyableText } from '@/components/common/copyable-text';
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { RelativeTime } from '@/components/common/relative-time';
+import { OpeningBalanceRecordActions } from '@/components/inventory/opening-balance-record-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
@@ -18,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { can } from '@/lib/auth/permissions';
 import {
   INBOUND_REASON_LABELS,
   type InboundRecord as BaseInboundRecord,
@@ -139,6 +142,12 @@ const getActualWeight = (record: InboundRecordWithProduct) => {
   return weight ? `${weight.toFixed(2)} kg` : '-';
 };
 
+const getDamagedQuantity = (record: InboundRecordWithProduct) =>
+  record.damagedQuantity ?? 0;
+
+const hasDamagedQuantity = (record: InboundRecordWithProduct) =>
+  getDamagedQuantity(record) > 0;
+
 /**
  * 入库记录表格组件
  * ✅ 符合产品模块UI风格规范
@@ -149,6 +158,12 @@ export function InboundRecordsTable({
   isLoading,
   onPageChange,
 }: InboundRecordsTableProps) {
+  const { data: session } = useSession();
+  const canManageOpeningBalance = can(
+    session?.user ?? null,
+    'inventory:adjust'
+  );
+
   if (isLoading) {
     return <ContentLoading text="加载入库记录..." />;
   }
@@ -157,12 +172,15 @@ export function InboundRecordsTable({
     <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
       <TableHeading count={records.length} />
       {/* 桌面端表格视图 */}
-      <div className="hidden overflow-x-auto md:block">
-        <RecordsTable records={records} />
+      <div className="hidden overflow-x-auto xl:block">
+        <RecordsTable
+          records={records}
+          canManageOpeningBalance={canManageOpeningBalance}
+        />
       </div>
 
       {/* 移动端卡片视图 */}
-      <div className="space-y-3 p-3 md:hidden">
+      <div className="space-y-3 p-3 xl:hidden">
         {records.length === 0 ? (
           <EmptyState
             title="暂无入库记录"
@@ -178,6 +196,8 @@ export function InboundRecordsTable({
         ) : (
           records.map(record => {
             const piecesPerUnit = getActualPiecesPerUnit(record);
+            const damagedQuantity = getDamagedQuantity(record);
+            const showDamage = damagedQuantity > 0;
             return (
               <div
                 key={record.id}
@@ -191,6 +211,14 @@ export function InboundRecordsTable({
                     <div className="mt-0.5 text-xs text-[hsl(var(--color-text-secondary))]">
                       {record.product?.name || '未知产品'}
                     </div>
+                    <div className="mt-1 text-[11px] font-bold text-slate-400">
+                      单据号：{record.recordNumber}
+                    </div>
+                    {record.openingImportBatchId ? (
+                      <div className="mt-1 break-all font-mono text-[11px] text-blue-600">
+                        导入批次：{record.openingImportBatchId}
+                      </div>
+                    ) : null}
                     <div className="mt-1 text-xs text-[hsl(var(--color-text-secondary))]">
                       规格：
                       {formatSpecification(record.product?.specification) ||
@@ -217,12 +245,22 @@ export function InboundRecordsTable({
                     </div>
                   </div>
                   <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
-                    <Badge
-                      variant={getOperationTypeVariant(record.reason)}
-                      className="mb-1 text-xs font-medium"
-                    >
-                      {getOperationTypeLabel(record.reason)}
-                    </Badge>
+                    <div className="mb-1 flex flex-wrap justify-end gap-1">
+                      <Badge
+                        variant={getOperationTypeVariant(record.reason)}
+                        className="text-xs font-medium"
+                      >
+                        {getOperationTypeLabel(record.reason)}
+                      </Badge>
+                      {showDamage ? (
+                        <Badge
+                          variant="destructive"
+                          className="text-xs font-bold"
+                        >
+                          有破损
+                        </Badge>
+                      ) : null}
+                    </div>
                     <div className="flex items-center justify-end gap-1">
                       <User className="h-3 w-3" />
                       <RelativeTime date={record.createdAt} />
@@ -237,11 +275,42 @@ export function InboundRecordsTable({
                   </span>
                 </div>
 
+                {showDamage ? (
+                  <div className="mt-2 flex items-center justify-between rounded-lg border border-red-100 bg-red-50/70 px-3 py-2 text-xs">
+                    <span className="font-bold text-red-600">到货破损</span>
+                    <span className="font-black text-red-600">
+                      {formatQuantity(damagedQuantity, piecesPerUnit)}
+                    </span>
+                  </div>
+                ) : null}
+
                 {record.remarks && (
                   <div className="mt-2 text-[11px] text-slate-400 italic">
                     备注：{record.remarks}
                   </div>
                 )}
+
+                {canManageOpeningBalance &&
+                record.reason === 'opening_balance' ? (
+                  <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/70 p-3">
+                    <div className="mb-2 text-[11px] font-bold text-amber-700">
+                      期初纠错
+                    </div>
+                    <OpeningBalanceRecordActions record={record} compact />
+                  </div>
+                ) : null}
+
+                <div className="mt-3 border-t border-slate-50 pt-3">
+                  <Button size="sm" variant="outline" asChild className="w-full">
+                    <Link
+                      href={`/inventory/inbound/${encodeURIComponent(
+                        record.recordNumber
+                      )}`}
+                    >
+                      查看详情
+                    </Link>
+                  </Button>
+                </div>
               </div>
             );
           })
@@ -277,7 +346,15 @@ function TableHeading({ count }: { count: number }) {
   );
 }
 
-function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
+function RecordsTable({
+  records,
+  canManageOpeningBalance,
+}: {
+  records: InboundRecordWithProduct[];
+  canManageOpeningBalance: boolean;
+}) {
+  const colSpan = canManageOpeningBalance ? 10 : 9;
+
   return (
     <Table>
       <TableHeader className="bg-slate-50">
@@ -309,12 +386,17 @@ function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
           <TableHead className="py-4 font-black text-slate-700">
             备注说明
           </TableHead>
+          {canManageOpeningBalance ? (
+            <TableHead className="py-4 font-black text-slate-700">
+              期初纠错
+            </TableHead>
+          ) : null}
         </TableRow>
       </TableHeader>
       <TableBody>
         {records.length === 0 ? (
           <TableRow>
-            <TableCell colSpan={10} className="p-8">
+            <TableCell colSpan={colSpan} className="p-8">
               <EmptyState
                 title="暂无入库记录"
                 description="还没有任何入库流水，您可以先创建一条入库记录。"
@@ -330,7 +412,11 @@ function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
           </TableRow>
         ) : (
           records.map(record => (
-            <InboundRecordRow key={record.id} record={record} />
+            <InboundRecordRow
+              key={record.id}
+              record={record}
+              canManageOpeningBalance={canManageOpeningBalance}
+            />
           ))
         )}
       </TableBody>
@@ -338,17 +424,33 @@ function RecordsTable({ records }: { records: InboundRecordWithProduct[] }) {
   );
 }
 
-function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
+function InboundRecordRow({
+  record,
+  canManageOpeningBalance,
+}: {
+  record: InboundRecordWithProduct;
+  canManageOpeningBalance: boolean;
+}) {
   const piecesPerUnit = getActualPiecesPerUnit(record);
+  const damagedQuantity = getDamagedQuantity(record);
+  const showDamage = hasDamagedQuantity(record);
 
   return (
     <TableRow className="h-14 border-b border-slate-100 transition-colors hover:bg-blue-50/30">
-      <TableCell className="max-w-[120px] truncate font-mono text-[11px] font-bold tracking-tight text-slate-400">
-        {record.product?.code ? (
-          <CopyableText text={record.product.code} />
-        ) : (
-          record.productId
-        )}
+      <TableCell className="max-w-[160px] truncate font-mono text-[11px] font-bold tracking-tight text-slate-400">
+        <div className="space-y-1">
+          <Link
+            href={`/inventory/inbound/${encodeURIComponent(record.recordNumber)}`}
+            className="text-slate-500 transition-colors hover:text-blue-600 hover:underline"
+          >
+            <CopyableText text={record.recordNumber} showIcon="never" />
+          </Link>
+          {record.openingImportBatchId ? (
+            <div className="break-all font-mono text-[10px] text-blue-600">
+              {record.openingImportBatchId}
+            </div>
+          ) : null}
+        </div>
       </TableCell>
       <TableCell>
         <div className="flex flex-col py-1">
@@ -393,17 +495,34 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
         </div>
       </TableCell>
       <TableCell className="text-right">
-        <span className="text-sm font-black text-blue-600">
-          {formatQuantity(record.quantity, piecesPerUnit)}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-sm font-black text-blue-600">
+            {formatQuantity(record.quantity, piecesPerUnit)}
+          </span>
+          {showDamage ? (
+            <span className="text-[11px] font-bold text-red-500">
+              破损 {formatQuantity(damagedQuantity, piecesPerUnit)}
+            </span>
+          ) : null}
+        </div>
       </TableCell>
       <TableCell>
-        <Badge
-          variant={getOperationTypeVariant(record.reason)}
-          className="text-[10px] font-black tracking-wider uppercase"
-        >
-          {getOperationTypeLabel(record.reason)}
-        </Badge>
+        <div className="flex flex-wrap gap-1">
+          <Badge
+            variant={getOperationTypeVariant(record.reason)}
+            className="text-[10px] font-black tracking-wider uppercase"
+          >
+            {getOperationTypeLabel(record.reason)}
+          </Badge>
+          {showDamage ? (
+            <Badge
+              variant="destructive"
+              className="text-[10px] font-black tracking-wider"
+            >
+              有破损
+            </Badge>
+          ) : null}
+        </div>
       </TableCell>
       <TableCell className="text-xs text-slate-500">
         <div className="flex flex-col gap-1">
@@ -417,6 +536,20 @@ function InboundRecordRow({ record }: { record: InboundRecordWithProduct }) {
       <TableCell className="max-w-[150px] truncate text-xs text-slate-400 italic">
         {record.remarks || '-'}
       </TableCell>
+      {canManageOpeningBalance ? (
+        <TableCell className="min-w-[220px]">
+          {record.reason === 'opening_balance' ? (
+            <div className="space-y-2">
+              <div className="text-[11px] font-bold text-amber-700">
+                导入错误可直接在这里处理
+              </div>
+              <OpeningBalanceRecordActions record={record} compact />
+            </div>
+          ) : (
+            <span className="text-xs text-slate-300">-</span>
+          )}
+        </TableCell>
+      ) : null}
     </TableRow>
   );
 }

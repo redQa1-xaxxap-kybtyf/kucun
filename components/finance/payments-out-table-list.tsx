@@ -39,12 +39,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface PaymentOutRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -111,7 +114,7 @@ export function PaymentsOutTableList({
   return (
     <div className="space-y-4">
       {/* 桌面端：宽表格 + 横向滚动 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
+      <div className="hidden overflow-x-auto rounded-md border xl:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -119,7 +122,9 @@ export function PaymentsOutTableList({
               <TableHead className="w-[140px]">关联应付款</TableHead>
               <TableHead className="w-[150px]">供应商</TableHead>
               <TableHead className="w-[100px]">付款方式</TableHead>
-              <TableHead className="w-[120px] text-right">付款金额</TableHead>
+              <TableHead className="w-[110px] text-right">记账金额</TableHead>
+              <TableHead className="w-[110px] text-right">实际付款</TableHead>
+              <TableHead className="w-[100px] text-right">抹零差额</TableHead>
               <TableHead className="w-[140px]">付款日期</TableHead>
               <TableHead className="w-[100px]">状态</TableHead>
               <TableHead className="w-[120px] text-center">操作</TableHead>
@@ -142,7 +147,7 @@ export function PaymentsOutTableList({
       </div>
 
       {/* 移动端：卡片列表 */}
-      <div className="space-y-3 md:hidden">
+      <div className="grid gap-3 lg:grid-cols-2 xl:hidden">
         {payments.map(payment => (
           <PaymentOutCard
             key={payment.id}
@@ -222,11 +227,23 @@ function PaymentOutTableRow({
         <PaymentMethodBadge method={payment.paymentMethod} />
       </TableCell>
 
-      {/* 付款金额 */}
+      {/* 记账金额 */}
       <TableCell className="text-right">
         <div className="font-medium text-[hsl(var(--color-primary))]">
           {formatCurrency(payment.paymentAmount)}
         </div>
+      </TableCell>
+
+      {/* 实际付款 */}
+      <TableCell className="text-right">
+        <div className="font-medium text-green-600">
+          {formatCurrency(payment.actualPaymentAmount)}
+        </div>
+      </TableCell>
+
+      {/* 抹零差额 */}
+      <TableCell className="text-right">
+        <RoundingAmountDisplay amount={payment.roundingAmount} />
       </TableCell>
 
       {/* 付款日期 */}
@@ -273,25 +290,31 @@ function PaymentOutCard({
   isVoiding?: boolean;
 }) {
   const isThisConfirming = isConfirming && confirmingId === payment.id;
+  const primaryActionsClass = cn(
+    'grid gap-2',
+    payment.status === 'pending' && onConfirm ? 'grid-cols-2' : 'grid-cols-1'
+  );
 
   return (
     <div className="bg-card rounded-lg border p-3 shadow-[var(--shadow-light)] sm:p-4">
       <div className="flex items-start justify-between gap-2">
-        <div className="space-y-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
             <span>付款单号</span>
             <span className="font-mono">
               <CopyableText text={payment.paymentNumber} />
             </span>
           </div>
-          <div className="text-sm font-medium">{payment.supplier.name}</div>
+          <div className="text-sm font-medium leading-5 break-words">
+            {payment.supplier.name}
+          </div>
           {payment.supplier.phone && (
             <div className="text-muted-foreground text-xs">
               {payment.supplier.phone}
             </div>
           )}
         </div>
-        <div className="flex flex-col items-end gap-2 text-xs">
+        <div className="flex shrink-0 flex-col items-end gap-2 text-xs">
           <StatusBadge status={payment.status} />
           <PaymentMethodBadge method={payment.paymentMethod} />
         </div>
@@ -313,17 +336,28 @@ function PaymentOutCard({
         </div>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3 text-xs sm:text-sm">
+      <div className="mt-3 grid grid-cols-3 gap-3 text-xs sm:text-sm">
         <div className="space-y-1">
-          <div className="text-muted-foreground">付款金额</div>
+          <div className="text-muted-foreground">记账金额</div>
           <div className="font-medium text-[hsl(var(--color-primary))]">
             {formatCurrency(payment.paymentAmount)}
           </div>
         </div>
         <div className="space-y-1">
-          <div className="text-muted-foreground">经办人</div>
-          <div>{payment.user.name}</div>
+          <div className="text-muted-foreground">实际付款</div>
+          <div className="font-medium text-green-600">
+            {formatCurrency(payment.actualPaymentAmount)}
+          </div>
         </div>
+        <div className="space-y-1">
+          <div className="text-muted-foreground">抹零差额</div>
+          <RoundingAmountDisplay amount={payment.roundingAmount} />
+        </div>
+      </div>
+
+      <div className="mt-3 text-xs sm:text-sm">
+        <span className="text-muted-foreground">经办人：</span>
+        <span>{payment.user.name}</span>
       </div>
 
       <div className="text-muted-foreground mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -339,15 +373,15 @@ function PaymentOutCard({
         </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap gap-2">
+      <div className="mt-3 grid grid-cols-[1fr_auto] items-start gap-2">
+        <div className={primaryActionsClass}>
           {payment.status === 'pending' && (
             <>
               <Button
                 variant="outline"
                 size="sm"
                 asChild
-                className="h-8 px-3 text-xs"
+                className="h-9 w-full justify-center px-3 text-xs"
               >
                 <Link href={`/finance/payments-out/${payment.id}/edit`}>
                   <Pencil className="mr-1 h-3.5 w-3.5" />
@@ -360,7 +394,7 @@ function PaymentOutCard({
                   size="sm"
                   onClick={() => onConfirm(payment.id)}
                   disabled={isConfirming || Boolean(isVoiding)}
-                  className="h-8 bg-green-600 px-3 text-xs text-white hover:bg-green-700"
+                  className="h-9 w-full bg-green-600 px-3 text-xs text-white hover:bg-green-700"
                 >
                   {isThisConfirming ? '确认中...' : '确认付款'}
                 </Button>
@@ -371,7 +405,7 @@ function PaymentOutCard({
             variant="outline"
             size="sm"
             asChild
-            className="h-8 px-3 text-xs"
+            className="h-9 w-full justify-center px-3 text-xs"
           >
             <Link href={`/finance/payments-out/${payment.id}`}>
               <Eye className="mr-1 h-3.5 w-3.5" />
@@ -382,7 +416,11 @@ function PaymentOutCard({
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 shrink-0 rounded-lg"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -444,7 +482,7 @@ function StatusBadge({ status }: { status: string }) {
   > = {
     pending: { label: '待确认', variant: 'secondary', icon: Clock },
     confirmed: { label: '已确认', variant: 'default', icon: CheckCircle },
-    cancelled: { label: '已取消', variant: 'destructive', icon: XCircle },
+    cancelled: { label: '已作废', variant: 'destructive', icon: XCircle },
   };
 
   const config = statusConfig[status] || {
@@ -480,6 +518,19 @@ function PaymentMethodBadge({ method }: { method: string }) {
       <Receipt className="h-3 w-3" />
       {methodLabels[method] || method}
     </Badge>
+  );
+}
+
+function RoundingAmountDisplay({ amount }: { amount: number }) {
+  if (amount === 0) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+
+  return (
+    <span className={amount < 0 ? 'text-red-600' : 'text-orange-600'}>
+      {amount < 0 ? '+' : '-'}
+      {formatCurrency(Math.abs(amount))}
+    </span>
   );
 }
 
