@@ -1,7 +1,9 @@
 import type { NextConfig } from 'next';
 
 const strictBuildChecks =
-  process.env.NODE_ENV === 'production' || process.env.CI === 'true';
+  process.env.STRICT_BUILD_CHECKS === 'true' ||
+  (process.env.STRICT_BUILD_CHECKS !== 'false' &&
+    (process.env.NODE_ENV === 'production' || process.env.CI === 'true'));
 
 const nextConfig: NextConfig = {
   // Jest / Next.js 依赖中存在 ESM-only 包（如 MSW 相关依赖），需要在 Next 编译链中转译

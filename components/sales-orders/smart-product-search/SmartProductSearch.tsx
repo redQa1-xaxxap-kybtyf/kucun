@@ -28,7 +28,7 @@ import type { ProductWithInventory, SmartProductSearchProps } from './types';
 
 const AddTemporaryProductDialog = dynamic(
   () =>
-    import('../add-temporary-product-dialog').then(
+    import('../add-temporary-product-dialog/AddTemporaryProductDialog').then(
       mod => mod.AddTemporaryProductDialog
     ),
   { ssr: false, loading: () => null }

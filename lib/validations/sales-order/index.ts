@@ -329,7 +329,15 @@ export const salesOrderQuerySchema = z.object({
     .optional()
     .default('desc')
     .transform(val => val ?? 'desc'),
-  status: salesOrderStatusSchema
+  status: z
+    .enum([
+      'pending',
+      'draft',
+      'confirmed',
+      'shipped',
+      'completed',
+      'cancelled',
+    ])
     .nullable()
     .optional()
     .transform(val => val ?? undefined),

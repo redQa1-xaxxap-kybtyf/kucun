@@ -37,6 +37,9 @@ function buildQueryString(params: BatchSpecificationQueryParams = {}): string {
   if (params.productId) {
     query.set('productId', params.productId);
   }
+  if (params.variantId) {
+    query.set('variantId', params.variantId);
+  }
   if (params.batchNumber) {
     query.set('batchNumber', params.batchNumber);
   }

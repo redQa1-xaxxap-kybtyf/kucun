@@ -21,6 +21,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { ItemPricingResult } from '@/lib/services/factory-shipment-pricing-service';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 
 interface PricingResultDialogProps {
   open: boolean;
@@ -107,9 +108,9 @@ export function PricingResultDialog({
                     <TableCell className="text-center font-medium">
                       {index + 1}
                     </TableCell>
-                    <TableCell>¥{result.unitCost.toFixed(2)}</TableCell>
+                    <TableCell>{formatCostPrice(result.unitCost)}</TableCell>
                     <TableCell>¥{result.allocatedExpense.toFixed(2)}</TableCell>
-                    <TableCell>¥{result.finalUnitCost.toFixed(2)}</TableCell>
+                    <TableCell>{formatCostPrice(result.finalUnitCost)}</TableCell>
                     <TableCell className="font-semibold">
                       ¥{result.suggestedUnitPrice.toFixed(2)}
                     </TableCell>

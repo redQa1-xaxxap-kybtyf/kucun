@@ -14,6 +14,7 @@ import {
   Package,
   Trash2,
   Truck,
+  Undo2,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -112,6 +113,9 @@ export function ERPSalesOrderList({
   const [cancelConfirmOpen, setCancelConfirmOpen] = React.useState(false);
   const [orderPendingCancel, setOrderPendingCancel] =
     React.useState<SalesOrder | null>(null);
+  const [withdrawConfirmOpen, setWithdrawConfirmOpen] = React.useState(false);
+  const [orderPendingWithdraw, setOrderPendingWithdraw] =
+    React.useState<SalesOrder | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
   const [orderPendingDelete, setOrderPendingDelete] =
     React.useState<SalesOrder | null>(null);
@@ -122,6 +126,14 @@ export function ERPSalesOrderList({
 
   const statusFilterValue = initialParams?.status ?? undefined;
   const normalizedStatus = statusFilterValue;
+  const isPrioritySorted = React.useMemo(() => {
+    const sortBy = initialParams?.sortBy || 'createdAt';
+
+    return (
+      sortBy === 'createdAt' &&
+      (!normalizedStatus || normalizedStatus === 'pending')
+    );
+  }, [initialParams?.sortBy, normalizedStatus]);
 
   // 检查是否有活跃筛选条件
   // ✅ P1修复: 将搜索词纳入活跃筛选判断
@@ -303,13 +315,15 @@ export function ERPSalesOrderList({
 
   // ✅ 使用新的 useUpdateSalesOrderStatus Hook，自动处理缓存刷新
   const updateStatusMutation = useUpdateSalesOrderStatus({
-    onSuccess: () => {
+    onSuccess: result => {
       toast({
         title: '操作成功',
-        description: '订单状态已更新',
+        description: result.message || '订单状态已更新',
         variant: 'success',
       });
       setUpdatingOrderId(null);
+      setWithdrawConfirmOpen(false);
+      setOrderPendingWithdraw(null);
 
       // ✅ 缓存自动刷新，无需手动调用 refetchQueries
       // useUpdateSalesOrderStatus Hook 已经处理了所有缓存刷新逻辑：
@@ -352,6 +366,69 @@ export function ERPSalesOrderList({
     (status: SalesOrderStatus) => !NON_CANCELABLE_STATUSES.includes(status),
     []
   );
+
+  const getWithdrawConfirmationBlockReason = React.useCallback(
+    (order: SalesOrder) => {
+      if (order.status !== 'confirmed') {
+        return '只有已确认且未发货的订单才能撤回确认';
+      }
+      if (order.orderType === 'TRANSFER') {
+        return '调货销售暂不支持撤回确认，请直接取消后重开';
+      }
+      if (order.hasReturnOrder) {
+        return '订单已发生退货，不能撤回确认';
+      }
+      if ((order.paidAmount ?? 0) > 0) {
+        return '订单已存在收款记录，不能撤回确认';
+      }
+      if (Number(order.prepaymentAmount ?? 0) > 0) {
+        return '订单已使用预收款冲抵，不能撤回确认，请直接取消后重开';
+      }
+      return undefined;
+    },
+    []
+  );
+
+  const handleWithdrawOrderClick = React.useCallback(
+    (order: SalesOrder, event: React.MouseEvent) => {
+      event.stopPropagation();
+
+      const blockReason = getWithdrawConfirmationBlockReason(order);
+      if (blockReason) {
+        toast({
+          title: '暂不能撤回确认',
+          description: blockReason,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setOrderPendingWithdraw(order);
+      setWithdrawConfirmOpen(true);
+    },
+    [getWithdrawConfirmationBlockReason, toast]
+  );
+
+  const handleConfirmWithdrawOrder = React.useCallback(() => {
+    if (!orderPendingWithdraw) {
+      return;
+    }
+
+    const orderId = orderPendingWithdraw.id;
+    setUpdatingOrderId(orderId);
+    updateStatusMutation.mutate({
+      id: orderId,
+      status: 'draft',
+      idempotencyKey: crypto.randomUUID(),
+    });
+  }, [orderPendingWithdraw, updateStatusMutation]);
+
+  const handleWithdrawDialogOpenChange = React.useCallback((open: boolean) => {
+    setWithdrawConfirmOpen(open);
+    if (!open) {
+      setOrderPendingWithdraw(null);
+    }
+  }, []);
 
   const handleCancelOrderClick = React.useCallback(
     (order: SalesOrder, event: React.MouseEvent) => {
@@ -609,6 +686,7 @@ export function ERPSalesOrderList({
             key: 'status',
             label: '订单状态',
             options: [
+              { label: '待处理', value: 'pending' },
               { label: '草稿', value: 'draft' },
               { label: '已确认', value: 'confirmed' },
               { label: '已发货', value: 'shipped' },
@@ -693,6 +771,20 @@ export function ERPSalesOrderList({
         variant="pro"
         compact={true}
       />
+
+      {isPrioritySorted && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-amber-900 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+            <div className="min-w-0">
+              <p className="text-sm font-bold">待确认优先</p>
+              <p className="mt-1 text-xs leading-5 text-amber-800 sm:text-sm">
+                列表默认按业务处理顺序展示，草稿单会始终排在已确认前面，方便先确认再发货；已完成和已取消会自动靠后。
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 数据表格 */}
       <div className="card-shadow-medium overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
@@ -931,6 +1023,17 @@ export function ERPSalesOrderList({
                                 取消
                               </DropdownMenuItem>
                             )}
+                            {order.status === 'confirmed' && (
+                              <DropdownMenuItem
+                                onClick={event =>
+                                  handleWithdrawOrderClick(order, event)
+                                }
+                                className="text-xs"
+                              >
+                                <Undo2 className="mr-1 h-3 w-3" />
+                                撤回确认
+                              </DropdownMenuItem>
+                            )}
                             {order.status === 'cancelled' && (
                               <DropdownMenuItem
                                 onClick={event =>
@@ -1004,8 +1107,8 @@ export function ERPSalesOrderList({
                   role="button"
                   tabIndex={0}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
                       <div className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
                         {order.orderNumber}
                       </div>
@@ -1046,14 +1149,14 @@ export function ERPSalesOrderList({
                         )}
                       </div>
                     </div>
-                    <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div className="min-w-0 rounded-xl bg-[hsl(var(--color-bg-secondary))] px-3 py-2 text-xs text-[hsl(var(--color-text-secondary))] sm:shrink-0 sm:bg-transparent sm:px-0 sm:py-0 sm:text-right">
                       <div className="font-semibold text-[hsl(var(--color-success))]">
                         金额：{formatAmount(order.totalAmount)}
                       </div>
-                      <div className="mt-1 flex justify-end">
+                      <div className="mt-1 flex sm:justify-end">
                         {getPaymentStatusBadge(order)}
                       </div>
-                      <div className="mt-1 text-[hsl(var(--color-text-tertiary))]">
+                      <div className="mt-1 break-all text-[hsl(var(--color-text-tertiary))] sm:break-normal">
                         创建时间：{formatDateTime(order.createdAt)}
                       </div>
                     </div>
@@ -1155,6 +1258,44 @@ export function ERPSalesOrderList({
               {orderPendingCancel && updatingOrderId === orderPendingCancel.id
                 ? '正在取消...'
                 : '确认取消'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={withdrawConfirmOpen}
+        onOpenChange={handleWithdrawDialogOpenChange}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50">
+                <Undo2 className="h-5 w-5 text-amber-600" />
+              </div>
+              <AlertDialogTitle>确认撤回为草稿</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4 text-sm leading-6 text-[hsl(var(--color-text-secondary))]">
+              确定要将订单{' '}
+              <strong>{orderPendingWithdraw?.orderNumber}</strong>{' '}
+              撤回为草稿吗？
+              <br />
+              撤回后可重新修改订单，系统会同步释放预留库存并关闭当前待收记录。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>暂不撤回</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmWithdrawOrder}
+              disabled={
+                !!orderPendingWithdraw &&
+                updatingOrderId === orderPendingWithdraw.id
+              }
+            >
+              {orderPendingWithdraw &&
+              updatingOrderId === orderPendingWithdraw.id
+                ? '正在撤回...'
+                : '确认撤回'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

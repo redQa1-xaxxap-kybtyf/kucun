@@ -99,7 +99,12 @@ export async function resolveShipmentItems(
       displayName: trimmedDisplayName,
       specification: trimmedSpecification,
       unit: trimmedUnit,
-      // piecesPerUnit column is not present in some environments; skip persisting
+      piecesPerUnit:
+        typeof item.piecesPerUnit === 'number' &&
+        Number.isInteger(item.piecesPerUnit) &&
+        item.piecesPerUnit > 0
+          ? item.piecesPerUnit
+          : (product?.piecesPerUnit ?? null),
       weight: itemWeight,
     };
   });

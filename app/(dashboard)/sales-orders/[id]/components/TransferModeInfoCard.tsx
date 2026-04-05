@@ -4,6 +4,10 @@ import { Truck } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import {
+  SALES_ORDER_TYPE_LABELS,
+  TRANSFER_MODE_LABELS,
+} from '@/lib/types/sales-order';
 
 import type { SalesOrderDetail } from './types';
 
@@ -19,13 +23,15 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
         <div className="ml-5 flex-1">
           <div className="flex items-center gap-3">
             <h3 className="text-sm font-black tracking-widest text-amber-900 uppercase">
-              协同调货业务指令
+              {SALES_ORDER_TYPE_LABELS.TRANSFER}履约说明
             </h3>
             <Badge
               variant="outline"
               className="border-amber-300 bg-white text-[10px] font-black text-amber-700"
             >
-              {order.transferMode === 'MIXED' ? '混合发货' : '供应商直发'}
+              {order.transferMode === 'MIXED'
+                ? TRANSFER_MODE_LABELS.MIXED
+                : TRANSFER_MODE_LABELS.SUPPLIER_ONLY}
             </Badge>
           </div>
           <div className="mt-3 space-y-2 text-xs font-medium text-amber-800">
@@ -35,7 +41,7 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
                   ✓
                 </span>
                 <span>
-                  当前处于 <strong>混合发货</strong>{' '}
+                  当前处于 <strong>{TRANSFER_MODE_LABELS.MIXED}</strong>{' '}
                   模式：系统将根据库存策略自动拆分本地仓与供应商发货计划。
                 </span>
               </p>
@@ -45,7 +51,8 @@ export function TransferModeInfoCard({ order }: { order: SalesOrderDetail }) {
                   !
                 </span>
                 <span>
-                  当前处于 <strong>纯调货</strong>{' '}
+                  当前处于{' '}
+                  <strong>{TRANSFER_MODE_LABELS.SUPPLIER_ONLY}</strong>{' '}
                   模式：所有产品线均关联至外部供应商，本地不执行库存扣减。
                 </span>
               </p>

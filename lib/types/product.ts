@@ -52,8 +52,12 @@ export interface ProductCategory {
 export interface ProductInventoryBatch {
   /** 批次号 */
   batchNumber: string;
-  /** 批次库存数量 */
+  /** 批次总库存数量 */
   quantity: number;
+  /** 批次预留数量 */
+  reservedQuantity?: number;
+  /** 批次可用数量（总库存 - 预留） */
+  availableQuantity?: number;
   /** 批次对应的每件片数（若存在批次规格） */
   piecesPerUnit?: number;
   /** 批次对应的每件重量(kg) */
@@ -82,6 +86,12 @@ export interface ProductInventory {
 export interface ProductBatchSpec {
   /** 批次号 */
   batchNumber: string;
+  /** 产品变体ID */
+  variantId?: string;
+  /** 色号 */
+  colorCode?: string;
+  /** 色名 */
+  colorName?: string;
   /** 每件对应的片数 */
   piecesPerUnit: number;
   /** 当前批次的库存数量（片） */

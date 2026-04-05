@@ -59,12 +59,13 @@ import {
   type ReturnOrderStatus,
   type ReturnOrderType,
   type ReturnProcessType,
-  RETURN_ORDER_STATUS_LABELS,
+  type ReturnOrderUiStatus,
+  getReturnOrderDisplayStatus,
+  getReturnOrderPendingRefundAmount,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
-import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 interface ERPReturnOrderListProps {
@@ -110,12 +111,11 @@ export function ERPReturnOrderList({
   );
   const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
 
-  // 确认退货订单（submitted -> completed），并自动创建应退货款
   const updateStatusMutation = useUpdateReturnOrderStatus({
     onSuccess: () => {
       toast({
-        title: '确认成功',
-        description: '退货订单已确认并完成，后续不允许再编辑或取消',
+        title: '完成成功',
+        description: '退货已完成，库存已回补；如需退款，请继续处理退款',
         variant: 'success',
       });
       queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
@@ -136,6 +136,7 @@ export function ERPReturnOrderList({
     page: initialParams?.page || 1,
     limit: initialParams?.limit || paginationConfig.defaultPageSize,
     search: initialParams?.search,
+    uiStatus: initialParams?.uiStatus,
     status: initialParams?.status,
     type: initialParams?.type,
     processType: initialParams?.processType,
@@ -179,7 +180,8 @@ export function ERPReturnOrderList({
   const displayData = queryData;
 
   const searchValue = searchInput;
-  const statusFilter: ReturnOrderStatus | 'all' = queryParams.status ?? 'all';
+  const statusFilter: ReturnOrderUiStatus | 'all' =
+    queryParams.uiStatus ?? 'all';
   const typeFilter: ReturnOrderType | 'all' = queryParams.type ?? 'all';
   const processTypeFilter: ReturnProcessType | 'all' =
     queryParams.processType ?? 'all';
@@ -190,6 +192,25 @@ export function ERPReturnOrderList({
     endDate: queryParams.endDate,
   };
   const isBackgroundFetching = isFetching && !isLoading;
+
+  const getPrimaryActionConfig = React.useCallback(
+    (status: ReturnOrderStatus) => {
+      if (
+        status === 'submitted' ||
+        status === 'approved' ||
+        status === 'processing'
+      ) {
+        return {
+          nextStatus: 'completed' as const,
+          label: '完成退货',
+          loadingLabel: '完成中...',
+        };
+      }
+
+      return null;
+    },
+    []
+  );
 
   React.useEffect(() => {
     if (!isSearching) return;
@@ -328,12 +349,12 @@ export function ERPReturnOrderList({
   );
 
   const handleStatusChange = React.useCallback(
-    (status: ReturnOrderStatus | 'all') => {
+    (status: ReturnOrderUiStatus | 'all') => {
       if (onFilter) {
-        onFilter('status', status === 'all' ? undefined : status);
+        onFilter('uiStatus', status === 'all' ? undefined : status);
       } else {
         updateQueryStringParams({
-          status: status === 'all' ? undefined : status,
+          uiStatus: status === 'all' ? undefined : status,
           page: 1,
         });
       }
@@ -425,10 +446,11 @@ export function ERPReturnOrderList({
       onFilter('includeTest', undefined);
       onFilter('includeVoided', undefined);
     } else {
-      updateQueryStringParams({
-        status: undefined,
-        type: undefined,
-        processType: undefined,
+        updateQueryStringParams({
+          uiStatus: undefined,
+          status: undefined,
+          type: undefined,
+          processType: undefined,
         startDate: undefined,
         endDate: undefined,
         includeTest: undefined,
@@ -474,10 +496,6 @@ export function ERPReturnOrderList({
       onDelete(returnOrder);
     }
   };
-
-  // 获取状态颜色（使用统一的 badge-helpers）
-  const getStatusColor = (status: string) =>
-    getReturnOrderStatusBadgeVariant(status);
 
   // ✅ 改进的错误处理：显示错误信息并提供重试功能
   if (error) {
@@ -556,9 +574,9 @@ export function ERPReturnOrderList({
               <TableRow>
                 <TableCell colSpan={9} className="p-8">
                   <EmptyState
-                    title="暂无退货订单数据"
+                    title="暂无退货订单"
                     action={
-                      <Button onClick={handleCreateNew}>新建退货单</Button>
+                      <Button onClick={handleCreateNew}>新建退货订单</Button>
                     }
                     compact
                   />
@@ -599,13 +617,8 @@ export function ERPReturnOrderList({
                       const hasAdjustment =
                         Math.abs(actualAmount - returnOrder.totalAmount) >
                         0.005;
-                      const remainingAmount =
-                        typeof returnOrder.remainingAmount === 'number'
-                          ? returnOrder.remainingAmount
-                          : undefined;
-                      const hasRemaining =
-                        typeof remainingAmount === 'number' &&
-                        remainingAmount > 0.005;
+                      const pendingRefundAmount =
+                        getReturnOrderPendingRefundAmount(returnOrder);
 
                       return (
                         <div className="flex flex-col items-end gap-0.5">
@@ -616,9 +629,9 @@ export function ERPReturnOrderList({
                               {formatCurrency(returnOrder.totalAmount)}
                             </span>
                           )}
-                          {hasRemaining && (
+                          {pendingRefundAmount > 0.005 && (
                             <span className="text-xs text-[hsl(var(--color-warning))]">
-                              待处理 {formatCurrency(remainingAmount)}
+                              待退款 {formatCurrency(pendingRefundAmount)}
                             </span>
                           )}
                         </div>
@@ -626,8 +639,8 @@ export function ERPReturnOrderList({
                     })()}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusColor(returnOrder.status)}>
-                      {RETURN_ORDER_STATUS_LABELS[returnOrder.status]}
+                    <Badge variant={getReturnOrderDisplayStatus(returnOrder).variant}>
+                      {getReturnOrderDisplayStatus(returnOrder).label}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -635,19 +648,26 @@ export function ERPReturnOrderList({
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center gap-2">
-                      {/* 提交后的确认按钮：submitted 状态显示 */}
-                      {returnOrder.status === 'submitted' && (
+                      {(() => {
+                        const actionConfig = getPrimaryActionConfig(
+                          returnOrder.status
+                        );
+
+                        if (!actionConfig) {
+                          return null;
+                        }
+
+                        return (
                         <Button
                           variant="outline"
                           size="sm"
                           className="h-8 px-2 text-xs"
                           onClick={e => {
                             e.stopPropagation();
-                            // 提交后的财务确认：将状态置为 approved，并自动创建应退货款
                             setConfirmingId(returnOrder.id);
                             updateStatusMutation.mutate({
                               id: returnOrder.id,
-                              status: 'approved',
+                              status: actionConfig.nextStatus,
                             });
                           }}
                           disabled={confirmingId === returnOrder.id}
@@ -655,16 +675,17 @@ export function ERPReturnOrderList({
                           {confirmingId === returnOrder.id ? (
                             <span className="flex items-center gap-1 text-xs">
                               <CheckCircle2 className="h-3 w-3 animate-spin" />
-                              确认中...
+                              {actionConfig.loadingLabel}
                             </span>
                           ) : (
                             <span className="flex items-center gap-1 text-xs">
                               <CheckCircle2 className="h-3 w-3" />
-                              确认
+                              {actionConfig.label}
                             </span>
                           )}
                         </Button>
-                      )}
+                        );
+                      })()}
 
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

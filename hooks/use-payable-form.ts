@@ -103,8 +103,8 @@ function usePayableMutations({
     mutationFn: (data: CreatePayableRecordData) =>
       payablesApi.createPayableRecord(data),
     onSuccess: async data => {
-      showSuccess('创建成功', {
-        description: `应付款单号 "${data.payableNumber}" 创建成功！`,
+      showSuccess('新建成功', {
+        description: `应付款记录 "${data.payableNumber}" 已新建。`,
       });
 
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建应付款后立即看到新记录
@@ -120,9 +120,9 @@ function usePayableMutations({
       }
     },
     onError: (error: Error) => {
-      const errorMessage = error.message || '创建应付款失败';
+      const errorMessage = error.message || '新建应付款记录失败';
       setSubmitError(errorMessage);
-      showError('创建失败', { description: errorMessage });
+      showError('新建失败', { description: errorMessage });
     },
   });
 

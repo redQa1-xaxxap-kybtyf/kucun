@@ -152,8 +152,8 @@ export function SalesOrderForm({
     mutationFn: createSalesOrder,
     onSuccess: data => {
       toast({
-        title: '销售订单创建成功',
-        description: `订单号 "${data.orderNumber}" 已创建`,
+        title: '新建成功',
+        description: `销售订单 "${data.orderNumber}" 已新建。`,
         variant: 'success',
       });
 
@@ -175,8 +175,9 @@ export function SalesOrderForm({
     },
     onError: error => {
       toast({
-        title: '创建失败',
-        description: error instanceof Error ? error.message : '创建失败',
+        title: '新建失败',
+        description:
+          error instanceof Error ? error.message : '新建销售订单失败',
         variant: 'destructive',
       });
     },
@@ -307,9 +308,9 @@ export function SalesOrderForm({
             返回
           </Button>
           <div className="flex-1">
-            <h1 className="text-3xl font-bold tracking-tight">创建销售订单</h1>
+            <h1 className="text-3xl font-bold tracking-tight">新建销售订单</h1>
             <p className="text-muted-foreground">
-              创建新的销售订单，管理客户订单和产品销售
+              新建销售订单，管理客户订单和产品销售
             </p>
           </div>
         </div>
@@ -447,7 +448,9 @@ export function SalesOrderForm({
                         >
                           <div className="flex flex-col items-center gap-2">
                             <Package className="h-8 w-8 opacity-50" />
-                            <span className="text-sm">暂无产品明细</span>
+                            <span className="text-sm">
+                              还没有产品明细，请先添加产品
+                            </span>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -702,7 +705,7 @@ export function SalesOrderForm({
                   ) : (
                     <>
                       <Plus className="mr-2 h-4 w-4" />
-                      新建订单
+                      新建销售订单
                     </>
                   )}
                 </Button>

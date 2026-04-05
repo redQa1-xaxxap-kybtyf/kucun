@@ -38,10 +38,10 @@ export default function CreateReturnOrderError({
 
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-gray-900">
-              创建退货订单时出错
+              新建退货订单时出错
             </h2>
             <p className="text-sm text-gray-600">
-              无法加载创建退货订单页面，请稍后重试
+              无法加载新建退货订单页面，请稍后重试
             </p>
           </div>
 

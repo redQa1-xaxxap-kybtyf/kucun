@@ -52,6 +52,7 @@ function normalizeParams(
   const sortOrderRaw = parseSingle(raw.sortOrder);
   const searchRaw = parseSingle(raw.search);
   const productIdRaw = parseSingle(raw.productId);
+  const variantIdRaw = parseSingle(raw.variantId);
   const batchNumberRaw = parseSingle(raw.batchNumber);
 
   const pageParsed = Number.parseInt(pageRaw ?? '', 10);
@@ -87,6 +88,9 @@ function normalizeParams(
     ...(productIdRaw && productIdRaw.trim()
       ? { productId: productIdRaw.trim() }
       : {}),
+    ...(variantIdRaw && variantIdRaw.trim()
+      ? { variantId: variantIdRaw.trim() }
+      : {}),
     ...(batchNumberRaw && batchNumberRaw.trim()
       ? { batchNumber: batchNumberRaw.trim() }
       : {}),
@@ -119,6 +123,7 @@ export default async function BatchSpecificationPage({
     sortOrder: normalizedParams.sortOrder ?? DEFAULT_SORT_ORDER,
     search: normalizedParams.search,
     productId: normalizedParams.productId,
+    variantId: normalizedParams.variantId,
     batchNumber: normalizedParams.batchNumber,
   });
 

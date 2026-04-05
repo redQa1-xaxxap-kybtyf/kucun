@@ -18,6 +18,7 @@ import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
 
 // 事务类型定义：显式使用 Prisma.TransactionClient，避免使用模糊的 Omit<typeof prisma,...> 类型
@@ -61,7 +62,7 @@ export async function addToFIFOQueue(
         batchNumber: params.batchNumber,
         inboundRecordId: params.inboundRecordId,
         remainingQty: params.quantity,
-        unitCost: params.unitCost,
+        unitCost: roundCostPrice(params.unitCost),
         inboundDate: params.inboundDate,
       },
     });
@@ -71,7 +72,7 @@ export async function addToFIFOQueue(
       variantId: params.variantId,
       inboundRecordId: params.inboundRecordId,
       quantity: params.quantity,
-      unitCost: params.unitCost,
+      unitCost: roundCostPrice(params.unitCost),
     });
   } catch (error) {
     logger.error('fifo-cost-service', 'FIFO队列入队失败', error);
@@ -89,6 +90,10 @@ function normalizeNullableString(
 
 function roundCurrency(value: number): number {
   return Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
+}
+
+function toUnitCost(value: unknown): number {
+  return roundCostPrice(toNumber(value));
 }
 
 function buildFifoBackfillRecordNumber(inventoryId: string): string {
@@ -163,6 +168,10 @@ export async function ensureFIFOQueueMatchesInventory(
       params.unitCostHint > 0
         ? params.unitCostHint
         : 0;
+  }
+
+  if (usedUnitCost > 0) {
+    usedUnitCost = roundCostPrice(usedUnitCost);
   }
 
   if (!(usedUnitCost > 0)) {
@@ -246,7 +255,7 @@ export async function ensureFIFOQueueMatchesInventory(
 
   const recordUnitCost =
     inboundRecord.unitCost !== null && inboundRecord.unitCost !== undefined
-      ? toNumber(inboundRecord.unitCost)
+      ? toUnitCost(inboundRecord.unitCost)
       : usedUnitCost;
 
   const costEntries = await tx.inventoryCostQueue.findMany({
@@ -375,13 +384,14 @@ export async function getFIFOCost(
         }
 
         const consumeQty = Math.min(remainingToConsume, batch.remainingQty);
-        const batchCost = consumeQty * toNumber(batch.unitCost);
+        const batchUnitCost = toUnitCost(batch.unitCost);
+        const batchCost = consumeQty * batchUnitCost;
 
         totalCost += batchCost;
         batches.push({
           inboundRecordId: batch.inboundRecordId,
           qty: consumeQty,
-          unitCost: toNumber(batch.unitCost),
+          unitCost: batchUnitCost,
           batchCost,
         });
 
@@ -442,8 +452,8 @@ export async function getFIFOCost(
     });
 
     return {
-      totalCost: Math.round(totalCost * 100) / 100,
-      averageUnitCost: Math.round(averageUnitCost * 100) / 100,
+      totalCost: roundCurrency(totalCost),
+      averageUnitCost: roundCostPrice(averageUnitCost),
       batches,
     };
   } catch (error) {
@@ -520,7 +530,7 @@ export async function consumeFIFOQueue(
         // 针对单个批次增加有限次并发重试，避免高并发下直接失败
         let currentRemainingQty = batch.remainingQty;
         let currentUpdatedAt = batch.updatedAt;
-        let currentUnitCost = toNumber(batch.unitCost);
+        let currentUnitCost = toUnitCost(batch.unitCost);
 
         for (
           let attempt = 0;
@@ -584,7 +594,7 @@ export async function consumeFIFOQueue(
 
             currentRemainingQty = fresh.remainingQty;
             currentUpdatedAt = fresh.updatedAt;
-            currentUnitCost = toNumber(fresh.unitCost);
+            currentUnitCost = toUnitCost(fresh.unitCost);
             continue;
           }
 
@@ -649,8 +659,8 @@ export async function consumeFIFOQueue(
     });
 
     return {
-      totalCost: Math.round(totalCost * 100) / 100,
-      averageUnitCost: Math.round(averageUnitCost * 100) / 100,
+      totalCost: roundCurrency(totalCost),
+      averageUnitCost: roundCostPrice(averageUnitCost),
       batches,
     };
   } catch (error) {
@@ -737,7 +747,7 @@ export async function consumeFIFOQueueByBatch(
 
         let currentRemainingQty = batch.remainingQty;
         let currentUpdatedAt = batch.updatedAt;
-        let currentUnitCost = toNumber(batch.unitCost);
+        let currentUnitCost = toUnitCost(batch.unitCost);
 
         for (
           let attempt = 0;
@@ -781,7 +791,7 @@ export async function consumeFIFOQueueByBatch(
 
             currentRemainingQty = fresh.remainingQty;
             currentUpdatedAt = fresh.updatedAt;
-            currentUnitCost = toNumber(fresh.unitCost);
+            currentUnitCost = toUnitCost(fresh.unitCost);
             continue;
           }
 
@@ -828,8 +838,8 @@ export async function consumeFIFOQueueByBatch(
     const averageUnitCost = totalCost / outboundQty;
 
     return {
-      totalCost: Math.round(totalCost * 100) / 100,
-      averageUnitCost: Math.round(averageUnitCost * 100) / 100,
+      totalCost: roundCurrency(totalCost),
+      averageUnitCost: roundCostPrice(averageUnitCost),
       batches,
     };
   } catch (error) {
@@ -884,7 +894,7 @@ export async function getWeightedAverageCostFromFIFOByBatch(
 
       for (const batch of queue) {
         totalQty += batch.remainingQty;
-        totalCost += batch.remainingQty * toNumber(batch.unitCost);
+        totalCost += batch.remainingQty * toUnitCost(batch.unitCost);
       }
 
       if (queue.length < pageSize) {
@@ -902,7 +912,7 @@ export async function getWeightedAverageCostFromFIFOByBatch(
     }
 
     const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
-    return Math.round(avgCost * 100) / 100;
+    return roundCostPrice(avgCost);
   } catch (error) {
     logger.error('fifo-cost-service', '计算批次加权平均成本失败', error);
     throw error;
@@ -944,7 +954,7 @@ export async function getWeightedAverageCostFromFIFO(
 
       for (const batch of queue) {
         totalQty += batch.remainingQty;
-        totalCost += batch.remainingQty * toNumber(batch.unitCost);
+        totalCost += batch.remainingQty * toUnitCost(batch.unitCost);
       }
 
       if (queue.length < pageSize) {
@@ -962,7 +972,7 @@ export async function getWeightedAverageCostFromFIFO(
     }
 
     const avgCost = totalQty > 0 ? totalCost / totalQty : 0;
-    return Math.round(avgCost * 100) / 100;
+    return roundCostPrice(avgCost);
   } catch (error) {
     logger.error('fifo-cost-service', '计算加权平均成本失败', error);
     throw error;

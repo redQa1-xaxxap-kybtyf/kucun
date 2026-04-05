@@ -41,7 +41,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
 
   return (
     <>
-      <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
         <div className="space-y-6">
           {/* 页面标题 */}
           <PageHeader
@@ -54,7 +54,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-11 transition-transform hover:-translate-y-0.5"
+                  className="h-11 w-full justify-center transition-transform hover:-translate-y-0.5 sm:w-auto"
                   onClick={() => setIsImportDialogOpen(true)}
                 >
                   <Upload className="mr-2 h-4 w-4" />
@@ -63,7 +63,7 @@ export function ProductsPageClient({ initialParams }: ProductsPageClientProps) {
                 <Button
                   size="lg"
                   asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 w-full justify-center shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)] sm:w-auto"
                 >
                   <Link href="/products/create">
                     <Plus className="mr-2 h-4 w-4" />

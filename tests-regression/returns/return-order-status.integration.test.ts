@@ -1,5 +1,23 @@
 import { updateReturnOrderStatus } from '@/lib/api/handlers/return-order-status';
 
+jest.mock('@/app/actions/return-orders.utils', () => {
+  const actual = jest.requireActual('@/app/actions/return-orders.utils');
+  return {
+    ...actual,
+    applyCompletionEffects: jest.fn().mockImplementation(
+      async (
+        _tx: unknown,
+        returnOrder: {
+          items: Array<{ productId: string }>;
+        }
+      ) =>
+        returnOrder.items.map(item => ({
+          productId: item.productId,
+        }))
+    ),
+  };
+});
+
 jest.mock('@/lib/logger', () => ({
   logger: {
     debug: jest.fn(),
@@ -54,8 +72,11 @@ type ReturnOrderRow = {
 };
 
 type ReturnOrderItemRow = {
+  damagedQuantity?: number | null;
   id: string;
+  productId?: string;
   returnOrderId: string;
+  returnQuantity?: number;
   salesOrderItemId: string;
   subtotal: number;
 };
@@ -191,6 +212,34 @@ function createInMemoryReturnPrisma(seed?: {
 
   const tx = {
     returnOrder: {
+      findUnique: async (args: any) => {
+        const id = args?.where?.id as string | undefined;
+        if (!id) return null;
+        const row = store.returnOrdersById.get(id);
+        if (!row) return null;
+
+        const items = Array.from(store.returnOrderItemsById.values())
+          .filter(item => item.returnOrderId === id)
+          .map(item => ({
+            damagedQuantity: item.damagedQuantity ?? 0,
+            productId: item.productId ?? `prod-${item.salesOrderItemId}`,
+            returnQuantity: item.returnQuantity ?? 1,
+            salesOrderItemId: item.salesOrderItemId,
+            subtotal: item.subtotal,
+          }));
+
+        if (!args?.select?.items) {
+          return pickSelected(row, args?.select);
+        }
+
+        const result = pickSelected(row, {
+          ...args.select,
+          items: false,
+        }) as Record<string, unknown>;
+        result.items = items;
+        return result;
+      },
+
       update: async (args: any) => {
         const id = String(args?.where?.id ?? '');
         const row = store.returnOrdersById.get(id);
@@ -220,6 +269,16 @@ function createInMemoryReturnPrisma(seed?: {
 
         store.returnOrdersById.set(id, clone(updated));
         return pickSelected(updated, args?.select);
+      },
+    },
+
+    salesOrderItem: {
+      findMany: async (args: any) => {
+        const ids = (args?.where?.id?.in ?? []) as string[];
+        return ids.map(id => ({
+          batchNumber: null,
+          id,
+        }));
       },
     },
 
@@ -509,7 +568,7 @@ describe('退货状态流转（集成回归）', () => {
     expect(updatedSalesOrder?.profitAmount).toBe(54);
   });
 
-  test('退款金额缺失：应根据明细小计自动推断并回写到退货单 + 创建退款记录（approved）', async () => {
+  test('退款金额缺失：approved 阶段只更新退货状态，不自动生成退款记录', async () => {
     const { store } = resetPrisma({
       returnOrders: [
         {
@@ -558,28 +617,23 @@ describe('退货状态流转（集成回归）', () => {
       'user-2'
     );
 
-    expect(result.refundCreated).toBe(true);
+    expect(result.refundCreated).toBe(false);
 
     const updatedOrder = store.returnOrdersById.get('ro-2');
     expect(updatedOrder?.status).toBe('approved');
-    expect(Number(updatedOrder?.refundAmount ?? 0)).toBe(10);
+    expect(Number(updatedOrder?.refundAmount ?? 0)).toBe(0);
 
-    expect(store.refundRecordsById.size).toBe(1);
-    const refund = Array.from(store.refundRecordsById.values())[0]!;
-    expect(refund.refundAmount).toBe(10);
-    expect(refund.remainingAmount).toBe(10);
-
-    // approved 阶段不应入账 sales_return，也不应调整利润
+    expect(store.refundRecordsById.size).toBe(0);
     expect(recordPartnerTransaction).not.toHaveBeenCalled();
   });
 
-  test('退款金额缺失且明细为0：应使用退货单总额兜底并生成退款记录', async () => {
+  test('退款金额缺失且明细为0：completed 阶段应使用退货单总额兜底生成退款记录', async () => {
     const { store } = resetPrisma({
       returnOrders: [
         {
           id: 'ro-2b',
           returnNumber: 'RT-002B',
-          status: 'submitted',
+          status: 'approved',
           remarks: null,
           refundAmount: 0,
           totalAmount: 15,
@@ -601,8 +655,8 @@ describe('退货状态流转（集成回归）', () => {
 
     const result = await updateReturnOrderStatus(
       'ro-2b',
+      'completed',
       'approved',
-      'submitted',
       'refund',
       {},
       'user-2b'
@@ -617,16 +671,16 @@ describe('退货状态流转（集成回归）', () => {
     const refund = Array.from(store.refundRecordsById.values())[0]!;
     expect(refund.refundAmount).toBe(15);
     expect(refund.remainingAmount).toBe(15);
-    expect(recordPartnerTransaction).not.toHaveBeenCalled();
+    expect(recordPartnerTransaction).toHaveBeenCalledTimes(1);
   });
 
-  test('退款型退货缺少 salesOrderId：应失败并回滚状态/应退货款', async () => {
+  test('退款型退货缺少 salesOrderId：completed 阶段应失败并回滚状态/应退货款', async () => {
     const { store } = resetPrisma({
       returnOrders: [
         {
           id: 'ro-2c',
           returnNumber: 'RT-002C',
-          status: 'submitted',
+          status: 'approved',
           remarks: null,
           refundAmount: 0,
           totalAmount: 0,
@@ -649,20 +703,20 @@ describe('退货状态流转（集成回归）', () => {
     await expect(
       updateReturnOrderStatus(
         'ro-2c',
+        'completed',
         'approved',
-        'submitted',
         'refund',
         {},
         'user-2c'
       )
     ).rejects.toThrow('缺少关联的销售订单');
 
-    expect(store.returnOrdersById.get('ro-2c')?.status).toBe('submitted');
+    expect(store.returnOrdersById.get('ro-2c')?.status).toBe('approved');
     expect(store.refundRecordsById.size).toBe(0);
     expect(recordPartnerTransaction).not.toHaveBeenCalled();
   });
 
-  test('已存在退款记录：应根据 processedAmount 自动修正 remainingAmount 与状态（processing）', async () => {
+  test('processing 阶段不应自动修正已存在退款记录', async () => {
     const { store } = resetPrisma({
       returnOrders: [
         {
@@ -726,12 +780,12 @@ describe('退货状态流转（集成回归）', () => {
     expect(result.refundCreated).toBe(false);
 
     const updatedRefund = store.refundRecordsById.get('refund-3')!;
-    expect(updatedRefund.refundAmount).toBe(10);
-    expect(updatedRefund.remainingAmount).toBe(5);
-    expect(updatedRefund.status).toBe('processing');
+    expect(updatedRefund.refundAmount).toBe(8);
+    expect(updatedRefund.remainingAmount).toBe(3);
+    expect(updatedRefund.status).toBe('pending');
   });
 
-  test('已存在退款记录：processedAmount >= refundAmount 时应标记 completed 且 remaining=0', async () => {
+  test('completed 阶段应根据 processedAmount 自动修正 existing refund 为 completed', async () => {
     const { store } = resetPrisma({
       returnOrders: [
         {
@@ -785,7 +839,7 @@ describe('退货状态流转（集成回归）', () => {
 
     const result = await updateReturnOrderStatus(
       'ro-3b',
-      'processing',
+      'completed',
       'approved',
       'refund',
       {},
@@ -800,7 +854,7 @@ describe('退货状态流转（集成回归）', () => {
     expect(updatedRefund.status).toBe('completed');
   });
 
-  test('已存在退款记录：rejected/cancelled 状态应保持不被自动重开', async () => {
+  test('completed 阶段遇到 rejected/cancelled 旧退款单时应新建一张待处理退款单', async () => {
     const { store } = resetPrisma({
       returnOrders: [
         {
@@ -854,19 +908,21 @@ describe('退货状态流转（集成回归）', () => {
 
     const result = await updateReturnOrderStatus(
       'ro-3c',
-      'processing',
+      'completed',
       'approved',
       'refund',
       {},
       'user-3c'
     );
 
-    expect(result.refundCreated).toBe(false);
-
-    const updatedRefund = store.refundRecordsById.get('refund-3c')!;
-    expect(updatedRefund.refundAmount).toBe(10);
-    expect(updatedRefund.remainingAmount).toBe(10);
-    expect(updatedRefund.status).toBe('rejected');
+    expect(result.refundCreated).toBe(true);
+    expect(store.refundRecordsById.size).toBe(2);
+    const createdRefund = Array.from(store.refundRecordsById.values()).find(
+      refund => refund.id !== 'refund-3c'
+    )!;
+    expect(createdRefund.refundAmount).toBe(10);
+    expect(createdRefund.remainingAmount).toBe(10);
+    expect(createdRefund.status).toBe('pending');
   });
 
   test('退款金额为0：允许完成但不生成应退货款/不入账/不回退利润', async () => {

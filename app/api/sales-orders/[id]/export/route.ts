@@ -19,6 +19,8 @@ import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/compo
 import { getSalesOrderDetailWithPayments } from '@/lib/api/handlers/sales-orders/detail';
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
+import { SALES_ORDER_TYPE_LABELS } from '@/lib/types/sales-order';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import {
   SAMPLE_SETTLEMENT_TYPE_LABELS,
   getSalesOrderReceivableTotal,
@@ -79,7 +81,7 @@ function buildDetailExportRows(order: SalesOrderDetail) {
       数量: quantityDisplay,
       单价: Number(displayUnitPrice.toFixed(2)),
       小计: Number((item.subtotal || 0).toFixed(2)),
-      成本价: Number(costPrice.toFixed(2)),
+      成本价: roundCostPrice(costPrice),
       毛利: Number(grossProfitPiece.toFixed(2)),
       '毛利率(%)': Number(grossProfitRate.toFixed(2)),
       备注: item.remarks || '',
@@ -132,9 +134,9 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
     订单号: order.orderNumber || '',
     业务标签: order.isSampleOrder
       ? SAMPLE_SETTLEMENT_TYPE_LABELS[order.sampleSettlementType ?? 'FREE']
-      : order.orderType === 'TRANSFER'
-        ? '调货销售'
-        : '正常销售',
+      : SALES_ORDER_TYPE_LABELS[
+          order.orderType === 'TRANSFER' ? 'TRANSFER' : 'NORMAL'
+        ],
     客户名称: customer?.name || '',
     联系电话: customer?.phone || '',
     收货地址: customer?.address || '',
@@ -148,7 +150,7 @@ function buildSummaryExportRow(order: SalesOrderDetail) {
       : '',
     产品数量: totalQuantity,
     订单总额: Number(totalAmount.toFixed(2)),
-    已付金额: Number(paidAmount.toFixed(2)),
+    已收金额: Number(paidAmount.toFixed(2)),
     未付金额: Number(unpaidAmount.toFixed(2)),
     备注: order.remarks || '',
   };

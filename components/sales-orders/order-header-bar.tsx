@@ -4,7 +4,10 @@ import { FileText, Tag, User } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import type { Customer } from '@/lib/types/customer';
-import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import {
+  SALES_ORDER_TYPE_LABELS,
+  type SalesOrderStatus,
+} from '@/lib/types/sales-order';
 
 interface OrderHeaderBarProps {
   orderNumber?: string;
@@ -69,7 +72,7 @@ export function OrderHeaderBar({
           <div className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
             <span className="text-sm">
-              {orderType === 'NORMAL' ? '正常销售' : '调货销售'}
+              {SALES_ORDER_TYPE_LABELS[orderType]}
             </span>
           </div>
         </div>

@@ -7,6 +7,7 @@ import { zhCN } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -39,6 +40,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { computePaymentOutRounding } from '@/lib/utils/payment-out-amounts';
 
 import type { PaymentOutRecord } from './page-client';
 
@@ -61,11 +63,26 @@ const editPaymentOutSchema = z.object({
     }
   ),
   paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
+  actualPaymentAmount: z.number().min(0, { error: '实际付款金额不能为负' }),
+  roundingAmount: z.number(),
   paymentDate: z.string().min(1, { error: '请选择付款日期' }),
   voucherNumber: z.string().optional(),
   bankInfo: z.string().optional(),
   remarks: z.string().optional(),
-});
+}).refine(
+  value =>
+    Math.abs(
+      Number(
+        (
+          value.actualPaymentAmount + value.roundingAmount - value.paymentAmount
+        ).toFixed(2)
+      )
+    ) < 0.01,
+  {
+    message: '付款金额应等于实际付款金额与抹零金额之和',
+    path: ['actualPaymentAmount'],
+  }
+);
 
 type EditPaymentOutFormData = z.infer<typeof editPaymentOutSchema>;
 
@@ -108,7 +125,7 @@ function PayableInfoSidebar({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-sm">已付金额</p>
+          <p className="text-muted-foreground text-sm">已核销金额</p>
           <p className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(payableRecord.paidAmount)}
           </p>
@@ -137,6 +154,8 @@ export function EditPaymentOutFormSection({
     defaultValues: {
       paymentMethod: initialPayment.paymentMethod as any,
       paymentAmount: initialPayment.paymentAmount,
+      actualPaymentAmount: initialPayment.actualPaymentAmount,
+      roundingAmount: initialPayment.roundingAmount,
       paymentDate: format(new Date(initialPayment.paymentDate), 'yyyy-MM-dd'),
       voucherNumber: initialPayment.voucherNumber || '',
       bankInfo: initialPayment.bankInfo || '',
@@ -145,6 +164,28 @@ export function EditPaymentOutFormSection({
   });
 
   const watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedPaymentAmount = form.watch('paymentAmount');
+  const watchedActualPaymentAmount = form.watch('actualPaymentAmount');
+
+  useEffect(() => {
+    if (
+      typeof watchedPaymentAmount !== 'number' ||
+      Number.isNaN(watchedPaymentAmount) ||
+      typeof watchedActualPaymentAmount !== 'number' ||
+      Number.isNaN(watchedActualPaymentAmount)
+    ) {
+      return;
+    }
+
+    const rounding = computePaymentOutRounding(
+      watchedPaymentAmount,
+      watchedActualPaymentAmount
+    );
+
+    if (form.getValues('roundingAmount') !== rounding) {
+      form.setValue('roundingAmount', rounding, { shouldValidate: true });
+    }
+  }, [form, watchedActualPaymentAmount, watchedPaymentAmount]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: EditPaymentOutFormData) => {
@@ -280,6 +321,54 @@ export function EditPaymentOutFormSection({
                         />
                       </FormControl>
                       <FormDescription>请输入实际付款金额</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="actualPaymentAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>实际付款金额</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          placeholder="输入实际付款金额"
+                          {...field}
+                          onChange={e =>
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        供应商实际收到的金额，可低于记账金额用于抹零。
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="roundingAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>抹零差额</FormLabel>
+                      <FormControl>
+                        <Input
+                          readOnly
+                          type="number"
+                          step="0.01"
+                          value={field.value?.toFixed(2) ?? '0.00'}
+                          className="bg-muted"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        自动计算：记账金额 - 实际付款，正值表示少付抹零，负值表示多付。
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
+import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
 
 interface InventoryItem {
   productId: string;
@@ -19,6 +20,7 @@ interface InventoryItem {
 interface InventoryCheckResult {
   productId: string;
   product?: Product;
+  batchNumber?: string;
   requestedQuantity: number;
   availableQuantity: number;
   isAvailable: boolean;
@@ -79,6 +81,7 @@ export function InventoryChecker({
           return {
             productId: item.productId,
             product: undefined,
+            batchNumber: item.batchNumber,
             requestedQuantity,
             availableQuantity: 0,
             isAvailable: false,
@@ -88,7 +91,10 @@ export function InventoryChecker({
           };
         }
 
-        const rawAvailable = product.inventory?.availableQuantity;
+        const rawAvailable = getProductAvailableQuantity(
+          product,
+          item.batchNumber
+        );
         if (rawAvailable === undefined || rawAvailable === null) {
           return null;
         }
@@ -106,20 +112,28 @@ export function InventoryChecker({
 
         // 系统内部统一使用"片"作为单位，避免单位混淆
         const unitLabel = '片';
+        const batchLabel = item.batchNumber?.trim();
 
         if (!isAvailable) {
-          message = `库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`;
+          message = batchLabel
+            ? `批次 ${batchLabel} 库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`
+            : `库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`;
           severity = 'error';
         } else if (isLowStock) {
-          message = `库存预警！剩余 ${availableQuantity}${unitLabel}`;
+          message = batchLabel
+            ? `批次 ${batchLabel} 库存预警！剩余 ${availableQuantity}${unitLabel}`
+            : `库存预警！剩余 ${availableQuantity}${unitLabel}`;
           severity = 'warning';
         } else {
-          message = `库存充足，剩余 ${availableQuantity}${unitLabel}`;
+          message = batchLabel
+            ? `批次 ${batchLabel} 库存充足，剩余 ${availableQuantity}${unitLabel}`
+            : `库存充足，剩余 ${availableQuantity}${unitLabel}`;
         }
 
         return {
           productId: item.productId,
           product,
+          batchNumber: item.batchNumber,
           requestedQuantity,
           availableQuantity,
           isAvailable,
@@ -179,7 +193,11 @@ export function InventoryChecker({
             {errorItems.length === 1 ? (
               <div>
                 产品 [{errorItems[0].product?.code || '未知编码'}]{' '}
-                {errorItems[0].product?.name || '未知产品'} 库存不足，当前库存：
+                {errorItems[0].product?.name || '未知产品'}
+                {errorItems[0].batchNumber
+                  ? ` / 批次 ${errorItems[0].batchNumber}`
+                  : ''}{' '}
+                库存不足，当前库存：
                 {errorItems[0].availableQuantity}片，需要：
                 {errorItems[0].requestedQuantity}片，缺少：
                 {errorItems[0].requestedQuantity -
@@ -195,8 +213,10 @@ export function InventoryChecker({
                   {errorItems.map((item, index) => (
                     <div key={index}>
                       - [{item.product?.code || '未知编码'}]{' '}
-                      {item.product?.name || '未知产品'}：当前库存{' '}
-                      {item.availableQuantity}片，需要 {item.requestedQuantity}
+                      {item.product?.name || '未知产品'}
+                      {item.batchNumber ? ` / 批次 ${item.batchNumber}` : ''}：
+                      当前库存 {item.availableQuantity}片，需要{' '}
+                      {item.requestedQuantity}
                       片，缺少 {item.requestedQuantity - item.availableQuantity}
                       片
                     </div>
@@ -211,7 +231,10 @@ export function InventoryChecker({
             {warningItems.length === 1 ? (
               <div>
                 产品 [{warningItems[0].product?.code || '未知编码'}]{' '}
-                {warningItems[0].product?.name || '未知产品'}{' '}
+                {warningItems[0].product?.name || '未知产品'}
+                {warningItems[0].batchNumber
+                  ? ` / 批次 ${warningItems[0].batchNumber}`
+                  : ''}{' '}
                 库存偏低，当前库存：
                 {warningItems[0].availableQuantity}
                 {warningItems[0].product?.unit
@@ -231,8 +254,9 @@ export function InventoryChecker({
                   {warningItems.map((item, index) => (
                     <div key={index}>
                       - [{item.product?.code || '未知编码'}]{' '}
-                      {item.product?.name || '未知产品'}：当前库存{' '}
-                      {item.availableQuantity}
+                      {item.product?.name || '未知产品'}
+                      {item.batchNumber ? ` / 批次 ${item.batchNumber}` : ''}：
+                      当前库存 {item.availableQuantity}
                       {item.product?.unit
                         ? PRODUCT_UNIT_LABELS[
                             item.product
@@ -346,15 +370,18 @@ function _InventoryCheckItem({ result }: InventoryCheckItemProps) {
 interface InventoryStatusProps {
   product: Product;
   requestedQuantity: number;
+  batchNumber?: string;
   className?: string;
 }
 
 export function InventoryStatus({
   product,
   requestedQuantity,
+  batchNumber,
   className,
 }: InventoryStatusProps) {
-  const availableQuantity = product.inventory?.availableQuantity || 0;
+  const availableQuantity =
+    getProductAvailableQuantity(product, batchNumber) ?? 0;
   const isAvailable = availableQuantity >= requestedQuantity;
   const isLowStock = availableQuantity > 0 && availableQuantity <= 10;
 

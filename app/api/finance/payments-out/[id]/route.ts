@@ -21,6 +21,7 @@ import type { PaymentOutRecordDetail } from '@/lib/types/payable';
 import { parseLocalDateString } from '@/lib/utils/datetime';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { toNumber } from '@/lib/utils/number';
+import { normalizePaymentOutAmounts } from '@/lib/utils/payment-out-amounts';
 import { updatePaymentOutRecordSchema } from '@/lib/validations/payable';
 
 type PaymentParams = { id: string };
@@ -96,6 +97,8 @@ function serializePaymentOutRecordDetail(
     userId: payment.userId,
     paymentMethod: normalizePaymentOutMethod(payment.paymentMethod),
     paymentAmount: toNumber(payment.paymentAmount),
+    actualPaymentAmount: toNumber(payment.actualPaymentAmount),
+    roundingAmount: toNumber(payment.roundingAmount),
     paymentDate: payment.paymentDate,
     status: normalizePaymentOutStatus(payment.status),
     ...(payment.payableRecordId !== null &&
@@ -216,8 +219,36 @@ const putPaymentHandler = withAuth(
       const { user } = context;
 
       const body = await request.json();
+      const parseNumber = (value: unknown): number => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value;
+        }
+        if (typeof value === 'string' && value.trim() !== '') {
+          const parsed = Number(value);
+          if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+            return parsed;
+          }
+        }
+        return Number.NaN;
+      };
+      const hasPaymentAmount = body?.paymentAmount !== undefined;
+      const hasActualPaymentAmount = body?.actualPaymentAmount !== undefined;
+      const hasRoundingAmount = body?.roundingAmount !== undefined;
+      const normalizedAmounts =
+        hasPaymentAmount || hasActualPaymentAmount || hasRoundingAmount
+          ? normalizePaymentOutAmounts({
+              paymentAmount: parseNumber(body?.paymentAmount),
+              actualPaymentAmount: hasActualPaymentAmount
+                ? parseNumber(body.actualPaymentAmount)
+                : undefined,
+              roundingAmount: hasRoundingAmount
+                ? parseNumber(body.roundingAmount)
+                : undefined,
+            })
+          : null;
       const validationResult = updatePaymentOutRecordSchema.safeParse({
         ...body,
+        ...(normalizedAmounts ?? {}),
         id,
       });
 
@@ -250,6 +281,7 @@ const putPaymentHandler = withAuth(
         select: {
           id: true,
           paymentAmount: true,
+          actualPaymentAmount: true,
           status: true,
           payableRecordId: true,
           supplierId: true,
@@ -274,6 +306,9 @@ const putPaymentHandler = withAuth(
       }
 
       const existingPaymentAmount = toNumber(existingPayment.paymentAmount);
+      const existingActualPaymentAmount = toNumber(
+        existingPayment.actualPaymentAmount
+      );
 
       const executeUpdate = async () =>
         await prisma.$transaction(async tx => {
@@ -324,9 +359,13 @@ const putPaymentHandler = withAuth(
           });
 
           const currentPaymentAmount = toNumber(payment.paymentAmount);
-          const paymentAmountDelta =
-            Math.round((currentPaymentAmount - existingPaymentAmount) * 100) /
-            100;
+          const currentActualPaymentAmount = toNumber(
+            payment.actualPaymentAmount
+          );
+          const actualPaymentAmountDelta =
+            Math.round(
+              (currentActualPaymentAmount - existingActualPaymentAmount) * 100
+            ) / 100;
 
           // 如果关联应付款记录，需要同步更新应付款状态
           if (payment.payableRecordId) {
@@ -376,10 +415,12 @@ const putPaymentHandler = withAuth(
           }
 
           // ✅ 付款金额变更需同步供应商往来账单（追加差额流水，避免重算历史余额）
-          if (paymentAmountDelta !== 0) {
+          if (actualPaymentAmountDelta !== 0) {
             const transactionType =
-              paymentAmountDelta > 0 ? 'payment_out' : 'payment_out_reversal';
-            const amount = Math.abs(paymentAmountDelta);
+              actualPaymentAmountDelta > 0
+                ? 'payment_out'
+                : 'payment_out_reversal';
+            const amount = Math.abs(actualPaymentAmountDelta);
 
             await recordPartnerTransaction(
               {
@@ -392,15 +433,18 @@ const putPaymentHandler = withAuth(
                 referenceId: idempotencyKey ?? randomUUID(),
                 referenceNumber: payment.paymentNumber,
                 description:
-                  paymentAmountDelta > 0
-                    ? `付款 ${payment.paymentNumber} 金额调增`
-                    : `付款 ${payment.paymentNumber} 金额调减`,
+                  actualPaymentAmountDelta > 0
+                    ? `付款 ${payment.paymentNumber} 实付金额调增`
+                    : `付款 ${payment.paymentNumber} 实付金额调减`,
                 userId: user.id,
                 occurredAt: payment.paymentDate,
                 metadata: {
                   triggeredBy: 'payment_out:update',
                   source: payment.id,
                   userId: user.id,
+                  paymentAmount: currentPaymentAmount,
+                  actualPaymentAmount: currentActualPaymentAmount,
+                  roundingAmount: toNumber(payment.roundingAmount),
                 },
               },
               tx
@@ -479,6 +523,7 @@ const deletePaymentHandler = withAuth(
           id: true,
           status: true,
           paymentAmount: true,
+          actualPaymentAmount: true,
           payableRecordId: true,
           supplierId: true,
           paymentNumber: true,
@@ -532,6 +577,9 @@ const deletePaymentHandler = withAuth(
         await prisma.$transaction(async tx => {
           const now = new Date();
           const paymentAmount = toNumber(existingPayment.paymentAmount);
+          const actualPaymentAmount = toNumber(
+            existingPayment.actualPaymentAmount
+          );
 
           // 1) 回滚关联应付款（若存在）
           if (existingPayment.payableRecordId) {
@@ -601,27 +649,31 @@ const deletePaymentHandler = withAuth(
             throw ApiError.badRequest('供应商不存在');
           }
 
-          await recordPartnerTransaction(
-            {
-              partnerId: existingPayment.supplierId,
-              partnerName: supplier.name,
-              partnerRole: 'supplier',
-              entityType: 'supplier',
-              transactionType: 'payment_out_reversal',
-              amount: paymentAmount,
-              referenceId: existingPayment.id,
-              referenceNumber: existingPayment.paymentNumber,
-              description: `付款 ${existingPayment.paymentNumber} 作废`,
-              userId: user.id,
-              occurredAt: now,
-              metadata: {
-                triggeredBy: 'payment_out:void',
-                source: existingPayment.id,
+          if (actualPaymentAmount > 0) {
+            await recordPartnerTransaction(
+              {
+                partnerId: existingPayment.supplierId,
+                partnerName: supplier.name,
+                partnerRole: 'supplier',
+                entityType: 'supplier',
+                transactionType: 'payment_out_reversal',
+                amount: actualPaymentAmount,
+                referenceId: existingPayment.id,
+                referenceNumber: existingPayment.paymentNumber,
+                description: `付款 ${existingPayment.paymentNumber} 作废`,
                 userId: user.id,
+                occurredAt: now,
+                metadata: {
+                  triggeredBy: 'payment_out:void',
+                  source: existingPayment.id,
+                  userId: user.id,
+                  paymentAmount,
+                  actualPaymentAmount,
+                },
               },
-            },
-            tx
-          );
+              tx
+            );
+          }
 
           return {
             id: existingPayment.id,

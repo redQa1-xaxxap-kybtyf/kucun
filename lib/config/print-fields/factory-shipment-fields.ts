@@ -9,6 +9,7 @@ import type {
   PrintConfig,
   PrintFieldDefinition,
 } from '@/lib/types/print-config';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 
 /**
  * 厂家发货单表头字段
@@ -77,7 +78,7 @@ const factoryShipmentHeaderFields: PrintFieldDefinition[] = [
         pending_shipment: '待发货',
         shipped: '已发货',
         in_transit: '运输中',
-        arrived: '到港',
+        arrived: '已到港',
         cancelled: '已取消',
       };
       return statusMap[value as string] || (value as string);
@@ -98,7 +99,7 @@ const factoryShipmentHeaderFields: PrintFieldDefinition[] = [
   },
   {
     key: 'estimatedArrival',
-    label: '预计到货',
+    label: '预计到港',
     type: 'header',
     width: '120px',
     align: 'left',
@@ -111,7 +112,7 @@ const factoryShipmentHeaderFields: PrintFieldDefinition[] = [
   },
   {
     key: 'arrivalDate',
-    label: '实际到货',
+    label: '到港日期',
     type: 'header',
     width: '120px',
     align: 'left',
@@ -277,7 +278,10 @@ const factoryShipmentItemFields: PrintFieldDefinition[] = [
     width: '100px',
     align: 'right',
     defaultVisible: false,
-    format: value => (typeof value === 'number' ? `¥${value.toFixed(2)}` : '-'),
+    format: value =>
+      typeof value === 'number'
+        ? formatCostPrice(value, { fallback: '-' })
+        : '-',
   },
   {
     key: 'allocatedExpense',

@@ -4,6 +4,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
+import { revalidateProducts } from '@/lib/cache';
+import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateReturnStatusSchema } from '@/lib/validations/return-order';
@@ -17,7 +19,23 @@ export const PATCH = withAuth(
     const userId = user.id;
 
     // 解析请求体
-    const body = await request.json();
+    const rawBody = await request.text();
+    let body: unknown = {};
+
+    if (rawBody.trim().length > 0) {
+      try {
+        body = JSON.parse(rawBody) as unknown;
+      } catch {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '请求体不是合法的 JSON',
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const validationResult = updateReturnStatusSchema.safeParse(body);
 
     if (!validationResult.success) {
@@ -78,6 +96,15 @@ export const PATCH = withAuth(
         )
     );
 
+    if (result.affectedProductIds?.length) {
+      await Promise.allSettled(
+        result.affectedProductIds.flatMap(productId => [
+          invalidateInventoryCache(productId),
+          revalidateProducts(productId),
+        ])
+      );
+    }
+
     // 获取更新后的完整订单信息
     const updatedReturnOrder = await prisma.returnOrder.findUnique({
       where: { id },
@@ -112,6 +139,17 @@ export const PATCH = withAuth(
                 code: true,
               },
             },
+          },
+        },
+        refunds: {
+          select: {
+            id: true,
+            processedAmount: true,
+            processedDate: true,
+            refundAmount: true,
+            refundDate: true,
+            remainingAmount: true,
+            status: true,
           },
         },
       },

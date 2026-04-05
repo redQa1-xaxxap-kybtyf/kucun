@@ -10,6 +10,7 @@ import type {
   ReturnOrderStatus,
   ReturnOrderType,
   ReturnProcessType,
+  ReturnOrderUiStatus,
 } from '@/lib/types/return-order';
 
 import { ReturnOrdersPageClient } from './page-client';
@@ -33,6 +34,13 @@ const RETURN_ORDER_TYPE_VALUES: ReturnOrderType[] = [
   'other',
 ] as const;
 
+const RETURN_ORDER_UI_STATUS_VALUES: ReturnOrderUiStatus[] = [
+  'draft',
+  'pending',
+  'awaiting_refund',
+  'completed',
+] as const;
+
 const RETURN_PROCESS_TYPE_VALUES: ReturnProcessType[] = [
   'refund',
   'exchange',
@@ -44,6 +52,7 @@ interface PageProps {
     limit?: string;
     search?: string;
     status?: string;
+    uiStatus?: string;
     type?: string;
     processType?: string;
     sortBy?: string;
@@ -85,6 +94,11 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
   const isReturnOrderType = (value?: string): value is ReturnOrderType =>
     typeof value === 'string' &&
     (RETURN_ORDER_TYPE_VALUES as readonly string[]).includes(value);
+  const isReturnOrderUiStatus = (
+    value?: string
+  ): value is ReturnOrderUiStatus =>
+    typeof value === 'string' &&
+    (RETURN_ORDER_UI_STATUS_VALUES as readonly string[]).includes(value);
   const isReturnProcessType = (value?: string): value is ReturnProcessType =>
     typeof value === 'string' &&
     (RETURN_PROCESS_TYPE_VALUES as readonly string[]).includes(value);
@@ -93,6 +107,9 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
     limit: params?.limit ? parseInt(params.limit, 10) : 20,
     search: params?.search || '',
     status: isReturnOrderStatus(params?.status) ? params?.status : undefined,
+    uiStatus: isReturnOrderUiStatus(params?.uiStatus)
+      ? params?.uiStatus
+      : undefined,
     type: isReturnOrderType(params?.type) ? params?.type : undefined,
     processType: isReturnProcessType(params?.processType)
       ? params?.processType

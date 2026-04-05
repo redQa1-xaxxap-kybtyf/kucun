@@ -54,8 +54,8 @@ export function ReceivablesPageClient({
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
-          title="应收货款管理"
-          description="跟踪销售订单产生的应收账款，督促客户按时回款"
+          title="客户待收款"
+          description="按客户跟进未回款订单，查看待收余额和收款进度。"
           icon={<TrendingUp className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-primary))"
           actions={

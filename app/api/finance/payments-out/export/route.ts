@@ -15,6 +15,10 @@ import { type NextRequest } from 'next/server';
 import { errorResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+  PAYMENT_OUT_METHOD_LABELS,
+  PAYMENT_OUT_STATUS_LABELS,
+} from '@/lib/types/payable';
 import { paymentOutRecordQuerySchema } from '@/lib/validations/payable';
 
 type ExportFormat = 'excel' | 'csv';
@@ -81,9 +85,9 @@ export const POST = withAuth(
 
       if (search) {
         where.OR = [
-          { paymentNumber: { contains: search, mode: 'insensitive' } },
-          { supplier: { name: { contains: search, mode: 'insensitive' } } },
-          { voucherNumber: { contains: search, mode: 'insensitive' } },
+          { paymentNumber: { contains: search } },
+          { supplier: { name: { contains: search } } },
+          { voucherNumber: { contains: search } },
         ];
       }
 
@@ -167,9 +171,17 @@ export const POST = withAuth(
       const exportRows = payments.map(payment => ({
         付款编号: payment.paymentNumber,
         供应商名称: payment.supplier?.name ?? '',
-        付款金额: Number(payment.paymentAmount),
-        付款方式: payment.paymentMethod,
-        付款状态: payment.status,
+        记账金额: Number(payment.paymentAmount),
+        实际付款金额: Number(payment.actualPaymentAmount),
+        抹零金额: Number(payment.roundingAmount),
+        付款方式:
+          PAYMENT_OUT_METHOD_LABELS[
+            payment.paymentMethod as keyof typeof PAYMENT_OUT_METHOD_LABELS
+          ] ?? payment.paymentMethod,
+        付款状态:
+          PAYMENT_OUT_STATUS_LABELS[
+            payment.status as keyof typeof PAYMENT_OUT_STATUS_LABELS
+          ] ?? payment.status,
         付款日期: payment.paymentDate.toISOString(),
         应付款编号: payment.payableRecord?.payableNumber ?? '',
         应付金额: Number(payment.payableRecord?.payableAmount ?? 0),
@@ -186,11 +198,19 @@ export const POST = withAuth(
 
         const fileContent = CSVExportService.generateCSVContent(exportRows, {
           dateFields: ['付款日期'],
-          numberFields: ['付款金额', '应付金额', '剩余应付金额'],
+          numberFields: [
+            '记账金额',
+            '实际付款金额',
+            '抹零金额',
+            '应付金额',
+            '剩余应付金额',
+          ],
           fieldOrder: [
             '付款编号',
             '供应商名称',
-            '付款金额',
+            '记账金额',
+            '实际付款金额',
+            '抹零金额',
             '付款方式',
             '付款状态',
             '付款日期',
@@ -229,7 +249,9 @@ export const POST = withAuth(
       worksheet['!cols'] = [
         { width: 16 }, // 付款编号
         { width: 18 }, // 供应商名称
-        { width: 12 }, // 付款金额
+        { width: 12 }, // 记账金额
+        { width: 12 }, // 实际付款金额
+        { width: 12 }, // 抹零金额
         { width: 12 }, // 付款方式
         { width: 12 }, // 付款状态
         { width: 20 }, // 付款日期

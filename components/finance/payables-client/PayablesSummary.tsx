@@ -64,7 +64,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
             共 {totalTrackedCount} 个应付订单
           </p>
           <p className="text-muted-foreground text-xs">
-            待付款 {displayStatistics.pendingCount} · 部分付款{' '}
+            待付款 {displayStatistics.pendingCount} · 部分结清{' '}
             {displayStatistics.partialCount}
           </p>
         </CardContent>
@@ -98,7 +98,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">已付金额</CardTitle>
+          <CardTitle className="text-sm font-medium">已核销金额</CardTitle>
           <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
         </CardHeader>
         <CardContent>
@@ -106,7 +106,7 @@ export function PayablesSummary({ filters, initialStatistics }: Props) {
             {formatCurrency(displayStatistics.totalPaidAmount)}
           </div>
           <p className="text-muted-foreground text-xs">
-            付款率{' '}
+            结算率{' '}
             {displayStatistics.totalPayables > 0
               ? Math.round(
                   (displayStatistics.totalPaidAmount /

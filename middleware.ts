@@ -10,6 +10,10 @@ import { authMiddleware } from './lib/auth-middleware';
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const pathname = url.pathname;
+  const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
+  const hostname = (hostHeader?.split(':')[0] || url.hostname).toLowerCase();
+  const isLocalLoopback =
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
 
   const isAuthApi = pathname.startsWith('/api/auth');
   const isAuthPage = pathname.startsWith('/auth/');
@@ -19,7 +23,7 @@ export async function middleware(request: NextRequest) {
     const proto =
       request.headers.get('x-forwarded-proto') || url.protocol.replace(':', '');
 
-    if ((isAuthApi || isAuthPage) && proto !== 'https') {
+    if (!isLocalLoopback && (isAuthApi || isAuthPage) && proto !== 'https') {
       return new Response('HTTPS Required', { status: 403 });
     }
   }
@@ -63,8 +67,11 @@ export async function middleware(request: NextRequest) {
     "base-uri 'self';",
     "form-action 'self';",
     "frame-ancestors 'none';",
-    'upgrade-insecure-requests;',
   ];
+
+  if (!isLocalLoopback) {
+    cspDirectives.push('upgrade-insecure-requests;');
+  }
 
   const cspHeader = cspDirectives
     .join(' ')

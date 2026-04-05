@@ -25,8 +25,8 @@ export interface ReceivableExportData extends Record<string, unknown> {
   客户名称: string;
   /** 订单金额 */
   订单金额: number;
-  /** 已付金额 */
-  已付金额: number;
+  /** 已收金额 */
+  已收金额: number;
   /** 应收余额 */
   应收余额: number;
   /** 订单状态 */
@@ -68,7 +68,7 @@ export class ReceivablesExportService {
       订单编号: item.orderNumber || '',
       客户名称: item.customerName || '未知客户',
       订单金额: item.totalAmount,
-      已付金额: item.paidAmount,
+      已收金额: item.paidAmount,
       应收余额: item.remainingAmount,
       订单状态:
         PAYMENT_STATUS_MAP[item.paymentStatus] || item.paymentStatus || '',
@@ -92,7 +92,7 @@ export class ReceivablesExportService {
       filename,
       sheetName: '应收账款',
       dateFields: ['创建时间', '确认时间', '发货时间'],
-      numberFields: ['订单金额', '已付金额', '应收余额'],
+      numberFields: ['订单金额', '已收金额', '应收余额'],
       freezeHeader: true,
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
     });
@@ -110,13 +110,13 @@ export class ReceivablesExportService {
     CSVExportService.exportToCSV(data, {
       filename,
       dateFields: ['创建时间', '确认时间', '发货时间'],
-      numberFields: ['订单金额', '已付金额', '应收余额'],
+      numberFields: ['订单金额', '已收金额', '应收余额'],
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
       fieldOrder: [
         '订单编号',
         '客户名称',
         '订单金额',
-        '已付金额',
+        '已收金额',
         '应收余额',
         '订单状态',
         '创建时间',

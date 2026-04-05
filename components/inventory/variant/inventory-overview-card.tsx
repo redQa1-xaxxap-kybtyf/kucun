@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryOverviewCardProps {
@@ -105,7 +106,7 @@ export function InventoryOverviewCard({
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-[hsl(var(--color-info))]">
-              ￥{inventory.averageUnitCost?.toFixed(2) || '0.00'}
+              {formatCostPrice(inventory.averageUnitCost)}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
               平均成本

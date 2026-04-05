@@ -48,7 +48,7 @@ export function InboundRecordsToolbar({
   return (
     <PageHeader
       title="入库记录"
-      description="查看和管理产品入库记录，跟踪库存增加情况"
+      description="查看全部入库记录，跟踪库存增加情况"
       icon={<PackageCheck className="h-6 w-6" />}
       iconBgColor="hsl(var(--color-primary))"
       variant="solid"
@@ -71,7 +71,7 @@ export function InboundRecordsToolbar({
               onClick={onCreateNew}
             >
               <Plus className="h-4 w-4" />
-              新建入库
+              产品入库
             </Button>
           )}
         </>

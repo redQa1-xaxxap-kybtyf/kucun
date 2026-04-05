@@ -20,6 +20,7 @@ import {
   type CountItemStatus,
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 
@@ -56,7 +57,7 @@ export function CountItemsTable({
     return variants[status];
   };
 
-  const formatNumber = (value: number | null | undefined) => {
+  const formatAmount = (value: number | null | undefined) => {
     if (value === null || value === undefined) return '-';
     return value.toLocaleString('zh-CN', {
       minimumFractionDigits: 2,
@@ -194,7 +195,10 @@ export function CountItemsTable({
                 {hasFinancePermission && (
                   <>
                     <TableCell className="text-right">
-                      {formatNumber(item.unitCost)}
+                      {formatCostPrice(item.unitCost, {
+                        withSymbol: false,
+                        fallback: '-',
+                      })}
                     </TableCell>
                     <TableCell
                       className={`text-right ${
@@ -205,7 +209,7 @@ export function CountItemsTable({
                           : ''
                       }`}
                     >
-                      {formatNumber(item.totalCost)}
+                      {formatAmount(item.totalCost)}
                     </TableCell>
                   </>
                 )}
@@ -322,7 +326,13 @@ export function CountItemsTable({
                   </Badge>
                   {hasFinancePermission && (
                     <div className="mt-2 space-y-1 text-xs text-[hsl(var(--color-text-secondary))]">
-                      <div>单位成本：{formatNumber(item.unitCost)}</div>
+                      <div>
+                        单位成本：
+                        {formatCostPrice(item.unitCost, {
+                          withSymbol: false,
+                          fallback: '-',
+                        })}
+                      </div>
                       <div
                         className={
                           item.totalCost && item.totalCost !== 0
@@ -332,7 +342,7 @@ export function CountItemsTable({
                             : ''
                         }
                       >
-                        差异金额：{formatNumber(item.totalCost)}
+                        差异金额：{formatAmount(item.totalCost)}
                       </div>
                     </div>
                   )}

@@ -39,6 +39,7 @@ export default async function SalesOrdersPage({
   const limit = Number(params.limit) || paginationConfig.defaultPageSize;
   const search = (params.search as string) || '';
   const status = params.status as
+    | 'pending'
     | 'draft'
     | 'confirmed'
     | 'shipped'

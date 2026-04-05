@@ -32,6 +32,24 @@ export const INBOUND_REASON_OPTIONS = Object.entries(INBOUND_REASON_LABELS).map(
   ([value, label]) => ({ value: value as InboundReason, label })
 );
 
+// 采购到货破损处理方式
+export type InboundDamageHandling = 'supplier_claim' | 'internal_loss';
+
+export const INBOUND_DAMAGE_HANDLING_LABELS: Record<
+  InboundDamageHandling,
+  string
+> = {
+  supplier_claim: '报工厂赔付',
+  internal_loss: '不报工厂，内部承担',
+};
+
+export const INBOUND_DAMAGE_HANDLING_OPTIONS = Object.entries(
+  INBOUND_DAMAGE_HANDLING_LABELS
+).map(([value, label]) => ({
+  value: value as InboundDamageHandling,
+  label,
+}));
+
 // 入库单位标签映射
 export const INBOUND_UNIT_LABELS: Record<InboundUnit, string> = {
   pieces: '片',
@@ -51,6 +69,10 @@ export interface InboundRecord {
   variantId?: string; // 产品变体ID
   supplierId?: string; // 供应商ID
   quantity: number;
+  damagedQuantity?: number; // 到货破损片数（不入库存）
+  damageHandling?: InboundDamageHandling; // 到货破损处理方式
+  damageTotalCost?: number; // 破损参考金额
+  damageRemarks?: string; // 破损备注
   reason: InboundReason;
   remarks?: string;
   userId: string;
@@ -58,6 +80,7 @@ export interface InboundRecord {
   // 批次管理字段
   productionDate?: string; // ISO日期字符串
   batchNumber?: string; // 批次号
+  openingImportBatchId?: string; // 期初批量导入批次号
   colorCode?: string; // 色号
   unitCost?: number; // 单位成本
   totalCost?: number; // 总成本
@@ -109,6 +132,10 @@ export interface CreateInboundRequest {
   unitCost: number; // 单位成本（必填）
   reason: InboundReason;
   remarks?: string;
+  damagedInputQuantity?: number; // 到货破损录入数量（沿用入库单位）
+  damagedQuantity?: number; // 到货破损折算片数
+  damageHandling?: InboundDamageHandling; // 到货破损处理方式
+  damageRemarks?: string; // 到货破损备注
 
   // 批次管理字段
   productionDate?: string; // ISO日期字符串
@@ -136,6 +163,7 @@ export interface InboundQueryParams {
   search?: string;
   productId?: string;
   reason?: InboundReason;
+  hasDamage?: boolean;
   userId?: string;
   startDate?: string;
   endDate?: string;

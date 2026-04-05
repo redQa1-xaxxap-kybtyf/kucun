@@ -1,4 +1,18 @@
+import path from 'path';
+
 import { defineConfig, devices } from '@playwright/test';
+
+const PLAYWRIGHT_ARTIFACTS_ROOT = path.resolve(
+  process.cwd(),
+  '..',
+  'kucun-playwright-artifacts'
+);
+const PLAYWRIGHT_BASE_URL =
+  process.env.BASE_URL || 'http://127.0.0.1:3000';
+const MANAGED_SERVER_ENABLED = process.env.PLAYWRIGHT_MANAGED_SERVER === '1';
+const MANAGED_SERVER_COMMAND =
+  process.env.PLAYWRIGHT_WEB_SERVER_COMMAND ||
+  'cross-env PORT=3001 npm run build && cross-env PORT=3001 npm run start';
 
 /**
  * Playwright 端到端测试配置
@@ -6,6 +20,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  outputDir: path.join(PLAYWRIGHT_ARTIFACTS_ROOT, 'test-results'),
 
   // 测试超时时间
   timeout: 60 * 1000,
@@ -17,12 +32,20 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
 
   // 报告配置
-  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+  reporter: [
+    [
+      'html',
+      {
+        outputFolder: path.join(PLAYWRIGHT_ARTIFACTS_ROOT, 'playwright-report'),
+      },
+    ],
+    ['list'],
+  ],
 
   // 全局配置
   use: {
     // 基础URL
-    baseURL: 'http://localhost:3000',
+    baseURL: PLAYWRIGHT_BASE_URL,
 
     // 截图配置
     screenshot: 'only-on-failure',
@@ -57,11 +80,12 @@ export default defineConfig({
     // },
   ],
 
-  // 开发服务器配置（可选）
-  // webServer: {
-  //   command: 'npm run dev',
-  //   url: 'http://localhost:3001',
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 120 * 1000,
-  // },
+  webServer: MANAGED_SERVER_ENABLED
+    ? {
+        command: MANAGED_SERVER_COMMAND,
+        url: `${PLAYWRIGHT_BASE_URL}/auth/signin`,
+        reuseExistingServer: false,
+        timeout: 15 * 60 * 1000,
+      }
+    : undefined,
 });

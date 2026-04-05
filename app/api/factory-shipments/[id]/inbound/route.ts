@@ -8,6 +8,11 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
+import {
+  convertQuantityToPieces,
+  convertUnitPriceToPieceCost,
+  isInventoryUnitConversionError,
+} from '@/lib/utils/inventory-unit-conversion';
 import { toNumber } from '@/lib/utils/number';
 
 interface RouteParams {
@@ -57,11 +62,21 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
               productId: true,
               supplierId: true,
               quantity: true,
+              unit: true,
+              piecesPerUnit: true,
               unitCost: true,
               batchNumber: true,
               isManualProduct: true,
               temporaryProductId: true,
               displayName: true,
+              productCode: true,
+              product: {
+                select: {
+                  code: true,
+                  unit: true,
+                  piecesPerUnit: true,
+                },
+              },
             },
           },
         },
@@ -108,10 +123,30 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           );
         }
 
-        const quantity = Number(item.quantity ?? 0);
+        const quantity = convertQuantityToPieces(
+          {
+            quantity: item.quantity,
+            unit: item.unit ?? item.product?.unit,
+            piecesPerUnit: item.piecesPerUnit ?? item.product?.piecesPerUnit,
+            displayName: item.displayName,
+            productCode: item.productCode || item.product?.code,
+          },
+          { strict: true, fallbackLabel: '厂家发货明细' }
+        );
         if (!Number.isFinite(quantity) || quantity <= 0) {
           continue;
         }
+
+        const pieceUnitCost = convertUnitPriceToPieceCost(
+          {
+            unitPrice: unitCost,
+            unit: item.unit ?? item.product?.unit,
+            piecesPerUnit: item.piecesPerUnit ?? item.product?.piecesPerUnit,
+            displayName: item.displayName,
+            productCode: item.productCode || item.product?.code,
+          },
+          { strict: true, fallbackLabel: '厂家发货明细' }
+        );
 
         const markResult = await tx.factoryShipmentOrderItem.updateMany({
           where: {
@@ -134,7 +169,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           {
             productId: item.productId,
             quantity,
-            unitCost,
+            unitCost: pieceUnitCost,
             reason: 'purchase',
             remarks: `厂家发货单${order.orderNumber}自用补货入库`,
             batchNumber: item.batchNumber ?? '',
@@ -213,6 +248,13 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       },
     });
   } catch (error) {
+    if (isInventoryUnitConversionError(error)) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      );
+    }
+
     const message = error instanceof Error ? error.message : '';
 
     if (message.startsWith('NOT_FOUND:')) {

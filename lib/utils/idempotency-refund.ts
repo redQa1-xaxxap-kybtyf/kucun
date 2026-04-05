@@ -247,54 +247,6 @@ export async function processRefundWithLock(
       };
     }
 
-    // 如果本次处理后退款已完成，且关联了退货订单，则自动完成退货并入库调整库存
-    if (finalStatus === 'completed' && refund.returnOrderId) {
-      // 动态导入退货完成后的入库逻辑（与 Server Actions 复用同一实现）
-      const { applyCompletionEffects } = await import(
-        '@/app/actions/return-orders.utils'
-      );
-
-      const relatedReturnOrder = await tx.returnOrder.findUnique({
-        where: { id: refund.returnOrderId },
-        include: {
-          items: true,
-        },
-      });
-
-      if (relatedReturnOrder) {
-        // 1) 按退货明细执行入库（仅对未标记破损的数量入库）
-        await applyCompletionEffects(
-          tx as unknown as any,
-          {
-            salesOrderId: relatedReturnOrder.salesOrderId ?? undefined,
-            returnNumber: relatedReturnOrder.returnNumber,
-            items: relatedReturnOrder.items.map(item => ({
-              productId: item.productId,
-              returnQuantity: Number(item.returnQuantity),
-              damagedQuantity:
-                typeof item.damagedQuantity === 'number'
-                  ? item.damagedQuantity
-                  : 0,
-              // 严格按批次退回：退货明细上有 batchNumber 就带入
-              batchNumber: (item as { batchNumber?: string | null })
-                .batchNumber,
-            })),
-          },
-          operatorId
-        );
-
-        // 2) 将退货订单标记为已完成
-        await tx.returnOrder.update({
-          where: { id: relatedReturnOrder.id },
-          data: {
-            status: 'completed',
-            updatedAt: new Date(),
-            completedAt: new Date(),
-          },
-        });
-      }
-    }
-
     // 释放锁
     await lock.release();
 

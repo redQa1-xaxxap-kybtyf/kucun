@@ -4,6 +4,7 @@ import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { getNotificationDelegate } from '@/lib/db/notification-delegate';
+import { markFallbackNotificationsRead } from '@/lib/notifications/fallback-state';
 
 /**
  * 标记通知为已读
@@ -19,17 +20,19 @@ export const POST = withAuth(
       params?: Promise<Record<string, string>> | Record<string, string>;
     }
   ) => {
+    const { user } = context;
+    const { id } = await resolveParams(context.params);
+
     try {
-      const { id } = await resolveParams(context.params);
-      const { user } = context;
       const notificationDelegate = getNotificationDelegate(prisma);
 
       if (!notificationDelegate) {
-        console.debug('[标记已读] Notification 委托不存在，返回成功');
-        return NextResponse.json({
+        const response = NextResponse.json({
           success: true,
           message: '通知已标记为已读',
         });
+        markFallbackNotificationsRead(response, request, user.id, [id]);
+        return response;
       }
 
       // 检查通知是否属于当前用户
@@ -68,11 +71,12 @@ export const POST = withAuth(
           error.message.includes('Cannot read properties of undefined') ||
           error.message.includes('notification'))
       ) {
-        console.debug('[标记已读] Notification 表尚未创建，返回成功');
-        return NextResponse.json({
+        const response = NextResponse.json({
           success: true,
           message: '通知已标记为已读',
         });
+        markFallbackNotificationsRead(response, request, user.id, [id]);
+        return response;
       }
 
       console.error('[标记已读] 操作失败:', error);

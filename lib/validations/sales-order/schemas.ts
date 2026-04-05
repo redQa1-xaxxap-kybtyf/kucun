@@ -5,6 +5,12 @@
 
 import { z } from 'zod';
 
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
+
 /**
  * ✅ 辅助函数：处理可空的数字类型 - 移除transform避免类型推断问题
  */
@@ -149,8 +155,8 @@ export const salesOrderItemSchema = z
       z
         .number()
         .min(0, '成本价不能为负数')
-        .max(999999.99, '成本价不能超过999,999.99')
-        .multipleOf(0.01, '成本价最多保留2位小数')
+        .max(COST_PRICE_MAX, `成本价不能超过${COST_PRICE_MAX_LABEL}`)
+        .refine(hasAtMostCostPriceDecimals, '成本价最多保留3位小数')
     ),
 
     costSubtotal: nullableNumber(

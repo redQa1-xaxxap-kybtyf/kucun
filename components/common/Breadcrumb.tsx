@@ -55,7 +55,7 @@ const SKIP_INTERMEDIATE_PATHS: Record<string, string[]> = {
  * 严格遵循代码质量规范，统一使用中文标题
  */
 const PATH_TITLES: Record<string, string> = {
-  '/dashboard': '控制台',
+  '/dashboard': '仪表盘',
   '/inventory': '库存管理',
   '/inventory/inbound': '入库记录',
   '/inventory/inbound/create': '产品入库',
@@ -68,7 +68,7 @@ const PATH_TITLES: Record<string, string> = {
   '/inventory/counts/new': '创建盘点计划',
   '/inventory/counts/statistics': '盘点统计',
   '/inventory/batch': '批次管理',
-  '/inventory/temporary-products': '临时产品库',
+  '/inventory/temporary-products': '调货产品库',
   '/products': '产品管理',
   '/products/create': '新建产品',
   '/sales-orders': '销售订单',
@@ -111,17 +111,17 @@ const PATH_TITLES: Record<string, string> = {
   '/finance/reports/monthly': '月度报表',
   '/finance/reports/annual': '年度报表',
   '/finance/reports/profit-loss': '盈亏分析',
-  '/finance/receivables': '应收货款',
+  '/finance/receivables': '客户待收款',
   '/finance/receivables/create': '新建应收',
-  '/finance/customer-statements': '往来明细账',
-  '/finance/refunds': '应退货款',
+  '/finance/customer-statements': '客户往来明细',
+  '/finance/refunds': '退款处理',
   '/finance/refunds/create': '新建退款',
-  '/finance/statements': '应收应付总账',
+  '/finance/statements': '往来对账',
   '/finance/statements/create': '新建账单',
-  '/finance/payments': '收款记录',
+  '/finance/payments': '已收款记录',
   '/finance/payments/create': '新建收款',
-  '/finance/payables': '应付款',
-  '/finance/payables/create': '新建应付款',
+  '/finance/payables': '供应商待付款',
+  '/finance/payables/create': '新建应付款记录',
   '/finance/payments-out': '付款记录',
   '/finance/payments-out/create': '新建付款',
   '/finance/expenses': '费用记录',
@@ -131,13 +131,13 @@ const PATH_TITLES: Record<string, string> = {
   monthly: '月度报表',
   annual: '年度报表',
   'profit-loss': '盈亏分析',
-  receivables: '应收货款',
-  refunds: '应退货款',
-  statements: '应收应付总账',
-  payments: '收款记录',
-  payables: '应付款',
+  receivables: '客户待收款',
+  refunds: '退款处理',
+  statements: '往来对账',
+  payments: '已收款记录',
+  payables: '供应商待付款',
   'payments-out': '付款记录',
-  'customer-statements': '往来明细账',
+  'customer-statements': '客户往来明细',
   expenses: '费用记录',
 
   // 设置模块路径映射
@@ -169,12 +169,14 @@ const DETAIL_TITLE_MAP: Record<string, string> = {
   销售订单: '订单详情',
   退货订单: '退货详情',
   厂家发货: '发货详情',
-  往来明细账: '明细账详情',
-  应收货款: '应收详情',
-  应退货款: '退款详情',
-  应收应付总账: '总账详情',
-  收款记录: '收款详情',
+  客户往来明细: '明细账详情',
+  客户待收款: '应收详情',
+  退款处理: '退款详情',
+  往来对账: '对账详情',
+  已收款记录: '收款详情',
+  供应商待付款: '应付款详情',
   应付款: '应付款详情',
+  已付款记录: '付款详情',
   付款记录: '付款详情',
   入库记录: '入库详情',
   出库记录: '出库详情',
@@ -192,11 +194,12 @@ const EDIT_TITLE_MAP: Record<string, string> = {
   销售订单: '编辑订单',
   退货订单: '编辑退货订单',
   厂家发货: '编辑发货',
-  往来明细账: '编辑明细账',
-  应收货款: '编辑应收货款',
-  应退货款: '编辑应退货款',
-  应收应付总账: '编辑总账',
-  收款记录: '编辑收款记录',
+  客户往来明细: '编辑明细账',
+  客户待收款: '编辑待收款',
+  退款处理: '编辑退款',
+  往来对账: '编辑对账',
+  已收款记录: '编辑收款记录',
+  供应商待付款: '编辑应付款',
   应付款: '编辑应付款',
   付款记录: '编辑付款记录',
   入库记录: '编辑入库记录',
@@ -244,7 +247,7 @@ export function Breadcrumb({
     // 添加首页
     if (showHome) {
       breadcrumbItems.push({
-        title: '控制台',
+        title: '仪表盘',
         href: '/dashboard',
         isCurrent: pathname === '/dashboard' || pathname === '/',
       });
@@ -256,7 +259,7 @@ export function Breadcrumb({
       currentPath += `/${segment}`;
       const isLast = index === segments.length - 1;
 
-      // 如果当前路径就是控制台，且已经添加了首页，则跳过
+      // 如果当前路径就是仪表盘，且已经添加了首页，则跳过
       if (currentPath === '/dashboard' && showHome) return;
 
       // 获取标题

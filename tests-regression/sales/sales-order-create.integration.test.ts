@@ -83,6 +83,14 @@ const { prisma } = jest.requireMock('@/lib/db') as {
   };
 };
 
+function createRetryableTransactionConflictError() {
+  return {
+    code: 'P2034',
+    message:
+      'Transaction failed due to a write conflict or a deadlock. Please retry your transaction',
+  };
+}
+
 function createSalesOrderTx(params: {
   userId: string;
   customerId: string;
@@ -485,6 +493,77 @@ describe('sales-order create integration', () => {
     ).rejects.toThrow('库存预留失败');
 
     expect(tx.paymentRecord.create).not.toHaveBeenCalled();
+  });
+
+  it('创建销售订单遇到瞬时事务写冲突时应自动重试并成功', async () => {
+    const userId = '33333333-3333-4333-8333-333333333333';
+    const customerId = '22222222-2222-4222-8222-222222222222';
+    const productId = '11111111-1111-4111-8111-111111111111';
+    const variantId = '44444444-4444-4444-8444-444444444444';
+
+    const tx = createSalesOrderTx({
+      userId,
+      customerId,
+      productId,
+      variantId,
+      inventories: [
+        {
+          id: 'inv-1',
+          productId,
+          variantId,
+          batchNumber: 'B1',
+          quantity: 100,
+          reservedQuantity: 0,
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ],
+    });
+
+    const { generateSalesOrderNumber } = jest.requireMock(
+      '@/lib/services/simple-order-number-generator'
+    ) as {
+      generateSalesOrderNumber: jest.Mock;
+    };
+    generateSalesOrderNumber.mockResolvedValue('SO-0004A');
+
+    prisma.$transaction
+      .mockRejectedValueOnce(createRetryableTransactionConflictError())
+      .mockImplementationOnce(async (fn: any) => fn(tx));
+    prisma.product.findMany.mockResolvedValue([
+      {
+        id: productId,
+        name: 'P1',
+        code: 'P1',
+        unit: '片',
+        specification: 'spec',
+        piecesPerUnit: 1,
+        weight: null,
+      },
+    ]);
+
+    const result = await createSalesOrder(
+      {
+        customerId,
+        status: 'confirmed',
+        orderType: 'NORMAL',
+        items: [
+          {
+            productId,
+            colorCode: 'C01',
+            quantity: 10,
+            unitPrice: 5,
+            subtotal: 50,
+          },
+        ],
+        usePrepayment: false,
+      },
+      userId
+    );
+
+    expect(result.orderNumber).toBe('SO-0004A');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(tx.inventory.updateMany).toHaveBeenCalledTimes(1);
+    expect(tx.paymentRecord.create).toHaveBeenCalledTimes(1);
   });
 
   it('draft 普通销售开单：不应预留库存，也不应创建应收', async () => {

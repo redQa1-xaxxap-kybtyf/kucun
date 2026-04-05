@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 
-import { PRODUCT_UNIT_VALUES } from '@/lib/config/product';
+import { PRODUCT_UNITS, PRODUCT_UNIT_VALUES } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 import {
   PURCHASE_ORDER_STATUS,
@@ -136,7 +136,19 @@ export const purchaseOrderItemSchema = z
       message: '手动输入产品必须填写产品名称，库存产品必须选择产品',
       path: ['manualProductName'],
     }
-  );
+  )
+  .superRefine((data, ctx) => {
+    if (
+      data.unit === PRODUCT_UNITS.PIECE &&
+      (!Number.isInteger(data.piecesPerUnit) || (data.piecesPerUnit ?? 0) <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['piecesPerUnit'],
+        message: '按件采购时必须填写每件片数',
+      });
+    }
+  });
 
 // 创建采购订单验证
 export const createPurchaseOrderSchema = z.object({

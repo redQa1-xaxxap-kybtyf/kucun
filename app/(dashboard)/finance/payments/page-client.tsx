@@ -475,20 +475,20 @@ export function PaymentsPageClient({
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
-                    收款记录
+                    已收款记录
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    记录客户回款明细，确保应收账款及时核销
+                    查看待确认和已到账的收款记录，方便快速核对
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 sm:items-center sm:justify-end">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:[&>*]:w-auto">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 w-full shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {isExporting ? '导出中...' : '导出'}
@@ -496,7 +496,7 @@ export function PaymentsPageClient({
                 <Button
                   size="lg"
                   asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 w-full shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Link href="/finance/payments/create">
                     <Plus className="mr-2 h-4 w-4" />

@@ -43,6 +43,8 @@ interface PaymentOutRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -379,7 +381,7 @@ export function PaymentOutDetailClient({
                 <div className="flex items-center gap-8">
                   <div className="text-right">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      付款金额
+                      记账金额
                     </p>
                     <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
                       {formatCurrency(payment.paymentAmount)}
@@ -388,11 +390,30 @@ export function PaymentOutDetailClient({
                   <div className="h-8 w-px bg-[hsl(var(--color-border-secondary))]"></div>
                   <div className="text-right">
                     <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      付款方式
+                      实际付款
                     </p>
-                    <div className="flex justify-end font-medium text-[hsl(var(--color-text-primary))]">
-                      <PaymentMethodDisplay method={payment.paymentMethod} />
-                    </div>
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(payment.actualPaymentAmount)}
+                    </p>
+                  </div>
+                  <div className="h-8 w-px bg-[hsl(var(--color-border-secondary))]"></div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      抹零差额
+                    </p>
+                    <p
+                      className={`text-2xl font-bold ${
+                        payment.roundingAmount < 0
+                          ? 'text-red-600'
+                          : payment.roundingAmount > 0
+                            ? 'text-orange-600'
+                            : 'text-[hsl(var(--color-text-tertiary))]'
+                      }`}
+                    >
+                      {payment.roundingAmount === 0
+                        ? '-'
+                        : `${payment.roundingAmount < 0 ? '+' : '-'}${formatCurrency(Math.abs(payment.roundingAmount))}`}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -436,6 +457,15 @@ export function PaymentOutDetailClient({
                       </div>
                     </div>
                   )}
+
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      付款方式
+                    </span>
+                    <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                      <PaymentMethodDisplay method={payment.paymentMethod} />
+                    </div>
+                  </div>
 
                   <div className="space-y-1">
                     <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">

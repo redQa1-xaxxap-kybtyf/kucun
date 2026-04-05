@@ -218,6 +218,7 @@ function useSalesOrdersController(initialParams: SalesOrderQueryParams) {
 
   const handleClearFilters = React.useCallback(() => {
     updateParams({
+      search: '',
       status: undefined,
       customerId: '',
       startDate: undefined,

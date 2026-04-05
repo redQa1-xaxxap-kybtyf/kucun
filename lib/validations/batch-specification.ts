@@ -40,6 +40,7 @@ export const createBatchSpecificationSchema = z.object({
   productId: z
     .string({ message: '产品ID必须是字符串' })
     .uuid({ error: '产品ID格式不正确' }),
+  variantId: z.string().uuid('产品变体ID格式不正确').optional(),
 
   batchNumber: batchNumberSchema,
   piecesPerUnit: piecesPerUnitSchema,
@@ -74,6 +75,7 @@ export const batchSpecificationQuerySchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
 
   productId: z.string().uuid('产品ID格式不正确').optional(),
+  variantId: z.string().uuid('产品变体ID格式不正确').optional(),
 
   batchNumber: z.string().max(50, '批次号不能超过50个字符').optional(),
 

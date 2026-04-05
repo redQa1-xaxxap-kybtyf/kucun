@@ -12,7 +12,7 @@ import type {
 } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
-import { Breadcrumb } from './Breadcrumb';
+import { Breadcrumb, CompactBreadcrumb } from './Breadcrumb';
 import { BreadcrumbProvider } from './BreadcrumbContext';
 import { Header } from './Header';
 import {
@@ -300,7 +300,12 @@ export function DashboardLayoutClient({
                   isMobile ? 'px-4 py-3' : 'px-8 py-3'
                 )}
               >
-                <Breadcrumb className="text-xs font-black tracking-widest text-slate-500 uppercase" />
+                <div className="md:hidden">
+                  <CompactBreadcrumb className="text-xs font-black text-slate-500" />
+                </div>
+                <div className="hidden md:block">
+                  <Breadcrumb className="text-xs font-black tracking-widest text-slate-500 uppercase" />
+                </div>
               </div>
             )}
 

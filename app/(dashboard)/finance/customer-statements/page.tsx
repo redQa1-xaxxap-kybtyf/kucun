@@ -12,8 +12,8 @@ import type { CustomerStatementQuery } from '@/lib/types/customer-statement';
 import { CustomerStatementsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '往来明细账 - 财务管理',
-  description: '按客户查看详细的往来流水与余额核对',
+  title: '客户往来明细 - 财务管理',
+  description: '按客户查看往来流水、退款和余额变化',
 };
 
 export const dynamic = 'force-dynamic';

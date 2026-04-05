@@ -27,7 +27,7 @@ import { PaymentsOutPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '付款记录 - 财务管理',
-  description: '管理采购订单的付款记录，跟踪付款状态和金额',
+  description: '管理采购付款记录，跟踪确认状态、记账金额与实际付款金额',
 };
 
 /**
@@ -269,6 +269,8 @@ async function getPaymentsOutData(searchParams: {
       userId: payment.userId,
       paymentMethod: (payment.paymentMethod ?? 'other') as PaymentOutMethod,
       paymentAmount: Number(payment.paymentAmount),
+      actualPaymentAmount: Number(payment.actualPaymentAmount),
+      roundingAmount: Number(payment.roundingAmount),
       paymentDate: payment.paymentDate,
       status: (payment.status ?? 'pending') as PaymentOutStatus,
       remarks: payment.remarks ?? undefined,

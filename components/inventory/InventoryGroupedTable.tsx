@@ -27,6 +27,7 @@ import { can } from '@/lib/auth/permissions';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -35,6 +36,8 @@ interface InventoryGroupedTableProps {
   onAdjust: (id: string) => void;
   /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
   searchQuery?: string;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
   density: 'compact' | 'comfortable';
 }
 
@@ -125,7 +128,14 @@ function formatSpecification(spec: string | null | undefined): string {
 }
 
 export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
-  ({ data, onAdjust, searchQuery, density }) => {
+  ({
+    data,
+    onAdjust,
+    searchQuery,
+    hasActiveFilters,
+    onClearFilters,
+    density,
+  }) => {
     const groups = React.useMemo(() => groupByProduct(data), [data]);
     const { data: session } = useSession();
 
@@ -137,6 +147,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
     // ✅ 判断是否为搜索无结果
     const hasSearchQuery = searchQuery && searchQuery.trim().length > 0;
+    const isFilteredEmpty = Boolean(hasSearchQuery || hasActiveFilters);
     const isEmptyState = data.length === 0;
 
     return (
@@ -192,25 +203,28 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
               >
                 <EmptyState
                   title={
-                    hasSearchQuery ? '未找到匹配的库存记录' : '暂无库存数据'
+                    isFilteredEmpty ? '未找到匹配的库存记录' : '暂无库存数据'
                   }
                   description={
-                    hasSearchQuery
+                    isFilteredEmpty
                       ? '请尝试调整搜索条件或清空筛选后再试。'
                       : '还没有任何库存记录，您可以先进行产品入库。'
                   }
                   icon={<Package className="text-muted-foreground h-6 w-6" />}
                   action={
-                    hasSearchQuery ? (
+                    isFilteredEmpty ? (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          // 简单方案：跳转到库存总览根路径，清空所有筛选
+                          if (onClearFilters) {
+                            onClearFilters();
+                            return;
+                          }
                           window.location.href = '/inventory';
                         }}
                       >
-                        清空筛选
+                        清空条件
                       </Button>
                     ) : (
                       <Button size="sm" asChild>
@@ -406,10 +420,11 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     {/* 货值评估 */}
                     {hasFinancePermission && (
                       <TableCell className="py-3 text-right">
-                        {item.unitCost ? (
+                        {item.unitCost !== null &&
+                        item.unitCost !== undefined ? (
                           <div className="flex flex-col items-end gap-0.5">
                             <div className="text-[10px] font-bold text-slate-400">
-                              成本单价: {formatCurrency(item.unitCost)}
+                              成本单价: {formatCostPrice(item.unitCost)}
                             </div>
                             <div className="text-sm font-black text-slate-900">
                               {formatCurrency(item.quantity * item.unitCost)}

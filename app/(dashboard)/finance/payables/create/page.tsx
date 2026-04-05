@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 export const metadata: Metadata = {
-  title: '创建应付款 - 财务管理',
-  description: '创建新的应付款记录',
+  title: '新建应付款记录 - 财务管理',
+  description: '新增一笔供应商应付款记录',
 };
 
 /**
- * 创建应付款页面
+ * 新建应付款记录页面
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
 export default function CreatePayablePage() {
@@ -29,10 +29,10 @@ export default function CreatePayablePage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    创建应付款
+                    新建应付款记录
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    创建新的应付款记录，记录对供应商的应付账款
+                    录入新的应付款记录，登记对供应商的应付账款
                   </p>
                 </div>
               </div>

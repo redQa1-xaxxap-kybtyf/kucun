@@ -53,6 +53,7 @@ export function PurchaseOrderSearchToolbar({
   );
 
   const hasActiveFilters =
+    !!searchValue.trim() ||
     statusFilter !== 'all' ||
     !!supplierId ||
     !!dateRange?.startDate ||

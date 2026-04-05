@@ -17,20 +17,10 @@ import type {
   ItemProfitResult,
   OrderProfitSummary,
 } from '@/lib/types/factory-shipment';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
 
 import { roundToTwoDecimals } from './factory-shipment-expense-service';
-
-/**
- * 获取实际片数（考虑单位转换）
- * 如果单位是"件"且有每件片数，则转换为片数；否则直接返回数量
- */
-function getActualQuantityInPieces(item: FactoryShipmentOrderItem): number {
-  if (item.unit === '件' && item.piecesPerUnit && item.piecesPerUnit > 0) {
-    return item.quantity * item.piecesPerUnit;
-  }
-  return item.quantity;
-}
 
 // ==================== 辅助工具函数 ====================
 
@@ -122,12 +112,11 @@ export function calculateItemProfit(
   receivableAmount: number,
   allocatedExpense: number
 ): ItemProfitResult {
-  // ✅ 修复：使用 unitCost 作为进货单价，unitPrice 作为销售单价
-  // ✅ 修复：考虑单位转换（件 → 片）
-  const actualQuantity = getActualQuantityInPieces(item);
+  const quantity = Number(item.quantity ?? 0);
+  const baseUnitCost = item.unitCost || item.unitPrice;
 
-  // 采购成本 = 进货单价 × 实际片数
-  const purchaseCost = (item.unitCost || item.unitPrice) * actualQuantity;
+  // 订单明细成本始终按业务录入单位核算，库存入库时再转换为单片成本。
+  const purchaseCost = baseUnitCost * quantity;
   const revenue = receivableAmount; // 应收金额
   const expense = allocatedExpense; // 分摊费用
 
@@ -138,13 +127,11 @@ export function calculateItemProfit(
   const profitMargin =
     revenue > 0 ? roundToTwoDecimals((profitAmount / revenue) * 100) : 0;
 
-  // 最终单位成本 = 进货单价 + 分摊费用 / 实际片数
+  // 订单明细单位成本保持为当前录入单位（件/片）的成本。
   const finalUnitCost =
-    actualQuantity > 0
-      ? roundToTwoDecimals(
-          (item.unitCost || item.unitPrice) + expense / actualQuantity
-        )
-      : item.unitCost || item.unitPrice;
+    quantity > 0
+      ? roundCostPrice(baseUnitCost + expense / quantity)
+      : baseUnitCost;
 
   return {
     itemId: item.id,
@@ -170,12 +157,10 @@ export function calculateSelfItemCost(
   item: FactoryShipmentOrderItem,
   allocatedExpense: number
 ): number {
-  // ✅ 修复：使用 unitCost 作为进货单价
-  // ✅ 修复：考虑单位转换（件 → 片）
   const purchasePrice = item.unitCost || item.unitPrice;
-  const actualQuantity = getActualQuantityInPieces(item);
-  return actualQuantity > 0
-    ? roundToTwoDecimals(purchasePrice + allocatedExpense / actualQuantity)
+  const quantity = Number(item.quantity ?? 0);
+  return quantity > 0
+    ? roundCostPrice(purchasePrice + allocatedExpense / quantity)
     : purchasePrice;
 }
 

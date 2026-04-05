@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { ExpenseFilters } from '@/components/finance/expenses/expense-filters';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -266,45 +267,22 @@ export function ExpensesPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
-        {/* 页面标题卡片 - v3 PRO 旗舰玻璃拟态 */}
-        <Card className="relative overflow-hidden border-none bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-          {/* 装饰性光斑 */}
-          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-indigo-500/10 blur-3xl" />
-
-          <CardContent className="relative z-10 p-6 sm:p-8">
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-5">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-[0_10px_20px_rgba(37,99,235,0.3)]">
-                  <Receipt className="h-7 w-7 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
-                    费用支出流水{' '}
-                    <span className="ml-2 text-xs font-normal tracking-widest uppercase opacity-40 sm:text-sm">
-                      费用开支明细台账
-                    </span>
-                  </h1>
-                  <p className="mt-1 text-sm font-medium text-slate-400">
-                    智能财务开支监控 · 业务关联穿透审计
-                  </p>
-                </div>
-              </div>
-              {hasManagePermission && (
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-12 border-none bg-blue-600 px-8 text-white shadow-[0_10px_20px_rgba(37,99,235,0.2)] transition-all hover:scale-105 hover:bg-blue-500 sm:text-sm"
-                >
-                  <Link href="/finance/expenses/create">
-                    <Plus className="mr-2 h-5 w-5" />
-                    新增费用记录
-                  </Link>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader
+          title="费用记录"
+          description="登记营业费、管理费、工资等费用；审核入账后自动进入报表。"
+          icon={<Receipt className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-primary))"
+          actions={
+            hasManagePermission ? (
+              <Button size="lg" asChild className="h-11 shadow-[var(--shadow-light)]">
+                <Link href="/finance/expenses/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新增费用
+                </Link>
+              </Button>
+            ) : null
+          }
+        />
 
         {/* 统计卡片 */}
         <ExpenseStatistics params={statisticsParams} />

@@ -97,6 +97,27 @@ export function useInboundFormSubmit({
         requestData.weight = data.weight;
       }
 
+      if (
+        data.damagedInputQuantity &&
+        data.damagedInputQuantity > 0 &&
+        data.damagedQuantity &&
+        data.damagedQuantity > 0
+      ) {
+        requestData.damagedInputQuantity = data.damagedInputQuantity;
+        requestData.damagedQuantity = data.damagedQuantity;
+
+        if (data.damageHandling) {
+          requestData.damageHandling = data.damageHandling;
+        }
+
+        if (data.damageRemarks) {
+          const trimmedDamageRemarks = data.damageRemarks.trim();
+          if (trimmedDamageRemarks.length > 0) {
+            requestData.damageRemarks = trimmedDamageRemarks;
+          }
+        }
+      }
+
       return await createMutation.mutateAsync(requestData);
     },
     onSuccess: () => {

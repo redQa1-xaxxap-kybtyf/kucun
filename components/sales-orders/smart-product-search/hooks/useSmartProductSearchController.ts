@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import {
   isPinyinSearchQuery,
   loadPinyinUtils,
@@ -24,6 +23,9 @@ export function useSmartProductSearchController({
 }: SmartProductSearchProps) {
   const [open, setOpen] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const searchChangeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   const {
     searchValue,
@@ -31,44 +33,66 @@ export function useSmartProductSearchController({
     clearSearch,
     filteredProducts,
     selectedProduct,
-    debouncedSearchValue,
   } = useProductSearchState(products, value);
+
+  const clearScheduledSearchChange = useCallback(() => {
+    if (searchChangeTimeoutRef.current) {
+      clearTimeout(searchChangeTimeoutRef.current);
+      searchChangeTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleSearchChange = useCallback(
+    (nextValue: string) => {
+      if (!onSearchChange) {
+        return;
+      }
+
+      clearScheduledSearchChange();
+      searchChangeTimeoutRef.current = setTimeout(() => {
+        onSearchChange(nextValue.trim());
+        searchChangeTimeoutRef.current = null;
+      }, 250);
+    },
+    [clearScheduledSearchChange, onSearchChange]
+  );
 
   useSearchLifecycle({
     open,
     showAddDialog,
     onSearchChange,
     clearSearch,
-    debouncedSearchValue,
     selectedProduct,
     setSearchValue,
+    clearScheduledSearchChange,
   });
 
   const handleSearchValueChange = useCallback(
     (nextValue: string) => {
       setSearchValue(nextValue);
+      scheduleSearchChange(nextValue);
     },
-    [setSearchValue]
+    [scheduleSearchChange, setSearchValue]
   );
 
   const handleProductSelect = useCallback(
     (productId: string) => {
       onValueChange?.(productId);
       setOpen(false);
+      clearScheduledSearchChange();
       clearSearch();
-      onSearchChange?.('');
     },
-    [clearSearch, onSearchChange, onValueChange]
+    [clearScheduledSearchChange, clearSearch, onValueChange]
   );
 
   const handleBatchSelect = useCallback(
     (productId: string, batchNumber: string) => {
       onBatchSelect?.(productId, batchNumber);
       setOpen(false);
+      clearScheduledSearchChange();
       clearSearch();
-      onSearchChange?.('');
     },
-    [clearSearch, onBatchSelect, onSearchChange]
+    [clearScheduledSearchChange, clearSearch, onBatchSelect]
   );
 
   const handleAddTemporaryProduct = useCallback(() => {
@@ -87,10 +111,23 @@ export function useSmartProductSearchController({
     }) => {
       onTemporaryProductAdd?.(productData);
       setShowAddDialog(false);
+      clearScheduledSearchChange();
       clearSearch();
       onSearchChange?.('');
     },
-    [clearSearch, onTemporaryProductAdd, onSearchChange]
+    [
+      clearScheduledSearchChange,
+      clearSearch,
+      onTemporaryProductAdd,
+      onSearchChange,
+    ]
+  );
+
+  useEffect(
+    () => () => {
+      clearScheduledSearchChange();
+    },
+    [clearScheduledSearchChange]
   );
 
   const selectedSpecification = useMemo(
@@ -120,9 +157,9 @@ interface UseSearchLifecycleParams {
   showAddDialog: boolean;
   onSearchChange?: (value: string) => void;
   clearSearch: () => void;
-  debouncedSearchValue: string;
   selectedProduct: ProductWithInventory | null;
   setSearchValue: (value: string) => void;
+  clearScheduledSearchChange: () => void;
 }
 
 function useSearchLifecycle({
@@ -130,9 +167,9 @@ function useSearchLifecycle({
   showAddDialog,
   onSearchChange,
   clearSearch,
-  debouncedSearchValue,
   selectedProduct,
   setSearchValue,
+  clearScheduledSearchChange,
 }: UseSearchLifecycleParams) {
   const previousOpen = usePrevious(open);
   const selectedProductPrefill = useMemo(
@@ -166,6 +203,7 @@ function useSearchLifecycle({
 
     if (!open && wasOpen && !showAddDialog) {
       // 关闭时清空搜索
+      clearScheduledSearchChange();
       clearSearch();
       onSearchChange?.('');
     }
@@ -179,16 +217,9 @@ function useSearchLifecycle({
     showAddDialog,
     setSearchValue,
     clearSearch,
+    clearScheduledSearchChange,
     onSearchChange,
   ]);
-
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    onSearchChange?.(debouncedSearchValue.trim());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, debouncedSearchValue]);
 }
 
 function usePrevious<T>(value: T) {
@@ -207,19 +238,16 @@ interface ProductSearchState {
   clearSearch: () => void;
   filteredProducts: ProductWithInventory[];
   selectedProduct: ProductWithInventory | null;
-  debouncedSearchValue: string;
 }
 
 function useProductSearchState(
   products: ProductWithInventory[],
   selectedId?: string
 ): ProductSearchState {
-  const {
-    inputValue: searchValue,
-    debouncedValue: debouncedSearchValue,
-    setInputValue,
-    clearSearch,
-  } = useDebouncedSearch({ delay: 250 });
+  const [searchValue, setSearchValue] = useState('');
+  const clearSearch = useCallback(() => {
+    setSearchValue('');
+  }, []);
 
   const [pinyinUtils, setPinyinUtils] = useState<PinyinUtils | null>(null);
   const needsPinyin = useMemo(() => isPinyinSearchQuery(searchValue), [searchValue]);
@@ -269,10 +297,9 @@ function useProductSearchState(
 
   return {
     searchValue,
-    setSearchValue: setInputValue,
+    setSearchValue,
     clearSearch,
     filteredProducts,
     selectedProduct,
-    debouncedSearchValue,
   };
 }

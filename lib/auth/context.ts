@@ -10,9 +10,8 @@
  */
 
 import type { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { safeAuth } from '@/lib/auth';
 
 // ==================== 类型定义 ====================
 
@@ -146,7 +145,7 @@ export function requireApiAuth(request: NextRequest): AuthUser {
  * ```
  */
 export async function getServerAuthContext(): Promise<AuthContext> {
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('auth-context');
 
   if (!session?.user) {
     return {

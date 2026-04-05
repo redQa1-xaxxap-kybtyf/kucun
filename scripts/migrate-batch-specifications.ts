@@ -97,8 +97,9 @@ async function migrateBatchSpecifications(): Promise<MigrationResult> {
           try {
             const batchSpec = await prisma.batchSpecification.upsert({
               where: {
-                productId_batchNumber: {
+                productId_variantKey_batchNumber: {
                   productId: product.id,
+                  variantKey: '',
                   batchNumber,
                 },
               },
@@ -109,6 +110,7 @@ async function migrateBatchSpecifications(): Promise<MigrationResult> {
               },
               create: {
                 productId: product.id,
+                variantKey: '',
                 batchNumber,
                 piecesPerUnit: product.piecesPerUnit,
                 weight: product.weight,

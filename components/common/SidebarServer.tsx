@@ -1,7 +1,6 @@
-import { getServerSession } from 'next-auth';
 import * as React from 'react';
 
-import { authOptions } from '@/lib/auth';
+import { safeAuth } from '@/lib/auth';
 import { getAccessibleNavItems } from '@/lib/auth/permissions';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
@@ -26,7 +25,7 @@ interface SidebarServerProps {
  */
 export async function SidebarServer({ state, className }: SidebarServerProps) {
   // 在服务器端获取 session
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('sidebar-server');
   const userRole = session?.user?.role as UserRole | undefined;
 
   // 在服务器端过滤导航项(基于权限)

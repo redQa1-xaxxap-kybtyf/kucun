@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import {
   buildOffsetPaginationMeta,
@@ -11,6 +11,45 @@ import {
   getNotificationDelegate,
   type NotificationRecord,
 } from '@/lib/db/notification-delegate';
+import { getFallbackNotificationState } from '@/lib/notifications/fallback-state';
+import { listFallbackNotifications } from '@/lib/services/fallback-notification-service';
+
+async function buildFallbackNotificationResponse(
+  request: NextRequest,
+  userId: string,
+  page: number,
+  limit: number,
+  skip: number
+) {
+  const { hiddenIds, readIds } = getFallbackNotificationState(request, userId);
+  const notifications = await listFallbackNotifications({
+    userId,
+    hiddenIds,
+    readIds,
+    limit: Math.max(skip + limit + 1, 20),
+  });
+  const unreadCount = notifications.filter(
+    notification => !notification.isRead
+  ).length;
+  const { items, hasMore } = sliceLimitPlusOne(
+    notifications.slice(skip, skip + limit + 1),
+    limit
+  );
+
+  return NextResponse.json({
+    notifications: items.map(notification => ({
+      id: notification.id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.type,
+      isRead: notification.isRead,
+      href: notification.href ?? null,
+      createdAt: notification.createdAt,
+    })),
+    unreadCount,
+    pagination: buildOffsetPaginationMeta({ page, limit, hasMore }),
+  });
+}
 
 /**
  * 获取通知列表
@@ -26,16 +65,13 @@ export const GET = withAuth(async (request, { user }) => {
     const notificationDelegate = getNotificationDelegate(prisma);
 
     if (!notificationDelegate) {
-      return NextResponse.json({
-        notifications: [],
-        unreadCount: 0,
-        pagination: buildOffsetPaginationMeta({
-          page,
-          limit,
-          total: 0,
-          hasMore: false,
-        }),
-      });
+      return buildFallbackNotificationResponse(
+        request,
+        user.id,
+        page,
+        limit,
+        skip
+      );
     }
 
     // 获取通知列表（这里是模拟数据，实际应该从数据库读取）
@@ -90,19 +126,16 @@ export const GET = withAuth(async (request, { user }) => {
         error.message.includes('Cannot read properties of undefined') ||
         error.message.includes('notification'))
     ) {
-      const { page, limit } = parseOffsetPagination(
+      const { page, limit, skip } = parseOffsetPagination(
         request.nextUrl.searchParams
       );
-      return NextResponse.json({
-        notifications: [],
-        unreadCount: 0,
-        pagination: buildOffsetPaginationMeta({
-          page,
-          limit,
-          total: 0,
-          hasMore: false,
-        }),
-      });
+      return buildFallbackNotificationResponse(
+        request,
+        user.id,
+        page,
+        limit,
+        skip
+      );
     }
 
     // 其他错误才记录

@@ -75,8 +75,12 @@ export async function getInventoryCounts(
   };
 }
 
-function buildBatchSpecKey(productId: string, batchNumber: string) {
-  return `${productId}::${batchNumber}`;
+function buildBatchSpecKey(
+  productId: string,
+  batchNumber: string,
+  variantId?: string | null
+) {
+  return `${productId}::${variantId ?? ''}::${batchNumber}`;
 }
 
 async function attachBatchPiecesPerUnit(
@@ -87,6 +91,7 @@ async function attachBatchPiecesPerUnit(
     .filter(item => item.batchNumber && item.productId)
     .map(item => ({
       productId: item.productId,
+      variantId: item.variantId ?? null,
       batchNumber: item.batchNumber as string,
     }));
 
@@ -98,7 +103,11 @@ async function attachBatchPiecesPerUnit(
   const uniqueKeySet = new Set<string>();
   const uniquePairs: typeof pairs = [];
   for (const pair of pairs) {
-    const key = buildBatchSpecKey(pair.productId, pair.batchNumber);
+    const key = buildBatchSpecKey(
+      pair.productId,
+      pair.batchNumber,
+      pair.variantId
+    );
     if (!uniqueKeySet.has(key)) {
       uniqueKeySet.add(key);
       uniquePairs.push(pair);
@@ -109,20 +118,49 @@ async function attachBatchPiecesPerUnit(
     return count;
   }
 
+  const seenConditions = new Set<string>();
+  const conditions = uniquePairs.flatMap(pair => {
+    const entries = [
+      {
+        productId: pair.productId,
+        variantId: pair.variantId,
+        batchNumber: pair.batchNumber,
+      },
+    ];
+
+    if (pair.variantId) {
+      entries.push({
+        productId: pair.productId,
+        variantId: null,
+        batchNumber: pair.batchNumber,
+      });
+    }
+
+    return entries.filter(condition => {
+      const key = buildBatchSpecKey(
+        condition.productId,
+        condition.batchNumber,
+        condition.variantId
+      );
+      if (seenConditions.has(key)) {
+        return false;
+      }
+      seenConditions.add(key);
+      return true;
+    });
+  });
+
   const batchSpecs = await prisma.batchSpecification.findMany({
     where: {
-      OR: uniquePairs.map(p => ({
-        productId: p.productId,
-        batchNumber: p.batchNumber,
-      })),
+      OR: conditions,
     },
     select: {
       id: true,
       productId: true,
+      variantId: true,
       batchNumber: true,
       piecesPerUnit: true,
     },
-    take: uniquePairs.length,
   });
 
   if (!batchSpecs.length) {
@@ -131,7 +169,10 @@ async function attachBatchPiecesPerUnit(
 
   const specMap = new Map<string, (typeof batchSpecs)[number]>();
   batchSpecs.forEach(spec => {
-    specMap.set(buildBatchSpecKey(spec.productId, spec.batchNumber), spec);
+    specMap.set(
+      buildBatchSpecKey(spec.productId, spec.batchNumber, spec.variantId ?? null),
+      spec
+    );
   });
 
   return {
@@ -141,8 +182,17 @@ async function attachBatchPiecesPerUnit(
         return item;
       }
 
-      const key = buildBatchSpecKey(item.productId, item.batchNumber);
-      const spec = specMap.get(key);
+      const key = buildBatchSpecKey(
+        item.productId,
+        item.batchNumber,
+        item.variantId ?? null
+      );
+      const fallbackKey = buildBatchSpecKey(
+        item.productId,
+        item.batchNumber,
+        null
+      );
+      const spec = specMap.get(key) ?? specMap.get(fallbackKey);
       if (!spec) {
         return item;
       }

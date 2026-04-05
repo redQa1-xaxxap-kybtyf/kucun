@@ -1,22 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-
+import { ProductForm } from '@/components/products/product-form';
 import { useToast } from '@/components/ui/use-toast';
 import type { Product } from '@/lib/types/product';
-
-const ProductForm = dynamic(
-  () =>
-    import('@/components/products/product-form').then(mod => mod.ProductForm),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
-        表单加载中...
-      </div>
-    ),
-  }
-);
 
 interface ProductEditClientProps {
   productId: string;

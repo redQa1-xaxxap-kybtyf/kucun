@@ -102,9 +102,9 @@ export const GET = withAuth(
 
     if (search) {
       where.OR = [
-        { refundNumber: { contains: search, mode: 'insensitive' } },
-        { customer: { name: { contains: search, mode: 'insensitive' } } },
-        { reason: { contains: search, mode: 'insensitive' } },
+        { refundNumber: { contains: search } },
+        { customer: { name: { contains: search } } },
+        { reason: { contains: search } },
       ];
     }
 

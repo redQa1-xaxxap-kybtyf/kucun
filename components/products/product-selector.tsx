@@ -304,7 +304,7 @@ export function ProductSelector({
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
-            <Command>
+            <Command shouldFilter={false}>
               <CommandInput
                 placeholder="搜索产品..."
                 value={searchValue}
@@ -523,7 +523,7 @@ export function MultiProductSelector({
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
-          <Command>
+          <Command shouldFilter={false}>
             <CommandInput
               placeholder="搜索产品..."
               value={searchValue}

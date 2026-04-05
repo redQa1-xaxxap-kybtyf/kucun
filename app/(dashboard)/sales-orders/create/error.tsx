@@ -37,9 +37,9 @@ export default function CreateSalesOrderError({
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">创建订单时出错</h2>
+            <h2 className="text-2xl font-bold text-gray-900">新建销售订单时出错</h2>
             <p className="text-sm text-gray-600">
-              无法加载新建订单页面，请稍后重试
+              无法加载新建销售订单页面，请稍后重试
             </p>
           </div>
 

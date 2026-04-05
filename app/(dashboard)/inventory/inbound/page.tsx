@@ -81,6 +81,11 @@ export default async function InboundRecordsPage({
     return value && value.trim() !== '' ? value : undefined;
   };
 
+  const parseBooleanParam = (key: string) => {
+    const value = urlSearchParams.get(key);
+    return value === 'true' ? true : undefined;
+  };
+
   const rawSortBy = urlSearchParams.get('sortBy') || undefined;
   const allowedSortFields: NonNullable<InboundQueryParams['sortBy']>[] = [
     'createdAt',
@@ -125,6 +130,7 @@ export default async function InboundRecordsPage({
     search: getOptional('search'),
     productId: getOptional('productId'),
     reason: getOptional('reason') as InboundQueryParams['reason'],
+    hasDamage: parseBooleanParam('hasDamage'),
     userId: getOptional('userId'),
     startDate: getOptional('startDate'),
     endDate: getOptional('endDate'),

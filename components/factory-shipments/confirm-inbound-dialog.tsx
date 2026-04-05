@@ -25,6 +25,7 @@ import {
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 import type { CreateInboundRequest } from '@/lib/types/inbound';
+import { COST_PRICE_STEP } from '@/lib/utils/cost-price';
 
 interface ConfirmInboundDialogProps {
   orderId: string;
@@ -231,7 +232,7 @@ function InboundItemCard({
           <Input
             type="number"
             min={0}
-            step="0.01"
+            step={COST_PRICE_STEP}
             placeholder="请输入入库成本"
             value={state?.unitCost ?? (item as any).unitCost ?? 0}
             onChange={e => onFieldChange(item.id, 'unitCost', e.target.value)}

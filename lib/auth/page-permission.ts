@@ -17,9 +17,8 @@
  */
 
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { safeAuth } from '@/lib/auth';
 import { can, type Permission } from '@/lib/auth/permissions';
 
 /**
@@ -71,7 +70,7 @@ export async function requirePagePermission(
   const { redirectTo = '/dashboard', show403 = false } = options;
 
   // 获取用户 session
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('require-page-permission');
 
   // 未登录：重定向到登录页
   if (!session) {
@@ -114,7 +113,7 @@ export async function requireAnyPagePermission(
 ) {
   const { redirectTo = '/dashboard', show403 = false } = options;
 
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('require-any-page-permission');
 
   if (!session) {
     redirect('/auth/signin');
@@ -158,7 +157,7 @@ export async function requireAllPagePermissions(
 ) {
   const { redirectTo = '/dashboard', show403 = false } = options;
 
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('require-all-page-permissions');
 
   if (!session) {
     redirect('/auth/signin');
@@ -201,7 +200,7 @@ export async function requireAllPagePermissions(
 export async function checkPagePermission(
   permission: Permission
 ): Promise<boolean> {
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('check-page-permission');
 
   if (!session) {
     return false;

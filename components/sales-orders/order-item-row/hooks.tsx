@@ -6,6 +6,10 @@ import { useWatch } from 'react-hook-form';
 import type { Product } from '@/lib/types/product';
 import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import {
+  getInventoryBatchAvailableQuantity,
+  getInventoryBatchReservedQuantity,
+} from '@/lib/utils/product-inventory';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 import type { OrderFormInstance } from './types';
@@ -228,23 +232,28 @@ export function useAvailableBatches(
     const batchSpecMap = new Map(
       (resolvedProduct?.batchSpecs ?? []).map(spec => [spec.batchNumber, spec])
     );
-    const normalized = inventoryBatches.map(batch => {
-      const batchWeight = (batch as { weight?: number }).weight;
-      const normalizedWeight =
-        typeof batchWeight === 'number' && batchWeight > 0
-          ? batchWeight
-          : batchSpecMap.get(batch.batchNumber)?.weight;
+    const normalized = inventoryBatches
+      .map(batch => {
+        const batchWeight = (batch as { weight?: number }).weight;
+        const normalizedWeight =
+          typeof batchWeight === 'number' && batchWeight > 0
+            ? batchWeight
+            : batchSpecMap.get(batch.batchNumber)?.weight;
 
-      return {
-        batchNumber: batch.batchNumber,
-        quantity: batch.quantity,
-        piecesPerUnit:
-          typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
-            ? batch.piecesPerUnit
-            : batchSpecMap.get(batch.batchNumber)?.piecesPerUnit,
-        weight: normalizedWeight,
-      };
-    });
+        return {
+          batchNumber: batch.batchNumber,
+          quantity: getInventoryBatchAvailableQuantity(batch),
+          reservedQuantity: getInventoryBatchReservedQuantity(batch),
+          piecesPerUnit:
+            typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+              ? batch.piecesPerUnit
+              : batchSpecMap.get(batch.batchNumber)?.piecesPerUnit,
+          weight: normalizedWeight,
+        };
+      })
+      .filter(
+        batch => batch.quantity > 0 || batch.batchNumber === currentBatchNumber
+      );
 
     if (
       currentBatchNumber &&

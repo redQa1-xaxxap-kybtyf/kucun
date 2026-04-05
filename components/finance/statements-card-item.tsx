@@ -1,11 +1,4 @@
-import {
-  ArrowUpRight,
-  ChevronRight,
-  History,
-  TrendingDown,
-  User,
-  Wallet,
-} from 'lucide-react';
+import { ChevronRight, History, TrendingDown, User, Wallet } from 'lucide-react';
 import Link from 'next/link';
 
 import { RelativeTime } from '@/components/common/relative-time';
@@ -27,185 +20,141 @@ type StatementCardItemProps = {
 export function StatementCardItem({ statement }: StatementCardItemProps) {
   const balance = statement.currentBalance ?? 0;
   const balanceLabel =
-    balance > 0 ? '应收余额' : balance < 0 ? '应付余额' : '账目结清';
-
+    balance > 0 ? '待收余额' : balance < 0 ? '待付余额' : '已结清';
   const paymentRate =
     Math.abs(statement.totalAmount) > 0
       ? (Math.abs(statement.paidAmount) / Math.abs(statement.totalAmount)) * 100
       : 0;
 
   return (
-    <div className="group relative overflow-hidden rounded-[2.5rem] border-none bg-white p-6 shadow-[0_10px_40px_rgba(0,0,0,0.03)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.08)]">
-      {/* Background Decorator */}
-      <div className="absolute top-0 right-0 p-8 opacity-[0.02] transition-transform duration-700 group-hover:scale-110">
-        {statement.type === 'customer' ? (
-          <User size={120} />
-        ) : (
-          <TrendingDown size={120} />
-        )}
-      </div>
-
-      <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center">
-        {/* Left: Identity Section */}
-        <div className="flex min-w-[300px] items-center gap-5">
+    <div className="rounded-xl border border-[hsl(var(--color-border-secondary))] bg-white p-5 shadow-[var(--shadow-light)]">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-4">
           <div
             className={cn(
-              'flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-500 group-hover:rotate-6',
+              'flex h-12 w-12 items-center justify-center rounded-xl text-white',
               statement.type === 'customer'
-                ? 'bg-blue-600 shadow-blue-100'
-                : 'bg-purple-600 shadow-purple-100'
+                ? 'bg-[hsl(var(--color-primary))]'
+                : 'bg-[hsl(var(--color-text-secondary))]'
             )}
           >
             {statement.type === 'customer' ? (
-              <User className="h-8 w-8" />
+              <User className="h-5 w-5" />
             ) : (
-              <TrendingDown className="h-8 w-8" />
+              <TrendingDown className="h-5 w-5" />
             )}
           </div>
-          <div className="space-y-1">
-            <h3 className="text-xl font-black tracking-tighter text-slate-900 transition-colors group-hover:text-blue-600">
+
+          <div className="min-w-0 space-y-1">
+            <div className="truncate text-base font-semibold text-[hsl(var(--color-text-primary))]">
               {statement.name}
-            </h3>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="rounded-md border-slate-100 bg-slate-50 px-2 py-0 text-[10px] font-black tracking-widest text-slate-500 uppercase"
-              >
-                {TYPE_LABEL_MAP[statement.type]}
-              </Badge>
-              <div
-                className={cn(
-                  'rounded-md px-2 py-0.5 text-[10px] font-black tracking-widest uppercase',
-                  statement.status === 'active'
-                    ? 'bg-emerald-50 text-emerald-600'
-                    : 'bg-slate-50 text-slate-400'
-                )}
-              >
-                {STATUS_LABEL_MAP[statement.status]}
-              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline">{TYPE_LABEL_MAP[statement.type]}</Badge>
+              <Badge variant="secondary">{STATUS_LABEL_MAP[statement.status]}</Badge>
             </div>
           </div>
         </div>
 
-        {/* Middle: Professional Metrics Grid */}
-        <div className="grid flex-1 grid-cols-2 gap-8 border-slate-50 lg:border-x lg:px-10 xl:grid-cols-4">
-          <div className="space-y-1">
-            <span className="text-[10px] font-black tracking-widest text-slate-300 uppercase">
-              往来账项项数
-            </span>
-            <p className="text-lg font-black text-slate-900">
-              {statement.totalOrders}{' '}
-              <span className="ml-1 text-xs font-bold text-slate-400">
-                项流水
-              </span>
-            </p>
-          </div>
-          <div className="space-y-1">
-            <span className="text-[10px] font-black tracking-widest text-slate-300 uppercase">
-              本期累计流水
-            </span>
-            <p className="text-lg font-black text-slate-900">
-              {formatCurrency(Math.abs(statement.totalAmount))}
-            </p>
-          </div>
-          <div className="space-y-1 lg:col-span-2 xl:col-span-2">
-            <div className="mb-1.5 flex items-center justify-between">
-              <span className="text-[10px] font-black tracking-widest text-slate-300 uppercase">
-                对账结算百分比
-              </span>
-              <span className="text-xs font-black text-blue-600">
+        <div className="grid flex-1 gap-4 sm:grid-cols-3">
+          <MetricBlock
+            label="业务笔数"
+            value={`${statement.totalOrders} 笔`}
+          />
+          <MetricBlock
+            label="累计往来金额"
+            value={formatCurrency(Math.abs(statement.totalAmount))}
+          />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs text-[hsl(var(--color-text-secondary))]">
+              <span>结算进度</span>
+              <span className="font-medium text-[hsl(var(--color-primary))]">
                 {paymentRate.toFixed(1)}%
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-50">
+            <div className="h-2 overflow-hidden rounded-full bg-[hsl(var(--color-bg-secondary))]">
               <div
-                className="h-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-1000 group-hover:from-emerald-500 group-hover:to-teal-500"
+                className="h-full rounded-full bg-[hsl(var(--color-primary))]"
                 style={{ width: `${paymentRate}%` }}
               />
             </div>
           </div>
         </div>
 
-        {/* Right: Balance & Action */}
-        <div className="flex items-center gap-8 lg:min-w-[300px] lg:justify-end">
-          <div className="space-y-1 text-right">
-            <span className="text-[10px] font-black tracking-widest text-slate-300 uppercase">
+        <div className="flex items-center justify-between gap-4 lg:min-w-[220px] lg:justify-end">
+          <div className="text-left lg:text-right">
+            <div className="text-xs text-[hsl(var(--color-text-secondary))]">
               {balanceLabel}
-            </span>
-            <div className="flex items-baseline justify-end gap-1">
-              <span
-                className={cn(
-                  'text-xs font-black',
-                  balance > 0
-                    ? 'text-emerald-500'
-                    : balance < 0
-                      ? 'text-rose-500'
-                      : 'text-slate-200'
-                )}
-              >
-                ¥
-              </span>
-              <p
-                className={cn(
-                  'text-3xl leading-none font-black tracking-tighter',
-                  balance > 0
-                    ? 'text-emerald-600'
-                    : balance < 0
-                      ? 'text-rose-600'
-                      : 'text-slate-300'
-                )}
-              >
-                {formatCurrency(Math.abs(balance)).replace('¥', '')}
-              </p>
+            </div>
+            <div
+              className={cn(
+                'text-2xl font-semibold',
+                balance > 0
+                  ? 'text-[hsl(var(--color-success))]'
+                  : balance < 0
+                    ? 'text-[hsl(var(--color-error))]'
+                    : 'text-[hsl(var(--color-text-secondary))]'
+              )}
+            >
+              {formatCurrency(Math.abs(balance))}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              size="icon"
-              variant="ghost"
-              asChild
-              className="h-12 w-12 rounded-2xl bg-slate-50 text-slate-400 shadow-sm transition-all hover:bg-slate-900 hover:text-white active:scale-90"
-            >
-              <Link href={`/finance/statements/${statement.id}`}>
-                <ChevronRight className="h-6 w-6" />
-              </Link>
-            </Button>
-          </div>
+          <Button size="icon" variant="outline" asChild>
+            <Link href={`/finance/statements/${statement.id}`}>
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </Button>
         </div>
       </div>
 
-      {/* Footer: Timeline & Metadata */}
-      <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-5">
-        <div className="flex items-center gap-8">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-[hsl(var(--color-border-secondary))] pt-4 text-xs text-[hsl(var(--color-text-secondary))]">
+        <div className="flex flex-wrap items-center gap-4">
           {statement.lastTransactionDate && (
-            <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-400 uppercase">
+            <div className="flex items-center gap-1.5">
               <History className="h-3.5 w-3.5" />
-              最近动账{' '}
-              <span className="border-b border-slate-100 text-slate-900">
+              <span>最近业务</span>
+              <span className="text-[hsl(var(--color-text-primary))]">
                 <RelativeTime date={statement.lastTransactionDate} />
               </span>
             </div>
           )}
           {statement.lastPaymentDate && (
-            <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-slate-400 uppercase">
+            <div className="flex items-center gap-1.5">
               <Wallet className="h-3.5 w-3.5" />
-              最近结算{' '}
-              <span className="border-b border-slate-100 text-slate-900">
+              <span>最近收付款</span>
+              <span className="text-[hsl(var(--color-text-primary))]">
                 <RelativeTime date={statement.lastPaymentDate} />
               </span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <Link
-            href={`/finance/statements/${statement.id}/transactions`}
-            className="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-blue-600 uppercase transition-colors hover:text-blue-800"
-          >
-            查看财务审计穿透流水 <ArrowUpRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+        <Link
+          href={`/finance/statements/${statement.id}/transactions`}
+          className="font-medium text-[hsl(var(--color-primary))] hover:underline"
+        >
+          查看明细
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function MetricBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
+        {label}
+      </div>
+      <div className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
+        {value}
       </div>
     </div>
   );

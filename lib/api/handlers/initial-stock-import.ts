@@ -1,9 +1,13 @@
+import { randomBytes } from 'node:crypto';
+
 import { generateBatchNumberOutsideTransaction } from '@/lib/api/batch-number-generator';
 import { executeMinimalInboundTransaction } from '@/lib/api/minimal-inbound-transaction';
 import { prisma } from '@/lib/db';
+import { toNumberOrNull } from '@/lib/utils/number';
 import {
   initialStockImportSchema,
   initialStockRowSchema,
+  type InitialStockQuantityUnit,
   type InitialStockRow,
   type InitialStockRowInput,
 } from '@/lib/validations/initial-stock';
@@ -30,8 +34,16 @@ export interface InitialStockImportPreviewRow {
   specification: string;
   colorCode?: string;
   batchNumber: string;
+  inputQuantity: number;
+  quantityUnit: InitialStockQuantityUnit;
+  quantityUnitSource: 'row' | 'default';
+  piecesPerUnit?: number;
+  piecesPerUnitSource?: 'row' | 'product';
+  weight?: number;
+  weightSource?: 'row' | 'product';
   quantity: number;
   unitCost: number;
+  supplierName?: string;
   location?: string;
   matchMethod: string;
 }
@@ -52,6 +64,7 @@ export interface InitialStockImportExecutionResult
   extends InitialStockImportValidationResult {
   importedCount: number;
   importedProductIds: string[];
+  importBatchId?: string;
 }
 
 type ProductLookup = {
@@ -59,11 +72,20 @@ type ProductLookup = {
   code: string;
   name: string;
   specification: string | null;
+  piecesPerUnit: number;
+  weight: unknown;
   variants: Array<{
     id: string;
     colorCode: string;
     status: string;
   }>;
+};
+
+type SupplierLookup = {
+  id: string;
+  name: string;
+  supplierCode: string | null;
+  status: string;
 };
 
 type ParsedInitialStockRow = {
@@ -76,8 +98,18 @@ type PreparedInitialStockRow = {
   product: ProductLookup;
   variantId?: string;
   batchNumber: string;
+  inputQuantity: number;
+  quantityUnit: InitialStockQuantityUnit;
+  quantityUnitSource: 'row' | 'default';
+  piecesPerUnit?: number;
+  piecesPerUnitSource?: 'row' | 'product';
+  batchPiecesPerUnit?: number;
+  weight?: number;
+  weightSource?: 'row' | 'product';
   quantity: number;
   unitCost: number;
+  supplierId?: string;
+  supplierName?: string;
   location?: string;
   remarks: string;
   preview: InitialStockImportPreviewRow;
@@ -86,7 +118,31 @@ type PreparedInitialStockRow = {
 type InitialStockImportContext = {
   productByCode: Map<string, ProductLookup>;
   productsByNameSpec: Map<string, ProductLookup[]>;
+  suppliersByName: Map<string, SupplierLookup[]>;
+  supplierByCode: Map<string, SupplierLookup>;
 };
+
+function normalizeInitialStockRowAliases(
+  row: InitialStockRowInput
+): InitialStockRowInput {
+  const normalizedRow = { ...(row as Record<string, unknown>) };
+
+  if (
+    normalizedRow.单位成本 === undefined &&
+    normalizedRow.单片成本 !== undefined
+  ) {
+    normalizedRow.单位成本 = normalizedRow.单片成本;
+  }
+
+  if (
+    normalizedRow.单位成本 === undefined &&
+    normalizedRow['单片成本(元/片)'] !== undefined
+  ) {
+    normalizedRow.单位成本 = normalizedRow['单片成本(元/片)'];
+  }
+
+  return normalizedRow as InitialStockRowInput;
+}
 
 function normalizeLookupKey(value: string | undefined | null): string {
   return (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -102,6 +158,14 @@ function buildResolvedRowKey(
   batchNumber: string
 ) {
   return `${productId}::${variantId ?? 'null'}::${normalizeLookupKey(batchNumber)}`;
+}
+
+function createOpeningImportBatchId() {
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const randomPart = randomBytes(2).toString('hex').toUpperCase();
+  return `OBI-${datePart}-${timePart}-${randomPart}`;
 }
 
 function createImportError(
@@ -152,6 +216,14 @@ async function loadImportContext(
         .map(name => name.trim())
     )
   );
+  const supplierInputs = Array.from(
+    new Set(
+      rows
+        .map(item => item.row.供应商.trim())
+        .filter(Boolean)
+        .map(name => name.trim())
+    )
+  );
 
   const whereClauses: Array<{
     code?: {
@@ -178,28 +250,58 @@ async function loadImportContext(
     });
   }
 
-  const products = await prisma.product.findMany({
-    where: whereClauses.length > 0 ? { OR: whereClauses } : undefined,
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      specification: true,
-      variants: {
-        select: {
-          id: true,
-          colorCode: true,
-          status: true,
-        },
-        orderBy: {
-          colorCode: 'asc',
+  const [products, suppliers] = await Promise.all([
+    prisma.product.findMany({
+      where: whereClauses.length > 0 ? { OR: whereClauses } : undefined,
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        specification: true,
+        piecesPerUnit: true,
+        weight: true,
+        variants: {
+          select: {
+            id: true,
+            colorCode: true,
+            status: true,
+          },
+          orderBy: {
+            colorCode: 'asc',
+          },
         },
       },
-    },
-  });
+    }),
+    supplierInputs.length > 0
+      ? prisma.supplier.findMany({
+          where: {
+            OR: [
+              {
+                name: {
+                  in: supplierInputs,
+                },
+              },
+              {
+                supplierCode: {
+                  in: supplierInputs,
+                },
+              },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            supplierCode: true,
+            status: true,
+          },
+        })
+      : Promise.resolve([]),
+  ]);
 
   const productByCode = new Map<string, ProductLookup>();
   const productsByNameSpec = new Map<string, ProductLookup[]>();
+  const suppliersByName = new Map<string, SupplierLookup[]>();
+  const supplierByCode = new Map<string, SupplierLookup>();
 
   products.forEach(product => {
     productByCode.set(normalizeLookupKey(product.code), product);
@@ -209,10 +311,22 @@ async function loadImportContext(
     current.push(product);
     productsByNameSpec.set(key, current);
   });
+  suppliers.forEach(supplier => {
+    const normalizedName = normalizeLookupKey(supplier.name);
+    const current = suppliersByName.get(normalizedName) ?? [];
+    current.push(supplier);
+    suppliersByName.set(normalizedName, current);
+
+    if (supplier.supplierCode) {
+      supplierByCode.set(normalizeLookupKey(supplier.supplierCode), supplier);
+    }
+  });
 
   return {
     productByCode,
     productsByNameSpec,
+    suppliersByName,
+    supplierByCode,
   };
 }
 
@@ -429,6 +543,187 @@ function resolveVariant(
   };
 }
 
+function resolvePiecesPerUnit(
+  parsedRow: ParsedInitialStockRow,
+  product: ProductLookup
+) {
+  const productPiecesPerUnit =
+    typeof product.piecesPerUnit === 'number' && product.piecesPerUnit > 0
+      ? product.piecesPerUnit
+      : undefined;
+  const rowPiecesPerUnit = parsedRow.row.装箱数;
+
+  if (typeof rowPiecesPerUnit === 'number' && rowPiecesPerUnit > 0) {
+    return {
+      piecesPerUnit: rowPiecesPerUnit,
+      piecesPerUnitSource: 'row' as const,
+      batchPiecesPerUnit:
+        rowPiecesPerUnit !== productPiecesPerUnit ? rowPiecesPerUnit : undefined,
+    };
+  }
+
+  if (typeof productPiecesPerUnit === 'number' && productPiecesPerUnit > 0) {
+    return {
+      piecesPerUnit: productPiecesPerUnit,
+      piecesPerUnitSource: 'product' as const,
+      batchPiecesPerUnit: undefined,
+    };
+  }
+
+  return {};
+}
+
+function resolveQuantity(
+  parsedRow: ParsedInitialStockRow,
+  productCode: string,
+  piecesPerUnitResolution: {
+    piecesPerUnit?: number;
+  }
+):
+  | {
+      inputQuantity: number;
+      quantityUnit: InitialStockQuantityUnit;
+      quantityUnitSource: 'row' | 'default';
+      quantity: number;
+    }
+  | {
+      error: InitialStockImportError;
+    } {
+  const inputQuantity = parsedRow.row.数量;
+  const quantityUnit = parsedRow.row.数量单位 ?? '片';
+  const quantityUnitSource = parsedRow.row.数量单位 ? 'row' : 'default';
+
+  if (quantityUnit === '片') {
+    return {
+      inputQuantity,
+      quantityUnit,
+      quantityUnitSource,
+      quantity: inputQuantity,
+    };
+  }
+
+  if (
+    typeof piecesPerUnitResolution.piecesPerUnit !== 'number' ||
+    piecesPerUnitResolution.piecesPerUnit <= 0
+  ) {
+    return {
+      error: createImportError(
+        parsedRow.rowNumber,
+        '数量单位填写“件”时，必须填写装箱数，或先在产品管理里维护该产品的装箱数',
+        '装箱数',
+        productCode
+      ),
+    };
+  }
+
+  const convertedQuantity = inputQuantity * piecesPerUnitResolution.piecesPerUnit;
+
+  if (!Number.isSafeInteger(convertedQuantity) || convertedQuantity <= 0) {
+    return {
+      error: createImportError(
+        parsedRow.rowNumber,
+        '换算后的片数超出系统支持范围，请检查数量和装箱数后重试',
+        '数量',
+        productCode
+      ),
+    };
+  }
+
+  return {
+    inputQuantity,
+    quantityUnit,
+    quantityUnitSource,
+    quantity: convertedQuantity,
+  };
+}
+
+function resolveWeight(
+  parsedRow: ParsedInitialStockRow,
+  product: ProductLookup
+): {
+  weight?: number;
+  weightSource?: 'row' | 'product';
+} {
+  const rowWeight = parsedRow.row['每件重量(kg)'];
+
+  if (typeof rowWeight === 'number' && rowWeight > 0) {
+    return {
+      weight: rowWeight,
+      weightSource: 'row',
+    };
+  }
+
+  const productWeight = toNumberOrNull(product.weight);
+  if (productWeight && productWeight > 0) {
+    return {
+      weight: productWeight,
+      weightSource: 'product',
+    };
+  }
+
+  return {};
+}
+
+function resolveSupplier(
+  parsedRow: ParsedInitialStockRow,
+  context: InitialStockImportContext,
+  productCode?: string
+):
+  | {
+      supplierId?: string;
+      supplierName?: string;
+    }
+  | {
+      error: InitialStockImportError;
+    } {
+  const supplierNameInput = parsedRow.row.供应商.trim();
+
+  if (!supplierNameInput) {
+    return {};
+  }
+
+  const normalizedInput = normalizeLookupKey(supplierNameInput);
+  const matchedByCode = context.supplierByCode.get(normalizedInput);
+
+  if (matchedByCode) {
+    return {
+      supplierId: matchedByCode.id,
+      supplierName: matchedByCode.name,
+    };
+  }
+
+  const matchedByName = context.suppliersByName.get(normalizedInput) ?? [];
+
+  if (matchedByName.length === 0) {
+    return {
+      error: createImportError(
+        parsedRow.rowNumber,
+        `供应商 ${supplierNameInput} 不存在，请先在供应商管理中创建后再导入`,
+        '供应商',
+        productCode
+      ),
+    };
+  }
+
+  if (matchedByName.length > 1) {
+    return {
+      error: createImportError(
+        parsedRow.rowNumber,
+        `供应商 ${supplierNameInput} 存在重名，请填写唯一供应商编码后再导入`,
+        '供应商',
+        productCode
+      ),
+    };
+  }
+
+  const supplier = matchedByName[0];
+
+  return {
+    supplierId: supplier.id,
+    supplierName: supplier.name,
+  };
+}
+
 async function parseInitialStockRows(rows: InitialStockRowInput[]): Promise<{
   parsedRows: ParsedInitialStockRow[];
   errors: InitialStockImportError[];
@@ -439,7 +734,7 @@ async function parseInitialStockRows(rows: InitialStockRowInput[]): Promise<{
   const parsedRows: ParsedInitialStockRow[] = [];
   const errors: InitialStockImportError[] = [];
 
-  rows.forEach((rawRow, index) => {
+  rows.map(normalizeInitialStockRowAliases).forEach((rawRow, index) => {
     const rowNumber = index + 2;
     const parseResult = initialStockRowSchema.safeParse(rawRow);
 
@@ -707,13 +1002,49 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
 
     seenRowKeys.set(rowKey, parsedRow.rowNumber);
 
+    const piecesPerUnitResolution = resolvePiecesPerUnit(
+      parsedRow,
+      productResolution.product
+    );
+    const quantityResolution = resolveQuantity(
+      parsedRow,
+      productResolution.product.code,
+      piecesPerUnitResolution
+    );
+    const weightResolution = resolveWeight(parsedRow, productResolution.product);
+    const supplierResolution = resolveSupplier(
+      parsedRow,
+      context,
+      productResolution.product.code
+    );
+
+    if ('error' in quantityResolution) {
+      errors.push(quantityResolution.error);
+      continue;
+    }
+
+    if ('error' in supplierResolution) {
+      errors.push(supplierResolution.error);
+      continue;
+    }
+
     preliminaryRows.push({
       rowNumber: parsedRow.rowNumber,
       product: productResolution.product,
       variantId: variantResolution.variantId,
       batchNumber: finalBatchNumber,
-      quantity: parsedRow.row.数量,
+      inputQuantity: quantityResolution.inputQuantity,
+      quantityUnit: quantityResolution.quantityUnit,
+      quantityUnitSource: quantityResolution.quantityUnitSource,
+      piecesPerUnit: piecesPerUnitResolution.piecesPerUnit,
+      piecesPerUnitSource: piecesPerUnitResolution.piecesPerUnitSource,
+      batchPiecesPerUnit: piecesPerUnitResolution.batchPiecesPerUnit,
+      weight: weightResolution.weight,
+      weightSource: weightResolution.weightSource,
+      quantity: quantityResolution.quantity,
       unitCost: parsedRow.row.单位成本,
+      supplierId: supplierResolution.supplierId,
+      supplierName: supplierResolution.supplierName,
       location: parsedRow.row.库位 || undefined,
       remarks: parsedRow.row.备注 || parsedRow.row.成本来源 || '期初库存导入',
       preview: {
@@ -723,8 +1054,16 @@ async function prepareInitialStockImportRows(rows: InitialStockRowInput[]) {
         specification: productResolution.product.specification ?? '',
         colorCode: variantResolution.colorCode,
         batchNumber: finalBatchNumber,
-        quantity: parsedRow.row.数量,
+        inputQuantity: quantityResolution.inputQuantity,
+        quantityUnit: quantityResolution.quantityUnit,
+        quantityUnitSource: quantityResolution.quantityUnitSource,
+        piecesPerUnit: piecesPerUnitResolution.piecesPerUnit,
+        piecesPerUnitSource: piecesPerUnitResolution.piecesPerUnitSource,
+        weight: weightResolution.weight,
+        weightSource: weightResolution.weightSource,
+        quantity: quantityResolution.quantity,
         unitCost: parsedRow.row.单位成本,
+        supplierName: supplierResolution.supplierName,
         location: parsedRow.row.库位 || undefined,
         matchMethod: variantResolution.matchMethod,
       },
@@ -771,6 +1110,8 @@ export async function importInitialStockRows(
   const runtimeErrors = [...errors];
   const importedProductIds: string[] = [];
   let importedCount = 0;
+  const importBatchId =
+    importableRows.length > 0 ? createOpeningImportBatchId() : undefined;
 
   for (const row of importableRows) {
     try {
@@ -779,11 +1120,17 @@ export async function importInitialStockRows(
         variantId: row.variantId,
         quantity: row.quantity,
         unitCost: row.unitCost,
+        piecesPerUnit:
+          row.batchPiecesPerUnit ??
+          (row.weightSource === 'row' ? row.piecesPerUnit : undefined),
+        weight: row.weightSource === 'row' ? row.weight : undefined,
         reason: 'opening_balance',
         remarks: row.remarks,
         batchNumber: row.batchNumber,
+        openingImportBatchId: importBatchId,
         location: row.location,
         userId,
+        supplierId: row.supplierId,
       });
 
       importedCount += 1;
@@ -812,5 +1159,6 @@ export async function importInitialStockRows(
     errors: runtimeErrors,
     importedCount,
     importedProductIds: Array.from(new Set(importedProductIds)),
+    importBatchId,
   };
 }

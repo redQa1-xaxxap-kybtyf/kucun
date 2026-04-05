@@ -22,6 +22,10 @@ export const INBOUND_REASON_OPTIONS: FilterOption[] = [
   { value: 'return_inbound', label: '退货订单入库' },
 ];
 
+export const INBOUND_DAMAGE_FILTER_OPTIONS: FilterOption[] = [
+  { value: 'damaged', label: '只看有破损' },
+];
+
 // 出库原因标签映射
 export const OUTBOUND_REASON_OPTIONS: FilterOption[] = [
   { value: 'normal_outbound', label: '正常出库' },

@@ -14,8 +14,20 @@ export type SalesOrderStatus =
   | 'completed'
   | 'cancelled';
 
+export type SalesOrderFilterStatus = SalesOrderStatus | 'pending';
+
+export const SALES_ORDER_PENDING_FILTER_STATUSES = [
+  'draft',
+  'confirmed',
+] as const satisfies SalesOrderStatus[];
+
 // 销售订单类型枚举
 export type SalesOrderType = 'NORMAL' | 'TRANSFER';
+
+export const SALES_ORDER_TYPE_LABELS: Record<SalesOrderType, string> = {
+  NORMAL: '普通销售',
+  TRANSFER: '调货销售',
+};
 
 // 调货履约模式
 export type TransferFulfillmentMode = 'SUPPLIER_ONLY' | 'MIXED';
@@ -126,7 +138,7 @@ export interface SalesOrderQueryParams {
     | 'status'
     | 'shippedAt';
   sortOrder?: 'asc' | 'desc';
-  status?: SalesOrderStatus;
+  status?: SalesOrderFilterStatus;
   customerId?: string;
   userId?: string;
   startDate?: string;
@@ -307,7 +319,7 @@ export const SALES_ORDER_STATUS_TRANSITIONS: Record<
   SalesOrderStatus[]
 > = {
   draft: ['confirmed', 'cancelled'],
-  confirmed: ['shipped', 'completed', 'cancelled'],
+  confirmed: ['draft', 'shipped', 'completed', 'cancelled'],
   shipped: ['completed', 'cancelled'],
   completed: [], // 已完成不能转换到其他状态
   cancelled: [], // 已取消不能转换到其他状态

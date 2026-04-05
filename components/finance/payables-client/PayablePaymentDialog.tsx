@@ -43,6 +43,7 @@ import { payablesApi } from '@/lib/api/payables';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { formatDate as formatDateUtil } from '@/lib/utils/datetime';
+import { computePaymentOutRounding } from '@/lib/utils/payment-out-amounts';
 import {
   PAYMENT_OUT_METHODS,
   paymentOutMethodSchema,
@@ -53,11 +54,26 @@ const paymentFormSchema = z.object({
   payableRecordId: z.string().min(1, '应付款ID不能为空'),
   supplierId: z.string().min(1, '供应商ID不能为空'),
   paymentAmount: z.number().min(0.01, '付款金额必须大于0'),
+  actualPaymentAmount: z.number().min(0, '实际付款金额不能为负'),
+  roundingAmount: z.number(),
   paymentMethod: paymentOutMethodSchema,
   paymentDate: z.string().min(1, '请选择付款日期'),
   bankInfo: z.string().optional(),
   remarks: z.string().max(200, '备注不能超过200个字符').optional(),
-});
+}).refine(
+  value =>
+    Math.abs(
+      Number(
+        (
+          value.actualPaymentAmount + value.roundingAmount - value.paymentAmount
+        ).toFixed(2)
+      )
+    ) < 0.01,
+  {
+    message: '付款金额应等于实际付款金额与抹零金额之和',
+    path: ['actualPaymentAmount'],
+  }
+);
 
 type PaymentFormData = z.infer<typeof paymentFormSchema>;
 
@@ -102,6 +118,8 @@ function usePaymentDialogState(
       payableRecordId: '',
       supplierId: '',
       paymentAmount: 0,
+      actualPaymentAmount: 0,
+      roundingAmount: 0,
       paymentMethod: 'bank_transfer',
       paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       bankInfo: '',
@@ -110,6 +128,8 @@ function usePaymentDialogState(
   });
 
   const paymentMethod = form.watch('paymentMethod');
+  const paymentAmount = form.watch('paymentAmount');
+  const actualPaymentAmount = form.watch('actualPaymentAmount');
 
   useEffect(() => {
     if (!open) {
@@ -122,6 +142,8 @@ function usePaymentDialogState(
         payableRecordId: payableInfo.id,
         supplierId: payableInfo.supplier?.id ?? '',
         paymentAmount: payableInfo.remainingAmount,
+        actualPaymentAmount: payableInfo.remainingAmount,
+        roundingAmount: 0,
         paymentMethod: 'bank_transfer',
         paymentDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
         bankInfo: '',
@@ -129,6 +151,26 @@ function usePaymentDialogState(
       });
     }
   }, [open, payableInfo, form]);
+
+  useEffect(() => {
+    if (
+      typeof paymentAmount !== 'number' ||
+      Number.isNaN(paymentAmount) ||
+      typeof actualPaymentAmount !== 'number' ||
+      Number.isNaN(actualPaymentAmount)
+    ) {
+      return;
+    }
+
+    const rounding = computePaymentOutRounding(
+      paymentAmount,
+      actualPaymentAmount
+    );
+
+    if (form.getValues('roundingAmount') !== rounding) {
+      form.setValue('roundingAmount', rounding, { shouldValidate: true });
+    }
+  }, [actualPaymentAmount, form, paymentAmount]);
 
   const handleDialogOpenChange = useCallback(
     (open: boolean) => {
@@ -201,7 +243,7 @@ function PayableInfoCard({ payableInfo }: { payableInfo: PayableInfo }) {
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground mb-1">已付金额</p>
+          <p className="text-muted-foreground mb-1">已核销金额</p>
           <p className="font-semibold text-green-600">
             {formatCurrency(payableInfo.paidAmount)}
           </p>
@@ -297,6 +339,67 @@ const PaymentMethodField = ({
   />
 );
 
+const ActualPaymentAmountField = ({
+  form,
+}: {
+  form: UseFormReturn<PaymentFormData>;
+}) => (
+  <FormField
+    control={form.control}
+    name="actualPaymentAmount"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>实际付款金额</FormLabel>
+        <FormControl>
+          <Input
+            type="number"
+            step="0.01"
+            min="0"
+            placeholder="请输入实际付款金额"
+            {...field}
+            onChange={event =>
+              field.onChange(parseFloat(event.target.value) || 0)
+            }
+          />
+        </FormControl>
+        <p className="text-muted-foreground text-xs">
+          供应商实际收到的金额，可低于记账金额用于抹零
+        </p>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+);
+
+const RoundingAmountField = ({
+  form,
+}: {
+  form: UseFormReturn<PaymentFormData>;
+}) => (
+  <FormField
+    control={form.control}
+    name="roundingAmount"
+    render={({ field }) => (
+      <FormItem>
+        <FormLabel>抹零差额</FormLabel>
+        <FormControl>
+          <Input
+            readOnly
+            type="number"
+            step="0.01"
+            value={field.value?.toFixed(2) ?? '0.00'}
+            className="bg-muted"
+          />
+        </FormControl>
+        <p className="text-muted-foreground text-xs">
+          自动计算：记账金额 - 实际付款，正值表示少付抹零，负值表示多付
+        </p>
+        <FormMessage />
+      </FormItem>
+    )}
+  />
+);
+
 const PaymentDateField = ({
   form,
 }: {
@@ -384,6 +487,8 @@ function PaymentForm({
         <PayableInfoCard payableInfo={payableInfo} />
 
         <PaymentAmountField form={form} payableInfo={payableInfo} />
+        <ActualPaymentAmountField form={form} />
+        <RoundingAmountField form={form} />
         <PaymentMethodField form={form} />
         <PaymentDateField form={form} />
         {paymentMethod === 'bank_transfer' && (
@@ -429,6 +534,8 @@ export function PayablePaymentDialog({
         payableRecordId: data.payableRecordId,
         supplierId: data.supplierId,
         paymentAmount: data.paymentAmount,
+        actualPaymentAmount: data.actualPaymentAmount,
+        roundingAmount: data.roundingAmount,
         paymentMethod: data.paymentMethod,
         paymentDate: data.paymentDate,
         bankInfo: data.bankInfo,

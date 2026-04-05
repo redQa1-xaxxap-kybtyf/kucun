@@ -65,7 +65,7 @@ const STATUS_MAP: Record<string, string> = {
   pending_shipment: '待发货',
   shipped: '已发货',
   in_transit: '运输中',
-  arrived: '到港',
+  arrived: '已到港',
   cancelled: '已取消',
 };
 

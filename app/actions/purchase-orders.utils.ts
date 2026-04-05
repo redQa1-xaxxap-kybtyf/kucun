@@ -29,6 +29,10 @@ import {
 import type { ValidationIssue } from '@/lib/types/validation';
 import { toNumber } from '@/lib/utils/number';
 import { generatePayableNumber } from '@/lib/utils/payment-number-generator';
+import {
+  convertPurchaseOrderQuantityToPieces,
+  convertPurchaseOrderUnitPriceToPieceCost,
+} from '@/lib/utils/purchase-order-unit';
 import type {
   PurchaseOrderFormData,
   PurchaseOrderItemInput,
@@ -115,6 +119,7 @@ export async function createPurchaseOrderInternal(
             displayName: item.displayName,
             specification: item.specification?.trim() || null,
             unit: item.unit || 'piece',
+            piecesPerUnit: item.piecesPerUnit ?? null,
             weight: item.weight,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
@@ -320,7 +325,11 @@ export async function fetchOrderForStatusChange(orderId: string) {
         select: {
           id: true,
           productId: true,
+          productCode: true,
+          displayName: true,
           quantity: true,
+          unit: true,
+          piecesPerUnit: true,
           unitPrice: true,
           unitCostWithExpense: true,
           batchNumber: true,
@@ -365,9 +374,15 @@ export async function applyStatusUpdateTransaction(
     });
 
     let inboundResults: MinimalInboundTransactionResult[] = [];
+    let payableExpenseAmount =
+      order.expenseAmount === null || order.expenseAmount === undefined
+        ? null
+        : toNumber(order.expenseAmount);
 
     if (payload.status === PURCHASE_ORDER_STATUS.ARRIVED) {
-      inboundResults = await createArrivalInboundRecords(tx, order, userId);
+      const arrivalResult = await createArrivalInboundRecords(tx, order, userId);
+      inboundResults = arrivalResult.inboundResults;
+      payableExpenseAmount = arrivalResult.totalExpenseAmount;
       await refreshPurchaseOrderFulfillment(tx, order.id);
     }
 
@@ -378,10 +393,7 @@ export async function applyStatusUpdateTransaction(
         userId: order.userId,
         orderNumber: order.orderNumber,
         totalAmount: toNumber(order.totalAmount),
-        expenseAmount:
-          order.expenseAmount === null || order.expenseAmount === undefined
-            ? null
-            : toNumber(order.expenseAmount), // ✅ 修复：传递费用金额
+        expenseAmount: payableExpenseAmount,
       });
     }
 
@@ -393,13 +405,19 @@ async function createArrivalInboundRecords(
   tx: PrismaTransaction,
   order: NonNullable<Awaited<ReturnType<typeof fetchOrderForStatusChange>>>,
   userId: string
-): Promise<MinimalInboundTransactionResult[]> {
-  const { allocationsByItemId } =
+): Promise<{
+  inboundResults: MinimalInboundTransactionResult[];
+  totalExpenseAmount: number;
+}> {
+  const { allocationsByItemId, totalExpenseAmount } =
     await ensurePurchaseOrderCostAllocatedBeforeInbound(tx, order.id);
 
   const itemIds = order.items.map(item => item.id);
   if (itemIds.length === 0) {
-    return [];
+    return {
+      inboundResults: [],
+      totalExpenseAmount,
+    };
   }
 
   const inboundTotals = await tx.inboundRecord.groupBy({
@@ -425,25 +443,35 @@ async function createArrivalInboundRecords(
       continue;
     }
 
+    const orderedQuantity = convertPurchaseOrderQuantityToPieces(item, {
+      strict: true,
+    });
     const alreadyReceived = receivedMap.get(item.id) ?? 0;
-    const remainingQuantity = Math.max(
-      0,
-      (item.quantity ?? 0) - alreadyReceived
-    );
+    const remainingQuantity = Math.max(0, orderedQuantity - alreadyReceived);
 
     if (remainingQuantity <= 0) {
       continue;
     }
 
     const allocation = allocationsByItemId.get(item.id);
+    const fallbackPieceCost = convertPurchaseOrderUnitPriceToPieceCost(
+      {
+        unitPrice:
+          item.unitPrice === null || item.unitPrice === undefined
+            ? null
+            : toNumber(item.unitPrice),
+        unit: item.unit,
+        piecesPerUnit: item.piecesPerUnit,
+        displayName: item.displayName,
+        productCode: item.productCode,
+      },
+      { strict: true }
+    );
 
     const inboundUnitCost = resolveInboundUnitCost({
       unitCostWithExpense: allocation?.unitCostWithExpense ?? null,
-      unitPrice:
-        item.unitPrice === null || item.unitPrice === undefined
-          ? null
-          : toNumber(item.unitPrice),
-      fallback: toNumber(item.unitPrice),
+      unitPrice: fallbackPieceCost,
+      fallback: fallbackPieceCost,
     });
 
     const inbound = await executeMinimalInboundTransaction(
@@ -467,5 +495,8 @@ async function createArrivalInboundRecords(
     createdInboundRecords.push(inbound);
   }
 
-  return createdInboundRecords;
+  return {
+    inboundResults: createdInboundRecords,
+    totalExpenseAmount,
+  };
 }

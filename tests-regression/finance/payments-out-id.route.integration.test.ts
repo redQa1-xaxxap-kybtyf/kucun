@@ -170,6 +170,7 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
     prisma.paymentOutRecord.findUnique.mockResolvedValue({
       id: 'pay-1',
       paymentAmount: 10,
+      actualPaymentAmount: 10,
       status: 'confirmed',
       payableRecordId: 'payable-1',
       supplierId: 'sup-1',
@@ -202,6 +203,8 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
       data: {
         id: 'pay-1',
         paymentAmount: 70,
+        actualPaymentAmount: 70,
+        roundingAmount: 0,
         paymentDate: new Date('2026-01-02T00:00:00.000Z'),
       },
     });
@@ -209,6 +212,7 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
     prisma.paymentOutRecord.findUnique.mockResolvedValue({
       id: 'pay-1',
       paymentAmount: 50,
+      actualPaymentAmount: 50,
       status: 'confirmed',
       payableRecordId: 'payable-1',
       supplierId: 'sup-1',
@@ -235,6 +239,8 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
           userId: 'test-user',
           paymentMethod: 'bank_transfer',
           paymentAmount: 70,
+          actualPaymentAmount: 70,
+          roundingAmount: 0,
           paymentDate: new Date('2026-01-02T00:00:00.000Z'),
           status: 'confirmed',
           remarks: null,
@@ -300,6 +306,114 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
     expect(clearCacheAfterPaymentOut).toHaveBeenCalledTimes(1);
   });
 
+  test('PUT：抹零更新时，应按 paymentAmount 调整应付，按 actualPaymentAmount 差额写供应商往来账', async () => {
+    updatePaymentOutRecordSchema.safeParse.mockReturnValue({
+      success: true,
+      data: {
+        id: 'pay-2',
+        paymentAmount: 55,
+        actualPaymentAmount: 54,
+        roundingAmount: 1,
+        paymentDate: new Date('2026-01-02T00:00:00.000Z'),
+      },
+    });
+
+    prisma.paymentOutRecord.findUnique.mockResolvedValue({
+      id: 'pay-2',
+      paymentAmount: 50,
+      actualPaymentAmount: 50,
+      status: 'confirmed',
+      payableRecordId: 'payable-1',
+      supplierId: 'sup-1',
+      paymentNumber: 'POUT-002',
+      voidedAt: null,
+      paymentDate: new Date('2026-01-01T00:00:00.000Z'),
+    });
+
+    const tx = {
+      payableRecord: {
+        findUnique: jest.fn(async () => ({
+          id: 'payable-1',
+          payableAmount: 100,
+          paidAmount: 50,
+        })),
+        update: jest.fn(async () => ({})),
+      },
+      paymentOutRecord: {
+        update: jest.fn(async () => ({
+          id: 'pay-2',
+          paymentNumber: 'POUT-002',
+          payableRecordId: 'payable-1',
+          supplierId: 'sup-1',
+          userId: 'test-user',
+          paymentMethod: 'bank_transfer',
+          paymentAmount: 55,
+          actualPaymentAmount: 54,
+          roundingAmount: 1,
+          paymentDate: new Date('2026-01-02T00:00:00.000Z'),
+          status: 'confirmed',
+          remarks: null,
+          voucherNumber: null,
+          bankInfo: null,
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+          payableRecord: {
+            id: 'payable-1',
+            payableNumber: 'PAY-001',
+            payableAmount: 100,
+            remainingAmount: 45,
+          },
+          supplier: {
+            id: 'sup-1',
+            name: '供应商A',
+            phone: null,
+            address: null,
+          },
+          user: { id: 'test-user', name: 'Admin', email: 'a@example.com' },
+        })),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+
+    const { PUT } = await import('@/app/api/finance/payments-out/[id]/route');
+    const response = await PUT(
+      {
+        json: async () => ({
+          paymentAmount: 55,
+          actualPaymentAmount: 54,
+          roundingAmount: 1,
+          paymentDate: '2026-01-02T00:00:00.000Z',
+        }),
+      } as any,
+      { params: { id: 'pay-2' } } as any
+    );
+
+    expect(response.status).toBe(200);
+    expect(tx.payableRecord.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          paidAmount: 55,
+          remainingAmount: 45,
+        }),
+      })
+    );
+
+    expect(recordPartnerTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        partnerId: 'sup-1',
+        transactionType: 'payment_out',
+        amount: 4,
+        referenceNumber: 'POUT-002',
+        metadata: expect.objectContaining({
+          paymentAmount: 55,
+          actualPaymentAmount: 54,
+          roundingAmount: 1,
+        }),
+      }),
+      tx
+    );
+  });
+
   test('DELETE：付款记录不存在应返回 404，且不触发缓存失效', async () => {
     prisma.paymentOutRecord.findUnique.mockResolvedValue(null);
 
@@ -328,6 +442,7 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
       id: 'pay-1',
       status: 'cancelled',
       paymentAmount: 50,
+      actualPaymentAmount: 50,
       payableRecordId: 'payable-1',
       supplierId: 'sup-1',
       paymentNumber: 'POUT-001',
@@ -361,6 +476,7 @@ describe('/api/finance/payments-out/[id]（端点级回归）', () => {
       id: 'pay-1',
       status: 'confirmed',
       paymentAmount: 50,
+      actualPaymentAmount: 50,
       payableRecordId: 'payable-1',
       supplierId: 'sup-1',
       paymentNumber: 'POUT-001',

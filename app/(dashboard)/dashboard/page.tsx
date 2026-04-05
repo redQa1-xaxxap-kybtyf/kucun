@@ -7,17 +7,17 @@ import {
   HydrationBoundary,
   QueryClient,
 } from '@tanstack/react-query';
-import { getServerSession } from 'next-auth';
 
 import { ERPDashboard } from '@/components/dashboard/erp-dashboard';
 import { dashboardQueryKeys } from '@/lib/api/dashboard';
 import { getDashboardData } from '@/lib/api/handlers/dashboard';
-import { authOptions } from '@/lib/auth';
+import { safeAuth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type {
   DashboardFactoryShipmentSummary,
   DashboardSalesOrderSummary,
 } from '@/lib/types/dashboard';
+import { SALES_ORDER_PENDING_FILTER_STATUSES } from '@/lib/types/sales-order';
 
 /**
  * 仪表盘主页面组件 - 使用服务器组件优化首屏加载
@@ -76,9 +76,9 @@ export default async function DashboardPage({
         },
       }),
 
-      // 待处理订单（草稿状态）
+      // 待处理订单（草稿 + 已确认）
       prisma.salesOrder.findMany({
-        where: { status: 'draft' },
+        where: { status: { in: [...SALES_ORDER_PENDING_FILTER_STATUSES] } },
         take: 10,
         orderBy: { createdAt: 'asc' },
         include: {
@@ -109,7 +109,7 @@ export default async function DashboardPage({
       }),
     ]);
 
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('dashboard-page');
 
   const toCustomerSummary = (
     customer: { id: string; name: string | null } | null | undefined

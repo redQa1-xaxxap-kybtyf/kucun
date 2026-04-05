@@ -4,6 +4,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { CommandGroup, CommandItem } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
+import { getInventoryBatchAvailableQuantity } from '@/lib/utils/product-inventory';
 
 import type { ProductWithInventory } from '../types';
 import {
@@ -89,19 +90,22 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
       const specMap = new Map(batchSpecs.map(spec => [spec.batchNumber, spec]));
 
       if (inventoryBatches.length > 0) {
-        return inventoryBatches.map(batch => {
-          const spec = specMap.get(batch.batchNumber);
-          const normalizedPieces =
-            typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
-              ? batch.piecesPerUnit
-              : spec?.piecesPerUnit;
+        return inventoryBatches
+          .map(batch => {
+            const spec = specMap.get(batch.batchNumber);
+            const normalizedPieces =
+              typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+                ? batch.piecesPerUnit
+                : spec?.piecesPerUnit;
+            const availableQuantity = getInventoryBatchAvailableQuantity(batch);
 
-          return {
-            batchNumber: batch.batchNumber,
-            quantity: batch.quantity,
-            piecesPerUnit: normalizedPieces,
-          };
-        });
+            return {
+              batchNumber: batch.batchNumber,
+              quantity: availableQuantity,
+              piecesPerUnit: normalizedPieces,
+            };
+          })
+          .filter(batch => batch.quantity > 0);
       }
 
       return batchSpecs.map(spec => ({

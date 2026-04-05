@@ -15,13 +15,18 @@ import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
-import { INBOUND_REASON_OPTIONS } from '@/lib/constants/inventory-filters';
+import {
+  INBOUND_DAMAGE_FILTER_OPTIONS,
+  INBOUND_REASON_OPTIONS,
+} from '@/lib/constants/inventory-filters';
 
 interface InboundRecordsSearchToolbarProps {
   /** 搜索关键词（受控） */
   searchValue: string;
   /** 入库原因筛选（'all' 表示全部） */
   reasonFilter: string | 'all';
+  /** 破损筛选（'all' 表示全部） */
+  damageFilter: 'all' | 'damaged';
   /** 日期范围筛选 */
   dateRange: DateRangeValue;
   /** 输入框加载指示 */
@@ -30,6 +35,8 @@ interface InboundRecordsSearchToolbarProps {
   onSearch: (value: string) => void;
   /** 入库原因筛选回调 */
   onReasonChange: (value: string | 'all') => void;
+  /** 破损筛选回调 */
+  onDamageChange: (value: 'all' | 'damaged') => void;
   /** 日期范围变更 */
   onDateRangeChange: (range: DateRangeValue) => void;
   /** 清空筛选回调 */
@@ -41,17 +48,22 @@ export const InboundRecordsSearchToolbar =
     ({
       searchValue,
       reasonFilter,
+      damageFilter,
       dateRange,
       isSearching,
       onSearch,
       onReasonChange,
+      onDamageChange,
       onDateRangeChange,
       onClearFilters,
     }) => {
       const logic = useInboundToolbarLogic({
+        searchValue,
         reasonFilter,
+        damageFilter,
         dateRange,
         onReasonChange,
+        onDamageChange,
         onDateRangeChange,
         onClearFilters,
       });
@@ -60,6 +72,7 @@ export const InboundRecordsSearchToolbar =
         <InboundToolbarView
           searchValue={searchValue}
           reasonFilter={reasonFilter}
+          damageFilter={damageFilter}
           isSearching={isSearching}
           dateRange={dateRange}
           onSearch={onSearch}
@@ -72,16 +85,22 @@ export const InboundRecordsSearchToolbar =
 InboundRecordsSearchToolbar.displayName = 'InboundRecordsSearchToolbar';
 
 function useInboundToolbarLogic({
+  searchValue,
   reasonFilter,
+  damageFilter,
   dateRange,
   onReasonChange,
+  onDamageChange,
   onDateRangeChange,
   onClearFilters,
 }: Pick<
   InboundRecordsSearchToolbarProps,
+  | 'searchValue'
   | 'reasonFilter'
+  | 'damageFilter'
   | 'dateRange'
   | 'onReasonChange'
+  | 'onDamageChange'
   | 'onDateRangeChange'
   | 'onClearFilters'
 >) {
@@ -89,9 +108,14 @@ function useInboundToolbarLogic({
     (key: string, value: string | undefined) => {
       if (key === 'reason') {
         onReasonChange(value && value !== 'all' ? value : 'all');
+        return;
+      }
+
+      if (key === 'hasDamage') {
+        onDamageChange(value === 'damaged' ? 'damaged' : 'all');
       }
     },
-    [onReasonChange]
+    [onDamageChange, onReasonChange]
   );
 
   const toggleReason = React.useCallback(
@@ -113,7 +137,11 @@ function useInboundToolbarLogic({
   }, [onClearFilters]);
 
   const hasActiveFilters =
-    reasonFilter !== 'all' || !!dateRange.startDate || !!dateRange.endDate;
+    !!searchValue.trim() ||
+    reasonFilter !== 'all' ||
+    damageFilter !== 'all' ||
+    !!dateRange.startDate ||
+    !!dateRange.endDate;
 
   return {
     handleFilterChange,
@@ -127,6 +155,7 @@ function useInboundToolbarLogic({
 type InboundToolbarViewProps = {
   searchValue: string;
   reasonFilter: string | 'all';
+  damageFilter: 'all' | 'damaged';
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
@@ -140,6 +169,7 @@ type InboundToolbarViewProps = {
 function InboundToolbarView({
   searchValue,
   reasonFilter,
+  damageFilter,
   dateRange,
   isSearching,
   onSearch,
@@ -180,9 +210,16 @@ function InboundToolbarView({
           options: INBOUND_REASON_OPTIONS,
           width: 'w-full sm:w-40',
         },
+        {
+          key: 'hasDamage',
+          label: '破损情况',
+          options: INBOUND_DAMAGE_FILTER_OPTIONS,
+          width: 'w-full sm:w-40',
+        },
       ]}
       filterValues={{
         reason: reasonFilter === 'all' ? 'all' : reasonFilter,
+        hasDamage: damageFilter === 'damaged' ? 'damaged' : 'all',
       }}
       onFilterChange={handleFilterChange}
       // 日期范围筛选

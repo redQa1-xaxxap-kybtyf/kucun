@@ -51,13 +51,13 @@ function formatTransactionStatus(status: string): string {
     confirmed: '已确认',
     cancelled: '已取消',
     completed: '已完成',
-    processing: '处理中',
+    processing: '待退款',
     approved: '已审核',
-    rejected: '已拒绝',
+    rejected: '已关闭',
     draft: '草稿',
     shipped: '已发货',
     submitted: '已提交',
-    applied: '已冲抵',
+    applied: '已入账',
   };
 
   return STATUS_LABELS[status] ?? status;

@@ -3,6 +3,7 @@
  */
 
 import type { SalesOrderDetail } from '@/app/(dashboard)/sales-orders/[id]/components/types';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
@@ -190,7 +191,7 @@ export class SalesOrderExportService {
         数量: quantityDisplay,
         单价: Number(displayUnitPrice.toFixed(2)),
         小计: Number((item.subtotal || 0).toFixed(2)),
-        成本价: Number(costPrice.toFixed(2)),
+        成本价: roundCostPrice(costPrice),
         毛利: Number(grossProfitPiece.toFixed(2)),
         '毛利率(%)': Number(grossProfitRate.toFixed(2)),
         备注: item.remarks || '',
@@ -248,7 +249,7 @@ export class SalesOrderExportService {
         : '',
       产品数量: totalQuantity,
       订单总额: Number(totalAmount.toFixed(2)),
-      已付金额: Number(paidAmount.toFixed(2)),
+      已收金额: Number(paidAmount.toFixed(2)),
       未付金额: Number(unpaidAmount.toFixed(2)),
       备注: order.remarks || '',
     };

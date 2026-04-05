@@ -88,7 +88,7 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
       _sum: { actualPaymentAmount: 0 },
     });
     prisma.paymentOutRecord.aggregate.mockResolvedValue({
-      _sum: { paymentAmount: 0 },
+      _sum: { actualPaymentAmount: 0 },
     });
 
     prisma.inventory.findMany.mockResolvedValue([]);
@@ -215,5 +215,39 @@ describe('monthly-report-service：口径/边界（集成回归）', () => {
     expect(report.inventoryTurnover.averageInventoryValue).toBe(155);
     expect(report.inventoryTurnover.turnoverRate).toBe(2);
     expect(report.inventoryTurnover.turnoverDays).toBe(15);
+  });
+
+  test('应收应付口径：月报中的 paidAmount 应按实际付款金额 actualPaymentAmount 聚合', async () => {
+    prisma.accountStatement.aggregate.mockResolvedValue({
+      _sum: { currentBalance: 300 },
+    });
+    prisma.payableRecord.aggregate.mockResolvedValue({
+      _sum: { payableAmount: 500, paidAmount: 400, remainingAmount: 100 },
+    });
+    prisma.paymentRecord.aggregate.mockResolvedValue({
+      _sum: { actualPaymentAmount: 200 },
+    });
+    prisma.paymentOutRecord.aggregate.mockResolvedValue({
+      _sum: { actualPaymentAmount: 79.5 },
+    });
+
+    const { getMonthlyReport } = await import(
+      '@/lib/services/monthly-report-service'
+    );
+    const report = await getMonthlyReport(2025, 1, false);
+
+    expect(prisma.paymentOutRecord.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        _sum: { actualPaymentAmount: true },
+        where: expect.objectContaining({
+          status: 'confirmed',
+          paymentDate: expect.objectContaining({
+            gte: expect.any(Date),
+            lte: expect.any(Date),
+          }),
+        }),
+      })
+    );
+    expect(report.receivables.paidAmount).toBe(79.5);
   });
 });

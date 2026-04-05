@@ -320,13 +320,13 @@ async function getMonthlyReceivables(
       ...(applyReportVisibility({} as any, visibility) as any),
     },
     _sum: {
-      paymentAmount: true,
+      actualPaymentAmount: true,
     },
   });
 
   const totalPayable = toNumber(payableStats._sum.payableAmount);
   const receivedAmount = Number(receivedStats._sum.actualPaymentAmount ?? 0);
-  const paidAmount = toNumber(paidStats._sum.paymentAmount);
+  const paidAmount = toNumber(paidStats._sum.actualPaymentAmount);
   const payableBalance = toNumber(payableStats._sum.remainingAmount);
 
   return {

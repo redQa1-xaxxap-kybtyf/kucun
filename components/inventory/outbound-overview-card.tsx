@@ -23,7 +23,8 @@ import {
   OUTBOUND_TYPE_VARIANTS,
   type OutboundRecordDetail,
 } from '@/lib/types/inventory';
-import { formatCurrency, formatNumber } from '@/lib/utils/format';
+import { formatCostPrice } from '@/lib/utils/cost-price';
+import { formatNumber } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 const OUTBOUND_REASON_LABELS: Record<string, string> = {
@@ -125,8 +126,8 @@ export function OutboundOverviewCard({
           {
             label: '单位成本',
             value:
-              record.unitCost !== undefined
-                ? formatCurrency(record.unitCost)
+              record.unitCost !== undefined && record.unitCost !== null
+                ? formatCostPrice(record.unitCost)
                 : '—',
             icon: HandCoins,
             iconClassName:

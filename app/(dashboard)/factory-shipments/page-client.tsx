@@ -303,8 +303,8 @@ export function FactoryShipmentsPageClient({
           title={mode === 'factory' ? '厂家发货管理' : '客户直发管理'}
           description={
             mode === 'factory'
-              ? '管理厂家发货订单，跟踪货物运输状态和到货情况'
-              : '管理客户直发订单，跟踪货物运输状态和到货情况'
+              ? '管理厂家发货订单，跟踪货物运输状态和到港进度'
+              : '管理客户直发订单，跟踪货物运输状态和到港进度'
           }
           icon={<Package className="h-6 w-6 text-white" />}
           variant="solid"

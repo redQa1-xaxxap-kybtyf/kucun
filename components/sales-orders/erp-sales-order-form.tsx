@@ -45,6 +45,7 @@ import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import {
+  SALES_ORDER_TYPE_LABELS,
   SAMPLE_SETTLEMENT_TYPE_LABELS,
   TRANSFER_MODE_LABELS,
   type SalesOrder,
@@ -60,6 +61,8 @@ import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { formatDate } from '@/lib/utils/datetime';
+import { getProductAvailableQuantity } from '@/lib/utils/product-inventory';
+import { mergeProductsById } from '@/lib/utils/product-selection';
 import {
   transformFormDataToCreateInput,
   transformFormDataToUpdateInput,
@@ -113,6 +116,9 @@ const coerceNumeric = (value: unknown): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const buildInventoryRequestKey = (productId: string, batchNumber?: string) =>
+  `${productId}::${(batchNumber ?? '').trim()}`;
+
 // 记住“新建销售订单”页面最近一次选择的订单类型，避免刷新/重载后总是回到 NORMAL
 const ORDER_TYPE_STORAGE_KEY = 'salesOrders.create.defaultOrderType';
 
@@ -124,7 +130,11 @@ interface ERPSalesOrderFormProps {
   orderId?: string;
   initialData?: SalesOrder;
   initialOrderNumber?: string; // 新增：服务端预生成的订单号
-  onSuccess?: (order: { id: string; orderNumber?: string }) => void;
+  onSuccess?: (order: {
+    id: string;
+    orderNumber?: string;
+    status?: SalesOrderStatus;
+  }) => void;
   onCancel?: () => void;
 }
 
@@ -347,6 +357,44 @@ export function ERPSalesOrderForm({
       }),
   });
 
+  const [selectedProducts, setSelectedProducts] = React.useState<Product[]>([]);
+
+  const baseProducts = React.useMemo(
+    () => productsData?.data ?? [],
+    [productsData?.data]
+  );
+
+  const rememberSelectedProduct = React.useCallback((product: Product | null) => {
+    if (!product?.id) {
+      return;
+    }
+
+    setSelectedProducts(current => mergeProductsById(current, [product]));
+  }, []);
+
+  const initialOrderProducts = React.useMemo(
+    () =>
+      (initialData?.items ?? [])
+        .map(item => item.product)
+        .filter((product): product is Product => Boolean(product?.id)),
+    [initialData?.items]
+  );
+
+  React.useEffect(() => {
+    if (initialOrderProducts.length === 0) {
+      return;
+    }
+
+    setSelectedProducts(current =>
+      mergeProductsById(current, initialOrderProducts)
+    );
+  }, [initialOrderProducts]);
+
+  const availableProducts = React.useMemo(
+    () => mergeProductsById(baseProducts, selectedProducts),
+    [baseProducts, selectedProducts]
+  );
+
   const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
     queryKey: suppliersQueryKey,
     queryFn: () => getSuppliers(suppliersQueryParams),
@@ -363,10 +411,13 @@ export function ERPSalesOrderForm({
 
   // ✅ 使用新的 useCreateSalesOrder Hook，自动处理缓存刷新
   const createMutation = useCreateSalesOrder({
-    onSuccess: (data: { id: string; orderNumber: string }) => {
+    onSuccess: (data: SalesOrder) => {
+      const isConfirmed = data.status === 'confirmed';
       toast({
-        title: '订单创建成功',
-        description: `订单号：${data.orderNumber}`,
+        title: isConfirmed ? '订单已保存并确认' : '草稿已保存',
+        description: isConfirmed
+          ? `订单号：${data.orderNumber}`
+          : `订单号：${data.orderNumber}，当前为可继续修改状态`,
         variant: 'success',
       });
 
@@ -375,12 +426,19 @@ export function ERPSalesOrderForm({
       // - 立即刷新: 销售订单列表、统计
       // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、应付款、财务概览）
 
-      onSuccess?.(data);
+      onSuccess?.({
+        id: data.id,
+        orderNumber: data.orderNumber,
+        status: data.status,
+      });
     },
     onError: (error: Error) => {
+      const isConfirmed = form.getValues('status') === 'confirmed';
       toast({
-        title: '创建失败',
-        description: error.message,
+        title: isConfirmed ? '确认失败' : '保存失败',
+        description:
+          error.message ||
+          (isConfirmed ? '保存并确认销售订单失败' : '保存销售订单失败'),
         variant: 'destructive',
       });
     },
@@ -390,9 +448,12 @@ export function ERPSalesOrderForm({
   const updateMutation = useUpdateSalesOrder({
     onSuccess: (response: { data?: SalesOrder | null }) => {
       const order = response.data;
+      const isConfirmed = order?.status === 'confirmed';
       toast({
-        title: '订单更新成功',
-        description: `订单号：${order?.orderNumber || ''}`,
+        title: isConfirmed ? '订单已更新并确认' : '更新成功',
+        description: isConfirmed
+          ? `订单号：${order?.orderNumber || ''}`
+          : `订单号：${order?.orderNumber || ''}，当前仍可继续修改`,
         variant: 'success',
       });
 
@@ -402,13 +463,20 @@ export function ERPSalesOrderForm({
       // - 延迟刷新: 库存、客户、产品、仪表盘、财务（包括应收款、财务概览）
 
       if (order) {
-        onSuccess?.(order);
+        onSuccess?.({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: order.status,
+        });
       }
     },
     onError: (error: Error) => {
+      const isConfirmed = form.getValues('status') === 'confirmed';
       toast({
-        title: '更新失败',
-        description: error.message,
+        title: isConfirmed ? '确认失败' : '更新失败',
+        description:
+          error.message ||
+          (isConfirmed ? '更新并确认销售订单失败' : '更新销售订单失败'),
         variant: 'destructive',
       });
     },
@@ -606,13 +674,13 @@ export function ERPSalesOrderForm({
   // 计算总重量：根据单位和每件片数正确计算
   const productMap = React.useMemo(() => {
     const map = new Map<string, Product>();
-    (productsData?.data ?? []).forEach(product => {
+    availableProducts.forEach(product => {
       if (product?.id) {
         map.set(product.id, product);
       }
     });
     return map;
-  }, [productsData?.data]);
+  }, [availableProducts]);
 
   const totalWeight = React.useMemo(
     () =>
@@ -626,9 +694,17 @@ export function ERPSalesOrderForm({
         const product = productId ? productMap.get(productId) : undefined;
         const batchSpec =
           product && item.batchNumber
-            ? product.batchSpecs?.find(
+            ? (product.batchSpecs?.find(
+                spec =>
+                  spec.batchNumber === item.batchNumber &&
+                  spec.colorCode === (item.colorCode || undefined)
+              ) ??
+              product.batchSpecs?.find(
+                spec => spec.batchNumber === item.batchNumber && !spec.colorCode
+              ) ??
+              product.batchSpecs?.find(
                 spec => spec.batchNumber === item.batchNumber
-              )
+              ))
             : undefined;
 
         const effectivePiecesPerUnit =
@@ -707,7 +783,7 @@ export function ERPSalesOrderForm({
     [watchedItems, productMap]
   );
 
-  // 是否存在库存不足的产品（用于禁用“提交订单”按钮）
+  // 是否存在库存不足的产品（用于禁用“保存并确认”按钮）
   const hasInventoryShortage = React.useMemo(() => {
     const currentOrderType = orderType;
     const currentTransferMode = transferMode;
@@ -719,7 +795,10 @@ export function ERPSalesOrderForm({
       return false;
     }
 
-    const requestedByProduct = new Map<string, number>();
+    const requestedByBucket = new Map<
+      string,
+      { productId: string; batchNumber?: string; requestedQty: number }
+    >();
 
     for (const item of watchedItems) {
       if (!item || !item.productId || item.isManualProduct) continue;
@@ -734,20 +813,28 @@ export function ERPSalesOrderForm({
 
       if (!Number.isFinite(effectiveQty) || effectiveQty <= 0) continue;
 
-      requestedByProduct.set(
+      const batchNumber = (item.batchNumber ?? '').toString().trim();
+      const key = buildInventoryRequestKey(productId, batchNumber);
+      const existing = requestedByBucket.get(key);
+
+      requestedByBucket.set(key, {
         productId,
-        (requestedByProduct.get(productId) ?? 0) + effectiveQty
-      );
+        batchNumber: batchNumber || undefined,
+        requestedQty: (existing?.requestedQty ?? 0) + effectiveQty,
+      });
     }
 
-    for (const [productId, requestedQty] of requestedByProduct.entries()) {
-      const product = productMap.get(productId);
-      const available = product?.inventory?.availableQuantity;
+    for (const bucket of requestedByBucket.values()) {
+      const product = productMap.get(bucket.productId);
+      const available = getProductAvailableQuantity(
+        product,
+        bucket.batchNumber
+      );
 
       if (
         available !== undefined &&
         Number.isFinite(available) &&
-        available < requestedQty
+        available < bucket.requestedQty
       ) {
         return true;
       }
@@ -1145,7 +1232,11 @@ export function ERPSalesOrderForm({
         currentOrderType !== 'TRANSFER' || currentTransferMode === 'MIXED';
 
       if (shouldCheckInventory && watchedItems.length > 0) {
-        const requestedByProduct = new Map<string, number>();
+        const requestedByBucket = new Map<
+          string,
+          { productId: string; batchNumber?: string; requestedQty: number }
+        >();
+        const missingBatchMessages: string[] = [];
 
         for (const item of watchedItems) {
           if (!item || !item.productId || item.isManualProduct) {
@@ -1164,30 +1255,69 @@ export function ERPSalesOrderForm({
             continue;
           }
 
-          requestedByProduct.set(
+          const product = productMap.get(productId);
+          const batchNumber = (item.batchNumber ?? '').toString().trim();
+          const selectableBatchCount =
+            product?.inventory?.batches?.filter(batch => {
+              const available = getProductAvailableQuantity(
+                product,
+                batch.batchNumber
+              );
+              return available !== undefined && available > 0;
+            }).length ?? 0;
+
+          if (!batchNumber && selectableBatchCount > 1) {
+            const name = product?.name || '未知产品';
+            const code = product?.code || productId;
+            missingBatchMessages.push(
+              `[${code}] ${name}：存在多个可用批次，请先指定批次号`
+            );
+          }
+
+          const key = buildInventoryRequestKey(productId, batchNumber);
+          const existing = requestedByBucket.get(key);
+          requestedByBucket.set(key, {
             productId,
-            (requestedByProduct.get(productId) ?? 0) + effectiveQty
-          );
+            batchNumber: batchNumber || undefined,
+            requestedQty: (existing?.requestedQty ?? 0) + effectiveQty,
+          });
+        }
+
+        if (missingBatchMessages.length > 0) {
+          toast({
+            variant: 'destructive',
+            title: '请先选择批次后再确认订单',
+            description:
+              missingBatchMessages.length === 1
+                ? missingBatchMessages[0]
+                : `以下产品需要先指定批次：\n${missingBatchMessages.join('\n')}`,
+          });
+          return;
         }
 
         const shortageMessages: string[] = [];
 
-        requestedByProduct.forEach((requestedQty, productId) => {
-          const product = productMap.get(productId);
-          const available = product?.inventory?.availableQuantity ?? undefined;
+        requestedByBucket.forEach(
+          ({ productId, batchNumber, requestedQty }) => {
+            const product = productMap.get(productId);
+            const available =
+              getProductAvailableQuantity(product, batchNumber) ?? undefined;
 
-          if (
-            available !== undefined &&
-            Number.isFinite(available) &&
-            available < requestedQty
-          ) {
-            const name = product?.name || '未知产品';
-            const code = product?.code || productId;
-            shortageMessages.push(
-              `[${code}] ${name}：可用 ${available} 片，需要 ${requestedQty} 片`
-            );
+            if (
+              available !== undefined &&
+              Number.isFinite(available) &&
+              available < requestedQty
+            ) {
+              const name = product?.name || '未知产品';
+              const code = product?.code || productId;
+              shortageMessages.push(
+                batchNumber
+                  ? `[${code}] ${name} / 批次 ${batchNumber}：可用 ${available} 片，需要 ${requestedQty} 片`
+                  : `[${code}] ${name}：可用 ${available} 片，需要 ${requestedQty} 片`
+              );
+            }
           }
-        });
+        );
 
         if (shortageMessages.length > 0) {
           toast({
@@ -1332,7 +1462,7 @@ export function ERPSalesOrderForm({
                               htmlFor="normal"
                               className="cursor-pointer text-sm font-normal"
                             >
-                              正常销售
+                              {SALES_ORDER_TYPE_LABELS.NORMAL}
                             </Label>
                           </div>
                           <div className="flex items-center space-x-2">
@@ -1341,7 +1471,7 @@ export function ERPSalesOrderForm({
                               htmlFor="transfer"
                               className="cursor-pointer text-sm font-normal"
                             >
-                              调货销售
+                              {SALES_ORDER_TYPE_LABELS.TRANSFER}
                             </Label>
                           </div>
                         </RadioGroup>
@@ -1611,7 +1741,8 @@ export function ERPSalesOrderForm({
             remove={remove}
             onAddItem={addOrderItem}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
-            products={productsData?.data || []}
+            products={availableProducts}
+            onSelectedProduct={rememberSelectedProduct}
             orderType={orderType}
             transferMode={transferMode}
             unitMapping={UNIT_MAPPING}
@@ -1791,7 +1922,7 @@ export function ERPSalesOrderForm({
           {watchedItems.length > 0 && (
             <InventoryChecker
               items={inventoryCheckItems}
-              products={productsData?.data || []}
+              products={availableProducts}
               onInventoryCheck={() => {
                 // 处理库存检查结果
               }}
@@ -1820,23 +1951,6 @@ export function ERPSalesOrderForm({
                   disabled={
                     createMutation.isPending ||
                     updateMutation.isPending ||
-                    !form.watch('customerId')
-                  }
-                  className="h-8 text-xs"
-                  onClick={() => submitWithStatus('draft')}
-                >
-                  {createMutation.isPending || updateMutation.isPending ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Save className="mr-1 h-3 w-3" />
-                  )}
-                  {mode === 'edit' ? '保存草稿' : '保存草稿'}
-                </Button>
-                <Button
-                  type="button"
-                  disabled={
-                    createMutation.isPending ||
-                    updateMutation.isPending ||
                     fields.length === 0 ||
                     !form.watch('customerId') ||
                     hasInventoryShortage
@@ -1849,14 +1963,32 @@ export function ERPSalesOrderForm({
                   ) : (
                     <Save className="mr-1 h-3 w-3" />
                   )}
-                  {mode === 'edit' ? '更新并确认' : '提交订单'}
+                  {mode === 'edit' ? '保存并确认' : '保存并确认'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  disabled={
+                    createMutation.isPending ||
+                    updateMutation.isPending ||
+                    !form.watch('customerId')
+                  }
+                  className="h-8 text-xs"
+                  onClick={() => submitWithStatus('draft')}
+                >
+                  {createMutation.isPending || updateMutation.isPending ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : (
+                    <Save className="mr-1 h-3 w-3" />
+                  )}
+                  {mode === 'edit' ? '保存修改' : '保存订单'}
                 </Button>
               </div>
             </div>
 
             <div className="mt-2 text-center">
               <p className="text-xs text-gray-500">
-                保存草稿：可随时修改；提交订单：确认后进入处理流程
+                保存订单：先保存为可继续修改状态；保存并确认：确认后进入发货、收款等正式流程
               </p>
             </div>
           </div>

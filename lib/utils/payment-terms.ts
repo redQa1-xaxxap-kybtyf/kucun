@@ -190,7 +190,7 @@ export function getPaymentStatusText(
   currentDate: Date = new Date()
 ): string {
   if (isPaid) {
-    return '已付款';
+    return '已收款';
   }
 
   if (isOverdue(dueDate, paymentTerm, currentDate)) {

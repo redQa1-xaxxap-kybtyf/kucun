@@ -3,10 +3,8 @@
 import { createRoot } from 'react-dom/client';
 
 import { PrintCanvas } from '@/components/print-designer/renderer/PrintCanvas';
-import {
-  getDefaultTemplate,
-  getPrintDataForTemplate,
-} from '@/lib/print-designer/actions';
+import { fetchDefaultTemplate } from '@/lib/print-designer/default-template-client';
+import { fetchPrintDataForTemplate } from '@/lib/print-designer/preview-data-client';
 import type { TemplateType } from '@/lib/print-designer/schemas';
 
 import { ExportService, type ImageExportOptions } from './export-service';
@@ -55,7 +53,7 @@ function ensureBrowserContext() {
 }
 
 async function loadDefaultTemplate(templateType: TemplateType) {
-  const templateResult = await getDefaultTemplate(templateType);
+  const templateResult = await fetchDefaultTemplate(templateType);
 
   if (!templateResult.success) {
     throw new PrintTemplateExportError(
@@ -136,7 +134,7 @@ export class PrintTemplateExportService {
     options: TemplateDocumentImageExportOptions
   ): Promise<void> {
     const { templateType, documentId } = options;
-    const data = await getPrintDataForTemplate(templateType, documentId);
+    const data = await fetchPrintDataForTemplate(templateType, documentId);
 
     if (!data) {
       throw new PrintTemplateExportError(

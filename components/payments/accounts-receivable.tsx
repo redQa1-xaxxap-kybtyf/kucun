@@ -132,12 +132,12 @@ const AccountsReceivableComponent = React.forwardRef<
     const getPaymentStatusConfig = (status: string) => {
       const configs = {
         unpaid: {
-          label: '未付款',
+          label: '未收款',
           variant: 'destructive' as const,
           icon: XCircle,
         },
         partial: {
-          label: '部分付款',
+          label: '部分收款',
           variant: 'warning' as const,
           icon: Clock,
         },
@@ -147,7 +147,7 @@ const AccountsReceivableComponent = React.forwardRef<
           icon: Clock,
         },
         paid: {
-          label: '已付款',
+          label: '已收款',
           variant: 'success' as const,
           icon: CheckCircle,
         },
@@ -232,7 +232,7 @@ const AccountsReceivableComponent = React.forwardRef<
       },
       {
         key: 'paymentStatus',
-        title: '付款状态',
+        title: '收款状态',
         width: '100px',
         render: (_value, receivable) => {
           const config = getPaymentStatusConfig(receivable.paymentStatus);
@@ -478,7 +478,7 @@ const AccountsReceivableComponent = React.forwardRef<
 
               {/* 筛选器 */}
               <div className="flex items-center space-x-2">
-                {/* 付款状态筛选 */}
+                {/* 收款状态筛选 */}
                 <Select
                   value={query.paymentStatus || ''}
                   onValueChange={value =>
@@ -486,14 +486,14 @@ const AccountsReceivableComponent = React.forwardRef<
                   }
                 >
                   <SelectTrigger className="w-32">
-                    <SelectValue placeholder="付款状态" />
+                    <SelectValue placeholder="收款状态" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">全部状态</SelectItem>
-                    <SelectItem value="unpaid">未付款</SelectItem>
-                    <SelectItem value="partial">部分付款</SelectItem>
+                    <SelectItem value="unpaid">未收款</SelectItem>
+                    <SelectItem value="partial">部分收款</SelectItem>
                     <SelectItem value="pending">待确认</SelectItem>
-                    <SelectItem value="paid">已付款</SelectItem>
+                    <SelectItem value="paid">已收款</SelectItem>
                   </SelectContent>
                 </Select>
 

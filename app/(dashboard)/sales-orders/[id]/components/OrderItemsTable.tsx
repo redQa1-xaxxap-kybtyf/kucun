@@ -5,6 +5,7 @@ import { ShoppingCart } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/utils';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatDate } from '@/lib/utils/datetime';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 
@@ -506,8 +507,8 @@ export function OrderItemsTable({
                       <>
                         <td className="px-3 py-2.5 text-right align-top whitespace-nowrap">
                           <span className="text-sm text-gray-600">
-                            {item.unitCost
-                              ? formatCurrency(item.unitCost)
+                            {item.unitCost !== null && item.unitCost !== undefined
+                              ? formatCostPrice(item.unitCost)
                               : '-'}
                           </span>
                         </td>

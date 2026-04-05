@@ -1,5 +1,7 @@
 import type { Prisma } from '@prisma/client';
 
+import { convertPurchaseOrderQuantityToPieces } from '@/lib/utils/purchase-order-unit';
+
 export type PurchaseOrderFulfillmentStatus = 'none' | 'partial' | 'complete';
 
 export interface PurchaseOrderExecutionSummary {
@@ -18,17 +20,27 @@ export interface PurchaseOrderItemExecution {
 const EXECUTION_EPSILON = 1e-6;
 
 export function calculatePurchaseOrderExecution(
-  order: { id: string; items: Array<{ id: string; quantity: number }> },
+  order: {
+    id: string;
+    items: Array<{
+      id: string;
+      quantity: number;
+      unit?: string | null;
+      piecesPerUnit?: number | null;
+      displayName?: string | null;
+      productCode?: string | null;
+    }>;
+  },
   inboundByOrder: Map<string, number>,
   inboundByItem: Map<string, number>
 ): {
   summary: PurchaseOrderExecutionSummary;
   items: PurchaseOrderItemExecution[];
 } {
-  const orderedQuantity = order.items.reduce(
-    (sum, item) => sum + (item.quantity ?? 0),
-    0
+  const orderedQuantities = order.items.map(item =>
+    convertPurchaseOrderQuantityToPieces(item)
   );
+  const orderedQuantity = orderedQuantities.reduce((sum, item) => sum + item, 0);
   const receivedQuantity = inboundByOrder.get(order.id) ?? 0;
   const executionRate =
     orderedQuantity > 0
@@ -45,9 +57,10 @@ export function calculatePurchaseOrderExecution(
 
   const items = order.items.map(item => {
     const itemReceived = inboundByItem.get(item.id) ?? 0;
+    const orderedItemQuantity = convertPurchaseOrderQuantityToPieces(item);
     const itemExecutionRate =
-      (item.quantity ?? 0) > 0
-        ? Number((itemReceived / item.quantity).toFixed(4))
+      orderedItemQuantity > 0
+        ? Number((itemReceived / orderedItemQuantity).toFixed(4))
         : 0;
 
     return {
@@ -75,6 +88,10 @@ export async function refreshPurchaseOrderFulfillment(
   const items: Array<{
     id: string;
     quantity: number;
+    unit: string | null;
+    piecesPerUnit: number | null;
+    displayName: string | null;
+    productCode: string;
     inboundStatus: string | null;
     inboundReceivedAt: Date | null;
   }> = [];
@@ -87,6 +104,10 @@ export async function refreshPurchaseOrderFulfillment(
       select: {
         id: true,
         quantity: true,
+        unit: true,
+        piecesPerUnit: true,
+        displayName: true,
+        productCode: true,
         inboundStatus: true,
         inboundReceivedAt: true,
       },
@@ -133,7 +154,10 @@ export async function refreshPurchaseOrderFulfillment(
 
   for (const item of items) {
     const received = inboundMap.get(item.id) ?? 0;
-    const fullyReceived = received + EXECUTION_EPSILON >= (item.quantity ?? 0);
+    const orderedQuantity = convertPurchaseOrderQuantityToPieces(item);
+    const fullyReceived =
+      orderedQuantity > 0 &&
+      received + EXECUTION_EPSILON >= orderedQuantity;
     const newStatus = fullyReceived ? 'received' : 'pending';
     const newReceivedAt = fullyReceived
       ? (item.inboundReceivedAt ?? now)

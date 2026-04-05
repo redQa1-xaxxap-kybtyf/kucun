@@ -1,8 +1,5 @@
-'use client';
-
 import { AlertTriangle, Home, LogIn } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -14,9 +11,14 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-export default function AuthErrorPage() {
-  const searchParams = useSearchParams();
-  const error = searchParams.get('error');
+export default async function AuthErrorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const rawError = params.error;
+  const error = Array.isArray(rawError) ? rawError[0] : rawError;
 
   // 错误信息映射
   const errorMessages: Record<string, { title: string; description: string }> =

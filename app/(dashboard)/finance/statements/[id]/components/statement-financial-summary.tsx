@@ -45,7 +45,7 @@ export function StatementFinancialSummary({
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground text-sm">累计收付</span>
+          <span className="text-muted-foreground text-sm">累计结算</span>
           <span className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(Math.abs(paidAmount))}
           </span>

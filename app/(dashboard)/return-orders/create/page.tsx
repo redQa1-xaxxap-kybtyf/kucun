@@ -45,8 +45,8 @@ export default function CreateReturnOrderPage() {
       <div className="space-y-6">
         {/* 页面标题 */}
         <PageHeader
-          title="创建退货订单"
-          description="创建新的退货订单，处理客户退货申请"
+          title="新建退货订单"
+          description="新建退货订单，处理客户退货申请"
           icon={<PackageX className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-error))"
           actions={

@@ -13,15 +13,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import {
+  getActionableRefundForReturnOrder,
+  getReturnOrderDisplayStatus,
+  getReturnOrderPendingRefundAmount,
   RETURN_ORDER_MODE_LABELS,
-  RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
+  type ReturnOrderStatus,
+  type ReturnProcessType,
+  type ReturnOrderRefundSummary,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
-import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { csrfFetch } from '@/lib/utils/csrf';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
@@ -57,9 +63,9 @@ interface ReturnOrderDetail {
   salesOrderId?: string;
   customerId: string;
   userId: string;
-  status: string;
+  status: ReturnOrderStatus;
   type: string;
-  processType: string;
+  processType: ReturnProcessType;
   reason: string;
   totalAmount: number;
   refundAmount: number;
@@ -80,6 +86,7 @@ interface ReturnOrderDetail {
     orderNumber: string;
     totalAmount: number;
   };
+  refunds?: ReturnOrderRefundSummary[];
   items: Array<{
     id: string;
     salesOrderItemId: string;
@@ -203,7 +210,9 @@ export function ReturnOrderDetailPageClient({
   id,
 }: ReturnOrderDetailPageClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isGeneratingRefund, setIsGeneratingRefund] = useState(false);
 
   const {
     data: order,
@@ -244,10 +253,16 @@ export function ReturnOrderDetailPageClient({
 
   const writeOffAmount = order.totalAmount - order.refundAmount;
   const hasWriteOff = Math.abs(writeOffAmount) > 0.005;
+  const displayStatus = getReturnOrderDisplayStatus(order);
+  const actionableRefund = getActionableRefundForReturnOrder(order);
+  const pendingRefundAmount = getReturnOrderPendingRefundAmount(order);
+  const showRefundActionCard =
+    order.processType === 'refund' &&
+    order.status === 'completed' &&
+    pendingRefundAmount > 0.005;
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved':
+  const getStatusIcon = (statusValue: string) => {
+    switch (statusValue) {
       case 'completed':
         return <CheckCircle className="h-4 w-4" />;
       case 'rejected':
@@ -255,6 +270,36 @@ export function ReturnOrderDetailPageClient({
         return <XCircle className="h-4 w-4" />;
       default:
         return null;
+    }
+  };
+
+  const handleRefundAction = async () => {
+    if (actionableRefund?.id) {
+      router.push(`/finance/refunds/${actionableRefund.id}/process`);
+      return;
+    }
+
+    try {
+      setIsGeneratingRefund(true);
+      const response = await csrfFetch(`/api/return-orders/${id}/refund`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok || !result.success || !result.data?.refundId) {
+        throw new Error(result.error || result.message || '生成退款处理单失败');
+      }
+
+      router.push(`/finance/refunds/${result.data.refundId}/process`);
+    } catch (error) {
+      toast({
+        title: '处理失败',
+        description: error instanceof Error ? error.message : '生成退款处理单失败',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingRefund(false);
     }
   };
 
@@ -271,14 +316,12 @@ export function ReturnOrderDetailPageClient({
                     退货订单详情
                   </h1>
                   <Badge
-                    variant={getReturnOrderStatusBadgeVariant(order.status)}
+                    variant={displayStatus.variant}
                     className="text-xs sm:text-sm"
                   >
-                    {getStatusIcon(order.status)}
+                    {getStatusIcon(displayStatus.value)}
                     <span className="ml-1">
-                      {RETURN_ORDER_STATUS_LABELS[
-                        order.status as keyof typeof RETURN_ORDER_STATUS_LABELS
-                      ] || order.status}
+                      {displayStatus.label}
                     </span>
                   </Badge>
                 </div>
@@ -288,6 +331,7 @@ export function ReturnOrderDetailPageClient({
               </div>
               <ReturnOrderHeaderActions
                 id={id}
+                processType={order.processType}
                 returnNumber={order.returnNumber}
                 status={order.status}
                 onPrint={() => setIsPrintDialogOpen(true)}
@@ -644,6 +688,45 @@ export function ReturnOrderDetailPageClient({
               </CardContent>
             </Card>
 
+            {showRefundActionCard && (
+              <Card className="border-[hsl(var(--color-warning))]/30 bg-[hsl(var(--color-warning-light))]/40">
+                <CardHeader className="border-b border-[hsl(var(--color-warning))]/20">
+                  <CardTitle className="text-lg">退款处理</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="rounded-xl border border-[hsl(var(--color-warning))]/25 bg-white/80 p-4">
+                    <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                      这张退货单已经完成，库存已回补。
+                    </p>
+                    <p className="mt-2 text-base font-semibold text-[hsl(var(--color-text-primary))]">
+                      待退款金额：{formatCurrency(pendingRefundAmount)}
+                    </p>
+                    {actionableRefund?.id ? (
+                      <p className="mt-2 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        已生成退款单，继续处理资金即可，不会再次改库存。
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        还没有退款处理单，点击下方按钮可自动生成并进入处理页面。
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    size="lg"
+                    className="h-11 w-full"
+                    onClick={handleRefundAction}
+                    disabled={isGeneratingRefund}
+                  >
+                    {isGeneratingRefund
+                      ? '处理中...'
+                      : actionableRefund?.id
+                        ? '去处理退款'
+                        : '生成并处理退款'}
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 操作历史 */}
             <Card>
               <CardHeader>
@@ -664,10 +747,10 @@ export function ReturnOrderDetailPageClient({
                     <div className="flex items-center space-x-3">
                       <div
                         className={`h-2 w-2 rounded-full ${
-                          order.status === 'approved' ||
-                          order.status === 'completed'
+                          displayStatus.value === 'completed'
                             ? 'bg-green-500'
-                            : order.status === 'rejected'
+                            : displayStatus.value === 'rejected' ||
+                                displayStatus.value === 'cancelled'
                               ? 'bg-red-500'
                               : 'bg-yellow-500'
                         }`}
@@ -675,11 +758,7 @@ export function ReturnOrderDetailPageClient({
                       <div className="flex-1">
                         <p className="text-sm font-medium">
                           状态更新为：
-                          {
-                            RETURN_ORDER_STATUS_LABELS[
-                              order.status as keyof typeof RETURN_ORDER_STATUS_LABELS
-                            ]
-                          }
+                          {displayStatus.label}
                         </p>
                         <p className="text-muted-foreground text-xs">
                           {formatDateTime(order.updatedAt)}
@@ -690,25 +769,6 @@ export function ReturnOrderDetailPageClient({
                 </div>
               </CardContent>
             </Card>
-
-            {/* 快速操作 */}
-            {order.status === 'pending' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>快速操作</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button className="w-full" size="sm">
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    批准退货
-                  </Button>
-                  <Button variant="destructive" className="w-full" size="sm">
-                    <XCircle className="mr-2 h-4 w-4" />
-                    拒绝退货
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       </div>

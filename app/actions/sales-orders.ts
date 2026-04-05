@@ -12,6 +12,11 @@ import { revalidateProducts } from '@/lib/cache';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
 import { withIdempotency } from '@/lib/utils/idempotency';
 
 /**
@@ -52,7 +57,12 @@ const salesOrderItemSchema = z
     quantity: z.number().positive('数量必须大于 0'),
     unitPrice: z.number().positive('单价必须大于 0'),
     subtotal: z.number().nonnegative('小计不能为负'),
-    unitCost: z.number().optional(),
+    unitCost: z
+      .number()
+      .min(0, '成本不能为负数')
+      .max(COST_PRICE_MAX, `成本不能超过${COST_PRICE_MAX_LABEL}`)
+      .refine(hasAtMostCostPriceDecimals, '成本最多保留3位小数')
+      .optional(),
     costSubtotal: z.number().optional(),
     profitAmount: z.number().optional(),
   })

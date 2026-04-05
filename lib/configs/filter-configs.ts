@@ -10,6 +10,71 @@
  * ✅ Bug修复：补全所有排序选项，与后端 buildOrderByClause 保持一致
  * ⚠️ 注意：Inventory表没有created_at字段，只有updated_at
  */
+export const DEFAULT_INVENTORY_SORT_MODE = 'updatedAt_desc' as const;
+
+export const INVENTORY_SORT_MODE_OPTIONS = [
+  { label: '最近更新优先', value: 'updatedAt_desc' },
+  { label: '最早更新优先', value: 'updatedAt_asc' },
+  { label: '库存数量从多到少', value: 'quantity_desc' },
+  { label: '库存数量从少到多', value: 'quantity_asc' },
+  { label: '预留数量从多到少', value: 'reservedQuantity_desc' },
+  { label: '预留数量从少到多', value: 'reservedQuantity_asc' },
+  { label: '批次号 A-Z', value: 'batchNumber_asc' },
+  { label: '批次号 Z-A', value: 'batchNumber_desc' },
+  { label: '库位 A-Z', value: 'location_asc' },
+  { label: '库位 Z-A', value: 'location_desc' },
+] as const;
+
+export function buildInventorySortMode(
+  sortBy = 'updatedAt',
+  sortOrder = 'desc'
+) {
+  return `${sortBy}_${sortOrder}`;
+}
+
+export function parseInventorySortMode(value?: string) {
+  const fallback = {
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+  } as const;
+
+  if (!value) {
+    return fallback;
+  }
+
+  const [sortBy, sortOrder] = value.split('_');
+  const matched = INVENTORY_SORT_MODE_OPTIONS.find(
+    option => option.value === `${sortBy}_${sortOrder}`
+  );
+
+  if (!matched) {
+    return fallback;
+  }
+
+  return {
+    sortBy: sortBy as
+      | 'updatedAt'
+      | 'quantity'
+      | 'reservedQuantity'
+      | 'batchNumber'
+      | 'location',
+    sortOrder: sortOrder as 'asc' | 'desc',
+  };
+}
+
+export function getInventorySortModeLabel(
+  sortBy = 'updatedAt',
+  sortOrder = 'desc'
+) {
+  const mode = buildInventorySortMode(sortBy, sortOrder);
+  return (
+    INVENTORY_SORT_MODE_OPTIONS.find(option => option.value === mode)?.label ||
+    '最近更新优先'
+  );
+}
+
+export const INVENTORY_SEARCH_HINT = '可直接搜索产品编码、名称、批次号或库位';
+
 export const INVENTORY_FILTER_CONFIG = {
   filters: [
     {
@@ -30,7 +95,7 @@ export const INVENTORY_FILTER_CONFIG = {
       width: 'w-[140px]' as const,
     },
   ],
-  searchPlaceholder: '搜索产品名称、编码...',
+  searchPlaceholder: '搜索产品名称、编码、批次或库位...',
   dateRangeLabel: '更新时间',
   dateRangePlaceholder: '选择更新时间范围',
 };
@@ -56,11 +121,11 @@ export const SALES_ORDER_FILTER_CONFIG = {
     },
     {
       key: 'paymentStatus',
-      label: '付款状态',
+      label: '收款状态',
       options: [
-        { label: '未付款', value: 'unpaid' },
-        { label: '部分付款', value: 'partial' },
-        { label: '已付款', value: 'paid' },
+        { label: '未收款', value: 'unpaid' },
+        { label: '部分收款', value: 'partial' },
+        { label: '已收款', value: 'paid' },
       ],
       width: 'w-[140px]',
     },

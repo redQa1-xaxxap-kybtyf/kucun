@@ -3,7 +3,11 @@ import type { Prisma } from '@prisma/client';
 import { buildDateTimeRangeFromDateStrings } from '@/lib/api/date-range';
 import { prisma } from '@/lib/db';
 import { getSystemMode } from '@/lib/services/system-mode-service';
-import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
+import {
+  SALES_ORDER_PENDING_FILTER_STATUSES,
+  type SalesOrderStatus,
+  type SalesOrderQueryParams,
+} from '@/lib/types/sales-order';
 import { getSalesOrderReceivableTotal } from '@/lib/utils/sample-order';
 
 import {
@@ -46,6 +50,17 @@ const sortableFields: Record<
 const DEFAULT_SORT_FIELD: keyof Prisma.SalesOrderOrderByWithRelationInput =
   'createdAt';
 const DEFAULT_SORT_ORDER: Prisma.SortOrder = 'desc';
+const DEFAULT_PRIORITY_STATUS_GROUPS = [
+  ['draft'],
+  ['confirmed'],
+  ['shipped'],
+  ['completed'],
+  ['cancelled'],
+] as const satisfies readonly (readonly SalesOrderStatus[])[];
+const PENDING_PRIORITY_STATUS_GROUPS = [
+  ['draft'],
+  ['confirmed'],
+] as const satisfies readonly (readonly SalesOrderStatus[])[];
 
 const buildWhere = (
   {
@@ -89,7 +104,10 @@ const buildWhere = (
   }
 
   if (status) {
-    where.status = status;
+    where.status =
+      status === 'pending'
+        ? { in: [...SALES_ORDER_PENDING_FILTER_STATUSES] }
+        : status;
   }
 
   if (customerId) {
@@ -140,6 +158,122 @@ const buildOrderBy = (params: SalesOrderQueryParams) => {
   ] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
 };
 
+const buildInGroupOrderBy = (
+  params: SalesOrderQueryParams
+): Prisma.SalesOrderOrderByWithRelationInput[] => {
+  const sortOrder = params.sortOrder ?? DEFAULT_SORT_ORDER;
+
+  return [
+    { createdAt: sortOrder },
+    { id: sortOrder },
+  ] satisfies Prisma.SalesOrderOrderByWithRelationInput[];
+};
+
+const shouldUsePrioritizedStatusOrdering = (params: SalesOrderQueryParams) => {
+  const sortField = params.sortBy ?? DEFAULT_SORT_FIELD;
+
+  return (
+    sortField === 'createdAt' &&
+    (params.status === undefined || params.status === 'pending')
+  );
+};
+
+const getPriorityStatusGroups = (
+  status: SalesOrderQueryParams['status']
+): readonly (readonly SalesOrderStatus[])[] =>
+  status === 'pending'
+    ? PENDING_PRIORITY_STATUS_GROUPS
+    : DEFAULT_PRIORITY_STATUS_GROUPS;
+
+const countStatuses = (
+  groups: readonly (readonly SalesOrderStatus[])[],
+  countsByStatus: Map<string, number>
+) =>
+  groups.reduce(
+    (sum, statuses) =>
+      sum +
+      statuses.reduce(
+        (groupSum, status) => groupSum + (countsByStatus.get(status) ?? 0),
+        0
+      ),
+    0
+  );
+
+async function getPrioritizedSalesOrders(
+  params: SalesOrderQueryParams,
+  systemMode: 'trial' | 'production'
+) {
+  const { page = 1, limit = 20 } = params;
+  const skip = (page - 1) * limit;
+  const baseWhere = buildWhere({ ...params, status: undefined }, systemMode);
+  const priorityStatusGroups = getPriorityStatusGroups(params.status);
+  const priorityStatuses = priorityStatusGroups.flat();
+
+  const statusCounts = await prisma.salesOrder.groupBy({
+    by: ['status'],
+    where: {
+      ...baseWhere,
+      status: {
+        in: [...priorityStatuses],
+      },
+    },
+    _count: {
+      _all: true,
+    },
+  });
+
+  const countsByStatus = new Map<string, number>(
+    statusCounts.map(item => [item.status, item._count._all])
+  );
+
+  let remainingSkip = skip;
+  let remainingTake = limit;
+  const groupedOrders: SalesOrderListResult[] = [];
+  const orderBy = buildInGroupOrderBy(params);
+
+  for (const statuses of priorityStatusGroups) {
+    if (remainingTake <= 0) {
+      break;
+    }
+
+    const groupTotal = statuses.reduce(
+      (sum, status) => sum + (countsByStatus.get(status) ?? 0),
+      0
+    );
+
+    if (groupTotal === 0) {
+      continue;
+    }
+
+    if (remainingSkip >= groupTotal) {
+      remainingSkip -= groupTotal;
+      continue;
+    }
+
+    const groupWhere: Prisma.SalesOrderWhereInput = {
+      ...baseWhere,
+      status: statuses.length === 1 ? statuses[0] : { in: [...statuses] },
+    };
+
+    const groupOrders = await prisma.salesOrder.findMany({
+      where: groupWhere,
+      orderBy,
+      skip: remainingSkip,
+      take: remainingTake,
+      include: listInclude,
+    });
+
+    groupedOrders.push(...groupOrders);
+    remainingTake -= groupOrders.length;
+    remainingSkip = 0;
+  }
+
+  return {
+    orders: groupedOrders,
+    total: countStatuses(priorityStatusGroups, countsByStatus),
+  };
+}
+
 const mapListOrder = (
   order: SalesOrderListResult,
   productsMap: Map<
@@ -185,21 +319,35 @@ const mapListOrder = (
 
 export async function getSalesOrders(params: SalesOrderQueryParams) {
   const { page = 1, limit = 20 } = params;
-  const skip = (page - 1) * limit;
   const systemMode = await getSystemMode();
-  const where = buildWhere(params, systemMode);
-  const orderBy = buildOrderBy(params);
+  let orders: SalesOrderListResult[] = [];
+  let total = 0;
 
-  const [orders, total] = await Promise.all([
-    prisma.salesOrder.findMany({
-      where,
-      orderBy,
-      skip,
-      take: limit,
-      include: listInclude,
-    }),
-    prisma.salesOrder.count({ where }),
-  ]);
+  if (shouldUsePrioritizedStatusOrdering(params)) {
+    const prioritizedResult = await getPrioritizedSalesOrders(
+      { ...params, page, limit },
+      systemMode
+    );
+    orders = prioritizedResult.orders;
+    total = prioritizedResult.total;
+  } else {
+    const skip = (page - 1) * limit;
+    const where = buildWhere(params, systemMode);
+    const orderBy = buildOrderBy(params);
+
+    const result = await Promise.all([
+      prisma.salesOrder.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        include: listInclude,
+      }),
+      prisma.salesOrder.count({ where }),
+    ]);
+
+    [orders, total] = result;
+  }
 
   // 手动获取产品信息
   const productIds = orders

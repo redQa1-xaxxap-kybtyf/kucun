@@ -41,6 +41,9 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
   const [reasonFilter, setReasonFilter] = React.useState<string | 'all'>(
     queryParams.reason || 'all'
   );
+  const [damageFilter, setDamageFilter] = React.useState<'all' | 'damaged'>(
+    queryParams.hasDamage ? 'damaged' : 'all'
+  );
   const [dateRange, setDateRange] = React.useState<{
     startDate?: string;
     endDate?: string;
@@ -67,6 +70,14 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
     [handleFilter]
   );
 
+  const handleDamageChange = React.useCallback(
+    (value: 'all' | 'damaged') => {
+      setDamageFilter(value);
+      handleFilter('hasDamage', value === 'damaged' ? true : undefined);
+    },
+    [handleFilter]
+  );
+
   // 日期范围处理
   const handleDateRangeChange = React.useCallback(
     (range: { startDate?: string; endDate?: string }) => {
@@ -81,6 +92,7 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
   const handleClearFilters = React.useCallback(() => {
     setSearchValue('');
     setReasonFilter('all');
+    setDamageFilter('all');
     setDateRange({});
     handleResetFilters();
   }, [handleResetFilters]);
@@ -101,10 +113,12 @@ export function ERPInboundRecords({ initialParams }: ERPInboundRecordsProps) {
       <InboundRecordsSearchToolbar
         searchValue={searchValue}
         reasonFilter={reasonFilter}
+        damageFilter={damageFilter}
         dateRange={dateRange}
         isSearching={isLoading}
         onSearch={handleSearch}
         onReasonChange={handleReasonChange}
+        onDamageChange={handleDamageChange}
         onDateRangeChange={handleDateRangeChange}
         onClearFilters={handleClearFilters}
       />

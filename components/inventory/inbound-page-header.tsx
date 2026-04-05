@@ -36,10 +36,10 @@ export function InboundPageHeader() {
             </div>
             <div className="space-y-1.5">
               <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                产品入库记录
+                入库记录
               </h1>
               <p className="text-sm font-medium text-slate-500">
-                实时跟踪全渠道库存入库流水 · 确保资产账实相符
+                统一查看仓库入库流水 · 确保库存账实相符
               </p>
             </div>
           </div>
@@ -80,7 +80,7 @@ export function InboundPageHeader() {
               onClick={() => router.push('/inventory/inbound/create')}
             >
               <Plus className="mr-2 h-4 w-4" />
-              办理产品入库
+              产品入库
             </Button>
           </div>
         </div>

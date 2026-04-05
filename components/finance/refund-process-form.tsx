@@ -106,7 +106,7 @@ export function RefundProcessForm({
         icon: AlertCircle,
       },
       processing: {
-        label: '处理中',
+        label: '待退款',
         variant: 'default' as const,
         icon: CalendarIcon,
       },
@@ -116,7 +116,7 @@ export function RefundProcessForm({
         icon: CheckCircle,
       },
       rejected: {
-        label: '已拒绝',
+        label: '已关闭',
         variant: 'destructive' as const,
         icon: XCircle,
       },
@@ -239,7 +239,7 @@ export function RefundProcessForm({
       toast({
         title: '处理成功',
         description:
-          formData.status === 'completed' ? '退款已批准' : '退款已拒绝',
+          formData.status === 'completed' ? '退款已完成' : '退款已关闭',
         variant: 'success',
       });
 
@@ -247,7 +247,6 @@ export function RefundProcessForm({
       onSuccess?.();
       if (variant === 'page') {
         router.replace('/finance/refunds');
-        router.refresh();
       } else {
         onCancel?.();
       }

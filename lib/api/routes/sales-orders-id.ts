@@ -223,7 +223,9 @@ export const putSalesOrderRoute: ApiHandler = async (
   }
 
   const message =
-    status === 'confirmed'
+    existingOrder.status === 'confirmed' && status === 'draft'
+      ? '销售订单已撤回为草稿'
+      : status === 'confirmed'
       ? '销售订单已确认'
       : status === 'shipped'
         ? '销售订单已发货'

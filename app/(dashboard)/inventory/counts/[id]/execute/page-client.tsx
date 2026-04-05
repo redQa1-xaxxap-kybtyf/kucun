@@ -29,6 +29,7 @@ import {
   type InventoryCountDetail,
   type InventoryCountItem,
 } from '@/lib/types/inventory-count';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 import { ProductDataUtils } from '@/lib/utils/product-data';
@@ -261,7 +262,7 @@ export function ExecuteCountPageClient({
     return diff * item.unitCost;
   };
 
-  const formatNumber = (value: number | null | undefined) => {
+  const formatAmount = (value: number | null | undefined) => {
     if (value === null || value === undefined) return '-';
     return value.toLocaleString('zh-CN', {
       minimumFractionDigits: 2,
@@ -491,7 +492,10 @@ export function ExecuteCountPageClient({
                       {hasFinancePermission && (
                         <>
                           <TableCell className="text-right">
-                            {formatNumber(item.unitCost)}
+                            {formatCostPrice(item.unitCost, {
+                              withSymbol: false,
+                              fallback: '-',
+                            })}
                           </TableCell>
                           <TableCell
                             className={`text-right ${
@@ -502,7 +506,7 @@ export function ExecuteCountPageClient({
                                 : ''
                             }`}
                           >
-                            {formatNumber(totalCost)}
+                            {formatAmount(totalCost)}
                           </TableCell>
                         </>
                       )}
@@ -632,7 +636,7 @@ export function ExecuteCountPageClient({
                               : ''
                           }`}
                         >
-                          {formatNumber(totalCost)}
+                          {formatAmount(totalCost)}
                         </div>
                       </div>
                     )}

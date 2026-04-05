@@ -31,6 +31,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import type { InboundFormData } from '@/lib/types/inbound';
+import { COST_PRICE_STEP } from '@/lib/utils/cost-price';
 
 interface InboundCostFieldWithTooltipProps {
   form: UseFormReturn<InboundFormData, any, any>;
@@ -76,7 +77,7 @@ export function InboundCostFieldWithTooltip({
             <Input
               type="number"
               min="0.01"
-              step="0.01"
+              step={COST_PRICE_STEP}
               placeholder="请输入每片成本"
               className="h-9"
               {...field}

@@ -6,18 +6,19 @@
 
 import type { ParamConfig } from '@/hooks/url-search-params';
 import type {
+  SalesOrderFilterStatus,
   SalesOrderQueryParams,
-  SalesOrderStatus,
   SalesOrderType,
 } from '@/lib/types/sales-order';
 
 const statusValues = [
+  'pending',
   'draft',
   'confirmed',
   'shipped',
   'completed',
   'cancelled',
-] as const satisfies SalesOrderStatus[];
+] as const satisfies SalesOrderFilterStatus[];
 
 const sortByValues = [
   'orderNumber',

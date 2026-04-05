@@ -47,6 +47,7 @@ export const FactoryShipmentSearchToolbar =
       onClearFilters,
     }) => {
       const logic = useFactoryShipmentToolbarLogic({
+        searchValue,
         statusFilter,
         dateRange,
         onStatusChange,
@@ -70,6 +71,7 @@ export const FactoryShipmentSearchToolbar =
 FactoryShipmentSearchToolbar.displayName = 'FactoryShipmentSearchToolbar';
 
 function useFactoryShipmentToolbarLogic({
+  searchValue,
   statusFilter,
   dateRange,
   onStatusChange,
@@ -77,6 +79,7 @@ function useFactoryShipmentToolbarLogic({
   onClearFilters,
 }: Pick<
   FactoryShipmentSearchToolbarProps,
+  | 'searchValue'
   | 'statusFilter'
   | 'dateRange'
   | 'onStatusChange'
@@ -113,7 +116,10 @@ function useFactoryShipmentToolbarLogic({
   }, [onClearFilters]);
 
   const hasActiveFilters =
-    statusFilter !== 'all' || !!dateRange.startDate || !!dateRange.endDate;
+    !!searchValue.trim() ||
+    statusFilter !== 'all' ||
+    !!dateRange.startDate ||
+    !!dateRange.endDate;
 
   return {
     handleFilterChange,

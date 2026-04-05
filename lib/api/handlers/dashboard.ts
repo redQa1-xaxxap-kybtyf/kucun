@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import type { DashboardData, TimeRange } from '@/lib/types/dashboard';
+import { SALES_ORDER_PENDING_FILTER_STATUSES } from '@/lib/types/sales-order';
 import { toNumber } from '@/lib/utils/number';
 
 /**
@@ -271,7 +272,9 @@ export async function getInventoryAlerts() {
 export async function getTodoItems() {
   const pendingOrders = await prisma.salesOrder.count({
     where: {
-      status: 'pending',
+      status: {
+        in: [...SALES_ORDER_PENDING_FILTER_STATUSES],
+      },
     },
   });
 
@@ -348,7 +351,7 @@ export async function getProductRanking(
         SELECT 
           p.id as productId,
           p.name as productName,
-          p.product_code as productCode,
+          p.code as productCode,
           SUM(soi.quantity) as totalQuantity,
           SUM(soi.subtotal) as totalAmount,
           COUNT(DISTINCT so.id) as orderCount
@@ -358,7 +361,7 @@ export async function getProductRanking(
         WHERE so.created_at >= ${startDate}
           AND so.status IN ('confirmed', 'processing', 'shipped', 'completed', 'delivered')
           AND soi.product_id IS NOT NULL
-        GROUP BY p.id, p.name, p.product_code
+        GROUP BY p.id, p.name, p.code
         ORDER BY totalAmount DESC
         LIMIT ${limit}
       `,
@@ -377,7 +380,7 @@ export async function getProductRanking(
         SELECT 
           p.id as productId,
           p.name as productName,
-          p.product_code as productCode,
+          p.code as productCode,
           SUM(fsoi.quantity) as totalQuantity,
           SUM(fsoi.total_price) as totalAmount,
           COUNT(DISTINCT fso.id) as orderCount
@@ -387,7 +390,7 @@ export async function getProductRanking(
         WHERE fso.created_at >= ${startDate}
           AND fso.status IN ('confirmed', 'shipped', 'delivered', 'completed')
           AND fsoi.product_id IS NOT NULL
-        GROUP BY p.id, p.name, p.product_code
+        GROUP BY p.id, p.name, p.code
         ORDER BY totalAmount DESC
         LIMIT ${limit}
       `,

@@ -64,14 +64,25 @@ export const GET = withAuth(
       };
 
       // 验证查询参数
-      const validatedQuery = UserListQuerySchema.parse(queryParams);
+      const validatedQueryResult = UserListQuerySchema.safeParse(queryParams);
+
+      if (!validatedQueryResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: validatedQueryResult.error.issues[0]?.message ?? '查询参数不正确',
+          },
+          { status: 400 }
+        );
+      }
+      const validatedQuery = validatedQueryResult.data;
 
       // 构建查询条件
       const where: {
         OR?: Array<{
-          username?: { contains: string; mode: 'insensitive' };
-          email?: { contains: string; mode: 'insensitive' };
-          name?: { contains: string; mode: 'insensitive' };
+          username?: { contains: string };
+          email?: { contains: string };
+          name?: { contains: string };
         }>;
         role?: string;
         status?: string;
@@ -80,10 +91,10 @@ export const GET = withAuth(
       if (validatedQuery.search) {
         where.OR = [
           {
-            username: { contains: validatedQuery.search, mode: 'insensitive' },
+            username: { contains: validatedQuery.search },
           },
-          { email: { contains: validatedQuery.search, mode: 'insensitive' } },
-          { name: { contains: validatedQuery.search, mode: 'insensitive' } },
+          { email: { contains: validatedQuery.search } },
+          { name: { contains: validatedQuery.search } },
         ];
       }
 
@@ -168,7 +179,17 @@ export const POST = withAuth(
       body = await request.json();
 
       // 验证输入数据
-      const validatedData = CreateUserSchema.parse(body);
+      const validationResult = CreateUserSchema.safeParse(body);
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: validationResult.error.issues[0]?.message ?? '数据验证失败',
+          },
+          { status: 400 }
+        );
+      }
+      const validatedData = validationResult.data;
 
       // 检查用户名是否已存在
       const existingUsername = await prisma.user.findUnique({
@@ -329,7 +350,17 @@ export const PUT = withAuth(
       const body = await request.json();
 
       // 验证输入数据
-      validatedData = UpdateUserSchema.parse(body);
+      const validationResult = UpdateUserSchema.safeParse(body);
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: validationResult.error.issues[0]?.message ?? '数据验证失败',
+          },
+          { status: 400 }
+        );
+      }
+      validatedData = validationResult.data;
       const { userId, ...updateData } = validatedData;
 
       // 验证用户更新权限和数据

@@ -20,6 +20,7 @@ import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import type { InboundListResponse } from '@/lib/types/inbound';
+import { calculateTotalCost } from '@/lib/utils/cost-calculation';
 import { toISOString } from '@/lib/utils/datetime';
 import { toNumberOrNull } from '@/lib/utils/number';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
@@ -92,6 +93,7 @@ export function parseInboundQueryParams(searchParams: URLSearchParams) {
     search: searchParams.get('search') || undefined,
     productId: searchParams.get('productId') || undefined,
     reason: searchParams.get('reason') || undefined,
+    hasDamage: searchParams.get('hasDamage') || undefined,
     userId: searchParams.get('userId') || undefined,
     startDate: searchParams.get('startDate') || undefined,
     endDate: searchParams.get('endDate') || undefined,
@@ -104,6 +106,7 @@ export function parseInboundQueryParams(searchParams: URLSearchParams) {
     ...parsed,
     productId: parsed.productId || undefined,
     reason: parsed.reason || undefined,
+    hasDamage: parsed.hasDamage ? true : undefined,
     userId: parsed.userId || undefined,
     startDate: parsed.startDate || undefined,
     endDate: parsed.endDate || undefined,
@@ -119,6 +122,7 @@ export function buildInboundWhereClause(queryData: {
   search?: string;
   productId?: string;
   reason?: string;
+  hasDamage?: boolean;
   userId?: string;
   startDate?: string;
   endDate?: string;
@@ -132,6 +136,7 @@ export function buildInboundWhereClause(queryData: {
       { product: { name: { contains: queryData.search } } },
       { product: { code: { contains: queryData.search } } },
       { batchNumber: { contains: queryData.search } },
+      { openingImportBatchId: { contains: queryData.search } },
       { remarks: { contains: queryData.search } },
     ];
   }
@@ -144,6 +149,13 @@ export function buildInboundWhereClause(queryData: {
   // 入库原因筛选
   if (queryData.reason) {
     where.reason = queryData.reason;
+  }
+
+  // 只看有破损
+  if (queryData.hasDamage) {
+    where.damagedQuantity = {
+      gt: 0,
+    };
   }
 
   // 操作用户筛选
@@ -202,10 +214,17 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     variantId: record.variantId ?? undefined,
     supplierId: record.supplierId ?? undefined,
     quantity: record.quantity,
+    damagedQuantity: record.damagedQuantity ?? undefined,
+    damageHandling: record.damageHandling as
+      | import('@/lib/types/inbound').InboundDamageHandling
+      | undefined,
+    damageTotalCost: toNumberOrNull(record.damageTotalCost) ?? undefined,
+    damageRemarks: record.damageRemarks ?? undefined,
     reason: record.reason as import('@/lib/types/inbound').InboundReason,
     remarks: record.remarks ?? undefined,
     userId: record.userId,
     batchNumber: record.batchNumber ?? undefined,
+    openingImportBatchId: record.openingImportBatchId ?? undefined,
     colorCode: record.variant?.colorCode ?? undefined,
     unitCost: toNumberOrNull(record.unitCost) ?? undefined,
     totalCost: toNumberOrNull(record.totalCost) ?? undefined,
@@ -291,6 +310,7 @@ export async function getInboundRecords(queryData: {
   search?: string;
   productId?: string;
   reason?: string;
+  hasDamage?: boolean;
   userId?: string;
   startDate?: string;
   endDate?: string;
@@ -382,6 +402,9 @@ export async function createInboundRecord(
     weight?: number; // 产品重量（入库时确定）
     unitCost?: number; // 单位成本（期初/采购入库）
     totalCost?: number; // 总成本（冗余，便于报表）
+    damagedQuantity?: number; // 到货破损片数（不入库存）
+    damageHandling?: string; // 到货破损处理方式
+    damageRemarks?: string; // 到货破损备注
     purchaseOrderId?: string;
     purchaseOrderItemId?: string;
     supplierId?: string;
@@ -406,6 +429,7 @@ export async function createInboundRecord(
     const batchSpec = await upsertBatchSpecification(
       {
         productId: data.productId,
+        variantId: data.variantId,
         batchNumber: data.batchNumber,
         piecesPerUnit:
           typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0
@@ -432,6 +456,24 @@ export async function createInboundRecord(
       batchNumber: data.batchNumber || null,
       batchSpecificationId, // 关联批次规格参数（如果有）
       quantity: data.quantity,
+      damagedQuantity:
+        typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
+          ? data.damagedQuantity
+          : 0,
+      damageHandling:
+        typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
+          ? (data.damageHandling ?? null)
+          : null,
+      damageTotalCost:
+        typeof data.damagedQuantity === 'number' &&
+        data.damagedQuantity > 0 &&
+        typeof data.unitCost === 'number'
+          ? calculateTotalCost(data.damagedQuantity, data.unitCost)
+          : null,
+      damageRemarks:
+        typeof data.damagedQuantity === 'number' && data.damagedQuantity > 0
+          ? cleanRemarks(data.damageRemarks)
+          : null,
       reason: data.reason,
       remarks: cleanRemarks(data.remarks),
       unitCost: typeof data.unitCost === 'number' ? data.unitCost : null,
@@ -451,6 +493,12 @@ export async function createInboundRecord(
     variantId: inboundRecord.variantId || undefined,
     supplierId: inboundRecord.supplierId || undefined,
     quantity: inboundRecord.quantity,
+    damagedQuantity: inboundRecord.damagedQuantity || undefined,
+    damageHandling: (inboundRecord.damageHandling as
+      | import('@/lib/types/inbound').InboundDamageHandling
+      | null) ?? undefined,
+    damageTotalCost: toNumberOrNull(inboundRecord.damageTotalCost) ?? undefined,
+    damageRemarks: inboundRecord.damageRemarks || undefined,
     reason: inboundRecord.reason,
     remarks: inboundRecord.remarks || '',
     userId: inboundRecord.userId,

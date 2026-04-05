@@ -152,6 +152,7 @@ const orderListSelect = {
       displayName: true,
       specification: true,
       unit: true,
+      piecesPerUnit: true,
       weight: true,
       remarks: true,
       supplier: {

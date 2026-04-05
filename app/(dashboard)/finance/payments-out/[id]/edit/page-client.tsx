@@ -34,6 +34,8 @@ export interface PaymentOutRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -146,4 +148,3 @@ export function EditPaymentOutClient({
     </div>
   );
 }
-

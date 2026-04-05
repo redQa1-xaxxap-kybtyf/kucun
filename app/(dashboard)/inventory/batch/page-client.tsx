@@ -76,6 +76,9 @@ function buildSearchParams(params: ResolvedParams) {
   if (params.productId) {
     searchParams.set('productId', params.productId);
   }
+  if (params.variantId) {
+    searchParams.set('variantId', params.variantId);
+  }
   if (params.batchNumber) {
     searchParams.set('batchNumber', params.batchNumber);
   }
@@ -124,6 +127,7 @@ export function BatchSpecificationPageClient({
           sortOrder: next.sortOrder ?? DEFAULT_SORT_ORDER,
           search: next.search?.trim() || undefined,
           productId: next.productId?.trim() || undefined,
+          variantId: next.variantId?.trim() || undefined,
           batchNumber: next.batchNumber?.trim() || undefined,
         };
         return normalized;
@@ -175,6 +179,7 @@ export function BatchSpecificationPageClient({
       page: DEFAULT_PAGE,
       search: undefined,
       productId: undefined,
+      variantId: undefined,
       batchNumber: undefined,
       startDate: undefined,
       endDate: undefined,

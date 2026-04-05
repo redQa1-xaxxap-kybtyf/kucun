@@ -30,6 +30,8 @@ interface PaymentOutRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -79,6 +81,8 @@ async function getPaymentOutDetail(
         id: true,
         paymentNumber: true,
         paymentAmount: true,
+        actualPaymentAmount: true,
+        roundingAmount: true,
         paymentMethod: true,
         paymentDate: true,
         status: true,
@@ -131,6 +135,8 @@ async function getPaymentOutDetail(
       id: payment.id,
       paymentNumber: payment.paymentNumber,
       paymentAmount: Number(payment.paymentAmount),
+      actualPaymentAmount: Number(payment.actualPaymentAmount),
+      roundingAmount: Number(payment.roundingAmount),
       paymentMethod: payment.paymentMethod,
       paymentDate: payment.paymentDate.toISOString(),
       status: payment.status,

@@ -17,8 +17,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       quickActions.push(
         {
           id: 'create-sales-order',
-          title: '创建销售订单',
-          description: '快速创建新的销售订单',
+          title: '新建销售订单',
+          description: '快速录入一张销售订单',
           icon: 'plus-circle',
           color: 'blue',
           href: '/sales-orders/create',
@@ -53,8 +53,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       quickActions.push(
         {
           id: 'create-product',
-          title: '添加产品',
-          description: '添加新的产品到系统',
+          title: '新建产品',
+          description: '录入新的产品资料',
           icon: 'plus',
           color: 'purple',
           href: '/products/create',

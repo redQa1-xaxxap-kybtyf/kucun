@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 
 import type { ProductImage } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
+import { shouldBypassImageOptimization } from '@/lib/utils/image';
 
 import 'react-photo-view/dist/react-photo-view.css';
 
@@ -197,6 +198,7 @@ export function ProductImageGallery({
                 fill
                 className="object-cover"
                 sizes="80px"
+                unoptimized={shouldBypassImageOptimization(img.url)}
               />
               <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
                 <ZoomIn className="h-4 w-4 text-white drop-shadow" />

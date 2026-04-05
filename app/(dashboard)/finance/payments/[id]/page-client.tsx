@@ -8,15 +8,27 @@ import {
   FileText,
   Package,
   User,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
@@ -153,6 +165,9 @@ export function PaymentDetailClient({
   const { toast } = useToast();
   const [payment, setPayment] = useState(initialPayment);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [cancelNotes, setCancelNotes] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // 确认收款
   const handleConfirm = async () => {
@@ -163,15 +178,13 @@ export function PaymentDetailClient({
     setIsConfirming(true);
     try {
       const response = await fetch(
-        `/api/payments/${payment.id}`,
+        `/api/payments/${payment.id}/confirm`,
         getCsrfTokenHeader({
-          method: 'PUT',
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            status: 'confirmed',
-          }),
+          body: JSON.stringify({}),
         })
       );
 
@@ -206,6 +219,56 @@ export function PaymentDetailClient({
     }
   };
 
+  const handleCancel = async () => {
+    if (isCancelling || payment.status !== 'pending') {
+      return;
+    }
+
+    setIsCancelling(true);
+    try {
+      const trimmedNotes = cancelNotes.trim();
+      const response = await fetch(
+        `/api/payments/${payment.id}/cancel`,
+        getCsrfTokenHeader({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(
+            trimmedNotes ? { notes: trimmedNotes } : {}
+          ),
+        })
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || '取消收款失败');
+      }
+
+      toast({
+        title: '取消成功',
+        description: '收款记录已取消',
+        variant: 'success',
+      });
+
+      setPayment({
+        ...payment,
+        status: 'cancelled',
+      });
+      setShowCancelDialog(false);
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: '取消失败',
+        description: error instanceof Error ? error.message : '取消收款失败',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
@@ -225,18 +288,70 @@ export function PaymentDetailClient({
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:justify-end">
             {payment.status === 'pending' && (
-              <Button
-                size="sm"
-                className="gap-1.5 bg-green-600 hover:bg-green-700"
-                onClick={handleConfirm}
-                disabled={isConfirming}
-              >
-                <CheckCircle className="h-3.5 w-3.5" />
-                {isConfirming ? '确认中...' : '确认收款'}
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-green-600 hover:bg-green-700"
+                  onClick={handleConfirm}
+                  disabled={isConfirming || isCancelling}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  {isConfirming ? '确认中...' : '确认收款'}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="gap-1.5"
+                  onClick={() => {
+                    setCancelNotes('');
+                    setShowCancelDialog(true);
+                  }}
+                  disabled={isConfirming || isCancelling}
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  取消收款
+                </Button>
+              </>
             )}
           </div>
         </div>
+
+        <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认取消这笔收款？</AlertDialogTitle>
+              <AlertDialogDescription>
+                将取消收款单 <strong>{payment.paymentNumber}</strong>。
+                <br />
+                取消后保留单据记录，但不会继续进入到账统计。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">取消备注（可选）</div>
+              <Textarea
+                value={cancelNotes}
+                onChange={event => setCancelNotes(event.target.value)}
+                placeholder="例如：误录收款 / 客户取消支付 / 重新登记..."
+                disabled={isCancelling}
+                rows={3}
+              />
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isCancelling}>
+                先不取消
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancel}
+                disabled={isCancelling}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {isCancelling ? '取消中...' : '确认取消收款'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* 收款金额卡片 - 优化为卡片式设计 */}
         <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-lg">
@@ -512,7 +627,7 @@ export function PaymentDetailClient({
                   <span className="font-semibold">
                     {formatCurrency(payment.paymentAmount)}
                   </span>
-                  ，已冲抵{' '}
+                  ，已入账{' '}
                   <span className="font-semibold">
                     {formatCurrency(payment.appliedAmount)}
                   </span>

@@ -1,12 +1,12 @@
 'use client';
 
-import { Download, FileText, Loader2, Users } from 'lucide-react';
+import { FileText, Loader2, Users } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
+import { PageHeader } from '@/components/common/page-header';
 import type { StatementsClientProps } from '@/components/finance/statements-client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 
 import { useStatementsFilters } from './hooks/useStatementsFilters';
 
@@ -79,67 +79,43 @@ export function StatementsPageClient({
   initialData,
   initialParams,
 }: StatementsPageClientProps) {
-  // 筛选状态管理（已提取到自定义Hook）
   const { filters, handlers } = useStatementsFilters({ initialParams });
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1680px] space-y-12 p-4 transition-all duration-500 lg:p-10 xl:p-14">
-        {/* 页面标题卡片 - v3 PRO 旗舰玻璃拟态对齐 */}
-        <Card className="relative overflow-hidden rounded-[2.5rem] border-none bg-slate-900 shadow-[0_20px_50px_rgba(0,0,0,0.2)]">
-          {/* 装饰性极光光斑 */}
-          <div className="absolute -top-20 -right-20 h-80 w-80 animate-pulse rounded-full bg-purple-500/10 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-80 w-80 rounded-full bg-blue-500/10 blur-3xl" />
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
+        <PageHeader
+          title="往来对账"
+          description="按客户和供应商查看余额、累计往来和最近结算情况。"
+          icon={<FileText className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-primary))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)]"
+              >
+                <Link href="/finance/customer-statements">
+                  <FileText className="mr-2 h-4 w-4" />
+                  客户往来明细
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)]"
+              >
+                <Link href="/customers">
+                  <Users className="mr-2 h-4 w-4" />
+                  客户档案
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
-          <CardContent className="relative z-10 p-8 lg:p-10">
-            <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-              <div className="flex items-center gap-6">
-                <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-slate-700/50 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-[0_15px_30px_rgba(0,0,0,0.3)] transition-transform duration-500 hover:rotate-3">
-                  <FileText className="h-10 w-10 text-blue-400" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <h1 className="text-3xl font-black tracking-tighter text-white sm:text-4xl">
-                      应收应付总账{' '}
-                      <span className="ml-2 text-xs font-normal tracking-widest uppercase opacity-40 sm:text-sm">
-                        客户供应商往来汇总
-                      </span>
-                    </h1>
-                  </div>
-                  <p className="mt-2 max-w-md text-sm font-medium text-slate-400">
-                    集中化管理全球业务伙伴的应收与应付数据，实时监控财务水位，确保每一笔往来清晰透彻。
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="lg"
-                  asChild
-                  className="h-14 rounded-2xl border border-slate-700/50 bg-slate-800/50 px-8 font-black text-slate-200 shadow-xl backdrop-blur-md transition-all hover:bg-slate-700 hover:text-white active:scale-95"
-                >
-                  <Link href="/finance/statements/export">
-                    <Download className="mr-2 h-5 w-5" />
-                    安全导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-14 rounded-2xl bg-blue-600 px-10 font-black text-white shadow-[0_10px_25px_rgba(37,99,235,0.3)] transition-all hover:bg-blue-500 hover:shadow-blue-400/20 active:scale-95"
-                >
-                  <Link href="/customers">
-                    <Users className="mr-2 h-5 w-5" />
-                    伙伴档案
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 客户端交互组件 */}
         <StatementsClient
           initialData={initialData}
           initialParams={initialParams}

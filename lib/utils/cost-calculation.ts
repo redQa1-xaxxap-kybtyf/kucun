@@ -8,6 +8,8 @@
  * - 单一职责: 每个函数只负责一种计算
  */
 
+import { formatCostPrice, roundCostPrice } from '@/lib/utils/cost-price';
+
 /**
  * 计算加权平均成本
  *
@@ -17,13 +19,13 @@
  * @param currentUnitCost 当前单位成本
  * @param inboundQuantity 入库数量
  * @param inboundUnitCost 入库单位成本
- * @returns 新的加权平均单位成本（保留2位小数）
+ * @returns 新的加权平均单位成本（保留3位小数）
  *
  * @example
  * // 原库存: 100片 × ￥10/片 = ￥1000
  * // 入库: 50片 × ￥12/片 = ￥600
  * // 新成本: (1000 + 600) / (100 + 50) = ￥10.67/片
- * calculateWeightedAverageCost(100, 10, 50, 12) // 10.67
+ * calculateWeightedAverageCost(100, 10, 50, 12) // 10.667
  */
 export function calculateWeightedAverageCost(
   currentQuantity: number,
@@ -51,8 +53,8 @@ export function calculateWeightedAverageCost(
   // 计算加权平均单位成本
   const weightedAverageCost = totalCost / totalQuantity;
 
-  // 保留2位小数
-  return Math.round(weightedAverageCost * 100) / 100;
+  // 单位成本统一保留3位小数
+  return roundCostPrice(weightedAverageCost);
 }
 
 /**
@@ -80,16 +82,11 @@ export function calculateTotalCost(quantity: number, unitCost: number): number {
  * @returns 格式化后的货币字符串
  *
  * @example
- * formatCost(1234.56) // "￥1,234.56"
- * formatCost(1234.56, false) // "1,234.56"
+ * formatCost(1234.56) // "￥1,234.560"
+ * formatCost(1234.56, false) // "1,234.560"
  */
 export function formatCost(cost: number, showSymbol = true): string {
-  const formatted = cost.toLocaleString('zh-CN', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-
-  return showSymbol ? `￥${formatted}` : formatted;
+  return formatCostPrice(cost, { withSymbol: showSymbol });
 }
 
 /**

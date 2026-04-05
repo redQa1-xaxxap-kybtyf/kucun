@@ -24,6 +24,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
@@ -263,10 +264,10 @@ function InventoryRowView({
       {/* 成本信息（仅财务权限可见）- 合并显示 */}
       {hasFinancePermission && (
         <TableCell className="text-right tabular-nums">
-          {item.unitCost ? (
+          {item.unitCost !== null && item.unitCost !== undefined ? (
             <div className="space-y-0.5">
               <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                {formatCurrency(item.unitCost)}
+                {formatCostPrice(item.unitCost)}
               </div>
               <div className="font-semibold text-[hsl(var(--color-primary))]">
                 {formatCurrency(item.quantity * item.unitCost)}

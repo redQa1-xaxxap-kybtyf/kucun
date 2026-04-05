@@ -10,6 +10,12 @@ import {
   FACTORY_SHIPMENT_ITEM_OWNERSHIP,
   FACTORY_SHIPMENT_STATUS,
 } from '@/lib/types/factory-shipment';
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
+import { isPieceEntryUnit } from '@/lib/utils/inventory-unit-conversion';
 
 /**
  * 辅助函数：处理可空的数字类型
@@ -89,7 +95,12 @@ export const factoryShipmentOrderItemSchema = z.object({
     .or(z.literal('')),
   quantity: z.number().positive('数量必须大于0'),
   unitPrice: z.number().min(0, '单价不能为负数'),
-  unitCost: z.number().min(0, '进货价不能为负数').optional(),
+  unitCost: z
+    .number()
+    .min(0, '进货价不能为负数')
+    .max(COST_PRICE_MAX, `进货价不能超过${COST_PRICE_MAX_LABEL}`)
+    .refine(hasAtMostCostPriceDecimals, '进货价最多保留3位小数')
+    .optional(),
   ownership: z
     .nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP)
     .default(FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER),
@@ -146,6 +157,17 @@ export const factoryShipmentOrderItemSchema = z.object({
     .max(500, '备注不能超过500个字符')
     .optional()
     .or(z.literal('')),
+}).superRefine((item, ctx) => {
+  if (
+    isPieceEntryUnit(item.unit) &&
+    (!Number.isInteger(item.piecesPerUnit) || (item.piecesPerUnit ?? 0) <= 0)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['piecesPerUnit'],
+      message: '按件录入时必须填写每件片数',
+    });
+  }
 });
 
 /**

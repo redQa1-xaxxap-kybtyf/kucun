@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { TableCell } from '@/components/ui/table';
 import type { Product } from '@/lib/types/product';
+import { COST_PRICE_STEP, formatCostPrice } from '@/lib/utils/cost-price';
 
 import type { OrderFormInstance } from '../types';
 
@@ -131,9 +132,11 @@ function QuantityInputCell({
 }) {
   const displayQuantityPath = `items.${index}.displayQuantity` as const;
   const quantityPath = `items.${index}.quantity` as const;
+  const batchNumberPath = `items.${index}.batchNumber` as const;
 
   // 使用系统数量（片数）进行库存比较，避免单位换算误差
   const requestedQuantity = Number(form.watch(quantityPath) ?? 0) || 0;
+  const selectedBatchNumber = form.watch(batchNumberPath) ?? undefined;
   const hasInventoryInfo =
     resolvedProduct &&
     resolvedProduct.inventory?.availableQuantity !== undefined;
@@ -199,6 +202,7 @@ function QuantityInputCell({
           <InventoryStatus
             product={resolvedProduct as Product}
             requestedQuantity={requestedQuantity}
+            batchNumber={selectedBatchNumber}
             className="text-xs"
           />
         </div>
@@ -300,7 +304,11 @@ export function UnitPriceCell({
 
               return (
                 <p className="mt-1 text-[11px] text-amber-600">
-                  销售单价低于成本（成本单价约为 {numericCost.toFixed(2)}
+                  销售单价低于成本（成本单价约为{' '}
+                  {formatCostPrice(numericCost, {
+                    withSymbol: false,
+                    fallback: '0.000',
+                  })}
                   ），请确认是否合理
                 </p>
               );
@@ -330,7 +338,7 @@ export function UnitCostCell({
             <FormControl>
               <Input
                 type="number"
-                step="0.01"
+                step={COST_PRICE_STEP}
                 min="0"
                 {...field}
                 value={

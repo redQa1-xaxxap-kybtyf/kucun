@@ -4,6 +4,12 @@ import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
+import { isPieceEntryUnit } from '@/lib/utils/inventory-unit-conversion';
 
 const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(
   FACTORY_SHIPMENT_STATUS
@@ -33,7 +39,12 @@ export const factoryShipmentItemSchema = z
     piecesPerUnit: z.number().int().min(1, '装箱数必须大于0').optional(),
     weight: z.number().nonnegative('重量不能为负数').optional(),
     quantity: z.number().positive('数量必须大于 0'),
-    unitCost: z.number().nonnegative('进货价不能为负').optional(),
+    unitCost: z
+      .number()
+      .nonnegative('进货价不能为负')
+      .max(COST_PRICE_MAX, `进货价不能超过${COST_PRICE_MAX_LABEL}`)
+      .refine(hasAtMostCostPriceDecimals, '进货价最多保留3位小数')
+      .optional(),
     unitPrice: z.number().nonnegative('单价不能为负'),
     totalPrice: z.number().nonnegative('总价不能为负'),
     remarks: z.string().optional(),
@@ -55,6 +66,17 @@ export const factoryShipmentItemSchema = z
         code: z.ZodIssueCode.custom,
         message: '手动产品必须填写名称',
         path: ['manualProductName'],
+      });
+    }
+
+    if (
+      isPieceEntryUnit(item.unit) &&
+      (!Number.isInteger(item.piecesPerUnit) || (item.piecesPerUnit ?? 0) <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '按件录入时必须填写每件片数',
+        path: ['piecesPerUnit'],
       });
     }
   });

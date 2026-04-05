@@ -49,7 +49,7 @@ const helpCategories = [
     description: '产品入库、出库和库存调整操作指南',
     icon: FileText,
     items: [
-      { title: '产品入库', description: '如何添加新产品到库存系统' },
+      { title: '产品入库', description: '如何新建入库记录并同步库存' },
       { title: '库存查询', description: '查看和搜索库存信息' },
       { title: '库存调整', description: '手动调整库存数量和状态' },
       { title: '出库操作', description: '处理产品出库和库存扣减' },
@@ -58,10 +58,10 @@ const helpCategories = [
   {
     id: 'sales-orders',
     title: '销售订单',
-    description: '订单创建、管理和处理流程',
+    description: '订单新建、管理和处理流程',
     icon: MessageCircle,
     items: [
-      { title: '创建销售订单', description: '如何新建和配置销售订单' },
+      { title: '新建销售订单', description: '如何新建和配置销售订单' },
       { title: '订单状态管理', description: '跟踪和更新订单状态' },
       { title: '订单号生成', description: '理解订单编号规则' },
       { title: '成本计算', description: '订单成本和利润计算方式' },
@@ -73,7 +73,7 @@ const helpCategories = [
     description: '客户信息维护和关系管理',
     icon: Phone,
     items: [
-      { title: '客户档案', description: '创建和维护客户基本信息' },
+      { title: '客户档案', description: '新建和维护客户基本信息' },
       { title: '客户分类', description: '客户分组和标签管理' },
       { title: '交易记录', description: '查看客户历史交易记录' },
       { title: '信用管理', description: '客户信用额度和风险控制' },
@@ -155,14 +155,14 @@ export default function HelpPage() {
             <div className="space-y-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-3xl font-black tracking-tighter text-slate-900">
-                  帮助与服务中心
+                  帮助中心
                 </h1>
                 <Badge className="bg-slate-900 px-2.5 py-1 text-[10px] font-black tracking-widest text-white uppercase hover:bg-slate-800">
-                  Support Hub
+                  使用指南
                 </Badge>
               </div>
               <p className="text-sm font-bold text-slate-400">
-                为您提供系统操作指南、常见问题解答及全方位的技术支持服务
+                为您提供系统操作指南、常见问题解答和支持渠道
               </p>
             </div>
           </div>
@@ -300,7 +300,7 @@ export default function HelpPage() {
             {/* 常见问题模块 */}
             <section className="space-y-6">
               <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
-                智库 FAQ
+                常见问题
               </h3>
               <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
                 <div className="space-y-6">
@@ -322,7 +322,7 @@ export default function HelpPage() {
             {/* 专业支持渠道 */}
             <section className="space-y-6">
               <h3 className="px-1 text-[11px] font-black tracking-widest text-slate-400 uppercase">
-                专业支持反馈
+                联系支持
               </h3>
               <div className="overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm">
                 <div className="divide-y divide-slate-50">
@@ -377,7 +377,7 @@ export default function HelpPage() {
                 </div>
                 <Separator className="my-5 bg-slate-50" />
                 <p className="text-right text-[10px] font-bold tracking-widest text-slate-300 uppercase">
-                  Last Updated:{' '}
+                  最近更新：{' '}
                   {new Date().toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',

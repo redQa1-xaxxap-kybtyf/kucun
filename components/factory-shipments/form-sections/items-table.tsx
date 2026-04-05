@@ -38,6 +38,8 @@ import type { ItemPricingResult } from '@/lib/services/factory-shipment-pricing-
 import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
 import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
+import { COST_PRICE_STEP, roundCostPrice } from '@/lib/utils/cost-price';
+import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 import type { FactoryShipmentOrderFormData } from '@/lib/validations/factory-shipment';
 
 const PricingResultDialog = dynamic(
@@ -287,7 +289,10 @@ export const ItemsTable = React.memo<ItemsTableProps>(
 
           // 自动填充单位
           if (product.unit) {
-            form.setValue(`items.${index}.unit`, product.unit as '片' | '件');
+            form.setValue(
+              `items.${index}.unit`,
+              toPieceOrSheetLabel(product.unit)
+            );
           }
 
           // 自动填充每件片数
@@ -699,10 +704,8 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                       if (currentCostPrice > 0) {
                                         form.setValue(
                                           `items.${index}.unitCost`,
-                                          Number(
-                                            (
-                                              currentCostPrice * piecesPerUnit
-                                            ).toFixed(2)
+                                          roundCostPrice(
+                                            currentCostPrice * piecesPerUnit
                                           )
                                         );
                                       }
@@ -723,10 +726,8 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                                       if (currentCostPrice > 0) {
                                         form.setValue(
                                           `items.${index}.unitCost`,
-                                          Number(
-                                            (
-                                              currentCostPrice / piecesPerUnit
-                                            ).toFixed(4)
+                                          roundCostPrice(
+                                            currentCostPrice / piecesPerUnit
                                           )
                                         );
                                       }
@@ -761,7 +762,7 @@ export const ItemsTable = React.memo<ItemsTableProps>(
                             <FormControl>
                               <Input
                                 type="number"
-                                step="0.01"
+                                step={COST_PRICE_STEP}
                                 min="0"
                                 {...field}
                                 value={

@@ -34,6 +34,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import type { InboundFormData } from '@/lib/types/inbound';
+import {
+  COST_PRICE_STEP,
+  formatCostPrice,
+  roundCostPrice,
+} from '@/lib/utils/cost-price';
 
 interface InboundCostFieldWithCalculatorProps {
   form: UseFormReturn<InboundFormData, any, any>;
@@ -54,7 +59,7 @@ export function InboundCostFieldWithCalculator({
 
     if (!isNaN(cost) && !isNaN(pieces) && pieces > 0) {
       const result = cost / pieces;
-      const rounded = Math.round(result * 100) / 100; // 保留2位小数
+      const rounded = roundCostPrice(result);
       setCalculatedCost(rounded);
     } else {
       setCalculatedCost(null);
@@ -110,7 +115,7 @@ export function InboundCostFieldWithCalculator({
                       <Input
                         type="number"
                         min="0.01"
-                        step="0.01"
+                        step={COST_PRICE_STEP}
                         placeholder="例如：100"
                         value={unitCost}
                         onChange={e => {
@@ -156,12 +161,14 @@ export function InboundCostFieldWithCalculator({
                             每片成本：
                           </span>
                           <span className="text-lg font-bold text-[hsl(var(--color-primary))]">
-                            ¥{calculatedCost.toFixed(2)}
+                            {formatCostPrice(calculatedCost)}
                           </span>
                         </div>
                         <div className="text-xs text-gray-500">
                           {unitCost} ÷ {piecesPerUnit} ={' '}
-                          {calculatedCost.toFixed(2)}
+                          {formatCostPrice(calculatedCost, {
+                            withSymbol: false,
+                          })}
                         </div>
                         <Button
                           type="button"
@@ -182,7 +189,7 @@ export function InboundCostFieldWithCalculator({
             <Input
               type="number"
               min="0.01"
-              step="0.01"
+              step={COST_PRICE_STEP}
               placeholder="请输入每片成本"
               className="h-9"
               {...field}

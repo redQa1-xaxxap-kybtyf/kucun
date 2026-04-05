@@ -303,7 +303,7 @@ export function CategorySelector({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn('w-36 justify-between', className)}
+          className={cn('w-full justify-between', className)}
         >
           <span
             className={cn(
@@ -316,7 +316,10 @@ export function CategorySelector({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[420px] p-0" align="start">
+      <PopoverContent
+        className="w-[min(420px,calc(100vw-2rem))] p-0"
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={searchPlaceholder}

@@ -78,7 +78,7 @@ export function StatementTransactions({
       <CardHeader className="border-b border-slate-200 bg-slate-50 px-6 py-4">
         <CardTitle className="flex items-center gap-2 text-sm font-black tracking-widest text-slate-500 uppercase italic">
           <FileText className="h-4 w-4" />
-          全业务往来明细账
+          全部业务往来明细
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0">

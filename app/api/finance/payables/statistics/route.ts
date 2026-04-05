@@ -177,6 +177,7 @@ const buildStatistics = ({
   const statusCountMap = createStatusCountMap(statusCounts);
   return {
     totalPayables: toNumber(totalPayablesResult._sum.payableAmount),
+    // 已核销金额：直接取应付款聚合 paidAmount，避免与现金实付口径混淆
     totalPaidAmount: toNumber(totalPaidAmountResult._sum.paidAmount),
     totalRemainingAmount: toNumber(
       totalRemainingAmountResult._sum.remainingAmount
@@ -185,6 +186,7 @@ const buildStatistics = ({
     partialCount: statusCountMap.partial || 0,
     paidCount: statusCountMap.paid || 0,
     thisMonthPayables: toNumber(thisMonthPayablesResult._sum.payableAmount),
+    // 本月付款金额：保留 paymentAmount 作为应付核销/结算口径
     thisMonthPayments: toNumber(thisMonthPaymentsResult._sum.paymentAmount),
     // 采购相关统计在下方构建时补充
   };

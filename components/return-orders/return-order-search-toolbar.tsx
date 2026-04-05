@@ -5,23 +5,23 @@
  * 使用统一的 SearchFilterCard 组件
  */
 
-import { Ban, Clock, Eye, Package } from 'lucide-react';
+import { Ban, Clock3, Eye, Wallet } from 'lucide-react';
 import * as React from 'react';
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
-  RETURN_ORDER_STATUS_LABELS,
+  RETURN_ORDER_UI_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
-  type ReturnOrderStatus,
   type ReturnOrderType,
   type ReturnProcessType,
+  type ReturnOrderUiStatus,
 } from '@/lib/types/return-order';
 
 interface ReturnOrderSearchToolbarProps {
   searchValue: string;
-  statusFilter: ReturnOrderStatus | 'all';
+  statusFilter: ReturnOrderUiStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
   includeTest?: boolean;
@@ -29,7 +29,7 @@ interface ReturnOrderSearchToolbarProps {
   dateRange: DateRangeValue;
   isSearching?: boolean;
   onSearch: (value: string) => void;
-  onStatusChange: (value: ReturnOrderStatus | 'all') => void;
+  onStatusChange: (value: ReturnOrderUiStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
   onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
   onIncludeTestToggle: () => void;
@@ -59,6 +59,7 @@ export const ReturnOrderSearchToolbar =
       onClearFilters,
     }) => {
       const logic = useReturnOrderToolbarLogic({
+        searchValue,
         statusFilter,
         typeFilter,
         processTypeFilter,
@@ -94,6 +95,7 @@ export const ReturnOrderSearchToolbar =
 ReturnOrderSearchToolbar.displayName = 'ReturnOrderSearchToolbar';
 
 function useReturnOrderToolbarLogic({
+  searchValue,
   statusFilter,
   typeFilter,
   processTypeFilter,
@@ -107,6 +109,7 @@ function useReturnOrderToolbarLogic({
   onClearFilters,
 }: Pick<
   ReturnOrderSearchToolbarProps,
+  | 'searchValue'
   | 'statusFilter'
   | 'typeFilter'
   | 'processTypeFilter'
@@ -121,9 +124,9 @@ function useReturnOrderToolbarLogic({
 >) {
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
-      if (key === 'status') {
+      if (key === 'uiStatus') {
         onStatusChange(
-          value && value !== 'all' ? (value as ReturnOrderStatus) : 'all'
+          value && value !== 'all' ? (value as ReturnOrderUiStatus) : 'all'
         );
       } else if (key === 'type') {
         onTypeChange(
@@ -139,7 +142,7 @@ function useReturnOrderToolbarLogic({
   );
 
   const toggleStatus = React.useCallback(
-    (status: ReturnOrderStatus) => () => {
+    (status: ReturnOrderUiStatus) => () => {
       onStatusChange(statusFilter === status ? 'all' : status);
     },
     [onStatusChange, statusFilter]
@@ -157,6 +160,7 @@ function useReturnOrderToolbarLogic({
   }, [onClearFilters]);
 
   const hasActiveFilters =
+    !!searchValue.trim() ||
     statusFilter !== 'all' ||
     typeFilter !== 'all' ||
     processTypeFilter !== 'all' ||
@@ -176,7 +180,7 @@ function useReturnOrderToolbarLogic({
 
 type ReturnOrderToolbarViewProps = {
   searchValue: string;
-  statusFilter: ReturnOrderStatus | 'all';
+  statusFilter: ReturnOrderUiStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
   includeTest?: boolean;
@@ -187,7 +191,7 @@ type ReturnOrderToolbarViewProps = {
   onIncludeTestToggle: () => void;
   onIncludeVoidedToggle: () => void;
   handleFilterChange: (key: string, value: string | undefined) => void;
-  toggleStatus: (status: ReturnOrderStatus) => () => void;
+  toggleStatus: (status: ReturnOrderUiStatus) => () => void;
   handleDateRangeChange: (range: DateRangeValue) => void;
   handleClearFilters: () => void;
   hasActiveFilters: boolean;
@@ -220,18 +224,18 @@ function ReturnOrderToolbarView({
       // Toggle 按钮
       toggleButtons={[
         {
-          key: 'submitted',
-          label: '待审核',
-          icon: <Clock className="h-3.5 w-3.5" />,
-          active: statusFilter === 'submitted',
-          onClick: toggleStatus('submitted'),
+          key: 'pending',
+          label: '待处理',
+          icon: <Clock3 className="h-3.5 w-3.5" />,
+          active: statusFilter === 'pending',
+          onClick: toggleStatus('pending'),
         },
         {
-          key: 'processing',
-          label: '处理中',
-          icon: <Package className="h-3.5 w-3.5" />,
-          active: statusFilter === 'processing',
-          onClick: toggleStatus('processing'),
+          key: 'awaiting_refund',
+          label: '待退款',
+          icon: <Wallet className="h-3.5 w-3.5" />,
+          active: statusFilter === 'awaiting_refund',
+          onClick: toggleStatus('awaiting_refund'),
         },
         {
           key: 'includeTest',
@@ -251,9 +255,9 @@ function ReturnOrderToolbarView({
       // 筛选器配置
       filters={[
         {
-          key: 'status',
+          key: 'uiStatus',
           label: '状态',
-          options: Object.entries(RETURN_ORDER_STATUS_LABELS).map(
+          options: Object.entries(RETURN_ORDER_UI_STATUS_LABELS).map(
             ([value, label]) => ({
               label,
               value,
@@ -285,7 +289,7 @@ function ReturnOrderToolbarView({
         },
       ]}
       filterValues={{
-        status: statusFilter === 'all' ? 'all' : statusFilter,
+        uiStatus: statusFilter === 'all' ? 'all' : statusFilter,
         type: typeFilter === 'all' ? 'all' : typeFilter,
         processType: processTypeFilter === 'all' ? 'all' : processTypeFilter,
       }}

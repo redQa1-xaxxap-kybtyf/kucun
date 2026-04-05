@@ -1,6 +1,24 @@
 import { updateReturnOrderStatus } from '@/lib/api/handlers/return-order-status';
 import { createSalesOrder } from '@/lib/api/handlers/sales-orders/create';
 
+jest.mock('@/app/actions/return-orders.utils', () => {
+  const actual = jest.requireActual('@/app/actions/return-orders.utils');
+  return {
+    ...actual,
+    applyCompletionEffects: jest.fn().mockImplementation(
+      async (
+        _tx: unknown,
+        returnOrder: {
+          items: Array<{ productId: string }>;
+        }
+      ) =>
+        returnOrder.items.map(item => ({
+          productId: item.productId,
+        }))
+    ),
+  };
+});
+
 jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -175,8 +193,11 @@ type ReturnOrderRow = {
 };
 
 type ReturnOrderItemRow = {
+  damagedQuantity?: number | null;
   id: string;
+  productId?: string;
   returnOrderId: string;
+  returnQuantity?: number;
   salesOrderItemId: string;
   subtotal: number;
 };
@@ -449,6 +470,34 @@ function createInMemoryPrisma(seed?: {
     },
 
     returnOrder: {
+      findUnique: async (args: any) => {
+        const id = args?.where?.id as string | undefined;
+        if (!id) return null;
+        const row = store.returnOrdersById.get(id);
+        if (!row) return null;
+
+        const items = Array.from(store.returnOrderItemsById.values())
+          .filter(item => item.returnOrderId === id)
+          .map(item => ({
+            damagedQuantity: item.damagedQuantity ?? 0,
+            productId: item.productId ?? `prod-${item.salesOrderItemId}`,
+            returnQuantity: item.returnQuantity ?? 1,
+            salesOrderItemId: item.salesOrderItemId,
+            subtotal: item.subtotal,
+          }));
+
+        if (!args?.select?.items) {
+          return pickSelected(row, args?.select);
+        }
+
+        const result = pickSelected(row, {
+          ...args.select,
+          items: false,
+        }) as Record<string, unknown>;
+        result.items = items;
+        return result;
+      },
+
       update: async (args: any) => {
         const id = String(args?.where?.id ?? '');
         const row = store.returnOrdersById.get(id);
@@ -478,6 +527,16 @@ function createInMemoryPrisma(seed?: {
 
         store.returnOrdersById.set(id, clone(updated));
         return pickSelected(updated, args?.select);
+      },
+    },
+
+    salesOrderItem: {
+      findMany: async (args: any) => {
+        const ids = (args?.where?.id?.in ?? []) as string[];
+        return ids.map(id => ({
+          batchNumber: null,
+          id,
+        }));
       },
     },
 
@@ -738,7 +797,7 @@ describe('销售订单 × 退货订单（集成回归）', () => {
     expect(updatedSalesOrder?.profitAmount).toBe(30);
   });
 
-  test('退款金额缺失：approved 阶段应自动汇总小计生成退款记录；completed 阶段才入账 sales_return 并回退利润', async () => {
+  test('退款金额缺失：approved 阶段不自动生成退款记录；completed 阶段统一生成并入账', async () => {
     const userId = '33333333-3333-4333-8333-333333333333';
     const customerId = '22222222-2222-4222-8222-222222222222';
     const productId = '11111111-1111-4111-8111-111111111111';
@@ -813,12 +872,10 @@ describe('销售订单 × 退货订单（集成回归）', () => {
       userId
     );
 
-    expect(approved.refundCreated).toBe(true);
-    expect(generateRefundNumber).toHaveBeenCalledTimes(1);
-    expect(store.refundRecordsById.size).toBe(1);
-    expect(Number(store.returnOrdersById.get('ro-2')?.refundAmount ?? 0)).toBe(
-      10
-    );
+    expect(approved.refundCreated).toBe(false);
+    expect(generateRefundNumber).toHaveBeenCalledTimes(0);
+    expect(store.refundRecordsById.size).toBe(0);
+    expect(Number(store.returnOrdersById.get('ro-2')?.refundAmount ?? 0)).toBe(0);
     expect(recordPartnerTransaction).toHaveBeenCalledTimes(1);
     expect(store.salesOrdersById.get(order.id)?.profitAmount).toBe(40);
 
@@ -831,7 +888,8 @@ describe('销售订单 × 退货订单（集成回归）', () => {
       userId
     );
 
-    expect(completed.refundCreated).toBe(false);
+    expect(completed.refundCreated).toBe(true);
+    expect(generateRefundNumber).toHaveBeenCalledTimes(1);
     expect(store.refundRecordsById.size).toBe(1);
     expect(recordPartnerTransaction).toHaveBeenCalledTimes(2);
 

@@ -22,8 +22,8 @@ type PayableSortField =
 import { PayablesPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '应付款管理 - 财务管理',
-  description: '管理供应商应付款和付款记录，跟踪付款状态',
+  title: '供应商待付款 - 财务管理',
+  description: '查看供应商待付款余额与结算进度',
 };
 
 // ✅ Next.js 15 Route Segment Config

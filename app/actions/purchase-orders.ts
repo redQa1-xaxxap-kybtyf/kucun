@@ -405,6 +405,7 @@ const PURCHASE_ORDER_DETAIL_INCLUDE = {
           name: true,
           specification: true,
           unit: true,
+          piecesPerUnit: true,
           weight: true,
         },
       },
@@ -598,6 +599,11 @@ function mapPurchaseOrderItem(
           name: item.product.name,
           specification: item.product.specification ?? undefined,
           unit: item.product.unit,
+          piecesPerUnit:
+            item.product.piecesPerUnit === null ||
+            item.product.piecesPerUnit === undefined
+              ? undefined
+              : toNumber(item.product.piecesPerUnit),
           weight:
             item.product.weight === null || item.product.weight === undefined
               ? undefined

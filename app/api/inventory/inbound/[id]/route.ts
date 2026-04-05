@@ -74,6 +74,7 @@ const getInboundRecordHandler = withAuth(
           reason: record.reason,
           remarks: record.remarks || undefined,
           userId: record.userId,
+          openingImportBatchId: record.openingImportBatchId || undefined,
           createdAt: record.createdAt.toISOString(),
           updatedAt: record.updatedAt.toISOString(),
           product: record.product,
@@ -132,6 +133,7 @@ const putInboundRecordHandler = withAuth(
           productId: true,
           variantId: true,
           batchNumber: true,
+          openingImportBatchId: true,
         },
       });
 
@@ -308,6 +310,8 @@ const putInboundRecordHandler = withAuth(
           reason: updatedRecord.reason,
           remarks: updatedRecord.remarks || undefined,
           userId: updatedRecord.userId,
+          openingImportBatchId:
+            updatedRecord.openingImportBatchId || undefined,
           createdAt: updatedRecord.createdAt.toISOString(),
           updatedAt: updatedRecord.updatedAt.toISOString(),
           product: updatedRecord.product,

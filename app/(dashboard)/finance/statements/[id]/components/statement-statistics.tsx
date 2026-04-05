@@ -72,7 +72,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
           <div className="bg-white p-6">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">
-                平均付款周期
+                平均结算周期
               </span>
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
@@ -96,7 +96,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
             <div className="flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 animate-pulse text-amber-500" />
               <span className="text-[11px] font-black tracking-widest text-slate-900 uppercase">
-                账务回款健康度
+                账务结算健康度
               </span>
             </div>
             <span className="font-mono text-sm font-black text-slate-900">
@@ -127,7 +127,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
             </div>
             <div className="rounded-lg border border-slate-200 bg-white p-3 transition-all hover:border-purple-300">
               <div className="mb-1 text-[9px] font-bold text-slate-400 uppercase">
-                上月实付基准
+                上月结算基准
               </div>
               <div className="text-xs font-black text-slate-700">
                 {formatCurrency(summary.lastMonthAmount)}

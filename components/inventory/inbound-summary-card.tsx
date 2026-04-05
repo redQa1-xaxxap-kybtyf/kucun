@@ -13,11 +13,16 @@ import dynamic from 'next/dynamic';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { OpeningBalanceRecordActions } from '@/components/inventory/opening-balance-record-actions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { can } from '@/lib/auth/permissions';
-import type { InboundRecordDetail } from '@/lib/types/inbound';
+import {
+  INBOUND_DAMAGE_HANDLING_LABELS,
+  type InboundRecordDetail,
+} from '@/lib/types/inbound';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatCurrency, formatNumber } from '@/lib/utils/format';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
@@ -82,6 +87,10 @@ export function InboundSummaryCard({
     () => can(session?.user ?? null, 'finance:view'),
     [session?.user]
   );
+  const canManageOpeningBalance = React.useMemo(
+    () => can(session?.user ?? null, 'inventory:adjust'),
+    [session?.user]
+  );
 
   // 构建统计项数组，根据权限动态添加成本相关项
   const stats = [
@@ -130,25 +139,66 @@ export function InboundSummaryCard({
       value: record.batchNumber || '—',
       icon: <ClipboardList className="h-5 w-5" />,
     },
+    ...(record.damagedQuantity && record.damagedQuantity > 0
+      ? [
+          {
+            label: '到货破损',
+            value: (() => {
+              const ppu =
+                record.batchSpecification?.piecesPerUnit ??
+                record.product?.piecesPerUnit ??
+                0;
+              return ppu > 0
+                ? formatPieceSummary(record.damagedQuantity, ppu, {
+                    fallbackUnit: '片',
+                  })
+                : `${formatNumber(record.damagedQuantity)}片`;
+            })(),
+            icon: <Boxes className="h-5 w-5" />,
+          },
+          {
+            label: '破损处理',
+            value:
+              record.damageHandling &&
+              INBOUND_DAMAGE_HANDLING_LABELS[record.damageHandling]
+                ? INBOUND_DAMAGE_HANDLING_LABELS[record.damageHandling]
+                : '—',
+            icon: <BadgeCheck className="h-5 w-5" />,
+          },
+        ]
+      : []),
     // 财务统计项：仅在有权限时显示
     ...(hasFinancePermission
       ? [
           {
             label: '单位成本',
             value:
-              record.unitCost !== undefined
-                ? formatCurrency(record.unitCost)
+              record.unitCost !== undefined && record.unitCost !== null
+                ? formatCostPrice(record.unitCost)
                 : '—',
             icon: <CalendarDays className="h-5 w-5" />,
           },
           {
             label: '总成本',
             value:
-              record.totalCost !== undefined
+              record.totalCost !== undefined && record.totalCost !== null
                 ? formatCurrency(record.totalCost)
                 : '—',
             icon: <CalendarDays className="h-5 w-5" />,
           },
+          ...(record.damagedQuantity && record.damagedQuantity > 0
+            ? [
+                {
+                  label: '破损参考金额',
+                  value:
+                    record.damageTotalCost !== undefined &&
+                    record.damageTotalCost !== null
+                      ? formatCurrency(record.damageTotalCost)
+                      : '—',
+                  icon: <CalendarDays className="h-5 w-5" />,
+                },
+              ]
+            : []),
         ]
       : []),
   ];
@@ -182,13 +232,16 @@ export function InboundSummaryCard({
               )}
             </p>
           </div>
-          <div className="mx-auto flex items-center gap-2 md:mx-0">
+          <div className="mx-auto flex flex-wrap items-center justify-center gap-2 md:mx-0 md:justify-end">
             <Badge
               variant={reasonVariant}
               className="w-fit px-3 py-1 text-[11px] font-black tracking-widest uppercase"
             >
               {reasonLabel}
             </Badge>
+            {record.reason === 'opening_balance' && canManageOpeningBalance ? (
+              <OpeningBalanceRecordActions record={record} />
+            ) : null}
             <Button
               variant="outline"
               size="sm"

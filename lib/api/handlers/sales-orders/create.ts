@@ -181,6 +181,27 @@ function isSalesOrderOrderNumberUniqueConstraintError(error: unknown) {
   );
 }
 
+function isRetryableSalesOrderCreateConflict(error: unknown) {
+  if (error instanceof PrismaClient.PrismaClientKnownRequestError) {
+    return error.code === 'P2034';
+  }
+
+  if (!error || typeof error !== 'object') {
+    return false;
+  }
+
+  const maybeError = error as { code?: unknown; message?: unknown };
+  const code = typeof maybeError.code === 'string' ? maybeError.code : '';
+  const message =
+    typeof maybeError.message === 'string'
+      ? maybeError.message
+      : error instanceof Error
+        ? error.message
+        : '';
+
+  return code === 'P2034' || /(write conflict|deadlock)/i.test(message);
+}
+
 export async function createSalesOrder(data: CreateInput, userId: string) {
   const validatedData = salesOrderCreateSchema.parse(data);
   const transferMode = normalizeTransferMode(validatedData);
@@ -474,22 +495,33 @@ export async function createSalesOrder(data: CreateInput, userId: string) {
       }, getLongTransactionOptions());
     } catch (error) {
       attempt += 1;
+      const isOrderNumberConflict =
+        isSalesOrderOrderNumberUniqueConstraintError(error);
+      const isRetryableTransactionConflict =
+        isRetryableSalesOrderCreateConflict(error);
 
       if (
         attempt >= maxCreateRetries ||
-        !isSalesOrderOrderNumberUniqueConstraintError(error)
+        (!isOrderNumberConflict && !isRetryableTransactionConflict)
       ) {
         throw error;
       }
 
-      const delayMs = Math.min(300, 50 * attempt);
+      const delayMs = isRetryableTransactionConflict
+        ? Math.min(400, 50 * 2 ** (attempt - 1))
+        : Math.min(300, 50 * attempt);
       logger.warn(
         'sales-orders',
-        '销售订单号冲突，准备重试创建订单',
+        isRetryableTransactionConflict
+          ? '销售订单创建遇到事务写冲突，准备重试'
+          : '销售订单号冲突，准备重试创建订单',
         undefined,
         {
           attempt,
           delayMs,
+          retryReason: isRetryableTransactionConflict
+            ? 'transaction_conflict'
+            : 'order_number_conflict',
           error:
             error instanceof Error
               ? {

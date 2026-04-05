@@ -4,6 +4,41 @@ import {
 } from '@/lib/services/purchase-order-cost-service';
 
 describe('allocatePurchaseOrderExpensesByQuantity', () => {
+  it('converts ordered pieces and piece cost before allocating expenses', () => {
+    const allocations = allocatePurchaseOrderExpensesByQuantity(
+      [
+        {
+          id: 'a',
+          quantity: 10,
+          unitPrice: 80,
+          unit: 'piece',
+          piecesPerUnit: 8,
+          displayName: '800x800砖',
+        },
+        {
+          id: 'b',
+          quantity: 20,
+          unitPrice: 5,
+          unit: 'sheet',
+          displayName: '散片',
+        },
+      ],
+      120
+    );
+
+    expect(allocations).toHaveLength(2);
+    expect(allocations[0]).toMatchObject({
+      id: 'a',
+      allocatedExpense: 96,
+      unitCostWithExpense: 11.2,
+    });
+    expect(allocations[1]).toMatchObject({
+      id: 'b',
+      allocatedExpense: 24,
+      unitCostWithExpense: 6.2,
+    });
+  });
+
   it('distributes expenses proportionally by quantity and keeps totals balanced', () => {
     const allocations = allocatePurchaseOrderExpensesByQuantity(
       [
@@ -53,7 +88,7 @@ describe('allocatePurchaseOrderExpensesByQuantity', () => {
     );
     allocations.forEach(item => {
       const unitPrice = priceLookup.get(item.id) ?? 0;
-      expect(item.unitCostWithExpense).toBeCloseTo(unitPrice + 0.01, 2);
+      expect(item.unitCostWithExpense).toBeCloseTo(unitPrice + 0.007, 3);
     });
   });
 
@@ -72,7 +107,7 @@ describe('resolveInboundUnitCost', () => {
         unitPrice: 9,
         fallback: 8,
       })
-    ).toBe(12.35);
+    ).toBe(12.345);
   });
 
   it('falls back to unit price when allocation is missing', () => {
@@ -82,7 +117,7 @@ describe('resolveInboundUnitCost', () => {
         unitPrice: 7.111,
         fallback: 6,
       })
-    ).toBe(7.11);
+    ).toBe(7.111);
   });
 
   it('uses fallback value as the last resort', () => {
@@ -92,6 +127,6 @@ describe('resolveInboundUnitCost', () => {
         unitPrice: undefined,
         fallback: 5.555,
       })
-    ).toBe(5.56);
+    ).toBe(5.555);
   });
 });

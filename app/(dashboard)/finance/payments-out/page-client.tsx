@@ -50,6 +50,8 @@ interface ClientPaymentRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -109,7 +111,7 @@ export function PaymentsOutPageClient({
     []
   );
   const PAYMENT_METHOD_VALUES = React.useMemo<PaymentOutMethod[]>(
-    () => ['cash', 'bank_transfer', 'check', 'other'],
+    () => ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
     []
   );
   const paymentOutSortValues = React.useMemo(
@@ -185,6 +187,8 @@ export function PaymentsOutPageClient({
         id: payment.id,
         paymentNumber: payment.paymentNumber,
         paymentAmount: payment.paymentAmount,
+        actualPaymentAmount: payment.actualPaymentAmount,
+        roundingAmount: payment.roundingAmount,
         paymentMethod: payment.paymentMethod,
         paymentDate: normalizeDate(payment.paymentDate),
         status: payment.status,
@@ -527,17 +531,17 @@ export function PaymentsOutPageClient({
                     付款记录
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    记录向供应商付款明细，确保应付账款及时结清
+                    查看待确认和已确认的付款记录，方便核对供应商结算
                   </p>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 sm:items-center sm:justify-end">
+              <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end sm:[&>*]:w-auto">
                 <Button
                   variant="outline"
                   size="lg"
                   onClick={handleExport}
                   disabled={isExporting}
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 w-full shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Download className="mr-2 h-4 w-4" />
                   {isExporting ? '导出中...' : '导出'}
@@ -545,7 +549,7 @@ export function PaymentsOutPageClient({
                 <Button
                   size="lg"
                   asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                  className="h-11 w-full shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Link href="/finance/payments-out/create">
                     <Plus className="mr-2 h-4 w-4" />

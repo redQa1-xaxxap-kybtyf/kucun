@@ -80,7 +80,9 @@ export type ElementType = z.infer<typeof ElementTypeSchema>;
 /** 基础元素属性 - 所有元素共享 */
 export const BaseElementSchema = z.object({
   /** 元素唯一 ID */
-  id: z.string().uuid(),
+  // 兼容历史系统模板里的稳定 ID（如 00000000-0000-0000-0000-000000010100）
+  // 以及新设计器生成的标准 UUID，元素层只要求“非空且唯一”即可。
+  id: z.string().min(1).max(100),
 
   /** 元素类型 */
   type: ElementTypeSchema,

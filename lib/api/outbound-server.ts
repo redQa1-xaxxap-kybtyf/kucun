@@ -106,17 +106,23 @@ function formatOutboundRecord(record: OutboundRecordWithRelations) {
 async function fetchBatchSpecifications(
   records: OutboundRecordWithRelations[]
 ): Promise<Map<string, { piecesPerUnit?: number; weight?: number }>> {
+  const buildBatchKey = (
+    productId: string,
+    batchNumber: string,
+    variantId?: string | null
+  ) => `${productId}-${variantId ?? ''}-${batchNumber}`;
   const batchSpecMap = new Map<
     string,
     { piecesPerUnit?: number; weight?: number }
   >();
 
   const batchQueries = records.reduce<
-    Array<{ productId: string; batchNumber: string }>
+    Array<{ productId: string; variantId: string | null; batchNumber: string }>
   >((acc, record) => {
     if (record.batchNumber) {
       acc.push({
         productId: record.productId,
+        variantId: record.variantId ?? null,
         batchNumber: record.batchNumber,
       });
     }
@@ -124,24 +130,57 @@ async function fetchBatchSpecifications(
   }, []);
 
   if (batchQueries.length > 0) {
+    const seenConditions = new Set<string>();
+    const conditions = batchQueries.flatMap(query => {
+      const entries = [
+        {
+          productId: query.productId,
+          variantId: query.variantId,
+          batchNumber: query.batchNumber,
+        },
+      ];
+
+      if (query.variantId) {
+        entries.push({
+          productId: query.productId,
+          variantId: null,
+          batchNumber: query.batchNumber,
+        });
+      }
+
+      return entries.filter(condition => {
+        const key = buildBatchKey(
+          condition.productId,
+          condition.batchNumber,
+          condition.variantId
+        );
+        if (seenConditions.has(key)) {
+          return false;
+        }
+        seenConditions.add(key);
+        return true;
+      });
+    });
+
     const batchSpecs = await prisma.batchSpecification.findMany({
       where: {
-        OR: batchQueries.map(query => ({
-          productId: query.productId,
-          batchNumber: query.batchNumber,
-        })),
+        OR: conditions,
       },
       select: {
         productId: true,
+        variantId: true,
         batchNumber: true,
         piecesPerUnit: true,
         weight: true,
       },
-      take: batchQueries.length,
     });
 
     batchSpecs.forEach(spec => {
-      const key = `${spec.productId}-${spec.batchNumber}`;
+      const key = buildBatchKey(
+        spec.productId,
+        spec.batchNumber,
+        spec.variantId ?? null
+      );
       batchSpecMap.set(key, {
         piecesPerUnit: spec.piecesPerUnit ?? undefined,
         weight:
@@ -182,9 +221,15 @@ function formatRecordWithBatchInfo(
   const formatted = formatOutboundRecord(record);
 
   const batchKey = record.batchNumber
-    ? `${record.productId}-${record.batchNumber}`
+    ? `${record.productId}-${record.variantId ?? ''}-${record.batchNumber}`
     : null;
-  const batchOverride = batchKey ? batchSpecMap.get(batchKey) : undefined;
+  const fallbackBatchKey = record.batchNumber
+    ? `${record.productId}--${record.batchNumber}`
+    : null;
+  const batchOverride = batchKey
+    ? (batchSpecMap.get(batchKey) ??
+      (fallbackBatchKey ? batchSpecMap.get(fallbackBatchKey) : undefined))
+    : undefined;
   const piecesPerUnit =
     batchOverride?.piecesPerUnit ?? record.product.piecesPerUnit ?? undefined;
   const weightPerUnitRaw = batchOverride?.weight ?? record.product.weight;

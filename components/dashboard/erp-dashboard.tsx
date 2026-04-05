@@ -164,7 +164,7 @@ export function ERPDashboard({
           lowStockItems={dashboardData.lowStockItems}
           pendingOrderCount={pendingOrders.length}
           onViewInventory={() => router.push('/inventory')}
-          onViewOrders={() => router.push('/sales-orders')}
+          onViewOrders={() => router.push('/sales-orders?status=pending')}
         />
 
         <div className="space-y-10">
@@ -246,15 +246,20 @@ function DashboardHeader({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex w-full flex-col gap-3 md:w-auto md:flex-row md:flex-wrap md:items-center md:gap-4">
         {/* 快捷操作按钮组 */}
-        <div className="flex items-center gap-2 rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
-          {quickActions.map(({ label, action, icon: Icon }) => (
+        <div className="grid w-full grid-cols-2 gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2 sm:p-1.5">
+          {quickActions.map(({ label, action, icon: Icon }, index) => (
             <Button
               key={label}
               size="sm"
               variant="ghost"
-              className="h-10 rounded-xl px-4 font-bold text-slate-500 transition-all hover:bg-slate-900 hover:text-white active:scale-95"
+              className={cn(
+                'h-10 w-full justify-center rounded-xl px-4 font-bold text-slate-500 transition-all hover:bg-slate-900 hover:text-white active:scale-95 sm:w-auto sm:justify-start',
+                quickActions.length % 2 === 1 &&
+                  index === quickActions.length - 1 &&
+                  'col-span-2 sm:col-span-1'
+              )}
               onClick={action}
             >
               <Icon className="mr-2 h-4 w-4" />
@@ -263,11 +268,11 @@ function DashboardHeader({
           ))}
         </div>
 
-        <div className="flex items-center gap-2 rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100">
+        <div className="flex w-full items-center gap-2 rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-100 sm:w-auto">
           <select
             value={selectedPeriod}
             onChange={e => onPeriodChange(e.target.value)}
-            className="ring-offset-background focus:ring-slate-900 h-10 w-[120px] rounded-xl border-none bg-transparent px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-offset-2 focus:outline-hidden"
+            className="ring-offset-background focus:ring-slate-900 h-10 min-w-0 flex-1 rounded-xl border-none bg-transparent px-3 py-2 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-offset-2 focus:outline-hidden sm:w-[120px] sm:flex-none"
             aria-label="时间范围"
           >
             <option value="1d">今天</option>
@@ -281,7 +286,8 @@ function DashboardHeader({
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-900"
+            aria-label="刷新仪表盘"
+            className="h-10 w-10 shrink-0 rounded-xl text-slate-400 hover:bg-slate-50 hover:text-slate-900"
             onClick={onRefresh}
             disabled={isRefreshing}
           >

@@ -89,20 +89,20 @@ function ERPProductListFilters({
       }
       variant="pro"
       compact={true}
-      customFilters={
-        <CategorySelector
-          categories={categories}
-          value={initialParams?.categoryId || undefined}
-          onValueChange={nextCategoryId => {
+        customFilters={
+          <CategorySelector
+            categories={categories}
+            value={initialParams?.categoryId || undefined}
+            onValueChange={nextCategoryId => {
             handleFilter({
               categoryId: nextCategoryId,
-              status: initialParams?.status,
-            });
-          }}
-          className="h-14 w-36 rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white"
-        />
-      }
-    />
+                status: initialParams?.status,
+              });
+            }}
+            className="h-14 w-full rounded-2xl border-white bg-white/40 font-bold shadow-sm backdrop-blur-md hover:bg-white sm:w-36"
+          />
+        }
+      />
   );
 }
 

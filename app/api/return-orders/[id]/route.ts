@@ -71,6 +71,17 @@ export const GET = withAuth(
             },
           },
         },
+        refunds: {
+          select: {
+            id: true,
+            processedAmount: true,
+            processedDate: true,
+            refundAmount: true,
+            refundDate: true,
+            remainingAmount: true,
+            status: true,
+          },
+        },
       },
     });
 
@@ -367,6 +378,17 @@ export const PUT = withAuth(
                   code: true,
                 },
               },
+            },
+          },
+          refunds: {
+            select: {
+              id: true,
+              processedAmount: true,
+              processedDate: true,
+              refundAmount: true,
+              refundDate: true,
+              remainingAmount: true,
+              status: true,
             },
           },
         },

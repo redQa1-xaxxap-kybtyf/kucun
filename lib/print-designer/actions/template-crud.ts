@@ -414,6 +414,7 @@ export async function getDefaultTemplate(
 
     const template = await prisma.printTemplate.findFirst({
       where: { type, isDefault: true },
+      orderBy: [{ updatedAt: 'desc' }, { createdAt: 'desc' }],
     });
 
     if (template) {

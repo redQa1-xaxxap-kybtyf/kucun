@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { PRODUCT_UNITS, PRODUCT_UNIT_VALUES } from '@/lib/config/product';
 import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
@@ -34,7 +35,11 @@ export const purchaseOrderItemSchema = z
     manualUnit: z.string().optional(),
     displayName: z.string().min(1, '产品名称不能为空'),
     specification: z.string().optional(),
-    unit: z.string().optional(),
+    unit: z
+      .enum(PRODUCT_UNIT_VALUES as [string, ...string[]], {
+        message: '请选择有效的计量单位',
+      })
+      .optional(),
     weight: z.number().nonnegative('重量不能为负数').optional(),
     piecesPerUnit: z
       .number()
@@ -64,6 +69,19 @@ export const purchaseOrderItemSchema = z
         code: z.ZodIssueCode.custom,
         message: '手动产品必须填写名称',
         path: ['manualProductName'],
+      });
+    }
+
+    const normalizedUnit = item.unit ?? PRODUCT_UNITS.PIECE;
+    if (
+      normalizedUnit === PRODUCT_UNITS.PIECE &&
+      (!Number.isInteger(item.piecesPerUnit) ||
+        (item.piecesPerUnit ?? 0) <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '按件采购时必须填写每件片数',
+        path: ['piecesPerUnit'],
       });
     }
   });

@@ -171,14 +171,14 @@ export const POST = withAuth(
         );
         fileContent = CSVExportService.generateCSVContent(exportData, {
           dateFields: ['到期日期', '创建时间'],
-          numberFields: ['应付金额', '已付金额', '剩余金额'],
+          numberFields: ['应付金额', '已核销金额', '剩余金额'],
           fieldOrder: [
             '应付款编号',
             '供应商名称',
             '应付金额',
-            '已付金额',
+            '已核销金额',
             '剩余金额',
-            '付款状态',
+            '结算状态',
             '来源类型',
             '来源单号',
             '到期日期',
@@ -200,9 +200,9 @@ export const POST = withAuth(
           { width: 15 }, // 应付款编号
           { width: 20 }, // 供应商名称
           { width: 12 }, // 应付金额
-          { width: 12 }, // 已付金额
+          { width: 12 }, // 已核销金额
           { width: 12 }, // 剩余金额
-          { width: 10 }, // 付款状态
+          { width: 10 }, // 结算状态
           { width: 12 }, // 来源类型
           { width: 15 }, // 来源单号
           { width: 20 }, // 到期日期

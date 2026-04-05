@@ -2,6 +2,7 @@
 
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
+import { useState } from 'react';
 
 import { ProductImageCard } from '@/components/products/product-image-card';
 import { ProductImageUploadArea } from '@/components/products/product-image-upload-area';
@@ -9,6 +10,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useImageUpload } from '@/hooks/use-image-upload';
 import type { ProductImage } from '@/lib/types/product';
+import { shouldBypassImageOptimization } from '@/lib/utils/image';
+
+type ProductImageTab = 'thumbnail' | 'main' | 'effect';
 
 interface ProductImageUploadProps {
   thumbnailUrl?: string;
@@ -29,6 +33,8 @@ export function ProductImageUpload({
   maxFiles = 8,
   maxSize = 5,
 }: ProductImageUploadProps) {
+  const [activeTab, setActiveTab] = useState<ProductImageTab>('thumbnail');
+
   // 使用自定义Hook处理图片上传逻辑
   const {
     uploading,
@@ -71,7 +77,11 @@ export function ProductImageUpload({
         </Alert>
       )}
 
-      <Tabs defaultValue="thumbnail" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={value => setActiveTab(value as ProductImageTab)}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="thumbnail">缩略图</TabsTrigger>
           <TabsTrigger value="main">主图</TabsTrigger>
@@ -102,6 +112,7 @@ export function ProductImageUpload({
                     fill
                     className="object-cover"
                     sizes="200px"
+                    unoptimized={shouldBypassImageOptimization(thumbnailUrl)}
                   />
                 </div>
               </div>

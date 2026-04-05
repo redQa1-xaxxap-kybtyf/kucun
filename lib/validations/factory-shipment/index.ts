@@ -6,6 +6,11 @@
 import { z } from 'zod';
 
 import { FACTORY_SHIPMENT_ITEM_OWNERSHIP } from '@/lib/types/factory-shipment';
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
 
 import {
   factoryShipmentFeeItemSchema,
@@ -196,7 +201,14 @@ const factoryShipmentOrderItemFormSchema = z.object({
   quantity: z.preprocess(coerceNumber, z.number().positive('数量必须大于0')),
   unitPrice: z.preprocess(coerceNumber, z.number().min(0, '单价不能为负数')),
   unitCost: z
-    .preprocess(coerceNumber, z.number().min(0, '进货价不能为负数'))
+    .preprocess(
+      coerceNumber,
+      z
+        .number()
+        .min(0, '进货价不能为负数')
+        .max(COST_PRICE_MAX, `进货价不能超过${COST_PRICE_MAX_LABEL}`)
+        .refine(hasAtMostCostPriceDecimals, '进货价最多保留3位小数')
+    )
     .optional(),
   // 客户直发场景下，货物归属默认为客户，UI 不再显示此字段
   ownership: z

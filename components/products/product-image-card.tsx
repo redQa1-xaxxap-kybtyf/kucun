@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ProductImage } from '@/lib/types/product';
+import { shouldBypassImageOptimization } from '@/lib/utils/image';
 
 interface ProductImageCardProps {
   image: ProductImage;
@@ -49,6 +50,7 @@ export function ProductImageCard({
               fill
               className="cursor-zoom-in object-cover"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              unoptimized={shouldBypassImageOptimization(image.url)}
               onClick={() => setPreviewOpen(true)}
             />
             <div
@@ -71,6 +73,7 @@ export function ProductImageCard({
                 type="button"
                 variant="destructive"
                 size="sm"
+                aria-label={`删除${title}`}
                 className="absolute top-2 right-2 h-8 w-8 p-0 opacity-0 transition-opacity group-hover:opacity-100"
                 onClick={() => onRemove(index, image.type)}
               >

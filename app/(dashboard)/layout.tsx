@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
 import * as React from 'react';
 
 import { DashboardLayoutClient } from '@/components/common/DashboardLayoutClient';
@@ -7,7 +6,7 @@ import {
   bottomNavigationItems,
   navigationItems,
 } from '@/components/common/sidebar-navigation-config';
-import { authOptions } from '@/lib/auth';
+import { safeAuth } from '@/lib/auth';
 import { getSystemMode } from '@/lib/services/system-mode-service';
 import type { NavigationItem } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
@@ -30,7 +29,7 @@ export default async function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   // 在服务端获取 session
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('dashboard-layout');
 
   // 如果未认证，重定向到登录页
   if (!session) {

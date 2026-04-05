@@ -2,10 +2,11 @@
 
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
-import type {
-  PayableRecordQuery,
-  PayableSourceType,
-  PayableStatus,
+import {
+  PAYABLE_STATUS_LABELS,
+  type PayableRecordQuery,
+  type PayableSourceType,
+  type PayableStatus,
 } from '@/lib/types/payable';
 
 interface Props {
@@ -32,9 +33,9 @@ export function PayablesFilterBar({
           key: 'status',
           label: '状态',
           options: [
-            { label: '待付款', value: 'pending' },
-            { label: '部分付款', value: 'partial' },
-            { label: '已付款', value: 'paid' },
+            { label: PAYABLE_STATUS_LABELS.pending, value: 'pending' },
+            { label: PAYABLE_STATUS_LABELS.partial, value: 'partial' },
+            { label: PAYABLE_STATUS_LABELS.paid, value: 'paid' },
             { label: '已取消', value: 'cancelled' },
           ],
           width: 'w-[140px]',

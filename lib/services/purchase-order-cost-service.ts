@@ -1,12 +1,21 @@
 import type { Prisma } from '@prisma/client';
 
 import { roundToTwoDecimals } from '@/lib/services/factory-shipment-expense-service';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
+import {
+  convertPurchaseOrderQuantityToPieces,
+  convertPurchaseOrderUnitPriceToPieceCost,
+} from '@/lib/utils/purchase-order-unit';
 
 export interface PurchaseOrderExpenseAllocationInput {
   id: string;
   quantity: number;
   unitPrice: number;
+  unit?: string | null;
+  piecesPerUnit?: number | null;
+  displayName?: string | null;
+  productCode?: string | null;
 }
 
 export interface PurchaseOrderExpenseAllocationResult {
@@ -23,7 +32,18 @@ export function allocatePurchaseOrderExpensesByQuantity(
     throw new Error('采购订单至少需要一个明细进行费用分摊');
   }
 
-  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+  const normalizedItems = items.map(item => ({
+    ...item,
+    actualQuantity: convertPurchaseOrderQuantityToPieces(item, { strict: true }),
+    pieceUnitCost: convertPurchaseOrderUnitPriceToPieceCost(item, {
+      strict: true,
+    }),
+  }));
+
+  const totalQuantity = normalizedItems.reduce(
+    (sum, item) => sum + item.actualQuantity,
+    0
+  );
 
   if (totalQuantity <= 0) {
     throw new Error('采购订单明细数量总和必须大于0');
@@ -34,8 +54,8 @@ export function allocatePurchaseOrderExpensesByQuantity(
   const perUnitExpenseRaw =
     totalQuantity > 0 ? totalExpenseCents / totalQuantity / 100 : 0;
 
-  const allocations = items.map(item => {
-    const ratio = item.quantity / totalQuantity;
+  const allocations = normalizedItems.map(item => {
+    const ratio = item.actualQuantity / totalQuantity;
     const rawCents = ratio * totalExpenseCents;
     const baseCents = Math.floor(rawCents);
     const remainder = rawCents - baseCents;
@@ -58,7 +78,7 @@ export function allocatePurchaseOrderExpensesByQuantity(
       .map((allocation, index) => ({
         index,
         remainder: allocation.remainder,
-        quantity: allocation.quantity,
+        quantity: allocation.actualQuantity,
       }))
       .sort((a, b) => {
         if (b.remainder !== a.remainder) {
@@ -79,8 +99,8 @@ export function allocatePurchaseOrderExpensesByQuantity(
   return allocations.map(allocation => ({
     id: allocation.id,
     allocatedExpense: roundToTwoDecimals(allocation.baseCents / 100),
-    unitCostWithExpense: roundToTwoDecimals(
-      allocation.unitPrice + perUnitExpenseRaw
+    unitCostWithExpense: roundCostPrice(
+      allocation.pieceUnitCost + perUnitExpenseRaw
     ),
   }));
 }
@@ -96,14 +116,14 @@ export function resolveInboundUnitCost(options: {
     typeof unitCostWithExpense === 'number' &&
     !Number.isNaN(unitCostWithExpense)
   ) {
-    return roundToTwoDecimals(unitCostWithExpense);
+    return roundCostPrice(unitCostWithExpense);
   }
 
   if (typeof unitPrice === 'number' && !Number.isNaN(unitPrice)) {
-    return roundToTwoDecimals(unitPrice);
+    return roundCostPrice(unitPrice);
   }
 
-  return roundToTwoDecimals(fallback);
+  return roundCostPrice(fallback);
 }
 
 export async function ensurePurchaseOrderCostAllocatedBeforeInbound(
@@ -123,6 +143,10 @@ export async function ensurePurchaseOrderCostAllocatedBeforeInbound(
           id: true,
           quantity: true,
           unitPrice: true,
+          unit: true,
+          piecesPerUnit: true,
+          displayName: true,
+          productCode: true,
         },
       },
     },
@@ -170,6 +194,10 @@ export async function ensurePurchaseOrderCostAllocatedBeforeInbound(
       id: item.id,
       quantity: item.quantity,
       unitPrice: toNumber(item.unitPrice),
+      unit: item.unit,
+      piecesPerUnit: item.piecesPerUnit,
+      displayName: item.displayName,
+      productCode: item.productCode,
     })),
     totalExpenseAmount
   );
@@ -179,9 +207,11 @@ export async function ensurePurchaseOrderCostAllocatedBeforeInbound(
     PurchaseOrderExpenseAllocationResult
   >();
   const quantityByItemId = new Map<string, number>();
+  const unitPriceByItemId = new Map<string, number>();
 
   for (const item of order.items) {
     quantityByItemId.set(item.id, item.quantity);
+    unitPriceByItemId.set(item.id, toNumber(item.unitPrice));
   }
 
   for (const allocation of allocations) {
@@ -199,7 +229,8 @@ export async function ensurePurchaseOrderCostAllocatedBeforeInbound(
   const costAmount = roundToTwoDecimals(
     allocations.reduce((sum, allocation) => {
       const qty = quantityByItemId.get(allocation.id) ?? 0;
-      return sum + allocation.unitCostWithExpense * qty;
+      const unitPrice = unitPriceByItemId.get(allocation.id) ?? 0;
+      return sum + unitPrice * qty + allocation.allocatedExpense;
     }, 0)
   );
 

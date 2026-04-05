@@ -204,20 +204,29 @@ function useCreateProductMutation({
         description: '产品已成功创建',
       });
 
-      // ✅ 使用 removeQueries 完全清除缓存，确保列表页必定重新获取数据
-      await queryClient.removeQueries({
-        queryKey: productQueryKeys.lists(),
-      });
+      try {
+        // ✅ 使用 removeQueries 完全清除缓存，确保列表页必定重新获取数据
+        await queryClient.removeQueries({
+          queryKey: productQueryKeys.lists(),
+        });
 
-      // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
-      await queryClient.refetchQueries({
-        queryKey: productQueryKeys.all,
-        type: 'active',
-      });
-
-      const shouldNavigate = await handleSuccessCallback(onSuccess, product);
-      if (shouldNavigate) {
-        navigateToList();
+        // ✅ 使用 refetchQueries 强制立即刷新，确保用户创建产品后立即看到新记录
+        await queryClient.refetchQueries({
+          queryKey: productQueryKeys.all,
+          type: 'active',
+        });
+      } catch (error) {
+        logger.warn(
+          '[useProductForm] create success cache refresh failed, continue navigation',
+          {
+            error,
+          }
+        );
+      } finally {
+        const shouldNavigate = await handleSuccessCallback(onSuccess, product);
+        if (shouldNavigate) {
+          navigateToList();
+        }
       }
     },
     onError: (error: Error) => {
@@ -249,20 +258,29 @@ function useUpdateProductMutation({
         description: '产品已成功更新',
       });
 
-      // ✅ 使用 removeQueries 完全清除缓存，确保列表页必定重新获取数据
-      await queryClient.removeQueries({
-        queryKey: productQueryKeys.lists(),
-      });
+      try {
+        // ✅ 使用 removeQueries 完全清除缓存，确保列表页必定重新获取数据
+        await queryClient.removeQueries({
+          queryKey: productQueryKeys.lists(),
+        });
 
-      // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新产品后立即看到变化
-      await queryClient.refetchQueries({
-        queryKey: productQueryKeys.all,
-        type: 'active',
-      });
-
-      const shouldNavigate = await handleSuccessCallback(onSuccess, product);
-      if (shouldNavigate) {
-        navigateToList();
+        // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新产品后立即看到变化
+        await queryClient.refetchQueries({
+          queryKey: productQueryKeys.all,
+          type: 'active',
+        });
+      } catch (error) {
+        logger.warn(
+          '[useProductForm] update success cache refresh failed, continue navigation',
+          {
+            error,
+          }
+        );
+      } finally {
+        const shouldNavigate = await handleSuccessCallback(onSuccess, product);
+        if (shouldNavigate) {
+          navigateToList();
+        }
       }
     },
     onError: (error: Error) => {

@@ -112,8 +112,8 @@ export function AnnualReportClient() {
       );
 
       toast({
-        title: '报表已生成',
-        description: `${year} 年度报表数据已重新计算并刷新`,
+        title: '数据已刷新',
+        description: `${year} 年度报表已重新计算`,
       });
     } catch (error) {
       const message =
@@ -168,7 +168,7 @@ export function AnnualReportClient() {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : '导出年度报表图片失败';
+        error instanceof Error ? error.message : '导出图片失败';
       toast({
         variant: 'destructive',
         title: '导出失败',
@@ -215,7 +215,7 @@ export function AnnualReportClient() {
                     年度报表
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看年度营业收入、营业成本、利润趋势与费用结构
+                    查看年度收入、成本、费用结构和利润趋势
                   </p>
                 </div>
               </div>
@@ -228,7 +228,7 @@ export function AnnualReportClient() {
                   className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
-                  {isGenerating ? '生成中...' : '生成报表'}
+                  {isGenerating ? '刷新中...' : '重新计算'}
                 </Button>
                 <Button
                   variant="outline"
@@ -238,7 +238,7 @@ export function AnnualReportClient() {
                   className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
-                  {isExporting ? '导出中...' : '导出报表图片'}
+                  {isExporting ? '导出中...' : '导出图片'}
                 </Button>
               </div>
             </div>
@@ -272,6 +272,12 @@ export function AnnualReportClient() {
                 当前年份
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="px-4 py-3 text-xs leading-5 text-[hsl(var(--color-text-secondary))]">
+            报表说明：年度报表仅统计已审核入账的费用；关联采购的费用已计入库存/成本，不重复计入期间费用。
           </CardContent>
         </Card>
 

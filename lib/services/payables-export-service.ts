@@ -9,6 +9,10 @@
 
 import type { PayableRecord } from '@prisma/client';
 
+import {
+  PAYABLE_SOURCE_TYPE_LABELS,
+  PAYABLE_STATUS_LABELS,
+} from '@/lib/types/payable';
 import { toNumber } from '@/lib/utils/number';
 
 import { CSVExportService } from './csv-export-service';
@@ -24,12 +28,12 @@ export interface PayableExportData extends Record<string, unknown> {
   供应商名称: string;
   /** 应付金额 */
   应付金额: number;
-  /** 已付金额 */
-  已付金额: number;
+  /** 已核销金额 */
+  已核销金额: number;
   /** 剩余金额 */
   剩余金额: number;
-  /** 付款状态 */
-  付款状态: string;
+  /** 结算状态 */
+  结算状态: string;
   /** 来源类型 */
   来源类型: string;
   /** 来源单号 */
@@ -52,27 +56,6 @@ export interface PayableWithRelations extends PayableRecord {
 }
 
 /**
- * 状态映射
- */
-const STATUS_MAP: Record<string, string> = {
-  pending: '待付款',
-  partial: '部分付款',
-  paid: '已付款',
-  cancelled: '已取消',
-};
-
-/**
- * 来源类型映射
- */
-const SOURCE_TYPE_MAP: Record<string, string> = {
-  purchase_order: '采购订单',
-  factory_shipment: '厂家发货',
-  sales_order: '销售订单',
-  service: '服务费用',
-  other: '其他',
-};
-
-/**
  * 应付款导出服务
  */
 export class PayablesExportService {
@@ -89,10 +72,15 @@ export class PayablesExportService {
       应付款编号: item.payableNumber || '',
       供应商名称: item.supplier?.name || '未知供应商',
       应付金额: toNumber(item.payableAmount, 0),
-      已付金额: toNumber(item.paidAmount, 0),
+      已核销金额: toNumber(item.paidAmount, 0),
       剩余金额: toNumber(item.remainingAmount, 0),
-      付款状态: STATUS_MAP[item.status] || item.status,
-      来源类型: SOURCE_TYPE_MAP[item.sourceType] || item.sourceType,
+      结算状态:
+        PAYABLE_STATUS_LABELS[item.status as keyof typeof PAYABLE_STATUS_LABELS] ||
+        item.status,
+      来源类型:
+        PAYABLE_SOURCE_TYPE_LABELS[
+          item.sourceType as keyof typeof PAYABLE_SOURCE_TYPE_LABELS
+        ] || item.sourceType,
       来源单号: item.sourceNumber || '',
       到期日期: item.dueDate?.toISOString() || '',
       创建时间: item.createdAt?.toISOString() || '',
@@ -116,7 +104,7 @@ export class PayablesExportService {
       filename,
       sheetName: '应付账款',
       dateFields: ['到期日期', '创建时间'],
-      numberFields: ['应付金额', '已付金额', '剩余金额'],
+      numberFields: ['应付金额', '已核销金额', '剩余金额'],
       freezeHeader: true,
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
     });
@@ -134,15 +122,15 @@ export class PayablesExportService {
     CSVExportService.exportToCSV(data, {
       filename,
       dateFields: ['到期日期', '创建时间'],
-      numberFields: ['应付金额', '已付金额', '剩余金额'],
+      numberFields: ['应付金额', '已核销金额', '剩余金额'],
       dateFormat: 'yyyy-MM-dd HH:mm:ss',
       fieldOrder: [
         '应付款编号',
         '供应商名称',
         '应付金额',
-        '已付金额',
+        '已核销金额',
         '剩余金额',
-        '付款状态',
+        '结算状态',
         '来源类型',
         '来源单号',
         '到期日期',

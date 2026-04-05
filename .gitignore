@@ -86,6 +86,10 @@ playwright.config.mjs
 *.test.js
 *.test.ts
 *.spec.ts
+!tests/
+!tests/e2e/
+!tests/e2e/finance-regression.spec.ts
+!tests/e2e/inventory-counts/fullchain-ui.test.ts
 
 !tests-regression/**/*.test.ts
 *.spec.js
@@ -156,6 +160,12 @@ type-check-result.txt
 .tmp-*.json
 jest-*.json
 prisma/*.bak-*
+*.out.txt
+*.err.txt
+playwright-*.png
+test-artifacts/
+tmp-*.txt
+tests/screenshots/
 
 # 微信小程序依赖目录（仅本地安装使用，不提交到仓库）
 /kucunxcx/node_modules/

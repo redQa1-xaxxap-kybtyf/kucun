@@ -111,7 +111,7 @@ export function PageHeader({
 
           {/* 操作按钮区域 */}
           {actions && (
-            <div className="flex w-full items-center justify-start gap-2 sm:w-auto sm:justify-end">
+            <div className="flex w-full flex-col items-stretch justify-start gap-2 [&>*]:w-full sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:[&>*]:w-auto">
               {actions}
             </div>
           )}

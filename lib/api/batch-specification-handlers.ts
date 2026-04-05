@@ -17,6 +17,12 @@ import type {
 import type { Product } from '@/lib/types/product';
 import { toISOString } from '@/lib/utils/datetime';
 
+function normalizeBatchSpecificationVariantKey(
+  variantId?: string | null
+): string {
+  return variantId ?? '';
+}
+
 /**
  * 验证产品是否存在
  */
@@ -41,6 +47,38 @@ async function validateProductExists(
 }
 
 /**
+ * 验证产品变体是否存在且属于指定产品
+ */
+async function validateVariantExists(
+  productId: string,
+  variantId: string,
+  tx?: Prisma.TransactionClient
+): Promise<void> {
+  const prismaClient = tx || prisma;
+
+  const variant = await prismaClient.productVariant.findUnique({
+    where: { id: variantId },
+    select: {
+      id: true,
+      productId: true,
+      status: true,
+    },
+  });
+
+  if (!variant) {
+    throw ApiError.notFound('产品色号');
+  }
+
+  if (variant.productId !== productId) {
+    throw ApiError.badRequest('色号不属于当前产品');
+  }
+
+  if (variant.status !== 'active') {
+    throw ApiError.forbidden('产品色号已停用，无法操作');
+  }
+}
+
+/**
  * 验证批次规格参数是否存在
  */
 async function validateBatchSpecificationExists(id: string): Promise<void> {
@@ -61,6 +99,7 @@ function formatBatchSpecifications(
   specifications: Array<{
     id: string;
     productId: string;
+    variantId: string | null;
     batchNumber: string;
     piecesPerUnit: number;
     weight: unknown;
@@ -78,6 +117,12 @@ function formatBatchSpecifications(
       createdAt: Date;
       updatedAt: Date;
     };
+    variant?: {
+      id: string;
+      colorCode: string;
+      colorName: string | null;
+      sku: string;
+    } | null;
   }>
 ): BatchSpecification[] {
   return specifications.map(spec => {
@@ -93,6 +138,7 @@ function formatBatchSpecifications(
     return {
       id: spec.id,
       productId: spec.productId,
+      variantId: spec.variantId ?? undefined,
       batchNumber: spec.batchNumber,
       piecesPerUnit: spec.piecesPerUnit,
       weight,
@@ -124,6 +170,14 @@ function formatBatchSpecifications(
           inventory: undefined,
         } satisfies Product,
       }),
+      ...(spec.variant && {
+        variant: {
+          id: spec.variant.id,
+          colorCode: spec.variant.colorCode,
+          colorName: spec.variant.colorName ?? undefined,
+          sku: spec.variant.sku,
+        },
+      }),
     };
   });
 }
@@ -134,6 +188,7 @@ function formatBatchSpecifications(
 function buildBatchSpecificationWhereClause(queryData: {
   search?: string;
   productId?: string;
+  variantId?: string;
   batchNumber?: string;
   startDate?: string;
   endDate?: string;
@@ -151,12 +206,18 @@ function buildBatchSpecificationWhereClause(queryData: {
       { batchNumber: { contains: queryData.search } },
       { product: { name: { contains: queryData.search } } },
       { product: { code: { contains: queryData.search } } },
+      { variant: { colorCode: { contains: queryData.search } } },
+      { variant: { colorName: { contains: queryData.search } } },
     ];
   }
 
   // 产品筛选
   if (queryData.productId) {
     where.productId = queryData.productId;
+  }
+
+  if (queryData.variantId) {
+    where.variantId = queryData.variantId;
   }
 
   // 批次号筛选
@@ -201,15 +262,20 @@ export async function upsertBatchSpecification(
   tx?: Prisma.TransactionClient
 ): Promise<BatchSpecification> {
   const prismaClient = tx || prisma;
+  const variantKey = normalizeBatchSpecificationVariantKey(data.variantId);
 
   // ✅ 验证产品存在 - 传递事务上下文确保原子性
   await validateProductExists(data.productId, prismaClient);
+  if (data.variantId) {
+    await validateVariantExists(data.productId, data.variantId, prismaClient);
+  }
 
   // 使用upsert确保批次规格参数的唯一性
   const specification = await prismaClient.batchSpecification.upsert({
     where: {
-      productId_batchNumber: {
+      productId_variantKey_batchNumber: {
         productId: data.productId,
+        variantKey,
         batchNumber: data.batchNumber,
       },
     },
@@ -221,6 +287,8 @@ export async function upsertBatchSpecification(
     },
     create: {
       productId: data.productId,
+      variantId: data.variantId ?? null,
+      variantKey,
       batchNumber: data.batchNumber,
       piecesPerUnit: data.piecesPerUnit,
       weight: data.weight || null,
@@ -238,6 +306,14 @@ export async function upsertBatchSpecification(
           status: true,
           createdAt: true,
           updatedAt: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+          sku: true,
         },
       },
     },
@@ -271,6 +347,14 @@ export async function getBatchSpecificationById(
           updatedAt: true,
         },
       },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+          sku: true,
+        },
+      },
     },
   });
 
@@ -292,15 +376,27 @@ export async function getBatchSpecificationById(
  */
 export async function getBatchSpecificationByProductAndBatch(
   productId: string,
-  batchNumber: string
+  batchNumber: string,
+  variantId?: string | null
 ): Promise<BatchSpecification | null> {
-  const specification = await prisma.batchSpecification.findUnique({
+  const requestedVariantKey = normalizeBatchSpecificationVariantKey(variantId);
+
+  const specification = await prisma.batchSpecification.findFirst({
     where: {
-      productId_batchNumber: {
-        productId,
-        batchNumber,
-      },
+      productId,
+      batchNumber,
+      OR: [
+        { variantKey: requestedVariantKey },
+        { variantKey: '' },
+      ],
     },
+    orderBy:
+      requestedVariantKey.length > 0
+        ? [
+            { variantKey: 'desc' },
+            { updatedAt: 'desc' },
+          ]
+        : [{ updatedAt: 'desc' }],
     include: {
       product: {
         select: {
@@ -313,6 +409,14 @@ export async function getBatchSpecificationByProductAndBatch(
           status: true,
           createdAt: true,
           updatedAt: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+          sku: true,
         },
       },
     },
@@ -340,6 +444,7 @@ export async function getBatchSpecifications(queryData: {
   limit: number;
   search?: string;
   productId?: string;
+  variantId?: string;
   batchNumber?: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
@@ -369,6 +474,14 @@ export async function getBatchSpecifications(queryData: {
             status: true,
             createdAt: true,
             updatedAt: true,
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            colorCode: true,
+            colorName: true,
+            sku: true,
           },
         },
       },
@@ -424,6 +537,14 @@ export async function updateBatchSpecification(
           status: true,
           createdAt: true,
           updatedAt: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+          sku: true,
         },
       },
     },

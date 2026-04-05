@@ -42,14 +42,15 @@ import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import {
   canConfirmArrival,
   canConfirmShipment,
   formatAmount,
   formatDate,
-  formatUnit,
   getFactoryShipmentStatusBadgeVariant,
 } from '@/lib/utils/factory-shipment-helpers';
+import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 
 const PrintTemplatePreviewDialog = dynamic(
   () =>
@@ -546,7 +547,7 @@ export function FactoryShipmentOrderDetail({
                       <TableCell className="px-4 py-2 text-left text-sm font-medium whitespace-nowrap text-[hsl(var(--color-text-primary))]">
                         {(() => {
                           const qty = Math.floor(item.quantity || 0);
-                          const unit = item.unit;
+                          const unit = toPieceOrSheetLabel(item.unit);
                           const ppu = item.piecesPerUnit || 0;
                           if (unit === '件') {
                             return ppu > 0
@@ -564,17 +565,17 @@ export function FactoryShipmentOrderDetail({
                             }
                             return `${qty}片`;
                           }
-                          return `${qty}${formatUnit(unit)}`;
+                          return `${qty}${unit}`;
                         })()}
                       </TableCell>
                       <TableCell className="py-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                        {formatUnit(item.unit)}
+                        {toPieceOrSheetLabel(item.unit)}
                       </TableCell>
                       <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
                         {item.piecesPerUnit ?? '-'}
                       </TableCell>
                       <TableCell className="py-2 text-right text-sm text-[hsl(var(--color-text-secondary))]">
-                        {formatAmount(item.unitCost || 0)}
+                        {formatCostPrice(item.unitCost || 0)}
                       </TableCell>
                       <TableCell className="py-2 text-right text-sm font-medium text-[hsl(var(--color-text-primary))]">
                         {formatAmount(item.unitPrice)}

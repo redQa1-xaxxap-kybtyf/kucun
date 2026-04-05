@@ -26,10 +26,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  getPrintDataForTemplate,
-  getRecentDocumentsForTemplate,
+  fetchPrintDataForTemplate,
+  fetchRecentDocumentsForTemplate,
   type RecentPrintDocumentOption,
-} from '@/lib/print-designer/actions';
+} from '@/lib/print-designer/preview-data-client';
 import { getMockPrintData } from '@/lib/print-designer/preview-mock-data';
 import type { PrintTemplate } from '@/lib/print-designer/schemas';
 import { getTemplateTypeMeta, getTemplateTypeLabel } from '@/lib/print-designer/template-meta';
@@ -103,16 +103,25 @@ export function PreviewDialog({
     setError('');
 
     startTransition(async () => {
-      const documents = await getRecentDocumentsForTemplate(template.type, 20);
-      setRecentDocuments(documents);
-      setLoadingText('');
+      try {
+        const documents = await fetchRecentDocumentsForTemplate(template.type, 20);
+        setRecentDocuments(documents);
+        setLoadingText('');
 
-      if (documents.length === 0) {
-        setError(`暂无可用于预览的${templateMeta?.realDataLabel ?? '真实单据'}`);
-        return;
+        if (documents.length === 0) {
+          setError(
+            `暂无可用于预览的${templateMeta?.realDataLabel ?? '真实单据'}`
+          );
+          return;
+        }
+
+        setSelectedDocumentId(currentId => currentId || documents[0].id);
+      } catch (error) {
+        setLoadingText('');
+        setError(
+          error instanceof Error ? error.message : '加载真实单据列表失败'
+        );
       }
-
-      setSelectedDocumentId(currentId => currentId || documents[0].id);
     });
   }, [dataSource, open, supportsRealPreview, template.type, templateMeta?.realDataLabel, templateMeta?.recentDocumentLabel]);
 
@@ -126,15 +135,25 @@ export function PreviewDialog({
     setError('');
 
     startTransition(async () => {
-      const data = await getPrintDataForTemplate(template.type, selectedDocumentId);
-      if (!data) {
-        setError('未找到可用于预览的数据，请更换单据再试。');
-        setLoadingText('');
-        return;
-      }
+      try {
+        const data = await fetchPrintDataForTemplate(
+          template.type,
+          selectedDocumentId
+        );
+        if (!data) {
+          setError('未找到可用于预览的数据，请更换单据再试。');
+          setLoadingText('');
+          return;
+        }
 
-      setPreviewData(data);
-      setLoadingText('');
+        setPreviewData(data);
+        setLoadingText('');
+      } catch (error) {
+        setError(
+          error instanceof Error ? error.message : '加载真实单据失败'
+        );
+        setLoadingText('');
+      }
     });
   }, [dataSource, open, selectedDocumentId, supportsRealPreview, template.type, templateMeta?.realDataLabel]);
 
@@ -185,16 +204,24 @@ export function PreviewDialog({
     setLoadingText(`正在刷新${templateMeta?.realDataLabel ?? '真实单据'}...`);
 
     startTransition(async () => {
-      const data = await getPrintDataForTemplate(template.type, selectedDocumentId);
-      if (!data) {
-        setError('刷新失败，请确认单据仍存在。');
-        setLoadingText('');
-        return;
-      }
+      try {
+        const data = await fetchPrintDataForTemplate(
+          template.type,
+          selectedDocumentId
+        );
+        if (!data) {
+          setError('刷新失败，请确认单据仍存在。');
+          setLoadingText('');
+          return;
+        }
 
-      setPreviewData(data);
-      setError('');
-      setLoadingText('');
+        setPreviewData(data);
+        setError('');
+        setLoadingText('');
+      } catch (error) {
+        setError(error instanceof Error ? error.message : '刷新失败，请稍后再试。');
+        setLoadingText('');
+      }
     });
   };
 

@@ -13,6 +13,7 @@ import { getProducts } from '@/lib/api/products';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
 import { ProductDataUtils } from '@/lib/utils/product-data';
+import { getInventoryBatchAvailableQuantity } from '@/lib/utils/product-inventory';
 
 import { SmartProductSearch } from './smart-product-search';
 
@@ -296,6 +297,8 @@ export function IntelligentProductInput<T extends FieldValues = FieldValues>({
               return {
                 batchNumber: b.batchNumber,
                 quantity: b.quantity,
+                reservedQuantity: b.reservedQuantity,
+                availableQuantity: getInventoryBatchAvailableQuantity(b),
                 piecesPerUnit: normalizedPieces,
                 weight: normalizedWeight,
               };

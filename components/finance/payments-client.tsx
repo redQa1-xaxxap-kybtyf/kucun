@@ -5,10 +5,21 @@ import * as React from 'react';
 import { SearchFilterCard } from '@/components/common/search-filter-card';
 import { PaymentsTableList } from '@/components/finance/payments-table-list';
 import { ChineseYuan } from '@/components/icons/chinese-yuan';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { DateRangeValue } from '@/components/ui/date-range-picker';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { useConfirmPayment } from '@/lib/api/payments';
+import { useCancelPayment, useConfirmPayment } from '@/lib/api/payments';
 import type { PaymentStatus } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -204,8 +215,8 @@ function usePaymentEventHandlers({
         setConfirmingId(paymentId);
         await confirmPaymentMutation.mutateAsync({ id: paymentId });
         toast({
-          title: '收款已确认',
-          description: '该收款记录已成功确认到账。',
+          title: '收款已到账',
+          description: '该收款记录已确认到账。',
           variant: 'success',
         });
         externalOnRefresh?.();
@@ -246,9 +257,15 @@ export function PaymentsClient({
   onRefresh: externalOnRefresh,
 }: PaymentsClientProps) {
   const { payments, statistics, pagination } = initialData;
+  const { toast } = useToast();
+  const cancelPaymentMutation = useCancelPayment();
   const [searchValue, setSearchValue] = React.useState(
     initialParams?.search ?? ''
   );
+  const [cancellingPayment, setCancellingPayment] =
+    React.useState<PaymentRecord | null>(null);
+  const [cancelNotes, setCancelNotes] = React.useState('');
+  const [cancellingId, setCancellingId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     setSearchValue(initialParams?.search ?? '');
@@ -278,6 +295,56 @@ export function PaymentsClient({
     [baseHandleSearch]
   );
 
+  const handleCancelRequest = React.useCallback(
+    (payment: PaymentRecord) => {
+      if (cancelPaymentMutation.isPending) {
+        return;
+      }
+
+      setCancellingPayment(payment);
+      setCancelNotes('');
+    },
+    [cancelPaymentMutation.isPending]
+  );
+
+  const handleCancelConfirm = React.useCallback(async () => {
+    if (!cancellingPayment || cancelPaymentMutation.isPending) {
+      return;
+    }
+
+    try {
+      const trimmedNotes = cancelNotes.trim();
+      setCancellingId(cancellingPayment.id);
+      await cancelPaymentMutation.mutateAsync({
+        id: cancellingPayment.id,
+        ...(trimmedNotes ? { notes: trimmedNotes } : {}),
+      });
+
+      toast({
+        title: '收款已取消',
+        description: '该待确认收款已取消，不会继续进入到账流程。',
+        variant: 'success',
+      });
+
+      setCancellingPayment(null);
+      externalOnRefresh?.();
+    } catch (error) {
+      toast({
+        title: '取消失败',
+        description: error instanceof Error ? error.message : '请稍后重试',
+        variant: 'destructive',
+      });
+    } finally {
+      setCancellingId(null);
+    }
+  }, [
+    cancelNotes,
+    cancellingPayment,
+    cancelPaymentMutation,
+    externalOnRefresh,
+    toast,
+  ]);
+
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
@@ -305,10 +372,64 @@ export function PaymentsClient({
           pagination={pagination}
           onPageChange={handlePageChange}
           onConfirm={handleConfirm}
+          onCancel={handleCancelRequest}
           confirmingId={confirmingId}
           isConfirming={isConfirming}
+          cancellingId={cancellingId}
+          isCancelling={cancelPaymentMutation.isPending}
         />
       </div>
+
+      <AlertDialog
+        open={Boolean(cancellingPayment)}
+        onOpenChange={open => {
+          if (!open) {
+            setCancellingPayment(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认取消这笔收款？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancellingPayment ? (
+                <>
+                  将取消收款单{' '}
+                  <strong>{cancellingPayment.paymentNumber}</strong>。
+                  <br />
+                  取消后会关闭这笔待确认收款，保留记录，但不会继续算作到账。
+                </>
+              ) : (
+                '确认取消当前待确认收款。'
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">取消备注（可选）</div>
+            <Textarea
+              value={cancelNotes}
+              onChange={event => setCancelNotes(event.target.value)}
+              placeholder="例如：客户改期 / 误录收款 / 重新登记..."
+              disabled={cancelPaymentMutation.isPending}
+              rows={3}
+            />
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelPaymentMutation.isPending}>
+              先不取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelConfirm}
+              disabled={cancelPaymentMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelPaymentMutation.isPending ? '取消中...' : '确认取消收款'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -352,7 +473,7 @@ function PaymentStatisticsCards({
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
-            已确认 / 冲抵金额
+            已到账金额
           </CardTitle>
           <CheckCircle className="h-4 w-4 text-[hsl(var(--color-primary))]" />
         </CardHeader>
@@ -361,7 +482,7 @@ function PaymentStatisticsCards({
             {formatCurrency(statistics.confirmedAmount)}
           </div>
           <p className="text-muted-foreground text-xs">
-            含预收款冲抵，确认率{' '}
+            含已入账金额，到账率{' '}
             {statistics.totalAmount > 0
               ? (
                   (statistics.confirmedAmount / statistics.totalAmount) *
@@ -375,7 +496,7 @@ function PaymentStatisticsCards({
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">待确认金额</CardTitle>
+          <CardTitle className="text-sm font-medium">待确认收款</CardTitle>
           <Clock className="h-4 w-4 text-[hsl(var(--color-warning))]" />
         </CardHeader>
         <CardContent>
@@ -429,37 +550,11 @@ function PaymentFilters({
   onFilterChange,
   onDateRangeChange,
 }: PaymentFiltersProps) {
-  const handleIncludeTestToggle = React.useCallback(() => {
-    const nextValue = initialParams?.includeTest ? undefined : 'true';
-    onFilterChange('includeTest', nextValue);
-  }, [initialParams?.includeTest, onFilterChange]);
-
-  const handleIncludeVoidedToggle = React.useCallback(() => {
-    const nextValue = initialParams?.includeVoided ? undefined : 'true';
-    onFilterChange('includeVoided', nextValue);
-  }, [initialParams?.includeVoided, onFilterChange]);
-
   return (
     <SearchFilterCard
       searchValue={searchValue}
       onSearchChange={onSearch}
-      searchPlaceholder="搜索收款单号、客户名称或订单号..."
-      toggleButtons={[
-        {
-          key: 'includeTest',
-          label: '显示测试',
-          icon: <TrendingUp className="h-3.5 w-3.5" />,
-          active: !!initialParams?.includeTest,
-          onClick: handleIncludeTestToggle,
-        },
-        {
-          key: 'includeVoided',
-          label: '显示作废',
-          icon: <Clock className="h-3.5 w-3.5" />,
-          active: !!initialParams?.includeVoided,
-          onClick: handleIncludeVoidedToggle,
-        },
-      ]}
+      searchPlaceholder="搜索收款单号、客户名称或销售单号"
       // 筛选器配置
       filters={[
         {
@@ -467,27 +562,15 @@ function PaymentFilters({
           label: '状态',
           options: [
             { label: '待确认', value: 'pending' },
-            { label: '已确认', value: 'confirmed' },
-            { label: '已冲抵', value: 'applied' },
+            { label: '已到账', value: 'confirmed' },
+            { label: '已入账', value: 'applied' },
             { label: '已取消', value: 'cancelled' },
-          ],
-          width: 'w-[140px]',
-        },
-        {
-          key: 'paymentMethod',
-          label: '支付方式',
-          options: [
-            { label: '现金', value: 'cash' },
-            { label: '银行转账', value: 'bank_transfer' },
-            { label: '支付宝', value: 'alipay' },
-            { label: '微信支付', value: 'wechat' },
           ],
           width: 'w-[140px]',
         },
       ]}
       filterValues={{
         status: initialParams?.status || 'all',
-        paymentMethod: initialParams?.paymentMethod || 'all',
       }}
       onFilterChange={onFilterChange}
       // 日期范围筛选
@@ -501,7 +584,7 @@ function PaymentFilters({
         onChange: onDateRangeChange,
         placeholder: '选择收款日期范围',
       }}
-      variant="pro"
+      variant="bordered"
       compact={true}
     />
   );

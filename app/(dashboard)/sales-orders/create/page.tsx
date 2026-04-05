@@ -11,6 +11,9 @@ import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-gen
  * 采用中国ERP系统标准布局
  * 优化：使用 Server Component 预先生成订单号，消除加载延迟
  */
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function CreateSalesOrderPage() {
   // 服务端预先生成订单号，无延迟
   const initialOrderNumber = await generateSalesOrderNumber();

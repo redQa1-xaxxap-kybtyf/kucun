@@ -35,7 +35,7 @@ export function DashboardTodoBar({
       id: 'pending-orders',
       title: '待处理',
       count: pendingOrderCount,
-      label: '个订单等待出库',
+      label: '个订单待确认或发货',
       icon: ShoppingCart,
       action: onViewOrders,
       color: 'bg-amber-500',
@@ -56,6 +56,7 @@ export function DashboardTodoBar({
       {activeTodos.map(todo => (
         <div
           key={todo.id}
+          data-testid={`dashboard-todo-${todo.id}`}
           className={cn(
             'group relative overflow-hidden rounded-[32px] border border-white p-1 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/50',
             todo.bg
@@ -93,6 +94,7 @@ export function DashboardTodoBar({
             <Button
               variant="outline"
               size="icon"
+              aria-label={`查看${todo.title}`}
               className="h-12 w-12 rounded-2xl border-slate-100 text-slate-400 transition-all hover:bg-slate-900 hover:text-white active:scale-90"
               onClick={todo.action}
             >
@@ -102,7 +104,7 @@ export function DashboardTodoBar({
           {/* 背景装饰轨迹 */}
           <div
             className={cn(
-              'absolute -right-4 -bottom-4 h-24 w-24 rounded-full opacity-5 blur-2xl',
+              'pointer-events-none absolute -right-4 -bottom-4 h-24 w-24 rounded-full opacity-5 blur-2xl',
               todo.color
             )}
           />

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getInboundRecordByNumber } from '@/lib/api/inbound-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
 import {
+  INBOUND_DAMAGE_HANDLING_LABELS,
   INBOUND_REASON_LABELS,
   type InboundRecordDetail,
 } from '@/lib/types/inbound';
@@ -119,6 +120,12 @@ function OperationRecordCard({
   createdAt,
   updatedAt,
 }: OperationRecordCardProps) {
+  const damageHandlingLabel =
+    record.damageHandling &&
+    INBOUND_DAMAGE_HANDLING_LABELS[record.damageHandling]
+      ? INBOUND_DAMAGE_HANDLING_LABELS[record.damageHandling]
+      : null;
+
   return (
     <Card className="border-slate-200 bg-white shadow-sm transition-all hover:shadow-md">
       <CardHeader className="border-b border-slate-100 bg-slate-50 px-6 py-4">
@@ -159,6 +166,42 @@ function OperationRecordCard({
             {record.location || '—'}
           </span>
         </div>
+        <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+          <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            导入批次
+          </span>
+          <span className="font-mono text-xs text-slate-600">
+            {record.openingImportBatchId || '—'}
+          </span>
+        </div>
+        {record.damagedQuantity && record.damagedQuantity > 0 ? (
+          <>
+            <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                到货破损
+              </span>
+              <span className="font-bold text-amber-700">
+                {record.damagedQuantity}片
+              </span>
+            </div>
+            <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                处理方式
+              </span>
+              <span className="font-bold text-slate-700">
+                {damageHandlingLabel || '—'}
+              </span>
+            </div>
+            <div className="grid grid-cols-[100px_1fr] gap-2">
+              <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+                破损说明
+              </span>
+              <span className="text-xs text-slate-500 italic">
+                {record.damageRemarks || '（无破损说明）'}
+              </span>
+            </div>
+          </>
+        ) : null}
         <div className="grid grid-cols-[100px_1fr] gap-2 border-t border-slate-50 pt-2">
           <span className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
             备注摘要

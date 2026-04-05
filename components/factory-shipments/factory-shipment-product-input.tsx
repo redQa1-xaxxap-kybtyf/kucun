@@ -11,6 +11,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import type { Product } from '@/lib/types/product';
+import { getInventoryBatchAvailableQuantity } from '@/lib/utils/product-inventory';
 import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 interface FactoryShipmentProductInputProps {
@@ -66,6 +67,8 @@ export function FactoryShipmentProductInput({
           return {
             batchNumber: b.batchNumber,
             quantity: b.quantity,
+            reservedQuantity: b.reservedQuantity,
+            availableQuantity: getInventoryBatchAvailableQuantity(b),
             piecesPerUnit: normalizedPieces,
             weight: normalizedWeight,
           };

@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
+import { OpeningBalanceImportBatchActions } from '@/components/inventory/opening-balance-import-batch-actions';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,12 +41,30 @@ import {
   type InitialStockImportResult,
 } from '@/lib/api/initial-stock';
 import { queryKeys } from '@/lib/queryKeys';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { showError, showSuccess, showWarning } from '@/lib/utils/toast-helper';
 import { validateFileUpload } from '@/lib/validations/upload';
 
 interface InitialStockImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function getDefaultQuantityUnitCount(result: InitialStockImportResult | null) {
+  if (!result) {
+    return 0;
+  }
+
+  return result.previewRows.filter(
+    row => row.quantityUnitSource === 'default'
+  ).length;
+}
+
+function getQuantityUnitHintText(result: InitialStockImportResult | null) {
+  const defaultCount = getDefaultQuantityUnitCount(result);
+  return defaultCount > 0
+    ? `，其中 ${defaultCount} 条未填写数量单位，已按片处理`
+    : '';
 }
 
 function InitialStockImportSummary({
@@ -104,7 +123,14 @@ function InitialStockPreviewTable({
 
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium text-slate-900">可导入明细</div>
+      <div className="flex flex-col gap-1">
+        <div className="text-sm font-medium text-slate-900">可导入明细</div>
+        {getDefaultQuantityUnitCount(result) > 0 ? (
+          <div className="text-xs text-amber-700">
+            未填写数量单位的旧模板行，系统已按“片”处理。建议后续统一填写“件”或“片”，避免再把件数当片数。
+          </div>
+        ) : null}
+      </div>
       <div className="max-h-72 overflow-auto rounded-xl border border-slate-200">
         <Table>
           <TableHeader>
@@ -115,8 +141,13 @@ function InitialStockPreviewTable({
               <TableHead>规格</TableHead>
               <TableHead>色号</TableHead>
               <TableHead>批次号</TableHead>
-              <TableHead>数量</TableHead>
-              <TableHead>单位成本</TableHead>
+              <TableHead>装箱数</TableHead>
+              <TableHead>每件重量(kg)</TableHead>
+              <TableHead>录入数量</TableHead>
+              <TableHead>数量单位</TableHead>
+              <TableHead>入库片数</TableHead>
+              <TableHead>单片成本</TableHead>
+              <TableHead>供应商</TableHead>
               <TableHead>库位</TableHead>
               <TableHead>匹配方式</TableHead>
             </TableRow>
@@ -132,8 +163,58 @@ function InitialStockPreviewTable({
                 <TableCell>{row.specification || '-'}</TableCell>
                 <TableCell>{row.colorCode || '-'}</TableCell>
                 <TableCell>{row.batchNumber}</TableCell>
-                <TableCell>{row.quantity}</TableCell>
-                <TableCell>{row.unitCost}</TableCell>
+                <TableCell>
+                  {typeof row.piecesPerUnit === 'number' ? (
+                    <div className="space-y-0.5">
+                      <div>{row.piecesPerUnit}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {row.piecesPerUnitSource === 'row'
+                          ? '模板填写'
+                          : '产品档案'}
+                      </div>
+                    </div>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell>
+                  {typeof row.weight === 'number' ? (
+                    <div className="space-y-0.5">
+                      <div>{row.weight}</div>
+                      <div className="text-[11px] text-slate-500">
+                        {row.weightSource === 'row' ? '模板填写' : '产品档案'}
+                      </div>
+                    </div>
+                  ) : (
+                    '-'
+                  )}
+                </TableCell>
+                <TableCell>{row.inputQuantity}</TableCell>
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <div>{row.quantityUnit}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {row.quantityUnitSource === 'row'
+                        ? '模板填写'
+                        : '未填，按片兼容'}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="space-y-0.5">
+                    <div>{row.quantity}</div>
+                    <div className="text-[11px] text-slate-500">
+                      {row.quantityUnit === '件' &&
+                      typeof row.piecesPerUnit === 'number'
+                        ? `${row.inputQuantity}件 × ${row.piecesPerUnit}片/件`
+                        : '直接按片入库'}
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {formatCostPrice(row.unitCost, { withSymbol: false })}
+                </TableCell>
+                <TableCell>{row.supplierName || '-'}</TableCell>
                 <TableCell>{row.location || '-'}</TableCell>
                 <TableCell>{row.matchMethod}</TableCell>
               </TableRow>
@@ -256,43 +337,28 @@ export function InitialStockImportDialog({
     null
   );
 
-  function resetDialogState() {
-    setFile(null);
-    setResult(null);
-    previewMutation.reset();
-    importMutation.reset();
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }
-
-  const redirectToInventory = React.useCallback(() => {
-    resetDialogState();
-    onOpenChange(false);
-    router.push(`/inventory?hasStock=true&refresh=${Date.now()}`);
-  }, [onOpenChange, router]);
-
   const previewMutation = useMutation({
     mutationFn: previewInitialStockImport,
     onSuccess: previewResult => {
       setResult(previewResult);
+      const quantityUnitHint = getQuantityUnitHintText(previewResult);
 
       if (!previewResult.canImport) {
         showWarning('预校验完成', {
-          description: '没有可导入的数据，请根据错误明细修正后重试',
+          description: `没有可导入的数据，请根据错误明细修正后重试${quantityUnitHint}`,
         });
         return;
       }
 
       if (previewResult.duplicateCount > 0 || previewResult.errorCount > 0) {
         showWarning('预校验完成', {
-          description: `可导入 ${previewResult.validCount} 条，跳过 ${previewResult.duplicateCount} 条，错误 ${previewResult.errorCount} 条`,
+          description: `可导入 ${previewResult.validCount} 条，跳过 ${previewResult.duplicateCount} 条，错误 ${previewResult.errorCount} 条${quantityUnitHint}`,
         });
         return;
       }
 
       showSuccess('预校验通过', {
-        description: `共 ${previewResult.validCount} 条数据可导入`,
+        description: `共 ${previewResult.validCount} 条数据可导入${quantityUnitHint}`,
       });
     },
     onError: error => {
@@ -306,6 +372,7 @@ export function InitialStockImportDialog({
     mutationFn: importInitialStock,
     onSuccess: async importResult => {
       setResult(importResult);
+      const quantityUnitHint = getQuantityUnitHintText(importResult);
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all }),
@@ -316,22 +383,21 @@ export function InitialStockImportDialog({
 
       if ((importResult.importedCount ?? 0) === 0) {
         showWarning('导入未完成', {
-          description: '没有成功导入的数据，请检查跳过和错误明细',
+          description: `没有成功导入的数据，请检查跳过和错误明细${quantityUnitHint}`,
         });
         return;
       }
 
       if (importResult.duplicateCount > 0 || importResult.errorCount > 0) {
         showWarning('导入已完成', {
-          description: `成功导入 ${importResult.importedCount ?? 0} 条并已直接写入库存，跳过 ${importResult.duplicateCount} 条，错误 ${importResult.errorCount} 条`,
+          description: `成功导入 ${importResult.importedCount ?? 0} 条并已直接写入库存，跳过 ${importResult.duplicateCount} 条，错误 ${importResult.errorCount} 条${quantityUnitHint}`,
         });
         return;
       }
 
       showSuccess('导入成功', {
-        description: `成功导入 ${importResult.importedCount ?? 0} 条期初库存，并已直接写入库存`,
+        description: `成功导入 ${importResult.importedCount ?? 0} 条期初库存，并已直接写入库存${quantityUnitHint}`,
       });
-      redirectToInventory();
     },
     onError: error => {
       showError('导入失败', {
@@ -339,6 +405,22 @@ export function InitialStockImportDialog({
       });
     },
   });
+
+  const resetDialogState = React.useCallback(() => {
+    setFile(null);
+    setResult(null);
+    previewMutation.reset();
+    importMutation.reset();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [importMutation, previewMutation]);
+
+  const redirectToInventory = React.useCallback(() => {
+    resetDialogState();
+    onOpenChange(false);
+    router.push(`/inventory?hasStock=true&refresh=${Date.now()}`);
+  }, [onOpenChange, resetDialogState, router]);
 
   const isBusy = previewMutation.isPending || importMutation.isPending;
 
@@ -397,7 +479,7 @@ export function InitialStockImportDialog({
             期初库存批量导入
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600">
-            正式导入只会导入产品库中已存在且通过校验的产品。建议优先下载产品库模板，直接填写批次、数量、单位成本和库位。
+            正式导入只会导入产品库中已存在且通过校验的产品。建议优先下载产品库模板，直接填写批次、装箱数、每件重量、数量、数量单位、单片成本、供应商和库位；数量单位填“件”时会按装箱数自动换算成片，但单片成本始终按“每片”填写；留空只会兼容旧模板按“片”处理。
           </DialogDescription>
         </DialogHeader>
 
@@ -406,8 +488,7 @@ export function InitialStockImportDialog({
             <PackageSearch className="h-4 w-4" />
             <AlertDescription className="leading-6">
               推荐流程：先点“导出产品库模板”，系统会自动带出产品编码、名称、规格、色号；上传后先做预校验，再正式导入。一行只表示一个“产品编码
-              + 色号 +
-              批次”组合，同编号多个色号或多个批次请拆成多行。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
+              + 色号 + 批次”组合，同编号多个色号或多个批次请拆成多行。数量单位建议明确填写“件”或“片”，其中“件”会自动按装箱数换算成片；装箱数、每件重量不填时默认使用产品管理里的值；供应商按名称精确匹配，不填也可导入。遇到重复批次、已有库存或错误行时，系统会自动跳过并给出明细。
             </AlertDescription>
           </Alert>
 
@@ -494,6 +575,30 @@ export function InitialStockImportDialog({
               </AlertDescription>
             </Alert>
           )}
+
+          {result?.importedCount && result.importedCount > 0 && result.importBatchId ? (
+            <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-blue-900">
+                    本次导入批次号
+                  </div>
+                  <div className="font-mono text-sm font-bold text-blue-700">
+                    {result.importBatchId}
+                  </div>
+                  <div className="text-xs text-blue-700/80">
+                    如果这次导入发现数量录错，可以直接按这个批次统一更正，或者在没进入后续业务前整批删除重导。
+                  </div>
+                </div>
+
+                <OpeningBalanceImportBatchActions
+                  batchId={result.importBatchId}
+                  triggerLabel="按本次导入批次处理"
+                  triggerClassName="border-blue-200 bg-white text-blue-700 hover:bg-blue-100"
+                />
+              </div>
+            </div>
+          ) : null}
 
           <InitialStockPreviewTable result={result} />
           <InitialStockDuplicateTable result={result} />

@@ -2,14 +2,14 @@
 // 遵循 TypeScript 严格模式，禁用 any 类型
 
 // 厂家发货订单状态枚举
-// 状态流程: 草稿 → 已确认 → 待发货 → 已发货 → 运输中 → 到港 → 已取消
+// 状态流程: 草稿 → 已确认 → 待发货 → 已发货 → 运输中 → 已到港 → 已取消
 export const FACTORY_SHIPMENT_STATUS = {
   DRAFT: 'draft', // 草稿 - 订单创建但未提交
   CONFIRMED: 'confirmed', // 已确认 - 订单已确认，准备发货
   PENDING_SHIPMENT: 'pending_shipment', // 待发货 - 等待发货
   SHIPPED: 'shipped', // 已发货 - 已从工厂发货
   IN_TRANSIT: 'in_transit', // 运输中 - 货物在运输途中
-  ARRIVED: 'arrived', // 到港 - 货物已到达港口
+  ARRIVED: 'arrived', // 已到港 - 货物已到达港口
   CANCELLED: 'cancelled', // 已取消 - 订单已取消
 } as const;
 
@@ -43,7 +43,7 @@ export const FACTORY_SHIPMENT_STATUS_LABELS: Record<
   [FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT]: '待发货',
   [FACTORY_SHIPMENT_STATUS.SHIPPED]: '已发货',
   [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: '运输中',
-  [FACTORY_SHIPMENT_STATUS.ARRIVED]: '到港',
+  [FACTORY_SHIPMENT_STATUS.ARRIVED]: '已到港',
   [FACTORY_SHIPMENT_STATUS.CANCELLED]: '已取消',
 };
 
@@ -63,7 +63,7 @@ export const FACTORY_SHIPMENT_STATUS_VARIANTS: Record<
   [FACTORY_SHIPMENT_STATUS.PENDING_SHIPMENT]: 'secondary', // 待发货 - 灰色
   [FACTORY_SHIPMENT_STATUS.SHIPPED]: 'info', // 已发货 - 蓝色
   [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: 'info', // 运输中 - 蓝色
-  [FACTORY_SHIPMENT_STATUS.ARRIVED]: 'success', // 到港 - 绿色
+  [FACTORY_SHIPMENT_STATUS.ARRIVED]: 'success', // 已到港 - 绿色
   [FACTORY_SHIPMENT_STATUS.CANCELLED]: 'destructive', // 已取消 - 红色
 };
 

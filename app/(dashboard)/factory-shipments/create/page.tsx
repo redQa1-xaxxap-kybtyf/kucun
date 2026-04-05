@@ -24,7 +24,7 @@ const FactoryShipmentOrderForm = dynamic(
 );
 
 /**
- * 创建厂家发货订单页面
+ * 新建厂家发货单页面
  * 采用中国ERP系统标准布局，严格遵循全栈项目统一约定规范
  */
 export default function CreateFactoryShipmentPage() {
@@ -32,7 +32,7 @@ export default function CreateFactoryShipmentPage() {
 
   // 处理创建成功
   const handleSuccess = () => {
-    // 厂家发货订单创建成功，跳转到列表页
+    // 厂家发货单创建成功，跳转到列表页
     router.push('/factory-shipments');
   };
 
@@ -54,10 +54,10 @@ export default function CreateFactoryShipmentPage() {
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    创建厂家发货订单
+                    新建厂家发货单
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    创建新的厂家发货订单，支持多供应商产品和临时产品管理
+                    新建一张厂家发货单，支持多供应商产品和临时产品管理
                   </p>
                 </div>
               </div>

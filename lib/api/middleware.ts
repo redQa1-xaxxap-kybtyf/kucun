@@ -333,21 +333,24 @@ function logError(
     error: extractErrorInfo(error),
   };
 
+  const logContext = {
+    errorId: errorInfo.errorId,
+    timestamp: errorInfo.timestamp,
+    url: errorInfo.url,
+    method: errorInfo.method,
+  };
+  const logMetadata = {
+    error: errorInfo.error,
+  };
+
+  // 预期内的业务拒绝（4xx）只记为 warn，避免污染真实异常告警。
+  if (isApiError(error) && error.statusCode < 500) {
+    logger.warn('api:middleware', 'API 业务拒绝', logContext, logMetadata);
+    return;
+  }
+
   // 使用统一日志系统记录错误
-  logger.error(
-    'api:middleware',
-    'API 错误',
-    error,
-    {
-      errorId: errorInfo.errorId,
-      timestamp: errorInfo.timestamp,
-      url: errorInfo.url,
-      method: errorInfo.method,
-    },
-    {
-      error: errorInfo.error,
-    }
-  );
+  logger.error('api:middleware', 'API 错误', error, logContext, logMetadata);
 
   // TODO: 写入数据库或发送到错误监控服务
   // if (env.NODE_ENV === 'production') {

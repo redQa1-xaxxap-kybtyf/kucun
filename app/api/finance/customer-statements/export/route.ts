@@ -86,7 +86,7 @@ interface CustomerStatementSummaryExportRow {
   应收余额: number;
   采购金额: number;
   采购退货金额: number;
-  已付金额: number;
+  已核销金额: number;
   预付款: number;
   应付余额: number;
   净余额: number;
@@ -123,7 +123,7 @@ function buildSummaryExportRow(
     应收余额: summary.receivables.receivableBalance,
     采购金额: summary.payables.purchaseAmount,
     采购退货金额: summary.payables.purchaseReturnAmount,
-    已付金额: summary.payables.paymentPaid,
+    已核销金额: summary.payables.paymentPaid,
     预付款: summary.payables.prepaymentPaid,
     应付余额: summary.payables.payableBalance,
     净余额: summary.netBalance,

@@ -80,6 +80,8 @@ export interface PaymentOutRecord {
   userId: string;
   paymentMethod: PaymentOutMethod;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentDate: Date | string;
   status: PaymentOutStatus;
   remarks?: string;
@@ -116,13 +118,13 @@ export interface PaymentOutRecordDetail extends PaymentOutRecord {
 // 应付款统计数据
 export interface PayableStatistics {
   totalPayables: number;
-  totalPaidAmount: number;
+  totalPaidAmount: number; // 已核销金额（来自 payableRecord.paidAmount，非现金实付）
   totalRemainingAmount: number;
   pendingCount: number;
   partialCount?: number;
   paidCount: number;
   thisMonthPayables: number;
-  thisMonthPayments: number;
+  thisMonthPayments: number; // 本月付款记账金额（paymentAmount，用于应付核销口径）
   // 采购相关扩展统计（按供应商维度汇总）
   purchaseGoodsAmount?: number; // 货款总额（来自采购订单明细）
   purchaseFreightAmount?: number; // 关联运费/费用总额（来自采购订单费用记录）
@@ -174,8 +176,8 @@ export interface PaymentOutRecordResponse {
 // 应付款状态标签映射
 export const PAYABLE_STATUS_LABELS: Record<PayableStatus, string> = {
   pending: '待付款',
-  partial: '部分付款',
-  paid: '已付款',
+  partial: '部分结清',
+  paid: '已结清',
   overdue: '已逾期',
   cancelled: '已取消',
 };

@@ -54,9 +54,9 @@ export interface CustomerStatementSummary {
   payables: {
     purchaseAmount: number; // 采购金额
     purchaseReturnAmount: number; // 采购退货金额
-    paymentPaid: number; // 已付款
+    paymentPaid: number; // 已核销金额（按应付记账/核销口径）
     refundReceived: number; // 已收退款
-    prepaymentPaid: number; // 预付款
+    prepaymentPaid: number; // 预付款（按付款记账口径）
     payableBalance: number; // 应付余额 = 采购 - 退货 - 付款 - 预付 + 退款
   };
 

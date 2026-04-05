@@ -24,6 +24,7 @@ import { parseLocalDateString } from '@/lib/utils/datetime';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { toNumber } from '@/lib/utils/number';
 import { generatePaymentOutNumber } from '@/lib/utils/payment-number-generator';
+import { normalizePaymentOutAmounts } from '@/lib/utils/payment-out-amounts';
 import {
   createPaymentOutRecordSchema,
   paymentOutRecordQuerySchema,
@@ -52,6 +53,8 @@ type PaymentOutRecordWithInclude = {
   userId: string;
   paymentMethod: string;
   paymentAmount: unknown;
+  actualPaymentAmount: unknown;
+  roundingAmount: unknown;
   paymentDate: Date;
   status: string;
   remarks: string | null;
@@ -100,6 +103,8 @@ function serializePaymentOutRecordDetail(
     userId: payment.userId,
     paymentMethod: normalizePaymentOutMethod(payment.paymentMethod),
     paymentAmount: toNumber(payment.paymentAmount),
+    actualPaymentAmount: toNumber(payment.actualPaymentAmount),
+    roundingAmount: toNumber(payment.roundingAmount),
     paymentDate: payment.paymentDate,
     status: normalizePaymentOutStatus(payment.status),
     ...(payment.payableRecordId !== null &&
@@ -207,9 +212,9 @@ export const GET = withAuth(
 
     if (search) {
       where.OR = [
-        { paymentNumber: { contains: search, mode: 'insensitive' } },
-        { supplier: { name: { contains: search, mode: 'insensitive' } } },
-        { voucherNumber: { contains: search, mode: 'insensitive' } },
+        { paymentNumber: { contains: search } },
+        { supplier: { name: { contains: search } } },
+        { voucherNumber: { contains: search } },
       ];
     }
 
@@ -307,7 +312,35 @@ export const POST = withAuth(
   async (request: NextRequest, { user }) => {
     // 解析请求体
     const body = await request.json();
-    const validationResult = createPaymentOutRecordSchema.safeParse(body);
+    const parseNumber = (value: unknown): number => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      return Number.NaN;
+    };
+
+    const normalizedAmounts = normalizePaymentOutAmounts({
+      paymentAmount: parseNumber(body?.paymentAmount),
+      actualPaymentAmount:
+        body?.actualPaymentAmount !== undefined
+          ? parseNumber(body.actualPaymentAmount)
+          : undefined,
+      roundingAmount:
+        body?.roundingAmount !== undefined
+          ? parseNumber(body.roundingAmount)
+          : undefined,
+    });
+
+    const validationResult = createPaymentOutRecordSchema.safeParse({
+      ...body,
+      ...normalizedAmounts,
+    });
 
     if (!validationResult.success) {
       return errorResponse(
@@ -317,10 +350,18 @@ export const POST = withAuth(
     }
 
     const { idempotencyKey, ...data } = validationResult.data;
+    const normalizedData = {
+      ...data,
+      ...normalizePaymentOutAmounts({
+        paymentAmount: data.paymentAmount,
+        actualPaymentAmount: data.actualPaymentAmount,
+        roundingAmount: data.roundingAmount,
+      }),
+    };
 
     // 验证供应商是否存在
     const supplier = await prisma.supplier.findUnique({
-      where: { id: data.supplierId },
+      where: { id: normalizedData.supplierId },
       select: { id: true, name: true, status: true },
     });
 
@@ -334,9 +375,9 @@ export const POST = withAuth(
 
     // 如果关联应付款记录,验证金额
     let payableRecord = null;
-    if (data.payableRecordId) {
+    if (normalizedData.payableRecordId) {
       payableRecord = await prisma.payableRecord.findUnique({
-        where: { id: data.payableRecordId },
+        where: { id: normalizedData.payableRecordId },
         select: {
           id: true,
           payableAmount: true,
@@ -355,9 +396,9 @@ export const POST = withAuth(
         payableRecord.remainingAmount,
         0
       );
-      if (data.paymentAmount > existingRemainingAmount) {
+      if (normalizedData.paymentAmount > existingRemainingAmount) {
         return errorResponse(
-          `付款金额超过应付金额。应付: ￥${existingRemainingAmount.toFixed(2)}, 本次付款: ￥${data.paymentAmount.toFixed(2)}`,
+          `付款金额超过应付金额。应付: ￥${existingRemainingAmount.toFixed(2)}, 本次付款: ￥${normalizedData.paymentAmount.toFixed(2)}`,
           400
         );
       }
@@ -366,7 +407,7 @@ export const POST = withAuth(
     const payment = await withIdempotency(
       idempotencyKey,
       'payment_out_create',
-      data.payableRecordId ?? data.supplierId,
+      normalizedData.payableRecordId ?? normalizedData.supplierId,
       user.id,
       validationResult.data,
       async () => {
@@ -379,14 +420,14 @@ export const POST = withAuth(
             // 创建付款记录
             const newPayment = await tx.paymentOutRecord.create({
               data: {
-                ...data,
+                ...normalizedData,
                 paymentNumber,
                 userId: user.id,
                 // ✅ 付款核销创建即为“已确认”状态（与统计口径、账本描述一致）
                 status: 'confirmed',
                 paymentDate:
-                  parseLocalDateString(data.paymentDate) ??
-                  new Date(data.paymentDate),
+                  parseLocalDateString(normalizedData.paymentDate) ??
+                  new Date(normalizedData.paymentDate),
               },
               include: {
                 payableRecord: {
@@ -416,15 +457,15 @@ export const POST = withAuth(
             });
 
             // 如果关联应付款记录,使用乐观锁更新应付款状态(并发控制)
-            if (payableRecord && data.payableRecordId) {
+            if (payableRecord && normalizedData.payableRecordId) {
               const updateResult = await tx.payableRecord.updateMany({
                 where: {
-                  id: data.payableRecordId,
-                  remainingAmount: { gte: data.paymentAmount },
+                  id: normalizedData.payableRecordId,
+                  remainingAmount: { gte: normalizedData.paymentAmount },
                 },
                 data: {
-                  paidAmount: { increment: data.paymentAmount },
-                  remainingAmount: { decrement: data.paymentAmount },
+                  paidAmount: { increment: normalizedData.paymentAmount },
+                  remainingAmount: { decrement: normalizedData.paymentAmount },
                   updatedAt: new Date(),
                 },
               });
@@ -434,7 +475,7 @@ export const POST = withAuth(
               }
 
               const refreshedPayable = await tx.payableRecord.findUnique({
-                where: { id: data.payableRecordId },
+                where: { id: normalizedData.payableRecordId },
                 select: {
                   status: true,
                   paidAmount: true,
@@ -453,7 +494,7 @@ export const POST = withAuth(
 
               if (computedStatus !== refreshedPayable.status) {
                 await tx.payableRecord.update({
-                  where: { id: data.payableRecordId },
+                  where: { id: normalizedData.payableRecordId },
                   data: {
                     status: computedStatus,
                     updatedAt: new Date(),
@@ -465,8 +506,8 @@ export const POST = withAuth(
               if (env.EXPENSE_TO_PAYABLE_ENABLED) {
                 try {
                   await updateExpensePaymentStatusAfterPayment({
-                    payableRecordId: data.payableRecordId,
-                    paymentAmount: data.paymentAmount,
+                    payableRecordId: normalizedData.payableRecordId,
+                    paymentAmount: normalizedData.paymentAmount,
                     payableAlreadyUpdated: true,
                     tx,
                   });
@@ -477,8 +518,8 @@ export const POST = withAuth(
                     undefined,
                     {
                       paymentNumber,
-                      payableRecordId: data.payableRecordId,
-                      paymentAmount: data.paymentAmount,
+                      payableRecordId: normalizedData.payableRecordId,
+                      paymentAmount: normalizedData.paymentAmount,
                       error:
                         error instanceof Error
                           ? error.message
@@ -492,28 +533,35 @@ export const POST = withAuth(
 
             // ✅ 修复问题1：记录供应商往来账本（与付款记录同事务）
             try {
-              await recordPartnerTransaction(
-                {
-                  partnerId: data.supplierId,
-                  partnerName: supplier.name,
-                  partnerRole: 'supplier',
-                  entityType: 'supplier',
-                  transactionType: 'payment_out',
-                  amount: data.paymentAmount,
-                  referenceId: newPayment.id,
-                  referenceNumber: paymentNumber,
-                  description: `付款 ${paymentNumber} 已确认`,
-                  userId: user.id,
-                  occurredAt: newPayment.paymentDate,
-                  metadata: {
-                    paymentMethod: data.paymentMethod,
-                    payableRecordId: data.payableRecordId ?? undefined,
-                    voucherNumber: data.voucherNumber ?? undefined,
-                    triggeredBy: 'payment_out:create',
+              if (normalizedData.actualPaymentAmount > 0) {
+                await recordPartnerTransaction(
+                  {
+                    partnerId: normalizedData.supplierId,
+                    partnerName: supplier.name,
+                    partnerRole: 'supplier',
+                    entityType: 'supplier',
+                    transactionType: 'payment_out',
+                    amount: normalizedData.actualPaymentAmount,
+                    referenceId: newPayment.id,
+                    referenceNumber: paymentNumber,
+                    description: `付款 ${paymentNumber} 已确认`,
+                    userId: user.id,
+                    occurredAt: newPayment.paymentDate,
+                    metadata: {
+                      paymentMethod: normalizedData.paymentMethod,
+                      payableRecordId:
+                        normalizedData.payableRecordId ?? undefined,
+                      voucherNumber: normalizedData.voucherNumber ?? undefined,
+                      paymentAmount: normalizedData.paymentAmount,
+                      actualPaymentAmount:
+                        normalizedData.actualPaymentAmount,
+                      roundingAmount: normalizedData.roundingAmount,
+                      triggeredBy: 'payment_out:create',
+                    },
                   },
-                },
-                tx
-              );
+                  tx
+                );
+              }
             } catch (error) {
               logger.error(
                 'payments-out',
@@ -523,7 +571,7 @@ export const POST = withAuth(
                 {
                   paymentId: newPayment.id,
                   paymentNumber,
-                  supplierId: data.supplierId,
+                  supplierId: normalizedData.supplierId,
                 }
               );
               // 账本记录失败时回滚整个事务
@@ -574,7 +622,11 @@ export const POST = withAuth(
     // 清除相关缓存
     await clearCacheAfterPaymentOut();
 
-    return successResponse(payment, 201, '付款记录创建成功');
+    return successResponse(
+      serializePaymentOutRecordDetail(payment as PaymentOutRecordWithInclude),
+      201,
+      '付款记录创建成功'
+    );
   },
   { permissions: ['finance:manage'] }
 );

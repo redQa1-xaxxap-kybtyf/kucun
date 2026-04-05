@@ -185,7 +185,7 @@ export function SupplierSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
+        <Command shouldFilter={false}>
           <CommandInput
             placeholder="搜索供应商名称..."
             value={searchValue}

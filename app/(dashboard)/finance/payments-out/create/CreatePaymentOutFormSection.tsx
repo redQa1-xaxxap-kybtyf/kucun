@@ -13,6 +13,7 @@ import { zhCN } from 'date-fns/locale';
 import { Calendar as CalendarIcon, Save } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -46,6 +47,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { cn, formatCurrency } from '@/lib/utils';
 import { getCsrfTokenHeader } from '@/lib/utils/csrf';
+import { computePaymentOutRounding } from '@/lib/utils/payment-out-amounts';
 
 const Calendar = dynamic(
   () => import('@/components/ui/calendar').then(mod => mod.Calendar),
@@ -69,11 +71,26 @@ const createPaymentOutSchema = z.object({
     }
   ),
   paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
+  actualPaymentAmount: z.number().min(0, { error: '实际付款金额不能为负' }),
+  roundingAmount: z.number(),
   paymentDate: z.string().min(1, { error: '请选择付款日期' }),
   voucherNumber: z.string().optional(),
   bankInfo: z.string().optional(),
   remarks: z.string().optional(),
-});
+}).refine(
+  value =>
+    Math.abs(
+      Number(
+        (
+          value.actualPaymentAmount + value.roundingAmount - value.paymentAmount
+        ).toFixed(2)
+      )
+    ) < 0.01,
+  {
+    message: '付款金额应等于实际付款金额与抹零金额之和',
+    path: ['actualPaymentAmount'],
+  }
+);
 
 type CreatePaymentOutFormData = z.infer<typeof createPaymentOutSchema>;
 
@@ -132,7 +149,7 @@ function PayableInfoSidebar({
           </p>
         </div>
         <div>
-          <p className="text-muted-foreground text-sm">已付金额</p>
+          <p className="text-muted-foreground text-sm">已核销金额</p>
           <p className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(payableRecord.paidAmount)}
           </p>
@@ -262,6 +279,54 @@ function PaymentOutFormFields({
                   {formatCurrency(payableRecord.remainingAmount)}
                 </FormDescription>
               )}
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="actualPaymentAmount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>实际付款金额</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                  onChange={e =>
+                    field.onChange(parseFloat(e.target.value) || 0)
+                  }
+                />
+              </FormControl>
+              <FormDescription>
+                供应商实际收到的金额，可低于记账金额用于抹零。
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="roundingAmount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>抹零差额</FormLabel>
+              <FormControl>
+                <Input
+                  readOnly
+                  type="number"
+                  step="0.01"
+                  value={field.value?.toFixed(2) ?? '0.00'}
+                  className="bg-muted"
+                />
+              </FormControl>
+              <FormDescription>
+                自动计算：记账金额 - 实际付款，正值表示少付抹零，负值表示多付。
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -402,20 +467,30 @@ function usePayableData(payableId: string) {
  */
 function useAvailablePayables() {
   const { data: payablesData, isLoading } = useQuery({
-    queryKey: queryKeys.payables.list({ status: 'pending,partial' }),
+    queryKey: queryKeys.payables.list({
+      page: 1,
+      limit: 100,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    }),
     queryFn: async () => {
-      const response = await fetch(
-        '/api/finance/payables?status=pending,partial&limit=100'
-      );
+      const response = await fetch('/api/finance/payables?limit=100');
       if (!response.ok) {
         throw new Error('获取应付款列表失败');
       }
-      return response.json();
+      const payload = (await response.json()) as {
+        data?: {
+          data?: PayableRecord[];
+        };
+      };
+      return payload.data?.data ?? [];
     },
   });
 
   return {
-    availablePayables: (payablesData?.data || []) as PayableRecord[],
+    availablePayables: (payablesData ?? []).filter(
+      payable => payable.status === 'pending' || payable.status === 'partial'
+    ),
     isLoading,
   };
 }
@@ -481,6 +556,8 @@ export function CreatePaymentOutFormSection() {
       supplierId: '',
       paymentMethod: 'bank_transfer',
       paymentAmount: 0,
+      actualPaymentAmount: 0,
+      roundingAmount: 0,
       paymentDate: format(new Date(), 'yyyy-MM-dd'),
       voucherNumber: '',
       bankInfo: '',
@@ -490,6 +567,8 @@ export function CreatePaymentOutFormSection() {
 
   const watchedPayableId = form.watch('payableRecordId');
   const watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedPaymentAmount = form.watch('paymentAmount');
+  const watchedActualPaymentAmount = form.watch('actualPaymentAmount');
 
   // 获取数据
   const payableRecord = usePayableData(watchedPayableId || '');
@@ -499,12 +578,59 @@ export function CreatePaymentOutFormSection() {
 
   // 处理应付款选择
   const handlePayableSelect = (selectedPayableId: string) => {
+    if (!selectedPayableId) {
+      form.setValue('supplierId', '');
+      form.setValue('paymentAmount', 0);
+      form.setValue('actualPaymentAmount', 0);
+      form.setValue('roundingAmount', 0);
+      return;
+    }
+
     const payable = availablePayables.find(p => p.id === selectedPayableId);
     if (payable) {
       form.setValue('supplierId', payable.supplier.id);
       form.setValue('paymentAmount', payable.remainingAmount);
+      form.setValue('actualPaymentAmount', payable.remainingAmount);
+      form.setValue('roundingAmount', 0);
     }
   };
+
+  useEffect(() => {
+    if (!watchedPayableId || !payableRecord) {
+      return;
+    }
+
+    form.setValue('supplierId', payableRecord.supplier.id, {
+      shouldValidate: true,
+    });
+    form.setValue('paymentAmount', payableRecord.remainingAmount, {
+      shouldValidate: true,
+    });
+    form.setValue('actualPaymentAmount', payableRecord.remainingAmount, {
+      shouldValidate: true,
+    });
+    form.setValue('roundingAmount', 0, { shouldValidate: true });
+  }, [form, payableRecord, watchedPayableId]);
+
+  useEffect(() => {
+    if (
+      typeof watchedPaymentAmount !== 'number' ||
+      Number.isNaN(watchedPaymentAmount) ||
+      typeof watchedActualPaymentAmount !== 'number' ||
+      Number.isNaN(watchedActualPaymentAmount)
+    ) {
+      return;
+    }
+
+    const rounding = computePaymentOutRounding(
+      watchedPaymentAmount,
+      watchedActualPaymentAmount
+    );
+
+    if (form.getValues('roundingAmount') !== rounding) {
+      form.setValue('roundingAmount', rounding, { shouldValidate: true });
+    }
+  }, [form, watchedActualPaymentAmount, watchedPaymentAmount]);
 
   // 提交表单
   const onSubmit = (data: CreatePaymentOutFormData) => {

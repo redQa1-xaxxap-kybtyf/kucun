@@ -222,7 +222,11 @@ export const inventoryKeys = {
   batchSpecifications: () =>
     [...inventoryKeys.all, 'batch-specifications'] as const,
   batchSpecificationsList: (
-    params?: BaseFilters & { productId?: string; batchNumber?: string }
+    params?: BaseFilters & {
+      productId?: string;
+      variantId?: string;
+      batchNumber?: string;
+    }
   ) => [...inventoryKeys.batchSpecifications(), 'list', params] as const,
   batchSpecification: (id: string) =>
     [...inventoryKeys.batchSpecifications(), id] as const,

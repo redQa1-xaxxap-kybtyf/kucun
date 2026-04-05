@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import type { BatchMatchResult, ExistingBatch } from '@/lib/types/batch';
+import { formatCostPrice } from '@/lib/utils/cost-price';
 import { formatDate } from '@/lib/utils/datetime';
 
 interface BatchSelectorProps {
@@ -209,10 +210,9 @@ export function BatchSelector({
                                 </div>
                                 <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs">
                                   <span>库存: {batch.quantity}</span>
-                                  {batch.unitCost && (
-                                    <span>
-                                      成本: ¥{batch.unitCost.toFixed(2)}
-                                    </span>
+                                  {batch.unitCost !== null &&
+                                    batch.unitCost !== undefined && (
+                                    <span>成本: {formatCostPrice(batch.unitCost)}</span>
                                   )}
                                   <span>{formatDate(batch.updatedAt)}</span>
                                 </div>

@@ -10,6 +10,7 @@ import {
 import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { paginationConfig } from '@/lib/env';
 import { publishInventoryChange } from '@/lib/events';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
@@ -17,6 +18,7 @@ import {
   consumeFIFOQueueByBatch,
   ensureFIFOQueueMatchesInventory,
 } from '@/lib/services/fifo-cost-service';
+import { runWithFifoTransactionRetry } from '@/lib/services/fifo-transaction-retry';
 import type { OutboundType } from '@/lib/types/inventory';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
@@ -226,38 +228,81 @@ const getOutboundRecordsHandler = withAuth(
       ]);
 
       // 查询每个批次的规格信息以获取实际的每件片数
+      const buildBatchKey = (
+        productId: string,
+        batchNumber: string,
+        variantId?: string | null
+      ) => `${productId}-${variantId ?? ''}-${batchNumber}`;
       const batchSpecMap = new Map<string, number>();
       const batchQueries = records.reduce<
-        Array<{ productId: string; batchNumber: string }>
+        Array<{
+          productId: string;
+          variantId: string | null;
+          batchNumber: string;
+        }>
       >((acc, record) => {
         if (!record.batchNumber) {
           return acc;
         }
         acc.push({
           productId: record.productId,
+          variantId: record.variantId ?? null,
           batchNumber: record.batchNumber,
         });
         return acc;
       }, []);
 
       if (batchQueries.length > 0) {
+        const seenConditions = new Set<string>();
+        const conditions = batchQueries.flatMap(query => {
+          const entries = [
+            {
+              productId: query.productId,
+              variantId: query.variantId,
+              batchNumber: query.batchNumber,
+            },
+          ];
+
+          if (query.variantId) {
+            entries.push({
+              productId: query.productId,
+              variantId: null,
+              batchNumber: query.batchNumber,
+            });
+          }
+
+          return entries.filter(condition => {
+            const key = buildBatchKey(
+              condition.productId,
+              condition.batchNumber,
+              condition.variantId
+            );
+            if (seenConditions.has(key)) {
+              return false;
+            }
+            seenConditions.add(key);
+            return true;
+          });
+        });
+
         const batchSpecs = await prisma.batchSpecification.findMany({
           where: {
-            OR: batchQueries.map(q => ({
-              productId: q.productId,
-              batchNumber: q.batchNumber,
-            })),
+            OR: conditions,
           },
           select: {
             productId: true,
+            variantId: true,
             batchNumber: true,
             piecesPerUnit: true,
           },
-          take: batchQueries.length,
         });
 
         batchSpecs.forEach(spec => {
-          const key = `${spec.productId}-${spec.batchNumber}`;
+          const key = buildBatchKey(
+            spec.productId,
+            spec.batchNumber,
+            spec.variantId ?? null
+          );
           batchSpecMap.set(key, spec.piecesPerUnit);
         });
       }
@@ -265,10 +310,21 @@ const getOutboundRecordsHandler = withAuth(
       // 格式化数据，使用批次规格的每件片数
       const formattedRecords = records.map(record => {
         const batchKey = record.batchNumber
-          ? `${record.productId}-${record.batchNumber}`
+          ? buildBatchKey(
+              record.productId,
+              record.batchNumber,
+              record.variantId ?? null
+            )
+          : null;
+        const fallbackBatchKey = record.batchNumber
+          ? buildBatchKey(record.productId, record.batchNumber, null)
           : null;
         const piecesPerUnit = batchKey
-          ? (batchSpecMap.get(batchKey) ?? record.product.piecesPerUnit)
+          ? (batchSpecMap.get(batchKey) ??
+            (fallbackBatchKey
+              ? batchSpecMap.get(fallbackBatchKey)
+              : undefined) ??
+            record.product.piecesPerUnit)
           : record.product.piecesPerUnit;
 
         return {
@@ -329,169 +385,178 @@ export async function executeOutboundTransaction(
   const normalizedCustomerId =
     typeof customerId === 'string' ? customerId.trim() : '';
 
-  return await prisma.$transaction(async tx => {
-    // ✅ 修复：批次号必填校验
-    if (normalizedBatchNumber.length === 0) {
-      throw new Error('批次号/色号为必填项');
-    }
+  return await runWithFifoTransactionRetry({
+    actionLabel: '出库',
+    moduleName: 'inventory-outbound',
+    operation: () =>
+      prisma.$transaction(async tx => {
+        // ✅ 修复：批次号必填校验
+        if (normalizedBatchNumber.length === 0) {
+          throw new Error('批次号/色号为必填项');
+        }
 
-    // ✅ 修复：如果有客户ID，校验同一客户的批次一致性
-    if (normalizedCustomerId.length > 0) {
-      const existingOutbounds = await tx.outboundRecord.findMany({
-        where: {
-          customerId: normalizedCustomerId,
+        // ✅ 修复：如果有客户ID，校验同一客户的批次一致性
+        if (normalizedCustomerId.length > 0) {
+          const existingOutbounds = await tx.outboundRecord.findMany({
+            where: {
+              customerId: normalizedCustomerId,
+              productId,
+            },
+            select: {
+              batchNumber: true,
+            },
+            distinct: ['batchNumber'],
+            take: 1000,
+          });
+
+          if (existingOutbounds.length > 0) {
+            const existingBatches = existingOutbounds
+              .map(r => r.batchNumber)
+              .filter(Boolean);
+            if (
+              existingBatches.length > 0 &&
+              !existingBatches.includes(normalizedBatchNumber)
+            ) {
+              throw new Error(
+                `同一客户的同一产品必须使用相同批次。已有批次：${existingBatches.join(', ')}`
+              );
+            }
+          }
+        }
+
+        // 1. 查找可用库存（必须指定批次）
+        const whereCondition: {
+          productId: string;
+          variantId?: string;
+          batchNumber: string; // ✅ 修复：批次号必填
+        } = {
           productId,
-        },
-        select: {
-          batchNumber: true,
-        },
-        distinct: ['batchNumber'],
-        take: 1000,
-      });
+          batchNumber: normalizedBatchNumber, // ✅ 修复：必须指定批次
+        };
 
-      if (existingOutbounds.length > 0) {
-        const existingBatches = existingOutbounds
-          .map(r => r.batchNumber)
-          .filter(Boolean);
-        if (
-          existingBatches.length > 0 &&
-          !existingBatches.includes(normalizedBatchNumber)
-        ) {
+        if (normalizedVariantId.length > 0) {
+          whereCondition.variantId = normalizedVariantId;
+        }
+
+        const availableInventory = await tx.inventory.findFirst({
+          where: whereCondition,
+          orderBy: [{ updatedAt: 'asc' }],
+        });
+
+        if (!availableInventory) {
+          throw new Error(`未找到批次 ${normalizedBatchNumber} 的库存记录`);
+        }
+
+        // 记录出库前的数量（用于事件发布）
+        const oldQuantity = availableInventory.quantity;
+
+        // 检查可用库存
+        const availableQuantity =
+          availableInventory.quantity - availableInventory.reservedQuantity;
+        if (availableQuantity < quantity) {
           throw new Error(
-            `同一客户的同一产品必须使用相同批次。已有批次：${existingBatches.join(', ')}`
+            `可用库存不足,当前可用库存:${availableQuantity},需要出库:${quantity}`
           );
         }
-      }
-    }
 
-    // 1. 查找可用库存（必须指定批次）
-    const whereCondition: {
-      productId: string;
-      variantId?: string;
-      batchNumber: string; // ✅ 修复：批次号必填
-    } = {
-      productId,
-      batchNumber: normalizedBatchNumber, // ✅ 修复：必须指定批次
-    };
+        // 2. 使用乐观锁更新库存 - 确保并发安全
+        // ✅ 修复：出库时同时扣减 quantity 和 reservedQuantity
+        const updatedCount = await tx.inventory.updateMany({
+          where: {
+            id: availableInventory.id,
+            quantity: { gte: quantity }, // 确保库存足够
+          },
+          data: {
+            quantity: { decrement: quantity },
+            // ✅ 修复：同时扣减预留量，最多扣减到 0
+            reservedQuantity: {
+              decrement: Math.min(
+                availableInventory.reservedQuantity,
+                quantity
+              ),
+            },
+            updatedAt: new Date(),
+          },
+        });
 
-    if (normalizedVariantId.length > 0) {
-      whereCondition.variantId = normalizedVariantId;
-    }
+        if (updatedCount.count === 0) {
+          throw new Error('库存不足或已被其他操作占用,请重试');
+        }
 
-    const availableInventory = await tx.inventory.findFirst({
-      where: whereCondition,
-      orderBy: [{ updatedAt: 'asc' }],
-    });
+        // 2.1 使用 FIFO 队列计算成本（若发现 FIFO 缺失则在事务内补齐，避免账实不一致）
+        const outboundQty = quantity;
+        const unitCostHint =
+          availableInventory.unitCost !== null &&
+          availableInventory.unitCost !== undefined
+            ? Number(availableInventory.unitCost)
+            : null;
 
-    if (!availableInventory) {
-      throw new Error(`未找到批次 ${normalizedBatchNumber} 的库存记录`);
-    }
+        await ensureFIFOQueueMatchesInventory(
+          {
+            inventoryId: availableInventory.id,
+            productId,
+            variantId: availableInventory.variantId,
+            batchNumber: availableInventory.batchNumber,
+            expectedInventoryQty: oldQuantity,
+            unitCostHint,
+            userId,
+            source: 'inventory-outbound',
+          },
+          tx
+        );
 
-    // 记录出库前的数量（用于事件发布）
-    const oldQuantity = availableInventory.quantity;
+        const fifoCost = await consumeFIFOQueueByBatch(
+          productId,
+          availableInventory.variantId,
+          availableInventory.batchNumber,
+          outboundQty,
+          tx
+        );
 
-    // 检查可用库存
-    const availableQuantity =
-      availableInventory.quantity - availableInventory.reservedQuantity;
-    if (availableQuantity < quantity) {
-      throw new Error(
-        `可用库存不足,当前可用库存:${availableQuantity},需要出库:${quantity}`
-      );
-    }
+        // FIFO 服务已在内部做四舍五入
+        const unitCost = fifoCost.averageUnitCost;
+        const totalCost = fifoCost.totalCost;
 
-    // 2. 使用乐观锁更新库存 - 确保并发安全
-    // ✅ 修复：出库时同时扣减 quantity 和 reservedQuantity
-    const updatedCount = await tx.inventory.updateMany({
-      where: {
-        id: availableInventory.id,
-        quantity: { gte: quantity }, // 确保库存足够
-      },
-      data: {
-        quantity: { decrement: quantity },
-        // ✅ 修复：同时扣减预留量，最多扣减到 0
-        reservedQuantity: {
-          decrement: Math.min(availableInventory.reservedQuantity, quantity),
-        },
-        updatedAt: new Date(),
-      },
-    });
+        // 3. 获取更新后的库存记录
+        const updatedInventory = await tx.inventory.findUnique({
+          where: { id: availableInventory.id },
+          include: {
+            product: {
+              select: { id: true, name: true, code: true },
+            },
+          },
+        });
 
-    if (updatedCount.count === 0) {
-      throw new Error('库存不足或已被其他操作占用,请重试');
-    }
+        // 4. 创建出库记录（包含成本信息）
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const recordNumber = `OUT-${dateStr}-${randomUUID().slice(0, 8).toUpperCase()}`;
+        const notesParts = [reason, notes, remarks]
+          .map(value => (typeof value === 'string' ? value.trim() : ''))
+          .filter(value => value.length > 0);
+        const mergedNotes =
+          notesParts.length > 0 ? notesParts.join(' | ') : null;
 
-    // 2.1 使用 FIFO 队列计算成本（若发现 FIFO 缺失则在事务内补齐，避免账实不一致）
-    const outboundQty = quantity;
-    const unitCostHint =
-      availableInventory.unitCost !== null &&
-      availableInventory.unitCost !== undefined
-        ? Number(availableInventory.unitCost)
-        : null;
+        await tx.outboundRecord.create({
+          data: {
+            recordNumber,
+            productId,
+            inventoryId: availableInventory.id,
+            quantity,
+            unitCost, // FIFO 或库存单位成本
+            totalCost, // FIFO 或库存总成本
+            reason: type,
+            batchNumber: availableInventory.batchNumber,
+            variantId: availableInventory.variantId,
+            notes: mergedNotes,
+            customerId:
+              normalizedCustomerId.length > 0 ? normalizedCustomerId : null,
+            operatorId: userId,
+          },
+        });
 
-    await ensureFIFOQueueMatchesInventory(
-      {
-        inventoryId: availableInventory.id,
-        productId,
-        variantId: availableInventory.variantId,
-        batchNumber: availableInventory.batchNumber,
-        expectedInventoryQty: oldQuantity,
-        unitCostHint,
-        userId,
-        source: 'inventory-outbound',
-      },
-      tx
-    );
-
-    const fifoCost = await consumeFIFOQueueByBatch(
-      productId,
-      availableInventory.variantId,
-      availableInventory.batchNumber,
-      outboundQty,
-      tx
-    );
-
-    // FIFO 服务已在内部做四舍五入
-    const unitCost = fifoCost.averageUnitCost;
-    const totalCost = fifoCost.totalCost;
-
-    // 3. 获取更新后的库存记录
-    const updatedInventory = await tx.inventory.findUnique({
-      where: { id: availableInventory.id },
-      include: {
-        product: {
-          select: { id: true, name: true, code: true },
-        },
-      },
-    });
-
-    // 4. 创建出库记录（包含成本信息）
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const recordNumber = `OUT-${dateStr}-${randomUUID().slice(0, 8).toUpperCase()}`;
-    const notesParts = [reason, notes, remarks]
-      .map(value => (typeof value === 'string' ? value.trim() : ''))
-      .filter(value => value.length > 0);
-    const mergedNotes = notesParts.length > 0 ? notesParts.join(' | ') : null;
-
-    await tx.outboundRecord.create({
-      data: {
-        recordNumber,
-        productId,
-        inventoryId: availableInventory.id,
-        quantity,
-        unitCost, // FIFO 或库存单位成本
-        totalCost, // FIFO 或库存总成本
-        reason: type,
-        batchNumber: availableInventory.batchNumber,
-        variantId: availableInventory.variantId,
-        notes: mergedNotes,
-        customerId:
-          normalizedCustomerId.length > 0 ? normalizedCustomerId : null,
-        operatorId: userId,
-      },
-    });
-
-    return { inventory: updatedInventory, oldQuantity };
+        return { inventory: updatedInventory, oldQuantity };
+      }, getStandardTransactionOptions()),
   });
 }
 

@@ -9,6 +9,8 @@ export interface BatchSpecification {
   id: string;
   /** 产品ID */
   productId: string;
+  /** 产品变体ID */
+  variantId?: string;
   /** 批次号 */
   batchNumber: string;
   /** 每单位片数 */
@@ -24,6 +26,10 @@ export interface BatchSpecification {
 
   // 关联数据（可选，根据查询需要包含）
   product?: import('./product').Product;
+  variant?: Pick<
+    import('./product').ProductVariant,
+    'id' | 'colorCode' | 'colorName' | 'sku'
+  >;
   inboundRecords?: import('./inbound').InboundRecord[];
 }
 
@@ -31,6 +37,8 @@ export interface BatchSpecification {
 export interface CreateBatchSpecificationRequest {
   /** 产品ID */
   productId: string;
+  /** 产品变体ID */
+  variantId?: string;
   /** 批次号 */
   batchNumber: string;
   /** 每单位片数 */
@@ -61,6 +69,8 @@ export interface BatchSpecificationQueryParams {
   search?: string;
   /** 产品ID */
   productId?: string;
+  /** 产品变体ID */
+  variantId?: string;
   /** 批次号 */
   batchNumber?: string;
   /** 开始日期 */

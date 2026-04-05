@@ -8,6 +8,7 @@ import {
   buildOffsetPaginationMeta,
   parseOffsetPagination,
 } from '@/lib/api/pagination';
+import { buildReturnOrderUiStatusWhere } from '@/lib/api/return-order-filters';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
@@ -69,7 +70,9 @@ export const GET = withAuth(
       customerId,
       salesOrderId,
       status,
+      uiStatus,
       type,
+      processType,
       startDate,
       endDate,
       sortBy = 'createdAt',
@@ -115,8 +118,24 @@ export const GET = withAuth(
       where.status = status;
     }
 
+    if (uiStatus) {
+      const existingAndFilters = Array.isArray(where.AND)
+        ? where.AND
+        : where.AND
+          ? [where.AND]
+          : [];
+      where.AND = [
+        ...existingAndFilters,
+        buildReturnOrderUiStatusWhere(uiStatus),
+      ];
+    }
+
     if (type) {
       where.type = type;
+    }
+
+    if (processType) {
+      where.processType = processType;
     }
 
     if (startDate || endDate) {
@@ -182,8 +201,12 @@ export const GET = withAuth(
           refunds: {
             select: {
               id: true,
+              processedAmount: true,
+              processedDate: true,
               refundAmount: true,
               refundDate: true,
+              remainingAmount: true,
+              status: true,
             },
           },
         },
@@ -554,8 +577,12 @@ export const POST = withAuth(
           refunds: {
             select: {
               id: true,
+              processedAmount: true,
+              processedDate: true,
               refundAmount: true,
               refundDate: true,
+              remainingAmount: true,
+              status: true,
             },
           },
         },

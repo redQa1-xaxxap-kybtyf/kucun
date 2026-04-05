@@ -65,6 +65,9 @@ export function BatchSpecificationsTable({
                     产品名称
                   </TableHead>
                   <TableHead className="py-4 font-black text-slate-500">
+                    色号
+                  </TableHead>
+                  <TableHead className="py-4 font-black text-slate-500">
                     批次号
                   </TableHead>
                   <TableHead className="py-4 font-black text-slate-500">
@@ -128,6 +131,9 @@ export function BatchSpecificationsTable({
                         <TableCell className="py-4 text-xs font-bold text-slate-600">
                           {spec.product?.name || '-'}
                         </TableCell>
+                        <TableCell className="py-4 text-xs font-semibold text-slate-500">
+                          {spec.variant?.colorCode || '通用'}
+                        </TableCell>
                         <TableCell className="py-4">
                           <span className="rounded-md border border-amber-100 bg-amber-50 px-2 py-0.5 text-[10px] font-black text-amber-600 uppercase">
                             {spec.batchNumber}
@@ -162,7 +168,7 @@ export function BatchSpecificationsTable({
                               <Link
                                 href={`/inventory/batch/${encodeURIComponent(
                                   spec.batchNumber
-                                )}/history?productId=${spec.productId}`}
+                                )}/history?productId=${spec.productId}${spec.variantId ? `&variantId=${spec.variantId}` : ''}`}
                                 prefetch={false}
                               >
                                 <History className="h-4 w-4" />
@@ -263,6 +269,9 @@ export function BatchSpecificationsTable({
                     <div className="mt-1 text-sm font-bold text-slate-600">
                       {spec.product?.name || '-'}
                     </div>
+                    <div className="mt-1 text-xs font-semibold text-slate-500">
+                      色号：{spec.variant?.colorCode || '通用'}
+                    </div>
                     <div className="mt-2 text-xs font-medium text-slate-400">
                       规格：{spec.product?.specification || '-'}
                     </div>
@@ -304,7 +313,7 @@ export function BatchSpecificationsTable({
                         <Link
                           href={`/inventory/batch/${encodeURIComponent(
                             spec.batchNumber
-                          )}/history?productId=${spec.productId}`}
+                          )}/history?productId=${spec.productId}${spec.variantId ? `&variantId=${spec.variantId}` : ''}`}
                           prefetch={false}
                         >
                           <History className="h-4 w-4" />

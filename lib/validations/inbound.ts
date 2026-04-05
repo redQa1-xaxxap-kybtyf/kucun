@@ -3,7 +3,12 @@
 
 import { z } from 'zod';
 
-import type { InboundReason } from '@/lib/types/inbound';
+import type { InboundDamageHandling, InboundReason } from '@/lib/types/inbound';
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
 
 export type { InboundReason } from '@/lib/types/inbound';
 
@@ -21,6 +26,11 @@ export const inboundReasonSchema = z.enum([
 
 // 入库单位类型
 export const inboundUnitSchema = z.enum(['pieces', 'units'] as const);
+
+export const inboundDamageHandlingSchema = z.enum([
+  'supplier_claim',
+  'internal_loss',
+] as const);
 
 // 创建入库记录验证规则
 export const createInboundSchema = z
@@ -88,6 +98,50 @@ export const createInboundSchema = z
       .refine(
         val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
         '备注包含不安全的内容'
+      ),
+
+    damagedInputQuantity: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '到货破损数量必须是数字' })
+        .min(0, { message: '到货破损数量不能为负数' })
+        .max(999999, { message: '到货破损数量不能超过999999' })
+        .int({ message: '到货破损数量必须是整数' })
+        .optional()
+    ),
+
+    damagedQuantity: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({ message: '到货破损片数必须是数字' })
+        .min(0, { message: '到货破损片数不能为负数' })
+        .max(999999, { message: '到货破损片数不能超过999999' })
+        .int({ message: '到货破损片数必须是整数' })
+        .optional()
+    ),
+
+    damageHandling: inboundDamageHandlingSchema.optional(),
+
+    damageRemarks: z
+      .string()
+      .max(500, '破损备注不能超过500个字符')
+      .optional()
+      .transform(val => val?.trim() || undefined)
+      .refine(
+        val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+        '破损备注包含不安全的内容'
       ),
 
     // 批次管理字段
@@ -180,8 +234,12 @@ export const createInboundSchema = z
             issue.input === undefined ? '请填写单位成本' : '单位成本必须是数字',
         })
         .min(0.01, { message: '单位成本必须大于0' })
-        .max(999999.99, { message: '单位成本不能超过999,999.99' })
-        .multipleOf(0.01, { message: '单位成本最多保留2位小数' })
+        .max(COST_PRICE_MAX, {
+          message: `单位成本不能超过${COST_PRICE_MAX_LABEL}`,
+        })
+        .refine(hasAtMostCostPriceDecimals, {
+          message: '单位成本最多保留3位小数',
+        })
     ),
   })
   .refine(data => !data.purchaseOrderItemId || Boolean(data.purchaseOrderId), {
@@ -191,10 +249,55 @@ export const createInboundSchema = z
   .refine(
     data =>
       data.reason !== 'purchase' ||
-      (Boolean(data.purchaseOrderId) && Boolean(data.purchaseOrderItemId)),
+      ((Boolean(data.purchaseOrderId) && Boolean(data.purchaseOrderItemId)) ||
+        (!data.purchaseOrderId && !data.purchaseOrderItemId)),
     {
       message: '采购入库必须关联采购订单与明细',
       path: ['purchaseOrderId'],
+    }
+  )
+  .refine(
+    data =>
+      data.inputUnit !== 'units' ||
+      (typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0),
+    {
+      message: '按件入库时必须填写装箱数',
+      path: ['piecesPerUnit'],
+    }
+  )
+  .refine(
+    data =>
+      data.inputUnit === 'units'
+        ? typeof data.piecesPerUnit === 'number' &&
+          typeof data.inputQuantity === 'number' &&
+          data.quantity === data.inputQuantity * data.piecesPerUnit
+        : typeof data.inputQuantity === 'number' &&
+          data.quantity === data.inputQuantity,
+    {
+      message: '最终片数与录入数量/装箱数不一致，请刷新后重试',
+      path: ['quantity'],
+    }
+  )
+  .refine(
+    data =>
+      (data.damagedInputQuantity ?? 0) <= 0 || Boolean(data.damageHandling),
+    {
+      message: '有到货破损时必须选择处理方式',
+      path: ['damageHandling'],
+    }
+  )
+  .refine(
+    data =>
+      (data.damagedInputQuantity ?? 0) <= 0
+        ? (data.damagedQuantity ?? 0) <= 0
+        : data.inputUnit === 'units'
+          ? typeof data.piecesPerUnit === 'number' &&
+            data.damagedQuantity ===
+              (data.damagedInputQuantity ?? 0) * data.piecesPerUnit
+          : data.damagedQuantity === data.damagedInputQuantity,
+    {
+      message: '破损片数与录入数量/装箱数不一致，请刷新后重试',
+      path: ['damagedQuantity'],
     }
   );
 
@@ -274,6 +377,16 @@ export const inboundQuerySchema = z.object({
         ].includes(val),
       '入库原因格式不正确'
     ),
+
+  hasDamage: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      val => !val || ['true', 'false'].includes(val),
+      '破损筛选格式不正确'
+    )
+    .transform(val => val === 'true'),
 
   userId: z
     .string()
@@ -406,6 +519,59 @@ export const inboundFormSchema = z
         '备注包含不安全的内容'
       ), // ✅ 移除 .transform()
 
+    damagedInputQuantity: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({
+          error: issue =>
+            issue.input === undefined
+              ? '到货破损数量不能为空'
+              : '到货破损数量必须是数字',
+        })
+        .min(0, { message: '到货破损数量不能为负数' })
+        .max(999999, { message: '到货破损数量不能超过999999' })
+        .int({ message: '到货破损数量必须是整数' })
+        .optional()
+    ),
+
+    damagedQuantity: z.preprocess(
+      val => {
+        if (val === undefined || val === null || val === '') {
+          return undefined;
+        }
+        const num = typeof val === 'number' ? val : Number(val);
+        return Number.isNaN(num) ? undefined : num;
+      },
+      z
+        .number({
+          error: issue =>
+            issue.input === undefined
+              ? '到货破损片数不能为空'
+              : '到货破损片数必须是数字',
+        })
+        .min(0, { message: '到货破损片数不能为负数' })
+        .max(999999, { message: '到货破损片数不能超过999999' })
+        .int({ message: '到货破损片数必须是整数' })
+        .optional()
+    ),
+
+    damageHandling: inboundDamageHandlingSchema.optional(),
+
+    damageRemarks: z
+      .string()
+      .max(500, '破损备注不能超过500个字符')
+      .optional()
+      .refine(
+        val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+        '破损备注包含不安全的内容'
+      ),
+
     // 批次管理字段
     // ✅ 修复：批次号设为必填
     batchNumber: z
@@ -514,8 +680,12 @@ export const inboundFormSchema = z
         z
           .number()
           .min(0.01, { message: '单位成本必须大于0' })
-          .max(999999.99, { message: '单位成本不能超过999,999.99' })
-          .multipleOf(0.01, { message: '单位成本最多保留2位小数' })
+          .max(COST_PRICE_MAX, {
+            message: `单位成本不能超过${COST_PRICE_MAX_LABEL}`,
+          })
+          .refine(hasAtMostCostPriceDecimals, {
+            message: '单位成本最多保留3位小数',
+          })
           .optional()
       )
       .refine(val => val !== undefined && val !== null, {
@@ -531,8 +701,10 @@ export const inboundFormSchema = z
   .refine(
     data =>
       data.reason !== 'purchase' ||
-      ((data.purchaseOrderId ?? '').trim().length > 0 &&
-        (data.purchaseOrderItemId ?? '').trim().length > 0),
+      (((data.purchaseOrderId ?? '').trim().length > 0 &&
+        (data.purchaseOrderItemId ?? '').trim().length > 0) ||
+        ((data.purchaseOrderId ?? '').trim().length === 0 &&
+          (data.purchaseOrderItemId ?? '').trim().length === 0)),
     {
       message: '采购入库必须关联采购订单与明细',
       path: ['purchaseOrderId'],
@@ -548,6 +720,50 @@ export const inboundFormSchema = z
       message: '请选择供应商',
       path: ['supplierId'],
     }
+  )
+  .refine(
+    data =>
+      data.inputUnit !== 'units' ||
+      (typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0),
+    {
+      message: '按件入库时必须填写装箱数',
+      path: ['piecesPerUnit'],
+    }
+  )
+  .refine(
+    data =>
+      data.inputUnit === 'units'
+        ? typeof data.piecesPerUnit === 'number' &&
+          typeof data.inputQuantity === 'number' &&
+          data.quantity === data.inputQuantity * data.piecesPerUnit
+        : typeof data.inputQuantity === 'number' &&
+          data.quantity === data.inputQuantity,
+    {
+      message: '最终片数与录入数量/装箱数不一致，请刷新后重试',
+      path: ['quantity'],
+    }
+  )
+  .refine(
+    data =>
+      (data.damagedInputQuantity ?? 0) <= 0 || Boolean(data.damageHandling),
+    {
+      message: '有到货破损时必须选择处理方式',
+      path: ['damageHandling'],
+    }
+  )
+  .refine(
+    data =>
+      (data.damagedInputQuantity ?? 0) <= 0
+        ? (data.damagedQuantity ?? 0) <= 0
+        : data.inputUnit === 'units'
+          ? typeof data.piecesPerUnit === 'number' &&
+            data.damagedQuantity ===
+              (data.damagedInputQuantity ?? 0) * data.piecesPerUnit
+          : data.damagedQuantity === data.damagedInputQuantity,
+    {
+      message: '破损片数与录入数量/装箱数不一致，请刷新后重试',
+      path: ['damagedQuantity'],
+    }
   );
 
 // 类型导出
@@ -559,6 +775,9 @@ export type InboundIdData = z.infer<typeof inboundIdSchema>;
 export type ProductSearchData = z.infer<typeof productSearchSchema>;
 // ✅ 表单数据类型 - 用于 React Hook Form
 export type InboundFormData = z.infer<typeof inboundFormSchema>;
+export type InboundDamageHandlingData = z.infer<
+  typeof inboundDamageHandlingSchema
+>;
 
 // 验证辅助函数
 export const validateInboundReason = (
@@ -574,6 +793,11 @@ export const validateInboundReason = (
     'return_inbound',
     'opening_balance',
   ].includes(reason);
+
+export const validateInboundDamageHandling = (
+  value: string
+): value is InboundDamageHandling =>
+  ['supplier_claim', 'internal_loss'].includes(value);
 
 // 数量格式化辅助函数
 export const formatQuantity = (quantity: number): number =>

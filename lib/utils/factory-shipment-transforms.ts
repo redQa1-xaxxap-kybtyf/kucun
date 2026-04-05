@@ -4,6 +4,7 @@ import {
   type FactoryShipmentItemOwnership,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
+import { toPieceOrSheetLabel } from '@/lib/utils/inventory-unit-conversion';
 import type {
   CreateFactoryShipmentOrderData,
   FactoryShipmentOrderItemData,
@@ -71,7 +72,7 @@ function normalizeItemForSubmit(
     remarks: trimToString(item.remarks),
     displayName: trimToString(item.displayName),
     specification: trimToString(item.specification),
-    unit: item.unit ?? '片',
+    unit: toPieceOrSheetLabel(item.unit),
     manualProductName: trimToUndefined(item.manualProductName),
     manualSpecification: trimToUndefined(item.manualSpecification),
     manualUnit: trimToUndefined(item.manualUnit),
@@ -129,7 +130,7 @@ export function transformFactoryShipmentFromAPI(
       ),
       displayName: item.displayName ?? '',
       specification: item.specification ?? '',
-      unit: item.unit === '件' || item.unit === '片' ? item.unit : '片',
+      unit: toPieceOrSheetLabel(item.unit),
       piecesPerUnit: toOptionalNumber(item.piecesPerUnit),
       weight: toOptionalNumber(item.weight),
       ownershipRemarks: item.ownershipRemarks ?? '',

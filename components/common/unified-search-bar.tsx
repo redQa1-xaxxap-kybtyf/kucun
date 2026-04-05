@@ -35,6 +35,7 @@ export interface FilterConfig {
   placeholder?: string;
   width?: string; // Tailwind类名,如 'w-32'
   includeAllOption?: boolean;
+  defaultValue?: string;
 }
 
 /**
@@ -93,6 +94,19 @@ export interface UnifiedSearchBarProps {
   variant?: 'default' | 'pro'; // 样式变体
 }
 
+function getResponsiveFilterWidthClass(width?: string) {
+  if (!width) {
+    return 'w-full sm:w-32';
+  }
+
+  const tokens = width.split(/\s+/).filter(Boolean);
+  const normalizedTokens = tokens.map(token =>
+    /^w-/.test(token) ? `sm:${token}` : token
+  );
+
+  return ['w-full', ...normalizedTokens].join(' ');
+}
+
 interface ActionButtonsSectionProps {
   actionButtons: ActionButton[];
   buttonSize: string;
@@ -115,14 +129,14 @@ const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
           key={action.key || action.label || `action-${index}`}
           size={compact ? 'sm' : 'default'}
           variant={action.variant || 'default'}
-          className={cn(buttonSize, action.className)}
+          className={cn('w-full justify-center sm:w-auto', buttonSize, action.className)}
           onClick={action.onClick}
         >
           {action.icon}
           {action.label}
         </Button>
       ))}
-      <div className="bg-border mx-1 h-6 w-px" />
+      <div className="bg-border mx-1 hidden h-6 w-px sm:block" />
     </>
   );
 };
@@ -148,7 +162,7 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
   searchValue,
   showClearButton,
 }) => (
-  <div className="relative w-full min-w-[200px] sm:w-[320px]">
+  <div className="relative min-w-0 w-full flex-1 sm:max-w-[320px] sm:min-w-[200px]">
     {isSearching ? (
       <Loader2
         className={cn(
@@ -165,6 +179,11 @@ const SearchInputBox: React.FC<SearchInputBoxProps> = ({
       />
     )}
     <Input
+      type="search"
+      inputMode="search"
+      enterKeyHint="search"
+      autoCapitalize="off"
+      autoCorrect="off"
       placeholder={searchPlaceholder}
       value={searchValue}
       onChange={onChange}
@@ -267,7 +286,7 @@ const ToggleButtonsSection: React.FC<ToggleButtonsSectionProps> = ({
 
 interface FiltersSectionProps {
   compact: boolean;
-  createHandler: (key: string) => (value: string) => void;
+  createHandler: (filter: FilterConfig) => (value: string) => void;
   filterValues: Record<string, string | undefined>;
   filters: FilterConfig[];
   inputSize: string;
@@ -289,17 +308,19 @@ const FiltersSection: React.FC<FiltersSectionProps> = ({
       {filters.map(filter => {
         const includeAllOption = filter.includeAllOption ?? true;
         const selectedValue =
-          filterValues[filter.key] ?? (includeAllOption ? 'all' : '');
+          filterValues[filter.key] ??
+          filter.defaultValue ??
+          (includeAllOption ? 'all' : '');
 
         return (
           <select
             key={filter.key}
             aria-label={filter.label}
             value={selectedValue}
-            onChange={e => createHandler(filter.key)(e.target.value)}
+            onChange={e => createHandler(filter)(e.target.value)}
             className={cn(
               inputSize,
-              filter.width || 'w-32',
+              getResponsiveFilterWidthClass(filter.width),
               compact && 'text-xs',
               // Pro 样式覆盖
               inputSize.includes('h-14') &&
@@ -367,10 +388,14 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
 
     // 筛选器变更处理
     const handleFilterChange = React.useCallback(
-      (key: string) => (value: string) => {
+      (filter: FilterConfig) => (value: string) => {
         if (onFilterChange) {
-          const newValue = value === 'all' || value === '' ? undefined : value;
-          onFilterChange(key, newValue);
+          const includeAllOption = filter.includeAllOption ?? true;
+          const isResetValue =
+            value === '' ||
+            (includeAllOption && value === 'all') ||
+            (filter.defaultValue !== undefined && value === filter.defaultValue);
+          onFilterChange(filter.key, isResetValue ? undefined : value);
         }
       },
       [onFilterChange]

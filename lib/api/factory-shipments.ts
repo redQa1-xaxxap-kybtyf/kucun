@@ -408,7 +408,12 @@ export function useUpdateFactoryShipmentOrderStatus() {
       id: string;
       data: UpdateFactoryShipmentOrderStatusData;
     }) => updateFactoryShipmentOrderStatus(id, data),
-    onSuccess: (_, { id }) => {
+    onSuccess: (updatedOrder, { id }) => {
+      queryClient.setQueryData(
+        queryKeys.factoryShipments.detail(id),
+        updatedOrder
+      );
+
       // ✅ 使用 refetchQueries 强制立即刷新，确保用户更新状态后立即看到变化
       // 刷新详情页
       queryClient.refetchQueries({

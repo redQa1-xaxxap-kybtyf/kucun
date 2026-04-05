@@ -16,7 +16,7 @@ import type { InboundPostProcessingJobData } from '@/lib/queue/inbound-queue';
 async function processInboundPostProcessing(
   job: Job<InboundPostProcessingJobData>
 ): Promise<void> {
-  const { productId, batchNumber, piecesPerUnit, weight } = job.data;
+  const { productId, batchNumber, piecesPerUnit, weight, variantId } = job.data;
 
   // eslint-disable-next-line no-console
   console.log(
@@ -28,6 +28,7 @@ async function processInboundPostProcessing(
     try {
       await upsertBatchSpecification({
         productId,
+        variantId,
         batchNumber,
         piecesPerUnit: piecesPerUnit || 1,
         weight: weight || undefined,

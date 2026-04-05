@@ -1,13 +1,13 @@
 import type {
   ReturnOrder,
-  ReturnOrderStatus,
   ReturnOrderType,
   ReturnProcessType,
+  ReturnOrderUiStatus,
 } from '@/lib/types/return-order';
 
 export interface ReturnOrderListViewProps {
   searchValue: string;
-  statusFilter: ReturnOrderStatus | 'all';
+  statusFilter: ReturnOrderUiStatus | 'all';
   typeFilter: ReturnOrderType | 'all';
   processTypeFilter: ReturnProcessType | 'all';
   includeTest?: boolean;
@@ -15,7 +15,7 @@ export interface ReturnOrderListViewProps {
   dateRange: { startDate?: string; endDate?: string };
   isSearching: boolean;
   onSearch: (value: string) => void;
-  onStatusChange: (value: ReturnOrderStatus | 'all') => void;
+  onStatusChange: (value: ReturnOrderUiStatus | 'all') => void;
   onTypeChange: (value: ReturnOrderType | 'all') => void;
   onProcessTypeChange: (value: ReturnProcessType | 'all') => void;
   onIncludeTestToggle: () => void;

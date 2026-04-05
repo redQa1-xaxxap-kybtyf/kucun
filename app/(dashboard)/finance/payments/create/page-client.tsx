@@ -108,6 +108,8 @@ interface SalesOrder {
   createdAt: string;
 }
 
+const PAYMENT_SELECTABLE_ORDER_STATUSES = new Set(['confirmed', 'shipped']);
+
 /**
  * 创建收款记录页面组件
  */
@@ -160,11 +162,9 @@ export default function CreatePaymentPage() {
 
   // 获取可用的销售订单列表
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: queryKeys.salesOrders.list({ status: 'confirmed,shipped' }),
+    queryKey: queryKeys.salesOrders.list({ status: 'payment-selectable' }),
     queryFn: async () => {
-      const response = await fetch(
-        '/api/sales-orders?status=confirmed,shipped&hasUnpaidAmount=true'
-      );
+      const response = await fetch('/api/sales-orders?limit=100');
       if (!response.ok) {
         throw new Error('获取订单列表失败');
       }
@@ -172,7 +172,13 @@ export default function CreatePaymentPage() {
     },
   });
 
-  const availableOrders: SalesOrder[] = ordersData?.data?.orders || [];
+  const availableOrders: SalesOrder[] = Array.isArray(ordersData?.data?.data)
+    ? ordersData.data.data.filter(
+        (order: SalesOrder) =>
+          PAYMENT_SELECTABLE_ORDER_STATUSES.has(order.status) &&
+          order.remainingAmount > 0
+      )
+    : [];
 
   useEffect(() => {
     if (

@@ -1,17 +1,30 @@
 'use client';
 
 import {
+  AlertCircle,
   ArrowLeft,
+  CheckCircle2,
   Download,
   Edit,
   MoreHorizontal,
   Printer,
   Truck,
+  Undo2,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +37,7 @@ import {
 import { useSalesOrderExport } from '@/hooks/use-sales-order-export';
 import {
   SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_TYPE_LABELS,
   SAMPLE_SETTLEMENT_TYPE_LABELS,
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
@@ -43,7 +57,11 @@ interface Props {
   order: SalesOrderDetail;
   id: string;
   canEditOrder: boolean;
+  canConfirmOrder: boolean;
+  withdrawConfirmationDisabledReason?: string;
   isUpdatingStatus: boolean;
+  onConfirmOrder: () => void;
+  onWithdrawConfirmation: () => void;
   onConfirmShipment: () => void;
   onShowToast: (
     title: string,
@@ -56,12 +74,17 @@ interface Props {
 
 interface HeaderActionsProps {
   canEditOrder: boolean;
+  canConfirmOrder: boolean;
+  isDraft: boolean;
   isConfirmed: boolean;
+  withdrawConfirmationDisabledReason?: string;
   isUpdatingStatus: boolean;
   isExportingImage: boolean;
   isExportingExcel: boolean;
   onBack: () => void;
   onEdit: () => void;
+  onConfirmOrder: () => void;
+  onRequestWithdrawConfirmation: () => void;
   onConfirmShipment: () => void;
   onPrint: () => void;
   onExportImage: () => void;
@@ -82,9 +105,9 @@ type TransferModeKey = keyof typeof TRANSFER_MODE_BADGE_STYLES;
 
 const getOrderTypeBadge = (orderType: string) =>
   orderType === 'TRANSFER' ? (
-    <Badge variant="secondary">调货销售</Badge>
+    <Badge variant="secondary">{SALES_ORDER_TYPE_LABELS.TRANSFER}</Badge>
   ) : (
-    <Badge variant="outline">正常销售</Badge>
+    <Badge variant="outline">{SALES_ORDER_TYPE_LABELS.NORMAL}</Badge>
   );
 
 const getSampleBadge = (
@@ -155,12 +178,17 @@ function SalesOrderMeta({ order }: SalesOrderMetaProps) {
 
 function HeaderActions({
   canEditOrder,
+  canConfirmOrder,
+  isDraft,
   isConfirmed,
+  withdrawConfirmationDisabledReason,
   isUpdatingStatus,
   isExportingImage,
   isExportingExcel,
   onBack,
   onEdit,
+  onConfirmOrder,
+  onRequestWithdrawConfirmation,
   onConfirmShipment,
   onPrint,
   onExportImage,
@@ -188,6 +216,31 @@ function HeaderActions({
         <Edit className="mr-1.5 h-3.5 w-3.5" />
         编辑
       </Button>
+      {isDraft && (
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onConfirmOrder}
+          disabled={!canConfirmOrder || isUpdatingStatus}
+          className="h-8 bg-[hsl(var(--color-primary))] px-3 text-xs text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))] disabled:bg-[hsl(var(--color-primary))] disabled:text-[hsl(var(--color-text-on-primary))] disabled:opacity-60 sm:h-9 sm:px-4"
+        >
+          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+          {isUpdatingStatus ? '处理中...' : '确认订单'}
+        </Button>
+      )}
+      {isConfirmed && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onRequestWithdrawConfirmation}
+          disabled={isUpdatingStatus}
+          title={withdrawConfirmationDisabledReason}
+          className="h-8 px-3 text-xs sm:h-9 sm:px-4"
+        >
+          <Undo2 className="mr-1.5 h-3.5 w-3.5" />
+          {isUpdatingStatus ? '处理中...' : '撤回确认'}
+        </Button>
+      )}
       {isConfirmed && (
         <Button
           variant="default"
@@ -263,7 +316,11 @@ export function HeaderCard({
   order,
   id,
   canEditOrder,
+  canConfirmOrder,
+  withdrawConfirmationDisabledReason,
   isUpdatingStatus,
+  onConfirmOrder,
+  onWithdrawConfirmation,
   onConfirmShipment,
   onShowToast,
 }: Props) {
@@ -277,6 +334,7 @@ export function HeaderCard({
   } = useSalesOrderExport();
 
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [isWithdrawConfirmOpen, setIsWithdrawConfirmOpen] = useState(false);
 
   const handleExportImage = useCallback(async () => {
     await exportToImage({
@@ -303,12 +361,29 @@ export function HeaderCard({
       return;
     }
 
-    onShowToast('无法编辑', '只有草稿状态的订单才能编辑', 'destructive');
+    onShowToast(
+      '无法编辑',
+      '只有未确认的草稿订单才能直接编辑，请先通过草稿方式保存订单。',
+      'destructive'
+    );
   }, [canEditOrder, id, onShowToast, router]);
 
   const handlePrint = useCallback(() => {
     setIsPrintDialogOpen(true);
   }, []);
+
+  const handleRequestWithdrawConfirmation = useCallback(() => {
+    if (withdrawConfirmationDisabledReason) {
+      onShowToast(
+        '暂不能撤回确认',
+        withdrawConfirmationDisabledReason,
+        'destructive'
+      );
+      return;
+    }
+
+    setIsWithdrawConfirmOpen(true);
+  }, [onShowToast, withdrawConfirmationDisabledReason]);
 
   return (
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-[0_2px_12px_rgba(0,0,0,0.02)]">
@@ -318,12 +393,19 @@ export function HeaderCard({
           <div className="h-px w-full bg-slate-100 lg:hidden" />
           <HeaderActions
             canEditOrder={canEditOrder}
+            canConfirmOrder={canConfirmOrder}
+            isDraft={order.status === 'draft'}
             isConfirmed={order.status === 'confirmed'}
+            withdrawConfirmationDisabledReason={
+              withdrawConfirmationDisabledReason
+            }
             isUpdatingStatus={isUpdatingStatus}
             isExportingImage={isExportingImage}
             isExportingExcel={isExportingExcel}
             onBack={() => router.back()}
             onEdit={handleEdit}
+            onConfirmOrder={onConfirmOrder}
+            onRequestWithdrawConfirmation={handleRequestWithdrawConfirmation}
             onConfirmShipment={onConfirmShipment}
             onPrint={handlePrint}
             onExportImage={handleExportImage}
@@ -341,6 +423,39 @@ export function HeaderCard({
           title="销售订单打印"
         />
       )}
+      <AlertDialog
+        open={isWithdrawConfirmOpen}
+        onOpenChange={setIsWithdrawConfirmOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50">
+                <AlertCircle className="h-5 w-5 text-amber-600" />
+              </div>
+              <AlertDialogTitle>确认撤回为草稿</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4 text-sm leading-6 text-slate-600">
+              撤回后，订单会回到
+              <strong>草稿</strong>
+              状态，可重新修改后再确认。
+              <br />
+              系统会同步释放预留库存，并关闭当前待收记录。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>暂不撤回</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setIsWithdrawConfirmOpen(false);
+                onWithdrawConfirmation();
+              }}
+            >
+              确认撤回
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

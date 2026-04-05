@@ -9,6 +9,7 @@ import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { isPieceEntryUnit } from '@/lib/utils/inventory-unit-conversion';
 
 import type { FactoryShipmentOrderItemFormData } from './schemas';
 
@@ -199,4 +200,17 @@ export function validateFactoryShipmentItems(
 ): void {
   validateManualProductFields(items, ctx, status);
   validateRequiredFieldsByStatus(items, status, ctx);
+
+  items.forEach((item, index) => {
+    if (
+      isPieceEntryUnit(item.unit) &&
+      (!Number.isInteger(item.piecesPerUnit) || (item.piecesPerUnit ?? 0) <= 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['items', index, 'piecesPerUnit'],
+        message: '按件录入时必须填写每件片数',
+      });
+    }
+  });
 }

@@ -3,6 +3,13 @@
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  formatCostPrice,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
+
 const prisma = new PrismaClient();
 
 // 数据验证模式
@@ -16,7 +23,12 @@ export const OrderValidationSchema = z.object({
         variantId: z.string().uuid('变体ID格式无效').optional(),
         quantity: z.number().positive('数量必须大于0'),
         unitPrice: z.number().min(0, '单价不能为负数'),
-        unitCost: z.number().min(0, '成本不能为负数').optional(),
+        unitCost: z
+          .number()
+          .min(0, '成本不能为负数')
+          .max(COST_PRICE_MAX, `成本不能超过${COST_PRICE_MAX_LABEL}`)
+          .refine(hasAtMostCostPriceDecimals, '成本最多保留3位小数')
+          .optional(),
       })
     )
     .min(1, '订单必须包含至少一个商品'),
@@ -236,7 +248,7 @@ export class ValidationService {
             message:
               unitPrice >= unitCost
                 ? '售价高于成本'
-                : `售价低于成本（售价: ${unitPrice.toFixed(2)}, 成本: ${unitCost.toFixed(2)}）`,
+                : `售价低于成本（售价: ${unitPrice.toFixed(2)}, 成本: ${formatCostPrice(unitCost, { withSymbol: false })}）`,
             severity: unitPrice >= unitCost ? 'INFO' : 'WARNING',
           });
         }

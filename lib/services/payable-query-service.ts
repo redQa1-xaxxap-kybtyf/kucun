@@ -137,6 +137,8 @@ function serializePayables(
       userId: record.userId,
       paymentMethod: record.paymentMethod as PaymentOutMethod,
       paymentAmount: toNumber(record.paymentAmount),
+      actualPaymentAmount: toNumber(record.actualPaymentAmount),
+      roundingAmount: toNumber(record.roundingAmount),
       paymentDate: record.paymentDate,
       status: record.status as PaymentOutStatus,
       ...(record.remarks !== null && record.remarks !== undefined
@@ -185,6 +187,8 @@ async function fetchPayables(
           supplierId: true,
           userId: true,
           paymentAmount: true,
+          actualPaymentAmount: true,
+          roundingAmount: true,
           paymentDate: true,
           paymentMethod: true,
           status: true,

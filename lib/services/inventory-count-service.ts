@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 
 import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { logger } from '@/lib/logger';
 import {
   addToFIFOQueue,
@@ -12,6 +13,7 @@ import {
   ensureFIFOQueueMatchesInventory,
   getWeightedAverageCostFromFIFO,
 } from '@/lib/services/fifo-cost-service';
+import { runWithFifoTransactionRetry } from '@/lib/services/fifo-transaction-retry';
 import { getInventoryCountById as getInventoryCountDetailById } from '@/lib/services/inventory-count/queries';
 import {
   COUNT_STATUS_LABELS,
@@ -26,6 +28,7 @@ import {
   type UpdateInventoryCountRequest,
 } from '@/lib/types/inventory-count';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
 
 const roundCurrency = (value: number): number =>
@@ -894,230 +897,236 @@ export async function completeCount(
   }
 
   // 2. 在事务中完成盘点并自动调整库存
-  const count = await prisma.$transaction(async tx => {
-    // 2.1 遍历所有有差异的盘点明细，自动创建调整记录
-    const itemsWithDifference = existingCount.items.filter(
-      item => item.difference !== 0 && item.actualQuantity !== null
-    );
-
-    for (const item of itemsWithDifference) {
-      const difference = item.difference;
-
-      // 2.1.1 生成调整单号
-      const adjustmentNumber = await generateAdjustmentNumber(tx);
-
-      // 2.1.2 确定调整原因（盘盈或盘亏）
-      const reason = difference > 0 ? 'surplus' : 'deficit';
-      const beforeQuantity = item.systemQuantity;
-      const afterQuantity = item.actualQuantity!;
-
-      // 2.1.3 更新库存数量
-      const inventories = await tx.inventory.findMany({
-        where: {
-          productId: item.productId,
-          variantId: item.variantId ?? null,
-          batchNumber: item.batchNumber ?? null,
-        },
-        select: {
-          id: true,
-          reservedQuantity: true,
-          unitCost: true,
-        },
-        take: 2,
-      });
-
-      const inventory = inventories[0];
-
-      if (!inventory) {
-        throw new Error(
-          `库存记录不存在: productId=${item.productId}, variantId=${item.variantId ?? 'null'}, batchNumber=${item.batchNumber ?? 'null'}`
+  const count = await runWithFifoTransactionRetry({
+    actionLabel: '完成盘点',
+    moduleName: 'inventory-count-service',
+    operation: () =>
+      prisma.$transaction(async tx => {
+        // 2.1 遍历所有有差异的盘点明细，自动创建调整记录
+        const itemsWithDifference = existingCount.items.filter(
+          item => item.difference !== 0 && item.actualQuantity !== null
         );
-      }
 
-      if (inventories.length > 1) {
-        throw new Error(
-          `库存记录不唯一: productId=${item.productId}, variantId=${item.variantId ?? 'null'}, batchNumber=${item.batchNumber ?? 'null'}`
-        );
-      }
+        for (const item of itemsWithDifference) {
+          const difference = item.difference;
 
-      if (afterQuantity < inventory.reservedQuantity) {
-        throw new Error(
-          `盘点调整后库存(${afterQuantity})不能低于预留数量(${inventory.reservedQuantity})。请先释放预留量或拆分盘点调整。`
-        );
-      }
+          // 2.1.1 生成调整单号
+          const adjustmentNumber = await generateAdjustmentNumber(tx);
 
-      await tx.inventory.update({
-        where: { id: inventory.id },
-        data: { quantity: afterQuantity },
-      });
+          // 2.1.2 确定调整原因（盘盈或盘亏）
+          const reason = difference > 0 ? 'surplus' : 'deficit';
+          const beforeQuantity = item.systemQuantity;
+          const afterQuantity = item.actualQuantity!;
 
-      // 2.1.4 计算调整成本（严格按 FIFO 成本优先）
-      let unitCost: number | null =
-        item.unitCost !== null && item.unitCost !== undefined
-          ? Number(item.unitCost)
-          : null;
-      let totalCost: number | null = null;
+          // 2.1.3 更新库存数量
+          const inventories = await tx.inventory.findMany({
+            where: {
+              productId: item.productId,
+              variantId: item.variantId ?? null,
+              batchNumber: item.batchNumber ?? null,
+            },
+            select: {
+              id: true,
+              reservedQuantity: true,
+              unitCost: true,
+            },
+            take: 2,
+          });
 
-      if (difference > 0) {
-        // 盘盈：视为“补录库存”，优先使用已有单价，其次使用 FIFO 队列的加权平均成本
-        if (unitCost === null) {
-          const fifoAvg = await getWeightedAverageCostFromFIFO(
-            item.productId,
-            item.variantId,
-            tx
-          );
-          unitCost = fifoAvg > 0 ? fifoAvg : null;
+          const inventory = inventories[0];
 
-          if (unitCost === null) {
-            if (
-              inventory.unitCost !== null &&
-              inventory.unitCost !== undefined
-            ) {
-              unitCost = Number(inventory.unitCost);
-            }
+          if (!inventory) {
+            throw new Error(
+              `库存记录不存在: productId=${item.productId}, variantId=${item.variantId ?? 'null'}, batchNumber=${item.batchNumber ?? 'null'}`
+            );
           }
-        }
 
-        totalCost =
-          unitCost !== null ? roundCurrency(difference * unitCost) : null;
-      } else if (difference < 0) {
-        // 盘亏：按 FIFO 队列逐批次消耗，得到真实差异成本
-        const absDiff = Math.abs(difference);
+          if (inventories.length > 1) {
+            throw new Error(
+              `库存记录不唯一: productId=${item.productId}, variantId=${item.variantId ?? 'null'}, batchNumber=${item.batchNumber ?? 'null'}`
+            );
+          }
 
-        const unitCostHint =
-          unitCost !== null
-            ? unitCost
-            : inventory.unitCost !== null && inventory.unitCost !== undefined
-              ? Number(inventory.unitCost)
+          if (afterQuantity < inventory.reservedQuantity) {
+            throw new Error(
+              `盘点调整后库存(${afterQuantity})不能低于预留数量(${inventory.reservedQuantity})。请先释放预留量或拆分盘点调整。`
+            );
+          }
+
+          await tx.inventory.update({
+            where: { id: inventory.id },
+            data: { quantity: afterQuantity },
+          });
+
+          // 2.1.4 计算调整成本（严格按 FIFO 成本优先）
+          let unitCost: number | null =
+            item.unitCost !== null && item.unitCost !== undefined
+              ? Number(item.unitCost)
               : null;
+          let totalCost: number | null = null;
 
-        await ensureFIFOQueueMatchesInventory(
-          {
-            inventoryId: inventory.id,
-            productId: item.productId,
-            variantId: item.variantId,
-            batchNumber: item.batchNumber ?? null,
-            expectedInventoryQty: beforeQuantity,
-            unitCostHint,
-            userId,
-            source: `inventory-count:${countId}`,
-          },
-          tx
-        );
+          if (difference > 0) {
+            // 盘盈：视为“补录库存”，优先使用已有单价，其次使用 FIFO 队列的加权平均成本
+            if (unitCost === null) {
+              const fifoAvg = await getWeightedAverageCostFromFIFO(
+                item.productId,
+                item.variantId,
+                tx
+              );
+              unitCost = fifoAvg > 0 ? fifoAvg : null;
 
-        const fifoCost = await consumeFIFOQueueByBatch(
-          item.productId,
-          item.variantId,
-          item.batchNumber ?? null,
-          absDiff,
-          tx
-        );
+              if (unitCost === null) {
+                if (
+                  inventory.unitCost !== null &&
+                  inventory.unitCost !== undefined
+                ) {
+                  unitCost = Number(inventory.unitCost);
+                }
+              }
+            }
 
-        if (absDiff > 0) {
-          unitCost = roundCurrency(fifoCost.totalCost / absDiff);
+            totalCost =
+              unitCost !== null ? roundCurrency(difference * unitCost) : null;
+          } else if (difference < 0) {
+            // 盘亏：按 FIFO 队列逐批次消耗，得到真实差异成本
+            const absDiff = Math.abs(difference);
+
+            const unitCostHint =
+              unitCost !== null
+                ? unitCost
+                : inventory.unitCost !== null &&
+                    inventory.unitCost !== undefined
+                  ? Number(inventory.unitCost)
+                  : null;
+
+            await ensureFIFOQueueMatchesInventory(
+              {
+                inventoryId: inventory.id,
+                productId: item.productId,
+                variantId: item.variantId,
+                batchNumber: item.batchNumber ?? null,
+                expectedInventoryQty: beforeQuantity,
+                unitCostHint,
+                userId,
+                source: `inventory-count:${countId}`,
+              },
+              tx
+            );
+
+            const fifoCost = await consumeFIFOQueueByBatch(
+              item.productId,
+              item.variantId,
+              item.batchNumber ?? null,
+              absDiff,
+              tx
+            );
+
+            if (absDiff > 0) {
+              unitCost = roundCostPrice(fifoCost.totalCost / absDiff);
+            }
+            // 差异为负数，totalCost 也应为负数
+            totalCost = -roundCurrency(fifoCost.totalCost);
+          }
+
+          // 2.1.4.1 盘盈时补录 FIFO 队列（视为盘盈入库），确保 FIFO 队列可用量与库存一致
+          if (difference > 0 && unitCost !== null) {
+            const inboundRecord = await tx.inboundRecord.create({
+              data: {
+                recordNumber: generateInboundRecordNumber(),
+                productId: item.productId,
+                variantId: item.variantId,
+                batchNumber: item.batchNumber,
+                batchSpecificationId: null,
+                quantity: difference,
+                unitCost,
+                totalCost: roundCurrency(difference * unitCost),
+                reason: 'surplus',
+                remarks: `盘点盘盈自动补录（盘点单：${countId}）`,
+                userId,
+                purchaseOrderId: null,
+                purchaseOrderItemId: null,
+                supplierId: null,
+              },
+            });
+
+            await addToFIFOQueue(
+              {
+                productId: item.productId,
+                variantId: item.variantId,
+                batchNumber: item.batchNumber,
+                inboundRecordId: inboundRecord.id,
+                quantity: difference,
+                unitCost,
+                inboundDate: new Date(),
+              },
+              tx
+            );
+          }
+
+          // 2.1.4 创建调整记录（包含成本信息）
+          await tx.inventoryAdjustment.create({
+            data: {
+              adjustmentNumber,
+              productId: item.productId,
+              variantId: item.variantId,
+              batchNumber: item.batchNumber,
+              beforeQuantity,
+              adjustQuantity: difference,
+              afterQuantity,
+              unitCost,
+              totalCost,
+              reason,
+              notes: `盘点自动调整（盘点单：${countId}）`,
+              status: 'approved',
+              operatorId: userId,
+              approverId: userId,
+              approvedAt: new Date(),
+            },
+          });
+
+          // 2.1.5 将盘点明细状态改为 'adjusted'
+          await tx.inventoryCountItem.update({
+            where: { id: item.id },
+            data: {
+              status: 'adjusted',
+            },
+          });
         }
-        // 差异为负数，totalCost 也应为负数
-        totalCost = -roundCurrency(fifoCost.totalCost);
-      }
 
-      // 2.1.4.1 盘盈时补录 FIFO 队列（视为盘盈入库），确保 FIFO 队列可用量与库存一致
-      if (difference > 0 && unitCost !== null) {
-        const inboundRecord = await tx.inboundRecord.create({
+        // 2.2 更新盘点计划状态
+        const updatedCount = await tx.inventoryCount.update({
+          where: { id: countId },
           data: {
-            recordNumber: generateInboundRecordNumber(),
-            productId: item.productId,
-            variantId: item.variantId,
-            batchNumber: item.batchNumber,
-            batchSpecificationId: null,
-            quantity: difference,
-            unitCost,
-            totalCost: roundCurrency(difference * unitCost),
-            reason: 'surplus',
-            remarks: `盘点盘盈自动补录（盘点单：${countId}）`,
-            userId,
-            purchaseOrderId: null,
-            purchaseOrderItemId: null,
-            supplierId: null,
+            status: 'completed',
+            endDate: new Date(),
+          },
+          include: {
+            creator: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            operator: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
           },
         });
 
-        await addToFIFOQueue(
-          {
-            productId: item.productId,
-            variantId: item.variantId,
-            batchNumber: item.batchNumber,
-            inboundRecordId: inboundRecord.id,
-            quantity: difference,
-            unitCost,
-            inboundDate: new Date(),
-          },
-          tx
-        );
-      }
-
-      // 2.1.4 创建调整记录（包含成本信息）
-      await tx.inventoryAdjustment.create({
-        data: {
-          adjustmentNumber,
-          productId: item.productId,
-          variantId: item.variantId,
-          batchNumber: item.batchNumber,
-          beforeQuantity,
-          adjustQuantity: difference,
-          afterQuantity,
-          unitCost,
-          totalCost,
-          reason,
-          notes: `盘点自动调整（盘点单：${countId}）`,
-          status: 'approved',
-          operatorId: userId,
-          approverId: userId,
-          approvedAt: new Date(),
-        },
-      });
-
-      // 2.1.5 将盘点明细状态改为 'adjusted'
-      await tx.inventoryCountItem.update({
-        where: { id: item.id },
-        data: {
-          status: 'adjusted',
-        },
-      });
-    }
-
-    // 2.2 更新盘点计划状态
-    const updatedCount = await tx.inventoryCount.update({
-      where: { id: countId },
-      data: {
-        status: 'completed',
-        endDate: new Date(),
-      },
-      include: {
-        creator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        operator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        category: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-    });
-
-    return updatedCount;
+        return updatedCount;
+      }, getStandardTransactionOptions()),
   });
 
   // 转换为 InventoryCount 类型

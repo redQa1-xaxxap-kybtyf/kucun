@@ -71,12 +71,12 @@ async function fetchReceivableDetail(id: string): Promise<ReceivableDetail> {
   });
 
   if (!response.ok) {
-    throw new Error('获取应收款详情失败');
+    throw new Error('获取待收款详情失败');
   }
 
   const result = await response.json();
   if (!result.success) {
-    throw new Error(result.error || '获取应收款详情失败');
+    throw new Error(result.error || '获取待收款详情失败');
   }
 
   return result.data;
@@ -434,8 +434,8 @@ export default function ReceivableDetailPage() {
   if (!receivable) {
     return (
       <ErrorMessage
-        title="应收款不存在"
-        message="未找到指定的应收款记录"
+        title="待收款记录不存在"
+        message="未找到指定的待收款记录"
         onRetry={() => router.push('/finance/receivables')}
       />
     );

@@ -64,6 +64,7 @@ interface OrderItemsSectionProps {
   onAddItem: () => void;
   isSubmitting: boolean;
   products: Product[];
+  onSelectedProduct?: (product: Product | null) => void;
   orderType: SalesOrderType | undefined;
   transferMode?: TransferFulfillmentMode;
   unitMapping: Record<string, string>;
@@ -132,6 +133,7 @@ export function OrderItemsSection({
   onAddItem,
   isSubmitting,
   products,
+  onSelectedProduct,
   orderType,
   transferMode,
   unitMapping,
@@ -160,8 +162,17 @@ export function OrderItemsSection({
         priceType,
         toast,
       });
+      onSelectedProduct?.(product);
     },
-    [form, priceHistory, priceType, selectedCustomerId, toast, unitMapping]
+    [
+      form,
+      onSelectedProduct,
+      priceHistory,
+      priceType,
+      selectedCustomerId,
+      toast,
+      unitMapping,
+    ]
   );
 
   const handleHistoricalProductSelect = React.useCallback(

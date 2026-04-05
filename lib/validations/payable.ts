@@ -90,12 +90,41 @@ export const createPaymentOutRecordSchema = z.object({
     .number()
     .positive('付款金额必须大于0')
     .max(999999999, '付款金额不能超过999,999,999'),
+  actualPaymentAmount: z
+    .number()
+    .min(0, '实际付款金额不能为负')
+    .max(999999999, '实际付款金额不能超过999,999,999')
+    .optional(),
+  roundingAmount: z
+    .number()
+    .min(-9999999, '抹零金额不能低于-9,999,999')
+    .max(9999999, '抹零金额不能超过9,999,999')
+    .optional(),
   paymentDate: z
     .string()
     .refine(date => !isNaN(Date.parse(date)), '请输入有效的付款日期'),
   remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
   voucherNumber: z.string().max(100, '凭证号不能超过100字符').optional(),
   bankInfo: z.string().max(500, '银行信息不能超过500字符').optional(),
+}).superRefine((data, ctx) => {
+  const actual =
+    data.actualPaymentAmount === undefined
+      ? data.paymentAmount
+      : data.actualPaymentAmount;
+  const rounding =
+    data.roundingAmount === undefined
+      ? Number((data.paymentAmount - actual).toFixed(2))
+      : data.roundingAmount;
+  const expected = Number((actual + rounding).toFixed(2));
+  const recorded = Number(data.paymentAmount.toFixed(2));
+
+  if (Math.abs(expected - recorded) >= 0.01) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: '付款金额应等于实际付款金额与抹零金额之和',
+      path: ['actualPaymentAmount'],
+    });
+  }
 });
 
 // 更新付款记录验证规则
@@ -108,6 +137,16 @@ export const updatePaymentOutRecordSchema = z.object({
     .positive('付款金额必须大于0')
     .max(999999999, '付款金额不能超过999,999,999')
     .optional(),
+  actualPaymentAmount: z
+    .number()
+    .min(0, '实际付款金额不能为负')
+    .max(999999999, '实际付款金额不能超过999,999,999')
+    .optional(),
+  roundingAmount: z
+    .number()
+    .min(-9999999, '抹零金额不能低于-9,999,999')
+    .max(9999999, '抹零金额不能超过9,999,999')
+    .optional(),
   paymentDate: z
     .string()
     .refine(date => !isNaN(Date.parse(date)), '请输入有效的付款日期')
@@ -116,6 +155,34 @@ export const updatePaymentOutRecordSchema = z.object({
   remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
   voucherNumber: z.string().max(100, '凭证号不能超过100字符').optional(),
   bankInfo: z.string().max(500, '银行信息不能超过500字符').optional(),
+}).superRefine((data, ctx) => {
+  const hasActual = data.actualPaymentAmount !== undefined;
+  const hasRounding = data.roundingAmount !== undefined;
+
+  if (hasActual || hasRounding) {
+    if (data.paymentAmount === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '更新实际付款金额或抹零金额时必须同时提供付款金额',
+        path: ['paymentAmount'],
+      });
+      return;
+    }
+
+    const actual = data.actualPaymentAmount ?? data.paymentAmount;
+    const rounding =
+      data.roundingAmount ?? Number((data.paymentAmount - actual).toFixed(2));
+    const expected = Number((actual + rounding).toFixed(2));
+    const recorded = Number(data.paymentAmount.toFixed(2));
+
+    if (Math.abs(expected - recorded) >= 0.01) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '付款金额应等于实际付款金额与抹零金额之和',
+        path: ['actualPaymentAmount'],
+      });
+    }
+  }
 });
 
 // 应付款查询参数验证规则

@@ -324,7 +324,7 @@ export function useErpDashboardData(
       }
 
       const pendingResponse = await fetch(
-        '/api/sales-orders?page=1&limit=10&status=draft&sortBy=createdAt&sortOrder=asc'
+        '/api/sales-orders?page=1&limit=10&status=pending&sortBy=createdAt&sortOrder=asc'
       );
       if (pendingResponse.ok) {
         const pendingData = await pendingResponse.json();

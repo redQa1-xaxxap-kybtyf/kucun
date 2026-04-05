@@ -17,6 +17,8 @@ export interface ProductWithInventory {
     batches?: Array<{
       batchNumber: string;
       quantity: number;
+      reservedQuantity?: number | null;
+      availableQuantity?: number | null;
       piecesPerUnit?: number | null;
       weight?: number | null;
     }>;

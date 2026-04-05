@@ -456,6 +456,32 @@ export async function auth() {
   return getServerSession(authOptions);
 }
 
+function isExpectedDynamicAuthError(error: unknown) {
+  return (
+    error instanceof Error &&
+    error.message.includes('Dynamic server usage')
+  );
+}
+
+/**
+ * 安全获取服务端会话
+ * 在认证子系统异常时返回 null，避免页面直接 500。
+ */
+export async function safeAuth(context?: string) {
+  try {
+    return await getServerSession(authOptions);
+  } catch (error) {
+    if (isExpectedDynamicAuthError(error)) {
+      return null;
+    }
+
+    logger.error('auth', '获取服务端会话失败', error, {
+      context: context || 'unknown',
+    });
+    return null;
+  }
+}
+
 // 权限检查函数
 export function hasPermission(
   userRole: string,

@@ -39,6 +39,8 @@ const payableInclude = {
       supplierId: true,
       userId: true,
       paymentAmount: true,
+      actualPaymentAmount: true,
+      roundingAmount: true,
       paymentDate: true,
       paymentMethod: true,
       status: true,
@@ -180,6 +182,8 @@ function serializePayableRecordDetail(
       userId: payment.userId,
       paymentMethod: normalizePaymentOutMethod(payment.paymentMethod),
       paymentAmount: toNumber(payment.paymentAmount),
+      actualPaymentAmount: toNumber(payment.actualPaymentAmount),
+      roundingAmount: toNumber(payment.roundingAmount),
       paymentDate: payment.paymentDate,
       status: normalizePaymentOutStatus(payment.status),
       ...(payment.remarks !== null && payment.remarks !== undefined
@@ -296,7 +300,7 @@ const putPayableHandler = withAuth(
         updateData.payableAmount < toNumber(existingPayable.paidAmount)
       ) {
         return NextResponse.json(
-          { success: false, error: '应付金额不能小于已付金额' },
+          { success: false, error: '应付金额不能小于已核销金额' },
           { status: 400 }
         );
       }

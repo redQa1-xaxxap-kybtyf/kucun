@@ -183,12 +183,12 @@ export const POST = withAuth(
         );
         fileContent = CSVExportService.generateCSVContent(exportData, {
           dateFields: ['创建时间', '确认时间', '发货时间'],
-          numberFields: ['订单金额', '已付金额', '应收余额'],
+          numberFields: ['订单金额', '已收金额', '应收余额'],
           fieldOrder: [
             '订单编号',
             '客户名称',
             '订单金额',
-            '已付金额',
+            '已收金额',
             '应收余额',
             '订单状态',
             '创建时间',
@@ -211,7 +211,7 @@ export const POST = withAuth(
           { width: 15 }, // 订单编号
           { width: 20 }, // 客户名称
           { width: 12 }, // 订单金额
-          { width: 12 }, // 已付金额
+          { width: 12 }, // 已收金额
           { width: 12 }, // 应收余额
           { width: 10 }, // 订单状态
           { width: 20 }, // 创建时间

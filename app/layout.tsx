@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { getServerSession } from 'next-auth';
 
 import ChunkLoadRecovery from '@/components/providers/chunkload-recovery';
 import QueryProvider from '@/components/providers/query-provider';
 import AuthSessionProvider from '@/components/providers/session-provider';
 import { Toaster } from '@/components/ui/toaster';
-import { authOptions } from '@/lib/auth';
+import { safeAuth } from '@/lib/auth';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,7 +24,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   // 在服务端获取 session，传递给 SessionProvider
-  const session = await getServerSession(authOptions);
+  const session = await safeAuth('root-layout');
 
   return (
     <html lang="zh-CN" suppressHydrationWarning>

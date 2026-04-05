@@ -33,8 +33,8 @@ export function EditSalesOrderPageClient({ orderId, initialData }: Props) {
       mode="edit"
       orderId={orderId}
       initialData={initialData}
-      onSuccess={() => {
-        router.push('/sales-orders');
+      onSuccess={order => {
+        router.push(`/sales-orders/${order.id}`);
       }}
       onCancel={() => {
         router.push(`/sales-orders/${orderId}`);

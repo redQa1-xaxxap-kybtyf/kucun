@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { reportErrorBoundary } from '@/lib/services/error-reporting-service';
 
 /**
- * 创建厂家发货订单页面错误边界
+ * 新建厂家发货单页面错误边界
  *
  * ✅ Next.js 15 最佳实践：错误边界组件
  * ✅ P1 修复：集成错误上报服务
@@ -24,7 +24,7 @@ export default function CreateFactoryShipmentError({
   useEffect(() => {
     // 上报错误到监控服务
     reportErrorBoundary(error, 'CreateFactoryShipmentError', {
-      pageTitle: '创建厂家发货订单',
+      pageTitle: '新建厂家发货单',
       route: '/factory-shipments/create',
     });
   }, [error]);
@@ -38,9 +38,9 @@ export default function CreateFactoryShipmentError({
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">创建订单时出错</h2>
+            <h2 className="text-2xl font-bold text-gray-900">新建厂家发货单时出错</h2>
             <p className="text-sm text-gray-600">
-              无法加载创建订单页面，请稍后重试
+              无法加载新建厂家发货页面，请稍后重试
             </p>
           </div>
 
@@ -67,7 +67,7 @@ export default function CreateFactoryShipmentError({
             <Button variant="outline" size="lg" asChild>
               <Link href="/factory-shipments">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                返回订单列表
+                返回厂家发货列表
               </Link>
             </Button>
           </div>

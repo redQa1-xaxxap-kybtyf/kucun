@@ -353,7 +353,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[hsl(var(--color-text-secondary))]">
-                      已付金额
+                      已核销金额
                     </span>
                     <span className="font-semibold text-[hsl(var(--color-success))]">
                       {formatCurrency(payable.paidAmount)}
@@ -372,7 +372,7 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                   <div className="space-y-2 pt-2">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-[hsl(var(--color-text-secondary))]">
-                        付款进度
+                        结算进度
                       </span>
                       <span className="font-medium text-[hsl(var(--color-text-primary))]">
                         {paymentProgress.toFixed(1)}%

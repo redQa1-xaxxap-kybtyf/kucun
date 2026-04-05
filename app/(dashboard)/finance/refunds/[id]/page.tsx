@@ -92,7 +92,7 @@ function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     pending: { label: '待处理', variant: 'warning' as const, icon: Clock },
     processing: {
-      label: '处理中',
+      label: '待退款',
       variant: 'info' as const,
       icon: AlertCircle,
     },
@@ -107,7 +107,7 @@ function StatusBadge({ status }: { status: string }) {
       icon: XCircle,
     },
     rejected: {
-      label: '已拒绝',
+      label: '已关闭',
       variant: 'destructive' as const,
       icon: XCircle,
     },
@@ -154,7 +154,7 @@ export default async function RefundDetailPage({
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    应退货款详情
+                    退款详情
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     退款编号：{refund.refundNumber}

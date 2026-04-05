@@ -8,11 +8,13 @@
 
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Package } from 'lucide-react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -32,9 +34,13 @@ interface VirtualizedInventoryTableProps {
   containerHeight?: number;
   /** ✅ 搜索关键词，用于区分无数据和搜索无结果 */
   searchQuery?: string;
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
   overscan?: number;
   density: 'compact' | 'comfortable';
 }
+
+type ClearFiltersHandler = () => void;
 
 /**
  * 表头组件
@@ -68,25 +74,61 @@ TableHeaderComponent.displayName = 'TableHeaderComponent';
 /**
  * 空状态组件
  */
-const InventoryEmptyState = React.memo<{ hasFinancePermission: boolean }>(
-  ({ hasFinancePermission }) => (
-    <div className="bg-card rounded border">
-      <Table>
-        <TableHeaderComponent hasFinancePermission={hasFinancePermission} />
-        <TableBody>
-          <TableRow>
-            <TableCell colSpan={hasFinancePermission ? 13 : 12} className="p-8">
-              <EmptyState
-                title="暂无库存数据"
-                icon={<Package className="text-muted-foreground h-6 w-6" />}
-                compact
-              />
-            </TableCell>
-          </TableRow>
-        </TableBody>
-      </Table>
-    </div>
-  )
+const InventoryEmptyState = React.memo<{
+  hasActiveFilters?: boolean;
+  hasFinancePermission: boolean;
+  onClearFilters?: ClearFiltersHandler;
+  searchQuery?: string;
+}>(
+  ({ hasActiveFilters, hasFinancePermission, onClearFilters, searchQuery }) => {
+    const isFilteredEmpty = Boolean(searchQuery?.trim() || hasActiveFilters);
+
+    return (
+      <div className="bg-card rounded border">
+        <Table>
+          <TableHeaderComponent hasFinancePermission={hasFinancePermission} />
+          <TableBody>
+            <TableRow>
+              <TableCell
+                colSpan={hasFinancePermission ? 13 : 12}
+                className="p-8"
+              >
+                <EmptyState
+                  title={
+                    isFilteredEmpty ? '未找到匹配的库存记录' : '暂无库存数据'
+                  }
+                  description={
+                    isFilteredEmpty
+                      ? '请尝试调整关键词或筛选条件后再试。'
+                      : '还没有任何库存记录，您可以先进行产品入库。'
+                  }
+                  icon={<Package className="text-muted-foreground h-6 w-6" />}
+                  action={
+                    isFilteredEmpty ? (
+                      onClearFilters ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={onClearFilters}
+                        >
+                          清空条件
+                        </Button>
+                      ) : null
+                    ) : (
+                      <Button size="sm" asChild>
+                        <Link href="/inventory/inbound/create">去入库</Link>
+                      </Button>
+                    )
+                  }
+                  compact
+                />
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+    );
+  }
 );
 
 InventoryEmptyState.displayName = 'InventoryEmptyState';
@@ -102,6 +144,9 @@ export const VirtualizedInventoryTable =
       onAdjust,
       itemHeight,
       containerHeight = 400,
+      searchQuery,
+      hasActiveFilters,
+      onClearFilters,
       overscan = 5,
       density,
     }) => {
@@ -128,7 +173,12 @@ export const VirtualizedInventoryTable =
       // 空状态
       if (data.length === 0) {
         return (
-          <InventoryEmptyState hasFinancePermission={hasFinancePermission} />
+          <InventoryEmptyState
+            hasFinancePermission={hasFinancePermission}
+            searchQuery={searchQuery}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={onClearFilters}
+          />
         );
       }
 

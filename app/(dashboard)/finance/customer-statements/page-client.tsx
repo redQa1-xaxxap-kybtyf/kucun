@@ -5,7 +5,6 @@
 import {
   ArrowUpRight,
   ChevronRight,
-  Download,
   FileText,
   History,
   Search,
@@ -15,15 +14,17 @@ import {
   User,
   Wallet,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-	import { Button } from '@/components/ui/button';
-	import { Input } from '@/components/ui/input';
-	import {
-	  useCustomerStatementStatistics,
-	  useCustomerStatements,
-	} from '@/lib/api/customer-statements';
+import { PageHeader } from '@/components/common/page-header';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  useCustomerStatementStatistics,
+  useCustomerStatements,
+} from '@/lib/api/customer-statements';
 import type {
   CustomerStatementListItem,
   CustomerStatementQuery,
@@ -198,85 +199,56 @@ export function CustomerStatementsPageClient({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50">
-      <div className="mx-auto max-w-[1680px] space-y-12 p-4 transition-all duration-500 lg:p-10 xl:p-14">
-        {/* Identity Wall Header */}
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white bg-white/60 p-8 shadow-sm backdrop-blur-xl transition-all duration-500 hover:shadow-xl">
-          <div className="absolute -top-20 -right-20 h-64 w-64 rounded-full bg-blue-50/50 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-indigo-50/30 blur-3xl" />
-
-          <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-slate-900 text-white shadow-2xl transition-transform duration-500 hover:scale-110">
-                <FileText className="h-10 w-10" />
-              </div>
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-4xl font-black tracking-tighter text-slate-900">
-                    往来明细账
-                  </h1>
-                  <div className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-bold tracking-wider text-white uppercase shadow-lg shadow-blue-200">
-                    逐笔核对
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className="flex items-center gap-2 text-sm font-bold text-slate-400">
-                    <span className="text-xs tracking-wider text-slate-500 uppercase">
-                      明细核对中心
-                    </span>
-                    <span className="font-bold text-slate-600">
-                      按客户查看往来流水与余额明细
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button
-                size="lg"
-                className="h-14 rounded-2xl bg-slate-900 px-10 font-black text-white shadow-xl transition-all hover:shadow-slate-200 active:scale-95"
-              >
-                <Download className="mr-2 h-5 w-5" />
-                导出明细账报表
-              </Button>
-            </div>
-          </div>
-        </div>
+    <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
+      <div className="space-y-4 sm:space-y-6">
+        <PageHeader
+          title="客户往来明细"
+          description="按客户查看应收、应付、退款和往来净额，适合逐个客户核对。"
+          icon={<FileText className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-primary))"
+          actions={
+            <Button
+              variant="outline"
+              size="lg"
+              asChild
+              className="h-11 shadow-[var(--shadow-light)]"
+            >
+              <Link href="/finance/statements">查看往来总览</Link>
+            </Button>
+          }
+        />
 
         {/* 筛选控制台 */}
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
           {/* 检索输入框 */}
           <div className="group relative flex-1">
             <Input
-              placeholder="检索客户名称、联系方式或 ID..."
+              placeholder="搜索客户名称或电话"
               value={queryParams.customerName || ''}
               onChange={e => handleSearch(e.target.value)}
-              className="h-14 rounded-2xl border-white bg-white/60 pl-12 font-bold shadow-sm backdrop-blur-md transition-all group-hover:shadow-md focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+              className="h-11 rounded-lg border-[hsl(var(--color-border-primary))] bg-white pl-10"
             />
-            <Search className="absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-slate-300 transition-colors group-hover:text-blue-500" />
+            <Search className="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[hsl(var(--color-text-tertiary))]" />
           </div>
 
-	          {/* 余额维度筛选 */}
-	          <div className="relative w-full sm:w-[240px]">
-	            <SlidersHorizontal className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-slate-400" />
-	            <select
-	              value={queryParams.balanceType || 'all'}
-	              onChange={e =>
-	                handleBalanceTypeChange(
-	                  e.target.value as 'receivable' | 'payable' | 'all'
-	                )
-	              }
-	              className="h-14 w-full rounded-2xl border border-white bg-white/60 pr-10 pl-12 font-bold shadow-sm backdrop-blur-md transition-all hover:bg-white focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:outline-hidden"
-	              aria-label="余额维度筛选"
-	            >
-	              <option value="all">全部往来账户</option>
-	              <option value="receivable">仅看应收账款</option>
-	              <option value="payable">仅看应付账款</option>
-	            </select>
-	          </div>
-	        </div>
+          <div className="relative w-full sm:w-[220px]">
+            <SlidersHorizontal className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-[hsl(var(--color-text-tertiary))]" />
+            <select
+              value={queryParams.balanceType || 'all'}
+              onChange={e =>
+                handleBalanceTypeChange(
+                  e.target.value as 'receivable' | 'payable' | 'all'
+                )
+              }
+              className="h-11 w-full rounded-lg border border-[hsl(var(--color-border-primary))] bg-white pr-8 pl-10 text-sm focus:outline-hidden focus:ring-2 focus:ring-[hsl(var(--color-primary-light))]"
+              aria-label="余额维度筛选"
+            >
+              <option value="all">全部客户</option>
+              <option value="receivable">仅看待收款</option>
+              <option value="payable">仅看待付款</option>
+            </select>
+          </div>
+        </div>
 
         {/* 统计卡片 */}
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -362,12 +334,12 @@ export function CustomerStatementsPageClient({
         {/* 对账单列表 */}
         <div className="space-y-6">
           <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-black tracking-tight text-slate-900">
-              客户明细账列表
+            <h2 className="text-xl font-semibold text-slate-900">
+              客户往来明细
             </h2>
-            <div className="flex items-center gap-2 text-xs font-bold tracking-wider text-slate-400 uppercase">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <History className="h-3.5 w-3.5" />
-              实时数据同步
+              数据实时更新
             </div>
           </div>
 
@@ -378,16 +350,16 @@ export function CustomerStatementsPageClient({
                   <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
                   <div className="absolute inset-0 animate-spin rounded-full border-4 border-slate-900 border-t-transparent" />
                 </div>
-                <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
-                  正在加载明细账数据...
+                <p className="text-sm font-medium text-slate-500">
+                  正在加载客户往来数据...
                 </p>
               </div>
             </div>
           ) : statements.length === 0 ? (
             <div className="flex flex-col items-center justify-center rounded-[2.5rem] border border-dashed border-slate-200 bg-white/20 py-24">
               <FileText className="mb-4 h-12 w-12 text-slate-200" />
-              <p className="text-sm font-black tracking-widest text-slate-400 uppercase">
-                暂无往来明细账记录
+              <p className="text-sm font-medium text-slate-500">
+                暂无客户往来记录
               </p>
             </div>
           ) : (
@@ -455,7 +427,7 @@ export function CustomerStatementsPageClient({
                         </div>
                         <div className="space-y-1">
                           <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
-                            业务净值
+                            往来净额
                           </span>
                           <div
                             className={cn(
@@ -472,7 +444,7 @@ export function CustomerStatementsPageClient({
                         </div>
                         <div className="space-y-1">
                           <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">
-                            待退余额
+                            待退款
                           </span>
                           <p
                             className={cn(
@@ -492,7 +464,7 @@ export function CustomerStatementsPageClient({
                         <div className="flex flex-col items-end gap-1.5 rounded-2xl border border-slate-100 bg-slate-50/50 px-4 py-3 text-sm transition-all group-hover:border-slate-800 group-hover:bg-slate-900">
                           <div className="flex w-full items-center justify-between gap-4">
                             <span className="font-bold text-slate-500 transition-colors group-hover:text-slate-400">
-                              净销流动
+                              净销售额
                             </span>
                             <span className="font-black text-slate-700 transition-colors group-hover:text-white">
                               {formatCurrency(receivableOverview.netSales)}
@@ -500,7 +472,7 @@ export function CustomerStatementsPageClient({
                           </div>
                           <div className="flex w-full items-center justify-between gap-4 border-t border-slate-200/50 pt-1 group-hover:border-slate-700">
                             <span className="font-bold text-slate-500 transition-colors group-hover:text-slate-400">
-                              净收结算
+                              净收款
                             </span>
                             <span className="font-black text-slate-700 transition-colors group-hover:text-white">
                               {formatCurrency(receivableOverview.netReceipts)}

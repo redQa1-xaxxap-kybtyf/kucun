@@ -32,12 +32,33 @@ export type ReturnProcessType =
   | 'refund' // 退款
   | 'exchange'; // 换货
 
+export type ReturnOrderUiStatus =
+  | 'draft' // 草稿
+  | 'pending' // 待处理
+  | 'awaiting_refund' // 待退款
+  | 'completed'; // 已完成
+
 // 退货模式枚举
 export type ReturnOrderMode =
   | 'single_order' // 单订单退货
   | 'multi_order'; // 多订单退货
 
 // 退货订单接口
+export interface ReturnOrderRefundSummary {
+  id: string;
+  processedAmount?: number;
+  processedDate?: string;
+  refundAmount: number;
+  refundDate: string;
+  remainingAmount?: number;
+  status?:
+    | 'pending'
+    | 'processing'
+    | 'completed'
+    | 'rejected'
+    | 'cancelled';
+}
+
 export interface ReturnOrder {
   id: string;
   returnNumber: string;
@@ -66,11 +87,7 @@ export interface ReturnOrder {
   customer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
   user?: Pick<User, 'id' | 'name'>;
   items?: ReturnOrderItem[];
-  refunds?: Array<{
-    id: string;
-    refundAmount: number;
-    refundDate: string;
-  }>;
+  refunds?: ReturnOrderRefundSummary[];
 }
 
 // 退货订单明细接口
@@ -117,6 +134,7 @@ export interface ReturnOrderQueryParams {
   limit?: number;
   search?: string;
   status?: ReturnOrderStatus;
+  uiStatus?: ReturnOrderUiStatus;
   type?: ReturnOrderType;
   processType?: ReturnProcessType;
   customerId?: string;
@@ -168,6 +186,16 @@ export const RETURN_ORDER_STATUS_LABELS: Record<ReturnOrderStatus, string> = {
   cancelled: '已取消',
 };
 
+export const RETURN_ORDER_UI_STATUS_LABELS: Record<
+  ReturnOrderUiStatus,
+  string
+> = {
+  draft: '草稿',
+  pending: '待处理',
+  awaiting_refund: '待退款',
+  completed: '已完成',
+};
+
 // 退货类型标签映射
 export const RETURN_ORDER_TYPE_LABELS: Record<ReturnOrderType, string> = {
   quality_issue: '质量问题',
@@ -210,6 +238,22 @@ export const RETURN_ORDER_STATUS_VARIANTS: Record<
   cancelled: 'destructive',
 };
 
+export const RETURN_ORDER_UI_STATUS_VARIANTS: Record<
+  ReturnOrderUiStatus,
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
+> = {
+  draft: 'outline',
+  pending: 'warning',
+  awaiting_refund: 'info',
+  completed: 'success',
+};
+
 // 退货排序选项
 export const RETURN_ORDER_SORT_OPTIONS = [
   { value: 'createdAt', label: '创建时间' },
@@ -237,6 +281,122 @@ export function getReturnOrderStatus(returnOrder: ReturnOrder) {
   };
 }
 
+function resolveRefundProcessedAmount(refund: ReturnOrderRefundSummary): number {
+  if (typeof refund.processedAmount === 'number') {
+    return refund.processedAmount;
+  }
+
+  if (typeof refund.remainingAmount === 'number') {
+    return Math.max(refund.refundAmount - refund.remainingAmount, 0);
+  }
+
+  if (refund.status === 'completed') {
+    return refund.refundAmount;
+  }
+
+  return 0;
+}
+
+export function getReturnOrderPendingRefundAmount(
+  returnOrder: Pick<
+    ReturnOrder,
+    'processType' | 'refundAmount' | 'refunds' | 'status'
+  >
+): number {
+  if (returnOrder.processType !== 'refund' || returnOrder.status !== 'completed') {
+    return 0;
+  }
+
+  const targetRefundAmount = Number(returnOrder.refundAmount ?? 0);
+  if (!Number.isFinite(targetRefundAmount) || targetRefundAmount <= 0) {
+    return 0;
+  }
+
+  const resolvedProcessedAmount = (returnOrder.refunds ?? []).reduce(
+    (sum, refund) => {
+      if (refund.status === 'rejected' || refund.status === 'cancelled') {
+        return sum;
+      }
+      return sum + resolveRefundProcessedAmount(refund);
+    },
+    0
+  );
+
+  return Math.max(Number((targetRefundAmount - resolvedProcessedAmount).toFixed(2)), 0);
+}
+
+export function hasPendingRefundForReturnOrder(
+  returnOrder: Pick<
+    ReturnOrder,
+    'processType' | 'refundAmount' | 'refunds' | 'status'
+  >
+): boolean {
+  return getReturnOrderPendingRefundAmount(returnOrder) > 0.005;
+}
+
+export function getActionableRefundForReturnOrder(
+  returnOrder: Pick<ReturnOrder, 'refunds'>
+): ReturnOrderRefundSummary | undefined {
+  const actionableRefund = [...(returnOrder.refunds ?? [])]
+    .sort((left, right) => {
+      const leftTime = new Date(left.refundDate).getTime();
+      const rightTime = new Date(right.refundDate).getTime();
+      return rightTime - leftTime;
+    })
+    .find(
+      refund =>
+        refund.status !== 'completed' &&
+        refund.status !== 'rejected' &&
+        refund.status !== 'cancelled'
+    );
+
+  return actionableRefund;
+}
+
+export function getReturnOrderUiStatus(
+  returnOrder: Pick<
+    ReturnOrder,
+    'processType' | 'refundAmount' | 'refunds' | 'status'
+  >
+): ReturnOrderUiStatus {
+  if (returnOrder.status === 'draft') {
+    return 'draft';
+  }
+
+  if (returnOrder.status === 'completed') {
+    return hasPendingRefundForReturnOrder(returnOrder)
+      ? 'awaiting_refund'
+      : 'completed';
+  }
+
+  return 'pending';
+}
+
+export function getReturnOrderDisplayStatus(
+  returnOrder: Pick<
+    ReturnOrder,
+    'processType' | 'refundAmount' | 'refunds' | 'status'
+  >
+) {
+  if (returnOrder.status === 'rejected' || returnOrder.status === 'cancelled') {
+    return {
+      isExceptional: true,
+      label: RETURN_ORDER_STATUS_LABELS[returnOrder.status],
+      value: returnOrder.status,
+      variant: RETURN_ORDER_STATUS_VARIANTS[returnOrder.status],
+    };
+  }
+
+  const uiStatus = getReturnOrderUiStatus(returnOrder);
+
+  return {
+    isExceptional: false,
+    label: RETURN_ORDER_UI_STATUS_LABELS[uiStatus],
+    value: uiStatus,
+    variant: RETURN_ORDER_UI_STATUS_VARIANTS[uiStatus],
+  };
+}
+
 /**
  * 检查退货状态流转是否有效
  */
@@ -246,8 +406,8 @@ export function isValidReturnStatusTransition(
 ): boolean {
   const validTransitions: Record<ReturnOrderStatus, ReturnOrderStatus[]> = {
     draft: ['submitted', 'cancelled'],
-    submitted: ['approved', 'rejected', 'cancelled'],
-    approved: ['processing', 'cancelled'],
+    submitted: ['approved', 'rejected', 'cancelled', 'completed'],
+    approved: ['processing', 'cancelled', 'completed'],
     rejected: ['cancelled'],
     processing: ['completed', 'cancelled'],
     completed: [],
@@ -316,7 +476,7 @@ export function canProcessReturnOrder(returnOrder: ReturnOrder): boolean {
  * 检查是否可以完成退货订单
  */
 export function canCompleteReturnOrder(returnOrder: ReturnOrder): boolean {
-  return returnOrder.status === 'processing';
+  return ['approved', 'processing'].includes(returnOrder.status);
 }
 
 /**

@@ -1,6 +1,6 @@
 'use client';
 
-import { Ban, Calendar, CheckCircle, Eye, TrendingDown } from 'lucide-react';
+import { Calendar, CheckCircle, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -66,17 +66,6 @@ export function RefundsClient({
     initialParams.search ?? ''
   );
 
-  const handleIncludeTestToggle = React.useCallback(() => {
-    onFilter?.('includeTest', initialParams.includeTest ? undefined : 'true');
-  }, [initialParams.includeTest, onFilter]);
-
-  const handleIncludeVoidedToggle = React.useCallback(() => {
-    onFilter?.(
-      'includeVoided',
-      initialParams.includeVoided ? undefined : 'true'
-    );
-  }, [initialParams.includeVoided, onFilter]);
-
   React.useEffect(() => {
     setSearchValue(initialParams.search ?? '');
   }, [initialParams.search]);
@@ -95,10 +84,10 @@ export function RefundsClient({
   const getStatusBadge = (status: RefundStatus) => {
     const statusConfig = {
       pending: { label: '待处理', variant: 'warning' as const },
-      processing: { label: '处理中', variant: 'info' as const },
+      processing: { label: '待退款', variant: 'info' as const },
       completed: { label: '已完成', variant: 'success' as const },
-      rejected: { label: '已拒绝', variant: 'destructive' as const },
-      cancelled: { label: '已取消', variant: 'secondary' as const },
+      rejected: { label: '已关闭', variant: 'destructive' as const },
+      cancelled: { label: '已作废', variant: 'secondary' as const },
     };
     const config = statusConfig[status as keyof typeof statusConfig];
     return (
@@ -272,7 +261,7 @@ export function RefundsClient({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">总应退金额</CardTitle>
+            <CardTitle className="text-sm font-medium">待退款总额</CardTitle>
             <TrendingDown className="h-4 w-4 text-[hsl(var(--color-warning))]" />
           </CardHeader>
           <CardContent>
@@ -287,7 +276,7 @@ export function RefundsClient({
 
         <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">已处理金额</CardTitle>
+            <CardTitle className="text-sm font-medium">已退款</CardTitle>
             <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
@@ -302,7 +291,7 @@ export function RefundsClient({
 
         <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">处理率</CardTitle>
+            <CardTitle className="text-sm font-medium">完成率</CardTitle>
             <ChineseYuan className="h-4 w-4 text-[hsl(var(--color-info))]" />
           </CardHeader>
           <CardContent>
@@ -314,23 +303,23 @@ export function RefundsClient({
                   ).toFixed(1)
                 : '0.0'}
               %
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {statistics.processingCount} 个处理中
-            </p>
-          </CardContent>
-        </Card>
+          </div>
+          <p className="text-muted-foreground text-xs">
+              {statistics.processingCount} 笔待退款
+          </p>
+        </CardContent>
+      </Card>
 
-        <Card className="shadow-[var(--shadow-medium)]">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">待处理金额</CardTitle>
+      <Card className="shadow-[var(--shadow-medium)]">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">未完成金额</CardTitle>
             <Calendar className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(statistics.totalRemaining)}
             </div>
-            <p className="text-muted-foreground text-xs">需要处理的退款</p>
+            <p className="text-muted-foreground text-xs">仍需处理的退款</p>
           </CardContent>
         </Card>
       </div>
@@ -342,23 +331,7 @@ export function RefundsClient({
           setSearchValue(value);
           onSearch?.(value);
         }}
-        searchPlaceholder="搜索退款单号、退货单号..."
-        toggleButtons={[
-          {
-            key: 'includeTest',
-            label: '显示测试',
-            icon: <Eye className="h-3.5 w-3.5" />,
-            active: !!initialParams.includeTest,
-            onClick: handleIncludeTestToggle,
-          },
-          {
-            key: 'includeVoided',
-            label: '显示作废',
-            icon: <Ban className="h-3.5 w-3.5" />,
-            active: !!initialParams.includeVoided,
-            onClick: handleIncludeVoidedToggle,
-          },
-        ]}
+        searchPlaceholder="搜索退款单号、退货单号或客户名称"
         // 筛选器配置
         filters={[
           {
@@ -366,9 +339,10 @@ export function RefundsClient({
             label: '状态',
             options: [
               { label: '待处理', value: 'pending' },
-              { label: '处理中', value: 'processing' },
+              { label: '待退款', value: 'processing' },
               { label: '已完成', value: 'completed' },
-              { label: '已拒绝', value: 'rejected' },
+              { label: '已关闭', value: 'rejected' },
+              { label: '已作废', value: 'cancelled' },
             ],
             width: 'w-[140px]',
           },
@@ -392,7 +366,7 @@ export function RefundsClient({
           onChange: range => onDateRangeChange?.(range),
           placeholder: '选择退款日期范围',
         }}
-        variant="pro"
+        variant="bordered"
         compact={true}
       />
 

@@ -376,7 +376,7 @@ describe('fifo-cost-service', () => {
     const result = await getFIFOCost('p1', 'v1', 15, tx);
 
     expect(result.totalCost).toBe(35);
-    expect(result.averageUnitCost).toBe(2.33);
+    expect(result.averageUnitCost).toBe(2.333);
     expect(result.batches).toEqual([
       { inboundRecordId: 'in1', qty: 10, unitCost: 2, batchCost: 20 },
       { inboundRecordId: 'in2', qty: 5, unitCost: 3, batchCost: 15 },
@@ -438,7 +438,7 @@ describe('fifo-cost-service', () => {
     const result = await consumeFIFOQueue('p1', 'v1', 15, tx);
 
     expect(result.totalCost).toBe(35);
-    expect(result.averageUnitCost).toBe(2.33);
+    expect(result.averageUnitCost).toBe(2.333);
 
     // 0001 被完全消耗，0002 还剩 5
     expect(store.queueById.get('0001')?.remainingQty).toBe(0);
@@ -579,7 +579,7 @@ describe('fifo-cost-service', () => {
     const result = await consumeFIFOQueueByBatch('p1', null, '   ', 6, tx);
 
     expect(result.totalCost).toBe(13);
-    expect(result.averageUnitCost).toBe(2.17);
+    expect(result.averageUnitCost).toBe(2.167);
     expect(result.batches).toEqual([
       { inboundRecordId: 'in1', qty: 5, unitCost: 2, batchCost: 10 },
       { inboundRecordId: 'in2', qty: 1, unitCost: 3, batchCost: 3 },
@@ -935,7 +935,7 @@ describe('fifo-cost-service', () => {
       tx
     );
 
-    // 2000*1 + 1*100 = 2100; 2100/2001 ≈ 1.049... -> 1.05
-    expect(avg).toBe(1.05);
+    // 2000*1 + 1*100 = 2100; 2100/2001 ≈ 1.049... -> 保留 3 位小数为 1.049
+    expect(avg).toBe(1.049);
   });
 });

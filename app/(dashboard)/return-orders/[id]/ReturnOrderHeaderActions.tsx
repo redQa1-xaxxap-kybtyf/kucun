@@ -4,11 +4,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Ban,
   CheckCircle,
-  Download,
   Edit,
   MoreHorizontal,
   Printer,
-  XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -36,6 +34,7 @@ import { getCsrfTokenHeader } from '@/lib/utils/csrf';
 
 interface ReturnOrderHeaderActionsProps {
   id: string;
+  processType: string;
   returnNumber: string;
   status: string;
   onPrint: () => void;
@@ -43,6 +42,7 @@ interface ReturnOrderHeaderActionsProps {
 
 export function ReturnOrderHeaderActions({
   id,
+  processType,
   returnNumber,
   status,
   onPrint,
@@ -51,6 +51,66 @@ export function ReturnOrderHeaderActions({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [processingAction, setProcessingAction] = useState<'completed' | null>(
+    null
+  );
+
+  const primaryAction =
+    status === 'submitted' || status === 'approved' || status === 'processing'
+      ? {
+          nextStatus: 'completed' as const,
+          label: '完成退货',
+          loadingLabel: '完成中...',
+        }
+      : null;
+
+  const statusMutation = useMutation({
+    mutationFn: async (nextStatus: 'completed') => {
+      const response = await fetch(
+        `/api/return-orders/${id}/status`,
+        getCsrfTokenHeader({
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            status: nextStatus,
+            idempotencyKey: crypto.randomUUID(),
+            remarks: '用户完成退货订单',
+          }),
+        })
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '更新退货订单状态失败');
+      }
+
+      return response.json();
+    },
+    onSuccess: (_data, nextStatus) => {
+      toast({
+        title: nextStatus === 'completed' ? '完成成功' : '操作成功',
+        description:
+          processType === 'refund'
+            ? '退货已完成，库存已回补；如需退款，请继续处理退款'
+            : '退货已完成，库存已回补',
+        variant: 'success',
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.returnOrders.detail(id),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
+      setProcessingAction(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '操作失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setProcessingAction(null);
+    },
+  });
 
   const cancelMutation = useMutation({
     mutationFn: async () => {
@@ -97,11 +157,29 @@ export function ReturnOrderHeaderActions({
   });
 
   const canEdit = ['draft', 'submitted'].includes(status);
-  const canCancel = ['draft', 'submitted', 'approved', 'processing'].includes(status);
+  const canCancel = ['draft', 'submitted', 'approved', 'processing'].includes(
+    status
+  );
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        {primaryAction && (
+          <Button
+            size="sm"
+            className="h-8 px-3"
+            onClick={() => {
+              setProcessingAction(primaryAction.nextStatus);
+              statusMutation.mutate(primaryAction.nextStatus);
+            }}
+            disabled={statusMutation.isPending || cancelMutation.isPending}
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            {processingAction === primaryAction.nextStatus && statusMutation.isPending
+              ? primaryAction.loadingLabel
+              : primaryAction.label}
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -110,10 +188,6 @@ export function ReturnOrderHeaderActions({
         >
           <Printer className="mr-2 h-4 w-4" />
           打印
-        </Button>
-        <Button variant="outline" size="sm" className="h-8 px-3">
-          <Download className="mr-2 h-4 w-4" />
-          导出
         </Button>
         {canEdit && (
           <Button
@@ -132,19 +206,7 @@ export function ReturnOrderHeaderActions({
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {status === 'pending' && (
-              <>
-                <DropdownMenuItem>
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  批准退货
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
-                  <XCircle className="mr-2 h-4 w-4" />
-                  拒绝退货
-                </DropdownMenuItem>
-              </>
-            )}
+        <DropdownMenuContent align="end">
             {canCancel && (
               <DropdownMenuItem
                 className="text-destructive"
@@ -154,8 +216,6 @@ export function ReturnOrderHeaderActions({
                 取消退货
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem>复制订单</DropdownMenuItem>
-            <DropdownMenuItem>发送邮件</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -194,4 +254,3 @@ export function ReturnOrderHeaderActions({
     </>
   );
 }
-

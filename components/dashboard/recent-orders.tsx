@@ -82,7 +82,7 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
         </CardHeader>
         <CardContent className="py-12 text-center">
           <Package className="text-muted-foreground/50 mx-auto mb-4 h-12 w-12" />
-          <p className="text-muted-foreground text-sm">暂无订单数据</p>
+          <p className="text-muted-foreground text-sm">暂无销售订单</p>
         </CardContent>
       </Card>
     );

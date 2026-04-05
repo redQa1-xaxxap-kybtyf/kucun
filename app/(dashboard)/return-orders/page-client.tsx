@@ -15,9 +15,9 @@ import { queryKeys } from '@/lib/queryKeys';
 import type {
   ReturnOrder,
   ReturnOrderQueryParams,
-  ReturnOrderStatus,
   ReturnOrderType,
   ReturnProcessType,
+  ReturnOrderUiStatus,
 } from '@/lib/types/return-order';
 
 const ReturnOrderListView = dynamic(
@@ -54,6 +54,7 @@ export function ReturnOrdersPageClient({
     page: initialParams?.page || 1,
     limit: initialParams?.limit || paginationConfig.defaultPageSize,
     search: initialParams?.search,
+    uiStatus: initialParams?.uiStatus,
     status: initialParams?.status,
     type: initialParams?.type,
     processType: initialParams?.processType,
@@ -116,12 +117,12 @@ export function ReturnOrdersPageClient({
   );
 
   const handleStatusChange = React.useCallback(
-    (value: ReturnOrderStatus | 'all') => {
+    (value: ReturnOrderUiStatus | 'all') => {
       const params = new URLSearchParams(window.location.search);
       if (value && value !== 'all') {
-        params.set('status', value);
+        params.set('uiStatus', value);
       } else {
-        params.delete('status');
+        params.delete('uiStatus');
       }
       params.delete('page');
       router.push(`/return-orders?${params.toString()}`);
@@ -178,6 +179,8 @@ export function ReturnOrdersPageClient({
 
   const handleClearFilters = React.useCallback(() => {
     const params = new URLSearchParams(window.location.search);
+    params.delete('search');
+    params.delete('uiStatus');
     params.delete('status');
     params.delete('type');
     params.delete('processType');
@@ -263,7 +266,7 @@ export function ReturnOrdersPageClient({
 
         <ReturnOrderListView
           searchValue={initialParams?.search || ''}
-          statusFilter={initialParams?.status || 'all'}
+          statusFilter={initialParams?.uiStatus || 'all'}
           typeFilter={initialParams?.type || 'all'}
           processTypeFilter={initialParams?.processType || 'all'}
           includeTest={initialParams?.includeTest}

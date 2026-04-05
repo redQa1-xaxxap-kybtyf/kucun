@@ -6,6 +6,7 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { buildReturnOrderUiStatusWhere } from '@/lib/api/return-order-filters';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { getSystemMode } from '@/lib/services/system-mode-service';
@@ -15,6 +16,7 @@ import type {
   ReturnOrderItem,
   ReturnOrderListResponse,
   ReturnOrderQueryParams,
+  ReturnOrderRefundSummary,
 } from '@/lib/types/return-order';
 
 /**
@@ -31,6 +33,7 @@ export async function getReturnOrdersServer(
     customerId,
     salesOrderId,
     status,
+    uiStatus,
     type,
     processType,
     startDate,
@@ -76,6 +79,18 @@ export async function getReturnOrdersServer(
 
   if (status) {
     where.status = status;
+  }
+
+  if (uiStatus) {
+    const existingAndFilters = Array.isArray(where.AND)
+      ? where.AND
+      : where.AND
+        ? [where.AND]
+        : [];
+    where.AND = [
+      ...existingAndFilters,
+      buildReturnOrderUiStatusWhere(uiStatus),
+    ];
   }
 
   if (type) {
@@ -153,8 +168,12 @@ export async function getReturnOrdersServer(
         refunds: {
           select: {
             id: true,
+            processedAmount: true,
+            processedDate: true,
             refundAmount: true,
             refundDate: true,
+            remainingAmount: true,
+            status: true,
           },
         },
       },
@@ -279,8 +298,18 @@ export async function getReturnOrdersServer(
       }),
       refunds: (order.refunds ?? []).map(record => ({
         id: record.id,
+        processedAmount:
+          record.processedAmount === null || record.processedAmount === undefined
+            ? undefined
+            : Number(record.processedAmount),
+        processedDate: record.processedDate?.toISOString(),
         refundAmount: Number(record.refundAmount),
         refundDate: record.refundDate.toISOString(),
+        remainingAmount:
+          record.remainingAmount === null || record.remainingAmount === undefined
+            ? undefined
+            : Number(record.remainingAmount),
+        status: record.status as ReturnOrderRefundSummary['status'],
       })),
     };
   });

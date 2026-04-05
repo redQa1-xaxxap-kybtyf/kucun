@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 
 import {
   InboundCostField,
+  InboundPurchaseDamageSection,
   InboundQuantityFields,
   InboundReasonField,
   InboundSpecificationFields,
@@ -76,6 +77,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     watchedInputQuantity,
     watchedInputUnit,
     watchedPiecesPerUnit,
+    watchedDamagedInputQuantity,
   } = useInboundForm({
     initialReason: isOpeningBalance ? 'opening_balance' : 'other',
   });
@@ -174,6 +176,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     setPendingFormData(null);
   };
 
+  const watchedReason = form.watch('reason');
+  const showPurchaseDamageSection = watchedReason === 'purchase';
+
   // 实时计算并更新最终片数
   useEffect(() => {
     if (watchedInputQuantity > 0 && watchedPiecesPerUnit > 0) {
@@ -187,6 +192,51 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       form.setValue('quantity', undefined); // ✅ 修改：设置为 undefined 而不是 0
     }
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
+
+  useEffect(() => {
+    const damagedQuantity =
+      watchedDamagedInputQuantity > 0
+        ? calculateFinalQuantity(
+            watchedDamagedInputQuantity,
+            watchedInputUnit,
+            watchedPiecesPerUnit
+          )
+        : undefined;
+
+    form.setValue('damagedQuantity', damagedQuantity, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  }, [
+    watchedDamagedInputQuantity,
+    watchedInputUnit,
+    watchedPiecesPerUnit,
+    form,
+  ]);
+
+  useEffect(() => {
+    if (watchedReason === 'purchase') {
+      return;
+    }
+
+    form.setValue('damagedInputQuantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damagedQuantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageHandling', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageRemarks', '', {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+  }, [watchedReason, form]);
+
   return (
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4">
@@ -313,7 +363,26 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                   </div>
                 </div>
 
-                {/* 4️⃣ 成本信息 */}
+                {showPurchaseDamageSection && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 shadow-inner">
+                        <AlertCircle className="h-5 w-5" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <h3 className="text-base font-black tracking-tight text-slate-900">
+                          4. 到货破损
+                        </h3>
+                        <p className="text-[10px] font-bold text-slate-400">
+                          只登记到货即发现的破损，库存仅计入合格数量
+                        </p>
+                      </div>
+                    </div>
+                    <InboundPurchaseDamageSection form={form} />
+                  </div>
+                )}
+
+                {/* 4️⃣ / 5️⃣ 成本信息 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
@@ -321,7 +390,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </div>
                     <div className="space-y-0.5">
                       <h3 className="text-base font-black tracking-tight text-slate-900">
-                        4. 价值核算
+                        {showPurchaseDamageSection ? '5. 价值核算' : '4. 价值核算'}
                       </h3>
                       <p className="text-[10px] font-bold text-slate-400">
                         核算入库资产的单位成本与总价值
@@ -336,7 +405,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                   </div>
                 </div>
 
-                {/* 5️⃣ 备注 */}
+                {/* 5️⃣ / 6️⃣ 备注 */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 text-slate-500 shadow-inner">
@@ -344,7 +413,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </div>
                     <div className="space-y-0.5">
                       <h3 className="text-base font-black tracking-tight text-slate-900">
-                        5. 备注存证
+                        {showPurchaseDamageSection ? '6. 备注存证' : '5. 备注存证'}
                       </h3>
                       <p className="text-[10px] font-bold text-slate-400">
                         记录本次入库的特殊变动或说明事项

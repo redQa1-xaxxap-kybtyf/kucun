@@ -66,6 +66,7 @@ const orderDetailSelect = {
           name: true,
           specification: true,
           unit: true,
+          piecesPerUnit: true,
           weight: true,
         },
       },

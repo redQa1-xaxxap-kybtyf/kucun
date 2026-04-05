@@ -54,7 +54,7 @@ export function StatementHeader({
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-3">
                 <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
-                  往来明细账
+                  往来对账明细
                 </h1>
                 <Badge className="border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-100">
                   {TYPE_LABEL_MAP[type]}

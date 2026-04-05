@@ -8,8 +8,8 @@ import {
 import { StatementsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '应收应付总账 - 财务管理',
-  description: '统一管理客户与供应商的应收应付汇总数据',
+  title: '往来对账 - 财务管理',
+  description: '按客户和供应商查看余额、流水与最近结算情况',
 };
 
 // ✅ Next.js 15 Route Segment Config

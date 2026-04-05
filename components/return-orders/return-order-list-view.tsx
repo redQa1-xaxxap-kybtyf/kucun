@@ -46,13 +46,12 @@ import { useToast } from '@/components/ui/use-toast';
 import { useUpdateReturnOrderStatus } from '@/lib/api/return-orders';
 import { queryKeys } from '@/lib/queryKeys';
 import {
-  RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
+  getReturnOrderDisplayStatus,
+  getReturnOrderPendingRefundAmount,
   type ReturnOrder,
-  type ReturnOrderStatus,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
-import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { formatDateTime } from '@/lib/utils/datetime';
 
 import { ErrorStateCard } from './return-order-list.error';
@@ -195,6 +194,8 @@ function ReturnOrderTable({
       {/* 移动端：卡片视图 */}
       <div className="space-y-3 px-3 py-3 md:hidden">
         {orders.map(order => {
+          const displayStatus = getReturnOrderDisplayStatus(order);
+          const pendingRefundAmount = getReturnOrderPendingRefundAmount(order);
           const handleCardClick = () => {
             if (onOrderSelect) {
               onOrderSelect(order);
@@ -234,7 +235,7 @@ function ReturnOrderTable({
                 </div>
                 <div className="shrink-0 text-right text-xs text-[hsl(var(--color-text-secondary))]">
                   <div className="font-semibold text-[hsl(var(--color-success))]">
-                    退款：
+                    金额：
                     {formatCurrency(
                       typeof order.refundAmount === 'number'
                         ? order.refundAmount
@@ -243,16 +244,17 @@ function ReturnOrderTable({
                   </div>
                   <div className="mt-1 flex justify-end">
                     <Badge
-                      variant={getReturnOrderStatusBadgeVariant(order.status)}
+                      variant={displayStatus.variant}
                       className="text-[10px] font-medium"
                     >
-                      {
-                        RETURN_ORDER_STATUS_LABELS[
-                          order.status as ReturnOrderStatus
-                        ]
-                      }
+                      {displayStatus.label}
                     </Badge>
                   </div>
+                  {pendingRefundAmount > 0.005 && (
+                    <div className="mt-1 text-[hsl(var(--color-warning))]">
+                      待退款：{formatCurrency(pendingRefundAmount)}
+                    </div>
+                  )}
                   <div className="mt-1 text-[hsl(var(--color-text-tertiary))]">
                     创建时间：{formatDateTime(order.createdAt)}
                   </div>
@@ -323,13 +325,10 @@ function ReturnOrderRow({
   }, [onDeleteRequest, order]);
 
   const formatRefundAmount = React.useCallback((o: ReturnOrder) => {
+    const pendingRefundAmount = getReturnOrderPendingRefundAmount(o);
     const actualAmount =
       typeof o.refundAmount === 'number' ? o.refundAmount : o.totalAmount;
     const hasAdjustment = Math.abs(actualAmount - o.totalAmount) > 0.005;
-    const remainingAmount =
-      typeof o.remainingAmount === 'number' ? o.remainingAmount : undefined;
-    const hasRemaining =
-      typeof remainingAmount === 'number' && remainingAmount > 0.005;
 
     return (
       <div className="flex flex-col items-end gap-0.5">
@@ -339,26 +338,34 @@ function ReturnOrderRow({
             原退货金额 {formatCurrency(o.totalAmount)}
           </span>
         )}
-        {hasRemaining && (
+        {pendingRefundAmount > 0.005 && (
           <span className="text-xs text-[hsl(var(--color-warning))]">
-            待处理 {formatCurrency(remainingAmount)}
+            待退款 {formatCurrency(pendingRefundAmount)}
           </span>
         )}
       </div>
     );
   }, []);
 
-  const handleConfirm = React.useCallback(() => {
+  const handleComplete = React.useCallback(() => {
     setIsConfirming(true);
     updateStatusMutation.mutate(
       {
         id: order.id,
-        // 提交后的“确认”仅将退货单置为已审核(approved)，并自动创建应退货款
-        status: 'approved',
+        status: 'completed',
       },
       {
         onSuccess: () => {
           setIsConfirming(false);
+          const successDescription =
+            order.processType === 'refund'
+              ? '退货已完成，库存已回补；如需退款，请继续处理退款'
+              : '退货已完成，库存已回补';
+          toast({
+            title: '完成成功',
+            description: successDescription,
+            variant: 'success',
+          });
           // 刷新退货订单相关的列表/统计缓存，而不整页刷新
           queryClient.invalidateQueries({
             queryKey: queryKeys.returnOrders.all,
@@ -374,7 +381,12 @@ function ReturnOrderRow({
         },
       }
     );
-  }, [order.id, updateStatusMutation, toast]);
+  }, [order.id, order.processType, queryClient, toast, updateStatusMutation]);
+
+  const displayStatus = getReturnOrderDisplayStatus(order);
+  const canComplete = ['submitted', 'approved', 'processing'].includes(
+    order.status
+  );
 
   return (
     <TableRow
@@ -416,31 +428,31 @@ function ReturnOrderRow({
       <TableCell>
         <div className="flex items-center gap-2">
           <Badge
-            variant={getReturnOrderStatusBadgeVariant(order.status)}
+            variant={displayStatus.variant}
             className="text-xs font-medium"
           >
-            {RETURN_ORDER_STATUS_LABELS[order.status as ReturnOrderStatus]}
+            {displayStatus.label}
           </Badge>
-          {order.status === 'submitted' && (
+          {canComplete && (
             <Button
               variant="outline"
               size="sm"
               className="h-7 px-2 text-xs"
               onClick={event => {
                 event.stopPropagation();
-                handleConfirm();
+                handleComplete();
               }}
               disabled={isConfirming}
             >
               {isConfirming ? (
                 <span className="flex items-center gap-1 text-xs">
                   <CheckCircle2 className="h-3 w-3 animate-spin" />
-                  确认中...
+                  完成中...
                 </span>
               ) : (
                 <span className="flex items-center gap-1 text-xs">
                   <CheckCircle2 className="h-3 w-3" />
-                  确认
+                  完成退货
                 </span>
               )}
             </Button>

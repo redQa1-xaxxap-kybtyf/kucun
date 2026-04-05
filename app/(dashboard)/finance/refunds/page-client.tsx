@@ -392,8 +392,8 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
     <div className="flex h-full flex-col overflow-auto p-4 sm:p-6">
       <div className="space-y-4 sm:space-y-6">
         <PageHeader
-          title="应退货款管理"
-          description="跟踪退货订单产生的应退账款，确保及时完成退款处理"
+          title="退款处理"
+          description="跟踪退货产生的退款，优先处理待处理和待退款记录。"
           icon={<TrendingDown className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-warning))"
           actions={

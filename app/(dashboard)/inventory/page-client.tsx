@@ -76,6 +76,7 @@ export function InventoryPageClient({
       searchValue={ctrl.searchInput}
       onSearch={ctrl.handleSearch}
       onFilter={ctrl.handleFilter}
+      onFilterPatch={ctrl.handleFilterPatch}
       onClearFilters={ctrl.handleClearFilters}
       onPageChange={ctrl.handlePageChange}
       onNextPageHover={ctrl.handleNextPageHover}
@@ -123,8 +124,12 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
     () => isPending || isFetching,
     [isPending, isFetching]
   );
-  const { handleFilter, handleClearFilters, handlePageChange } =
-    useInventoryFilters(updateParams, params.page ?? 1);
+  const {
+    handleFilter,
+    handleFilterPatch,
+    handleClearFilters,
+    handlePageChange,
+  } = useInventoryFilters(updateParams, params.page ?? 1);
 
   // ✅ 优化：简化防抖逻辑，固定300ms延迟
   // 移除复杂的自适应算法，提升性能和可维护性
@@ -211,6 +216,7 @@ function useInventoryController(initialParams: Partial<InventoryQueryParams>) {
     currentQueryParams,
     handleSearch,
     handleFilter,
+    handleFilterPatch,
     handleClearFilters,
     handlePageChange,
     handleNextPageHover,
@@ -307,25 +313,34 @@ function useInventoryFilters(
   updateParams: (updates: Partial<InventoryQueryParams>) => void,
   currentPage: number
 ) {
+  const handleFilterPatch = React.useCallback(
+    (updates: Partial<InventoryQueryParams>) => {
+      if (updates.lowStock) {
+        updateParams({ page: 1, lowStock: true, hasStock: false, ...updates });
+        return;
+      }
+
+      if (updates.hasStock) {
+        updateParams({ page: 1, hasStock: true, lowStock: false, ...updates });
+        return;
+      }
+
+      updateParams({ page: 1, ...updates });
+    },
+    [updateParams]
+  );
+
   const handleFilter = React.useCallback(
     (
       key: keyof InventoryQueryParams,
       value: string | number | boolean | undefined
     ) => {
-      if (key === 'lowStock' && value) {
-        updateParams({ page: 1, lowStock: true, hasStock: false });
-        return;
-      }
-      if (key === 'hasStock' && value) {
-        updateParams({ page: 1, hasStock: true, lowStock: false });
-        return;
-      }
       const patch = {
         [key]: value,
       } as unknown as Partial<InventoryQueryParams>;
-      updateParams({ page: 1, ...patch });
+      handleFilterPatch(patch);
     },
-    [updateParams]
+    [handleFilterPatch]
   );
 
   // ✅ Bug修复：清空筛选时也要清空搜索词
@@ -335,6 +350,8 @@ function useInventoryFilters(
       categoryId: undefined,
       lowStock: false,
       hasStock: false,
+      sortBy: 'updatedAt',
+      sortOrder: 'desc',
       startDate: undefined,
       endDate: undefined,
       page: 1,
@@ -349,7 +366,12 @@ function useInventoryFilters(
     [updateParams, currentPage]
   );
 
-  return { handleFilter, handleClearFilters, handlePageChange } as const;
+  return {
+    handleFilter,
+    handleFilterPatch,
+    handleClearFilters,
+    handlePageChange,
+  } as const;
 }
 
 function InventoryContent(props: {
@@ -365,6 +387,7 @@ function InventoryContent(props: {
     key: keyof InventoryQueryParams,
     value: string | number | boolean | undefined
   ) => void;
+  onFilterPatch: (updates: Partial<InventoryQueryParams>) => void;
   onClearFilters: () => void;
   onPageChange: (page: number) => void;
   onNextPageHover: () => void;
@@ -385,6 +408,7 @@ function InventoryContent(props: {
     searchValue,
     onSearch,
     onFilter,
+    onFilterPatch,
     onClearFilters,
     onPageChange,
     onNextPageHover,
@@ -482,6 +506,7 @@ function InventoryContent(props: {
                 searchValue={searchValue}
                 onSearch={onSearch}
                 onFilter={onFilter}
+                onFilterPatch={onFilterPatch}
                 onClearFilters={onClearFilters}
                 onPageChange={onPageChange}
                 onNextPageHover={onNextPageHover}

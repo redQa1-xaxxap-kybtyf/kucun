@@ -314,6 +314,8 @@ describe('/api/finance/payments-out（端点级回归）', () => {
         payableRecordId: null,
         paymentMethod: 'bank_transfer',
         paymentAmount: 1,
+        actualPaymentAmount: 1,
+        roundingAmount: 0,
         paymentDate: '2026-01-01',
         remarks: null,
         voucherNumber: null,
@@ -351,6 +353,8 @@ describe('/api/finance/payments-out（端点级回归）', () => {
         payableRecordId: null,
         paymentMethod: 'bank_transfer',
         paymentAmount: 50,
+        actualPaymentAmount: 50,
+        roundingAmount: 0,
         paymentDate: '2026-01-01',
         remarks: 'test',
         voucherNumber: null,
@@ -388,6 +392,8 @@ describe('/api/finance/payments-out（端点级回归）', () => {
           userId: 'test-user',
           paymentMethod: 'bank_transfer',
           paymentAmount: 50,
+          actualPaymentAmount: 50,
+          roundingAmount: 0,
           paymentDate: new Date('2026-01-01T00:00:00.000Z'),
           status: 'confirmed',
           remarks: 'test',
@@ -447,5 +453,134 @@ describe('/api/finance/payments-out（端点级回归）', () => {
     );
 
     expect(clearCacheAfterPaymentOut).toHaveBeenCalledTimes(1);
+  });
+
+  test('POST：带抹零创建成功时，应按记账金额核销应付，按实际付款金额写供应商往来账', async () => {
+    createPaymentOutRecordSchema.safeParse.mockReturnValue({
+      success: true,
+      data: {
+        idempotencyKey: 'idem-2',
+        supplierId: 'sup-1',
+        payableRecordId: 'payable-1',
+        paymentMethod: 'bank_transfer',
+        paymentAmount: 50,
+        actualPaymentAmount: 49.5,
+        roundingAmount: 0.5,
+        paymentDate: '2026-01-01',
+        remarks: 'rounding',
+        voucherNumber: null,
+        bankInfo: null,
+      },
+    });
+
+    prisma.supplier.findUnique.mockResolvedValue({
+      id: 'sup-1',
+      name: '供应商A',
+      status: 'active',
+    });
+    prisma.payableRecord.findUnique.mockResolvedValue({
+      id: 'payable-1',
+      payableAmount: 100,
+      paidAmount: 0,
+      remainingAmount: 50,
+      status: 'pending',
+    });
+
+    const tx = {
+      payableRecord: {
+        updateMany: jest.fn(async () => ({ count: 1 })),
+        findUnique: jest.fn(async () => ({
+          status: 'paid',
+          paidAmount: 50,
+          remainingAmount: 0,
+        })),
+        update: jest.fn(async () => ({})),
+      },
+      paymentOutRecord: {
+        create: jest.fn(async (args: any) => ({
+          id: 'pay-2',
+          ...args.data,
+          supplier: {
+            id: 'sup-1',
+            name: '供应商A',
+            phone: null,
+            address: null,
+          },
+          user: { id: 'test-user', name: 'Admin', email: 'a@example.com' },
+          payableRecord: {
+            id: 'payable-1',
+            payableNumber: 'PAY-001',
+            payableAmount: 100,
+            remainingAmount: 0,
+          },
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        })),
+        findUnique: jest.fn(async () => ({
+          id: 'pay-2',
+          paymentNumber: 'POUT-0002',
+          payableRecordId: 'payable-1',
+          supplierId: 'sup-1',
+          userId: 'test-user',
+          paymentMethod: 'bank_transfer',
+          paymentAmount: 50,
+          actualPaymentAmount: 49.5,
+          roundingAmount: 0.5,
+          paymentDate: new Date('2026-01-01T00:00:00.000Z'),
+          status: 'confirmed',
+          remarks: 'rounding',
+          voucherNumber: null,
+          bankInfo: null,
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+          payableRecord: {
+            id: 'payable-1',
+            payableNumber: 'PAY-001',
+            payableAmount: 100,
+            remainingAmount: 0,
+          },
+          supplier: {
+            id: 'sup-1',
+            name: '供应商A',
+            phone: null,
+            address: null,
+          },
+          user: { id: 'test-user', name: 'Admin', email: 'a@example.com' },
+        })),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+
+    const { POST } = await import('@/app/api/finance/payments-out/route');
+    const response = await POST(
+      { json: async () => ({}) } as any,
+      {
+        user: { id: 'test-user' },
+      } as any
+    );
+
+    expect(response.status).toBe(201);
+    expect(tx.payableRecord.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          paidAmount: { increment: 50 },
+          remainingAmount: { decrement: 50 },
+        }),
+      })
+    );
+
+    expect(recordPartnerTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        partnerId: 'sup-1',
+        transactionType: 'payment_out',
+        amount: 49.5,
+        metadata: expect.objectContaining({
+          paymentAmount: 50,
+          actualPaymentAmount: 49.5,
+          roundingAmount: 0.5,
+        }),
+      }),
+      tx
+    );
   });
 });

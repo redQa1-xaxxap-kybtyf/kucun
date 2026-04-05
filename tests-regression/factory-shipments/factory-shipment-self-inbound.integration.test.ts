@@ -54,13 +54,21 @@ type ShipmentItem = {
   inboundReceivedAt: Date | null;
   productId: string | null;
   supplierId: string | null;
+  productCode: string;
   quantity: number;
+  unit: string | null;
+  piecesPerUnit: number | null;
   unitCost: number | null;
   batchNumber: string | null;
   isManualProduct: boolean;
   temporaryProductId: string | null;
   displayName: string;
   totalPrice: number;
+  product?: {
+    code: string;
+    unit: string | null;
+    piecesPerUnit: number | null;
+  } | null;
 };
 
 type ShipmentOrder = {
@@ -107,13 +115,21 @@ function createStore(seed?: Partial<ShipmentOrder>) {
         inboundReceivedAt: null,
         productId: 'product-1',
         supplierId: 'supplier-1',
+        productCode: 'SELF-A',
         quantity: 5,
-        unitCost: 10,
+        unit: 'piece',
+        piecesPerUnit: 12,
+        unitCost: 96,
         batchNumber: 'B001',
         isManualProduct: false,
         temporaryProductId: null,
         displayName: '自用货A',
-        totalPrice: 50,
+        totalPrice: 480,
+        product: {
+          code: 'SELF-A',
+          unit: 'piece',
+          piecesPerUnit: 12,
+        },
       },
       {
         id: 'item-customer-1',
@@ -122,13 +138,21 @@ function createStore(seed?: Partial<ShipmentOrder>) {
         inboundReceivedAt: null,
         productId: 'product-2',
         supplierId: 'supplier-1',
+        productCode: 'CUSTOMER-B',
         quantity: 20,
+        unit: 'sheet',
+        piecesPerUnit: null,
         unitCost: 12,
         batchNumber: 'B002',
         isManualProduct: false,
         temporaryProductId: null,
         displayName: '客户货B',
         totalPrice: 240,
+        product: {
+          code: 'CUSTOMER-B',
+          unit: 'sheet',
+          piecesPerUnit: null,
+        },
       },
     ],
     ...seed,
@@ -234,8 +258,8 @@ describe('厂家直发自用补货入库：完整链路回归', () => {
     expect(executeMinimalInboundTransaction).toHaveBeenCalledWith(
       expect.objectContaining({
         productId: 'product-1',
-        quantity: 5,
-        unitCost: 10,
+        quantity: 60,
+        unitCost: 8,
         reason: 'purchase',
         supplierId: 'supplier-1',
         batchNumber: 'B001',
@@ -255,7 +279,7 @@ describe('厂家直发自用补货入库：完整链路回归', () => {
     const body = await response.json();
     expect(body.fulfillmentSummary).toEqual({
       customerOwnedAmount: 240,
-      selfOwnedAmount: 50,
+      selfOwnedAmount: 480,
     });
   });
 
@@ -281,5 +305,73 @@ describe('厂家直发自用补货入库：完整链路回归', () => {
       success: false,
       error: '存在非自用补货明细，无法标记入库',
     });
+  });
+
+  test('缺少 piecesPerUnit 时应返回 400，且不执行错误入库', async () => {
+    const store = createStore({
+      items: [
+        {
+          ...createStore().order.items[0],
+          piecesPerUnit: null,
+          product: {
+            code: 'SELF-A',
+            unit: 'piece',
+            piecesPerUnit: null,
+          },
+        },
+      ],
+    });
+    setupPrisma(store);
+    const { POST } = await import('@/app/api/factory-shipments/[id]/inbound/route');
+
+    const response = await POST(
+      {
+        json: async () => ({ itemIds: ['item-self-1'] }),
+      } as any,
+      {
+        params: { id: 'fs-1' },
+      } as any
+    );
+
+    expect(response.status).toBe(400);
+    expect(executeMinimalInboundTransaction).not.toHaveBeenCalled();
+
+    const body = await response.json();
+    expect(body).toEqual({
+      success: false,
+      error: '自用货A 按件录入时必须维护“每件片数”后才能继续',
+    });
+
+    const updatedItem = store.order.items.find(item => item.id === 'item-self-1');
+    expect(updatedItem?.selfInboundStatus).toBe('pending');
+    expect(updatedItem?.inboundReceivedAt).toBeNull();
+  });
+
+  test('重复提交同一自用明细时，不应生成第二笔入库', async () => {
+    const store = createStore();
+    setupPrisma(store);
+    const { POST } = await import('@/app/api/factory-shipments/[id]/inbound/route');
+
+    const firstResponse = await POST(
+      {
+        json: async () => ({ itemIds: ['item-self-1'] }),
+      } as any,
+      {
+        params: { id: 'fs-1' },
+      } as any
+    );
+
+    const secondResponse = await POST(
+      {
+        json: async () => ({ itemIds: ['item-self-1'] }),
+      } as any,
+      {
+        params: { id: 'fs-1' },
+      } as any
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(executeMinimalInboundTransaction).toHaveBeenCalledTimes(1);
   });
 });

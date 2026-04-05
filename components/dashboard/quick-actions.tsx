@@ -271,8 +271,8 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
       () => [
         {
           id: 'create-sales-order',
-          title: '创建销售订单',
-          description: '新建销售订单',
+          title: '新建销售订单',
+          description: '录入新的销售订单',
           icon: 'shopping-cart',
           href: '/sales-orders/create',
           color: 'blue',
@@ -295,16 +295,16 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
         },
         {
           id: 'inventory-inbound',
-          title: '库存入库',
-          description: '产品入库操作',
+          title: '产品入库',
+          description: '新增入库记录',
           icon: 'upload',
           href: '/inventory/inbound',
           color: 'yellow',
         },
         {
           id: 'inventory-outbound',
-          title: '库存出库',
-          description: '产品出库操作',
+          title: '产品出库',
+          description: '新增出库记录',
           icon: 'download',
           href: '/inventory/outbound',
           color: 'red',
@@ -312,8 +312,8 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
 
         {
           id: 'process-returns',
-          title: '处理退货',
-          description: '退货订单处理',
+          title: '退货订单',
+          description: '查看待处理退货',
           icon: 'rotate-ccw',
           href: '/return-orders',
           color: 'yellow',

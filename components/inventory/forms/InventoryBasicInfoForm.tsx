@@ -28,6 +28,7 @@ import {
   INBOUND_REASON_OPTIONS,
   INBOUND_UNIT_OPTIONS,
 } from '@/lib/types/inbound';
+import { COST_PRICE_STEP } from '@/lib/utils/cost-price';
 
 import type {
   FormValuesByMode,
@@ -352,7 +353,7 @@ function renderQuantitySection<M extends OperationMode>({
               <Input
                 type="number"
                 min="0"
-                step="0.01"
+                step={COST_PRICE_STEP}
                 placeholder="输入单位成本"
                 disabled={isLoading}
                 value={

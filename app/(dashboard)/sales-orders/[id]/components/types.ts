@@ -25,6 +25,7 @@ export interface SalesOrderDetail {
   itemsAmount: number;
   additionalFees: number;
   roundingAdjustment: number;
+  prepaymentAmount?: number;
   totalAmount: number;
   costAmount: number;
   profitAmount: number;

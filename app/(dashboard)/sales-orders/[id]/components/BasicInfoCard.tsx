@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_TYPE_LABELS,
   SAMPLE_SETTLEMENT_TYPE_LABELS,
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
@@ -107,14 +108,14 @@ export function BasicInfoCard({ order }: { order: SalesOrderDetail }) {
                   variant="outline"
                   className="w-fit border-amber-200 bg-amber-50 font-bold text-amber-700"
                 >
-                  协同调货
+                  {SALES_ORDER_TYPE_LABELS.TRANSFER}
                 </Badge>
               ) : (
                 <Badge
                   variant="outline"
                   className="w-fit border-blue-200 bg-blue-50 font-bold text-blue-700"
                 >
-                  正常零售
+                  {SALES_ORDER_TYPE_LABELS.NORMAL}
                 </Badge>
               )}
               {order.orderType === 'TRANSFER' && order.transferMode && (

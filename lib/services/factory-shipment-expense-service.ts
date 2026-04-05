@@ -19,6 +19,7 @@ import type {
   ExpenseAllocationSummary,
   FactoryShipmentOrderItem,
 } from '@/lib/types/factory-shipment';
+import { convertQuantityToPieces } from '@/lib/utils/inventory-unit-conversion';
 
 // ==================== 辅助工具函数 ====================
 
@@ -27,10 +28,11 @@ import type {
  * 如果单位是"件"且有每件片数，则转换为片数；否则直接返回数量
  */
 function getActualQuantityInPieces(item: FactoryShipmentOrderItem): number {
-  if (item.unit === '件' && item.piecesPerUnit && item.piecesPerUnit > 0) {
-    return item.quantity * item.piecesPerUnit;
-  }
-  return item.quantity;
+  return convertQuantityToPieces({
+    quantity: item.quantity,
+    unit: item.unit,
+    piecesPerUnit: item.piecesPerUnit,
+  });
 }
 
 /**

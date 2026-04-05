@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * 外调产品库客户端组件
+ * 调货产品库客户端组件
  */
 
 import { useQuery } from '@tanstack/react-query';
@@ -59,7 +59,7 @@ interface TemporaryProductsResponse {
   };
 }
 
-// 统一外调产品的单位展示为中文"件/片"
+// 统一调货产品的单位展示为中文"件/片"
 const getUnitLabel = (unit: string | null | undefined) => {
   if (!unit) return '-';
   return PRODUCT_UNIT_LABELS[unit] ?? unit;
@@ -77,7 +77,7 @@ export function TemporaryProductsClient() {
   const { data: suppliersData } = useSuppliers();
   const suppliers = suppliersData?.data || [];
 
-  // 获取外调产品列表
+  // 获取调货产品列表
   const { data, isLoading, error } = useQuery({
     queryKey: [
       'temporary-products',
@@ -198,7 +198,7 @@ export function TemporaryProductsClient() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-muted-foreground text-xs font-medium">
-                外调产品总数
+                调货产品总数
               </CardTitle>
               <Package className="text-muted-foreground h-3.5 w-3.5" />
             </CardHeader>
@@ -252,7 +252,7 @@ export function TemporaryProductsClient() {
         </div>
       )}
 
-      {/* 外调产品列表 */}
+      {/* 调货产品列表 */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
@@ -266,9 +266,9 @@ export function TemporaryProductsClient() {
           ) : products.length === 0 ? (
             <div className="text-muted-foreground flex flex-col items-center justify-center py-10">
               <Package className="mb-3 h-10 w-10 opacity-50" />
-              <p className="text-sm font-medium">暂无外调产品记录</p>
+              <p className="text-sm font-medium">暂无调货产品记录</p>
               <p className="mt-1 text-xs">
-                外调产品会在创建调货销售订单时自动记录
+                调货产品会在创建调货销售订单时自动记录
               </p>
             </div>
           ) : (
@@ -468,9 +468,9 @@ export function TemporaryProductsClient() {
               <Package className="h-4 w-4" />
             </div>
             <div className="space-y-0.5 text-xs">
-              <p className="font-medium text-blue-900">关于外调产品</p>
+              <p className="font-medium text-blue-900">关于调货产品</p>
               <p className="text-blue-700">
-                • 外调产品由系统在创建调货销售订单时自动记录和管理
+                • 调货产品由系统在创建调货销售订单时自动记录和管理
               </p>
               <p className="text-blue-700">
                 • 同一供应商的相同编码会自动复用,并更新使用统计
@@ -479,7 +479,7 @@ export function TemporaryProductsClient() {
                 • 此页面仅用于查询和检索,不提供手动创建/编辑/删除功能
               </p>
               <p className="text-blue-700">
-                • 使用次数反映了该外调产品在订单中被使用的总次数
+                • 使用次数反映了该调货产品在订单中被使用的总次数
               </p>
             </div>
           </div>

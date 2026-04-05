@@ -49,6 +49,7 @@ export const OutboundRecordsSearchToolbar =
       onClearFilters,
     }) => {
       const logic = useOutboundToolbarLogic({
+        searchValue,
         typeFilter,
         dateRange,
         onTypeChange,
@@ -72,6 +73,7 @@ export const OutboundRecordsSearchToolbar =
 OutboundRecordsSearchToolbar.displayName = 'OutboundRecordsSearchToolbar';
 
 function useOutboundToolbarLogic({
+  searchValue,
   typeFilter,
   dateRange,
   onTypeChange,
@@ -79,6 +81,7 @@ function useOutboundToolbarLogic({
   onClearFilters,
 }: Pick<
   OutboundRecordsSearchToolbarProps,
+  | 'searchValue'
   | 'typeFilter'
   | 'dateRange'
   | 'onTypeChange'
@@ -113,7 +116,10 @@ function useOutboundToolbarLogic({
   }, [onClearFilters]);
 
   const hasActiveFilters =
-    typeFilter !== 'all' || !!dateRange.startDate || !!dateRange.endDate;
+    !!searchValue.trim() ||
+    typeFilter !== 'all' ||
+    !!dateRange.startDate ||
+    !!dateRange.endDate;
 
   return {
     handleFilterChange,

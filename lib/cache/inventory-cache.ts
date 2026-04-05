@@ -53,6 +53,8 @@ export async function setCachedInventory(
 export interface InventoryBatch {
   batchNumber: string;
   quantity: number;
+  reservedQuantity?: number;
+  availableQuantity?: number;
 }
 
 export interface InventorySummary {
@@ -159,6 +161,7 @@ export async function getBatchCachedInventorySummary(
       },
       _sum: {
         quantity: true,
+        reservedQuantity: true,
       },
     });
 
@@ -167,6 +170,8 @@ export async function getBatchCachedInventorySummary(
         if (!item.batchNumber) return acc;
 
         const quantity = item._sum.quantity || 0;
+        const reservedQuantity = item._sum.reservedQuantity || 0;
+        const availableQuantity = Math.max(quantity - reservedQuantity, 0);
         if (!acc[item.productId]) {
           acc[item.productId] = [];
         }
@@ -174,6 +179,8 @@ export async function getBatchCachedInventorySummary(
         acc[item.productId].push({
           batchNumber: item.batchNumber,
           quantity,
+          reservedQuantity,
+          availableQuantity,
         });
 
         return acc;

@@ -11,6 +11,7 @@
 
 import { Prisma } from '@prisma/client';
 
+import { upsertBatchSpecification } from '@/lib/api/batch-specification-handlers';
 import { ApiError } from '@/lib/api/errors';
 import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import type { ProductUnit } from '@/lib/config/product';
@@ -40,9 +41,12 @@ export interface MinimalInboundTransactionData {
   variantId?: string;
   quantity: number;
   unitCost: number; // 入库单位成本（必填）
+  piecesPerUnit?: number;
+  weight?: number;
   reason: string;
   remarks?: string;
   batchNumber: string; // 事务外预生成
+  openingImportBatchId?: string;
   location?: string;
   userId: string;
   purchaseOrderId?: string;
@@ -104,6 +108,28 @@ export async function executeMinimalInboundTransaction(
   options?: { tx?: Prisma.TransactionClient }
 ): Promise<MinimalInboundTransactionResult> {
   const run = async (tx: Prisma.TransactionClient) => {
+    let batchSpecificationId: string | null = null;
+    if (
+      data.batchNumber &&
+      (typeof data.piecesPerUnit === 'number' || typeof data.weight === 'number')
+    ) {
+      const batchSpec = await upsertBatchSpecification(
+        {
+          productId: data.productId,
+          variantId: data.variantId,
+          batchNumber: data.batchNumber,
+          piecesPerUnit:
+            typeof data.piecesPerUnit === 'number' && data.piecesPerUnit > 0
+              ? data.piecesPerUnit
+              : 1,
+          weight: data.weight,
+        },
+        tx
+      );
+
+      batchSpecificationId = batchSpec.id;
+    }
+
     // 🎯 核心操作 1: 创建入库记录
     // 生成唯一记录编号
     const recordNumber = generateInboundRecordNumber();
@@ -121,7 +147,8 @@ export async function executeMinimalInboundTransaction(
         productId: data.productId,
         variantId: data.variantId || null,
         batchNumber: data.batchNumber || null,
-        batchSpecificationId: null, // 批次规格关联将在异步队列中处理
+        openingImportBatchId: data.openingImportBatchId || null,
+        batchSpecificationId,
         quantity: data.quantity,
         unitCost: data.unitCost, // 记录入库单位成本
         totalCost, // 记录入库总成本

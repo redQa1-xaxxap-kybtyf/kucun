@@ -220,7 +220,7 @@ export function ReturnOrderForm({
         )}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {mode === 'create' ? '创建退货订单' : '编辑退货订单'}
+            {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
           </h1>
           <p className="text-muted-foreground">
             {mode === 'create'
@@ -721,7 +721,7 @@ export function ReturnOrderForm({
               {isLoading
                 ? '保存中...'
                 : mode === 'create'
-                  ? '创建退货订单'
+                  ? '新建退货订单'
                   : '保存修改'}
             </Button>
           </div>

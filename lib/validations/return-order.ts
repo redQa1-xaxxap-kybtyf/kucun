@@ -260,6 +260,9 @@ export const returnOrderQuerySchema = z.object({
       'cancelled',
     ])
     .optional(),
+  uiStatus: z
+    .enum(['draft', 'pending', 'awaiting_refund', 'completed'])
+    .optional(),
   type: z
     .enum([
       'quality_issue',
@@ -270,6 +273,7 @@ export const returnOrderQuerySchema = z.object({
       'other',
     ])
     .optional(),
+  processType: z.enum(['refund', 'exchange']).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   sortBy: z

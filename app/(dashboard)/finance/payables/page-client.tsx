@@ -594,10 +594,10 @@ export function PayablesPageClient({
                 </div>
                 <div>
                   <h1 className="text-lg font-semibold tracking-tight text-[hsl(var(--color-text-primary))] sm:text-2xl sm:font-bold">
-                    应付款管理
+                    供应商待付款
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    跟踪采购订单产生的应付账款，确保按时完成付款结算
+                    查看采购和其他业务产生的待付款余额，及时完成结算
                   </p>
                 </div>
               </div>

@@ -4,6 +4,7 @@ import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber, toNumberOrNull } from '@/lib/utils/number';
 
 interface BatchSummary {
@@ -164,7 +165,8 @@ export const GET = withAuth(
         (sum, record) => sum + toNumber(record.unitCost, 0) * record.quantity,
         0
       );
-      const averageUnitCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
+      const averageUnitCost =
+        totalQuantity > 0 ? roundCostPrice(totalCost / totalQuantity) : 0;
 
       // 最新更新时间
       const lastUpdated =

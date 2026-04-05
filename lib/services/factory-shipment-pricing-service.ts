@@ -12,6 +12,7 @@
  */
 
 import type { FactoryShipmentOrderItem } from '@/lib/types/factory-shipment';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 
 import {
   allocateExpensesByValue,
@@ -60,17 +61,12 @@ export function calculateSuggestedPrice(
 
   // 进货单价
   const unitCost = item.unitCost || item.unitPrice;
+  const quantity = Number(item.quantity ?? 0);
 
-  // 计算实际片数：如果单位是"件"，需要转换为片数
-  let actualQuantityInPieces = item.quantity;
-  if (item.unit === '件' && item.piecesPerUnit && item.piecesPerUnit > 0) {
-    actualQuantityInPieces = item.quantity * item.piecesPerUnit;
-  }
-
-  // 最终单位成本 = 进货单价 + 分摊运费 / 实际片数
+  // 厂家发货单上的建议售价保持当前录入单位（件/片）口径。
   const finalUnitCost =
-    actualQuantityInPieces > 0
-      ? roundToTwoDecimals(unitCost + allocatedExpense / actualQuantityInPieces)
+    quantity > 0
+      ? roundCostPrice(unitCost + allocatedExpense / quantity)
       : unitCost;
 
   // 建议销售价 = 最终单位成本 × (1 + 目标利润率)

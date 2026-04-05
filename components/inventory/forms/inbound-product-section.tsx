@@ -61,7 +61,7 @@ export function InboundProductSection({
       return `${selectedProduct.batchSpecs[0].piecesPerUnit} 片`;
     }
 
-    return '多批次，请在下方选择批次';
+    return '多批次，可选现有批次或直接输入新批次';
   }, [selectedProduct]);
 
   const handleBatchSelect = (spec: {
@@ -180,9 +180,9 @@ export function InboundProductSection({
             </div>
             {batchSpecs.length > 0 && (
               <div className="col-span-5 flex flex-col gap-1.5 border-t border-green-200 pt-2">
-                <span className="font-medium text-gray-600">现有批次规格</span>
+                <span className="font-medium text-gray-600">现有批次参考</span>
                 <p className="text-muted-foreground text-xs">
-                  点击批次可快速切换入库批次，并同步装箱数。
+                  如果现有入库数量和现有批次相同可直接选择，新增批次请直接输入。
                 </p>
                 <div className="flex flex-col gap-1.5">
                   {batchSpecs.map((spec, index) => {
@@ -207,11 +207,12 @@ export function InboundProductSection({
                         type="button"
                         key={index}
                         onClick={() => handleBatchSelect(spec)}
+                        aria-pressed={selectedBatchNumber === spec.batchNumber}
                         className={cn(
                           'flex items-center gap-2 rounded border px-3 py-1.5 text-left transition',
                           selectedBatchNumber === spec.batchNumber
-                            ? 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] shadow-sm'
-                            : 'border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]'
+                            ? 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] ring-1 ring-[hsl(var(--color-primary))]/25 shadow-sm'
+                            : 'border-slate-200 bg-white text-slate-700 hover:border-[hsl(var(--color-primary))]/60 hover:bg-slate-50'
                         )}
                       >
                         <span className="font-mono text-xs font-semibold text-[hsl(var(--color-primary))]">
@@ -233,6 +234,11 @@ export function InboundProductSection({
                             （共 {spec.quantity} 片）
                           </span>
                         </span>
+                        {selectedBatchNumber === spec.batchNumber && (
+                          <span className="ml-auto rounded-full bg-[hsl(var(--color-primary))] px-2 py-0.5 text-[11px] font-semibold text-white">
+                            已选中
+                          </span>
+                        )}
                       </button>
                     );
                   })}

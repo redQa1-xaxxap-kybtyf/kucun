@@ -217,16 +217,22 @@ export async function getOptimizedInventoryList(
       p.pieces_per_unit as product_piecesPerUnit,
       p.weight as product_weight,
       p.thumbnail_url as product_thumbnailUrl,
-      bs.pieces_per_unit as batch_piecesPerUnit,
-      bs.weight as batch_weight,
+      COALESCE(bs_variant.pieces_per_unit, bs_default.pieces_per_unit) as batch_piecesPerUnit,
+      COALESCE(bs_variant.weight, bs_default.weight) as batch_weight,
       p.status as product_status,
       c.id as category_id,
       c.name as category_name,
       c.code as category_code
     FROM inventory i
     LEFT JOIN products p ON i.product_id = p.id
-    LEFT JOIN batch_specifications bs
-      ON bs.product_id = i.product_id AND bs.batch_number = i.batch_number
+    LEFT JOIN batch_specifications bs_variant
+      ON bs_variant.product_id = i.product_id
+      AND bs_variant.variant_key = COALESCE(i.variant_id, '')
+      AND bs_variant.batch_number = i.batch_number
+    LEFT JOIN batch_specifications bs_default
+      ON bs_default.product_id = i.product_id
+      AND bs_default.variant_key = ''
+      AND bs_default.batch_number = i.batch_number
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE ${whereClause}
     ORDER BY ${orderByClause}

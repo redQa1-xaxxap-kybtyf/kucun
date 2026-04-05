@@ -9,6 +9,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { ResetPasswordSchema } from '@/lib/validations/settings';
 
 // POST - 重置用户密码
@@ -33,7 +34,17 @@ export const POST = withAuth(async (request: NextRequest, context) => {
     const body = await request.json();
 
     // 验证输入数据
-    const validatedData = ResetPasswordSchema.parse(body);
+    const validationResult = ResetPasswordSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: validationResult.error.issues[0]?.message ?? '数据验证失败',
+        },
+        { status: 400 }
+      );
+    }
+    const validatedData = validationResult.data;
 
     // 检查用户是否存在
     const existingUser = await prisma.user.findUnique({
@@ -64,7 +75,7 @@ export const POST = withAuth(async (request: NextRequest, context) => {
       message: '密码重置成功',
     });
   } catch (error) {
-    console.error('重置密码失败:', error);
+    logger.error('settings', '重置密码失败', error);
     return NextResponse.json(
       {
         success: false,

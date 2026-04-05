@@ -49,6 +49,7 @@ const protectedPaths = [
   '/api/product-variants',
   '/api/seed-test-data',
   '/api/notifications', // 通知 API
+  '/api/print-templates', // 打印模板 API
   '/api/price-history', // 价格历史 API
   '/api/profile', // 个人资料 API
   '/api/admin', // 管理端 API（仅管理员可用）

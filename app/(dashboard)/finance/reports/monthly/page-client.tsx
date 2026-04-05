@@ -25,7 +25,7 @@ import { formatCurrency } from '@/lib/utils/format';
 import { buildMonthlyExpenseBreakdown } from '@/lib/utils/monthly-report-ui';
 
 export function MonthlyReportClient() {
-  const currentDate = new Date();
+  const currentDate = React.useMemo(() => new Date(), []);
   const [year, setYear] = React.useState(currentDate.getFullYear());
   const [month, setMonth] = React.useState(currentDate.getMonth() + 1);
   const [isGenerating, setIsGenerating] = React.useState(false);
@@ -109,12 +109,12 @@ export function MonthlyReportClient() {
       );
 
       toast({
-        title: '报表已生成',
-        description: `${year} 年 ${month} 月的月度报表数据已重新计算并刷新`,
+        title: '数据已刷新',
+        description: `${year} 年 ${month} 月的月度报表已重新计算`,
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : '生成月度报表图片失败';
+        error instanceof Error ? error.message : '刷新月度报表失败';
       toast({
         variant: 'destructive',
         title: '生成失败',
@@ -167,7 +167,7 @@ export function MonthlyReportClient() {
       });
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : '导出报表图片失败';
+        error instanceof Error ? error.message : '导出图片失败';
       toast({
         variant: 'destructive',
         title: '导出失败',
@@ -214,7 +214,7 @@ export function MonthlyReportClient() {
                     月度报表
                   </h1>
                   <p className="mt-1 text-xs text-[hsl(var(--color-text-secondary))] sm:text-sm">
-                    查看月度营业收入、营业成本、费用支出与净利润数据
+                    查看月度收入、成本、费用和净利润
                   </p>
                 </div>
               </div>
@@ -227,7 +227,7 @@ export function MonthlyReportClient() {
                   className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
-                  {isGenerating ? '生成中...' : '生成报表'}
+                  {isGenerating ? '刷新中...' : '重新计算'}
                 </Button>
                 <Button
                   variant="outline"
@@ -237,7 +237,7 @@ export function MonthlyReportClient() {
                   className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Receipt className="mr-2 h-4 w-4" />
-                  {isExporting ? '导出中...' : '导出报表图片'}
+                  {isExporting ? '导出中...' : '导出图片'}
                 </Button>
               </div>
             </div>
@@ -397,7 +397,7 @@ export function MonthlyReportClient() {
             ))}
           </div>
           <div className="mt-4 rounded-xl border border-slate-200 bg-white/80 px-4 py-3 text-xs leading-5 text-slate-500">
-            说明：月度报表仅统计已审核费用。关联采购订单的费用会计入口径计入库存/成本，不重复计入当期期间费用。
+            报表说明：仅统计已审核入账的费用；关联采购的费用已计入库存/成本，不重复计入当期期间费用。
           </div>
         </div>
 

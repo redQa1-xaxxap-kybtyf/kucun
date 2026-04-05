@@ -17,6 +17,24 @@ interface UseInboundFormOptions {
   initialReason?: InboundReason;
 }
 
+function normalizeOptionalNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+
+    const parsed = Number(trimmed);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
 export function useInboundForm(options?: UseInboundFormOptions) {
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
     null
@@ -33,8 +51,12 @@ export function useInboundForm(options?: UseInboundFormOptions) {
     defaultValues: {
       productId: '',
       inputQuantity: undefined,
+      damagedInputQuantity: undefined,
       inputUnit: 'pieces' as InboundUnit,
       quantity: undefined, // ✅ 修改：默认值改为 undefined
+      damagedQuantity: undefined,
+      damageHandling: undefined,
+      damageRemarks: '',
       unitCost: undefined,
       reason: options?.initialReason || 'other', // ✅ 修复：支持自定义初始值
       remarks: '',
@@ -48,9 +70,13 @@ export function useInboundForm(options?: UseInboundFormOptions) {
   const createMutation = useCreateInboundRecord();
 
   // 监听表单变化
-  const watchedInputQuantity = form.watch('inputQuantity') ?? 0;
+  const watchedInputQuantity =
+    normalizeOptionalNumber(form.watch('inputQuantity')) ?? 0;
   const watchedInputUnit = form.watch('inputUnit');
-  const watchedPiecesPerUnit = form.watch('piecesPerUnit') ?? 0;
+  const watchedPiecesPerUnit =
+    normalizeOptionalNumber(form.watch('piecesPerUnit')) ?? 0;
+  const watchedDamagedInputQuantity =
+    normalizeOptionalNumber(form.watch('damagedInputQuantity')) ?? 0;
 
   return {
     form,
@@ -60,6 +86,7 @@ export function useInboundForm(options?: UseInboundFormOptions) {
     watchedInputQuantity,
     watchedInputUnit,
     watchedPiecesPerUnit,
+    watchedDamagedInputQuantity,
   };
 }
 
@@ -122,6 +149,23 @@ export function useProductSelection(
       shouldDirty: false,
       shouldValidate: false,
     }); // ✅ 修改：设置为 undefined
+    form.setValue('damagedInputQuantity', undefined, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+    form.setValue('damagedQuantity', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageHandling', undefined, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.setValue('damageRemarks', '', {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
     const hasPiecesPerUnit =
       product.piecesPerUnit !== undefined && product.piecesPerUnit !== null;
     form.setValue(
@@ -154,6 +198,9 @@ export function useProductSelection(
       'productId',
       'inputQuantity',
       'quantity',
+      'damagedInputQuantity',
+      'damagedQuantity',
+      'damageHandling',
       'piecesPerUnit',
       'weight',
     ]);
@@ -166,8 +213,12 @@ export function useProductSelection(
     form.reset({
       productId: '',
       inputQuantity: undefined,
+      damagedInputQuantity: undefined,
       inputUnit: 'pieces' as InboundUnit,
       quantity: undefined,
+      damagedQuantity: undefined,
+      damageHandling: undefined,
+      damageRemarks: '',
       unitCost: undefined,
       reason: currentReason, // ✅ 保持当前的 reason，而不是重置为 'purchase'
       remarks: '',

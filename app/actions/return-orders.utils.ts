@@ -4,6 +4,7 @@ import {
   executeMinimalInboundTransaction,
   type MinimalInboundTransactionResult,
 } from '@/lib/api/minimal-inbound-transaction';
+import { roundCostPrice } from '@/lib/utils/cost-price';
 import { toNumber } from '@/lib/utils/number';
 
 export type Tx = Omit<
@@ -94,8 +95,8 @@ export async function createReturnOrderTx(
 
 const validTransitions: Record<string, string[]> = {
   draft: ['submitted', 'cancelled'],
-  submitted: ['approved', 'rejected', 'cancelled'],
-  approved: ['processing', 'cancelled'],
+  submitted: ['approved', 'rejected', 'cancelled', 'completed'],
+  approved: ['processing', 'cancelled', 'completed'],
   rejected: ['cancelled'],
   processing: ['completed', 'cancelled'],
   completed: [],
@@ -183,7 +184,7 @@ export async function applyCompletionEffects(
     let unitCost: number | null = null;
 
     if (outboundAgg && outboundAgg.totalQty > 0) {
-      unitCost = outboundAgg.totalCost / outboundAgg.totalQty;
+      unitCost = roundCostPrice(outboundAgg.totalCost / outboundAgg.totalQty);
     }
 
     // 如果无法追溯出库记录,退回到当前库存成本(保持兼容性)

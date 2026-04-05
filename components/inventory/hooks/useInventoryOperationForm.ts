@@ -112,8 +112,8 @@ const FORM_CONFIG: {
         piecesPerUnit: 1,
         weight: 0.01,
       }) satisfies DefaultValues<CreateInboundData>,
-    title: '库存入库',
-    description: '添加新的库存记录',
+    title: '产品入库',
+    description: '录入新的入库记录',
     typeOptions: INBOUND_REASON_OPTIONS.map(option => ({
       value: option.value,
       label: option.label,
@@ -136,8 +136,8 @@ const FORM_CONFIG: {
         reason: undefined,
         notes: '',
       }) satisfies DefaultValues<OutboundCreateFormData>,
-    title: '库存出库',
-    description: '减少库存数量',
+    title: '产品出库',
+    description: '登记本次出库数量',
     typeOptions: OUTBOUND_TYPE_OPTIONS,
   },
   adjust: {

@@ -1,4 +1,5 @@
 import { createInMemoryPrisma } from '../helpers/in-memory-prisma';
+import { buildFifoConflictUserMessage } from '@/lib/services/fifo-transaction-retry';
 
 jest.mock('@/lib/logger', () => ({
   logger: {
@@ -23,6 +24,14 @@ function resetPrisma(seed?: Parameters<typeof createInMemoryPrisma>[0]) {
   }
   Object.assign(prisma, memPrisma);
   return { tx, store };
+}
+
+function createRetryableWriteConflictError() {
+  return {
+    code: 'P2034',
+    message:
+      'Transaction failed due to a write conflict or a deadlock. Please retry your transaction',
+  };
 }
 
 describe('库存核心链路（集成回归）', () => {
@@ -669,6 +678,142 @@ describe('库存核心链路（集成回归）', () => {
     expect(inv.reservedQuantity).toBe(0);
     expect(store.outboundById.size).toBe(0);
     expect(store.fifoById.size).toBe(0);
+  });
+
+  test('手工出库：事务写冲突后应自动重试并成功', async () => {
+    const productId = 'prod-15';
+    const batchNumber = 'B15';
+    const userId = 'user-15';
+
+    const { store } = resetPrisma({
+      products: [{ id: productId, name: '产品O', code: 'P015', unit: '片' }],
+      users: [{ id: userId, name: '操作员' }],
+      inventories: [
+        {
+          id: 'inv-15',
+          productId,
+          variantId: null,
+          batchNumber,
+          quantity: 8,
+          reservedQuantity: 0,
+          unitCost: 5,
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ],
+      inboundRecords: [
+        {
+          id: 'inb-15',
+          recordNumber: 'IN-15',
+          productId,
+          variantId: null,
+          batchNumber,
+          batchSpecificationId: null,
+          quantity: 8,
+          unitCost: 5,
+          totalCost: 40,
+          reason: 'purchase',
+          remarks: null,
+          userId,
+          purchaseOrderId: null,
+          purchaseOrderItemId: null,
+          supplierId: null,
+          createdAt: new Date('2025-12-31T00:00:00.000Z'),
+          updatedAt: new Date('2025-12-31T00:00:00.000Z'),
+        },
+      ],
+      fifoQueue: [
+        {
+          id: 'q-15',
+          productId,
+          variantId: null,
+          batchNumber,
+          inboundRecordId: 'inb-15',
+          remainingQty: 8,
+          unitCost: 5,
+          inboundDate: new Date('2025-12-31T00:00:00.000Z'),
+          updatedAt: new Date('2025-12-31T00:00:01.000Z'),
+        },
+      ],
+    });
+
+    const originalTransaction = prisma.$transaction;
+    const writeConflict = createRetryableWriteConflictError();
+    let attempt = 0;
+
+    prisma.$transaction = jest.fn(async (fn: any, options?: any) => {
+      attempt += 1;
+      if (attempt === 1) {
+        throw writeConflict;
+      }
+      return originalTransaction(fn, options);
+    });
+
+    const { executeOutboundTransaction } = await import(
+      '@/app/api/inventory/outbound/route'
+    );
+
+    const result = await executeOutboundTransaction(
+      {
+        type: 'normal_outbound',
+        productId,
+        batchNumber,
+        quantity: 3,
+      },
+      userId
+    );
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
+    expect(result.inventory?.id).toBe('inv-15');
+    expect(store.outboundById.size).toBe(1);
+    expect((store.inventoriesById.get('inv-15') as any)?.quantity).toBe(5);
+    expect((store.fifoById.get('q-15') as any)?.remainingQty).toBe(5);
+  });
+
+  test('手工出库：事务写冲突重试耗尽后应提示用户刷新重试', async () => {
+    const productId = 'prod-16';
+    const batchNumber = 'B16';
+    const userId = 'user-16';
+
+    const { store } = resetPrisma({
+      products: [{ id: productId, name: '产品P', code: 'P016', unit: '片' }],
+      users: [{ id: userId, name: '操作员' }],
+      inventories: [
+        {
+          id: 'inv-16',
+          productId,
+          variantId: null,
+          batchNumber,
+          quantity: 6,
+          reservedQuantity: 0,
+          unitCost: 5,
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        },
+      ],
+    });
+
+    prisma.$transaction = jest.fn(async () => {
+      throw createRetryableWriteConflictError();
+    });
+
+    const { executeOutboundTransaction } = await import(
+      '@/app/api/inventory/outbound/route'
+    );
+
+    await expect(
+      executeOutboundTransaction(
+        {
+          type: 'normal_outbound',
+          productId,
+          batchNumber,
+          quantity: 2,
+        },
+        userId
+      )
+    ).rejects.toThrow(buildFifoConflictUserMessage('出库'));
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(3);
+    expect((store.inventoriesById.get('inv-16') as any)?.quantity).toBe(6);
+    expect(store.outboundById.size).toBe(0);
   });
 
   test('库存调整（正向）：应创建“surplus”入库记录并补 FIFO 队列', async () => {

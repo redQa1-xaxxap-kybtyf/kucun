@@ -280,7 +280,10 @@ export function BasicSettingsForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-12 pb-20">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="space-y-12 pb-32 sm:pb-20"
+      >
         {/* 系统配置 */}
         <SettingsSection
           title="系统识别与环境"
@@ -518,13 +521,13 @@ export function BasicSettingsForm() {
         </SettingsSection>
 
         {/* 底部悬浮动作栏 / Floating Action Bar */}
-        <div className="fixed bottom-6 left-1/2 z-50 flex w-fit -translate-x-1/2 items-center gap-3 rounded-full border border-slate-200 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-md transition-all duration-300">
+        <div className="fixed inset-x-3 bottom-3 z-50 flex items-center gap-2 rounded-3xl border border-slate-200 bg-white/95 p-2 shadow-[0_12px_40px_rgba(0,0,0,0.1)] backdrop-blur-md transition-all duration-300 sm:inset-x-auto sm:bottom-6 sm:left-1/2 sm:w-fit sm:-translate-x-1/2 sm:gap-3 sm:rounded-full">
           <Button
             type="button"
             variant="ghost"
             onClick={handleReset}
             disabled={isSubmitting || !hasChanges}
-            className="h-11 rounded-full px-6 font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-30"
+            className="h-11 min-w-0 flex-1 rounded-full px-4 font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-30 sm:flex-none sm:px-6"
           >
             <RefreshCw
               className={cn('mr-2 h-4 w-4', isSubmitting && 'animate-spin')}
@@ -535,7 +538,7 @@ export function BasicSettingsForm() {
           <Button
             type="submit"
             disabled={isSubmitting || !hasChanges}
-            className="h-11 rounded-full bg-slate-900 px-10 font-black text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200"
+            className="h-11 min-w-0 flex-1 rounded-full bg-slate-900 px-5 font-black text-white shadow-lg hover:bg-slate-800 disabled:bg-slate-200 sm:flex-none sm:px-10"
           >
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

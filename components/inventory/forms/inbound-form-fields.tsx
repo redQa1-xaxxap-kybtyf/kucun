@@ -24,14 +24,26 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { can } from '@/lib/auth/permissions';
 import {
+  INBOUND_DAMAGE_HANDLING_OPTIONS,
   type InboundFormData,
   INBOUND_REASON_OPTIONS,
   INBOUND_UNIT_OPTIONS,
 } from '@/lib/types/inbound';
+import { COST_PRICE_STEP } from '@/lib/utils/cost-price';
+import { formatCurrency, formatNumber } from '@/lib/utils/format';
 
 // ✅ 修复: 使用泛型参数以兼容 standardSchemaResolver
 interface InboundFormFieldsProps {
   form: UseFormReturn<InboundFormData, any, any>;
+}
+
+function parseOptionalNumber(value: string): number | undefined {
+  if (value.trim() === '') {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
@@ -53,8 +65,13 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
                 step="1"
                 placeholder="请输入数量"
                 className="h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
                 value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={event =>
+                  field.onChange(parseOptionalNumber(event.target.value))
+                }
               />
             </FormControl>
             <FormMessage />
@@ -136,8 +153,13 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 step="1"
                 placeholder="请输入装箱数"
                 className="h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
                 value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={event =>
+                  field.onChange(parseOptionalNumber(event.target.value))
+                }
               />
             </FormControl>
             <FormMessage />
@@ -161,8 +183,13 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 step="0.01"
                 placeholder="请输入每件重量"
                 className="h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
                 value={field.value ?? ''}
+                onBlur={field.onBlur}
+                onChange={event =>
+                  field.onChange(parseOptionalNumber(event.target.value))
+                }
               />
             </FormControl>
             <FormMessage />
@@ -231,11 +258,16 @@ export function InboundCostField({ form }: InboundFormFieldsProps) {
             <Input
               type="number"
               min="0.01"
-              step="0.01"
+              step={COST_PRICE_STEP}
               placeholder="请输入每片成本"
               className="h-9"
-              {...field}
+              name={field.name}
+              ref={field.ref}
               value={field.value ?? ''}
+              onBlur={field.onBlur}
+              onChange={event =>
+                field.onChange(parseOptionalNumber(event.target.value))
+              }
             />
           </FormControl>
           <FormDescription className="text-xs text-gray-500">
@@ -313,6 +345,186 @@ export function InboundTotalCostField({ form }: InboundFormFieldsProps) {
         </FormItem>
       )}
     />
+  );
+}
+
+export function InboundPurchaseDamageSection({
+  form,
+}: InboundFormFieldsProps) {
+  const reason = form.watch('reason');
+  const inputUnit = form.watch('inputUnit');
+  const acceptedQuantity = form.watch('quantity') ?? 0;
+  const damagedQuantity = form.watch('damagedQuantity') ?? 0;
+  const unitCost = form.watch('unitCost') ?? 0;
+  const damageHandling = form.watch('damageHandling');
+
+  const summary = useMemo(() => {
+    const arrivalQuantity = acceptedQuantity + damagedQuantity;
+    const damageAmount =
+      damagedQuantity > 0 && unitCost > 0 ? damagedQuantity * unitCost : 0;
+    const damageAmountLabel =
+      damageHandling === 'supplier_claim' ? '赔付参考' : '损耗参考';
+
+    return {
+      arrivalQuantity,
+      damageAmount,
+      damageAmountLabel,
+    };
+  }, [acceptedQuantity, damagedQuantity, damageHandling, unitCost]);
+
+  if (reason !== 'purchase') {
+    return null;
+  }
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-6">
+      <div className="rounded-2xl border border-amber-200 bg-white/70 p-4">
+        <p className="text-sm font-black text-amber-900">采购到货破损登记</p>
+        <p className="mt-1 text-xs font-medium text-amber-800">
+          这里只登记到货当下已发现的破损。系统只把上方“入库数量”写入库存，破损数量仅用于采购追责与财务跟踪。
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <FormField
+          control={form.control}
+          name="damagedInputQuantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-black text-slate-700">
+                到货破损数量
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="无破损可留空"
+                  className="h-9 border-amber-200 bg-white/80"
+                  name={field.name}
+                  ref={field.ref}
+                  value={field.value ?? ''}
+                  onBlur={field.onBlur}
+                  onChange={event =>
+                    field.onChange(parseOptionalNumber(event.target.value))
+                  }
+                />
+              </FormControl>
+              <FormDescription className="text-xs text-amber-700">
+                与上方入库单位保持一致，当前按“{inputUnit === 'units' ? '件' : '片'}”录入
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="damagedQuantity"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-medium text-slate-600">
+                破损折算片数
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  readOnly
+                  className="bg-muted h-9"
+                  name={field.name}
+                  ref={field.ref}
+                  value={field.value && field.value > 0 ? field.value : ''}
+                />
+              </FormControl>
+              <FormDescription className="text-xs text-slate-500">
+                按同一装箱数自动折算，不计入库存
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="damageHandling"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-sm font-black text-slate-700">
+                破损处理方式
+              </FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value}
+                disabled={!damagedQuantity}
+              >
+                <FormControl>
+                  <SelectTrigger className="h-9 border-amber-200 bg-white/80">
+                    <SelectValue placeholder="有破损时必须选择" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {INBOUND_DAMAGE_HANDLING_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="rounded-xl border border-white/70 bg-white/80 p-4">
+          <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            合格入库
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-900">
+            {formatNumber(acceptedQuantity)}片
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/70 bg-white/80 p-4">
+          <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            到货合计
+          </p>
+          <p className="mt-1 text-lg font-black text-slate-900">
+            {formatNumber(summary.arrivalQuantity)}片
+          </p>
+        </div>
+        <div className="rounded-xl border border-white/70 bg-white/80 p-4">
+          <p className="text-[11px] font-black tracking-widest text-slate-400 uppercase">
+            {summary.damageAmountLabel}
+          </p>
+          <p className="mt-1 text-lg font-black text-amber-700">
+            {summary.damageAmount > 0
+              ? formatCurrency(summary.damageAmount)
+              : '—'}
+          </p>
+        </div>
+      </div>
+
+      <FormField
+        control={form.control}
+        name="damageRemarks"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel className="text-sm font-black text-slate-700">
+              破损说明
+            </FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="例如：角裂 2 件，报工厂补偿；外箱破损 1 件，不报工厂。"
+                className="min-h-[88px] resize-none border-amber-200 bg-white/80"
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   );
 }
 

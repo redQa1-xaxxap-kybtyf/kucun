@@ -27,6 +27,20 @@ export function RelatedReturnOrdersCard({
   const isReturnOrderStatus = (value: unknown): value is ReturnOrderStatus =>
     typeof value === 'string' && value in RETURN_ORDER_STATUS_LABELS;
 
+  const getDisplayStatus = (status: ReturnOrderStatus) => {
+    if (status === 'submitted' || status === 'approved' || status === 'processing') {
+      return {
+        label: '待处理',
+        variant: 'warning' as const,
+      };
+    }
+
+    return {
+      label: RETURN_ORDER_STATUS_LABELS[status] ?? status,
+      variant: RETURN_ORDER_STATUS_VARIANTS[status] ?? 'secondary',
+    };
+  };
+
   return (
     <Card className="overflow-hidden rounded-2xl border-slate-100 shadow-sm ring-1 ring-slate-100/50">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 py-4">
@@ -53,6 +67,7 @@ export function RelatedReturnOrdersCard({
                 const status = isReturnOrderStatus(returnOrder.status)
                   ? returnOrder.status
                   : 'draft';
+                const displayStatus = getDisplayStatus(status);
                 return (
                   <tr
                     key={returnOrder.id}
@@ -63,12 +78,10 @@ export function RelatedReturnOrdersCard({
                     </td>
                     <td className="px-4 py-3.5">
                       <Badge
-                        variant={
-                          RETURN_ORDER_STATUS_VARIANTS[status] ?? 'secondary'
-                        }
+                        variant={displayStatus.variant}
                         className="rounded-lg px-2 py-0.5 font-bold tracking-tighter uppercase"
                       >
-                        {RETURN_ORDER_STATUS_LABELS[status] ?? status}
+                        {displayStatus.label}
                       </Badge>
                     </td>
                     <td className="px-4 py-3.5 text-xs font-medium text-slate-400">
@@ -83,7 +96,7 @@ export function RelatedReturnOrdersCard({
                           router.push(`/return-orders/${returnOrder.id}`)
                         }
                       >
-                        追溯详情
+                        查看详情
                       </Button>
                     </td>
                   </tr>

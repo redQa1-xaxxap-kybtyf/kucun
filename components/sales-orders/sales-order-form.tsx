@@ -145,7 +145,7 @@ export function SalesOrderForm({
     },
     onError: error => {
       setSubmitError(
-        error instanceof Error ? error.message : '创建销售订单失败'
+        error instanceof Error ? error.message : '新建销售订单失败'
       );
     },
   });
@@ -269,10 +269,10 @@ export function SalesOrderForm({
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {isEdit ? '编辑销售订单' : '新增销售订单'}
+              {isEdit ? '编辑销售订单' : '新建销售订单'}
             </h1>
             <p className="text-muted-foreground">
-              {isEdit ? '修改销售订单信息和明细' : '创建新的销售订单'}
+              {isEdit ? '修改销售订单信息和明细' : '新建销售订单并维护客户与明细信息'}
             </p>
           </div>
         </div>
@@ -453,7 +453,7 @@ export function SalesOrderForm({
             <Button type="submit" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               <Save className="mr-2 h-4 w-4" />
-              {isEdit ? '保存修改' : '新建订单'}
+              {isEdit ? '保存修改' : '新建销售订单'}
             </Button>
           </div>
         </form>

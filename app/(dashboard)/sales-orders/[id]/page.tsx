@@ -128,10 +128,10 @@ export default function SalesOrderDetailPage() {
 
   // ✅ 使用新的 useUpdateSalesOrderStatus Hook，自动处理缓存刷新
   const updateStatusMutation = useUpdateSalesOrderStatus({
-    onSuccess: () => {
+    onSuccess: result => {
       toast({
         title: '操作成功',
-        description: '订单状态已更新',
+        description: result.message || '订单状态已更新',
         variant: 'success',
       });
       setIsUpdatingStatus(false);
@@ -156,6 +156,34 @@ export default function SalesOrderDetailPage() {
   });
 
   // 确认发货
+  const handleConfirmOrder = () => {
+    if (order?.status !== 'draft') {
+      toast({
+        title: '操作失败',
+        description: '只有草稿订单才能确认',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!order.items || order.items.length === 0) {
+      toast({
+        title: '无法确认',
+        description: '请先补充订单明细后再确认订单',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    updateStatusMutation.mutate({
+      id,
+      status: 'confirmed',
+      idempotencyKey: crypto.randomUUID(),
+    });
+  };
+
+  // 确认发货
   const handleConfirmShipment = () => {
     if (order?.status !== 'confirmed') {
       toast({
@@ -170,6 +198,43 @@ export default function SalesOrderDetailPage() {
     updateStatusMutation.mutate({
       id,
       status: 'shipped',
+      idempotencyKey: crypto.randomUUID(),
+    });
+  };
+
+  const withdrawConfirmationDisabledReason =
+    order?.status !== 'confirmed'
+      ? '只有已确认且未发货的订单才能撤回确认'
+      : order.orderType === 'TRANSFER'
+        ? '调货销售暂不支持撤回确认，请直接取消后重开'
+        : (order.returnOrders ?? []).some(
+              returnOrder => returnOrder.status !== 'cancelled'
+            )
+          ? '订单已发生退货，不能撤回确认'
+          : (order.paymentRecords ?? []).some(payment =>
+                ['confirmed', 'applied'].includes(payment.status)
+              )
+            ? '订单已存在收款记录，不能撤回确认'
+            : (order.prepaymentTotalApplied ?? 0) > 0 ||
+                (order.prepaymentUsages?.length ?? 0) > 0 ||
+                Number(order.prepaymentAmount ?? 0) > 0
+              ? '订单已使用预收款冲抵，不能撤回确认，请直接取消后重开'
+              : undefined;
+
+  const handleWithdrawConfirmation = () => {
+    if (withdrawConfirmationDisabledReason) {
+      toast({
+        title: '暂不能撤回确认',
+        description: withdrawConfirmationDisabledReason,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    updateStatusMutation.mutate({
+      id,
+      status: 'draft',
       idempotencyKey: crypto.randomUUID(),
     });
   };
@@ -232,6 +297,8 @@ export default function SalesOrderDetailPage() {
   const pureTransferProfit = transferSalesAmount - (order.costAmount || 0);
 
   const canEditOrder = order.status === 'draft';
+  const canConfirmOrder =
+    order.status === 'draft' && Array.isArray(order.items) && order.items.length > 0;
 
   return (
     <div className="flex h-full flex-col overflow-auto bg-slate-50/30">
@@ -243,7 +310,13 @@ export default function SalesOrderDetailPage() {
           order={order}
           id={id}
           canEditOrder={canEditOrder}
+          canConfirmOrder={canConfirmOrder}
+          withdrawConfirmationDisabledReason={
+            withdrawConfirmationDisabledReason
+          }
           isUpdatingStatus={isUpdatingStatus}
+          onConfirmOrder={handleConfirmOrder}
+          onWithdrawConfirmation={handleWithdrawConfirmation}
           onConfirmShipment={handleConfirmShipment}
           onShowToast={(title, description, variant = 'default') =>
             toast({ title, description, variant })

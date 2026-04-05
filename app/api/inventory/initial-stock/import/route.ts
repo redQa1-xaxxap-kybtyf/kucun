@@ -39,6 +39,67 @@ function isExecutionResult(
   );
 }
 
+function normalizeInitialStockImportRow(
+  row: Record<string, unknown>
+): InitialStockRowInput {
+  const normalizedRow = { ...row } as Record<string, unknown>;
+
+  if (
+    normalizedRow['每件重量(kg)'] === undefined &&
+    normalizedRow['每件重量'] !== undefined
+  ) {
+    normalizedRow['每件重量(kg)'] = normalizedRow['每件重量'];
+  }
+
+  if (
+    normalizedRow['每件重量(kg)'] === undefined &&
+    normalizedRow['重量(kg)'] !== undefined
+  ) {
+    normalizedRow['每件重量(kg)'] = normalizedRow['重量(kg)'];
+  }
+
+  if (
+    normalizedRow['每件重量(kg)'] === undefined &&
+    normalizedRow['重量'] !== undefined
+  ) {
+    normalizedRow['每件重量(kg)'] = normalizedRow['重量'];
+  }
+
+  if (
+    normalizedRow.数量单位 === undefined &&
+    normalizedRow.入库单位 !== undefined
+  ) {
+    normalizedRow.数量单位 = normalizedRow.入库单位;
+  }
+
+  if (normalizedRow.数量单位 === undefined && normalizedRow.单位 !== undefined) {
+    normalizedRow.数量单位 = normalizedRow.单位;
+  }
+
+  if (
+    normalizedRow.供应商 === undefined &&
+    normalizedRow.供应商名称 !== undefined
+  ) {
+    normalizedRow.供应商 = normalizedRow.供应商名称;
+  }
+
+  if (
+    normalizedRow.单位成本 === undefined &&
+    normalizedRow.单片成本 !== undefined
+  ) {
+    normalizedRow.单位成本 = normalizedRow.单片成本;
+  }
+
+  if (
+    normalizedRow.单位成本 === undefined &&
+    normalizedRow['单片成本(元/片)'] !== undefined
+  ) {
+    normalizedRow.单位成本 = normalizedRow['单片成本(元/片)'];
+  }
+
+  return normalizedRow as InitialStockRowInput;
+}
+
 async function readRowsFromUpload(file: Blob): Promise<InitialStockRowInput[]> {
   const buffer = Buffer.from(await file.arrayBuffer());
   const workbook = XLSX.read(buffer, { type: 'buffer' });
@@ -49,10 +110,12 @@ async function readRowsFromUpload(file: Blob): Promise<InitialStockRowInput[]> {
     throw new Error('Excel 文件内容为空或格式不正确');
   }
 
-  return XLSX.utils.sheet_to_json<InitialStockRowInput>(worksheet, {
-    defval: '',
-    raw: false,
-  });
+  return XLSX.utils
+    .sheet_to_json<Record<string, unknown>>(worksheet, {
+      defval: '',
+      raw: false,
+    })
+    .map(normalizeInitialStockImportRow);
 }
 
 function buildResponseMessage(

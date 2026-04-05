@@ -23,8 +23,13 @@ import {
   PURCHASE_ORDER_STATUS,
   type PurchaseOrderStatus,
 } from '@/lib/types/purchase-order';
-import { withIdempotency } from '@/lib/utils/idempotency';
+import { checkIdempotency, withIdempotency } from '@/lib/utils/idempotency';
 import { toNumber } from '@/lib/utils/number';
+import {
+  convertPurchaseOrderQuantityToPieces,
+  convertPurchaseOrderUnitPriceToPieceCost,
+  isPurchaseOrderUnitConversionError,
+} from '@/lib/utils/purchase-order-unit';
 import { updatePurchaseOrderStatusSchema } from '@/lib/validations/purchase-order';
 
 type PurchaseOrderParams = { id: string };
@@ -104,7 +109,11 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
           select: {
             id: true,
             productId: true,
+            productCode: true,
+            displayName: true,
             quantity: true,
+            unit: true,
+            piecesPerUnit: true,
             unitPrice: true,
             unitCostWithExpense: true,
             batchNumber: true,
@@ -120,7 +129,12 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
       );
     }
 
+    const existingIdempotency = await checkIdempotency(
+      normalizedPayload.idempotencyKey
+    );
+
     if (
+      existingIdempotency.isNew &&
       !isValidStatusTransition(
         order.status as PurchaseOrderStatus,
         normalizedPayload.status
@@ -217,10 +231,13 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
                 continue;
               }
 
+              const orderedQuantity = convertPurchaseOrderQuantityToPieces(item, {
+                strict: true,
+              });
               const alreadyReceived = receivedMap.get(item.id) ?? 0;
               const remainingQuantity = Math.max(
                 0,
-                (item.quantity ?? 0) - alreadyReceived
+                orderedQuantity - alreadyReceived
               );
 
               if (remainingQuantity <= 0) {
@@ -228,14 +245,24 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
               }
 
               const allocation = allocationsByItemId.get(item.id);
+              const fallbackPieceCost = convertPurchaseOrderUnitPriceToPieceCost(
+                {
+                  unitPrice:
+                    item.unitPrice === null
+                      ? null
+                      : toNumber(item.unitPrice, Number.NaN),
+                  unit: item.unit,
+                  piecesPerUnit: item.piecesPerUnit,
+                  displayName: item.displayName,
+                  productCode: item.productCode,
+                },
+                { strict: true }
+              );
 
               const inboundUnitCost = resolveInboundUnitCost({
                 unitCostWithExpense: allocation?.unitCostWithExpense ?? null,
-                unitPrice:
-                  item.unitPrice === null
-                    ? null
-                    : toNumber(item.unitPrice, Number.NaN),
-                fallback: toNumber(item.unitPrice, 0),
+                unitPrice: fallbackPieceCost,
+                fallback: fallbackPieceCost,
               });
 
               const inbound = await executeMinimalInboundTransaction(
@@ -299,6 +326,12 @@ export const PUT = withAuth(async (request: NextRequest, context) => {
       userId: user.id,
       orderId,
     });
+    if (isPurchaseOrderUnitConversionError(error)) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { success: false, error: '更新订单状态失败' },
       { status: 500 }

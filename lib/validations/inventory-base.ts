@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
+import {
+  COST_PRICE_MAX,
+  COST_PRICE_MAX_LABEL,
+  hasAtMostCostPriceDecimals,
+} from '@/lib/utils/cost-price';
 
 /**
  * 库存管理基础验证规则
@@ -20,8 +25,8 @@ export const baseValidations = {
   unitCost: z
     .number()
     .min(0, '单位成本不能为负数')
-    .max(999999.99, '单位成本不能超过999,999.99')
-    .multipleOf(0.01, '单位成本最多保留2位小数')
+    .max(COST_PRICE_MAX, `单位成本不能超过${COST_PRICE_MAX_LABEL}`)
+    .refine(hasAtMostCostPriceDecimals, '单位成本最多保留3位小数')
     .optional(),
 
   remarks: z

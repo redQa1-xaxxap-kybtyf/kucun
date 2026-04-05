@@ -46,6 +46,7 @@ function parseQueryParams(searchParams: URLSearchParams) {
     limit,
     search: searchParams.get('search') || undefined,
     productId: searchParams.get('productId') || undefined,
+    variantId: searchParams.get('variantId') || undefined,
     batchNumber: searchParams.get('batchNumber') || undefined,
     startDate: searchParams.get('startDate') || undefined,
     endDate: searchParams.get('endDate') || undefined,

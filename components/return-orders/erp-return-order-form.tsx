@@ -5,7 +5,7 @@ import { standardSchemaResolver } from '@hookform/resolvers/standard-schema';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
@@ -72,6 +72,7 @@ export function ERPReturnOrderForm({
 }: ERPReturnOrderFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const submitIntentRef = useRef<'save' | 'submit' | null>(null);
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
   // ✅ 修复：初始化时同步 initialData.customerId，确保编辑模式下客户下拉框显示已选客户
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
@@ -283,6 +284,8 @@ export function ERPReturnOrderForm({
         description: `退货订单 ${response.data.returnNumber} 已提交审核`,
         variant: 'success',
       });
+      submitIntentRef.current = null;
+      onSuccess?.(response.data);
     },
     onError: error => {
       toast({
@@ -290,35 +293,60 @@ export function ERPReturnOrderForm({
         description: error.message || '提交退货订单时发生错误',
         variant: 'destructive',
       });
+      submitIntentRef.current = null;
     },
   });
 
   // 创建 / 更新 Mutations
   const createMutation = useCreateReturnOrder({
     onSuccess: response => {
+      if (submitIntentRef.current === 'submit') {
+        updateStatusMutation.mutate({
+          id: response.data.id,
+          status: 'submitted',
+        });
+        return;
+      }
+
       toast({
-        title: '创建成功',
-        description: `退货订单 ${response.data.returnNumber} 已创建`,
+        title: '草稿已保存',
+        description: `退货订单 ${response.data.returnNumber} 已保存为草稿，可继续编辑或提交处理。`,
         variant: 'success',
       });
+      submitIntentRef.current = null;
       onSuccess?.(response.data);
     },
     onError: error => {
+      const isSubmitIntent = submitIntentRef.current === 'submit';
       toast({
-        title: '创建失败',
-        description: error.message || '创建退货订单时发生错误',
+        title: isSubmitIntent ? '提交失败' : '草稿保存失败',
+        description:
+          error.message ||
+          (isSubmitIntent
+            ? '提交退货订单时发生错误'
+            : '保存退货草稿时发生错误'),
         variant: 'destructive',
       });
+      submitIntentRef.current = null;
     },
   });
 
   const updateMutation = useUpdateReturnOrder({
     onSuccess: response => {
+      if (submitIntentRef.current === 'submit') {
+        updateStatusMutation.mutate({
+          id: response.data.id,
+          status: 'submitted',
+        });
+        return;
+      }
+
       toast({
         title: '更新成功',
         description: `退货订单 ${response.data.returnNumber} 已更新`,
         variant: 'success',
       });
+      submitIntentRef.current = null;
       onSuccess?.(response.data);
     },
     onError: error => {
@@ -327,6 +355,7 @@ export function ERPReturnOrderForm({
         description: error.message || '更新退货订单时发生错误',
         variant: 'destructive',
       });
+      submitIntentRef.current = null;
     },
   });
 
@@ -396,6 +425,8 @@ export function ERPReturnOrderForm({
 
   // ✅ 表单提交（仅保存，不改变状态 -> 草稿）
   const onSubmit = (data: ReturnOrderFormData) => {
+    submitIntentRef.current = 'save';
+
     if (mode === 'edit' && initialData) {
       const updateData = {
         id: initialData.id,
@@ -421,6 +452,8 @@ export function ERPReturnOrderForm({
 
   // ✅ 提交退货订单：保存后立即将状态改为 submitted
   const onSubmitAndSubmit = (data: ReturnOrderFormData) => {
+    submitIntentRef.current = 'submit';
+
     if (mode === 'edit' && initialData) {
       const updateData = {
         id: initialData.id,
@@ -437,24 +470,10 @@ export function ERPReturnOrderForm({
         },
       };
 
-      updateMutation.mutate(updateData, {
-        onSuccess: response => {
-          updateStatusMutation.mutate({
-            id: response.data.id,
-            status: 'submitted',
-          });
-        },
-      });
+      updateMutation.mutate(updateData);
     } else {
       const { id: _id, ...createData } = data;
-      createMutation.mutate(createData, {
-        onSuccess: response => {
-          updateStatusMutation.mutate({
-            id: response.data.id,
-            status: 'submitted',
-          });
-        },
-      });
+      createMutation.mutate(createData);
     }
   };
 
@@ -541,7 +560,12 @@ export function ERPReturnOrderForm({
       {/* 错误提示 */}
       {error && (
         <div className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border px-4 py-3 text-sm">
-          {mode === 'create' ? '创建失败' : '更新失败'}: {error.message}
+          {mode === 'create'
+            ? submitIntentRef.current === 'submit'
+              ? '提交失败'
+              : '草稿保存失败'
+            : '更新失败'}
+          : {error.message}
         </div>
       )}
 

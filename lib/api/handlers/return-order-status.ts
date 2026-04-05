@@ -4,15 +4,9 @@
  * 遵循全局约定规范和唯一真理原则
  */
 
-import type { Prisma } from '@prisma/client';
-
+import { mergeRemarks } from '@/app/actions/return-orders.utils';
 import { prisma } from '@/lib/db';
-import { logger } from '@/lib/logger';
-import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
-import { toNumber } from '@/lib/utils/number';
-
-const roundCurrency = (value: number): number =>
-  Math.round(Number(value || 0) * 100) / 100;
+import { completeReturnOrderWorkflow } from '@/lib/services/return-order-orchestrator';
 
 /**
  * 状态流转规则
@@ -61,75 +55,8 @@ export interface ReturnOrderStatusUpdateResult {
     status: string;
     remarks?: string | null;
   };
+  affectedProductIds: string[];
   refundCreated: boolean;
-}
-
-/**
- * 退货完成时按退款金额比例,回算并调整原销售订单利润
- *
- * 设计原则:
- * - 使用退款金额占销售金额(itemsAmount)的比例,按比例回退成本
- * - 利润扣减 = 退款金额 - 按比例回退的成本
- * - 不直接修改订单金额和成本字段,仅调整利润字段,避免破坏原始订单金额
- */
-async function adjustSalesOrderProfitOnReturn(
-  tx: Prisma.TransactionClient,
-  params: { salesOrderId: string; refundAmount: number }
-): Promise<void> {
-  const refundAmount = roundCurrency(
-    Math.max(0, Number(params.refundAmount || 0))
-  );
-
-  if (refundAmount <= 0) {
-    return;
-  }
-
-  const salesOrder = await tx.salesOrder.findUnique({
-    where: { id: params.salesOrderId },
-    select: {
-      itemsAmount: true,
-      costAmount: true,
-      profitAmount: true,
-    },
-  });
-
-  if (!salesOrder) {
-    return;
-  }
-
-  const itemsAmount = roundCurrency(Number(salesOrder.itemsAmount || 0));
-  const costAmount = roundCurrency(Number(salesOrder.costAmount || 0));
-  const currentProfit = roundCurrency(Number(salesOrder.profitAmount || 0));
-
-  // 如果没有有效的销售金额,退货只能视为直接减少利润 = 退款金额
-  if (itemsAmount <= 0) {
-    const updatedProfit = roundCurrency(currentProfit - refundAmount);
-
-    await tx.salesOrder.update({
-      where: { id: params.salesOrderId },
-      data: { profitAmount: updatedProfit },
-    });
-
-    return;
-  }
-
-  // 退款金额不能超过销售金额,避免异常数据导致利润计算反向
-  const effectiveRefund = Math.min(refundAmount, itemsAmount);
-  const refundRatio = effectiveRefund / itemsAmount; // 0~1 之间
-
-  const returnCost = roundCurrency(costAmount * refundRatio);
-  const profitDelta = roundCurrency(effectiveRefund - returnCost);
-
-  if (profitDelta === 0) {
-    return;
-  }
-
-  const updatedProfit = roundCurrency(currentProfit - profitDelta);
-
-  await tx.salesOrder.update({
-    where: { id: params.salesOrderId },
-    data: { profitAmount: updatedProfit },
-  });
 }
 
 /**
@@ -140,7 +67,7 @@ export async function updateReturnOrderStatus(
   orderId: string,
   newStatus: string,
   currentStatus: string,
-  processType: string,
+  _processType: string,
   data: {
     remarks?: string;
     refundAmount?: number;
@@ -157,6 +84,13 @@ export async function updateReturnOrderStatus(
   // 执行状态更新
   return await prisma.$transaction(
     async tx => {
+      const currentOrder = await tx.returnOrder.findUnique({
+        where: { id: orderId },
+        select: {
+          remarks: true,
+        },
+      });
+
       // 准备更新数据
       const updateData: {
         status: string;
@@ -173,7 +107,7 @@ export async function updateReturnOrderStatus(
       };
 
       if (data.remarks !== undefined) {
-        updateData.remarks = data.remarks;
+        updateData.remarks = mergeRemarks(currentOrder?.remarks ?? null, data.remarks);
       }
 
       if (data.refundAmount !== undefined) {
@@ -215,177 +149,18 @@ export async function updateReturnOrderStatus(
         },
       });
 
+      let affectedProductIds: string[] = [];
       let refundCreated = false;
 
-      // 如果状态变更为已审核/处理中/已完成且处理方式为退款，自动创建或纠正应退货款记录金额
-      if (
-        (newStatus === 'approved' ||
-          newStatus === 'processing' ||
-          newStatus === 'completed') &&
-        processType === 'refund'
-      ) {
-        let computedRefundAmount =
-          data.refundAmount ??
-          (typeof order.refundAmount === 'number'
-            ? order.refundAmount
-            : Number(order.refundAmount ?? 0));
-
-        if (
-          !Number.isFinite(computedRefundAmount) ||
-          computedRefundAmount <= 0
-        ) {
-          const aggregated = await tx.returnOrderItem.aggregate({
-            where: { returnOrderId: orderId },
-            _sum: { subtotal: true },
-          });
-          const aggregatedAmount = Number(aggregated._sum.subtotal ?? 0);
-          if (aggregatedAmount > 0) {
-            computedRefundAmount = aggregatedAmount;
-          } else {
-            const orderTotalAmount = toNumber(order.totalAmount, 0);
-            if (orderTotalAmount > 0) {
-              computedRefundAmount = orderTotalAmount;
-            }
-          }
-        }
-
-        // 同步回退货订单上的退款金额，确保后续查询一致
-        const currentRefundAmount = toNumber(order.refundAmount, 0);
-        if (
-          computedRefundAmount > 0 &&
-          Math.abs(currentRefundAmount - computedRefundAmount) > 0.0001
-        ) {
-          await tx.returnOrder.update({
-            where: { id: orderId },
-            data: { refundAmount: computedRefundAmount },
-          });
-        }
-
-        if (computedRefundAmount > 0) {
-          // 检查是否已经存在退款记录
-          const existingRefund = await tx.refundRecord.findFirst({
-            where: {
-              returnOrderId: orderId,
-            },
-          });
-
-          if (existingRefund) {
-            const processedAmount = toNumber(existingRefund.processedAmount, 0);
-            const remainingAmount = Math.max(
-              Number((computedRefundAmount - processedAmount).toFixed(6)),
-              0
-            );
-            const resolvedStatus =
-              existingRefund.status === 'rejected' ||
-              existingRefund.status === 'cancelled'
-                ? existingRefund.status
-                : processedAmount >= computedRefundAmount
-                  ? 'completed'
-                  : processedAmount > 0
-                    ? 'processing'
-                    : 'pending';
-
-            await tx.refundRecord.update({
-              where: { id: existingRefund.id },
-              data: {
-                refundAmount: computedRefundAmount,
-                remainingAmount,
-                status: resolvedStatus,
-              },
-            });
-          } else {
-            // 生成退款单号
-            const { generateRefundNumber } = await import(
-              '@/lib/services/simple-order-number-generator'
-            );
-            const refundNumber = await generateRefundNumber();
-
-            if (!order.salesOrderId) {
-              throw new Error(
-                `退货订单 ${order.returnNumber} 缺少关联的销售订单，无法生成退款记录`
-              );
-            }
-
-            const refundData: Prisma.RefundRecordUncheckedCreateInput = {
-              refundNumber,
-              returnOrderId: orderId,
-              returnOrderNumber: order.returnNumber,
-              customerId: order.customerId,
-              userId,
-              salesOrderId: order.salesOrderId,
-              refundType: 'full_refund',
-              refundMethod: 'original_payment',
-              refundAmount: computedRefundAmount,
-              processedAmount: 0,
-              remainingAmount: computedRefundAmount,
-              status: 'pending',
-              refundDate: new Date(),
-              reason: `退货订单 ${order.returnNumber} 自动生成退款`,
-              remarks: `系统自动创建,关联退货订单：${order.returnNumber}`,
-            };
-
-            await tx.refundRecord.create({ data: refundData });
-
-            refundCreated = true;
-          }
-
-          // ✅ 往来账入账：退货完成后同步一笔「销售退货」流水
-          // 备注：用于在应收应付总账/往来明细中体现退货冲减；退款结算仍通过 refund 流水体现
-          if (
-            newStatus === 'completed' &&
-            order.customerId &&
-            computedRefundAmount > 0
-          ) {
-            try {
-              await recordPartnerTransaction(
-                {
-                  partnerId: order.customerId,
-                  partnerRole: 'customer',
-                  entityType: 'customer',
-                  transactionType: 'sales_return',
-                  amount: roundCurrency(computedRefundAmount),
-                  referenceId: order.id,
-                  referenceNumber: order.returnNumber,
-                  description: `销售退货 ${order.returnNumber} 入账`,
-                  userId,
-                  occurredAt: updateData.completedAt ?? updateData.updatedAt,
-                  metadata: {
-                    source: 'return_order',
-                    processType,
-                    status: newStatus,
-                    salesOrderId: order.salesOrderId ?? undefined,
-                    triggeredBy: 'return_order:status_change',
-                  },
-                },
-                tx
-              );
-            } catch (error) {
-              logger.error(
-                'return-order-status',
-                '退货完成后同步往来账失败',
-                error,
-                {
-                  orderId: order.id,
-                  returnNumber: order.returnNumber,
-                  customerId: order.customerId,
-                }
-              );
-              throw new Error(
-                `退货完成后同步往来账失败: ${
-                  error instanceof Error ? error.message : '未知错误'
-                }`
-              );
-            }
-          }
-
-          // ✅ 只有在退货完成时,按退款金额比例回退原销售订单利润
-          if (newStatus === 'completed' && order.salesOrderId) {
-            await adjustSalesOrderProfitOnReturn(tx, {
-              salesOrderId: order.salesOrderId,
-              refundAmount: computedRefundAmount,
-            });
-          }
-        }
+      if (newStatus === 'completed') {
+        const completionResult = await completeReturnOrderWorkflow(tx, {
+          completedAt: updateData.completedAt ?? updateData.updatedAt,
+          orderId,
+          refundAmount: data.refundAmount,
+          userId,
+        });
+        affectedProductIds = completionResult.affectedProductIds;
+        refundCreated = completionResult.refundCreated;
       }
 
       return {
@@ -395,6 +170,7 @@ export async function updateReturnOrderStatus(
           status: order.status,
           remarks: order.remarks ?? undefined,
         },
+        affectedProductIds,
         refundCreated,
       };
     },

@@ -19,8 +19,8 @@ import { refundQuerySchema } from '@/lib/validations/refund';
 import { RefundsPageClient } from './page-client';
 
 export const metadata: Metadata = {
-  title: '应退货款管理 - 财务管理',
-  description: '管理退货订单产生的应退账款，跟踪退款处理状态',
+  title: '退款处理 - 财务管理',
+  description: '管理退货产生的退款记录，跟踪待处理和待退款状态',
 };
 
 export const dynamic = 'force-dynamic';

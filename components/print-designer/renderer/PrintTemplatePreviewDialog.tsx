@@ -25,10 +25,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  getDefaultTemplate,
-  getPrintDataForTemplate,
-} from '@/lib/print-designer/actions';
+import { fetchDefaultTemplate } from '@/lib/print-designer/default-template-client';
+import { fetchPrintDataForTemplate } from '@/lib/print-designer/preview-data-client';
 import type { PrintTemplate, TemplateType } from '@/lib/print-designer/schemas';
 
 import { PrintCanvas } from './PrintCanvas';
@@ -87,43 +85,57 @@ export function PrintTemplatePreviewDialog({
     setPreviewScale(1);
 
     startTransition(async () => {
-      const [templateResult, printData] = await Promise.all([
-        getDefaultTemplate(templateType),
-        getPrintDataForTemplate(templateType, documentId),
-      ]);
+      try {
+        const [templateResult, printData] = await Promise.all([
+          fetchDefaultTemplate(templateType),
+          fetchPrintDataForTemplate(templateType, documentId),
+        ]);
 
-      if (!templateResult.success) {
-        const msg = templateResult.error ?? '获取默认模板失败';
-        setError(msg);
-        toast({ title: '加载失败', description: msg, variant: 'destructive' });
-        return;
-      }
+        if (!templateResult.success) {
+          const msg = templateResult.error ?? '获取默认模板失败';
+          setError(msg);
+          toast({
+            title: '加载失败',
+            description: msg,
+            variant: 'destructive',
+          });
+          return;
+        }
 
-      if (!templateResult.data) {
-        const msg =
-          '该单据类型未配置默认打印模板，请联系管理员在系统设置中配置。';
-        setError(msg);
-        toast({
-          title: '模板未配置',
-          description: msg,
-          variant: 'destructive',
-        });
-        return;
-      }
+        if (!templateResult.data) {
+          const msg =
+            '该单据类型未配置默认打印模板，请联系管理员在系统设置中配置。';
+          setError(msg);
+          toast({
+            title: '模板未配置',
+            description: msg,
+            variant: 'destructive',
+          });
+          return;
+        }
 
-      if (!printData) {
-        const msg = '未找到可打印的数据';
+        if (!printData) {
+          const msg = '未找到可打印的数据';
+          setError(msg);
+          toast({
+            title: '数据加载失败',
+            description: msg,
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        setTemplate(templateResult.data);
+        setData(printData);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : '加载打印数据失败';
         setError(msg);
         toast({
           title: '数据加载失败',
           description: msg,
           variant: 'destructive',
         });
-        return;
       }
-
-      setTemplate(templateResult.data);
-      setData(printData);
     });
   }, [open, templateType, documentId]);
 

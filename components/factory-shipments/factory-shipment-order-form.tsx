@@ -301,11 +301,11 @@ export function FactoryShipmentOrderForm({
       createMutation.mutate(payload, {
         onSuccess: createdOrder => {
           toast({
-            title: intent === 'draft' ? '草稿已保存' : '订单创建成功',
+            title: intent === 'draft' ? '草稿已保存' : '新建成功',
             description:
               intent === 'draft'
                 ? `厂家发货订单 ${createdOrder.orderNumber} 已保存为草稿，可随时继续编辑。`
-                : `厂家发货订单 ${createdOrder.orderNumber} 已创建并进入流程。`,
+                : `厂家发货订单 ${createdOrder.orderNumber} 已提交并进入正式发货流程。`,
             variant: 'success',
           });
           onSuccess?.(createdOrder);
@@ -325,15 +325,15 @@ export function FactoryShipmentOrderForm({
         },
         onError: error => {
           if (error instanceof FactoryShipmentValidationError) {
-            handleServerValidationError(error, '创建失败');
+            handleServerValidationError(error, '新建失败');
             return;
           }
           toast({
-            title: '创建失败',
+            title: '新建失败',
             description:
               error instanceof Error
                 ? error.message
-                : '创建厂家发货订单失败，请稍后重试。',
+                : '新建厂家发货单失败，请稍后重试。',
             variant: 'destructive',
           });
         },
@@ -469,14 +469,14 @@ export function FactoryShipmentOrderForm({
                     <Save className="mr-2 h-4 w-4" />
                     {isLoading && submitIntent === 'confirm'
                       ? '保存中...'
-                      : '新建订单'}
+                      : '新建发货单'}
                   </Button>
                 </div>
               )}
             </div>
             {!isEditing && (
               <p className="text-muted-foreground mt-4 text-sm">
-                保存草稿：用于临时保存，稍后可继续编辑；新建订单：提交后进入正式发货流程。
+                保存草稿：用于临时保存，稍后可继续编辑；新建发货单：提交后进入正式发货流程。
               </p>
             )}
           </CardContent>

@@ -27,6 +27,8 @@ interface PaymentOutRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -99,7 +101,7 @@ function _StatusBadge({ status }: { status: string }) {
       icon: CheckCircle,
     },
     cancelled: {
-      label: '已取消',
+      label: '已作废',
       variant: 'destructive' as const,
       icon: XCircle,
     },
@@ -166,6 +168,14 @@ export function PaymentsOutClient({
   }, [initialParams?.search]);
   const { payments, statistics: _statistics, pagination } = initialData;
 
+  const handleSearchChange = React.useCallback(
+    (value: string) => {
+      _setSearchValue(value);
+      _onSearch?.(value);
+    },
+    [_onSearch]
+  );
+
   // ... (保留 confirmedAmountChangeLabel 和 handleDateRangeChange)
 
   // 确认付款
@@ -197,7 +207,7 @@ export function PaymentsOutClient({
 
       toast({
         title: '确认成功',
-        description: '付款记录已确认',
+        description: '付款记录已确认完成。',
         variant: 'success',
       });
 
@@ -280,9 +290,9 @@ export function PaymentsOutClient({
       <div className="relative z-10">
         <SearchFilterCard
           searchValue={_searchValue}
-          onSearchChange={_setSearchValue}
-          searchPlaceholder="检索供应商名称、单号或联系人..."
-          variant="pro"
+          onSearchChange={handleSearchChange}
+          searchPlaceholder="搜索付款单号、供应商名称或联系人"
+          variant="bordered"
           compact={true}
           filters={[
             {
@@ -291,39 +301,26 @@ export function PaymentsOutClient({
               options: [
                 { label: '待确认', value: 'pending' },
                 { label: '已确认', value: 'confirmed' },
-                { label: '已取消', value: 'cancelled' },
-              ],
-              width: 'w-[140px]',
-            },
-            {
-              key: 'paymentMethod',
-              label: '付款方式',
-              options: [
-                { label: '现金', value: 'cash' },
-                { label: '银行转账', value: 'bank_transfer' },
-                { label: '支付宝', value: 'alipay' },
-                { label: '微信', value: 'wechat' },
-                { label: '支票', value: 'check' },
+                { label: '已作废', value: 'cancelled' },
               ],
               width: 'w-[140px]',
             },
           ]}
           filterValues={{
             status: initialParams?.status || 'all',
-            paymentMethod: initialParams?.paymentMethod || 'all',
           }}
           onFilterChange={_onFilter}
           dateRangeFilter={
             _onDateRangeChange
               ? {
                   key: 'dateRange',
-                  label: '日期',
+                  label: '付款日期',
                   value: {
                     startDate: initialParams?.startDate,
                     endDate: initialParams?.endDate,
                   },
                   onChange: _onDateRangeChange,
-                  placeholder: '付款日期范围',
+                  placeholder: '选择付款日期范围',
                 }
               : undefined
           }
