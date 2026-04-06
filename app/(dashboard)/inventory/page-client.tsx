@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { BarChart3, ChevronDown, ChevronRight } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 import { Suspense } from 'react';
 
@@ -12,17 +13,26 @@ import {
   InventoryListSkeleton,
   StatsCardsSkeleton,
 } from '@/components/ui/skeleton-compositions';
+import { useToast } from '@/components/ui/use-toast';
 import { useUrlSearchParams } from '@/hooks/url-search-params';
 import { useInventoryStatistics } from '@/hooks/use-inventory-statistics';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
+import { can } from '@/lib/auth/permissions';
 import { paginationConfig } from '@/lib/config/pagination';
 import { queryKeys } from '@/lib/queryKeys';
 import { inventoryParamsConfig } from '@/lib/schemas/inventory-params-config';
+import { ExportService } from '@/lib/services/export-service';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
+  Inventory,
   InventoryListResponse,
   InventoryQueryParams,
 } from '@/lib/types/inventory';
+import {
+  buildInventoryExportFilename,
+  buildInventoryExportRows,
+  INVENTORY_EXPORT_PAGE_SIZE,
+} from '@/lib/utils/inventory-export';
 
 const InventoryStatisticsCards = dynamic(
   () =>
@@ -45,6 +55,56 @@ interface InventoryPageClientProps {
   categoryOptions: CategoryOption[];
 }
 
+interface InventoryApiResponse {
+  success?: boolean;
+  data?: InventoryListResponse['data'];
+}
+
+async function fetchInventoryExportData(
+  queryParams: InventoryQueryParams
+): Promise<Inventory[]> {
+  const inventories: Inventory[] = [];
+  let currentPage = 1;
+  let totalPages = 1;
+
+  do {
+    const searchParams = new URLSearchParams();
+    const requestParams: InventoryQueryParams = {
+      ...queryParams,
+      page: currentPage,
+      limit: INVENTORY_EXPORT_PAGE_SIZE,
+    };
+
+    Object.entries(requestParams).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.set(key, String(value));
+      }
+    });
+
+    const response = await fetch(`/api/inventory?${searchParams.toString()}`);
+    if (!response.ok) {
+      throw new Error(
+        `库存导出查询失败: ${response.status} ${response.statusText}`
+      );
+    }
+
+    const payload = (await response.json()) as InventoryApiResponse;
+    if (!payload.success || !payload.data) {
+      throw new Error('库存导出查询返回格式不正确');
+    }
+
+    const pageRows = Array.isArray(payload.data.inventories)
+      ? payload.data.inventories
+      : [];
+
+    inventories.push(...pageRows);
+    totalPages = payload.data.pagination?.totalPages ?? 1;
+    currentPage += 1;
+  } while (currentPage <= totalPages);
+
+  return inventories;
+}
+
 /**
  * 库存管理页面客户端组件
  *
@@ -60,13 +120,67 @@ export function InventoryPageClient({
   categoryOptions,
 }: InventoryPageClientProps) {
   const ctrl = useInventoryController(initialParams);
+  const { data: session } = useSession();
+  const { toast } = useToast();
   const [density, setDensity] = React.useState<'compact' | 'comfortable'>(
     'comfortable'
   );
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const hasFinancePermission = React.useMemo(
+    () => can(session?.user ?? null, 'finance:view'),
+    [session?.user]
+  );
 
   const handleExport = React.useCallback(() => {
-    // TODO: Implement export logic
-  }, []);
+    if (isExporting) {
+      return;
+    }
+
+    void (async () => {
+      setIsExporting(true);
+
+      try {
+        const inventories = await fetchInventoryExportData(
+          ctrl.currentQueryParams
+        );
+
+        if (inventories.length === 0) {
+          toast({
+            variant: 'destructive',
+            title: '导出失败',
+            description: '当前筛选条件下没有可导出的库存数据',
+          });
+          return;
+        }
+
+        await ExportService.exportToExcel(
+          buildInventoryExportRows(inventories, {
+            includeFinance: hasFinancePermission,
+          }),
+          {
+            filename: buildInventoryExportFilename(),
+            sheetName: '库存总览',
+            includeHeaders: true,
+          }
+        );
+
+        toast({
+          title: '导出成功',
+          description: `已导出 ${inventories.length} 条库存批次记录`,
+        });
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: '导出失败',
+          description:
+            error instanceof Error ? error.message : '库存导出失败',
+        });
+      } finally {
+        setIsExporting(false);
+      }
+    })();
+  }, [ctrl.currentQueryParams, hasFinancePermission, isExporting, toast]);
 
   return (
     <InventoryContent
@@ -84,6 +198,7 @@ export function InventoryPageClient({
       isLoading={ctrl.isLoading}
       isFetching={ctrl.isFetching}
       isSearching={ctrl.isSearching} // ✅ 传递搜索状态
+      isExporting={isExporting}
       error={ctrl.error}
       density={density}
       onDensityChange={setDensity}
@@ -395,6 +510,7 @@ function InventoryContent(props: {
   isLoading: boolean;
   isFetching: boolean;
   isSearching: boolean; // ✅ 新增：搜索中状态
+  isExporting: boolean;
   error: unknown;
   density: 'compact' | 'comfortable';
   onDensityChange: (density: 'compact' | 'comfortable') => void;
@@ -416,6 +532,7 @@ function InventoryContent(props: {
     isLoading,
     isFetching,
     isSearching,
+    isExporting,
     error,
     density,
     onDensityChange,
@@ -514,6 +631,7 @@ function InventoryContent(props: {
                 isLoading={isLoading}
                 isFetching={isFetching}
                 isSearching={isSearching}
+                isExporting={isExporting}
                 density={density}
                 onDensityChange={onDensityChange}
                 onExport={onExport}

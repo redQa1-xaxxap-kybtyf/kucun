@@ -48,6 +48,7 @@ export interface ActionButton {
   onClick: () => void;
   variant?: 'default' | 'outline' | 'ghost' | 'destructive';
   className?: string;
+  disabled?: boolean;
 }
 
 /**
@@ -131,6 +132,7 @@ const ActionButtonsSection: React.FC<ActionButtonsSectionProps> = ({
           variant={action.variant || 'default'}
           className={cn('w-full justify-center sm:w-auto', buttonSize, action.className)}
           onClick={action.onClick}
+          disabled={action.disabled}
         >
           {action.icon}
           {action.label}

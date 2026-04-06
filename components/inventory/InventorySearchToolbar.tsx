@@ -36,6 +36,7 @@ interface InventorySearchToolbarProps {
   onFilterPatch?: (updates: Partial<InventoryQueryParams>) => void;
   onClearFilters?: () => void;
   isSearching?: boolean;
+  isExporting?: boolean;
   density: 'compact' | 'comfortable';
   onDensityChange: (density: 'compact' | 'comfortable') => void;
   onExport: () => void;
@@ -56,6 +57,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     onFilterPatch,
     onClearFilters,
     isSearching,
+    isExporting = false,
     density,
     onDensityChange,
     onExport,
@@ -155,13 +157,14 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
         },
         {
           key: 'export',
-          label: '导出库存',
+          label: isExporting ? '导出中...' : '导出库存',
           icon: <Download className="mr-1 h-3 w-3" />,
           onClick: onExport,
           variant: 'outline',
+          disabled: isExporting,
         },
       ],
-      [density, onDensityChange, onExport]
+      [density, isExporting, onDensityChange, onExport]
     );
 
     const sharedCardProps = {

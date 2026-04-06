@@ -179,6 +179,53 @@ function buildOrderByClause(
   return Prisma.raw(`${field} ${order}`);
 }
 
+interface InventoryGroupPageRow {
+  product_id: string;
+  product_code: string;
+}
+
+function buildGroupOrderByClause(
+  sortBy: string = 'updatedAt',
+  sortOrder: string = 'desc'
+): Prisma.Sql {
+  const normalizedOrder = sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+  const aggregateByField: Record<string, { asc: string; desc: string }> = {
+    updatedAt: {
+      asc: 'MIN(i.updated_at)',
+      desc: 'MAX(i.updated_at)',
+    },
+    quantity: {
+      asc: 'MIN(i.quantity)',
+      desc: 'MAX(i.quantity)',
+    },
+    reservedQuantity: {
+      asc: 'MIN(i.reserved_quantity)',
+      desc: 'MAX(i.reserved_quantity)',
+    },
+    productId: {
+      asc: 'MIN(i.product_id)',
+      desc: 'MAX(i.product_id)',
+    },
+    batchNumber: {
+      asc: 'MIN(i.batch_number)',
+      desc: 'MAX(i.batch_number)',
+    },
+    location: {
+      asc: 'MIN(i.location)',
+      desc: 'MAX(i.location)',
+    },
+  };
+
+  const aggregate =
+    aggregateByField[sortBy]?.[
+      normalizedOrder as keyof (typeof aggregateByField)[string]
+    ] ?? aggregateByField.updatedAt.desc;
+  const direction = normalizedOrder === 'asc' ? 'ASC' : 'DESC';
+
+  return Prisma.raw(`${aggregate} ${direction}`);
+}
+
 /**
  * 优化的库存列表查询
  * 使用原生SQL JOIN查询，解决N+1问题
@@ -196,9 +243,32 @@ export async function getOptimizedInventoryList(
 
   const whereClause = buildWhereClause(params);
   const orderByClause = buildOrderByClause(sortBy, sortOrder);
+  const groupOrderByClause = buildGroupOrderByClause(sortBy, sortOrder);
   const offset = (page - 1) * limit;
 
-  // 使用Prisma的原生SQL查询
+  // 先按产品分页，避免同编码不同批次被拆到不同页。
+  const pagedGroups = await prisma.$queryRaw<InventoryGroupPageRow[]>`
+    SELECT
+      i.product_id as product_id,
+      p.code as product_code
+    FROM inventory i
+    LEFT JOIN products p ON i.product_id = p.id
+    WHERE ${whereClause}
+    GROUP BY i.product_id, p.code
+    ORDER BY ${groupOrderByClause}, p.code ASC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  if (pagedGroups.length === 0) {
+    return [];
+  }
+
+  const pagedProductIds = pagedGroups.map(group => group.product_id);
+  const pagedGroupOrderClause = Prisma.sql`FIELD(i.product_id, ${Prisma.join(
+    pagedProductIds
+  )})`;
+
+  // 再一次性查出当前页产品下的所有批次记录，保证分组展示不会跨页。
   const rawRecords = await prisma.$queryRaw<unknown[]>`
     SELECT
       i.id,
@@ -235,8 +305,8 @@ export async function getOptimizedInventoryList(
       AND bs_default.batch_number = i.batch_number
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE ${whereClause}
-    ORDER BY ${orderByClause}
-    LIMIT ${limit} OFFSET ${offset}
+      AND i.product_id IN (${Prisma.join(pagedProductIds)})
+    ORDER BY ${pagedGroupOrderClause}, ${orderByClause}, i.id ASC
   `;
 
   // ✅ 将 Decimal 类型转换为 number，确保可以序列化到客户端
@@ -315,7 +385,7 @@ export async function getInventoryCount(
   const whereClause = buildWhereClause(params);
 
   const result = await prisma.$queryRaw<[{ count: bigint }]>`
-    SELECT COUNT(*) as count
+    SELECT COUNT(DISTINCT i.product_id) as count
     FROM inventory i
     LEFT JOIN products p ON i.product_id = p.id
     WHERE ${whereClause}

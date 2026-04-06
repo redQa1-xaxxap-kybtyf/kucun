@@ -47,6 +47,7 @@ interface ERPInventoryListProps {
   /** ✅ 新增：搜索状态指示 */
   /** ✅ 新增：搜索状态指示 */
   isSearching?: boolean;
+  isExporting?: boolean;
   density: 'compact' | 'comfortable';
   onDensityChange: (density: 'compact' | 'comfortable') => void;
   onExport: () => void;
@@ -93,6 +94,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     isLoading: _isLoading = false,
     isFetching = false,
     isSearching = false,
+    isExporting = false,
     density,
     onDensityChange,
     onExport,
@@ -223,16 +225,16 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
       queryParams.startDate,
     ]);
 
-    const totalRecords = data.pagination?.total ?? data.data.length;
+    const totalGroups = data.pagination?.total ?? data.data.length;
     const totalPages = data.pagination?.totalPages ?? 1;
     const currentPage = data.pagination?.page ?? 1;
     const resultHeadline = hasActiveFilters
-      ? `当前匹配 ${totalRecords} 条库存`
-      : `当前共 ${totalRecords} 条库存`;
+      ? `当前匹配 ${totalGroups} 个产品编码`
+      : `当前共 ${totalGroups} 个产品编码`;
     const resultDescription =
       totalPages > 1
-        ? `第 ${currentPage} / ${totalPages} 页，${INVENTORY_SEARCH_HINT}`
-        : INVENTORY_SEARCH_HINT;
+        ? `第 ${currentPage} / ${totalPages} 页，按产品编码分组展示，${INVENTORY_SEARCH_HINT}`
+        : `按产品编码分组展示，${INVENTORY_SEARCH_HINT}`;
 
     return (
       <div className="space-y-4">
@@ -246,6 +248,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           onFilterPatch={onFilterPatch}
           onClearFilters={onClearFilters}
           isSearching={isSearching || isFetching}
+          isExporting={isExporting}
           density={density}
           onDensityChange={onDensityChange}
           onExport={onExport}
@@ -325,8 +328,8 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
                 onPageChange={onPageChange}
                 onNextPageHover={onNextPageHover}
                 onPrevPageHover={onPrevPageHover}
-                showRange
-                showTotal
+                showRange={false}
+                showTotal={false}
               />
             </div>
           )}
