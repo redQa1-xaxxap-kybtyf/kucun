@@ -30,6 +30,10 @@ function normalizeBaseURL(url: string): string {
   return url.replace(/\/+$/, '');
 }
 
+type DeviceInfoLike = {
+  platform?: string;
+};
+
 function getApiConfig(): { baseURL: string; timeout: number } {
   // 1) 优先使用手动覆盖的 baseURL
   try {
@@ -46,7 +50,10 @@ function getApiConfig(): { baseURL: string; timeout: number } {
 
   // 2) 开发者工具：走开发环境（默认 localhost）
   try {
-    const deviceInfo = wx.getDeviceInfo?.();
+    const deviceInfo: DeviceInfoLike | null =
+      typeof wx.getDeviceInfo === 'function'
+        ? (wx.getDeviceInfo() as DeviceInfoLike)
+        : null;
     if (deviceInfo?.platform === 'devtools') {
       return ENV.development;
     }
